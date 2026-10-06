@@ -56,27 +56,65 @@ Vector2 analog_value(
     Vector2 center,
     float radius
 ) {
+    constexpr float deadzone = 0.10F;
+
     Vector2 offset =
         Vector2Subtract(
             point,
             center
         );
 
+    const float offset_length =
+        Vector2Length(offset);
+
     if (
-        Vector2Length(offset) >
-        radius
+        offset_length <=
+        radius * deadzone
     ) {
-        offset =
-            Vector2Scale(
-                Vector2Normalize(offset),
-                radius
-            );
+        return {
+            0.0F,
+            0.0F
+        };
     }
 
-    return {
-        offset.x / radius,
-        offset.y / radius
-    };
+    if (offset_length <= 0.0001F) {
+        return {
+            0.0F,
+            0.0F
+        };
+    }
+
+    float magnitude =
+        offset_length /
+        radius;
+
+    magnitude =
+        std::clamp(
+            magnitude,
+            0.0F,
+            1.0F
+        );
+
+    magnitude =
+        (
+            magnitude -
+            deadzone
+        ) /
+        (
+            1.0F -
+            deadzone
+        );
+
+    const Vector2 direction =
+        Vector2Scale(
+            offset,
+            1.0F / offset_length
+        );
+
+    return Vector2Scale(
+        direction,
+        magnitude
+    );
 }
 
 }
@@ -277,7 +315,7 @@ void InputSystem::update(
                     movement_radius
                 );
 
-            player_.move_x = value.x;
+            player_.move_x = -value.x;
             player_.move_y = value.y;
 
             continue;

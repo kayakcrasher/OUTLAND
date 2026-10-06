@@ -2,8 +2,15 @@
 
 #include "outland/input/InputSystem.hpp"
 #include "outland/input/TouchHUD.hpp"
+#include "outland/game/GameMode.hpp"
+#include "outland/game/HomeScreen.hpp"
+#include "outland/dev/DevLab.hpp"
+#include "outland/player/VerdanCharacter.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/terrain/TerrainWorld.hpp"
+#include "outland/world/terrain/TerrainHeight.hpp"
+#include "outland/world/foliage/FoliageSystem.hpp"
+#include "outland/world/physics/WorldCollision.hpp"
 
 #include <raylib.h>
 #include <raymath.h>
@@ -84,8 +91,17 @@ void Renderer::run() {
     input::InputSystem input_system;
     input::TouchHUD touch_hud;
 
+    game::HomeScreen home_screen;
+    dev::DevLab dev_lab;
+
+    game::GameMode game_mode =
+        game::GameMode::Home;
+
     world::VerdaRegion verda_region;
     world::terrain::TerrainWorld terrain_world;
+    world::foliage::FoliageSystem foliage_system;
+
+    float character_animation_time = 0.0F;
 
     Camera3D camera{};
 
@@ -126,6 +142,71 @@ void Renderer::run() {
             GetScreenHeight();
 
         // ====================================================
+        // HOME SCREEN
+        // ====================================================
+
+        if (
+            game_mode ==
+            game::GameMode::Home
+        ) {
+            const game::GameMode selected =
+                home_screen.update(
+                    screen_width,
+                    screen_height
+                );
+
+            BeginDrawing();
+
+            home_screen.draw(
+                screen_width,
+                screen_height
+            );
+
+            EndDrawing();
+
+            if (
+                selected !=
+                game::GameMode::Home
+            ) {
+                game_mode =
+                    selected;
+
+                player.position = {
+                    0.0F,
+                    world::terrain::TerrainHeight::sample(
+                        0.0F,
+                        8.0F
+                    ) + 1.0F,
+                    8.0F
+                };
+
+                player.vertical_velocity =
+                    0.0F;
+
+                player.grounded =
+                    true;
+
+                character_animation_time =
+                    0.0F;
+            }
+
+            continue;
+        }
+
+        // ====================================================
+        // RETURN HOME
+        // ====================================================
+
+        if (
+            IsKeyPressed(KEY_ESCAPE)
+        ) {
+            game_mode =
+                game::GameMode::Home;
+
+            continue;
+        }
+
+        // ====================================================
         // INPUT
         // ====================================================
 
@@ -137,6 +218,32 @@ void Renderer::run() {
         const input::PlayerInput&
             controls =
                 input_system.player();
+
+        // ====================================================
+        // DEV LAB
+        // ====================================================
+
+        if (
+            game_mode ==
+            game::GameMode::DevLab
+        ) {
+            dev_lab.update();
+
+            if (
+                dev_lab.teleport_requested()
+            ) {
+                player.position =
+                    dev_lab.spawn_position();
+
+                player.vertical_velocity =
+                    0.0F;
+
+                player.grounded =
+                    true;
+
+                dev_lab.clear_teleport();
+            }
+        }
 
         // ====================================================
         // VIEW MODE
@@ -206,16 +313,32 @@ void Renderer::run() {
                 )
             );
 
+        const float movement_strength =
+            Vector3Length(movement);
+
         if (
-            Vector3Length(movement) >
+            movement_strength >
             0.01F
         ) {
-            movement =
-                Vector3Normalize(
-                    movement
-                );
+            /*
+             * Preserve analog stick magnitude.
+             *
+             * Only clamp movement when combined inputs
+             * exceed the valid unit-vector range.
+             */
+            if (
+                movement_strength >
+                1.0F
+            ) {
+                movement =
+                    Vector3Scale(
+                        movement,
+                        1.0F /
+                        movement_strength
+                    );
+            }
 
-            player.position =
+            const Vector3 desired_position =
                 Vector3Add(
                     player.position,
                     Vector3Scale(
@@ -223,6 +346,44 @@ void Renderer::run() {
                         speed * dt
                     )
                 );
+
+            player.position =
+                world::physics::WorldCollision::
+                    resolve_player_movement(
+                        player.position,
+                        desired_position,
+                        verda_region,
+                        0.45F
+                    );
+        }
+
+        // ====================================================
+        // TERRAIN FOLLOW
+        // ====================================================
+
+        if (player.grounded) {
+            player.position.y =
+                world::terrain::TerrainHeight::sample(
+                    player.position.x,
+                    player.position.z
+                ) + 1.0F;
+        }
+
+        const float movement_amount =
+            std::clamp(
+                std::sqrt(
+                    controls.move_x *
+                    controls.move_x +
+                    controls.move_y *
+                    controls.move_y
+                ),
+                0.0F,
+                1.0F
+            );
+
+        if (movement_amount > 0.02F) {
+            character_animation_time +=
+                dt;
         }
 
         // ====================================================
@@ -249,12 +410,21 @@ void Renderer::run() {
                 player.vertical_velocity *
                 dt;
 
+            const float terrain_ground =
+                world::terrain::TerrainHeight::sample(
+                    player.position.x,
+                    player.position.z
+                );
+
+            const float player_ground_y =
+                terrain_ground + 1.0F;
+
             if (
                 player.position.y <=
-                1.0F
+                player_ground_y
             ) {
                 player.position.y =
-                    1.0F;
+                    player_ground_y;
 
                 player.vertical_velocity =
                     0.0F;
@@ -340,6 +510,15 @@ void Renderer::run() {
         terrain_world.draw();
 
         // ----------------------------------------------------
+        // VERDA FOLIAGE
+        // ----------------------------------------------------
+
+        foliage_system.draw(
+            camera.position
+        );
+
+
+        // ----------------------------------------------------
         // TRAINING ARENA
         //
         // Temporary flat development pad.
@@ -347,39 +526,31 @@ void Renderer::run() {
         // are converted to terrain-aware placement.
         // ----------------------------------------------------
 
-        DrawPlane(
-            {
-                0.0F,
-                0.0F,
-                0.0F
-            },
-            {
-                100.0F,
-                100.0F
-            },
-            Color{
-                94,
-                125,
-                75,
-                255
-            }
-        );
-
-        DrawGrid(
-            50,
-            2.0F
-        );
+        /*
+         * The procedural terrain is now the ground.
+         *
+         * The old 100 x 100 development plane and
+         * debug grid have been retired.
+         */
 
         // First region of Verda.
         verda_region.draw();
 
-        // Central structure.
-        DrawCube(
-            {
+        // Central training structure.
+        const float structure_ground_y =
+            world::terrain::TerrainHeight::sample(
                 0.0F,
-                1.5F,
                 0.0F
-            },
+            );
+
+        const Vector3 structure_position{
+            0.0F,
+            structure_ground_y + 1.5F,
+            0.0F
+        };
+
+        DrawCube(
+            structure_position,
             4.0F,
             3.0F,
             4.0F,
@@ -387,11 +558,7 @@ void Renderer::run() {
         );
 
         DrawCubeWires(
-            {
-                0.0F,
-                1.5F,
-                0.0F
-            },
+            structure_position,
             4.0F,
             3.0F,
             4.0F,
@@ -404,13 +571,25 @@ void Renderer::run() {
             i <= 4;
             ++i
         ) {
+            const float target_x =
+                static_cast<float>(
+                    i * 4
+                );
+
+            const float target_z =
+                -18.0F;
+
+            const float target_ground_y =
+                world::terrain::TerrainHeight::sample(
+                    target_x,
+                    target_z
+                );
+
             DrawCube(
                 {
-                    static_cast<float>(
-                        i * 4
-                    ),
-                    1.0F,
-                    -18.0F
+                    target_x,
+                    target_ground_y + 1.0F,
+                    target_z
                 },
                 1.0F,
                 2.0F,
@@ -425,20 +604,23 @@ void Renderer::run() {
 
         if (player.third_person) {
 
-            DrawCube(
-                player.position,
-                0.8F,
-                2.0F,
-                0.8F,
-                BLUE
-            );
+            const float player_ground_y =
+                world::terrain::TerrainHeight::sample(
+                    player.position.x,
+                    player.position.z
+                );
 
-            DrawCubeWires(
-                player.position,
-                0.8F,
-                2.0F,
-                0.8F,
-                BLACK
+            const Vector3 character_feet{
+                player.position.x,
+                player_ground_y,
+                player.position.z
+            };
+
+            player::VerdanCharacter::draw(
+                character_feet,
+                player.yaw,
+                movement_amount,
+                character_animation_time
             );
         }
 
@@ -457,7 +639,9 @@ void Renderer::run() {
         );
 
         DrawText(
-            "TRAINING ARENA",
+            game::game_mode_name(
+                game_mode
+            ),
             12,
             40,
             14,
@@ -524,6 +708,57 @@ void Renderer::run() {
             screen_width,
             screen_height
         );
+
+        // ====================================================
+        // TEMPORARY MOVEMENT DIAGNOSTICS
+        // ====================================================
+
+        DrawText(
+            TextFormat(
+                "STICK X: %.2f  Y: %.2f",
+                controls.move_x,
+                controls.move_y
+            ),
+            20,
+            100,
+            22,
+            YELLOW
+        );
+
+        DrawText(
+            TextFormat(
+                "MOVE X: %.2f  Z: %.2f",
+                movement.x,
+                movement.z
+            ),
+            20,
+            128,
+            22,
+            YELLOW
+        );
+
+        DrawText(
+            TextFormat(
+                "YAW: %.2f",
+                player.yaw
+            ),
+            20,
+            156,
+            22,
+            YELLOW
+        );
+
+        if (
+            game_mode ==
+            game::GameMode::DevLab
+        ) {
+            dev_lab.draw_overlay(
+                player.position,
+                player.yaw,
+                player.pitch,
+                player.grounded
+            );
+        }
 
         DrawFPS(
             screen_width - 90,

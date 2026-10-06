@@ -11,7 +11,7 @@ struct TouchElementLayout {
 
 struct TouchLayout {
     TouchElementLayout movement{
-        0.14F,
+        0.60F,
         0.76F,
         1.20F,
         0.30F

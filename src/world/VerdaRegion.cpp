@@ -1,4 +1,6 @@
 #include "outland/world/VerdaRegion.hpp"
+#include "outland/world/assets/VerdanArchitecture.hpp"
+#include "outland/world/terrain/TerrainHeight.hpp"
 
 #include <raylib.h>
 #include <raymath.h>
@@ -12,100 +14,97 @@ namespace {
 void draw_building(
     const Building& building
 ) {
-    Vector3 body_position =
-        building.position;
+    using assets::HouseStyle;
+    using assets::VerdanArchitecture;
 
-    body_position.y +=
-        building.size.y * 0.5F;
-
-    DrawCubeV(
-        body_position,
-        building.size,
-        building.wall_color
-    );
-
-    DrawCubeWiresV(
-        body_position,
-        building.size,
-        DARKGRAY
-    );
-
-    // Simple roof.
-    const Vector3 roof_position{
-        building.position.x,
-        building.position.y +
-            building.size.y +
-            0.35F,
-        building.position.z
-    };
-
-    const Vector3 roof_size{
-        building.size.x + 0.6F,
-        0.7F,
-        building.size.z + 0.6F
-    };
-
-    DrawCubeV(
-        roof_position,
-        roof_size,
-        building.roof_color
-    );
-
-    // Door.
-    const Vector3 door_position{
-        building.position.x,
-        building.position.y + 1.1F,
-        building.position.z -
-            building.size.z * 0.5F -
-            0.03F
-    };
-
-    DrawCube(
-        door_position,
-        1.2F,
-        2.2F,
-        0.10F,
-        Color{
-            75,
-            55,
-            40,
-            255
-        }
-    );
-
-    // Two front windows.
-    const float window_offset =
-        building.size.x * 0.28F;
-
-    for (
-        const float side :
-        {-1.0F, 1.0F}
-    ) {
-        const Vector3 window_position{
-            building.position.x +
-                window_offset * side,
-
-            building.position.y +
-                building.size.y * 0.55F,
-
-            building.position.z -
-                building.size.z * 0.5F -
-                0.04F
-        };
-
-        DrawCube(
-            window_position,
-            1.3F,
-            1.1F,
-            0.08F,
-            Color{
-                85,
-                120,
-                135,
-                255
-            }
+    const float ground_y =
+        terrain::TerrainHeight::sample(
+            building.position.x,
+            building.position.z
         );
+
+    HouseStyle style{
+        building.wall_color,
+
+        Color{
+            78,
+            74,
+            66,
+            255
+        },
+
+        building.roof_color,
+
+        Color{
+            105,
+            102,
+            92,
+            255
+        },
+
+        Color{
+            83,
+            119,
+            135,
+            255
+        },
+
+        false,
+        false,
+        true
+    };
+
+    /*
+     * Architecture variations.
+     *
+     * BuildingStyle now changes silhouette,
+     * not merely metadata.
+     */
+    switch (building.style) {
+
+        case BuildingStyle::TwoStoryHouse:
+            style.upper_floor = true;
+            style.balcony = true;
+            break;
+
+        case BuildingStyle::Shop:
+            style.upper_floor = false;
+            style.balcony = false;
+
+            style.trim = Color{
+                67,
+                82,
+                70,
+                255
+            };
+            break;
+
+        case BuildingStyle::Garage:
+            style.upper_floor = false;
+            style.balcony = false;
+
+            style.foundation = Color{
+                90,
+                88,
+                82,
+                255
+            };
+            break;
+
+        case BuildingStyle::RuralHouse:
+        default:
+            break;
     }
+
+    VerdanArchitecture::draw_house(
+        {
+            building.position.x,
+            ground_y,
+            building.position.z
+        },
+        building.size,
+        style
+    );
 }
 
 void draw_road(
@@ -120,7 +119,7 @@ void draw_road(
     const float length =
         Vector3Length(delta);
 
-    const Vector3 center =
+    Vector3 center =
         Vector3Scale(
             Vector3Add(
                 road.start,
@@ -128,6 +127,13 @@ void draw_road(
             ),
             0.5F
         );
+
+    center.y =
+        terrain::TerrainHeight::sample(
+            center.x,
+            center.z
+        ) +
+        0.04F;
 
     Color road_color{
         115,
@@ -167,26 +173,67 @@ void draw_road(
         ) *
         RAD2DEG;
 
-    DrawCubePro(
-        center,
-        {
+    /*
+     * raylib 6.0 does not expose DrawCubePro.
+     *
+     * Build a temporary cube model and rotate its
+     * transform so roads can point in any direction.
+     */
+    Mesh road_mesh =
+        GenMeshCube(
             road.width,
             0.08F,
             length
-        },
+        );
+
+    Model road_model =
+        LoadModelFromMesh(
+            road_mesh
+        );
+
+    road_model.transform =
+        MatrixMultiply(
+            MatrixRotateY(
+                angle * DEG2RAD
+            ),
+            MatrixTranslate(
+                center.x,
+                center.y,
+                center.z
+            )
+        );
+
+    road_model
+        .materials[0]
+        .maps[MATERIAL_MAP_DIFFUSE]
+        .color =
+            road_color;
+
+    DrawModel(
+        road_model,
         {
             0.0F,
-            1.0F,
+            0.0F,
             0.0F
         },
-        angle,
-        road_color
+        1.0F,
+        WHITE
+    );
+
+    UnloadModel(
+        road_model
     );
 }
 
 void draw_tree(
     Vector3 position
 ) {
+    position.y =
+        terrain::TerrainHeight::sample(
+            position.x,
+            position.z
+        );
+
     DrawCylinder(
         {
             position.x,
@@ -508,10 +555,16 @@ void VerdaRegion::draw() const {
         }
 
         // Development marker for settlement center.
+        const float settlement_ground_y =
+            terrain::TerrainHeight::sample(
+                settlement.center.x,
+                settlement.center.z
+            );
+
         DrawCylinder(
             {
                 settlement.center.x,
-                0.05F,
+                settlement_ground_y + 0.05F,
                 settlement.center.z
             },
             0.8F,

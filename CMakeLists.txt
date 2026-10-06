@@ -71,6 +71,14 @@ add_library(
 
     src/engine/render/Renderer.cpp
     src/world/VerdaRegion.cpp
+    src/dev/DevLab.cpp
+    src/game/HomeScreen.cpp
+    src/game/GameMode.cpp
+    src/world/foliage/FoliageSystem.cpp
+    src/player/VerdanCharacter.cpp
+    src/world/physics/WorldCollision.cpp
+    src/world/assets/VerdanArchitecture.cpp
+    src/world/assets/VerdanProps.cpp
     src/world/terrain/TerrainHeight.cpp
     src/world/terrain/TerrainChunk.cpp
     src/world/terrain/TerrainWorld.cpp
