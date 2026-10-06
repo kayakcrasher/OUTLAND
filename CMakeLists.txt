@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(
     Outland
-    VERSION 0.1.0
+    VERSION 0.2.0
     DESCRIPTION "Offline 3D open-world combat sandbox"
     LANGUAGES CXX
 )
@@ -19,8 +19,19 @@ option(
     ON
 )
 
+find_package(
+    PkgConfig
+    REQUIRED
+)
+
+pkg_check_modules(
+    RAYLIB
+    REQUIRED
+    raylib
+)
+
 # ============================================================
-# CORE LIBRARY
+# CORE
 # ============================================================
 
 add_library(
@@ -51,7 +62,55 @@ target_compile_options(
 )
 
 # ============================================================
-# GAME EXECUTABLE
+# RENDERER
+# ============================================================
+
+add_library(
+    outland_render
+    STATIC
+
+    src/engine/render/Renderer.cpp
+    src/world/VerdaRegion.cpp
+
+    src/input/InputSystem.cpp
+    src/input/TouchHUD.cpp
+)
+
+target_include_directories(
+    outland_render
+    PUBLIC
+        ${PROJECT_SOURCE_DIR}/include
+
+    PRIVATE
+        ${RAYLIB_INCLUDE_DIRS}
+)
+
+target_link_directories(
+    outland_render
+    PRIVATE
+        ${RAYLIB_LIBRARY_DIRS}
+)
+
+target_link_libraries(
+    outland_render
+    PUBLIC
+        outland_core
+
+    PRIVATE
+        ${RAYLIB_LIBRARIES}
+)
+
+target_compile_options(
+    outland_render
+    PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+        ${RAYLIB_CFLAGS_OTHER}
+)
+
+# ============================================================
+# EXECUTABLE
 # ============================================================
 
 add_executable(
@@ -63,6 +122,7 @@ target_link_libraries(
     outland
     PRIVATE
         outland_core
+        outland_render
 )
 
 # ============================================================
@@ -115,4 +175,5 @@ message(STATUS "================================")
 message(STATUS "OUTLAND ${PROJECT_VERSION}")
 message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "Tests: ${OUTLAND_BUILD_TESTS}")
+message(STATUS "raylib: ${RAYLIB_VERSION}")
 message(STATUS "================================")
