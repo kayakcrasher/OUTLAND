@@ -1,0 +1,49 @@
+# ============================================================
+# OUTLAND
+# Generated files and local development data
+# ============================================================
+
+# Build output
+/build/
+/build-*/
+/cmake-build-/
+
+# Runtime data
+/logs/
+/saves/
+
+# Compiled C/C++
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.dylib
+*.exe
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json
+
+# Android
+.gradle/
+local.properties
+*.apk
+*.aab
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Operating system junk
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
