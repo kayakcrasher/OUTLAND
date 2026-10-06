@@ -71,6 +71,9 @@ add_library(
 
     src/engine/render/Renderer.cpp
     src/world/VerdaRegion.cpp
+    src/world/terrain/TerrainHeight.cpp
+    src/world/terrain/TerrainChunk.cpp
+    src/world/terrain/TerrainWorld.cpp
 
     src/input/InputSystem.cpp
     src/input/TouchHUD.cpp

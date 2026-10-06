@@ -3,6 +3,7 @@
 #include "outland/input/InputSystem.hpp"
 #include "outland/input/TouchHUD.hpp"
 #include "outland/world/VerdaRegion.hpp"
+#include "outland/world/terrain/TerrainWorld.hpp"
 
 #include <raylib.h>
 #include <raymath.h>
@@ -84,6 +85,7 @@ void Renderer::run() {
     input::TouchHUD touch_hud;
 
     world::VerdaRegion verda_region;
+    world::terrain::TerrainWorld terrain_world;
 
     Camera3D camera{};
 
@@ -332,7 +334,17 @@ void Renderer::run() {
         BeginMode3D(camera);
 
         // ----------------------------------------------------
+        // VERDA TERRAIN
+        // ----------------------------------------------------
+
+        terrain_world.draw();
+
+        // ----------------------------------------------------
         // TRAINING ARENA
+        //
+        // Temporary flat development pad.
+        // This stays while player, targets and structures
+        // are converted to terrain-aware placement.
         // ----------------------------------------------------
 
         DrawPlane(
