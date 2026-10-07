@@ -22,6 +22,16 @@ public:
         float player_radius
     );
 
+    // Find a nearby window that the player can intentionally vault.
+    // Returns true and writes the landing position when a valid
+    // front-window opening is within reach.
+    static bool window_vault_target(
+        Vector3 position,
+        Vector3 forward,
+        const VerdaRegion& region,
+        Vector3& landing_position
+    );
+
 private:
     static bool circle_hits_box(
         float player_x,

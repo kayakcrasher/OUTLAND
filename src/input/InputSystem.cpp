@@ -326,7 +326,10 @@ void InputSystem::update(
                     movement_radius
                 );
 
-            player_.move_x = -value.x;
+            // Movement stick uses the same axis convention
+            // for native Android touch and X11 mouse-as-touch.
+            // RIGHT = positive X, LEFT = negative X.
+            player_.move_x = value.x;
             player_.move_y = value.y;
 
             continue;

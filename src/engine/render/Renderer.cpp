@@ -7,6 +7,10 @@
 #include "outland/game/GameMode.hpp"
 #include "outland/game/HomeScreen.hpp"
 #include "outland/dev/DevLab.hpp"
+
+#ifdef OUTLAND_DEV_TOOLS
+#include "outland/creator/CreatorController.hpp"
+#endif
 #include "outland/player/VerdanCharacter.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/terrain/TerrainWorld.hpp"
@@ -95,6 +99,10 @@ void Renderer::run() {
 
     game::HomeScreen home_screen;
     dev::DevLab dev_lab;
+
+#ifdef OUTLAND_DEV_TOOLS
+    creator::CreatorController creator_controller;
+#endif
 
     game::GameMode game_mode =
         game::GameMode::Home;
@@ -312,9 +320,9 @@ void Renderer::run() {
         };
 
         const Vector3 right{
-            std::cos(player.yaw),
+            -std::cos(player.yaw),
             0.0F,
-            -std::sin(player.yaw)
+            std::sin(player.yaw)
         };
 
         const float speed = controls.aim ? walk_speed * 0.55F :
@@ -374,6 +382,54 @@ void Renderer::run() {
                         verda_region,
                         0.45F
                     );
+        }
+
+        // ====================================================
+        // WINDOW VAULT
+        // ====================================================
+        //
+        // JUMP near a real window opening performs an
+        // intentional vault to the opposite side.
+        //
+        // The collision system determines whether the player
+        // is aligned with and facing a valid window.
+
+        if (controls.jump && player.grounded) {
+            Vector3 vault_landing{};
+
+            const Vector3 vault_forward{
+                -forward.x,
+                0.0F,
+                -forward.z
+            };
+
+            if (
+                world::physics::WorldCollision::
+                    window_vault_target(
+                        player.position,
+                        vault_forward,
+                        verda_region,
+                        vault_landing
+                    )
+            ) {
+                player.position.x =
+                    vault_landing.x;
+
+                player.position.z =
+                    vault_landing.z;
+
+                // Snap onto terrain on the destination side.
+                player.position.y =
+                    world::terrain::TerrainHeight::sample(
+                        player.position.x,
+                        player.position.z
+                    ) + 1.0F;
+
+                // Cancel vertical jump velocity so vaulting
+                // does not immediately launch the player.
+                player.vertical_velocity = 0.0F;
+                player.grounded = true;
+            }
         }
 
         // ====================================================
@@ -493,6 +549,34 @@ void Renderer::run() {
         if (game_mode == game::GameMode::DevLab && IsKeyPressed(KEY_T)) combat_world.reset_targets();
         combat_world.update(dt,game_mode == game::GameMode::DevLab);
         const Vector3 camera_direction=Vector3Normalize(Vector3Subtract(camera.target,camera.position));
+
+#ifdef OUTLAND_DEV_TOOLS
+        {
+            const bool creator_active =
+                game_mode == game::GameMode::DevLab;
+
+            creator_controller.set_enabled(
+                creator_active
+            );
+
+            if (creator_active) {
+                creator_controller.update(
+                    verda_region,
+                    camera.position,
+                    camera_direction
+                );
+
+                // Minecraft-style center-screen targeting:
+                // whatever the camera points at becomes
+                // the current Creator selection.
+                creator_controller.select_target(
+                    verda_region,
+                    camera.position,
+                    camera_direction
+                );
+            }
+        }
+#endif
         const Vector3 far_point=Vector3Add(camera.position,Vector3Scale(camera_direction,500.0F));
         const auto aimed_hit=combat_world.trace_segment(camera.position,far_point);
         const Vector3 aim_point=aimed_hit.hit() ? aimed_hit.position : far_point;
@@ -567,6 +651,17 @@ void Renderer::run() {
 
         // First region of Verda.
         verda_region.draw(camera.position);
+
+#ifdef OUTLAND_DEV_TOOLS
+        if (
+            game_mode ==
+            game::GameMode::DevLab
+        ) {
+            creator_controller.draw_world_overlay(
+                verda_region
+            );
+        }
+#endif
 
         // Central training structure.
         const float structure_ground_y =
@@ -697,6 +792,16 @@ void Renderer::run() {
                 player.grounded
             );
         }
+
+
+#ifdef OUTLAND_DEV_TOOLS
+        if (
+            game_mode ==
+            game::GameMode::DevLab
+        ) {
+            creator_controller.draw_hud();
+        }
+#endif
 
         DrawRectangleRec(audio_button, Fade(BLACK, 0.60F));
         DrawText(environment_audio.ready() ?

@@ -167,6 +167,60 @@ VerdaRegion::VerdaRegion() {
     generate_training_region();
 }
 
+#ifdef OUTLAND_DEV_TOOLS
+
+std::vector<Settlement>&
+VerdaRegion::editable_settlements() {
+    return settlements_;
+}
+
+bool VerdaRegion::delete_building(
+    const std::string_view building_id
+) {
+    for (auto& settlement : settlements_) {
+        const auto before =
+            settlement.buildings.size();
+
+        std::erase_if(
+            settlement.buildings,
+            [&](const Building& building) {
+                return building.id == building_id;
+            }
+        );
+
+        if (settlement.buildings.size() != before) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool VerdaRegion::delete_road(
+    const std::size_t settlement_index,
+    const std::size_t road_index
+) {
+    if (settlement_index >= settlements_.size()) {
+        return false;
+    }
+
+    auto& roads =
+        settlements_[settlement_index].roads;
+
+    if (road_index >= roads.size()) {
+        return false;
+    }
+
+    roads.erase(
+        roads.begin() +
+        static_cast<std::ptrdiff_t>(road_index)
+    );
+
+    return true;
+}
+
+#endif // OUTLAND_DEV_TOOLS
+
 void VerdaRegion::generate_training_region() {
     settlements_.clear();
 

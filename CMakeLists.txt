@@ -19,6 +19,12 @@ option(
     ON
 )
 
+option(
+    OUTLAND_DEV_TOOLS
+    "Build OUTLAND internal development and Creator tools"
+    OFF
+)
+
 find_package(
     PkgConfig
     REQUIRED
@@ -111,6 +117,31 @@ add_library(
     src/input/InputSystem.cpp
     src/input/TouchHUD.cpp
 )
+
+if(OUTLAND_DEV_TOOLS)
+    target_sources(
+        outland_render
+        PRIVATE
+            src/creator/CreatorController.cpp
+    )
+
+    target_compile_definitions(
+        outland_render
+        PUBLIC
+            OUTLAND_DEV_TOOLS=1
+    )
+
+    target_compile_definitions(
+        outland_core
+        PUBLIC
+            OUTLAND_DEV_TOOLS=1
+    )
+
+    message(
+        STATUS
+        "OUTLAND DEV tools enabled"
+    )
+endif()
 
 target_include_directories(
     outland_render

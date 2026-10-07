@@ -184,25 +184,209 @@ void VerdanArchitecture::draw_house(
         style.foundation
     );
 
-    // Main wall mass.
+    // --------------------------------------------------------
+    // PLAYABLE HOUSE SHELL
+    // --------------------------------------------------------
+    //
+    // OUTLAND buildings are gameplay spaces, not solid props.
+    // Build the exterior from individual wall sections so the
+    // front entrance is a real opening into the structure.
+
+    constexpr float wall_thickness = 0.24F;
+    constexpr float doorway_width = 1.45F;
+    constexpr float doorway_height = 2.35F;
+
+    const float wall_center_y =
+        ground_position.y +
+        size.y * 0.5F +
+        0.44F;
+
+    const float front_z =
+        ground_position.z -
+        size.z * 0.5F;
+
+    const float back_z =
+        ground_position.z +
+        size.z * 0.5F;
+
+    // Back wall.
     DrawCube(
         {
             ground_position.x,
-            ground_position.y +
-                size.y * 0.5F +
-                0.44F,
-            ground_position.z
+            wall_center_y,
+            back_z
         },
         size.x,
+        size.y,
+        wall_thickness,
+        style.plaster
+    );
+
+    // Left wall.
+    DrawCube(
+        {
+            ground_position.x - size.x * 0.5F,
+            wall_center_y,
+            ground_position.z
+        },
+        wall_thickness,
         size.y,
         size.z,
         style.plaster
     );
 
+    // Right wall.
+    DrawCube(
+        {
+            ground_position.x + size.x * 0.5F,
+            wall_center_y,
+            ground_position.z
+        },
+        wall_thickness,
+        size.y,
+        size.z,
+        style.plaster
+    );
+
+    // --------------------------------------------------------
+    // FRONT WALL WITH REAL OPENINGS
+    // --------------------------------------------------------
+    // Layout:
+    //
+    //   [ WINDOW ]   [ DOOR ]   [ WINDOW ]
+    //
+    // These are actual holes in the wall geometry.
+
+    constexpr float window_width = 1.25F;
+    constexpr float window_height = 1.35F;
+
+    // Front-wall pieces are measured upward from the top of
+    // the 0.44 m foundation. The visible window center is
+    // 1.75 m above ground, so convert it into wall-local Y.
+    constexpr float foundation_height = 0.44F;
+    constexpr float window_world_center_y = 1.75F;
+    constexpr float window_center_y =
+        window_world_center_y - foundation_height;
+
+    const float window_bottom =
+        window_center_y - window_height * 0.5F;
+
+    const float window_top =
+        window_center_y + window_height * 0.5F;
+
+    const float window_x =
+        size.x * 0.29F;
+
+    const float left_window_left =
+        -window_x - window_width * 0.5F;
+
+    const float left_window_right =
+        -window_x + window_width * 0.5F;
+
+    const float right_window_left =
+        window_x - window_width * 0.5F;
+
+    const float right_window_right =
+        window_x + window_width * 0.5F;
+
+    auto draw_front_piece =
+        [&](float x_min,
+            float x_max,
+            float y_min,
+            float y_max) {
+
+            if (x_max <= x_min || y_max <= y_min) {
+                return;
+            }
+
+            DrawCube(
+                {
+                    ground_position.x +
+                        (x_min + x_max) * 0.5F,
+                    ground_position.y +
+                        0.44F +
+                        (y_min + y_max) * 0.5F,
+                    front_z
+                },
+                x_max - x_min,
+                y_max - y_min,
+                wall_thickness,
+                style.plaster
+            );
+        };
+
+    const float left_edge = -size.x * 0.5F;
+    const float right_edge = size.x * 0.5F;
+
+    // Solid vertical wall sections between openings.
+    draw_front_piece(
+        left_edge,
+        left_window_left,
+        0.0F,
+        size.y
+    );
+
+    draw_front_piece(
+        left_window_right,
+        -doorway_width * 0.5F,
+        0.0F,
+        size.y
+    );
+
+    draw_front_piece(
+        doorway_width * 0.5F,
+        right_window_left,
+        0.0F,
+        size.y
+    );
+
+    draw_front_piece(
+        right_window_right,
+        right_edge,
+        0.0F,
+        size.y
+    );
+
+    // Wall below each window.
+    draw_front_piece(
+        left_window_left,
+        left_window_right,
+        0.0F,
+        window_bottom
+    );
+
+    draw_front_piece(
+        right_window_left,
+        right_window_right,
+        0.0F,
+        window_bottom
+    );
+
+    // Wall above each window.
+    draw_front_piece(
+        left_window_left,
+        left_window_right,
+        window_top,
+        size.y
+    );
+
+    draw_front_piece(
+        right_window_left,
+        right_window_right,
+        window_top,
+        size.y
+    );
+
+    // Header above the doorway.
+    draw_front_piece(
+        -doorway_width * 0.5F,
+        doorway_width * 0.5F,
+        doorway_height,
+        size.y
+    );
+
     const float front =
-        ground_position.z -
-        size.z * 0.5F -
-        0.06F;
+        front_z - 0.06F;
 
     if (detailed) {
         // Door.
@@ -215,28 +399,13 @@ void VerdanArchitecture::draw_house(
             style
         );
 
-        // Ground-floor windows.
-        draw_window(
-            {
-                ground_position.x - size.x * 0.29F,
-                ground_position.y + 1.75F,
-                front
-            },
-            1.25F,
-            1.35F,
-            style
-        );
-
-        draw_window(
-            {
-                ground_position.x + size.x * 0.29F,
-                ground_position.y + 1.75F,
-                front
-            },
-            1.25F,
-            1.35F,
-            style
-        );
+        // Ground-floor windows are real gameplay openings.
+        //
+        // Do NOT call draw_window() here. That helper draws the
+        // old decorative glass/pane assembly across the opening.
+        //
+        // The wall geometry above already forms the window holes.
+        // The sill below remains as the physical vault obstacle.
 
         if (style.upper_floor) {
             draw_window(
