@@ -1,4 +1,6 @@
 #include "outland/engine/render/Renderer.hpp"
+#include "outland/engine/audio/EnvironmentAudio.hpp"
+#include "outland/game/combat/CombatRenderer.hpp"
 
 #include "outland/input/InputSystem.hpp"
 #include "outland/input/TouchHUD.hpp"
@@ -35,7 +37,7 @@ struct PlayerState {
     float vertical_velocity{0.0F};
 
     float yaw{PI_F};
-    float pitch{-0.15F};
+    float pitch{-0.01F};
 
     bool grounded{true};
     bool third_person{true};
@@ -100,7 +102,14 @@ void Renderer::run() {
     world::VerdaRegion verda_region;
     world::terrain::TerrainWorld terrain_world;
     world::foliage::FoliageSystem foliage_system;
+    audio::EnvironmentAudio environment_audio(
+        std::string(GetApplicationDirectory()) + "assets/audio/environment"
+    );
 
+    game::combat::WeaponSystem weapons;
+    game::combat::CombatWorld combat_world(verda_region);
+    float recoil_pitch = 0.0F, recoil_yaw = 0.0F;
+    bool trigger_ready = false;
     float character_animation_time = 0.0F;
 
     Camera3D camera{};
@@ -141,6 +150,14 @@ void Renderer::run() {
         const int screen_height =
             GetScreenHeight();
 
+        const Rectangle audio_button{static_cast<float>(screen_width - 174), 44.0F, 162.0F, 34.0F};
+        if (IsKeyPressed(KEY_M) ||
+            (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(), audio_button))) {
+            environment_audio.toggle_mute();
+        }
+        if (IsKeyPressed(KEY_LEFT_BRACKET)) environment_audio.set_volume(environment_audio.volume() - 0.1F);
+        if (IsKeyPressed(KEY_RIGHT_BRACKET)) environment_audio.set_volume(environment_audio.volume() + 0.1F);
+
         // ====================================================
         // HOME SCREEN
         // ====================================================
@@ -149,6 +166,7 @@ void Renderer::run() {
             game_mode ==
             game::GameMode::Home
         ) {
+            environment_audio.update(player.position, player.grounded, false, verda_region);
             const game::GameMode selected =
                 home_screen.update(
                     screen_width,
@@ -186,8 +204,11 @@ void Renderer::run() {
                 player.grounded =
                     true;
 
-                character_animation_time =
-                    0.0F;
+                character_animation_time = 0.0F;
+                weapons.reset(game_mode == game::GameMode::DevLab);
+                combat_world.reset_targets();
+                recoil_pitch = recoil_yaw = 0.0F;
+                trigger_ready = false;
             }
 
             continue;
@@ -296,10 +317,8 @@ void Renderer::run() {
             -std::sin(player.yaw)
         };
 
-        const float speed =
-            controls.sprint
-                ? sprint_speed
-                : walk_speed;
+        const float speed = controls.aim ? walk_speed * 0.55F :
+                            controls.sprint ? sprint_speed : walk_speed;
 
         Vector3 movement =
             Vector3Add(
@@ -438,15 +457,15 @@ void Renderer::run() {
         // CAMERA POSITION
         // ====================================================
 
-        const Vector3 look_direction{
-            std::sin(player.yaw) *
-                std::cos(player.pitch),
+        environment_audio.update(player.position, player.grounded, true, verda_region);
 
-            std::sin(player.pitch),
-
-            std::cos(player.yaw) *
-                std::cos(player.pitch)
-        };
+        recoil_pitch *= std::exp(-dt * 5.0F);
+        recoil_yaw *= std::exp(-dt * 7.0F);
+        const float shot_pitch = std::clamp(player.pitch + recoil_pitch, -1.2F, 1.15F);
+        const float shot_yaw = player.yaw + recoil_yaw;
+        const Vector3 look_direction{std::sin(shot_yaw) * std::cos(shot_pitch),
+            std::sin(shot_pitch), std::cos(shot_yaw) * std::cos(shot_pitch)};
+        const Vector3 gun_right{std::cos(shot_yaw), 0.0F, -std::sin(shot_yaw)};
 
         const Vector3 head_position{
             player.position.x,
@@ -454,37 +473,50 @@ void Renderer::run() {
             player.position.z
         };
 
+        const float desired_fov = controls.aim ? 50.0F : 70.0F;
+        camera.fovy += (desired_fov-camera.fovy) * (1.0F-std::exp(-dt*12.0F));
         if (player.third_person) {
-
-            constexpr float
-                camera_distance =
-                    6.0F;
-
-            camera.target =
-                head_position;
-
-            camera.position =
-                Vector3Subtract(
-                    head_position,
-                    Vector3Scale(
-                        look_direction,
-                        camera_distance
-                    )
-                );
-
-            camera.position.y +=
-                2.0F;
+            const float distance = controls.aim ? 2.5F : 5.0F;
+            camera.position = Vector3Add(Vector3Subtract(head_position, Vector3Scale(look_direction,distance)),
+                Vector3Add(Vector3Scale(gun_right,controls.aim ? .4F : .75F), {0,controls.aim ? .25F : .8F,0}));
+            const auto obstruction = combat_world.trace_segment(head_position,camera.position);
+            if (obstruction.hit()) {
+                camera.position=Vector3Lerp(head_position,camera.position,
+                    std::max(0.0F,obstruction.fraction-.08F));
+            }
+            camera.target=Vector3Add(head_position,Vector3Scale(look_direction,25.0F));
+        } else {
+            camera.position=head_position;
+            camera.target=Vector3Add(head_position,look_direction);
         }
-        else {
-            camera.position =
-                head_position;
 
-            camera.target =
-                Vector3Add(
-                    head_position,
-                    look_direction
-                );
-        }
+        if (game_mode == game::GameMode::DevLab && IsKeyPressed(KEY_T)) combat_world.reset_targets();
+        combat_world.update(dt,game_mode == game::GameMode::DevLab);
+        const Vector3 camera_direction=Vector3Normalize(Vector3Subtract(camera.target,camera.position));
+        const Vector3 far_point=Vector3Add(camera.position,Vector3Scale(camera_direction,500.0F));
+        const auto aimed_hit=combat_world.trace_segment(camera.position,far_point);
+        const Vector3 aim_point=aimed_hit.hit() ? aimed_hit.position : far_point;
+        Vector3 gun_muzzle=Vector3Add(head_position,
+            Vector3Add(Vector3Scale(look_direction,weapons.selected()==game::combat::WeaponId::Rifle ? .95F : .65F),
+                Vector3Add(Vector3Scale(gun_right,controls.aim && !player.third_person ? 0.0F : .23F),
+                    {0,controls.aim ? -.12F : -.25F,0})));
+        const auto muzzle_obstruction=combat_world.trace_segment(head_position,gun_muzzle);
+        if (muzzle_obstruction.hit()) gun_muzzle=Vector3Lerp(head_position,gun_muzzle,
+            std::max(0.0F,muzzle_obstruction.fraction-.05F));
+        const Vector3 gun_direction=Vector3Normalize(Vector3Subtract(aim_point,gun_muzzle));
+        if (!controls.fire) trigger_ready=true;
+        game::combat::WeaponInput weapon_input;
+        weapon_input.fire=controls.fire && trigger_ready;
+        weapon_input.aim=controls.aim;
+        weapon_input.reload=controls.reload;
+        weapon_input.next_weapon=controls.next_weapon;
+        weapon_input.sprint=controls.sprint && !controls.aim && movement_amount>.1F;
+        weapon_input.grounded=player.grounded;
+        weapon_input.movement=movement_amount;
+        weapons.update(dt,weapon_input,{gun_muzzle,gun_direction},combat_world);
+        recoil_pitch=std::min(.20F,recoil_pitch+weapons.events().pitch_kick);
+        recoil_yaw+=weapons.events().yaw_kick;
+        environment_audio.play_combat(weapons.selected(),weapons.events());
 
         // ====================================================
         // DRAW
@@ -514,7 +546,7 @@ void Renderer::run() {
         // ----------------------------------------------------
 
         foliage_system.draw(
-            camera.position
+            camera.position, verda_region
         );
 
 
@@ -534,7 +566,7 @@ void Renderer::run() {
          */
 
         // First region of Verda.
-        verda_region.draw();
+        verda_region.draw(camera.position);
 
         // Central training structure.
         const float structure_ground_y =
@@ -565,38 +597,9 @@ void Renderer::run() {
             BLACK
         );
 
-        // Range targets.
-        for (
-            int i = -4;
-            i <= 4;
-            ++i
-        ) {
-            const float target_x =
-                static_cast<float>(
-                    i * 4
-                );
-
-            const float target_z =
-                -18.0F;
-
-            const float target_ground_y =
-                world::terrain::TerrainHeight::sample(
-                    target_x,
-                    target_z
-                );
-
-            DrawCube(
-                {
-                    target_x,
-                    target_ground_y + 1.0F,
-                    target_z
-                },
-                1.0F,
-                2.0F,
-                0.5F,
-                RED
-            );
-        }
+        game::combat::CombatRenderer::draw_world(weapons,combat_world);
+        game::combat::CombatRenderer::draw_gun(gun_muzzle,gun_direction,weapons.selected(),
+            weapons.reload_remaining()/weapons.weapon().reload_seconds,weapons.muzzle_flash());
 
         // ----------------------------------------------------
         // PLAYER BODY
@@ -604,23 +607,14 @@ void Renderer::run() {
 
         if (player.third_person) {
 
-            const float player_ground_y =
-                world::terrain::TerrainHeight::sample(
-                    player.position.x,
-                    player.position.z
-                );
-
-            const Vector3 character_feet{
-                player.position.x,
-                player_ground_y,
-                player.position.z
-            };
+            const Vector3 character_feet{player.position.x,player.position.y-1.0F,player.position.z};
 
             player::VerdanCharacter::draw(
                 character_feet,
                 player.yaw,
                 movement_amount,
-                character_animation_time
+                character_animation_time,
+                true
             );
         }
 
@@ -658,94 +652,38 @@ void Renderer::run() {
             BLACK
         );
 
-        // Crosshair.
-        const int center_x =
-            screen_width / 2;
-
-        const int center_y =
-            screen_height / 2;
-
-        DrawLine(
-            center_x - 7,
-            center_y,
-            center_x + 7,
-            center_y,
-            BLACK
-        );
-
-        DrawLine(
-            center_x,
-            center_y - 7,
-            center_x,
-            center_y + 7,
-            BLACK
-        );
-
-        // Input diagnostics.
-        if (controls.fire) {
-            DrawText(
-                "FIRE",
-                center_x - 20,
-                center_y + 25,
-                18,
-                RED
-            );
+        const int center_x=screen_width/2, center_y=screen_height/2;
+        const int gap=static_cast<int>((controls.aim ? 3 : 8)+movement_amount*5+recoil_pitch*180);
+        const Color crosshair_color=weapons.hit_marker()>0 ?
+            (weapons.last_headshot() ? ORANGE : GREEN) : RAYWHITE;
+        DrawLine(center_x-gap-6,center_y,center_x-gap,center_y,crosshair_color);
+        DrawLine(center_x+gap,center_y,center_x+gap+6,center_y,crosshair_color);
+        DrawLine(center_x,center_y-gap-6,center_x,center_y-gap,crosshair_color);
+        DrawLine(center_x,center_y+gap,center_x,center_y+gap+6,crosshair_color);
+        if (weapons.hit_marker()>0) {
+            DrawLine(center_x-10,center_y-10,center_x-5,center_y-5,crosshair_color);
+            DrawLine(center_x+5,center_y+5,center_x+10,center_y+10,crosshair_color);
+            DrawLine(center_x-10,center_y+10,center_x-5,center_y+5,crosshair_color);
+            DrawLine(center_x+5,center_y-5,center_x+10,center_y-10,crosshair_color);
+            DrawText(TextFormat("%s %.0f",weapons.last_headshot() ? "HEAD HIT" : "HIT",weapons.last_damage()),
+                center_x-40,center_y+35,16,crosshair_color);
         }
-
-        if (controls.aim) {
-            DrawText(
-                "AIM",
-                center_x - 18,
-                center_y + 48,
-                18,
-                DARKBLUE
-            );
-        }
+        DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
+        DrawText(weapons.weapon().name,24,screen_height-94,19,RAYWHITE);
+        if (weapons.unlimited()) DrawText("AMMO UNLIMITED - DEV LAB",24,screen_height-68,18,YELLOW);
+        else DrawText(TextFormat("%d / %d",weapons.ammo().loaded,weapons.ammo().reserve),
+            24,screen_height-68,22,RAYWHITE);
+        if (weapons.reload_remaining()>0) DrawText(TextFormat("RELOADING %.1fs",weapons.reload_remaining()),
+            24,screen_height-39,16,ORANGE);
+        else DrawText(weapons.ammo().loaded==0 && !weapons.unlimited() ?
+            "EMPTY - R / LOAD TO RELOAD" : "F / FIRE   Q / AIM   R / LOAD   TAB / GUN",
+            24,screen_height-39,12,RAYWHITE);
 
         touch_hud.draw(
             controls,
             input_system.layout(),
             screen_width,
             screen_height
-        );
-
-        // ====================================================
-        // TEMPORARY MOVEMENT DIAGNOSTICS
-        // ====================================================
-
-        DrawText(
-            TextFormat(
-                "STICK X: %.2f  Y: %.2f",
-                controls.move_x,
-                controls.move_y
-            ),
-            20,
-            100,
-            22,
-            YELLOW
-        );
-
-        DrawText(
-            TextFormat(
-                "MOVE X: %.2f  Z: %.2f",
-                movement.x,
-                movement.z
-            ),
-            20,
-            128,
-            22,
-            YELLOW
-        );
-
-        DrawText(
-            TextFormat(
-                "YAW: %.2f",
-                player.yaw
-            ),
-            20,
-            156,
-            22,
-            YELLOW
         );
 
         if (
@@ -759,6 +697,11 @@ void Renderer::run() {
                 player.grounded
             );
         }
+
+        DrawRectangleRec(audio_button, Fade(BLACK, 0.60F));
+        DrawText(environment_audio.ready() ?
+                 (environment_audio.muted() ? "AUDIO OFF · M" : "AUDIO ON · M") : "AUDIO UNAVAILABLE",
+                 screen_width - 165, 53, 14, RAYWHITE);
 
         DrawFPS(
             screen_width - 90,

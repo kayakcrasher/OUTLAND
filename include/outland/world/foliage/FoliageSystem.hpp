@@ -2,6 +2,8 @@
 
 #include <raylib.h>
 
+namespace outland::world { class VerdaRegion; }
+
 namespace outland::world::foliage {
 
 class FoliageSystem {
@@ -9,7 +11,8 @@ public:
     FoliageSystem();
 
     void draw(
-        const Vector3& camera_position
+        const Vector3& camera_position,
+        const VerdaRegion& region
     ) const;
 
 private:

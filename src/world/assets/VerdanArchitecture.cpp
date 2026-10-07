@@ -1,4 +1,5 @@
 #include "outland/world/assets/VerdanArchitecture.hpp"
+#include "outland/world/assets/VerdaGeometry.hpp"
 
 namespace outland::world::assets {
 
@@ -73,13 +74,15 @@ void VerdanArchitecture::draw_door(
     );
 
     // Handle.
-    DrawSphere(
+    DrawSphereEx(
         {
             position.x + 0.38F,
             position.y,
             position.z - 0.17F
         },
         0.07F,
+        4,
+        6,
         Color{
             170,
             150,
@@ -148,52 +151,25 @@ void VerdanArchitecture::draw_roof(
     const Vector3 building_size,
     const HouseStyle& style
 ) {
-    /*
-     * Temporary low-cost roof.
-     *
-     * Later this becomes proper pitched geometry.
-     * The overhang already improves the silhouette.
-     */
-
-    DrawCube(
-        {
-            position.x,
-            position.y +
-                building_size.y +
-                0.28F,
-            position.z
-        },
-        building_size.x + 0.65F,
-        0.55F,
-        building_size.z + 0.65F,
-        style.roof
-    );
-
-    // Roof edge/fascia.
-    DrawCubeWires(
-        {
-            position.x,
-            position.y +
-                building_size.y +
-                0.28F,
-            position.z
-        },
-        building_size.x + 0.65F,
-        0.55F,
-        building_size.z + 0.65F,
-        Color{
-            70,
-            65,
-            58,
-            255
-        }
-    );
+    const auto vertices = roof_vertices(position, building_size);
+    for (std::size_t face = 0; face < roof_faces.size(); ++face) {
+        const auto indices = roof_faces[face];
+        const Color color = face < 2 ? style.plaster : style.roof;
+        DrawTriangle3D(vertices[indices[0]], vertices[indices[1]], vertices[indices[2]], color);
+    }
+    // Fascia on both eaves; no wireframe edges in the finished silhouette.
+    for (float side : {-1.0F, 1.0F}) {
+        DrawCube({position.x + side * (building_size.x * 0.5F + 0.35F),
+                  position.y + building_size.y, position.z},
+                 0.12F, 0.18F, building_size.z + 0.7F, style.trim);
+    }
 }
 
 void VerdanArchitecture::draw_house(
     const Vector3 ground_position,
     const Vector3 size,
-    const HouseStyle& style
+    const HouseStyle& style,
+    const bool detailed
 ) {
     // Foundation.
     DrawCube(
@@ -228,75 +204,98 @@ void VerdanArchitecture::draw_house(
         size.z * 0.5F -
         0.06F;
 
-    // Door.
-    draw_door(
-        {
-            ground_position.x,
-            ground_position.y + 1.60F,
-            front
-        },
-        style
-    );
-
-    // Ground-floor windows.
-    draw_window(
-        {
-            ground_position.x - size.x * 0.29F,
-            ground_position.y + 1.75F,
-            front
-        },
-        1.25F,
-        1.35F,
-        style
-    );
-
-    draw_window(
-        {
-            ground_position.x + size.x * 0.29F,
-            ground_position.y + 1.75F,
-            front
-        },
-        1.25F,
-        1.35F,
-        style
-    );
-
-    if (style.upper_floor) {
-        draw_window(
-            {
-                ground_position.x - size.x * 0.27F,
-                ground_position.y +
-                    size.y * 0.70F,
-                front
-            },
-            1.30F,
-            1.40F,
-            style
-        );
-
-        draw_window(
-            {
-                ground_position.x + size.x * 0.27F,
-                ground_position.y +
-                    size.y * 0.70F,
-                front
-            },
-            1.30F,
-            1.40F,
-            style
-        );
-    }
-
-    if (style.balcony) {
-        draw_balcony(
+    if (detailed) {
+        // Door.
+        draw_door(
             {
                 ground_position.x,
-                ground_position.y +
-                    size.y * 0.57F,
-                front - 0.55F
+                ground_position.y + 1.60F,
+                front
             },
-            size.x * 0.72F
+            style
         );
+
+        // Ground-floor windows.
+        draw_window(
+            {
+                ground_position.x - size.x * 0.29F,
+                ground_position.y + 1.75F,
+                front
+            },
+            1.25F,
+            1.35F,
+            style
+        );
+
+        draw_window(
+            {
+                ground_position.x + size.x * 0.29F,
+                ground_position.y + 1.75F,
+                front
+            },
+            1.25F,
+            1.35F,
+            style
+        );
+
+        if (style.upper_floor) {
+            draw_window(
+                {
+                    ground_position.x - size.x * 0.27F,
+                    ground_position.y +
+                        size.y * 0.70F,
+                    front
+                },
+                1.30F,
+                1.40F,
+                style
+            );
+
+            draw_window(
+                {
+                    ground_position.x + size.x * 0.27F,
+                    ground_position.y +
+                        size.y * 0.70F,
+                    front
+                },
+                1.30F,
+                1.40F,
+                style
+            );
+        }
+
+        if (style.balcony) {
+            draw_balcony(
+                {
+                    ground_position.x,
+                    ground_position.y +
+                        size.y * 0.57F,
+                    front - 0.55F
+                },
+                size.x * 0.72F
+            );
+        }
+
+        // Entry steps, window sills, corner trim and one chimney.
+        DrawCube({ground_position.x, ground_position.y + 0.11F, front - 0.55F},
+                 1.8F, 0.22F, 1.1F, style.foundation);
+        DrawCube({ground_position.x, ground_position.y + 0.33F, front - 0.25F},
+                 1.5F, 0.22F, 0.5F, style.foundation);
+        for (float side : {-1.0F, 1.0F}) {
+            DrawCube({ground_position.x + side * size.x * 0.29F,
+                      ground_position.y + 1.04F, front - 0.13F},
+                     1.55F, 0.12F, 0.32F, style.foundation);
+            for (float end : {-1.0F, 1.0F}) {
+                DrawCube({ground_position.x + side * (size.x * 0.5F - 0.08F),
+                          ground_position.y + size.y * 0.5F + 0.44F,
+                          ground_position.z + end * (size.z * 0.5F - 0.08F)},
+                         0.2F, size.y, 0.2F, style.trim);
+            }
+        }
+        DrawCube({ground_position.x + size.x * 0.24F,
+                  ground_position.y + size.y + 0.44F + size.x * 0.18F,
+                  ground_position.z + size.z * 0.2F},
+                 0.65F, size.x * 0.24F, 0.65F, style.foundation);
     }
 
     draw_roof(

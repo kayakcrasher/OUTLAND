@@ -16,7 +16,7 @@ public:
     const std::vector<Settlement>&
     settlements() const;
 
-    void draw() const;
+    void draw(const Vector3& camera_position) const;
 
 private:
     std::vector<Settlement> settlements_;

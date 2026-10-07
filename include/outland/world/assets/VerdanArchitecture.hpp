@@ -21,7 +21,8 @@ public:
     static void draw_house(
         Vector3 ground_position,
         Vector3 size,
-        const HouseStyle& style
+        const HouseStyle& style,
+        bool detailed = true
     );
 
 private:

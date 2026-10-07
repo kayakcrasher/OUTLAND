@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OUTLAND / Verda asset workbench</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2eee3;color:#283b32;font:16px system-ui,sans-serif}
+header{padding:24px 32px;border-bottom:1px solid #cbd0bb}h1{font-size:26px;margin:0 0 8px}p{margin:0;color:#62705e}
+main{display:grid;grid-template-columns:240px 1fr;max-width:1400px;margin:auto;min-height:75vh}
+aside{padding:20px;display:flex;flex-direction:column;gap:7px}button,select{font:inherit;padding:10px;border:1px solid #bdc6af;border-radius:8px;color:inherit;background:#faf8f1;cursor:pointer}
+button[aria-pressed=true]{background:#365e43;color:white}section{padding:24px}canvas{width:100%;height:62vh;min-height:350px;touch-action:none;background:#e4e8d6;border-radius:16px}
+.bar{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}.bar p{margin-left:auto}
+footer{padding:0 32px 24px;color:#62705e;font-size:14px}@media(max-width:650px){main{grid-template-columns:1fr}aside{flex-direction:row;overflow:auto}aside button{white-space:nowrap}section{padding:12px}header{padding:20px}}
+</style>
+<header><h1>OUTLAND / VERDA</h1><p>Original environment starter kit · bright natural palette · grounded silhouettes</p></header>
+<main><aside aria-label="Assets" id="assets"></aside><section>
+<div class="bar"><label>Detail <select id="lod"><option value="0">LOD 0 — near</option><option value="1">LOD 1 — medium</option><option value="2">LOD 2 — far</option></select></label>
+<button id="reset">Reset view</button><p id="stats" aria-live="polite"></p></div>
+<canvas id="view" aria-label="3D asset preview: drag to rotate and scroll to zoom" tabindex="0"></canvas>
+</section></main>
+<footer>Drag to rotate · scroll to zoom · arrow keys rotate · Y-up, metre scale; gun pivot at muzzle.<br>Environment and weapon geometry study. Detailed textures, interiors, vehicle kit and Android profiling remain future work.</footer>
+<script>
+const data=__VERDA_DATA__, palette=__VERDA_PALETTE__;
+const canvas=document.querySelector('#view'), ctx=canvas.getContext('2d'), lod=document.querySelector('#lod');
+let selected=Object.keys(data)[0], yaw=-2.4, pitch=.4, zoom=1, last=null;
+const buttons=new Map();
+for(const name of Object.keys(data)){
+ const b=document.createElement('button');b.textContent=name.replaceAll('_',' ');b.onclick=()=>{selected=name;zoom=1;draw()};document.querySelector('#assets').append(b);buttons.set(name,b);
+}
+function draw(){
+ const dpr=window.devicePixelRatio||1,w=canvas.clientWidth,h=canvas.clientHeight;canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+ const faces=data[selected][Number(lod.value)];
+ const all=faces.flatMap(f=>f[0]), minY=Math.min(...all.map(p=>p[1])),maxY=Math.max(...all.map(p=>p[1]));
+ const rotate=(p)=>{const x=p[0]*Math.cos(yaw)-p[2]*Math.sin(yaw),z=p[0]*Math.sin(yaw)+p[2]*Math.cos(yaw),y=p[1]-(minY+maxY)/2;return [x,y*Math.cos(pitch)-z*Math.sin(pitch),y*Math.sin(pitch)+z*Math.cos(pitch)]};
+ const radius=Math.max(...all.map(p=>Math.hypot(p[0],p[1]-(minY+maxY)/2,p[2]))),scale=Math.min(w,h)*.39/Math.max(radius,.1)*zoom;
+ const triangles=faces.map(([points,material])=>({p:points.map(rotate),material})).sort((a,b)=>a.p.reduce((s,p)=>s+p[2],0)-b.p.reduce((s,p)=>s+p[2],0));
+ for(const {p,material} of triangles){
+  const a=p[1].map((v,i)=>v-p[0][i]),b=p[2].map((v,i)=>v-p[0][i]),n=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  if(n[2]<=0)continue;
+  const length=Math.hypot(...n),light=.72+.28*Math.max(0,(n[0]*-.3+n[1]*.8+n[2]*.5)/length);
+  ctx.fillStyle='rgb('+palette[material].map(c=>Math.round(c*light)).join(',')+')';ctx.beginPath();p.forEach((v,i)=>ctx[i?'lineTo':'moveTo'](w/2+v[0]*scale,h/2-v[1]*scale));ctx.closePath();ctx.fill();
+ }
+ document.querySelector('#stats').textContent=faces.length+' triangles · '+(maxY-minY).toFixed(2)+' m tall';
+ for(const [name,b] of buttons)b.setAttribute('aria-pressed',String(name===selected));
+}
+canvas.onpointerdown=e=>{last=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId)};
+canvas.onpointermove=e=>{if(!last)return;yaw+=(e.clientX-last[0])*.01;pitch=Math.max(-1.3,Math.min(1.3,pitch+(e.clientY-last[1])*.008));last=[e.clientX,e.clientY];draw()};
+canvas.onpointerup=canvas.onpointercancel=()=>{last=null};
+canvas.onwheel=e=>{e.preventDefault();zoom=Math.max(.4,Math.min(2.5,zoom*Math.exp(-e.deltaY*.001)));draw()};
+canvas.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();yaw+=(e.key==='ArrowLeft'?-.1:e.key==='ArrowRight'?.1:0);pitch=Math.max(-1.3,Math.min(1.3,pitch+(e.key==='ArrowUp'?.1:e.key==='ArrowDown'?-.1:0)));draw()};
+lod.onchange=draw;document.querySelector('#reset').onclick=()=>{yaw=-2.4;pitch=.4;zoom=1;draw()};new ResizeObserver(draw).observe(canvas);
+</script>
+</html>

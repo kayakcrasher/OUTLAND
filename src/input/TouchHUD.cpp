@@ -160,6 +160,11 @@ void TouchHUD::draw(
     const float base_button_radius =
         43.0F * scale;
 
+    draw_button(position_of(layout.reload, screen_width, screen_height),
+                base_button_radius * layout.reload.scale, layout.reload.opacity, "LOAD", input.reload);
+    draw_button(position_of(layout.weapon, screen_width, screen_height),
+                base_button_radius * layout.weapon.scale, layout.weapon.opacity, "GUN", input.next_weapon);
+
     draw_stick(
         position_of(
             layout.movement,

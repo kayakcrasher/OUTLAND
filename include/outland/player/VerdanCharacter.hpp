@@ -10,7 +10,8 @@ public:
         Vector3 feet_position,
         float yaw,
         float movement_amount,
-        float animation_time
+        float animation_time,
+        bool armed = false
     );
 };
 

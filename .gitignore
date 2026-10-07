@@ -47,3 +47,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.log
+# Original generated game assets are versioned for ready-to-use downloads.
+!assets/verda/starter/*.obj
+__pycache__/

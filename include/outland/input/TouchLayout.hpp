@@ -53,6 +53,8 @@ struct TouchLayout {
     };
 
     float look_sensitivity{2.25F};
+    TouchElementLayout reload{0.96F, 0.465F, 0.80F, 0.40F};
+    TouchElementLayout weapon{0.69F, 0.34F, 0.80F, 0.35F};
 
     void reset() {
         *this = TouchLayout{};

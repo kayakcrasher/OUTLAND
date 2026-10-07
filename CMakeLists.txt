@@ -30,6 +30,27 @@ pkg_check_modules(
     raylib
 )
 
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+    add_custom_command(
+        OUTPUT "${PROJECT_SOURCE_DIR}/assets/verda/starter/manifest.json"
+               "${PROJECT_SOURCE_DIR}/assets/audio/environment/verda_wind.wav"
+               "${PROJECT_SOURCE_DIR}/assets/audio/environment/gunshot_rifle.wav"
+        COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_verda_kit.py"
+        COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_verda_audio.py"
+        DEPENDS tools/generate_verda_kit.py tools/verda_preview.html tools/generate_verda_audio.py
+        COMMENT "Generating original Verda environment assets and audio"
+        VERBATIM
+    )
+    add_custom_target(verda_assets DEPENDS
+        "${PROJECT_SOURCE_DIR}/assets/verda/starter/manifest.json"
+        "${PROJECT_SOURCE_DIR}/assets/audio/environment/verda_wind.wav"
+        "${PROJECT_SOURCE_DIR}/assets/audio/environment/gunshot_rifle.wav"
+    )
+elseif(NOT EXISTS "${PROJECT_SOURCE_DIR}/assets/audio/environment/verda_wind.wav")
+    message(FATAL_ERROR "Install Python 3 to generate Verda assets (Termux: pkg install python).")
+endif()
+
 # ============================================================
 # CORE
 # ============================================================
@@ -70,6 +91,10 @@ add_library(
     STATIC
 
     src/engine/render/Renderer.cpp
+    src/engine/audio/EnvironmentAudio.cpp
+    src/game/combat/CombatWorld.cpp
+    src/game/combat/WeaponSystem.cpp
+    src/game/combat/CombatRenderer.cpp
     src/world/VerdaRegion.cpp
     src/dev/DevLab.cpp
     src/game/HomeScreen.cpp
@@ -128,12 +153,22 @@ add_executable(
     outland
     src/main.cpp
 )
+if(TARGET verda_assets)
+    add_dependencies(outland verda_assets)
+endif()
 
 target_link_libraries(
     outland
     PRIVATE
         outland_core
         outland_render
+)
+
+# Runtime assets live beside the executable, independent of the launch directory.
+add_custom_command(TARGET outland POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/assets"
+        "$<TARGET_FILE_DIR:outland>/assets"
 )
 
 # ============================================================
@@ -179,6 +214,45 @@ if(OUTLAND_BUILD_TESTS)
         NAME outland_core_tests
         COMMAND outland_tests
     )
+
+    # Record draw/audio calls to verify environment behavior without a display.
+    add_executable(outland_environment_tests
+        tests/integration/world/test_verda_environment.cpp
+        src/world/VerdaRegion.cpp
+        src/world/assets/VerdanArchitecture.cpp
+        src/world/foliage/FoliageSystem.cpp
+        src/world/physics/WorldCollision.cpp
+        src/world/terrain/TerrainHeight.cpp
+        src/engine/audio/EnvironmentAudio.cpp
+    )
+    target_include_directories(outland_environment_tests PRIVATE
+        "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS}
+    )
+    target_compile_options(outland_environment_tests PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(outland_environment_tests PRIVATE -UNDEBUG)
+    add_test(NAME outland_environment_tests COMMAND outland_environment_tests)
+    add_executable(outland_combat_tests
+        tests/integration/world/test_combat.cpp
+        src/game/combat/CombatWorld.cpp
+        src/game/combat/WeaponSystem.cpp
+        src/world/terrain/TerrainHeight.cpp
+    )
+    target_include_directories(outland_combat_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
+    target_compile_options(outland_combat_tests PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(outland_combat_tests PRIVATE -UNDEBUG)
+    add_test(NAME outland_combat_tests COMMAND outland_combat_tests)
+
+    add_executable(outland_combat_input_tests tests/integration/world/test_combat_input.cpp src/input/InputSystem.cpp)
+    target_include_directories(outland_combat_input_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
+    target_compile_options(outland_combat_input_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_combat_input_tests COMMAND outland_combat_input_tests)
+
+    if(Python3_Interpreter_FOUND)
+        add_dependencies(outland_environment_tests verda_assets)
+        add_test(NAME outland_asset_validation
+            COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/validate_verda_kit.py"
+        )
+    endif()
 
 endif()
 

@@ -58,14 +58,20 @@ bool WorldCollision::blocked(
             const Building& building :
             settlement.buildings
         ) {
+            const float angle = building.rotation_y * DEG2RAD;
+            const float dx = position.x - building.position.x;
+            const float dz = position.z - building.position.z;
+            // Match the rendered house's local coordinates for any yaw.
+            const float local_x = dx * std::cos(angle) - dz * std::sin(angle);
+            const float local_z = dx * std::sin(angle) + dz * std::cos(angle);
             if (
                 circle_hits_box(
-                    position.x,
-                    position.z,
+                    local_x,
+                    local_z,
                     player_radius,
 
-                    building.position.x,
-                    building.position.z,
+                    0.0F,
+                    0.0F,
 
                     building.size.x * 0.5F,
                     building.size.z * 0.5F

@@ -4,6 +4,9 @@
 
 #include <raylib.h>
 #include <raymath.h>
+#include <rlgl.h>
+#include "outland/world/assets/VerdaGeometry.hpp"
+#include <algorithm>
 
 #include <cmath>
 
@@ -12,7 +15,8 @@ namespace outland::world {
 namespace {
 
 void draw_building(
-    const Building& building
+    const Building& building,
+    const Vector3& camera_position
 ) {
     using assets::HouseStyle;
     using assets::VerdanArchitecture;
@@ -96,176 +100,65 @@ void draw_building(
             break;
     }
 
-    VerdanArchitecture::draw_house(
-        {
-            building.position.x,
-            ground_y,
-            building.position.z
-        },
-        building.size,
-        style
-    );
+    rlPushMatrix();
+    rlTranslatef(building.position.x, ground_y, building.position.z);
+    rlRotatef(building.rotation_y, 0.0F, 1.0F, 0.0F);
+    VerdanArchitecture::draw_house({0.0F, 0.0F, 0.0F}, building.size, style,
+        assets::distance_squared(building.position, camera_position) < 90.0F * 90.0F);
+    rlPopMatrix();
 }
 
 void draw_road(
     const Road& road
 ) {
-    const Vector3 delta =
-        Vector3Subtract(
-            road.end,
-            road.start
-        );
-
-    const float length =
-        Vector3Length(delta);
-
-    Vector3 center =
-        Vector3Scale(
-            Vector3Add(
-                road.start,
-                road.end
-            ),
-            0.5F
-        );
-
-    center.y =
-        terrain::TerrainHeight::sample(
-            center.x,
-            center.z
-        ) +
-        0.04F;
-
-    Color road_color{
-        115,
-        96,
-        68,
-        255
+    // Terrain-following ribbon; immediate triangles do not allocate GPU resources.
+    const float dx = road.end.x - road.start.x;
+    const float dz = road.end.z - road.start.z;
+    const float length = std::sqrt(dx*dx + dz*dz);
+    if (length < 0.001F || road.width <= 0.0F) return;
+    const float side_x = dz / length * road.width * 0.5F;
+    const float side_z = -dx / length * road.width * 0.5F;
+    const int segments = std::clamp(static_cast<int>(std::ceil(length / 2.0F)), 1, 512);
+    const Color color = road.type == RoadType::Asphalt ? Color{76,80,77,255}
+                      : road.type == RoadType::Gravel ? Color{157,151,127,255}
+                      : Color{161,128,83,255};
+    const auto edge = [&](float t, float side) {
+        const float x = road.start.x + dx*t + side_x*side;
+        const float z = road.start.z + dz*t + side_z*side;
+        return Vector3{x, terrain::TerrainHeight::sample(x,z) + 0.06F, z};
     };
-
-    if (
-        road.type ==
-        RoadType::Gravel
-    ) {
-        road_color = {
-            120,
-            120,
-            110,
-            255
-        };
+    for (int i = 0; i < segments; ++i) {
+        const float a = static_cast<float>(i) / segments;
+        const float b = static_cast<float>(i+1) / segments;
+        assets::draw_quad(edge(a, 1), edge(a, -1), edge(b, -1), edge(b, 1), color);
     }
-
-    if (
-        road.type ==
-        RoadType::Asphalt
-    ) {
-        road_color = {
-            70,
-            70,
-            68,
-            255
-        };
-    }
-
-    const float angle =
-        std::atan2(
-            delta.x,
-            delta.z
-        ) *
-        RAD2DEG;
-
-    /*
-     * raylib 6.0 does not expose DrawCubePro.
-     *
-     * Build a temporary cube model and rotate its
-     * transform so roads can point in any direction.
-     */
-    Mesh road_mesh =
-        GenMeshCube(
-            road.width,
-            0.08F,
-            length
-        );
-
-    Model road_model =
-        LoadModelFromMesh(
-            road_mesh
-        );
-
-    road_model.transform =
-        MatrixMultiply(
-            MatrixRotateY(
-                angle * DEG2RAD
-            ),
-            MatrixTranslate(
-                center.x,
-                center.y,
-                center.z
-            )
-        );
-
-    road_model
-        .materials[0]
-        .maps[MATERIAL_MAP_DIFFUSE]
-        .color =
-            road_color;
-
-    DrawModel(
-        road_model,
-        {
-            0.0F,
-            0.0F,
-            0.0F
-        },
-        1.0F,
-        WHITE
-    );
-
-    UnloadModel(
-        road_model
-    );
 }
 
-void draw_tree(
-    Vector3 position
-) {
-    position.y =
-        terrain::TerrainHeight::sample(
-            position.x,
-            position.z
-        );
-
-    DrawCylinder(
-        {
-            position.x,
-            position.y + 1.5F,
-            position.z
-        },
-        0.25F,
-        0.35F,
-        3.0F,
-        8,
-        Color{
-            90,
-            65,
-            40,
-            255
+void draw_tree(Vector3 position, const Vector3& camera_position) {
+    position.y = terrain::TerrainHeight::sample(position.x, position.z);
+    const float distance = assets::distance_squared(position, camera_position);
+    if (distance > 260.0F * 260.0F) return;
+    const bool detailed = distance < 65.0F * 65.0F;
+    const float variant = assets::variation(static_cast<int>(position.x), static_cast<int>(position.z), 5);
+    const float scale = 0.85F + variant * 0.45F;
+    const Color bark{115,83,52,255};
+    DrawCylinderEx(position, {position.x+0.18F*scale, position.y+3.5F*scale, position.z},
+                   0.35F*scale, 0.16F*scale, detailed ? 8 : 5, bark);
+    if (detailed) {
+        for (float side : {-1.0F, 1.0F}) {
+            DrawCylinderEx({position.x, position.y+2.1F*scale, position.z},
+                           {position.x+side*1.1F*scale, position.y+3.4F*scale, position.z+0.3F*side},
+                           0.14F*scale, 0.06F*scale, 5, bark);
         }
-    );
-
-    DrawSphere(
-        {
-            position.x,
-            position.y + 4.0F,
-            position.z
-        },
-        1.7F,
-        Color{
-            55,
-            100,
-            50,
-            255
-        }
-    );
+    }
+    DrawSphereEx({position.x, position.y+4.4F*scale, position.z}, 1.6F*scale,
+                 detailed ? 6 : 4, detailed ? 8 : 6, Color{103,157,67,255});
+    if (distance < 140.0F * 140.0F) {
+        DrawSphereEx({position.x-1.0F*scale, position.y+3.6F*scale, position.z+0.35F*scale},
+                     1.25F*scale, 4, 6, Color{79,133,58,255});
+        DrawSphereEx({position.x+1.1F*scale, position.y+3.8F*scale, position.z-0.25F*scale},
+                     1.2F*scale, 4, 6, Color{128,176,77,255});
+    }
 }
 
 }
@@ -335,23 +228,23 @@ void VerdaRegion::create_first_village() {
     );
 
     const Color plaster{
-        210,
-        198,
-        170,
+        232,
+        219,
+        182,
         255
     };
 
     const Color faded_blue{
-        150,
-        175,
-        180,
+        165,
+        199,
+        204,
         255
     };
 
     const Color faded_green{
-        145,
-        165,
-        125,
+        172,
+        193,
+        139,
         255
     };
 
@@ -363,9 +256,9 @@ void VerdaRegion::create_first_village() {
     };
 
     const Color roof_red{
-        120,
-        65,
-        50,
+        157,
+        79,
+        54,
         255
     };
 
@@ -519,7 +412,7 @@ VerdaRegion::settlements() const {
     return settlements_;
 }
 
-void VerdaRegion::draw() const {
+void VerdaRegion::draw(const Vector3& camera_position) const {
     for (
         const Settlement& settlement :
         settlements_
@@ -535,9 +428,9 @@ void VerdaRegion::draw() const {
             const Building& building :
             settlement.buildings
         ) {
-            draw_building(
-                building
-            );
+            if (assets::distance_squared(building.position, camera_position) < 320.0F * 320.0F) {
+                draw_building(building, camera_position);
+            }
         }
 
         for (
@@ -549,31 +442,11 @@ void VerdaRegion::draw() const {
                 AssetType::Tree
             ) {
                 draw_tree(
-                    asset.position
+                    asset.position, camera_position
                 );
             }
         }
 
-        // Development marker for settlement center.
-        const float settlement_ground_y =
-            terrain::TerrainHeight::sample(
-                settlement.center.x,
-                settlement.center.z
-            );
-
-        DrawCylinder(
-            {
-                settlement.center.x,
-                settlement_ground_y + 0.05F,
-                settlement.center.z
-            },
-            0.8F,
-            0.8F,
-            0.1F,
-            16,
-            GREEN
-        );
     }
 }
-
 }

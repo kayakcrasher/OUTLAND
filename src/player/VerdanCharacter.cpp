@@ -88,7 +88,8 @@ void VerdanCharacter::draw(
     const Vector3 feet_position,
     const float yaw,
     const float movement_amount,
-    const float animation_time
+    const float animation_time,
+    const bool armed
 ) {
     const Color skin{
         181,
@@ -404,9 +405,9 @@ void VerdanCharacter::draw(
         world_position(
             chest,
             {
-                -0.43F,
+                armed ? -0.26F : -0.43F,
                 -0.15F,
-                opposite_walk * 0.85F
+                armed ? 0.28F : opposite_walk * 0.85F
             },
             yaw
         );
@@ -415,9 +416,9 @@ void VerdanCharacter::draw(
         world_position(
             chest,
             {
-                0.43F,
+                armed ? 0.29F : 0.43F,
                 -0.15F,
-                walk * 0.85F
+                armed ? 0.20F : walk * 0.85F
             },
             yaw
         );
@@ -426,9 +427,9 @@ void VerdanCharacter::draw(
         world_position(
             chest,
             {
-                -0.40F,
-                -0.48F,
-                opposite_walk
+                armed ? 0.12F : -0.40F,
+                armed ? 0.02F : -0.48F,
+                armed ? 0.64F : opposite_walk
             },
             yaw
         );
@@ -437,9 +438,9 @@ void VerdanCharacter::draw(
         world_position(
             chest,
             {
-                0.40F,
-                -0.48F,
-                walk
+                armed ? 0.20F : 0.40F,
+                armed ? 0.03F : -0.48F,
+                armed ? 0.40F : walk
             },
             yaw
         );

@@ -1,0 +1,474 @@
+{
+  "units": "metres",
+  "up_axis": "Y",
+  "front": "-Z",
+  "origin": "ground centre; weapon pivots at muzzle, barrel +Z",
+  "material": "palette.mtl",
+  "assets": [
+    {
+      "id": "ground_grass",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "ground_grass_lod0.obj",
+          "triangles": 2
+        },
+        {
+          "file": "ground_grass_lod1.obj",
+          "triangles": 2
+        },
+        {
+          "file": "ground_grass_lod2.obj",
+          "triangles": 2
+        }
+      ],
+      "bounds": {
+        "min": [
+          -2,
+          0,
+          -2
+        ],
+        "max": [
+          2,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "id": "ground_dirt",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "ground_dirt_lod0.obj",
+          "triangles": 2
+        },
+        {
+          "file": "ground_dirt_lod1.obj",
+          "triangles": 2
+        },
+        {
+          "file": "ground_dirt_lod2.obj",
+          "triangles": 2
+        }
+      ],
+      "bounds": {
+        "min": [
+          -2,
+          0,
+          -2
+        ],
+        "max": [
+          2,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "id": "grass_field",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "grass_field_lod0.obj",
+          "triangles": 18
+        },
+        {
+          "file": "grass_field_lod1.obj",
+          "triangles": 10
+        },
+        {
+          "file": "grass_field_lod2.obj",
+          "triangles": 4
+        }
+      ],
+      "bounds": {
+        "min": [
+          -0.2996462373102776,
+          0,
+          -0.21103875831582344
+        ],
+        "max": [
+          0.2759463929147497,
+          0.5983286896315281,
+          0.25515025828496596
+        ]
+      }
+    },
+    {
+      "id": "grass_verge",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "grass_verge_lod0.obj",
+          "triangles": 18
+        },
+        {
+          "file": "grass_verge_lod1.obj",
+          "triangles": 10
+        },
+        {
+          "file": "grass_verge_lod2.obj",
+          "triangles": 4
+        }
+      ],
+      "bounds": {
+        "min": [
+          -0.3544638518654737,
+          0,
+          -0.1157634369875314
+        ],
+        "max": [
+          0.29037451090032496,
+          0.5407336877847031,
+          0.23840476138386701
+        ]
+      }
+    },
+    {
+      "id": "weed",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "weed_lod0.obj",
+          "triangles": 14
+        },
+        {
+          "file": "weed_lod1.obj",
+          "triangles": 8
+        },
+        {
+          "file": "weed_lod2.obj",
+          "triangles": 4
+        }
+      ],
+      "bounds": {
+        "min": [
+          -0.3544638518654737,
+          0,
+          -0.10775493457092235
+        ],
+        "max": [
+          0.29037451090032496,
+          1.0288986896710741,
+          0.23840476138386701
+        ]
+      }
+    },
+    {
+      "id": "pebble_scatter",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "pebble_scatter_lod0.obj",
+          "triangles": 140
+        },
+        {
+          "file": "pebble_scatter_lod1.obj",
+          "triangles": 80
+        },
+        {
+          "file": "pebble_scatter_lod2.obj",
+          "triangles": 40
+        }
+      ],
+      "bounds": {
+        "min": [
+          -0.8839664344562886,
+          0.0,
+          -0.7679046848712493
+        ],
+        "max": [
+          1.0357435347187067,
+          0.13535497518581685,
+          0.7230519053247945
+        ]
+      }
+    },
+    {
+      "id": "bush_round",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "bush_round_lod0.obj",
+          "triangles": 240
+        },
+        {
+          "file": "bush_round_lod1.obj",
+          "triangles": 72
+        },
+        {
+          "file": "bush_round_lod2.obj",
+          "triangles": 20
+        }
+      ],
+      "bounds": {
+        "min": [
+          -1.03,
+          -0.13999999999999996,
+          -0.67
+        ],
+        "max": [
+          1.05,
+          0.96,
+          0.7000000000000001
+        ]
+      }
+    },
+    {
+      "id": "bush_scrub",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "bush_scrub_lod0.obj",
+          "triangles": 240
+        },
+        {
+          "file": "bush_scrub_lod1.obj",
+          "triangles": 72
+        },
+        {
+          "file": "bush_scrub_lod2.obj",
+          "triangles": 20
+        }
+      ],
+      "bounds": {
+        "min": [
+          -1.4500000000000002,
+          -0.07,
+          -0.78
+        ],
+        "max": [
+          1.42,
+          0.64,
+          0.78
+        ]
+      }
+    },
+    {
+      "id": "rock_field",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "rock_field_lod0.obj",
+          "triangles": 80
+        },
+        {
+          "file": "rock_field_lod1.obj",
+          "triangles": 36
+        },
+        {
+          "file": "rock_field_lod2.obj",
+          "triangles": 20
+        }
+      ],
+      "bounds": {
+        "min": [
+          -0.599541778280933,
+          0.0,
+          -0.4407213164516686
+        ],
+        "max": [
+          0.5370100036722084,
+          0.68,
+          0.3852398271139185
+        ]
+      }
+    },
+    {
+      "id": "rock_boulder",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "rock_boulder_lod0.obj",
+          "triangles": 80
+        },
+        {
+          "file": "rock_boulder_lod1.obj",
+          "triangles": 36
+        },
+        {
+          "file": "rock_boulder_lod2.obj",
+          "triangles": 20
+        }
+      ],
+      "bounds": {
+        "min": [
+          -1.362594950638484,
+          0.0,
+          -0.9444028209678614
+        ],
+        "max": [
+          1.220477281073201,
+          1.9,
+          0.8255139152441111
+        ]
+      }
+    },
+    {
+      "id": "tree_oak",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "tree_oak_lod0.obj",
+          "triangles": 312
+        },
+        {
+          "file": "tree_oak_lod1.obj",
+          "triangles": 96
+        },
+        {
+          "file": "tree_oak_lod2.obj",
+          "triangles": 40
+        }
+      ],
+      "bounds": {
+        "min": [
+          -2.25,
+          -0.017976243034057142,
+          -1.6
+        ],
+        "max": [
+          2.3,
+          5.760000000000001,
+          1.6
+        ]
+      }
+    },
+    {
+      "id": "tree_tall",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "tree_tall_lod0.obj",
+          "triangles": 312
+        },
+        {
+          "file": "tree_tall_lod1.obj",
+          "triangles": 96
+        },
+        {
+          "file": "tree_tall_lod2.obj",
+          "triangles": 40
+        }
+      ],
+      "bounds": {
+        "min": [
+          -2.25,
+          -0.01523976999663008,
+          -1.6
+        ],
+        "max": [
+          2.3,
+          6.5520000000000005,
+          1.6
+        ]
+      }
+    },
+    {
+      "id": "house_rural",
+      "front": "-Z",
+      "origin": "ground centre",
+      "lods": [
+        {
+          "file": "house_rural_lod0.obj",
+          "triangles": 260
+        },
+        {
+          "file": "house_rural_lod1.obj",
+          "triangles": 116
+        },
+        {
+          "file": "house_rural_lod2.obj",
+          "triangles": 32
+        }
+      ],
+      "bounds": {
+        "min": [
+          -4.409999999999999,
+          0.0,
+          -4.66
+        ],
+        "max": [
+          4.409999999999999,
+          6.84,
+          3.85
+        ]
+      }
+    },
+    {
+      "id": "weapon_pistol",
+      "front": "+Z",
+      "origin": "muzzle",
+      "lods": [
+        {
+          "file": "weapon_pistol_lod0.obj",
+          "triangles": 60
+        },
+        {
+          "file": "weapon_pistol_lod1.obj",
+          "triangles": 36
+        },
+        {
+          "file": "weapon_pistol_lod2.obj",
+          "triangles": 24
+        }
+      ],
+      "bounds": {
+        "min": [
+          -0.045,
+          -0.20500000000000002,
+          -0.29000000000000004
+        ],
+        "max": [
+          0.054,
+          0.0885,
+          -0.009999999999999981
+        ]
+      }
+    },
+    {
+      "id": "weapon_rifle",
+      "front": "+Z",
+      "origin": "muzzle",
+      "lods": [
+        {
+          "file": "weapon_rifle_lod0.obj",
+          "triangles": 152
+        },
+        {
+          "file": "weapon_rifle_lod1.obj",
+          "triangles": 96
+        },
+        {
+          "file": "weapon_rifle_lod2.obj",
+          "triangles": 80
+        }
+      ],
+      "bounds": {
+        "min": [
+          -0.065,
+          -0.255,
+          -0.85
+        ],
+        "max": [
+          0.10300000000000001,
+          0.13999999999999999,
+          0.0
+        ]
+      }
+    }
+  ]
+}

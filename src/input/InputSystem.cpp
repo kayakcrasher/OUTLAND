@@ -141,6 +141,7 @@ void InputSystem::update(
     player_.fire = false;
     player_.aim = false;
     player_.reload = false;
+    player_.next_weapon = false;
     player_.interact = false;
     player_.crouch = false;
     player_.sprint = false;
@@ -226,12 +227,19 @@ void InputSystem::update(
         base_button_radius *
         layout_.aim.scale;
 
+    const Vector2 reload_center=element_position(layout_.reload,screen_width,screen_height);
+    const Vector2 weapon_center=element_position(layout_.weapon,screen_width,screen_height);
+    const float reload_radius=base_button_radius*layout_.reload.scale;
+    const float weapon_radius=base_button_radius*layout_.weapon.scale;
+
     // ========================================================
     // NATIVE TOUCH INPUT
     // ========================================================
 
     bool jump_down = false;
     bool view_down = false;
+    bool reload_down = false;
+    bool weapon_down = false;
 
     bool movement_alive = false;
     bool look_alive = false;
@@ -293,6 +301,9 @@ void InputSystem::update(
             player_.aim = true;
             continue;
         }
+
+        if (inside_circle(position,reload_center,reload_radius)) { reload_down=true;continue; }
+        if (inside_circle(position,weapon_center,weapon_radius)) { weapon_down=true;continue; }
 
         if (
             id == movement_touch_id_ ||
@@ -411,6 +422,8 @@ void InputSystem::update(
             mouse_control_ =
                 MouseControl::Aim;
         }
+        else if (inside_circle(mouse,reload_center,reload_radius)) mouse_control_=MouseControl::Reload;
+        else if (inside_circle(mouse,weapon_center,weapon_radius)) mouse_control_=MouseControl::Weapon;
         else if (
             inside_circle(
                 mouse,
@@ -493,7 +506,15 @@ void InputSystem::update(
             player_.aim = true;
             break;
 
+        case MouseControl::Reload:
+            reload_down=true;
+            break;
+        case MouseControl::Weapon:
+            weapon_down=true;
+            break;
         case MouseControl::None:
+            // Preserve HUD dragging and keep top-row UI clicks out of gunfire.
+            if (mouse.y>80) player_.fire=true;
             break;
         }
     }
@@ -516,6 +537,11 @@ void InputSystem::update(
     player_.toggle_view =
         view_down &&
         !previous_view_;
+
+    player_.reload=reload_down && !previous_reload_;
+    player_.next_weapon=weapon_down && !previous_weapon_;
+    previous_reload_=reload_down;
+    previous_weapon_=weapon_down;
 
     previous_jump_ =
         jump_down;
@@ -563,6 +589,9 @@ void InputSystem::update(
         player_.aim = true;
     }
 
+    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) player_.aim=true;
+    if (IsKeyPressed(KEY_TAB)) player_.next_weapon=true;
+
     if (IsKeyPressed(KEY_R)) {
         player_.reload = true;
     }
@@ -584,8 +613,8 @@ void InputSystem::update(
         Vector2Length(movement);
 
     if (
-        movement_length >
-        0.92F
+        movement_length > 0.92F &&
+        (movement_alive || mouse_control_ == MouseControl::Movement)
     ) {
         player_.sprint = true;
     }

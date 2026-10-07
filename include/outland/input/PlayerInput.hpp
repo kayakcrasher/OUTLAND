@@ -20,6 +20,7 @@ struct PlayerInput {
     bool fire{false};
     bool aim{false};
     bool reload{false};
+    bool next_weapon{false};
 
     // World interaction
     bool interact{false};
@@ -30,6 +31,7 @@ struct PlayerInput {
     void clear_frame_actions() {
         jump = false;
         reload = false;
+        next_weapon = false;
         interact = false;
         toggle_view = false;
     }

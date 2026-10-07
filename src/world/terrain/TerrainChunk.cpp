@@ -290,9 +290,9 @@ void TerrainChunk::build() {
         .materials[0]
         .maps[MATERIAL_MAP_DIFFUSE]
         .color = Color{
-            78,
-            105,
-            61,
+            112,
+            151,
+            77,
             255
         };
 

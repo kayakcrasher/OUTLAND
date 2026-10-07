@@ -144,7 +144,7 @@ void DevLab::draw_overlay(
         8,
         70,
         330,
-        150,
+        170,
         Fade(
             BLACK,
             0.58F
@@ -221,6 +221,7 @@ void DevLab::draw_overlay(
         14,
         LIGHTGRAY
     );
+    DrawText("T RESET TARGETS  /  UNLIMITED AMMO",18,220,14,YELLOW);
 }
 
 } // namespace outland::dev

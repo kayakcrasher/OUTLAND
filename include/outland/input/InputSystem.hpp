@@ -34,6 +34,8 @@ private:
 
     bool previous_jump_{false};
     bool previous_view_{false};
+    bool previous_reload_{false};
+    bool previous_weapon_{false};
 
     int movement_touch_id_{-1};
     int look_touch_id_{-1};
@@ -46,7 +48,9 @@ private:
         Jump,
         View,
         Fire,
-        Aim
+        Aim,
+        Reload,
+        Weapon
     };
 
     MouseControl mouse_control_{
