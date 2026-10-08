@@ -96,6 +96,43 @@ void draw_building(
             };
             break;
 
+        case BuildingStyle::Warehouse:
+            // Large, low industrial shell.
+            // It deliberately uses the same open modular architecture
+            // contract as every other OUTLAND building so doors and
+            // windows remain real gameplay openings.
+            style.upper_floor = false;
+            style.balcony = false;
+
+            style.plaster = Color{
+                148,
+                151,
+                145,
+                255
+            };
+
+            style.trim = Color{
+                66,
+                70,
+                68,
+                255
+            };
+
+            style.foundation = Color{
+                78,
+                80,
+                76,
+                255
+            };
+
+            style.roof = Color{
+                82,
+                86,
+                83,
+                255
+            };
+            break;
+
         case BuildingStyle::RuralHouse:
         default:
             break;

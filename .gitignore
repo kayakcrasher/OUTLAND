@@ -50,3 +50,9 @@ Thumbs.db
 # Original generated game assets are versioned for ready-to-use downloads.
 !assets/verda/starter/*.obj
 __pycache__/
+
+/assets/source/**/*.zip
+/assets/source/*.zip
+
+/assets/staging/
+*.bak*

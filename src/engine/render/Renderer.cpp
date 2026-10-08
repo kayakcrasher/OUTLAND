@@ -751,15 +751,6 @@ void Renderer::run() {
                     camera_direction
                 );
 
-                // Minecraft-style center-screen targeting:
-                // whatever the camera points at becomes
-                // the current Creator selection.
-                creator_controller.select_target(
-                    verda_region,
-                    camera.position,
-                    camera_direction
-                );
-
                 creator_touch_ui.update(
                     creator_controller,
                     screen_width,
@@ -768,6 +759,46 @@ void Renderer::run() {
 
                 const auto& creator_actions =
                     creator_touch_ui.actions();
+
+                // ====================================================
+                // CREATOR WORLD PICKING
+                //
+                // X11 mouse clicks use the actual screen position.
+                // UI owns its pixels, so editor buttons never select
+                // world geometry behind them.
+                // ====================================================
+                if (
+                    creator_touch_ui.active_tool() ==
+                        creator::CreatorTouchTool::Select &&
+                    IsMouseButtonPressed(
+                        MOUSE_BUTTON_LEFT
+                    )
+                ) {
+                    const Vector2 pointer =
+                        GetMousePosition();
+
+                    if (
+                        !creator_touch_ui.pointer_over_ui(
+                            pointer,
+                            screen_width,
+                            screen_height
+                        )
+                    ) {
+                        const Ray pick_ray =
+                            GetScreenToWorldRay(
+                                pointer,
+                                camera
+                            );
+
+                        (void)
+                            creator_controller.select_target(
+                                verda_region,
+                                pick_ray.position,
+                                pick_ray.direction
+                            );
+                    }
+                }
+
 
                 if (creator_actions.place) {
                     (void)creator_controller.place_selected(
