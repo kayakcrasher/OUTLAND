@@ -280,6 +280,33 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_combat_input_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_combat_input_tests COMMAND outland_combat_input_tests)
 
+    if(OUTLAND_DEV_TOOLS)
+        add_executable(
+            outland_creator_map_tests
+            tests/integration/creator/test_creator_map_io.cpp
+        )
+
+        target_link_libraries(
+            outland_creator_map_tests
+            PRIVATE
+                outland_render
+        )
+
+        target_compile_options(
+            outland_creator_map_tests
+            PRIVATE
+                -Wall
+                -Wextra
+                -Wpedantic
+                -UNDEBUG
+        )
+
+        add_test(
+            NAME outland_creator_map_tests
+            COMMAND outland_creator_map_tests
+        )
+    endif()
+
     if(Python3_Interpreter_FOUND)
         add_dependencies(outland_environment_tests verda_assets)
         add_test(NAME outland_asset_validation

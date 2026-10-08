@@ -1,6 +1,7 @@
 #pragma once
 
 #include "outland/world/Building.hpp"
+#include "outland/world/GameplayMarker.hpp"
 #include "outland/world/Road.hpp"
 #include "outland/world/WorldAsset.hpp"
 
@@ -41,6 +42,7 @@ struct Settlement {
     std::vector<Building> buildings;
     std::vector<Road> roads;
     std::vector<WorldAsset> assets;
+    std::vector<GameplayMarker> gameplay_markers;
 };
 
 }

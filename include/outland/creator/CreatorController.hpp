@@ -22,7 +22,8 @@ enum class CreatorSelectionType {
     None,
     Building,
     Road,
-    WorldAsset
+    WorldAsset,
+    GameplayMarker
 };
 
 struct CreatorSelection {
@@ -32,6 +33,7 @@ struct CreatorSelection {
 
     std::string building_id{};
     std::string world_asset_id{};
+    std::string gameplay_marker_id{};
 
     std::size_t settlement_index{0};
     std::size_t road_index{0};
@@ -52,6 +54,7 @@ struct CreatorSelection {
 
         building_id.clear();
         world_asset_id.clear();
+        gameplay_marker_id.clear();
 
         settlement_index = 0;
         road_index = 0;
@@ -294,6 +297,14 @@ private:
     );
 
     bool select_world_asset(
+        const world::VerdaRegion& region,
+        Vector3 origin,
+        Vector3 direction,
+        float& nearest_distance
+    );
+
+
+    bool select_gameplay_marker(
         const world::VerdaRegion& region,
         Vector3 origin,
         Vector3 direction,

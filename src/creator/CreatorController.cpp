@@ -499,6 +499,13 @@ bool CreatorController::select_target(
         nearest_distance
     );
 
+    select_gameplay_marker(
+        region,
+        origin,
+        direction,
+        nearest_distance
+    );
+
     return selection_.valid();
 }
 
@@ -712,6 +719,226 @@ bool CreatorController::place_selected(
         return false;
     }
 
+    // ========================================================
+    // PROCEDURAL OUTLAND BUILDINGS
+    //
+    // Buildings are real Verda Building objects rather than
+    // decorative WorldAssets. This keeps them enterable and
+    // connected to normal building collision/gameplay.
+    // ========================================================
+
+    if (asset->category == CreatorAssetCategory::Building) {
+        world::BuildingStyle style =
+            world::BuildingStyle::RuralHouse;
+
+        if (asset->id == "two_story_house") {
+            style = world::BuildingStyle::TwoStoryHouse;
+        } else if (asset->id == "shop") {
+            style = world::BuildingStyle::Shop;
+        } else if (asset->id == "garage") {
+            style = world::BuildingStyle::Garage;
+        } else if (asset->id == "warehouse") {
+            style = world::BuildingStyle::Warehouse;
+        } else if (asset->id != "rural_house") {
+            return false;
+        }
+
+        auto& settlements =
+            region.editable_settlements();
+
+        if (settlements.empty()) {
+            return false;
+        }
+
+        const std::string id_prefix =
+            "creator_building_" +
+            asset->id +
+            "_";
+
+        std::size_t next_id = 1;
+        std::string building_id;
+
+        for (;;) {
+            const std::string candidate =
+                id_prefix +
+                std::to_string(next_id);
+
+            bool exists = false;
+
+            for (const auto& settlement : settlements) {
+                for (
+                    const world::Building& building :
+                    settlement.buildings
+                ) {
+                    if (building.id == candidate) {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (exists) {
+                    break;
+                }
+            }
+
+            if (!exists) {
+                building_id = candidate;
+                break;
+            }
+
+            ++next_id;
+        }
+
+        world::Building building;
+
+        building.id = std::move(building_id);
+        building.style = style;
+        building.position = preview_.position;
+
+        building.size = {
+            asset->footprint.width,
+            asset->footprint.height,
+            asset->footprint.depth
+        };
+
+        building.rotation_y =
+            preview_.rotation_y;
+
+        building.wall_color = {
+            210,
+            195,
+            165,
+            255
+        };
+
+        building.roof_color = {
+            90,
+            70,
+            55,
+            255
+        };
+
+        building.enterable = true;
+
+        settlements.front().buildings.push_back(
+            std::move(building)
+        );
+
+        return true;
+    }
+
+    // ========================================================
+    // GAMEPLAY MARKERS
+    //
+    // Gameplay markers are editor/world data, not render
+    // models. They intentionally do not require model geometry.
+    // ========================================================
+
+    if (
+        asset->category ==
+        CreatorAssetCategory::Gameplay
+    ) {
+        auto& settlements =
+            region.editable_settlements();
+
+        if (settlements.empty()) {
+            return false;
+        }
+
+        world::GameplayMarkerType marker_type =
+            world::GameplayMarkerType::LootSpawn;
+
+        if (asset->id == "loot_spawn") {
+            marker_type =
+                world::GameplayMarkerType::LootSpawn;
+        } else if (asset->id == "zombie_spawn") {
+            marker_type =
+                world::GameplayMarkerType::ZombieSpawn;
+        } else if (asset->id == "npc_spawn") {
+            marker_type =
+                world::GameplayMarkerType::NpcSpawn;
+        } else if (asset->id == "vehicle_spawn") {
+            marker_type =
+                world::GameplayMarkerType::VehicleSpawn;
+        } else {
+            return false;
+        }
+
+        const std::string id_prefix =
+            "creator_marker_" +
+            asset->id +
+            "_";
+
+        std::size_t next_id = 1;
+        std::string marker_id;
+
+        for (;;) {
+            const std::string candidate =
+                id_prefix +
+                std::to_string(next_id);
+
+            bool exists = false;
+
+            for (
+                const world::Settlement& settlement :
+                settlements
+            ) {
+                for (
+                    const world::GameplayMarker& marker :
+                    settlement.gameplay_markers
+                ) {
+                    if (marker.id == candidate) {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (exists) {
+                    break;
+                }
+            }
+
+            if (!exists) {
+                marker_id = candidate;
+                break;
+            }
+
+            ++next_id;
+        }
+
+        world::GameplayMarker marker;
+
+        marker.id =
+            std::move(marker_id);
+
+        marker.type =
+            marker_type;
+
+        marker.position =
+            preview_.position;
+
+        marker.size = {
+            asset->footprint.width,
+            asset->footprint.height,
+            asset->footprint.depth
+        };
+
+        marker.rotation_y =
+            preview_.rotation_y;
+
+        marker.enabled =
+            true;
+
+        settlements.front()
+            .gameplay_markers
+            .push_back(
+                std::move(marker)
+            );
+
+        return true;
+    }
+
+    // Non-building Creator assets require model geometry.
     if (asset->model_path.empty()) {
         return false;
     }
@@ -919,6 +1146,123 @@ bool CreatorController::select_world_asset(
     return found;
 }
 
+bool CreatorController::select_gameplay_marker(
+    const world::VerdaRegion& region,
+    const Vector3 origin,
+    const Vector3 direction,
+    float& nearest_distance
+) {
+    bool found = false;
+
+    const Ray ray{
+        origin,
+        direction
+    };
+
+    const auto& settlements =
+        region.settlements();
+
+    for (
+        std::size_t settlement_index = 0;
+        settlement_index < settlements.size();
+        ++settlement_index
+    ) {
+        const auto& settlement =
+            settlements[settlement_index];
+
+        for (
+            const world::GameplayMarker& marker :
+            settlement.gameplay_markers
+        ) {
+            /*
+             * Only Creator-owned markers are editable here.
+             * Future world-authored markers stay protected.
+             */
+            if (
+                !marker.id.starts_with(
+                    "creator_marker_"
+                )
+            ) {
+                continue;
+            }
+
+            const float half_x =
+                std::max(
+                    marker.size.x * 0.5F,
+                    0.35F
+                );
+
+            const float half_z =
+                std::max(
+                    marker.size.z * 0.5F,
+                    0.35F
+                );
+
+            const float height =
+                std::max(
+                    marker.size.y,
+                    0.75F
+                );
+
+            const BoundingBox bounds{
+                {
+                    marker.position.x - half_x,
+                    marker.position.y,
+                    marker.position.z - half_z
+                },
+                {
+                    marker.position.x + half_x,
+                    marker.position.y + height,
+                    marker.position.z + half_z
+                }
+            };
+
+            const RayCollision hit =
+                GetRayCollisionBox(
+                    ray,
+                    bounds
+                );
+
+            if (!hit.hit) {
+                continue;
+            }
+
+            if (
+                hit.distance >
+                max_select_distance
+            ) {
+                continue;
+            }
+
+            if (
+                hit.distance >=
+                nearest_distance
+            ) {
+                continue;
+            }
+
+            nearest_distance =
+                hit.distance;
+
+            selection_.type =
+                CreatorSelectionType::GameplayMarker;
+
+            selection_.gameplay_marker_id =
+                marker.id;
+
+            selection_.settlement_index =
+                settlement_index;
+
+            selection_.position =
+                marker.position;
+
+            found = true;
+        }
+    }
+
+    return found;
+}
+
 bool CreatorController::delete_selected(
     world::VerdaRegion& region
 ) {
@@ -947,6 +1291,42 @@ bool CreatorController::delete_selected(
                 );
             break;
 
+        case CreatorSelectionType::GameplayMarker: {
+            auto& settlements =
+                region.editable_settlements();
+
+            if (
+                selection_.settlement_index >=
+                settlements.size()
+            ) {
+                break;
+            }
+
+            auto& markers =
+                settlements[
+                    selection_.settlement_index
+                ].gameplay_markers;
+
+            const std::size_t before =
+                markers.size();
+
+            std::erase_if(
+                markers,
+                [this](
+                    const world::GameplayMarker& marker
+                ) {
+                    return
+                        marker.id ==
+                        selection_.gameplay_marker_id;
+                }
+            );
+
+            deleted =
+                markers.size() != before;
+
+            break;
+        }
+
         case CreatorSelectionType::None:
         default:
             break;
@@ -962,13 +1342,6 @@ bool CreatorController::delete_selected(
 bool CreatorController::move_selected(
     world::VerdaRegion& region
 ) {
-    if (
-        selection_.type !=
-        CreatorSelectionType::WorldAsset
-    ) {
-        return false;
-    }
-
     if (!preview_.valid) {
         return false;
     }
@@ -988,24 +1361,97 @@ bool CreatorController::move_selected(
             selection_.settlement_index
         ];
 
-    for (
-        world::WorldAsset& asset :
-        settlement.assets
+    // --------------------------------------------------------
+    // BUILDING
+    // --------------------------------------------------------
+
+    if (
+        selection_.type ==
+        CreatorSelectionType::Building
     ) {
-        if (
-            asset.id !=
-            selection_.world_asset_id
+        for (
+            world::Building& building :
+            settlement.buildings
         ) {
-            continue;
+            if (
+                building.id !=
+                selection_.building_id
+            ) {
+                continue;
+            }
+
+            building.position =
+                preview_.position;
+
+            selection_.position =
+                building.position;
+
+            return true;
         }
 
-        asset.position =
-            preview_.position;
+        return false;
+    }
 
-        selection_.position =
-            asset.position;
+    // --------------------------------------------------------
+    // GAMEPLAY MARKER
+    // --------------------------------------------------------
 
-        return true;
+    if (
+        selection_.type ==
+        CreatorSelectionType::GameplayMarker
+    ) {
+        for (
+            world::GameplayMarker& marker :
+            settlement.gameplay_markers
+        ) {
+            if (
+                marker.id !=
+                selection_.gameplay_marker_id
+            ) {
+                continue;
+            }
+
+            marker.position =
+                preview_.position;
+
+            selection_.position =
+                marker.position;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    // --------------------------------------------------------
+    // WORLD ASSET
+    // --------------------------------------------------------
+
+    if (
+        selection_.type ==
+        CreatorSelectionType::WorldAsset
+    ) {
+        for (
+            world::WorldAsset& asset :
+            settlement.assets
+        ) {
+            if (
+                asset.id !=
+                selection_.world_asset_id
+            ) {
+                continue;
+            }
+
+            asset.position =
+                preview_.position;
+
+            selection_.position =
+                asset.position;
+
+            return true;
+        }
+
+        return false;
     }
 
     return false;
@@ -1014,13 +1460,6 @@ bool CreatorController::move_selected(
 bool CreatorController::duplicate_selected(
     world::VerdaRegion& region
 ) {
-    if (
-        selection_.type !=
-        CreatorSelectionType::WorldAsset
-    ) {
-        return false;
-    }
-
     auto& settlements =
         region.editable_settlements();
 
@@ -1036,6 +1475,277 @@ bool CreatorController::duplicate_selected(
 
     world::Settlement& settlement =
         settlements[settlement_index];
+
+    // --------------------------------------------------------
+    // GAMEPLAY MARKER
+    // --------------------------------------------------------
+
+    if (
+        selection_.type ==
+        CreatorSelectionType::GameplayMarker
+    ) {
+        world::GameplayMarker source;
+        bool found = false;
+
+        for (
+            const world::GameplayMarker& marker :
+            settlement.gameplay_markers
+        ) {
+            if (
+                marker.id ==
+                selection_.gameplay_marker_id
+            ) {
+                source = marker;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            return false;
+        }
+
+        std::string base_id =
+            source.id;
+
+        const std::size_t last_underscore =
+            base_id.find_last_of('_');
+
+        if (
+            last_underscore !=
+            std::string::npos
+        ) {
+            const std::string suffix =
+                base_id.substr(
+                    last_underscore + 1
+                );
+
+            bool numeric = !suffix.empty();
+
+            for (const char c : suffix) {
+                if (
+                    c < '0' ||
+                    c > '9'
+                ) {
+                    numeric = false;
+                    break;
+                }
+            }
+
+            if (numeric) {
+                base_id.erase(
+                    last_underscore + 1
+                );
+            } else {
+                base_id += "_";
+            }
+        } else {
+            base_id += "_";
+        }
+
+        std::size_t next_id = 1;
+        std::string new_id;
+
+        for (;;) {
+            const std::string candidate =
+                base_id +
+                std::to_string(next_id);
+
+            bool exists = false;
+
+            for (
+                const world::Settlement& scan :
+                settlements
+            ) {
+                for (
+                    const world::GameplayMarker& marker :
+                    scan.gameplay_markers
+                ) {
+                    if (
+                        marker.id ==
+                        candidate
+                    ) {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (exists) {
+                    break;
+                }
+            }
+
+            if (!exists) {
+                new_id = candidate;
+                break;
+            }
+
+            ++next_id;
+        }
+
+        world::GameplayMarker duplicate =
+            source;
+
+        duplicate.id =
+            std::move(new_id);
+
+        if (preview_.valid) {
+            duplicate.position =
+                preview_.position;
+        } else {
+            duplicate.position.x +=
+                1.0F;
+        }
+
+        settlement.gameplay_markers.push_back(
+            duplicate
+        );
+
+        selection_.type =
+            CreatorSelectionType::GameplayMarker;
+
+        selection_.gameplay_marker_id =
+            duplicate.id;
+
+        selection_.settlement_index =
+            settlement_index;
+
+        selection_.position =
+            duplicate.position;
+
+        return true;
+    }
+
+    // --------------------------------------------------------
+    // BUILDING
+    // --------------------------------------------------------
+
+    if (
+        selection_.type ==
+        CreatorSelectionType::Building
+    ) {
+        world::Building source;
+        bool found = false;
+
+        for (
+            const world::Building& building :
+            settlement.buildings
+        ) {
+            if (
+                building.id ==
+                selection_.building_id
+            ) {
+                source = building;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            return false;
+        }
+
+        std::string base_id =
+            selection_.building_id;
+
+        const std::size_t last_underscore =
+            base_id.find_last_of('_');
+
+        if (
+            last_underscore !=
+            std::string::npos
+        ) {
+            base_id =
+                base_id.substr(
+                    0,
+                    last_underscore
+                );
+        }
+
+        std::size_t next_id = 1;
+        std::string new_id;
+
+        for (;;) {
+            const std::string candidate =
+                base_id +
+                "_" +
+                std::to_string(next_id);
+
+            bool exists = false;
+
+            for (
+                const world::Settlement& current :
+                settlements
+            ) {
+                for (
+                    const world::Building& building :
+                    current.buildings
+                ) {
+                    if (
+                        building.id ==
+                        candidate
+                    ) {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (exists) {
+                    break;
+                }
+            }
+
+            if (!exists) {
+                new_id = candidate;
+                break;
+            }
+
+            ++next_id;
+        }
+
+        world::Building duplicate =
+            source;
+
+        duplicate.id =
+            new_id;
+
+        duplicate.position.x +=
+            1.0F;
+
+        duplicate.position.z +=
+            1.0F;
+
+        settlement.buildings.push_back(
+            duplicate
+        );
+
+        selection_.type =
+            CreatorSelectionType::Building;
+
+        selection_.building_id =
+            duplicate.id;
+
+        selection_.world_asset_id.clear();
+
+        selection_.settlement_index =
+            settlement_index;
+
+        selection_.position =
+            duplicate.position;
+
+        return true;
+    }
+
+    // --------------------------------------------------------
+    // WORLD ASSET
+    // --------------------------------------------------------
+
+    if (
+        selection_.type !=
+        CreatorSelectionType::WorldAsset
+    ) {
+        return false;
+    }
 
     world::WorldAsset source;
     bool found = false;
@@ -1094,7 +1804,10 @@ bool CreatorController::duplicate_selected(
                 const world::WorldAsset& asset :
                 current.assets
             ) {
-                if (asset.id == candidate) {
+                if (
+                    asset.id ==
+                    candidate
+                ) {
                     exists = true;
                     break;
                 }
@@ -1116,14 +1829,14 @@ bool CreatorController::duplicate_selected(
     world::WorldAsset duplicate =
         source;
 
-    duplicate.id = new_id;
+    duplicate.id =
+        new_id;
 
-    /*
-     * Offset the copy slightly so it does not sit
-     * perfectly inside the original.
-     */
-    duplicate.position.x += 1.0F;
-    duplicate.position.z += 1.0F;
+    duplicate.position.x +=
+        1.0F;
+
+    duplicate.position.z +=
+        1.0F;
 
     if (
         !region.place_world_asset(
@@ -1136,6 +1849,8 @@ bool CreatorController::duplicate_selected(
 
     selection_.type =
         CreatorSelectionType::WorldAsset;
+
+    selection_.building_id.clear();
 
     selection_.world_asset_id =
         duplicate.id;
@@ -1153,13 +1868,6 @@ bool CreatorController::rotate_selected(
     world::VerdaRegion& region,
     const float degrees
 ) {
-    if (
-        selection_.type !=
-        CreatorSelectionType::WorldAsset
-    ) {
-        return false;
-    }
-
     auto& settlements =
         region.editable_settlements();
 
@@ -1175,31 +1883,117 @@ bool CreatorController::rotate_selected(
             selection_.settlement_index
         ];
 
-    for (
-        world::WorldAsset& asset :
-        settlement.assets
+    const auto normalize_rotation =
+        [](float& rotation) {
+            rotation += 0.0F;
+
+            while (rotation >= 360.0F) {
+                rotation -= 360.0F;
+            }
+
+            while (rotation < 0.0F) {
+                rotation += 360.0F;
+            }
+        };
+
+    // --------------------------------------------------------
+    // BUILDING
+    // --------------------------------------------------------
+
+    if (
+        selection_.type ==
+        CreatorSelectionType::Building
     ) {
-        if (
-            asset.id !=
-            selection_.world_asset_id
+        for (
+            world::Building& building :
+            settlement.buildings
         ) {
-            continue;
+            if (
+                building.id !=
+                selection_.building_id
+            ) {
+                continue;
+            }
+
+            building.rotation_y += degrees;
+            normalize_rotation(
+                building.rotation_y
+            );
+
+            selection_.position =
+                building.position;
+
+            return true;
         }
 
-        asset.rotation_y += degrees;
+        return false;
+    }
 
-        while (asset.rotation_y >= 360.0F) {
-            asset.rotation_y -= 360.0F;
+    // --------------------------------------------------------
+    // GAMEPLAY MARKER
+    // --------------------------------------------------------
+
+    if (
+        selection_.type ==
+        CreatorSelectionType::GameplayMarker
+    ) {
+        for (
+            world::GameplayMarker& marker :
+            settlement.gameplay_markers
+        ) {
+            if (
+                marker.id !=
+                selection_.gameplay_marker_id
+            ) {
+                continue;
+            }
+
+            marker.rotation_y += degrees;
+
+            normalize_rotation(
+                marker.rotation_y
+            );
+
+            selection_.position =
+                marker.position;
+
+            return true;
         }
 
-        while (asset.rotation_y < 0.0F) {
-            asset.rotation_y += 360.0F;
+        return false;
+    }
+
+    // --------------------------------------------------------
+    // WORLD ASSET
+    // --------------------------------------------------------
+
+    if (
+        selection_.type ==
+        CreatorSelectionType::WorldAsset
+    ) {
+        for (
+            world::WorldAsset& asset :
+            settlement.assets
+        ) {
+            if (
+                asset.id !=
+                selection_.world_asset_id
+            ) {
+                continue;
+            }
+
+            asset.rotation_y += degrees;
+            normalize_rotation(
+                asset.rotation_y
+            );
+
+            selection_.position =
+                asset.position;
+
+            return true;
         }
 
-        selection_.position =
-            asset.position;
-
-        return true;
+        return false;
     }
 
     return false;
@@ -1412,6 +2206,157 @@ void CreatorController::draw_world_overlay(
         }
     }
 
+    // --------------------------------------------------------
+    // GAMEPLAY MARKER DEV GIZMOS
+    // --------------------------------------------------------
+
+    for (
+        const world::Settlement& settlement :
+        region.settlements()
+    ) {
+        for (
+            const world::GameplayMarker& marker :
+            settlement.gameplay_markers
+        ) {
+            if (
+                !marker.id.starts_with(
+                    "creator_marker_"
+                )
+            ) {
+                continue;
+            }
+
+            Color marker_color =
+                SKYBLUE;
+
+            switch (marker.type) {
+                case world::GameplayMarkerType::LootSpawn:
+                    marker_color = GOLD;
+                    break;
+
+                case world::GameplayMarkerType::ZombieSpawn:
+                    marker_color = RED;
+                    break;
+
+                case world::GameplayMarkerType::NpcSpawn:
+                    marker_color = SKYBLUE;
+                    break;
+
+                case world::GameplayMarkerType::VehicleSpawn:
+                    marker_color = PURPLE;
+                    break;
+            }
+
+            const float width =
+                std::max(
+                    marker.size.x,
+                    0.6F
+                );
+
+            const float height =
+                std::max(
+                    marker.size.y,
+                    0.8F
+                );
+
+            const float depth =
+                std::max(
+                    marker.size.z,
+                    0.6F
+                );
+
+            const Vector3 center{
+                marker.position.x,
+                marker.position.y +
+                    height * 0.5F,
+                marker.position.z
+            };
+
+            DrawCubeWires(
+                center,
+                width,
+                height,
+                depth,
+                marker_color
+            );
+
+            DrawLine3D(
+                marker.position,
+                {
+                    marker.position.x,
+                    marker.position.y +
+                        height + 1.0F,
+                    marker.position.z
+                },
+                marker_color
+            );
+
+            DrawSphereWires(
+                {
+                    marker.position.x,
+                    marker.position.y +
+                        height + 1.0F,
+                    marker.position.z
+                },
+                0.22F,
+                6,
+                8,
+                marker_color
+            );
+
+            // Direction indicator.
+            const float radians =
+                marker.rotation_y *
+                DEG2RAD;
+
+            const Vector3 direction_end{
+                marker.position.x +
+                    std::sin(radians) * 1.25F,
+                marker.position.y + 0.10F,
+                marker.position.z +
+                    std::cos(radians) * 1.25F
+            };
+
+            DrawLine3D(
+                {
+                    marker.position.x,
+                    marker.position.y + 0.10F,
+                    marker.position.z
+                },
+                direction_end,
+                marker_color
+            );
+
+            if (
+                selection_.type ==
+                    CreatorSelectionType::GameplayMarker &&
+                selection_.gameplay_marker_id ==
+                    marker.id
+            ) {
+                DrawCubeWires(
+                    center,
+                    width + 0.20F,
+                    height + 0.20F,
+                    depth + 0.20F,
+                    YELLOW
+                );
+
+                DrawSphereWires(
+                    {
+                        marker.position.x,
+                        marker.position.y +
+                            height + 1.0F,
+                        marker.position.z
+                    },
+                    0.32F,
+                    8,
+                    10,
+                    YELLOW
+                );
+            }
+        }
+    }
+
     if (preview_.valid) {
         DrawCubeWires(
             {
@@ -1468,6 +2413,12 @@ void CreatorController::draw_hud() const {
     ) {
         selected =
             selection_.world_asset_id.c_str();
+    } else if (
+        selection_.type ==
+        CreatorSelectionType::GameplayMarker
+    ) {
+        selected =
+            selection_.gameplay_marker_id.c_str();
     }
 
     char buffer[160];
