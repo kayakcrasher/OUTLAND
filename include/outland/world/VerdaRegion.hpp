@@ -26,6 +26,19 @@ public:
     std::vector<Settlement>&
     editable_settlements();
 
+    // Insert a data-driven Creator asset into the live
+    // Verda world. Returns false if there is no settlement.
+    [[nodiscard]]
+    bool place_world_asset(
+        WorldAsset asset,
+        std::size_t settlement_index = 0
+    );
+
+    [[nodiscard]]
+    bool delete_world_asset(
+        std::string_view asset_id
+    );
+
     [[nodiscard]]
     bool delete_building(
         std::string_view building_id

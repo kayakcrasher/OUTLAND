@@ -492,6 +492,13 @@ bool CreatorController::select_target(
         nearest_distance
     );
 
+    select_world_asset(
+        region,
+        origin,
+        direction,
+        nearest_distance
+    );
+
     return selection_.valid();
 }
 
@@ -695,6 +702,223 @@ bool CreatorController::select_road(
     return found;
 }
 
+bool CreatorController::place_selected(
+    world::VerdaRegion& region
+) {
+    const CreatorAssetDefinition* asset =
+        selected_asset();
+
+    if (asset == nullptr || !preview_.valid) {
+        return false;
+    }
+
+    if (asset->model_path.empty()) {
+        return false;
+    }
+
+    std::size_t next_creator_asset_id = 1;
+
+    const std::string id_prefix =
+        "creator_" +
+        asset->id +
+        "_";
+
+    std::string creator_asset_id;
+
+    for (;;) {
+        const std::string candidate =
+            id_prefix +
+            std::to_string(
+                next_creator_asset_id
+            );
+
+        bool already_exists = false;
+
+        for (
+            const world::Settlement& settlement :
+            region.settlements()
+        ) {
+            for (
+                const world::WorldAsset& existing :
+                settlement.assets
+            ) {
+                if (existing.id == candidate) {
+                    already_exists = true;
+                    break;
+                }
+            }
+
+            if (already_exists) {
+                break;
+            }
+        }
+
+        if (!already_exists) {
+            creator_asset_id = candidate;
+            break;
+        }
+
+        ++next_creator_asset_id;
+    }
+
+    world::WorldAsset placed;
+
+    placed.id =
+        std::move(creator_asset_id);
+
+    switch (asset->category) {
+        case CreatorAssetCategory::Road:
+            placed.type = world::AssetType::Road;
+            break;
+
+        case CreatorAssetCategory::Nature:
+            placed.type = world::AssetType::Tree;
+            break;
+
+        case CreatorAssetCategory::BuildingPart:
+            placed.type = world::AssetType::Wall;
+            break;
+
+        case CreatorAssetCategory::Building:
+            placed.type = world::AssetType::House;
+            break;
+
+        default:
+            placed.type = world::AssetType::Sign;
+            break;
+    }
+
+    placed.model_path = asset->model_path;
+    placed.position = preview_.position;
+
+    placed.size = {
+        asset->footprint.width,
+        asset->footprint.height,
+        asset->footprint.depth
+    };
+
+    placed.rotation_y = preview_.rotation_y;
+    placed.collision = true;
+
+    return region.place_world_asset(
+        std::move(placed)
+    );
+}
+
+bool CreatorController::select_world_asset(
+    const world::VerdaRegion& region,
+    const Vector3 origin,
+    const Vector3 direction,
+    float& nearest_distance
+) {
+    bool found = false;
+
+    const Ray ray{
+        origin,
+        direction
+    };
+
+    const auto& settlements =
+        region.settlements();
+
+    for (
+        std::size_t settlement_index = 0;
+        settlement_index < settlements.size();
+        ++settlement_index
+    ) {
+        const auto& settlement =
+            settlements[settlement_index];
+
+        for (
+            const world::WorldAsset& asset :
+            settlement.assets
+        ) {
+            /*
+             * Creator only edits Creator-owned
+             * WorldAssets here. Bootstrap Verda
+             * assets remain protected.
+             */
+            if (!asset.id.starts_with("creator_")) {
+                continue;
+            }
+
+            const float half_x =
+                std::max(
+                    asset.size.x * 0.5F,
+                    0.25F
+                );
+
+            const float half_z =
+                std::max(
+                    asset.size.z * 0.5F,
+                    0.25F
+                );
+
+            const float height =
+                std::max(
+                    asset.size.y,
+                    0.5F
+                );
+
+            const BoundingBox bounds{
+                {
+                    asset.position.x - half_x,
+                    asset.position.y,
+                    asset.position.z - half_z
+                },
+                {
+                    asset.position.x + half_x,
+                    asset.position.y + height,
+                    asset.position.z + half_z
+                }
+            };
+
+            const RayCollision hit =
+                GetRayCollisionBox(
+                    ray,
+                    bounds
+                );
+
+            if (!hit.hit) {
+                continue;
+            }
+
+            if (
+                hit.distance >
+                max_select_distance
+            ) {
+                continue;
+            }
+
+            if (
+                hit.distance >=
+                nearest_distance
+            ) {
+                continue;
+            }
+
+            nearest_distance =
+                hit.distance;
+
+            selection_.type =
+                CreatorSelectionType::WorldAsset;
+
+            selection_.world_asset_id =
+                asset.id;
+
+            selection_.settlement_index =
+                settlement_index;
+
+            selection_.position =
+                asset.position;
+
+            found = true;
+        }
+    }
+
+    return found;
+}
+
 bool CreatorController::delete_selected(
     world::VerdaRegion& region
 ) {
@@ -716,6 +940,13 @@ bool CreatorController::delete_selected(
                 );
             break;
 
+        case CreatorSelectionType::WorldAsset:
+            deleted =
+                region.delete_world_asset(
+                    selection_.world_asset_id
+                );
+            break;
+
         case CreatorSelectionType::None:
         default:
             break;
@@ -726,6 +957,252 @@ bool CreatorController::delete_selected(
     }
 
     return deleted;
+}
+
+bool CreatorController::move_selected(
+    world::VerdaRegion& region
+) {
+    if (
+        selection_.type !=
+        CreatorSelectionType::WorldAsset
+    ) {
+        return false;
+    }
+
+    if (!preview_.valid) {
+        return false;
+    }
+
+    auto& settlements =
+        region.editable_settlements();
+
+    if (
+        selection_.settlement_index >=
+        settlements.size()
+    ) {
+        return false;
+    }
+
+    world::Settlement& settlement =
+        settlements[
+            selection_.settlement_index
+        ];
+
+    for (
+        world::WorldAsset& asset :
+        settlement.assets
+    ) {
+        if (
+            asset.id !=
+            selection_.world_asset_id
+        ) {
+            continue;
+        }
+
+        asset.position =
+            preview_.position;
+
+        selection_.position =
+            asset.position;
+
+        return true;
+    }
+
+    return false;
+}
+
+bool CreatorController::duplicate_selected(
+    world::VerdaRegion& region
+) {
+    if (
+        selection_.type !=
+        CreatorSelectionType::WorldAsset
+    ) {
+        return false;
+    }
+
+    auto& settlements =
+        region.editable_settlements();
+
+    if (
+        selection_.settlement_index >=
+        settlements.size()
+    ) {
+        return false;
+    }
+
+    const std::size_t settlement_index =
+        selection_.settlement_index;
+
+    world::Settlement& settlement =
+        settlements[settlement_index];
+
+    world::WorldAsset source;
+    bool found = false;
+
+    for (
+        const world::WorldAsset& asset :
+        settlement.assets
+    ) {
+        if (
+            asset.id ==
+            selection_.world_asset_id
+        ) {
+            source = asset;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        return false;
+    }
+
+    std::string base_id =
+        selection_.world_asset_id;
+
+    const std::size_t last_underscore =
+        base_id.find_last_of('_');
+
+    if (
+        last_underscore !=
+        std::string::npos
+    ) {
+        base_id =
+            base_id.substr(
+                0,
+                last_underscore
+            );
+    }
+
+    std::size_t next_id = 1;
+    std::string new_id;
+
+    for (;;) {
+        const std::string candidate =
+            base_id +
+            "_" +
+            std::to_string(next_id);
+
+        bool exists = false;
+
+        for (
+            const world::Settlement& current :
+            settlements
+        ) {
+            for (
+                const world::WorldAsset& asset :
+                current.assets
+            ) {
+                if (asset.id == candidate) {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (exists) {
+                break;
+            }
+        }
+
+        if (!exists) {
+            new_id = candidate;
+            break;
+        }
+
+        ++next_id;
+    }
+
+    world::WorldAsset duplicate =
+        source;
+
+    duplicate.id = new_id;
+
+    /*
+     * Offset the copy slightly so it does not sit
+     * perfectly inside the original.
+     */
+    duplicate.position.x += 1.0F;
+    duplicate.position.z += 1.0F;
+
+    if (
+        !region.place_world_asset(
+            duplicate,
+            settlement_index
+        )
+    ) {
+        return false;
+    }
+
+    selection_.type =
+        CreatorSelectionType::WorldAsset;
+
+    selection_.world_asset_id =
+        duplicate.id;
+
+    selection_.settlement_index =
+        settlement_index;
+
+    selection_.position =
+        duplicate.position;
+
+    return true;
+}
+
+bool CreatorController::rotate_selected(
+    world::VerdaRegion& region,
+    const float degrees
+) {
+    if (
+        selection_.type !=
+        CreatorSelectionType::WorldAsset
+    ) {
+        return false;
+    }
+
+    auto& settlements =
+        region.editable_settlements();
+
+    if (
+        selection_.settlement_index >=
+        settlements.size()
+    ) {
+        return false;
+    }
+
+    world::Settlement& settlement =
+        settlements[
+            selection_.settlement_index
+        ];
+
+    for (
+        world::WorldAsset& asset :
+        settlement.assets
+    ) {
+        if (
+            asset.id !=
+            selection_.world_asset_id
+        ) {
+            continue;
+        }
+
+        asset.rotation_y += degrees;
+
+        while (asset.rotation_y >= 360.0F) {
+            asset.rotation_y -= 360.0F;
+        }
+
+        while (asset.rotation_y < 0.0F) {
+            asset.rotation_y += 360.0F;
+        }
+
+        selection_.position =
+            asset.position;
+
+        return true;
+    }
+
+    return false;
 }
 
 void CreatorController::rotate_preview(
@@ -861,6 +1338,80 @@ void CreatorController::draw_world_overlay(
         );
     }
 
+    if (
+        selection_.type ==
+        CreatorSelectionType::WorldAsset
+    ) {
+        const auto& settlements =
+            region.settlements();
+
+        if (
+            selection_.settlement_index <
+            settlements.size()
+        ) {
+            const auto& assets =
+                settlements[
+                    selection_.settlement_index
+                ].assets;
+
+            for (
+                const world::WorldAsset& asset :
+                assets
+            ) {
+                if (
+                    asset.id !=
+                    selection_.world_asset_id
+                ) {
+                    continue;
+                }
+
+                const float width =
+                    std::max(
+                        asset.size.x,
+                        0.25F
+                    );
+
+                const float height =
+                    std::max(
+                        asset.size.y,
+                        0.25F
+                    );
+
+                const float depth =
+                    std::max(
+                        asset.size.z,
+                        0.25F
+                    );
+
+                DrawCubeWires(
+                    {
+                        asset.position.x,
+                        asset.position.y +
+                            height * 0.5F,
+                        asset.position.z
+                    },
+                    width,
+                    height,
+                    depth,
+                    YELLOW
+                );
+
+                DrawLine3D(
+                    asset.position,
+                    {
+                        asset.position.x,
+                        asset.position.y +
+                            height + 0.75F,
+                        asset.position.z
+                    },
+                    YELLOW
+                );
+
+                break;
+            }
+        }
+    }
+
     if (preview_.valid) {
         DrawCubeWires(
             {
@@ -911,6 +1462,12 @@ void CreatorController::draw_hud() const {
         CreatorSelectionType::Road
     ) {
         selected = "ROAD";
+    } else if (
+        selection_.type ==
+        CreatorSelectionType::WorldAsset
+    ) {
+        selected =
+            selection_.world_asset_id.c_str();
     }
 
     char buffer[160];

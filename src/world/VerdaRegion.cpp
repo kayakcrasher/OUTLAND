@@ -10,6 +10,7 @@
 
 #include <cmath>
 
+
 namespace outland::world {
 
 namespace {
@@ -173,6 +174,61 @@ std::vector<Settlement>&
 VerdaRegion::editable_settlements() {
     return settlements_;
 }
+
+bool VerdaRegion::place_world_asset(
+    WorldAsset asset,
+    std::size_t settlement_index
+) {
+    if (settlement_index >= settlements_.size()) {
+        return false;
+    }
+
+    if (asset.id.empty()) {
+        return false;
+    }
+
+    // Creator IDs must remain unique so selection,
+    // deletion and future SAVE/LOAD remain deterministic.
+    for (const Settlement& settlement : settlements_) {
+        for (const WorldAsset& existing : settlement.assets) {
+            if (existing.id == asset.id) {
+                return false;
+            }
+        }
+    }
+
+    settlements_[settlement_index].assets.push_back(
+        std::move(asset)
+    );
+
+    return true;
+}
+
+bool VerdaRegion::delete_world_asset(
+    std::string_view asset_id
+) {
+    if (asset_id.empty()) {
+        return false;
+    }
+
+    for (Settlement& settlement : settlements_) {
+        const auto before = settlement.assets.size();
+
+        std::erase_if(
+            settlement.assets,
+            [asset_id](const WorldAsset& asset) {
+                return asset.id == asset_id;
+            }
+        );
+
+        if (settlement.assets.size() != before) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 
 bool VerdaRegion::delete_building(
     const std::string_view building_id

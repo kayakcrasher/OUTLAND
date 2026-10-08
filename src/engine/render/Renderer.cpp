@@ -10,6 +10,8 @@
 
 #ifdef OUTLAND_DEV_TOOLS
 #include "outland/creator/CreatorController.hpp"
+#include "outland/creator/CreatorMapIO.hpp"
+#include "outland/creator/CreatorTouchUI.hpp"
 #endif
 #include "outland/player/VerdanCharacter.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -23,10 +25,192 @@
 
 #include <algorithm>
 #include <cmath>
+#include <unordered_map>
 
 namespace outland::engine {
 
 namespace {
+
+std::unordered_map<std::string, Model>&
+world_asset_model_cache() {
+    static std::unordered_map<std::string, Model> cache;
+    return cache;
+}
+
+Model* get_world_asset_model(
+    const std::string& path
+) {
+    if (path.empty()) {
+        return nullptr;
+    }
+
+    auto& cache = world_asset_model_cache();
+
+    const auto found = cache.find(path);
+
+    if (found != cache.end()) {
+        return &found->second;
+    }
+
+    if (!FileExists(path.c_str())) {
+        TraceLog(
+            LOG_WARNING,
+            "OUTLAND asset missing: %s",
+            path.c_str()
+        );
+        return nullptr;
+    }
+
+    Model model = LoadModel(path.c_str());
+
+    if (model.meshCount <= 0) {
+        TraceLog(
+            LOG_WARNING,
+            "OUTLAND asset failed to load: %s",
+            path.c_str()
+        );
+        return nullptr;
+    }
+
+    auto result = cache.emplace(
+        path,
+        std::move(model)
+    );
+
+    return &result.first->second;
+}
+
+void draw_model_backed_world_assets(
+    const world::VerdaRegion& region,
+    const Vector3& camera_position
+) {
+    constexpr float max_distance = 320.0F;
+    constexpr float max_distance_sq =
+        max_distance * max_distance;
+
+    for (
+        const world::Settlement& settlement :
+        region.settlements()
+    ) {
+        for (
+            const world::WorldAsset& asset :
+            settlement.assets
+        ) {
+            if (asset.model_path.empty()) {
+                continue;
+            }
+
+            const float dx =
+                asset.position.x - camera_position.x;
+
+            const float dy =
+                asset.position.y - camera_position.y;
+
+            const float dz =
+                asset.position.z - camera_position.z;
+
+            const float distance_sq =
+                dx * dx +
+                dy * dy +
+                dz * dz;
+
+            if (distance_sq > max_distance_sq) {
+                continue;
+            }
+
+            Model* model =
+                get_world_asset_model(
+                    asset.model_path
+                );
+
+            if (model == nullptr) {
+                continue;
+            }
+
+            DrawModelEx(
+                *model,
+                asset.position,
+                {0.0F, 1.0F, 0.0F},
+                asset.rotation_y,
+                {1.0F, 1.0F, 1.0F},
+                WHITE
+            );
+        }
+    }
+}
+
+#ifdef OUTLAND_DEV_TOOLS
+void draw_creator_model_preview(
+    const creator::CreatorController& controller
+) {
+    const creator::CreatorPreview& preview =
+        controller.preview();
+
+    if (!preview.valid) {
+        return;
+    }
+
+    const creator::CreatorAssetDefinition* asset =
+        controller.selected_asset();
+
+    if (asset == nullptr) {
+        return;
+    }
+
+    if (asset->model_path.empty()) {
+        return;
+    }
+
+    Model* model =
+        get_world_asset_model(asset->model_path);
+
+    if (model == nullptr) {
+        return;
+    }
+
+    const Color ghost_color =
+        Fade(GREEN, 0.58F);
+
+    DrawModelEx(
+        *model,
+        preview.position,
+        {0.0F, 1.0F, 0.0F},
+        preview.rotation_y,
+        {
+            asset->default_scale,
+            asset->default_scale,
+            asset->default_scale
+        },
+        ghost_color
+    );
+
+    const float width =
+        asset->footprint.width *
+        asset->default_scale;
+
+    const float depth =
+        asset->footprint.depth *
+        asset->default_scale;
+
+    const float height =
+        asset->footprint.height *
+        asset->default_scale;
+
+    DrawCubeWires(
+        {
+            preview.position.x,
+            preview.position.y +
+                height * 0.5F,
+            preview.position.z
+        },
+        width,
+        height,
+        depth,
+        GREEN
+    );
+}
+#endif
+
 
 constexpr float PI_F =
     3.14159265358979323846F;
@@ -102,6 +286,7 @@ void Renderer::run() {
 
 #ifdef OUTLAND_DEV_TOOLS
     creator::CreatorController creator_controller;
+    creator::CreatorTouchUI creator_touch_ui;
 #endif
 
     game::GameMode game_mode =
@@ -574,6 +759,82 @@ void Renderer::run() {
                     camera.position,
                     camera_direction
                 );
+
+                creator_touch_ui.update(
+                    creator_controller,
+                    screen_width,
+                    screen_height
+                );
+
+                const auto& creator_actions =
+                    creator_touch_ui.actions();
+
+                if (creator_actions.place) {
+                    (void)creator_controller.place_selected(
+                        verda_region
+                    );
+                }
+
+                if (creator_actions.save) {
+                    const bool saved =
+                        creator::CreatorMapIO::save(
+                            verda_region,
+                            "maps/verda_creator.map"
+                        );
+
+                    TraceLog(
+                        saved ? LOG_INFO : LOG_ERROR,
+                        saved
+                            ? "Creator map saved"
+                            : "Creator map save FAILED"
+                    );
+                }
+
+                if (creator_actions.load) {
+                    const bool loaded =
+                        creator::CreatorMapIO::load(
+                            verda_region,
+                            "maps/verda_creator.map"
+                        );
+
+                    TraceLog(
+                        loaded ? LOG_INFO : LOG_ERROR,
+                        loaded
+                            ? "Creator map loaded"
+                            : "Creator map load FAILED"
+                    );
+                }
+
+                if (creator_actions.move) {
+                    (void)creator_controller.move_selected(
+                        verda_region
+                    );
+                }
+
+                if (creator_actions.duplicate) {
+                    (void)creator_controller.duplicate_selected(
+                        verda_region
+                    );
+                }
+
+                if (creator_actions.rotate) {
+                    if (
+                        !creator_controller.rotate_selected(
+                            verda_region,
+                            15.0F
+                        )
+                    ) {
+                        creator_controller.rotate_preview(
+                            15.0F
+                        );
+                    }
+                }
+
+                if (creator_actions.erase) {
+                    creator_controller.delete_selected(
+                        verda_region
+                    );
+                }
             }
         }
 #endif
@@ -653,12 +914,23 @@ void Renderer::run() {
         verda_region.draw(camera.position);
 
 #ifdef OUTLAND_DEV_TOOLS
+        draw_model_backed_world_assets(
+            verda_region,
+            camera.position
+        );
+#endif
+
+#ifdef OUTLAND_DEV_TOOLS
         if (
             game_mode ==
             game::GameMode::DevLab
         ) {
             creator_controller.draw_world_overlay(
                 verda_region
+            );
+
+            draw_creator_model_preview(
+                creator_controller
             );
         }
 #endif
@@ -800,6 +1072,12 @@ void Renderer::run() {
             game::GameMode::DevLab
         ) {
             creator_controller.draw_hud();
+
+            creator_touch_ui.draw(
+                creator_controller,
+                screen_width,
+                screen_height
+            );
         }
 #endif
 

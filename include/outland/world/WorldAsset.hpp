@@ -23,6 +23,10 @@ struct WorldAsset {
     std::string id;
     AssetType type{AssetType::House};
 
+    // Optional render model used by data-driven world assets.
+    // Empty keeps the existing procedural rendering path.
+    std::string model_path;
+
     Vector3 position{0.0F, 0.0F, 0.0F};
     Vector3 size{1.0F, 1.0F, 1.0F};
 

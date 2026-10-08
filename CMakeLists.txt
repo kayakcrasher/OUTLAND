@@ -123,6 +123,8 @@ if(OUTLAND_DEV_TOOLS)
         outland_render
         PRIVATE
             src/creator/CreatorController.cpp
+            src/creator/CreatorTouchUI.cpp
+        src/creator/CreatorMapIO.cpp
     )
 
     target_compile_definitions(

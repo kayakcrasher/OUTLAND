@@ -197,6 +197,383 @@ public:
 private:
     std::vector<CreatorAssetDefinition> assets_;
 
+    void add_imported_asset(
+        std::string id,
+        std::string name,
+        CreatorAssetCategory category,
+        std::string model_path,
+        CreatorFootprint footprint
+    ) {
+        CreatorAssetDefinition asset{
+            .id = std::move(id),
+            .name = std::move(name),
+            .category = category,
+            .model_path = std::move(model_path),
+            .thumbnail_path = "",
+            .footprint = footprint,
+            .placement = {},
+            .default_scale = 1.0F,
+            .tags = {
+                "quaternius",
+                "downtown",
+                "creator"
+            }
+        };
+
+        (void)add(std::move(asset));
+    }
+
+    void register_downtown_creator_pack() {
+        const std::string base =
+            "assets/verda/creator/downtown/";
+
+        // PARTS
+        add_imported_asset(
+            "brick_plain_1",
+            "Brick Wall",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Brick_Plain_1.gltf",
+            {3.0F, 0.4F, 3.0F}
+        );
+
+        add_imported_asset(
+            "brick_plain_3",
+            "Brick Wall Wide",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Brick_Plain_3.gltf",
+            {6.0F, 0.4F, 3.0F}
+        );
+
+        add_imported_asset(
+            "brick_corner_l",
+            "Brick Corner L",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Brick_90Angle_L.gltf",
+            {3.0F, 3.0F, 3.0F}
+        );
+
+        add_imported_asset(
+            "brick_corner_r",
+            "Brick Corner R",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Brick_90Angle_R.gltf",
+            {3.0F, 3.0F, 3.0F}
+        );
+
+        add_imported_asset(
+            "brick_interior_wall_1",
+            "Interior Wall",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Brick_InteriorWall_1.gltf",
+            {3.0F, 0.3F, 3.0F}
+        );
+
+        add_imported_asset(
+            "brick_interior_wall_3",
+            "Interior Wall Wide",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Brick_InteriorWall_3.gltf",
+            {6.0F, 0.3F, 3.0F}
+        );
+
+        add_imported_asset(
+            "brick_window_single",
+            "Brick Window",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Brick_Window_Square_Single.gltf",
+            {3.0F, 0.4F, 3.0F}
+        );
+
+        add_imported_asset(
+            "brick_window_double",
+            "Brick Double Window",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Brick_RedWhite_DoubleWindow.gltf",
+            {6.0F, 0.4F, 3.0F}
+        );
+
+        add_imported_asset(
+            "metal_plain_1",
+            "Metal Wall",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Metal_Plain_1.gltf",
+            {3.0F, 0.4F, 3.0F}
+        );
+
+        add_imported_asset(
+            "metal_plain_3",
+            "Metal Wall Wide",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Metal_Plain_3.gltf",
+            {6.0F, 0.4F, 3.0F}
+        );
+
+        add_imported_asset(
+            "metal_first_floor_wall",
+            "Metal Ground Wall",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Metal_FirstFloor_Wall.gltf",
+            {3.0F, 0.4F, 3.0F}
+        );
+
+        add_imported_asset(
+            "metal_first_floor_window",
+            "Metal Ground Window",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Metal_FirstFloor_Window.gltf",
+            {3.0F, 0.4F, 3.0F}
+        );
+
+        add_imported_asset(
+            "metal_window",
+            "Metal Window",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Metal_Window.gltf",
+            {3.0F, 0.4F, 3.0F}
+        );
+
+        // DOORS / FLOORS / ROOFS / ACCESS
+        add_imported_asset(
+            "doorframe_metal",
+            "Metal Door Frame",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/DoorFrame_Metal_Single.gltf",
+            {2.0F, 0.4F, 3.0F}
+        );
+
+        add_imported_asset(
+            "doorframe_wood",
+            "Wood Door Frame",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/DoorFrame_Wooden.gltf",
+            {2.0F, 0.4F, 3.0F}
+        );
+
+        add_imported_asset(
+            "door_1",
+            "Door 1",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Door_1.gltf",
+            {1.5F, 0.25F, 2.5F}
+        );
+
+        add_imported_asset(
+            "door_2",
+            "Door 2",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Door_2.gltf",
+            {1.5F, 0.25F, 2.5F}
+        );
+
+        add_imported_asset(
+            "door_3",
+            "Door 3",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Door_3.gltf",
+            {1.5F, 0.25F, 2.5F}
+        );
+
+        add_imported_asset(
+            "floor_2x2",
+            "Floor 2x2",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Floor_2x2.gltf",
+            {2.0F, 2.0F, 0.2F}
+        );
+
+        add_imported_asset(
+            "floor_4x4",
+            "Floor 4x4",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Floor_4x4.gltf",
+            {4.0F, 4.0F, 0.2F}
+        );
+
+        add_imported_asset(
+            "roof_2x2",
+            "Roof 2x2",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Roof_2x2.gltf",
+            {2.0F, 2.0F, 1.0F}
+        );
+
+        add_imported_asset(
+            "roof_4x4",
+            "Roof 4x4",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Roof_4x4.gltf",
+            {4.0F, 4.0F, 1.0F}
+        );
+
+        add_imported_asset(
+            "stairs_entrance",
+            "Entrance Stairs",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Stairs_Entrance_Concrete.gltf",
+            {3.0F, 3.0F, 1.5F}
+        );
+
+        add_imported_asset(
+            "entrance_concrete_2x1",
+            "Concrete Entrance 2x1",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Entrance_Concrete_2x1.gltf",
+            {2.0F, 1.0F, 0.5F}
+        );
+
+        add_imported_asset(
+            "entrance_concrete_2x2",
+            "Concrete Entrance 2x2",
+            CreatorAssetCategory::BuildingPart,
+            base + "parts/Entrance_Concrete_2x2.gltf",
+            {2.0F, 2.0F, 0.5F}
+        );
+
+        // ====================================================
+        // ROADS
+        // ====================================================
+
+        add_imported_asset(
+            "street_2lane",
+            "Street 2 Lane",
+            CreatorAssetCategory::Road,
+            base + "roads/Street_2Lane.gltf",
+            {6.0F, 12.0F, 0.2F}
+        );
+
+        add_imported_asset(
+            "street_2lane_nosidewalk",
+            "Street 2 Lane Bare",
+            CreatorAssetCategory::Road,
+            base + "roads/Street_2Lane_noSidewalk.gltf",
+            {6.0F, 12.0F, 0.2F}
+        );
+
+        add_imported_asset(
+            "street_4lane",
+            "Street 4 Lane",
+            CreatorAssetCategory::Road,
+            base + "roads/Street_4Lane.gltf",
+            {12.0F, 12.0F, 0.2F}
+        );
+
+        add_imported_asset(
+            "street_4way",
+            "4-Way Intersection",
+            CreatorAssetCategory::Road,
+            base + "roads/Street_4WayIntersection.gltf",
+            {12.0F, 12.0F, 0.2F}
+        );
+
+        add_imported_asset(
+            "street_t",
+            "T Intersection",
+            CreatorAssetCategory::Road,
+            base + "roads/Street_TIntersection.gltf",
+            {12.0F, 12.0F, 0.2F}
+        );
+
+        add_imported_asset(
+            "street_curve_2lane",
+            "Street Curve",
+            CreatorAssetCategory::Road,
+            base + "roads/Street_Curve_2Lane.gltf",
+            {12.0F, 12.0F, 0.2F}
+        );
+
+        add_imported_asset(
+            "asphalt_6x6",
+            "Asphalt 6x6",
+            CreatorAssetCategory::Road,
+            base + "roads/Street_Asphalt_6x6.gltf",
+            {6.0F, 6.0F, 0.2F}
+        );
+
+        add_imported_asset(
+            "asphalt_9x9",
+            "Asphalt 9x9",
+            CreatorAssetCategory::Road,
+            base + "roads/Street_Asphalt_9x9.gltf",
+            {9.0F, 9.0F, 0.2F}
+        );
+
+        add_imported_asset(
+            "sidewalk_straight",
+            "Straight Sidewalk",
+            CreatorAssetCategory::Road,
+            base + "roads/Sidewalk_Straight_3m.gltf",
+            {3.0F, 3.0F, 0.3F}
+        );
+
+        add_imported_asset(
+            "sidewalk_corner",
+            "Sidewalk Corner",
+            CreatorAssetCategory::Road,
+            base + "roads/Sidewalk_Corner_Flat_3m.gltf",
+            {3.0F, 3.0F, 0.3F}
+        );
+
+        add_imported_asset(
+            "crosswalk",
+            "Crosswalk",
+            CreatorAssetCategory::Road,
+            base + "roads/Decal_Crosswalk.gltf",
+            {6.0F, 3.0F, 0.05F}
+        );
+
+        add_imported_asset(
+            "stop_decal",
+            "STOP Road Marking",
+            CreatorAssetCategory::Road,
+            base + "roads/Decal_Stop.gltf",
+            {3.0F, 3.0F, 0.05F}
+        );
+
+        // ====================================================
+        // CITY PROPS
+        // ====================================================
+
+        add_imported_asset(
+            "ac_unit",
+            "AC Unit",
+            CreatorAssetCategory::Prop,
+            base + "props/Prop_ACUnit.gltf",
+            {1.5F, 1.0F, 1.2F}
+        );
+
+        add_imported_asset(
+            "bollard",
+            "Bollard",
+            CreatorAssetCategory::Prop,
+            base + "props/Prop_Bollard.gltf",
+            {0.5F, 0.5F, 1.2F}
+        );
+
+        add_imported_asset(
+            "drain",
+            "Street Drain",
+            CreatorAssetCategory::Prop,
+            base + "props/Prop_Drain.gltf",
+            {1.0F, 0.5F, 0.1F}
+        );
+
+        add_imported_asset(
+            "manhole",
+            "Manhole Cover",
+            CreatorAssetCategory::Prop,
+            base + "props/Prop_ManholeCover.gltf",
+            {1.0F, 1.0F, 0.1F}
+        );
+
+        add_imported_asset(
+            "city_planter",
+            "City Planter",
+            CreatorAssetCategory::Prop,
+            base + "props/Prop_Planter_Single.gltf",
+            {1.5F, 1.5F, 1.0F}
+        );
+    }
+
     void register_builtin_assets() {
 
         // ====================================================
@@ -443,6 +820,8 @@ private:
                 "gameplay"
             }
         });
+
+        register_downtown_creator_pack();
     }
 };
 

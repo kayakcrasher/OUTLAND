@@ -21,7 +21,8 @@ namespace outland::creator {
 enum class CreatorSelectionType {
     None,
     Building,
-    Road
+    Road,
+    WorldAsset
 };
 
 struct CreatorSelection {
@@ -30,6 +31,7 @@ struct CreatorSelection {
     };
 
     std::string building_id{};
+    std::string world_asset_id{};
 
     std::size_t settlement_index{0};
     std::size_t road_index{0};
@@ -49,6 +51,7 @@ struct CreatorSelection {
         type = CreatorSelectionType::None;
 
         building_id.clear();
+        world_asset_id.clear();
 
         settlement_index = 0;
         road_index = 0;
@@ -132,7 +135,24 @@ public:
         Vector3 direction
     );
 
+    bool place_selected(
+        world::VerdaRegion& region
+    );
+
     bool delete_selected(
+        world::VerdaRegion& region
+    );
+
+    bool rotate_selected(
+        world::VerdaRegion& region,
+        float degrees
+    );
+
+    bool duplicate_selected(
+        world::VerdaRegion& region
+    );
+
+    bool move_selected(
         world::VerdaRegion& region
     );
 
@@ -267,6 +287,13 @@ private:
     );
 
     bool select_road(
+        const world::VerdaRegion& region,
+        Vector3 origin,
+        Vector3 direction,
+        float& nearest_distance
+    );
+
+    bool select_world_asset(
         const world::VerdaRegion& region,
         Vector3 origin,
         Vector3 direction,
