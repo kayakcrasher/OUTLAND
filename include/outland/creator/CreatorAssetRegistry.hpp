@@ -586,7 +586,7 @@ private:
             .category = CreatorAssetCategory::Building,
             .model_path = "",
             .thumbnail_path = "",
-            .footprint = {8.0F, 7.0F, 4.0F},
+            .footprint = {8.0F, 4.0F, 7.0F},
             .placement = {},
             .default_scale = 1.0F,
             .tags = {
@@ -603,7 +603,7 @@ private:
             .category = CreatorAssetCategory::Building,
             .model_path = "",
             .thumbnail_path = "",
-            .footprint = {9.0F, 9.0F, 7.0F},
+            .footprint = {9.0F, 7.0F, 9.0F},
             .placement = {},
             .default_scale = 1.0F,
             .tags = {
@@ -620,7 +620,7 @@ private:
             .category = CreatorAssetCategory::Building,
             .model_path = "",
             .thumbnail_path = "",
-            .footprint = {11.0F, 8.0F, 4.5F},
+            .footprint = {11.0F, 4.5F, 8.0F},
             .placement = {},
             .default_scale = 1.0F,
             .tags = {
@@ -636,12 +636,29 @@ private:
             .category = CreatorAssetCategory::Building,
             .model_path = "",
             .thumbnail_path = "",
-            .footprint = {12.0F, 10.0F, 5.0F},
+            .footprint = {12.0F, 5.0F, 10.0F},
             .placement = {},
             .default_scale = 1.0F,
             .tags = {
                 "garage",
                 "utility",
+                "verda"
+            }
+        });
+
+        add({
+            .id = "warehouse",
+            .name = "Warehouse",
+            .category = CreatorAssetCategory::Building,
+            .model_path = "",
+            .thumbnail_path = "",
+            .footprint = {16.0F, 6.0F, 12.0F},
+            .placement = {},
+            .default_scale = 1.0F,
+            .tags = {
+                "warehouse",
+                "industrial",
+                "storage",
                 "verda"
             }
         });
