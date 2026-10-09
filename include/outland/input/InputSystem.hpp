@@ -35,6 +35,7 @@ public:
     TouchLayout& layout();
 
     void reset_layout();
+    [[nodiscard]] bool navigation_owns_point(Vector2 point,int width,int height) const;
 
     // Keep active contacts quarantined until their release.
     void cancel_controls();

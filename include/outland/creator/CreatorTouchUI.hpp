@@ -6,6 +6,7 @@
 #include "outland/creator/CreatorController.hpp"
 
 #include <raylib.h>
+#include <functional>
 
 #include <cstddef>
 #include <optional>
@@ -48,6 +49,8 @@ struct CreatorTouchActions {
 
     bool save{false};
     bool export_world{false};
+    bool world_pointer{false};
+    Vector2 world_point{};
     bool load{false};
 
     bool toggle_fly{false};
@@ -62,7 +65,7 @@ struct CreatorTouchActions {
 // CREATOR TOUCH UI
 // ============================================================
 
-enum class BuilderControl { Undo, Redo, Load, Ground, Grid, Near, Far, Lower, Raise, Up, Down, All, Search, Export };
+enum class BuilderControl { Undo, Redo, Load, Ground, Grid, Near, Far, Lower, Raise, Up, Down, All, Search, Export, Catalog };
 
 class CreatorTouchUI {
 public:
@@ -77,7 +80,8 @@ public:
         CreatorController& controller,
         int screen_width,
         int screen_height,
-        bool blocked=false
+        bool blocked=false,
+        const std::function<bool(Vector2)>& world_reserved={}
     );
 
     void draw(
@@ -95,6 +99,8 @@ public:
     actions() const;
 
     void clear_actions();
+    // Resolve a screen tap through the actual camera ray, then use the existing session edits.
+    void resolve_world_press(CreatorController& controller,const world::VerdaRegion& region,Ray ray);
 
     [[nodiscard]] bool owns_point(Vector2 point, int width, int height) const;
 
@@ -121,8 +127,11 @@ public:
     );
 
 private:
+    bool key_pressed(int key) const;
+    std::vector<int> queued_keys_;
     Rectangle logical_control_button(BuilderControl control,int width,int height) const;
     CreatorTouchActions actions_{};
+    std::string hint_{"ASSETS / B: unlimited models | Tap object: select | Tap ground: place"};
     std::vector<int> previous_touches_;
     std::vector<Vector2> presses_;
 

@@ -108,6 +108,12 @@ Vector2 analog_value(
 
 InputSystem::InputSystem() = default;
 
+bool InputSystem::navigation_owns_point(Vector2 point,int width,int height) const {
+    const float scale=base_scale(width,height);
+    return inside_circle(point,element_position(layout_.movement,width,height),92*scale*layout_.movement.scale) ||
+        inside_circle(point,element_position(layout_.look,width,height),92*scale*layout_.look.scale);
+}
+
 void InputSystem::update(int screen_width, int screen_height, bool gameplay, bool blocked,
     const std::function<bool(Vector2)>& reserved) {
     player_ = {};

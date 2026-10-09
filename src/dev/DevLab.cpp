@@ -1,4 +1,6 @@
 #include "outland/dev/DevLab.hpp"
+#include "outland/input/PointerEvents.hpp"
+#include "outland/input/TouchLayout.hpp"
 
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -32,11 +34,14 @@ Rectangle travel_button(int index,int width,int height) {
     const float scale=panel_scale(width,height);
     return {width*.5F+(-200+(index%2)*205.0F)*scale,(82.0F+(index/2)*54)*scale,195*scale,44*scale};
 }
-Rectangle tools_button(int width) {return {width*.5F-75,8,150,36};}
+Rectangle tools_button(int width,int height) {
+    const float scale=input::editor_scale(width,height);
+    return {width*.5F-75*scale,8*scale,150*scale,30*scale};
 }
-bool DevLab::owns_point(Vector2 p,int width,int height)const {(void)height;return tools_open_||CheckCollisionPointRec(p,tools_button(width));}
+}
+bool DevLab::owns_point(Vector2 p,int width,int height)const {return tools_open_||CheckCollisionPointRec(p,tools_button(width,height));}
 void DevLab::draw_tools(int width,int height,bool building)const {
-    DrawRectangleRec(tools_button(width),Fade(BLACK,.75F));DrawText("DEV TOOLS",width/2-56,16,18,YELLOW);
+    DrawRectangleRec(tools_button(width,height),Fade(BLACK,.75F));DrawText("DEV TOOLS",static_cast<int>(width*.5F-56*input::editor_scale(width,height)),static_cast<int>(16*input::editor_scale(width,height)),std::max(7,static_cast<int>(18*input::editor_scale(width,height))),YELLOW);
     if(!tools_open_)return;
     DrawRectangle(0,0,width,height,Fade(BLACK,.8F));
     const char* labels[]{building?"INSPECT / DRIVE":"BUILD WORLD","SPAWN HATCHBACK","CAPITAL","ESPERA","PORTO LUMA","SUDA HAVENO","ROKA","PREVIOUS LOCATION","CLOSE"};
@@ -50,7 +55,7 @@ void DevLab::update(int width,int height,bool travel_shortcuts) {
     if(focused && IsKeyPressed(KEY_F4))return_requested_=true;
     if(width>0 && height>0){
         const auto press=[&](Vector2 point){
-            if(!tools_open_){if(CheckCollisionPointRec(point,tools_button(width)))tools_open_=true;return;}
+            if(!tools_open_){if(CheckCollisionPointRec(point,tools_button(width,height)))tools_open_=true;return;}
             for(int i=0;i<9;++i)if(CheckCollisionPointRec(point,travel_button(i,width,height))){
                 if(i==0)build_toggle_=true;else if(i==1)vehicle_spawn_=true;else if(i==7)return_requested_=true;
                 else if(i>=2&&i<=6){location_=i==2?DevLocation::TrainingGround:i==3?DevLocation::Espera:i==4?DevLocation::PortoLuma:i==5?DevLocation::SouthHaven:DevLocation::Roka;teleport_requested_=true;}
@@ -59,7 +64,11 @@ void DevLab::update(int width,int height,bool travel_shortcuts) {
         };
         std::vector<int> contacts;const int count=GetTouchPointCount();
         for(int i=0;i<count;++i){const int id=GetTouchPointId(i);contacts.push_back(id);if(std::find(touch_ids_.begin(),touch_ids_.end(),id)==touch_ids_.end() && IsWindowFocused())press(GetTouchPosition(i));}
-        if(count==0&&!had_touch_&&IsWindowFocused()&&IsMouseButtonPressed(MOUSE_BUTTON_LEFT))press(GetMousePosition());
+        if(count==0&&!had_touch_&&IsWindowFocused()) {
+            const auto buffered=input::PointerEvents::presses();
+            if(!buffered.empty())press(buffered.front());
+            else if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT))press(GetMousePosition());
+        }
         touch_ids_=std::move(contacts);had_touch_=count>0;
     }
 

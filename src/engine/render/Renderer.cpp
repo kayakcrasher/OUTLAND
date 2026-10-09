@@ -9,6 +9,7 @@
 #include "outland/assets/ModelCache.hpp"
 
 #include "outland/input/InputSystem.hpp"
+#include "outland/input/PointerEvents.hpp"
 #include <unordered_set>
 #include "outland/input/TouchHUD.hpp"
 #include "outland/game/GameMode.hpp"
@@ -256,6 +257,8 @@ void Renderer::run() {
 
     PlayerState player;
 
+    input::PointerEvents pointer_events;
+    TraceLog(LOG_INFO,pointer_events.installed() ? "Desktop click capture enabled":"Desktop click capture unavailable - using raylib input polling");
     input::InputSystem input_system;
     input::TouchHUD touch_hud;
     bool inventory_open = false;
@@ -372,6 +375,7 @@ void Renderer::run() {
         8.5F;
 
     while (!WindowShouldClose()) {
+        pointer_events.begin_frame();
 
         const float dt =
             std::min(
@@ -457,7 +461,7 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
                 if(game_mode==game::GameMode::DevLab) {
                     dev_lab.begin_builder();
-                    creator_controller.state().flying=true;creator_controller.state().noclip=true;
+                    creator_controller.state().flying=true;creator_controller.state().noclip=true;creator_controller.state().grid_step=1;
                     creator_touch_ui.show_all_assets();creator_touch_ui.set_inventory_open(true);
                     creator_controller.clear_selection();
                 }
@@ -522,7 +526,8 @@ void Renderer::run() {
         }
         creator_active = game_mode == game::GameMode::DevLab && dev_lab.building();
         creator_controller.set_enabled(creator_active);
-        creator_touch_ui.update(creator_controller, screen_width, screen_height, dev_modal || !IsWindowFocused());
+        creator_touch_ui.update(creator_controller, screen_width, screen_height, dev_modal || !IsWindowFocused(),
+            [&](Vector2 p){return CheckCollisionPointRec(p,audio_button) || dev_lab.owns_point(p,screen_width,screen_height) || input_system.navigation_owns_point(p,screen_width,screen_height);});
         if (creator_active) {
             reserved = [&](Vector2 point) {
                 return CheckCollisionPointRec(point, audio_button) || dev_lab.owns_point(point,screen_width,screen_height) ||
@@ -930,6 +935,8 @@ void Renderer::run() {
                     !creator_touch_ui.inventory_open() && !dev_modal && IsWindowFocused()
                 );
 
+                if(creator_touch_ui.actions().world_pointer)creator_touch_ui.resolve_world_press(creator_controller,verda_region,
+                    GetScreenToWorldRayEx(creator_touch_ui.actions().world_point,camera,screen_width,screen_height));
                 const auto& action=creator_touch_ui.actions();
                 if(action.select)creator_controller.select_target(verda_region,camera.position,camera_direction);
                 if(action.place && creator_session.edit(verda_region,[&]{return creator_controller.place_selected(verda_region);}))creator_controller.clear_selection();
@@ -1070,6 +1077,8 @@ void Renderer::run() {
         }
 #endif
 
+        // Training-only geometry is not authored map data; hide it in the builder.
+        if(!creator_active) {
         // Central training structure.
         const float structure_ground_y =
             world::terrain::TerrainHeight::sample(
@@ -1100,6 +1109,7 @@ void Renderer::run() {
         );
 
         game::combat::CombatRenderer::draw_world(weapons,combat_world);
+        }
         if(weapons.available() && !driving && !creator_active)game::combat::CombatRenderer::draw_gun(gun_muzzle,gun_direction,weapons.selected(),
             weapons.reload_remaining()/weapons.weapon().reload_seconds,weapons.muzzle_flash());
         if(!creator_active)loot_ui.draw_world(item_registry,loot_session.world(),loot_feet,loot_session.inventory().state().light);
@@ -1207,6 +1217,10 @@ void Renderer::run() {
 
 
 #ifdef OUTLAND_DEV_TOOLS
+        if(creator_active && !creator_touch_ui.inventory_open() && !dev_lab.tools_open()) {
+            DrawLine(screen_width/2-6,screen_height/2,screen_width/2+6,screen_height/2,WHITE);
+            DrawLine(screen_width/2,screen_height/2-6,screen_width/2,screen_height/2+6,WHITE);
+        }
         if (
             game_mode ==
             game::GameMode::DevLab
