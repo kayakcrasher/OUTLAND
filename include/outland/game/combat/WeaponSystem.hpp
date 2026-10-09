@@ -4,6 +4,7 @@
 #include "outland/game/combat/CombatWorld.hpp"
 #include <array>
 #include <cstdint>
+#include <functional>
 
 namespace outland::game::combat {
 
@@ -42,6 +43,16 @@ public:
     [[nodiscard]] const Magazine& ammo(WeaponId id) const { return ammo_[static_cast<std::size_t>(id)]; }
     // Collect one magazine of reserve rounds, capped at the weapon's starting reserve.
     int collect_ammo();
+    // Optional inventory bridge: legacy standalone combat keeps its existing reserves.
+    // Bound reserves mirror the bag; only the consume callback may spend loose rounds.
+    void bind_inventory(std::function<bool(WeaponId)> owned,
+                        std::function<int(WeaponId)> reserve,
+                        std::function<int(WeaponId,int)> consume);
+    void unbind_inventory();
+    bool select(WeaponId id);
+    bool available() const;
+    bool set_loaded(WeaponId id,int rounds);
+    void request_reload();
     [[nodiscard]] float reload_remaining() const { return reload_remaining_; }
     [[nodiscard]] float muzzle_flash() const { return muzzle_flash_; }
     [[nodiscard]] float hit_marker() const { return hit_marker_; }
@@ -52,6 +63,7 @@ public:
     [[nodiscard]] const std::array<BulletImpact,64>& impacts() const { return impacts_; }
 private:
     void start_reload();
+    void refresh_reserves();
     bool shoot(const WeaponInput& input, ShotPose pose);
     void simulate(float dt, CombatWorld& world);
     float random();
@@ -64,6 +76,9 @@ private:
     float cooldown_{0}, reload_remaining_{0}, muzzle_flash_{0}, hit_marker_{0}, last_damage_{0};
     std::uint32_t random_state_{0x51f7349aU};
     unsigned int shot_number_{0}, impact_index_{0};
+    std::function<bool(WeaponId)> owned_;
+    std::function<int(WeaponId)> reserve_;
+    std::function<int(WeaponId,int)> consume_;
 };
 
 } // namespace outland::game::combat

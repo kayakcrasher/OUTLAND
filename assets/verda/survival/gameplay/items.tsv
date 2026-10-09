@@ -1,0 +1,23 @@
+id	name	category	model	stack	height	action	value	weapon	capacity	requires	starting_quantity	starting_loaded
+canned_food	Canned food	food	assets/verda/survival/runtime/Can.glb	6	0.18	eat	25		0		2	0
+water	Water bottle	water	assets/verda/survival/runtime/Water.glb	6	0.28	drink	30		0		2	0
+soda	Soda	water	assets/verda/survival/runtime/Can_Soda.glb	6	0.18	drink	15		0		0	0
+antibiotics	Antibiotics	medical	assets/verda/survival/runtime/Antibiotics.glb	4	0.16	heal	20		0		0	0
+antiseptic	Antiseptic	medical	assets/verda/survival/runtime/Antiseptic.glb	4	0.22	heal	15		0		0	0
+bandage	Bandage	medical	assets/verda/survival/runtime/band.glb	8	0.1	heal	10		0		1	0
+pistol_ammo	9mm rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	60	0.12	ammo	0	pistol	0		60	0
+rifle_ammo	Rifle rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	60	0.12	ammo	0	rifle	0		120	0
+pistol	V9 pistol	weapon		1	0.3	equip	0	pistol	0		1	12
+hunting_rifle	Hunting rifle	weapon	assets/verda/survival/runtime/hunting_rifle.glb	1	0.3	equip	0	rifle	0		1	30
+backpack	Backpack	container	assets/verda/survival/runtime/Backpack.glb	1	0.5	container	0		12		0	0
+trunk	Field storage trunk	container	assets/verda/survival/runtime/Trunk.glb	1	0.55	container	0		8		0	0
+battery	Battery	utility	assets/verda/survival/runtime/Battery.glb	12	0.12	none	0		0		0	0
+lantern	Lantern	utility	assets/verda/survival/runtime/Lantern.glb	1	0.35	light	0		0	battery	0	0
+torch	Torch	utility	assets/verda/survival/runtime/Torch.glb	1	0.3	light	0		0	battery	0	0
+axe	Axe	utility	assets/verda/survival/runtime/Axe.glb	1	0.3	none	0		0		0	0
+knife	Knife	utility	assets/verda/survival/runtime/knife.glb	1	0.16	none	0		0		0	0
+tent	Shelter tent	utility	assets/verda/survival/runtime/Shelter_tent.glb	1	1.2	none	0		0		0	0
+sleeping_bag	Sleeping bag	utility	assets/verda/survival/runtime/sleeping_bag.glb	1	0.2	none	0		0		0	0
+bonfire	Campfire kit	utility	assets/verda/survival/runtime/bonfire.glb	1	0.3	none	0		0		0	0
+matches	Matches	utility	assets/verda/survival/runtime/match.glb	16	0.1	none	0		0		0	0
+lighter	Lighter	utility	assets/verda/survival/runtime/zippo.glb	1	0.1	none	0		0		0	0

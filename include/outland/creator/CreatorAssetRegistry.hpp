@@ -3,6 +3,7 @@
 #ifdef OUTLAND_DEV_TOOLS
 
 #include <cstddef>
+#include <array>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -792,6 +793,15 @@ private:
         // ====================================================
         // CREATOR GAMEPLAY MARKERS
         // ====================================================
+
+        for(const auto& entry:std::array<std::pair<const char*,const char*>,3>{{
+            {"loot_spawn_medical","Medical Loot Spawn"},
+            {"loot_spawn_camp","Camp Loot Spawn"},
+            {"loot_spawn_weapons","Weapon Loot Spawn"}}}) {
+            (void)add({.id=entry.first,.name=entry.second,.category=CreatorAssetCategory::Gameplay,
+                .model_path="",.thumbnail_path="",.footprint={.5F,.5F,.5F},.placement={},
+                .default_scale=1,.tags={"loot","spawn","gameplay"}});
+        }
 
         add({
             .id = "loot_spawn",

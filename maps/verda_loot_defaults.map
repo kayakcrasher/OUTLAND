@@ -1,0 +1,6 @@
+OUTLAND_CREATOR_MAP 3
+MARKER "creator_marker_loot_spawn_general_training" 0 4 0 8 .5 .5 .5 0 1
+MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 .5 .5 .5 0 1
+MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 .5 .5 .5 0 1
+MARKER "creator_marker_loot_spawn_weapons_espera" 0 -12 0 -70 .5 .5 .5 0 1
+MARKER "creator_marker_loot_spawn_general_espera" 0 12 0 -65 .5 .5 .5 0 1

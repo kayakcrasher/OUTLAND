@@ -102,6 +102,12 @@ add_library(
     src/game/combat/CombatWorld.cpp
     src/game/combat/WeaponSystem.cpp
     src/game/combat/CombatRenderer.cpp
+    src/game/inventory/ItemRegistry.cpp
+    src/game/inventory/Inventory.cpp
+    src/game/inventory/LootWorld.cpp
+    src/game/inventory/LootSave.cpp
+    src/game/inventory/LootSession.cpp
+    src/game/inventory/LootUI.cpp
     src/world/VerdaRegion.cpp
     src/dev/DevLab.cpp
     src/game/HomeScreen.cpp
@@ -240,6 +246,22 @@ target_link_libraries(
         outland_render
 )
 
+# Keep tunable loot metadata current even when only TSV/map data changed.
+add_custom_target(outland_loot_data
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        "$<TARGET_FILE_DIR:outland>/assets/verda/survival/gameplay"
+        "$<TARGET_FILE_DIR:outland>/maps"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${PROJECT_SOURCE_DIR}/assets/verda/survival/gameplay/items.tsv"
+        "${PROJECT_SOURCE_DIR}/assets/verda/survival/gameplay/loot_tables.tsv"
+        "$<TARGET_FILE_DIR:outland>/assets/verda/survival/gameplay"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${PROJECT_SOURCE_DIR}/maps/verda_loot_defaults.map"
+        "$<TARGET_FILE_DIR:outland>/maps"
+    VERBATIM
+)
+add_dependencies(outland outland_loot_data)
+
 # Runtime assets live beside the executable, independent of the launch directory.
 add_custom_command(TARGET outland POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -325,6 +347,21 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_combat_input_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_combat_input_tests COMMAND outland_combat_input_tests)
 
+    add_executable(outland_loot_ui_tests tests/integration/inventory/test_loot_ui.cpp)
+    target_link_libraries(outland_loot_ui_tests PRIVATE outland_render)
+    target_compile_options(outland_loot_ui_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_loot_ui_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    target_link_options(outland_loot_ui_tests PRIVATE
+        -Wl,--wrap=GetTouchPointCount -Wl,--wrap=GetTouchPointId -Wl,--wrap=GetTouchPosition
+        -Wl,--wrap=GetMousePosition -Wl,--wrap=IsMouseButtonPressed -Wl,--wrap=IsKeyPressed -Wl,--wrap=IsKeyDown)
+    add_test(NAME outland_loot_ui_tests COMMAND outland_loot_ui_tests)
+
+    add_executable(outland_loot_tests tests/integration/inventory/test_loot.cpp)
+    target_link_libraries(outland_loot_tests PRIVATE outland_render)
+    target_compile_options(outland_loot_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_loot_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_loot_tests COMMAND outland_loot_tests)
+
     add_executable(outland_model_cache_tests tests/integration/assets/test_model_cache.cpp src/assets/ModelCache.cpp)
     target_include_directories(outland_model_cache_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_model_cache_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -356,6 +393,7 @@ if(OUTLAND_BUILD_TESTS)
     add_test(NAME outland_animation_asset_tests COMMAND outland_animation_asset_tests)
 
     if(Python3_Interpreter_FOUND)
+        add_test(NAME outland_loot_asset_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/audit_loot_assets.py")
         add_test(NAME outland_survival_catalog_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_survival_catalog.py" --check)
         add_test(NAME outland_starter_catalog_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_starter_catalog.py" --check)
     endif()

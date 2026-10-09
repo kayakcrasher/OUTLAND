@@ -1,6 +1,8 @@
 #include "outland/engine/render/Renderer.hpp"
 #include "outland/engine/audio/EnvironmentAudio.hpp"
 #include "outland/game/combat/CombatRenderer.hpp"
+#include "outland/game/inventory/LootSession.hpp"
+#include "outland/game/inventory/LootUI.hpp"
 #include "outland/assets/ModelCache.hpp"
 
 #include "outland/input/InputSystem.hpp"
@@ -254,7 +256,6 @@ void Renderer::run() {
     input::InputSystem input_system;
     input::TouchHUD touch_hud;
     bool inventory_open = false;
-    std::unordered_set<std::string> collected_loot;
     std::string interaction_message;
     float interaction_remaining = 0.0F;
 
@@ -278,6 +279,11 @@ void Renderer::run() {
     if(FileExists(initial_map.c_str())) {
         const bool loaded=creator::CreatorMapIO::load(verda_region,initial_map);
         TraceLog(loaded ? LOG_INFO:LOG_ERROR,loaded ? "Saved Verda map loaded":"Map load failed - using training region");
+    } else {
+        const std::string defaults="maps/verda_loot_defaults.map";
+        const std::string path=FileExists(defaults.c_str())?defaults:std::string(GetApplicationDirectory())+defaults;
+        if(FileExists(path.c_str()) && !creator::CreatorMapIO::load(verda_region,path))
+            TraceLog(LOG_ERROR,"Default loot markers could not be loaded");
     }
 #ifdef OUTLAND_DEV_TOOLS
     creator::CreatorSession creator_session(map_path);
@@ -292,6 +298,14 @@ void Renderer::run() {
         return;
     }
     characters::CharacterRenderer character_renderer(character_registry, character_root);
+    game::inventory::ItemRegistry item_registry;
+    std::string item_error;
+    const std::string item_root=character_root+"/assets/verda/survival/gameplay/";
+    if(!item_registry.load(item_root+"items.tsv",item_root+"loot_tables.tsv",item_error)){
+        TraceLog(LOG_ERROR,"Item registry: %s",item_error.c_str());return;
+    }
+    game::inventory::LootSession loot_session(item_registry);
+    game::inventory::LootUI loot_ui(character_root);
     characters::NpcSystem npcs;
     world::terrain::TerrainWorld terrain_world;
     world::foliage::FoliageSystem foliage_system;
@@ -411,13 +425,13 @@ void Renderer::run() {
                     true;
 
                 weapons.reset(game_mode == game::GameMode::DevLab);
+                if(game_mode!=game::GameMode::DevLab)loot_session.start(game_mode,map_path,weapons);
                 combat_world.reset_targets();
                 npcs.reset_session();
                 player_health.reset();
                 recoil_pitch = recoil_yaw = 0.0F;
                 trigger_ready = false;
                 inventory_open = false;
-                collected_loot.clear();
                 interaction_remaining = 0;
 #ifdef OUTLAND_DEV_TOOLS
                 if(game_mode==game::GameMode::DevLab) {
@@ -442,6 +456,9 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
             if(creator_session.dirty() && !creator_session.save(verda_region))continue;
 #endif
+            if(game_mode!=game::GameMode::DevLab && !loot_session.save(weapons) && loot_session.can_persist()){
+                interaction_message=loot_session.status();interaction_remaining=3;continue;
+            }
             game_mode =
                 game::GameMode::Home;
             input_system.cancel_controls();
@@ -474,15 +491,9 @@ void Renderer::run() {
 #endif
         // The equipment panel is modal: BAG closes it and GUN changes equipment.
         if (inventory_open) {
-            const auto& layout = input_system.layout();
-            const float scale = input::touch_scale(screen_width, screen_height);
-            input_system.update(screen_width, screen_height, true, !IsWindowFocused(),
-                [&](Vector2 p) {
-                    for (const auto& e : {layout.inventory, layout.weapon})
-                        if (Vector2Distance(p, {e.x * screen_width, e.y * screen_height}) <= 43 * scale * e.scale)
-                            return false;
-                    return true;
-                });
+            // The bag owns every touch. Keyboard I/Tab still pass through, then
+            // gameplay movement/fire is cleared below.
+            input_system.update(screen_width,screen_height,true,!IsWindowFocused(),[](Vector2){return true;});
             const bool switch_weapon = input_system.player().next_weapon;
             if (input_system.player().inventory) {
                 inventory_open = false;
@@ -500,37 +511,29 @@ void Renderer::run() {
                 reserved);
             if (input_system.player().inventory) {
                 inventory_open = true;
+                loot_ui.opened();
                 input_system.cancel_controls();
             }
         }
         if(!player_health.alive() && !creator_active) input_system.player()={};
         const input::PlayerInput& controls = input_system.player();
         interaction_remaining = std::max(0.0F, interaction_remaining - dt);
-        if (controls.interact && !creator_active) {
-            const world::GameplayMarker* nearest = nullptr;
-            float distance = 3.0F;
-            std::string loot_key;
-            for (const auto& settlement : verda_region.settlements()) {
-                for (const auto& marker : settlement.gameplay_markers) {
-                    const float d = Vector3Distance(player.position, marker.position);
-                    if (marker.enabled && d < distance) {
-                        nearest = &marker; distance = d;
-                        loot_key = settlement.id + "/" + marker.id;
-                    }
+        const Vector3 loot_feet{player.position.x,player.position.y-1,player.position.z};
+        const auto reachable_pickup=[&](Vector3 point){return !combat_world.trace_segment(
+            {player.position.x,player.position.y+.5F,player.position.z},Vector3Add(point,{0,.1F,0}),false,false).hit();};
+        if(!creator_active) {
+            loot_session.update(dt,verda_region,loot_feet,weapons);
+            if(controls.next_weapon)loot_session.changed();
+            if(controls.interact){interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;}
+            if(inventory_open){
+                const auto action=loot_ui.update(loot_session.inventory(),screen_width,screen_height,IsWindowFocused());
+                if(action.close){inventory_open=false;input_system.cancel_controls();}
+                else if(player_health.alive() && action.use){interaction_message=loot_session.use(action.selected,weapons,player_health);interaction_remaining=3;}
+                else if(player_health.alive() && (action.drop_one || action.drop_stack)){
+                    const Vector3 destination{loot_feet.x+std::sin(player.yaw)*1.2F,loot_feet.y,loot_feet.z-std::cos(player.yaw)*1.2F};
+                    interaction_message=loot_session.drop(action.selected,action.drop_stack,destination,weapons,reachable_pickup);interaction_remaining=3;
                 }
             }
-            interaction_message = nearest ? "Nearby marker: " + nearest->id : "Nothing to interact with nearby";
-            if (nearest && nearest->type == world::GameplayMarkerType::LootSpawn) {
-                if (collected_loot.contains(loot_key)) interaction_message = "Already collected";
-                else {
-                    const int rounds = weapons.collect_ammo();
-                    if (rounds > 0) {
-                        collected_loot.insert(loot_key);
-                        interaction_message = "Collected " + std::to_string(rounds) + " reserve rounds";
-                    } else interaction_message = "Ammo reserve is full";
-                }
-            }
-            interaction_remaining = 2.5F;
         }
 
         // ====================================================
@@ -1018,8 +1021,9 @@ void Renderer::run() {
         );
 
         game::combat::CombatRenderer::draw_world(weapons,combat_world);
-        game::combat::CombatRenderer::draw_gun(gun_muzzle,gun_direction,weapons.selected(),
+        if(weapons.available())game::combat::CombatRenderer::draw_gun(gun_muzzle,gun_direction,weapons.selected(),
             weapons.reload_remaining()/weapons.weapon().reload_seconds,weapons.muzzle_flash());
+        if(!creator_active)loot_ui.draw_world(item_registry,loot_session.world(),loot_feet,loot_session.inventory().state().light);
 
         character_renderer.draw_npcs(npcs, camera.position);
 
@@ -1086,7 +1090,7 @@ void Renderer::run() {
         }
         if (!creator_active && !inventory_open) {
             DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
-            DrawText(weapons.weapon().name,24,screen_height-94,19,RAYWHITE);
+            DrawText(weapons.available()?weapons.weapon().name:"NO WEAPON - OPEN BAG",24,screen_height-94,19,RAYWHITE);
             if (weapons.unlimited()) DrawText("AMMO UNLIMITED - DEV LAB",24,screen_height-68,18,YELLOW);
             else DrawText(TextFormat("%d / %d",weapons.ammo().loaded,weapons.ammo().reserve),
                 24,screen_height-68,22,RAYWHITE);
@@ -1138,25 +1142,13 @@ void Renderer::run() {
         }
 #endif
 
-        if (inventory_open) {
-            DrawRectangle(0, 80, screen_width, screen_height - 80, Fade(BLACK, .94F));
-            DrawText("EQUIPMENT", 60, 110, 24, RAYWHITE);
-            DrawText(TextFormat("Weapon: %s", weapons.weapon().name), 60, 190, 20, RAYWHITE);
-            DrawText(TextFormat("Loaded: %d   Reserve: %d", weapons.ammo().loaded, weapons.ammo().reserve),
-                60, 225, 20, RAYWHITE);
-            const auto pistol = weapons.ammo(game::combat::WeaponId::Pistol);
-            const auto rifle = weapons.ammo(game::combat::WeaponId::Rifle);
-            DrawText(TextFormat("V9 PISTOL  %d / %d", pistol.loaded, pistol.reserve), 60, 270, 18, GRAY);
-            DrawText(TextFormat("VR30 RIFLE  %d / %d", rifle.loaded, rifle.reserve), 60, 300, 18, GRAY);
-            DrawText("BAG / I: close    GUN / TAB: equip next weapon", 60, 350, 18, GRAY);
-            const auto& gun = input_system.layout().weapon;
-            const Vector2 gun_button{gun.x * screen_width, gun.y * screen_height};
-            DrawCircleV(gun_button, 43 * gun.scale * input::touch_scale(screen_width, screen_height), DARKGRAY);
-            DrawText("GUN", static_cast<int>(gun_button.x) - 16, static_cast<int>(gun_button.y) - 7, 16, WHITE);
-            const auto& bag = input_system.layout().inventory;
-            const Vector2 p{bag.x * screen_width, bag.y * screen_height};
-            DrawCircleV(p, 43 * bag.scale * input::touch_scale(screen_width, screen_height), DARKGRAY);
-            DrawText("BAG", static_cast<int>(p.x) - 16, static_cast<int>(p.y) - 7, 16, WHITE);
+        if(inventory_open)loot_ui.draw_inventory(item_registry,loot_session,weapons,screen_width,screen_height);
+        if(!creator_active && !inventory_open){
+            const int nearby=loot_session.world().nearest(loot_feet,2.8F,reachable_pickup);
+            if(nearby>=0){const auto& pickup=loot_session.world().state().pickups[static_cast<std::size_t>(nearby)];
+                const auto* item=item_registry.find(pickup.item);
+                if(item)DrawText(TextFormat("E / USE: %s x%d",item->name.c_str(),pickup.quantity),screen_width/2-180,screen_height-140,18,YELLOW);
+            }
         }
         if (interaction_remaining > 0)
             DrawText(interaction_message.c_str(), screen_width / 2 - 170, 100, 18, RAYWHITE);
@@ -1176,6 +1168,8 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
     if(creator_session.dirty() && !creator_session.save(verda_region))TraceLog(LOG_ERROR,"Unsaved Creator edits: %s",creator_session.path().c_str());
 #endif
+    if(game_mode!=game::GameMode::Home && game_mode!=game::GameMode::DevLab && !loot_session.save(weapons))
+        TraceLog(LOG_ERROR,"Inventory save failed: %s",loot_session.path().c_str());
 }
 
 // ============================================================

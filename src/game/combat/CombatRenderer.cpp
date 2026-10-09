@@ -6,7 +6,7 @@
 
 namespace outland::game::combat {
 
-void CombatRenderer::draw_gun(Vector3 muzzle,Vector3 direction,WeaponId id,float reload_fraction,float flash) {
+void CombatRenderer::draw_gun(Vector3 muzzle,Vector3 direction,WeaponId id,float reload_fraction,float flash,bool draw_hands) {
     const Color steel{65,73,77,255}, polymer{43,48,44,255}, accent{129,133,126,255},skin{181,142,111,255};
     rlPushMatrix();
     rlTranslatef(muzzle.x,muzzle.y,muzzle.z);
@@ -26,7 +26,7 @@ void CombatRenderer::draw_gun(Vector3 muzzle,Vector3 direction,WeaponId id,float
         DrawCube({0,.12F,-.18F},.018F,.04F,.025F,BLACK);
         DrawCube({.07F,0,-.45F},.015F,.055F,.09F,BLACK);
         DrawCube({.083F,.01F,-.42F},.04F,.022F,.022F,accent);
-        DrawSphereEx({-.035F,-.09F,-.22F},.06F,4,6,skin);
+        if(draw_hands)DrawSphereEx({-.035F,-.09F,-.22F},.06F,4,6,skin);
     } else {
         DrawCube({0,.015F,-.15F},.09F,.10F,.28F,steel);
         DrawCube({0,-.11F-reload_motion*.08F,-.23F},.075F,.19F,.10F,polymer);
@@ -34,7 +34,7 @@ void CombatRenderer::draw_gun(Vector3 muzzle,Vector3 direction,WeaponId id,float
         DrawCube({0,.076F,-.04F},.015F,.025F,.02F,BLACK);
         DrawCube({.048F,.02F,-.13F},.012F,.035F,.05F,BLACK);
     }
-    DrawSphereEx({.02F,-.10F,-.24F},.065F,4,6,skin);
+    if(draw_hands)DrawSphereEx({.02F,-.10F,-.24F},.065F,4,6,skin);
     DrawCylinderEx({0,0,-.002F},{0,0,.002F},.014F,.014F,8,BLACK);
     if(flash>0) {
         DrawSphereEx({0,0,.06F},.07F,4,6,Color{255,228,135,255});

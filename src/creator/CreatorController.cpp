@@ -844,7 +844,7 @@ bool CreatorController::place_selected(
         world::GameplayMarkerType marker_type =
             world::GameplayMarkerType::LootSpawn;
 
-        if (asset->id == "loot_spawn") {
+        if (asset->id == "loot_spawn" || asset->id.starts_with("loot_spawn_")) {
             marker_type =
                 world::GameplayMarkerType::LootSpawn;
         } else if (asset->id == "zombie_spawn") {

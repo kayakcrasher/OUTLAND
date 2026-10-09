@@ -13,14 +13,59 @@ Vector3 cross(Vector3 a,Vector3 b) { return {a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x
 }
 
 WeaponSystem::WeaponSystem() { reset(false); }
+void WeaponSystem::bind_inventory(std::function<bool(WeaponId)> owned,
+                                  std::function<int(WeaponId)> reserve,
+                                  std::function<int(WeaponId, int)> consume) {
+    if (!owned || !reserve || !consume) {
+        unbind_inventory();
+        return;
+    }
+    owned_ = std::move(owned);
+    reserve_ = std::move(reserve);
+    consume_ = std::move(consume);
+    refresh_reserves();
+}
+void WeaponSystem::unbind_inventory() {
+    owned_ = {};
+    reserve_ = {};
+    consume_ = {};
+}
+bool WeaponSystem::available() const { return !owned_ || owned_(selected_); }
+void WeaponSystem::refresh_reserves() {
+    if (reserve_)
+        for (std::size_t i = 0; i < ammo_.size(); ++i)
+            ammo_[i].reserve = std::max(0, reserve_(static_cast<WeaponId>(i)));
+}
+bool WeaponSystem::select(WeaponId id) {
+    if (static_cast<std::size_t>(id) >= ammo_.size() || (owned_ && !owned_(id)))
+        return false;
+    selected_ = id;
+    reload_remaining_ = 0;
+    cooldown_ = std::max(cooldown_, .2F);
+    return true;
+}
+bool WeaponSystem::set_loaded(WeaponId id, int rounds) {
+    const auto index = static_cast<std::size_t>(id);
+    if (index >= ammo_.size() || rounds < 0 || rounds > definition(id).magazine)
+        return false;
+    ammo_[index].loaded = rounds;
+    if (id == selected_)
+        reload_remaining_ = 0;
+    return true;
+}
+void WeaponSystem::request_reload() {
+    refresh_reserves();
+    start_reload();
+}
 int WeaponSystem::collect_ammo() {
-    if (unlimited_) return 0;
+    if (unlimited_ || reserve_) return 0;
     auto& reserve = ammo_[static_cast<std::size_t>(selected_)].reserve;
     const int added = std::max(0, std::min(weapon().magazine, weapon().reserve - reserve));
     reserve += added;
     return added;
 }
 void WeaponSystem::reset(bool unlimited) {
+    unbind_inventory();
     unlimited_=unlimited;selected_=WeaponId::Rifle;previous_fire_=false;
     cooldown_=reload_remaining_=muzzle_flash_=hit_marker_=last_damage_=0;
     last_headshot_=false;shot_number_=impact_index_=0;random_state_=0x51f7349aU;
@@ -32,7 +77,7 @@ float WeaponSystem::random() {
     return static_cast<float>(random_state_>>8)/16777216.0F;
 }
 void WeaponSystem::start_reload() {
-    if(unlimited_ || reload_remaining_>0 || ammo().loaded==weapon().magazine || ammo().reserve==0) return;
+    if(!available() || unlimited_ || reload_remaining_>0 || ammo().loaded==weapon().magazine || ammo().reserve==0) return;
     reload_remaining_=weapon().reload_seconds;events_.reload_started=true;
 }
 bool WeaponSystem::shoot(const WeaponInput& input, ShotPose pose) {
@@ -83,13 +128,13 @@ void WeaponSystem::simulate(float dt, CombatWorld& world) {
 
 void WeaponSystem::update(float dt,const WeaponInput& input,ShotPose pose,CombatWorld& world) {
     events_={};
+    refresh_reserves();
     dt=std::clamp(dt,0.0F,.1F);
     muzzle_flash_=std::max(0.0F,muzzle_flash_-dt);hit_marker_=std::max(0.0F,hit_marker_-dt);
     for(auto& impact:impacts_)impact.life=std::max(0.0F,impact.life-dt);
     if(input.next_weapon) {
-        selected_=selected_==WeaponId::Pistol ? WeaponId::Rifle : WeaponId::Pistol;
-        reload_remaining_=0;
-        cooldown_=std::max(cooldown_,.2F);
+        for(std::size_t step=1;step<ammo_.size();++step)
+            if(select(static_cast<WeaponId>((static_cast<std::size_t>(selected_)+step)%ammo_.size())))break;
     }
     if(input.reload)start_reload();
     bool pressed=input.fire && !previous_fire_;
@@ -103,11 +148,12 @@ void WeaponSystem::update(float dt,const WeaponInput& input,ShotPose pose,Combat
             reload_remaining_=std::max(0.0F,reload_remaining_-step);
             if(reload_remaining_==0) {
                 auto& magazine=ammo_[static_cast<std::size_t>(selected_)];
-                const int rounds=std::min(weapon().magazine-magazine.loaded,magazine.reserve);
+                const int wanted=std::min(weapon().magazine-magazine.loaded,magazine.reserve);
+                const int rounds=consume_ ? std::clamp(consume_(selected_,wanted),0,wanted):wanted;
                 magazine.loaded+=rounds;magazine.reserve-=rounds;events_.reload_finished=true;
             }
         }
-        const bool trigger=input.fire && (weapon().automatic || pressed);
+        const bool trigger=available() && input.fire && (weapon().automatic || pressed);
         if(trigger && !input.next_weapon && !input.sprint && reload_remaining_==0 && cooldown_<=.000001F) {
             if(unlimited_ || ammo().loaded>0) {
                 if(shoot(input,pose))pressed=false;
