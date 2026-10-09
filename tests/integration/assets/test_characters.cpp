@@ -19,9 +19,9 @@ int main() {
     std::string error;
     const std::string manifest=std::string(OUTLAND_SOURCE_DIR)+"/assets/verda/characters/character_manifest.tsv";
     assert(registry.load(manifest,error) && error.empty());
-    assert(registry.assets().size()==82);
+    assert(registry.assets().size()==84);
     assert(registry.pool(CharacterPool::Civilian).size()==45);
-    assert(registry.pool(CharacterPool::Emergency).size()==20);
+    assert(registry.pool(CharacterPool::Emergency).size()==22);
     assert(registry.pool(CharacterPool::Hostile).size()==9);
     assert(registry.pool(CharacterPool::Creature).size()==6);
     assert(registry.pool(CharacterPool::Arms).empty());
@@ -46,7 +46,7 @@ int main() {
     { std::ofstream out(broken); out<<"id\tname\tcategory\trole\tmodel\ttexture\tsource\r\n"
         "bad\tBad\tcivilian\tnpc\tassets/verda/characters/../../bad.glb\t\ttest\r\n"; }
     assert(!registry.load(broken.string(),error) && !error.empty());
-    assert(registry.assets().size()==82 && registry.player()->id=="character_01"); // Transactional failure.
+    assert(registry.assets().size()==84 && registry.player()->id=="character_01"); // Transactional failure.
     { std::ofstream out(broken); out<<"id\tname\tcategory\trole\tmodel\ttexture\tsource\n"
         "same\tOne\tcivilian\tnpc\tassets/verda/characters/one.glb\t\ttest\n"
         "same\tTwo\tcivilian\tnpc\tassets/verda/characters/two.glb\t\ttest\n"; }

@@ -10,6 +10,8 @@ namespace outland::creator {
 
 class CreatorMapIO {
 public:
+    // Stable user storage; packaged maps are read-only defaults.
+    static std::string writable_path(const std::string& application_directory,const std::string& home={},const std::string& override_directory={});
 #ifdef OUTLAND_DEV_TOOLS
     [[nodiscard]]
     static bool save(

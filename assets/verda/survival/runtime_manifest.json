@@ -1,0 +1,378 @@
+{
+  "source": "assets/verda/survival/Models/Survival.fbx",
+  "source_sha256": "ca5b637a63257401325671442b69411d5aad12c2a77d927a3aefd33951da5619",
+  "textures_resolved": [
+    "Antibiotics.png",
+    "Antiseptic.png",
+    "Axe.png",
+    "Backpack.png",
+    "Battery.png",
+    "Bengal.png",
+    "Bengal_.png",
+    "Can.png",
+    "Can_Soda.png",
+    "Casserole.png",
+    "Cup.png",
+    "Lantern.png",
+    "Lantern_Emissor.jpg",
+    "Shelter_tent.png",
+    "Torch.png",
+    "Trunk.png",
+    "Trunk_01.png",
+    "band.png",
+    "bonfire.png",
+    "farol.png",
+    "hunting_rifle.png",
+    "knife.png",
+    "match.png",
+    "sleeping_bag.png",
+    "sleeping_bag_01.png",
+    "zippo.png"
+  ],
+  "unresolved_source_images": [
+    "Mochila.png.002"
+  ],
+  "models": [
+    {
+      "id": "survival_ammunition_f5ba1f58",
+      "name": "Ammunition",
+      "source_object": "Ammunition",
+      "model": "assets/verda/survival/runtime/Ammunition.glb",
+      "sha256": "fbe5c4909c2cf5bc4f4aa0619ff4a29e249d526c038575bba207d6052e981b0f"
+    },
+    {
+      "id": "survival_antibiotics_b8d24268",
+      "name": "Antibiotics",
+      "source_object": "Antibiotics",
+      "model": "assets/verda/survival/runtime/Antibiotics.glb",
+      "sha256": "c9431e6f790693a7b3360f26ad40d416bc7709fa6a7e23a072702cd48c730c9a"
+    },
+    {
+      "id": "survival_antiseptic_ed9e16cc",
+      "name": "Antiseptic",
+      "source_object": "Antiseptic",
+      "model": "assets/verda/survival/runtime/Antiseptic.glb",
+      "sha256": "f03f1d6cdee28217b96407cd7c1a6f12b970ce235e68cb20e5993ebc7a429ec6"
+    },
+    {
+      "id": "survival_axe_9e28648f",
+      "name": "Axe",
+      "source_object": "Axe",
+      "model": "assets/verda/survival/runtime/Axe.glb",
+      "sha256": "5d8cc0935b89c9bd59d04c61a8e5ff9beed02e890e08dec1f97152c13ec08bf0"
+    },
+    {
+      "id": "survival_backpack_5118f76d",
+      "name": "Backpack",
+      "source_object": "Backpack",
+      "model": "assets/verda/survival/runtime/Backpack.glb",
+      "sha256": "534f90c6dd3a87830b5167a1f186856c12aa07464dd01173300d4993ce70c43a"
+    },
+    {
+      "id": "survival_backpack_001_19a5af7b",
+      "name": "Backpack.001",
+      "source_object": "Backpack.001",
+      "model": "assets/verda/survival/runtime/Backpack.001.glb",
+      "sha256": "c5959e538c2d038a23b2fcb0c25e4d26b49967b135b0a002ad24907df021e65c"
+    },
+    {
+      "id": "survival_battery_dfcb7c16",
+      "name": "Battery",
+      "source_object": "Battery",
+      "model": "assets/verda/survival/runtime/Battery.glb",
+      "sha256": "f12209b41592b1b8e70d6afac812dddba2eb9504563d3008dea6dbdc8d9e083c"
+    },
+    {
+      "id": "survival_begal_ammunition_26513936",
+      "name": "Begal ammunition",
+      "source_object": "Begal_ammunition",
+      "model": "assets/verda/survival/runtime/Begal_ammunition.glb",
+      "sha256": "06879ec95f6127f59af06e87c3c603fc45ca4ebb4605a258e7a24e074007c87f"
+    },
+    {
+      "id": "survival_bengal_b8b11aef",
+      "name": "Bengal",
+      "source_object": "Bengal",
+      "model": "assets/verda/survival/runtime/Bengal.glb",
+      "sha256": "ad41bb6e20cdbbd877a00f131ae62df40d94335a89b1b9dbddc7317e1d9ef136"
+    },
+    {
+      "id": "survival_bengal_01_9561b5b8",
+      "name": "Bengal 01",
+      "source_object": "Bengal_01",
+      "model": "assets/verda/survival/runtime/Bengal_01.glb",
+      "sha256": "1e3c9840ddf73c088f3627f86525a3be92a819e960198e0f59778e3f15e90b18"
+    },
+    {
+      "id": "survival_bengal_02_6af21c87",
+      "name": "Bengal 02",
+      "source_object": "Bengal_02",
+      "model": "assets/verda/survival/runtime/Bengal_02.glb",
+      "sha256": "2d9b460ad1ecc05632b064aaea723e0b64fed9d2f56d248939dd4cc240373eba"
+    },
+    {
+      "id": "survival_bullet_65e6b63d",
+      "name": "Bullet",
+      "source_object": "Bullet",
+      "model": "assets/verda/survival/runtime/Bullet.glb",
+      "sha256": "9ee0bc97b77d19f0d95f39f953236e7c76297961efa009755e1be91fe97bfa8e"
+    },
+    {
+      "id": "survival_can_2dba9a87",
+      "name": "Can",
+      "source_object": "Can",
+      "model": "assets/verda/survival/runtime/Can.glb",
+      "sha256": "c638a9f59367840b59b022505fd2a300342bd62091b2efb965f6550b6aa3836a"
+    },
+    {
+      "id": "survival_can_soda_7c5b658f",
+      "name": "Can Soda",
+      "source_object": "Can_Soda",
+      "model": "assets/verda/survival/runtime/Can_Soda.glb",
+      "sha256": "13796857ad8e8a3f7bce02acb57f95683473120ee0f14dd8acbca59ac381e6bf"
+    },
+    {
+      "id": "survival_casserole_1a42a228",
+      "name": "Casserole",
+      "source_object": "Casserole",
+      "model": "assets/verda/survival/runtime/Casserole.glb",
+      "sha256": "aced1943f48c973ad230ce42580384f16f8a605a8cac62bb90f9a9f3cc978c15"
+    },
+    {
+      "id": "survival_charger_fd351654",
+      "name": "Charger",
+      "source_object": "Charger",
+      "model": "assets/verda/survival/runtime/Charger.glb",
+      "sha256": "f0037b5cf73eda4afa5d065d4aca60781797cacb009d31ccef8f9d52576fe859"
+    },
+    {
+      "id": "survival_cup_1fb9305e",
+      "name": "Cup",
+      "source_object": "Cup",
+      "model": "assets/verda/survival/runtime/Cup.glb",
+      "sha256": "9e6bf384f1d2cb9885e50d47a53bb1b61e563d382182c5062a2c1908e18d9e86"
+    },
+    {
+      "id": "survival_farol_2f7d653e",
+      "name": "Farol",
+      "source_object": "Farol",
+      "model": "assets/verda/survival/runtime/Farol.glb",
+      "sha256": "817cce02a709846df3777d51e7c5f0d1b29e0f761bf3df0e56fd0d7ba8949f0d"
+    },
+    {
+      "id": "survival_farol_g_469755d1",
+      "name": "Farol G",
+      "source_object": "Farol_G",
+      "model": "assets/verda/survival/runtime/Farol_G.glb",
+      "sha256": "475ed9130bed69b8bfe795b0a46e7a56ad7d195cb966690cab4820725be5c055"
+    },
+    {
+      "id": "survival_glass_82c26818",
+      "name": "Glass",
+      "source_object": "Glass",
+      "model": "assets/verda/survival/runtime/Glass.glb",
+      "sha256": "3ec62eccdeb1f2ccc63606b193a0e821dccc52757fb8e70ec3a549fe80280c1a"
+    },
+    {
+      "id": "survival_handle_fa04ae3d",
+      "name": "Handle",
+      "source_object": "Handle",
+      "model": "assets/verda/survival/runtime/Handle.glb",
+      "sha256": "d33387bd1374292cfc27d056773468c773e1e47f165f380fabb2a0f92bf8c7ed"
+    },
+    {
+      "id": "survival_handle_001_dc1fa2b6",
+      "name": "Handle.001",
+      "source_object": "Handle.001",
+      "model": "assets/verda/survival/runtime/Handle.001.glb",
+      "sha256": "3eb72fa037eff24e95ea1606f1451ee52c0096b0f6e3c6e6a356b71ab96088b3"
+    },
+    {
+      "id": "survival_lantern_ee4b4532",
+      "name": "Lantern",
+      "source_object": "Lantern",
+      "model": "assets/verda/survival/runtime/Lantern.glb",
+      "sha256": "f879c06eab60b812fd2f356803805a84f8120aab998c39a8c26a2001e4bf01f0"
+    },
+    {
+      "id": "survival_shelter_tent_527f4e44",
+      "name": "Shelter tent",
+      "source_object": "Shelter_tent",
+      "model": "assets/verda/survival/runtime/Shelter_tent.glb",
+      "sha256": "6ff5500e38f973cee7205fca3d6ae874ae83b130d123356a86eddc90292a9e61"
+    },
+    {
+      "id": "survival_torch_dcc578ac",
+      "name": "Torch",
+      "source_object": "Torch",
+      "model": "assets/verda/survival/runtime/Torch.glb",
+      "sha256": "cbaca2ee32ee2237f18078338674005149ea79e452f6eb367c8b38ba2ec3777c"
+    },
+    {
+      "id": "survival_trunk_10c81e7c",
+      "name": "Trunk",
+      "source_object": "Trunk",
+      "model": "assets/verda/survival/runtime/Trunk.glb",
+      "sha256": "2a313e1688e5ca4bc1aeed75d7c15fbc504419a37052f0a7d228b6bd27968a5c"
+    },
+    {
+      "id": "survival_trunk_01_4fa91849",
+      "name": "Trunk 01",
+      "source_object": "Trunk_01",
+      "model": "assets/verda/survival/runtime/Trunk_01.glb",
+      "sha256": "2016cdc706a18cc81a1ff0b864dd5eaa4c22f1cd65ee600fc686c092d9b16358"
+    },
+    {
+      "id": "survival_water_7ca7dea9",
+      "name": "Water",
+      "source_object": "Water",
+      "model": "assets/verda/survival/runtime/Water.glb",
+      "sha256": "59782e23fe58d1453b7d7d653f95df0db0369cc396fba6a8384aa06e713143ac"
+    },
+    {
+      "id": "survival_band_65f15ce8",
+      "name": "band",
+      "source_object": "band",
+      "model": "assets/verda/survival/runtime/band.glb",
+      "sha256": "a8471c2d553c379286c74091f639f51d18672bf9ff91d0a64d83aa7575dbef02"
+    },
+    {
+      "id": "survival_bengal_dc01f18e",
+      "name": "bengal",
+      "source_object": "bengal",
+      "model": "assets/verda/survival/runtime/bengal.glb",
+      "sha256": "812432d566f4624d79117219df107e0ad46f17cb08e6351b149107f2e77f6274"
+    },
+    {
+      "id": "survival_bengal_01_4513eccc",
+      "name": "bengal 01",
+      "source_object": "bengal_01",
+      "model": "assets/verda/survival/runtime/bengal_01.glb",
+      "sha256": "cbb68839ca8ca02578f3ac3308ce47f6edeb59004785514c5d4b08f0e7b45726"
+    },
+    {
+      "id": "survival_bonfire_c4172667",
+      "name": "bonfire",
+      "source_object": "bonfire",
+      "model": "assets/verda/survival/runtime/bonfire.glb",
+      "sha256": "4f2ac999291955d6e3b8c9c22b5fb685bdc3b87fac4283507d082fd85d39ef81"
+    },
+    {
+      "id": "survival_branch_f38c764c",
+      "name": "branch",
+      "source_object": "branch",
+      "model": "assets/verda/survival/runtime/branch.glb",
+      "sha256": "95ece11ff8e6a56d6096be2fc47eb8c6e612d7af89e2e88c22724a0702ff2104"
+    },
+    {
+      "id": "survival_branch_01_ed84a764",
+      "name": "branch 01",
+      "source_object": "branch_01",
+      "model": "assets/verda/survival/runtime/branch_01.glb",
+      "sha256": "88b8e8796f65910b42d4e22a34d12d3afe914989a3b466a071d182342b1a1245"
+    },
+    {
+      "id": "survival_hunting_rifle_408cfb25",
+      "name": "hunting rifle",
+      "source_object": "hunting_rifle",
+      "model": "assets/verda/survival/runtime/hunting_rifle.glb",
+      "sha256": "42c01748a2c7300948f6e9ee21e4eab10add45d1ca2d513f8ffe889f478b3110"
+    },
+    {
+      "id": "survival_hunting_rifle_01_652a79e9",
+      "name": "hunting rifle 01",
+      "source_object": "hunting_rifle_01",
+      "model": "assets/verda/survival/runtime/hunting_rifle_01.glb",
+      "sha256": "ef1d63fe75b46d17ad951d15f06047966ebadda2e1f38ab84482ddd493d9de88"
+    },
+    {
+      "id": "survival_knife_3d4d101c",
+      "name": "knife",
+      "source_object": "knife",
+      "model": "assets/verda/survival/runtime/knife.glb",
+      "sha256": "aa9b055fb3541ceef8776c0719a2ee520fbda35eea7227fb203d8bae68dda6b1"
+    },
+    {
+      "id": "survival_match_4945a70f",
+      "name": "match",
+      "source_object": "match",
+      "model": "assets/verda/survival/runtime/match.glb",
+      "sha256": "189bf943ae7b4d3b2a40f5ac34fc7545c1dfd60c985cb2fd3826561fb202f1d3"
+    },
+    {
+      "id": "survival_match_01_ad60c901",
+      "name": "match 01",
+      "source_object": "match_01",
+      "model": "assets/verda/survival/runtime/match_01.glb",
+      "sha256": "f7082535b6a32d5b2fb9b6523f27f03390a8530e614cb794cff8799a951af766"
+    },
+    {
+      "id": "survival_sleeping_bag_a33469c0",
+      "name": "sleeping bag",
+      "source_object": "sleeping_bag",
+      "model": "assets/verda/survival/runtime/sleeping_bag.glb",
+      "sha256": "5e8a0b20ff59c6fc2f1c9da4898fd84b1a927bb4a7df12f96acc6133fd6cf6a9"
+    },
+    {
+      "id": "survival_sleeping_bag_01_165d4165",
+      "name": "sleeping bag 01",
+      "source_object": "sleeping_bag_01",
+      "model": "assets/verda/survival/runtime/sleeping_bag_01.glb",
+      "sha256": "ffcc07587a15b7add6c328c5b1e24a0fe444efb29b5eb3bc728ed8d407dec579"
+    },
+    {
+      "id": "survival_trigger_683259fe",
+      "name": "trigger",
+      "source_object": "trigger",
+      "model": "assets/verda/survival/runtime/trigger.glb",
+      "sha256": "8832baa36e078feeba97fd3521895d361d8b29cb4f07d5455810e134bd660942"
+    },
+    {
+      "id": "survival_zippo_479ff2e0",
+      "name": "zippo",
+      "source_object": "zippo",
+      "model": "assets/verda/survival/runtime/zippo.glb",
+      "sha256": "44201b4103415bf8e320c1b5a57359fa86817db39eb8134d75677a74726d55f1"
+    },
+    {
+      "id": "survival_zippo_01_a9d68ba9",
+      "name": "zippo 01",
+      "source_object": "zippo_01",
+      "model": "assets/verda/survival/runtime/zippo_01.glb",
+      "sha256": "8c0ca23dbe34beb72e87a1dff445fd72d3497dd41e73d7ffb444b4da78b450be"
+    }
+  ],
+  "texture_sha256": {
+    "Antibiotics.png": "4bb9350e183b618587d260bfc0e09b766a25a6316146bf317236c3b568737636",
+    "Antiseptic.png": "9050833201f10b0715437eda5150c6eb934e80f5045cd8e97974871efd29fb02",
+    "Axe.png": "f2d0fc96cc51d8efc8205ab0daab95eae3b380806976159238480bf814fabcc8",
+    "Backpack.png": "316e648d0cf2982f2a7bb4ab3016d78d6e481f04ca6fdc1387811a8c6b4b2ce1",
+    "Battery.png": "b8e21e97a7d8faea0836ed4816855b449f9ac2011e300bbcb276f77aa0639562",
+    "Bengal.png": "e7c3a3aed84587dbb4a22a7aaa742bd66c77644f130dbdd81e78be4277410fe2",
+    "Bengal_.png": "c4d4a068c32e44ef2615137b5e1b7a08e8c3e87ca7dcc08f461c70f2079d9905",
+    "Can.png": "8835c74cb2236355b549488708b5a93bf0459861773ae1a50e20b4b1683efdb5",
+    "Can_Soda.png": "21db2b0549c09a64bf251e79e11cbf96a644da86fc099d808bcd11638c4d972a",
+    "Casserole.png": "f66fa91ed9229f9b5ec9fcc8cbb67420d4e82d9183ec5b97e2a51064875873aa",
+    "Cup.png": "b2738cb47ffa99b2d66651316b3719c7128b7e35b56afd4835a75f5ce62c5d1a",
+    "Lantern.png": "f2a807d691634c8e8ca0deb964acd23529d40b24101961a9ceb8e444b900df9b",
+    "Lantern_Emissor.jpg": "248bcd0fd1f668872e099f427ea5b42d8da2aa49722de3fc09c8677d7a2208d1",
+    "Rock.jpg": "e6863a36fc124f802b49c2e04eec3d2d3a6e35b19fb255fd1004bdf87c677b18",
+    "Shelter_tent.png": "add4ba37f8727e5dd796cb89ee65815542d1c6e83f0580ad05e249429ee011ce",
+    "Torch.png": "4060fecfbb05985df43249912347f86d1602aabc7a1dbc12e8a2e79b92fa3385",
+    "Trunk.png": "2e7c2ae21b36b9aeb11d01a3ec72c2428750f37d6b68a3695e367de9533cfadc",
+    "Trunk_01.png": "e5288a1b197c03f2fa0496da21acd541c7567ee2eef1842a6d5abaec5119e29f",
+    "Water.png": "97cdfe04a9ec931b3bf81e21577106fea14bcd9455ad8625ddd1b35073bcaf03",
+    "Wood.jpg": "f40b5f18559073ce1b06a4b5d169d642787571d55b58828865905889aeea52f2",
+    "band.png": "d5fe0fd31ebe999a98647280a4e6e8c477e7bd61c18cb207020b9806a053d066",
+    "bonfire.png": "4f82516f9ef50066f3b6563837071efc58f81087faff2c2bc7fdf6d4aa3c59d9",
+    "bonfire_Emissor.png": "e3ba68020b531d1d661aa80421c7640052cc29c0759416c22349d106d7791818",
+    "faro_emissor.png": "de56544de2652e093382e76f703e74acde4a2449d7851079ff463a6a07c260b8",
+    "farol.png": "6b5e61b4c47594fc4569d30057c4505571f4d2ebb164ddc8d05433ab6cbdf1f4",
+    "hunting_rifle.png": "c0a6d700cb98b8cda3dc3c3b3faf3b678e1aefef79520f1699e79aee7006c93e",
+    "knife.png": "348378eb764cb4455c1f628be0b6de5f6c039ae9e66a80cf2f7328b74267eb0b",
+    "match.png": "0d56449734f1f919e023ad19a9c376247fc972c735ce68435ee044d9d952f6a3",
+    "sleeping_bag.png": "3f246ac6871e88d0bef0373bbc33b96b552ce871874c3526a8d90d4b1fc66384",
+    "sleeping_bag_01.png": "eaaba4efedd469e9b50b7a4d75fd2304cfaa24c2e17e33dc9250140278745c7a",
+    "zippo.png": "43c92bfbec7f7c97b9cfb5dc33dc2be76163e96d715c3dd0a890b731d32a5b60"
+  }
+}

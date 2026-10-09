@@ -112,6 +112,7 @@ add_library(
     src/characters/NpcSystem.cpp
     src/characters/NpcBehavior.cpp
     src/characters/AnimationController.cpp
+    src/characters/SkeletalGait.cpp
     src/world/physics/WorldCollision.cpp
     src/world/assets/VerdanArchitecture.cpp
     src/world/assets/VerdanProps.cpp
@@ -132,6 +133,18 @@ if(Python3_Interpreter_FOUND)
         VERBATIM)
     add_custom_target(outland_urban_catalog DEPENDS "${PROJECT_SOURCE_DIR}/include/outland/creator/UrbanAssetCatalog.hpp")
     add_dependencies(outland_render outland_urban_catalog)
+    file(GLOB OUTLAND_SURVIVAL_MODELS CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/assets/verda/survival/runtime/*.glb")
+    add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/include/outland/creator/SurvivalAssetCatalog.hpp"
+        COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_survival_catalog.py"
+        DEPENDS tools/generate_survival_catalog.py tools/gltf_import.py assets/verda/survival/runtime_manifest.json ${OUTLAND_SURVIVAL_MODELS} VERBATIM)
+    add_custom_target(outland_survival_catalog DEPENDS "${PROJECT_SOURCE_DIR}/include/outland/creator/SurvivalAssetCatalog.hpp")
+    add_dependencies(outland_render outland_survival_catalog)
+    file(GLOB OUTLAND_STARTER_MODELS CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/assets/verda/starter/*.obj")
+    add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/include/outland/creator/StarterAssetCatalog.hpp"
+        COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_starter_catalog.py"
+        DEPENDS tools/generate_starter_catalog.py ${OUTLAND_STARTER_MODELS} VERBATIM)
+    add_custom_target(outland_starter_catalog DEPENDS "${PROJECT_SOURCE_DIR}/include/outland/creator/StarterAssetCatalog.hpp")
+    add_dependencies(outland_render outland_starter_catalog)
     file(GLOB_RECURSE OUTLAND_CHARACTER_MODELS CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/assets/verda/characters/*.glb")
     add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/include/outland/creator/CharacterAssetCatalog.hpp"
         COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_character_catalog.py"
@@ -155,6 +168,7 @@ if(OUTLAND_DEV_TOOLS)
         outland_render
         PRIVATE
             src/creator/CreatorController.cpp
+            src/creator/CreatorSession.cpp
             src/creator/CreatorTouchUI.cpp
     )
 
@@ -317,7 +331,7 @@ if(OUTLAND_BUILD_TESTS)
     add_test(NAME outland_model_cache_tests COMMAND outland_model_cache_tests)
 
     add_executable(outland_character_renderer_tests tests/integration/assets/test_character_renderer.cpp
-        src/characters/CharacterRegistry.cpp src/characters/CharacterRenderer.cpp src/characters/AnimationController.cpp src/assets/ModelCache.cpp)
+        src/characters/CharacterRegistry.cpp src/characters/CharacterRenderer.cpp src/characters/AnimationController.cpp src/characters/SkeletalGait.cpp src/assets/ModelCache.cpp)
     target_include_directories(outland_character_renderer_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_character_renderer_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_character_renderer_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
@@ -341,6 +355,15 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_definitions(outland_animation_asset_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_animation_asset_tests COMMAND outland_animation_asset_tests)
 
+    if(Python3_Interpreter_FOUND)
+        add_test(NAME outland_survival_catalog_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_survival_catalog.py" --check)
+        add_test(NAME outland_starter_catalog_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_starter_catalog.py" --check)
+    endif()
+    add_executable(outland_skeletal_gait_tests tests/integration/assets/test_skeletal_gait.cpp src/characters/SkeletalGait.cpp)
+    target_include_directories(outland_skeletal_gait_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
+    target_compile_options(outland_skeletal_gait_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_skeletal_gait_tests COMMAND outland_skeletal_gait_tests)
+
     add_executable(outland_animation_tests tests/integration/assets/test_animation_controller.cpp src/characters/AnimationController.cpp)
     target_include_directories(outland_animation_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_animation_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -357,14 +380,21 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_asset_model_smoke PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
 
     if(OUTLAND_DEV_TOOLS)
+        add_executable(outland_creator_session_tests tests/integration/creator/test_creator_session.cpp)
+        target_link_libraries(outland_creator_session_tests PRIVATE outland_render)
+        target_compile_options(outland_creator_session_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+        add_test(NAME outland_creator_session_tests COMMAND outland_creator_session_tests)
+
         add_executable(outland_creator_touch_tests tests/integration/creator/test_creator_touch_ui.cpp)
         target_link_libraries(outland_creator_touch_tests PRIVATE outland_render)
         target_compile_options(outland_creator_touch_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+        target_compile_definitions(outland_creator_touch_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
         # Redirect input polling while retaining real raylib geometry/controller code.
         target_link_options(outland_creator_touch_tests PRIVATE
             -Wl,--wrap=GetTouchPointCount -Wl,--wrap=GetTouchPointId
             -Wl,--wrap=GetTouchPosition -Wl,--wrap=GetMousePosition
-            -Wl,--wrap=IsMouseButtonPressed)
+            -Wl,--wrap=IsMouseButtonPressed -Wl,--wrap=IsMouseButtonDown
+            -Wl,--wrap=IsKeyPressed -Wl,--wrap=IsKeyDown -Wl,--wrap=GetCharPressed)
         add_test(NAME outland_creator_touch_tests COMMAND outland_creator_touch_tests)
 
         add_executable(

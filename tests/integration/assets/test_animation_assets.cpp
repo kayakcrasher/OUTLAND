@@ -2,6 +2,9 @@
 #include "outland/characters/AnimationController.hpp"
 #include "outland/characters/AnimationAssetCatalog.hpp"
 #include <algorithm>
+#include <raymath.h>
+#include <cmath>
+#include "outland/characters/SkeletalGait.hpp"
 #include <cassert>
 #include <filesystem>
 #include <iostream>
@@ -22,12 +25,17 @@ int main() {
             if(AnimationController::classify(clips[i].name)!=AnimationAction::None) ++mapped;
             Model rig{};rig.boneCount=clips[i].boneCount;rig.bones=clips[i].bones;rig.bindPose=clips[i].framePoses[0];
             assert(AnimationController::compatible(rig,clips[i]));
+            if(asset.pool!=CharacterPool::Arms) {
+                rig.transform=asset.z_up ? MatrixRotateX(-PI*.5F):MatrixIdentity();SkeletalGait gait;
+                assert(gait.sample(rig,AnimationAction::Walk,.16,asset.facing_degrees));
+                for(const auto& pose:gait.pose())assert(std::isfinite(pose.translation.x) && std::isfinite(pose.rotation.w));
+            }
         }
         assert(mapped==info->mapped_clips);
         if(asset.pool!=CharacterPool::Arms) {++bodies;mapped_body+=mapped;}
         clips_seen+=count;
         if(clips) UnloadModelAnimations(clips,count);
     }
-    assert(bodies==80 && clips_seen==108 && mapped_body==0);
-    std::cout<<"[PASS] Real raylib CPU decoder audited all 82 production GLBs and 108 clips without a window\n";
+    assert(bodies==82 && clips_seen==108 && mapped_body==0);
+    std::cout<<"[PASS] Real raylib CPU decoder audited all 84 production GLBs and 108 clips without a window\n";
 }

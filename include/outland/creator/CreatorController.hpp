@@ -109,7 +109,8 @@ public:
     void update(
         world::VerdaRegion& region,
         Vector3 camera_position,
-        Vector3 camera_forward
+        Vector3 camera_forward,
+        bool allow_shortcuts = true
     );
 
     void draw_world_overlay(

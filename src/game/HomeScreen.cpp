@@ -6,6 +6,11 @@ namespace outland::game {
 
 namespace {
 
+#ifdef OUTLAND_DEV_TOOLS
+constexpr const char* dev_label="MAP BUILDER (DEV)";
+#else
+constexpr const char* dev_label="DEV LAB";
+#endif
 struct MenuButton {
     Rectangle bounds;
     const char* label;
@@ -122,7 +127,7 @@ GameMode HomeScreen::update(
         make_button(
             screen_width,
             start_y + spacing * 3.0F,
-            "DEV LAB",
+            dev_label,
             GameMode::DevLab
         )
     };
@@ -263,7 +268,7 @@ void HomeScreen::draw(
         make_button(
             screen_width,
             start_y + spacing * 3.0F,
-            "DEV LAB",
+            dev_label,
             GameMode::DevLab
         )
     };

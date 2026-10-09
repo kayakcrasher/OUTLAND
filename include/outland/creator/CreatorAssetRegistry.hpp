@@ -127,6 +127,8 @@ struct CreatorAssetDefinition {
 class CreatorAssetRegistry;
 inline void register_urban_assets(CreatorAssetRegistry& registry);
 inline void register_character_assets(CreatorAssetRegistry& registry);
+inline void register_starter_assets(CreatorAssetRegistry& registry);
+inline void register_survival_assets(CreatorAssetRegistry& registry);
 
 class CreatorAssetRegistry {
 public:
@@ -134,6 +136,15 @@ public:
         register_builtin_assets();
         register_urban_assets(*this);
         register_character_assets(*this);
+        register_starter_assets(*this);
+        register_survival_assets(*this);
+        // Retain legacy palette IDs while giving their former empty placeholders real geometry.
+        const auto reuse_model=[&](const char* alias,const char* source_id) {
+            const auto* source=find(source_id);if(!source)return;
+            for(auto& asset:assets_)if(asset.id==alias){asset.model_path=source->model_path;asset.footprint=source->footprint;break;}
+        };
+        reuse_model("rock","starter_rock_boulder_lod0");
+        reuse_model("wood_fence","urban_walls_fences_white_picket_fence_white_picket_fence_closed_left");
     }
 
     [[nodiscard]]
@@ -863,5 +874,7 @@ private:
 
 #include "outland/creator/UrbanAssetCatalog.hpp"
 #include "outland/creator/CharacterAssetCatalog.hpp"
+#include "outland/creator/StarterAssetCatalog.hpp"
+#include "outland/creator/SurvivalAssetCatalog.hpp"
 
 #endif // OUTLAND_DEV_TOOLS

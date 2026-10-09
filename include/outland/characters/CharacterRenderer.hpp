@@ -3,6 +3,7 @@
 #include "outland/characters/CharacterRegistry.hpp"
 #include "outland/characters/NpcSystem.hpp"
 #include <unordered_set>
+#include "outland/characters/SkeletalGait.hpp"
 namespace outland::characters {
 // Own this inside Renderer::run so resources die while the graphics context is live.
 class CharacterRenderer {
@@ -15,6 +16,7 @@ public:
     static bool prepare(const CharacterDefinition& definition,Model& model);
 private:
     AnimationController player_animation_;
+    SkeletalGait gait_;
     const CharacterRegistry& registry_;
     std::string asset_root_;
     assets::ModelCache models_{64};

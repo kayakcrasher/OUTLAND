@@ -2,7 +2,7 @@
 
 Only own-model clips are loaded. Topology matches are candidates, not permission to retarget; exact signatures include bind transforms and node transforms. Unmapped clips are never guessed.
 
-82 models; 108 embedded clips.
+84 models; 108 embedded clips.
 
 | Character | Role | Joints | Topology | Exact rig | Clip actions |
 |---|---|---:|---|---|---|
@@ -87,24 +87,28 @@ Only own-model clips are loaded. Topology matches are candidates, not permission
 | character_monster_03 | npc | 33 | a43b6fc95c0361f347a0e6d6 | 786e0bd2c550af66701811df | unmapped: 1 |
 | character_monster_04 | npc | 65 | 4be3af9192be4d6f6123596f | 535b792bad9d7b10211e8e9d | unmapped: 1 |
 | character_monster_05 | npc | 33 | a43b6fc95c0361f347a0e6d6 | f79126b3e251f22a075b7c60 | unmapped: 1 |
+| radiation_worker_heavy | npc | 183 | 24708df83c5bf040a022c304 | ff14d8955f0a738a62aa97f5 | none |
+| radiation_worker_light | npc | 131 | fbed7bed6ea13971d4bff291 | feabba308e478bd14162124c | none |
 | rebel_modern_rebel_soldier_character | npc | 30 | eeb003a825b03c9b9a647450 | c158ff30fa2476888ca1370e | none |
 
 ## Findings
 
-80 bodies, 79 body clips; 0 body clips have recognized action names.
+82 bodies, 79 body clips; 0 body clips have recognized action names.
 The PSX generic Mixamo/Layer0 clips are ~0.067s and have no declared idle/walk/run/attack/death semantics; they are retained but not assigned invented actions.
 The rebel body has a rig but no embedded clips. Named idle/attack clips exist on arm-only rigs; they are not transplanted to bodies.
 Runtime compatibility additionally checks bone count, names, parents, and mesh bone counts. Cross-model retargeting/blending is not implemented.
-Run falls back to compatible Walk/Idle; other missing living actions use compatible Idle or bind pose. Missing Death keeps bind pose without resurrection or invented motion.
+AnimationController selects only compatible clips, with Walk/Idle/bind-pose fallbacks. CharacterRenderer adds an explicitly authored procedural Mixamo gait for missing Idle/Walk/Run; this is separate from the embedded-clip audit. Missing Death keeps bind pose without resurrection or invented motion.
 
 ## Topology groups
 
 - `14863c2f624ee21ff599adb1` (14): character_18_female_police, character_20_female_police, character_22_female_firefighter, character_24_female_doctor, character_26_female_police, character_28_female_hm, character_32_female, character_33_female, character_female_01, character_female_06, character_female_10, character_female_12, character_female_16, character_monster_01
+- `24708df83c5bf040a022c304` (1): radiation_worker_heavy
 - `2c63a5f691c79988ae3e251a` (1): arms_arms_rig
 - `4be3af9192be4d6f6123596f` (2): character_monster, character_monster_04
 - `57acfaf026c86c86d30f5bc0` (1): arms_psx_first_person_arms
 - `a43b6fc95c0361f347a0e6d6` (63): character_01, character_02, character_03, character_04, character_05, character_06, character_07, character_08, character_09, character_10, character_11, character_12, character_13, character_14, character_15, character_16, character_17_female_police, character_17_police, character_18_police, character_19_female_police, character_19_police, character_20_police, character_21_female_firefighter, character_21_police, character_22_police, character_23_female_doctor, character_23_firefighter, character_24_firefighter, character_25_doctor, character_25_female_police, character_26_doctor, character_27_female_hm, character_27_hm, character_28_hm, character_29, character_29_female, character_30, character_30_female, character_31, character_31_female, character_32, character_female_02, character_female_03, character_female_04, character_female_05, character_female_07, character_female_08, character_female_09, character_female_11, character_female_13, character_female_14, character_female_15, character_killer, character_killer_01, character_killer_02, character_killer_03, character_killer_04, character_killer_05, character_killer_06, character_killer_07, character_monster_02, character_monster_03, character_monster_05
 - `eeb003a825b03c9b9a647450` (1): rebel_modern_rebel_soldier_character
+- `fbed7bed6ea13971d4bff291` (1): radiation_worker_light
 
 ## Exact rig groups
 
@@ -188,5 +192,7 @@ Run falls back to compatible Walk/Idle; other missing living actions use compati
 - `f3419bfa485a29b8bd178b03` (1): character_18_female_police
 - `f5310fa58ed83e97cdf6c54b` (1): character_killer_07
 - `f79126b3e251f22a075b7c60` (1): character_monster_05
+- `feabba308e478bd14162124c` (1): radiation_worker_light
+- `ff14d8955f0a738a62aa97f5` (1): radiation_worker_heavy
 - `ff196ae30c790c0917a68770` (1): character_female_11
 - `ff34e9ac96119dcc42151185` (1): character_23_firefighter

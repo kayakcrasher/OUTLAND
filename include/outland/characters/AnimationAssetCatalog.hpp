@@ -3,7 +3,7 @@
 #include <string_view>
 namespace outland::characters {
 struct AnimationAssetInfo { std::string_view id, topology, exact_rig; int joints, clips, mapped_clips; };
-inline constexpr std::array<AnimationAssetInfo,82> animation_asset_catalog = {{
+inline constexpr std::array<AnimationAssetInfo,84> animation_asset_catalog = {{
     {"arms_arms_rig","2c63a5f691c79988ae3e251a","18d9fb7de6155afb776e2e50",52,18,10},
     {"arms_psx_first_person_arms","57acfaf026c86c86d30f5bc0","839e8e106dc65b9f2042cd3e",50,11,7},
     {"character_01","a43b6fc95c0361f347a0e6d6","6c841f3a9d8aa870112ff69f",33,1,0},
@@ -85,6 +85,8 @@ inline constexpr std::array<AnimationAssetInfo,82> animation_asset_catalog = {{
     {"character_monster_03","a43b6fc95c0361f347a0e6d6","786e0bd2c550af66701811df",33,1,0},
     {"character_monster_04","4be3af9192be4d6f6123596f","535b792bad9d7b10211e8e9d",65,1,0},
     {"character_monster_05","a43b6fc95c0361f347a0e6d6","f79126b3e251f22a075b7c60",33,1,0},
+    {"radiation_worker_heavy","24708df83c5bf040a022c304","ff14d8955f0a738a62aa97f5",183,0,0},
+    {"radiation_worker_light","fbed7bed6ea13971d4bff291","feabba308e478bd14162124c",131,0,0},
     {"rebel_modern_rebel_soldier_character","eeb003a825b03c9b9a647450","c158ff30fa2476888ca1370e",30,0,0},
 }};
 } // namespace outland::characters

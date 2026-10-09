@@ -33,6 +33,8 @@ struct CreatorState {
 
     // Placement helpers.
     bool snap_to_ground{true};
+    float placement_height{0.0F};
+    float grid_step{0.0F};
     bool show_collision{false};
     bool show_grid{false};
 

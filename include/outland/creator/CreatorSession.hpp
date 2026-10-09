@@ -1,0 +1,29 @@
+#pragma once
+#ifdef OUTLAND_DEV_TOOLS
+#include "outland/world/VerdaRegion.hpp"
+#include <functional>
+#include <string>
+#include <vector>
+namespace outland::creator {
+// World-edit history and durable saves are separate from UI/input/rendering.
+class CreatorSession {
+public:
+    explicit CreatorSession(std::string path):path_(std::move(path)){}
+    bool edit(world::VerdaRegion& region,const std::function<bool()>& operation);
+    bool undo(world::VerdaRegion& region);
+    bool redo(world::VerdaRegion& region);
+    bool save(const world::VerdaRegion& region);
+    bool load(world::VerdaRegion& region);
+    void update(float dt,const world::VerdaRegion& region);
+    bool dirty() const {return dirty_;}
+    const std::string& status() const {return status_;}
+    const std::string& path() const {return path_;}
+private:
+    using Snapshot=std::vector<world::Settlement>;
+    std::vector<Snapshot> undo_,redo_;
+    std::string path_,status_{"Ready - changes autosave"};
+    bool dirty_{false};float quiet_{0};
+    void changed();
+};
+}
+#endif

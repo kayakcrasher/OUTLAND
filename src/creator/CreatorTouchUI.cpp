@@ -5,11 +5,15 @@
 #include <array>
 #include <algorithm>
 #include <cstdio>
+#include <cctype>
+#include <string>
+#include <rlgl.h>
 
 namespace outland::creator {
 
 namespace {
 
+float ui_scale(int height){return std::max(.5F,height/720.0F);}
 constexpr std::size_t category_count = 7;
 constexpr std::size_t assets_per_page = 8;
 
@@ -75,6 +79,21 @@ void CreatorTouchUI::set_active_tool(
     const CreatorTouchTool tool
 ) {
     active_tool_ = tool;
+}
+
+Rectangle CreatorTouchUI::control_button(BuilderControl control,int width,int height) const {
+    const float scale=ui_scale(height);width=static_cast<int>(width/scale);height=static_cast<int>(height/scale);
+    Rectangle result{};
+    if(control==BuilderControl::All)result={24,static_cast<float>(height-260),120,36};
+    else if(control==BuilderControl::Search)result={22,130,static_cast<float>(width-44),40};
+    else if(control==BuilderControl::Up || control==BuilderControl::Down)
+        result={10,control==BuilderControl::Up ? 92.0F:142.0F,98,44};
+    else {
+        const auto index=static_cast<int>(control);
+        const float cell=std::min(98.0F,(width-250.0F)/9);
+        result={120+index*cell,92,cell-4,44};
+    }
+    return {result.x*scale,result.y*scale,result.width*scale,result.height*scale};
 }
 
 Rectangle CreatorTouchUI::inventory_button(
@@ -212,6 +231,8 @@ bool CreatorTouchUI::pressed(
 }
 
 bool CreatorTouchUI::owns_point(Vector2 point, int width, int height) const {
+    const float scale=ui_scale(height);point={point.x/scale,point.y/scale};
+    width=static_cast<int>(width/scale);height=static_cast<int>(height/scale);
     if (inventory_open_) return true; // Modal drawer owns the entire pointer surface.
     if (CheckCollisionPointRec(point, inventory_button(width, height)) ||
         CheckCollisionPointRec(point, save_button(width, height)) ||
@@ -223,6 +244,10 @@ bool CreatorTouchUI::owns_point(Vector2 point, int width, int height) const {
     }
     for (std::size_t slot = 0; slot < CreatorController::hotbar_size; ++slot)
         if (CheckCollisionPointRec(point, hotbar_slot(slot, width, height))) return true;
+    for(auto control:{BuilderControl::Undo,BuilderControl::Redo,BuilderControl::Load,BuilderControl::Ground,
+        BuilderControl::Grid,BuilderControl::Near,BuilderControl::Far,BuilderControl::Lower,BuilderControl::Raise,
+        BuilderControl::Up,BuilderControl::Down})
+        if(CheckCollisionPointRec(point,control_button(control,width,height)))return true;
     return false;
 }
 
@@ -233,26 +258,54 @@ bool CreatorTouchUI::owns_point(Vector2 point, int width, int height) const {
 
 void CreatorTouchUI::update(
     CreatorController& controller,
-    const int screen_width,
-    const int screen_height
+    const int physical_width,
+    const int physical_height
 ) {
+    const bool resized=window_width_!=0 && (window_width_!=physical_width || window_height_!=physical_height);
+    window_width_=physical_width;window_height_=physical_height;input_scale_=ui_scale(physical_height);
+    const int screen_width=static_cast<int>(physical_width/input_scale_);
+    const int screen_height=static_cast<int>(physical_height/input_scale_);
+    if(resized){vertical_owner_=-1;vertical_direction_=0;}
     actions_.clear();
     presses_.clear();
+    if(vertical_owner_!=-1) {
+        bool held=false;
+        if(vertical_owner_==-2)held=GetTouchPointCount()==0 && IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+        for(int i=0;i<GetTouchPointCount();++i) if(GetTouchPointId(i)==vertical_owner_)held=true;
+        if(!held){vertical_owner_=-1;vertical_direction_=0;}
+    }
     std::vector<int> current;
     for (int i = 0; i < GetTouchPointCount(); ++i) {
         const int id = GetTouchPointId(i);
         current.push_back(id);
         if (std::find(previous_touches_.begin(), previous_touches_.end(), id) == previous_touches_.end())
-            presses_.push_back(GetTouchPosition(i));
+            presses_.push_back(logical_point(GetTouchPosition(i)));
     }
     previous_touches_ = std::move(current);
-    if (GetTouchPointCount() == 0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-        presses_.push_back(GetMousePosition());
+    if(resized)presses_.clear();
+    if (!resized && GetTouchPointCount() == 0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        presses_.push_back(logical_point(GetMousePosition()));
 
-    if (!controller.enabled()) {
-        return;
+    if (!controller.enabled()) {vertical_owner_=-1;vertical_direction_=0;return;}
+    if(!inventory_open_) {
+        for(const auto control:{BuilderControl::Up,BuilderControl::Down}) {
+            const auto rect=control_button(control,screen_width,screen_height);
+            for(int i=0;i<GetTouchPointCount();++i)
+                if(vertical_owner_==-1 && pressed({logical_point(GetTouchPosition(i)).x-.1F,logical_point(GetTouchPosition(i)).y-.1F,.2F,.2F}) && CheckCollisionPointRec(logical_point(GetTouchPosition(i)),rect)) {
+                    vertical_owner_=GetTouchPointId(i);vertical_direction_=control==BuilderControl::Up ? 1.0F:-1.0F;
+                }
+            if(GetTouchPointCount()==0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(logical_point(GetMousePosition()),rect)) {
+                vertical_owner_=-2;vertical_direction_=control==BuilderControl::Up ? 1.0F:-1.0F;
+            }
+        }
+        actions_.fly_vertical=vertical_direction_;
+        if(IsKeyDown(KEY_SPACE)) actions_.fly_vertical=1;
+        if(IsKeyDown(KEY_LEFT_CONTROL)) actions_.fly_vertical=-1;
+        if(IsKeyPressed(KEY_F5))actions_.save=true;
+        if(IsKeyPressed(KEY_DELETE) || IsKeyPressed(KEY_BACKSPACE))actions_.erase=true;
+        if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z))actions_.undo=true;
+        if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Y))actions_.redo=true;
     }
-
     const bool was_open = inventory_open_;
     if (!inventory_open_) update_toolbar(
         controller,
@@ -267,6 +320,7 @@ void CreatorTouchUI::update(
     );
 
     if (inventory_open_) {
+        vertical_owner_=-1;vertical_direction_=0;actions_.fly_vertical=0;
         if (was_open && pressed(inventory_button(screen_width, screen_height))) {
             inventory_open_ = false;
             return;
@@ -331,6 +385,23 @@ void CreatorTouchUI::update_toolbar(
         return;
     }
 
+    for(auto control:{BuilderControl::Undo,BuilderControl::Redo,BuilderControl::Load,BuilderControl::Ground,
+        BuilderControl::Grid,BuilderControl::Near,BuilderControl::Far,BuilderControl::Lower,BuilderControl::Raise}) {
+        if(!pressed(control_button(control,screen_width,screen_height)))continue;
+        switch(control) {
+            case BuilderControl::Undo:actions_.undo=true;break;
+            case BuilderControl::Redo:actions_.redo=true;break;
+            case BuilderControl::Load:actions_.load=true;break;
+            case BuilderControl::Ground:controller.state().snap_to_ground=!controller.state().snap_to_ground;break;
+            case BuilderControl::Grid:controller.state().grid_step=controller.state().grid_step>0 ? 0:1;break;
+            case BuilderControl::Near:controller.decrease_placement_distance();break;
+            case BuilderControl::Far:controller.increase_placement_distance();break;
+            case BuilderControl::Lower:controller.state().placement_height-=.25F;break;
+            case BuilderControl::Raise:controller.state().placement_height+=.25F;break;
+            default:break;
+        }
+        return;
+    }
     constexpr std::array<
         CreatorTouchTool,
         6
@@ -422,6 +493,7 @@ void CreatorTouchUI::update_hotbar(
         controller.select_hotbar_slot(
             slot
         );
+        controller.clear_selection();
 
         active_tool_ =
             CreatorTouchTool::Place;
@@ -489,11 +561,11 @@ Rectangle CreatorTouchUI::category_button(
 Rectangle CreatorTouchUI::asset_button(
     const std::size_t visible_index,
     const int screen_width,
-    const int
+    const int screen_height
 ) const {
     constexpr std::size_t columns = 4;
     constexpr float gap = 8.0F;
-    constexpr float card_height = 92.0F;
+    const float card_height = std::clamp((screen_height-460.0F)/2,36.0F,92.0F);
 
     const std::size_t column =
         visible_index % columns;
@@ -518,7 +590,7 @@ Rectangle CreatorTouchUI::asset_button(
                 column
             ) * (card_width + gap),
 
-        142.0F +
+        180.0F +
             static_cast<float>(
                 row
             ) * (card_height + gap),
@@ -533,9 +605,14 @@ Rectangle CreatorTouchUI::pack_button(int width, int height) const {
 }
 
 std::vector<const CreatorAssetDefinition*> CreatorTouchUI::drawer_assets(const CreatorController& controller) const {
-    auto assets = controller.registry().category(drawer_category_);
+    std::vector<const CreatorAssetDefinition*> assets;
+    if(all_categories_)for(const auto& asset:controller.registry().assets())assets.push_back(&asset);
+    else assets=controller.registry().category(drawer_category_);
+    auto lower=[](std::string text){for(auto& c:text)c=static_cast<char>(std::tolower(static_cast<unsigned char>(c)));return text;};
+    const auto query=lower(search_);
+    if(!query.empty())std::erase_if(assets,[&](const auto* asset){std::string text=asset->id+" "+asset->name+" "+asset->model_path;for(const auto& tag:asset->tags)text+=" "+tag;return lower(text).find(query)==std::string::npos;});
     if (pack_filter_ != 0) std::erase_if(assets, [this](const auto* asset) {
-        const auto prefix = pack_filter_ == 1 ? "assets/verda/urban/" : "assets/verda/characters/";
+        const auto prefix = pack_filter_ == 1 ? "assets/verda/urban/" : pack_filter_ == 2 ? "assets/verda/characters/":"assets/verda/survival/";
         return !asset->model_path.starts_with(prefix);
     });
     return assets;
@@ -555,6 +632,24 @@ void CreatorTouchUI::update_inventory(
     const int screen_width,
     const int screen_height
 ) {
+    if(pressed(control_button(BuilderControl::All,screen_width,screen_height))) {show_all_assets();return;}
+    if(pressed(control_button(BuilderControl::Search,screen_width,screen_height)))search_open_=!search_open_;
+    if(search_open_) {
+        int code=0;while((code=GetCharPressed())!=0)if(code>=32 && code<127 && search_.size()<60)search_+=static_cast<char>(code);
+        if(IsKeyPressed(KEY_BACKSPACE) && !search_.empty())search_.pop_back();
+        if(IsKeyPressed(KEY_ENTER))search_open_=false;
+        constexpr std::string_view keys="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_- ";
+        for(std::size_t i=0;i<keys.size()+3;++i) {
+            const float cell=(screen_width-44.0F)/10;
+            const Rectangle key{22+static_cast<float>(i%10)*cell,180+static_cast<float>(i/10)*48,cell-4,44};
+            if(!pressed(key))continue;
+            if(i<keys.size() && search_.size()<60)search_+=keys[i];
+            else if(i==keys.size() && !search_.empty())search_.pop_back();
+            else if(i==keys.size()+1)search_.clear();
+            else if(i==keys.size()+2)search_open_=false;
+        }
+        drawer_page_=0;return;
+    }
     for (
         std::size_t index = 0;
         index < categories.size();
@@ -572,6 +667,7 @@ void CreatorTouchUI::update_inventory(
             continue;
         }
 
+        all_categories_=false;
         drawer_category_ =
             categories[index];
 
@@ -585,8 +681,9 @@ void CreatorTouchUI::update_inventory(
     }
 
     if (pressed(pack_button(screen_width, screen_height))) {
-        pack_filter_ = (pack_filter_ + 1) % 3;
-        if (pack_filter_ == 2) drawer_category_ = CreatorAssetCategory::Prop;
+        pack_filter_ = (pack_filter_ + 1) % 4;
+        if (pack_filter_ == 3)all_categories_=true;
+        if (pack_filter_ == 2) {drawer_category_ = CreatorAssetCategory::Prop;all_categories_=false;}
         drawer_page_ = 0;
         return;
     }
@@ -662,6 +759,7 @@ void CreatorTouchUI::update_inventory(
             );
 
             inventory_open_ = false;
+            controller.clear_selection();
 
             active_tool_ =
                 CreatorTouchTool::Place;
@@ -742,13 +840,16 @@ void CreatorTouchUI::draw_button(
 
 void CreatorTouchUI::draw(
     const CreatorController& controller,
-    const int screen_width,
-    const int screen_height
+    const int physical_width,
+    const int physical_height
 ) const {
     if (!controller.enabled()) {
         return;
     }
 
+    const float scale=ui_scale(physical_height);
+    const int screen_width=static_cast<int>(physical_width/scale),screen_height=static_cast<int>(physical_height/scale);
+    rlPushMatrix();rlScalef(scale,scale,1);
     draw_toolbar(
         controller,
         screen_width,
@@ -768,6 +869,7 @@ void CreatorTouchUI::draw(
             screen_height
         );
     }
+    rlPopMatrix();
 }
 
 // ============================================================
@@ -779,6 +881,15 @@ void CreatorTouchUI::draw_toolbar(
     const int screen_width,
     const int screen_height
 ) const {
+    constexpr std::array<const char*,9> labels{"UNDO","REDO","LOAD","GROUND","GRID","NEAR","FAR","LOWER","RAISE"};
+    for(std::size_t i=0;i<labels.size();++i)draw_button(control_button(static_cast<BuilderControl>(i),screen_width,screen_height),labels[i],
+        i==3 ? controller.state().snap_to_ground:i==4 && controller.state().grid_step>0);
+    draw_button(control_button(BuilderControl::Up,screen_width,screen_height),"UP",actions_.fly_vertical>0);
+    draw_button(control_button(BuilderControl::Down,screen_width,screen_height),"DOWN",actions_.fly_vertical<0);
+    DrawText(status_.c_str(),120,143,16,YELLOW);
+    const auto* selected=controller.selected_asset();
+    DrawText(selected ? selected->name.c_str():"Choose an asset",120,188,16,RAYWHITE);
+    DrawText(TextFormat("Distance %.0fm  Height %+.2fm - SELECT object, look at destination, MOVE",controller.state().placement_distance,controller.state().placement_height),120,165,14,RAYWHITE);
     constexpr std::array<
         CreatorTouchTool,
         6
@@ -978,60 +1089,20 @@ void CreatorTouchUI::draw_asset_card(
             : Fade(RAYWHITE, 0.55F)
     );
 
-    const Rectangle preview{
-        rectangle.x + 7.0F,
-        rectangle.y + 7.0F,
-        rectangle.width - 14.0F,
-        48.0F
-    };
-
-    DrawRectangleRec(
-        preview,
-        Fade(BLACK, 0.48F)
-    );
-
-    char icon[2]{
-        asset.name.empty()
-            ? '?'
-            : asset.name[0],
-        '\0'
-    };
-
-    const int icon_width =
-        MeasureText(
-            icon,
-            26
-        );
-
-    DrawText(
-        icon,
-        static_cast<int>(
-            preview.x +
-            (
-                preview.width -
-                static_cast<float>(
-                    icon_width
-                )
-            ) * 0.5F
-        ),
-        static_cast<int>(
-            preview.y + 10.0F
-        ),
-        26,
-        selected ? YELLOW : RAYWHITE
-    );
-
-    DrawText(
-        asset.name.c_str(),
-        static_cast<int>(
-            rectangle.x + 5.0F
-        ),
-        static_cast<int>(
-            rectangle.y + 66.0F
-        ),
-        11,
-        selected ? BLACK : RAYWHITE
-    );
+    const int font=rectangle.height<60 ? 12:14;
+    const int lines=std::max(1,static_cast<int>((rectangle.height-12)/(font+3)));
+    std::string remaining=asset.name;
+    for(int line=0;line<lines && !remaining.empty();++line) {
+        std::size_t length=remaining.size();
+        while(length>1 && MeasureText(remaining.substr(0,length).c_str(),font)>rectangle.width-12)--length;
+        if(length<remaining.size() && line+1<lines) {
+            const auto space=remaining.rfind(' ',length);if(space!=std::string::npos && space>0)length=space;
+        }
+        std::string text=remaining.substr(0,length);remaining.erase(0,length);
+        while(!remaining.empty() && remaining.front()==' ')remaining.erase(remaining.begin());
+        if(line+1==lines && !remaining.empty()) {if(text.size()>3)text.resize(text.size()-3);text+="...";}
+        DrawText(text.c_str(),static_cast<int>(rectangle.x+6),static_cast<int>(rectangle.y+6+line*(font+3)),font,selected ? BLACK:RAYWHITE);
+    }
 }
 
 // ============================================================
@@ -1061,7 +1132,7 @@ void CreatorTouchUI::draw_inventory(
     );
 
     DrawText(
-        "OUTLAND CREATOR INVENTORY",
+        "MAP BUILDER - CHOOSE AN ASSET",
         24,
         52,
         18,
@@ -1085,13 +1156,25 @@ void CreatorTouchUI::draw_inventory(
             category_name(
                 category
             ).data(),
-            drawer_category_ ==
+            !all_categories_ && drawer_category_ ==
                 category
         );
     }
 
+    draw_button(control_button(BuilderControl::All,screen_width,screen_height),"ALL TYPES",all_categories_);
+    draw_button(control_button(BuilderControl::Search,screen_width,screen_height),search_.empty() ? "SEARCH ASSETS - TAP TO TYPE" : search_.c_str(),search_open_);
+    if(search_open_) {
+        constexpr std::string_view keys="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_- ";
+        for(std::size_t i=0;i<keys.size()+3;++i) {
+            const float cell=(screen_width-44.0F)/10;
+            const Rectangle key{22+static_cast<float>(i%10)*cell,180+static_cast<float>(i/10)*48,cell-4,44};
+            std::string label=i<keys.size() ? std::string(1,keys[i]):i==keys.size() ? "DEL":i==keys.size()+1 ? "CLEAR":"DONE";
+            draw_button(key,label.c_str(),false);
+        }
+        return;
+    }
     draw_button(pack_button(screen_width, screen_height),
-        pack_filter_ == 2 ? "CHARACTERS" : (pack_filter_ == 1 ? "URBAN ONLY" : "ALL ASSETS"), pack_filter_ != 0);
+        pack_filter_ == 3 ? "SURVIVAL" : pack_filter_ == 2 ? "CHARACTERS" : (pack_filter_ == 1 ? "URBAN ONLY" : "ALL ASSETS"), pack_filter_ != 0);
 
     const auto category_assets = drawer_assets(controller);
 

@@ -803,6 +803,31 @@
     "source_sha256": "3ba5a6aec861cfedf289ff3d648c43e35b2b0bc3240fb30dbaaa46f2b38075e5",
     "texture_sha256": "4ca510668158f7fa41923a3191c1985c8be6f94faddbe3f06d989ffb7c3d957e"
   },
+  "radiation_worker_heavy": {
+    "dependencies": {
+      "assets/verda/characters/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/Textures/Heavy hazmat suit/body radition guy.png": "ae785b2c55da21a23a5074186f73c2324a2c9a9f7f4dcb883f595fbb8cb37aba",
+      "assets/verda/characters/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/Textures/Heavy hazmat suit/guantelets radiation.png": "c34cd28520f7e15c6b94b3942c19343403f57a5b91815266910dcba0643cc17b",
+      "assets/verda/characters/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/Textures/Heavy hazmat suit/shoes radiation guy.png": "ebdeedc72883190f6f432110a95dd6de0abd40313c7afaac54bdcf3faddcb251"
+    },
+    "runtime_model": "assets/verda/characters/runtime/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/heavy radiation suit.glb",
+    "runtime_sha256": "9fd08400e51d4c5202bd5b8abd5170c2c8e11503b93ad586b5852f65001f140b",
+    "source_model": "assets/verda/characters/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/heavy radiation suit.fbx",
+    "source_sha256": "c541e0392c5a4c6d718a29233912d9f94d5fd9cb8655b6510c212dc029092e45",
+    "texture_sha256": "ae785b2c55da21a23a5074186f73c2324a2c9a9f7f4dcb883f595fbb8cb37aba"
+  },
+  "radiation_worker_light": {
+    "dependencies": {
+      "assets/verda/characters/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/Textures/Light radiation suit/body radition guy (1).png": "eed1a47c1f18b6672b4c6a462f685691867f3dccc38187c2d81aefb06c7136e9",
+      "assets/verda/characters/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/Textures/Light radiation suit/guantelets radiation.png": "c34cd28520f7e15c6b94b3942c19343403f57a5b91815266910dcba0643cc17b",
+      "assets/verda/characters/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/Textures/Light radiation suit/mask radition (1).png": "dba3442a4828ea0065aeb625768b27f4b244c74e718110c1f873078e066ec291",
+      "assets/verda/characters/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/Textures/Light radiation suit/shoes radiation guy.png": "ebdeedc72883190f6f432110a95dd6de0abd40313c7afaac54bdcf3faddcb251"
+    },
+    "runtime_model": "assets/verda/characters/runtime/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/light hazmat suit.glb",
+    "runtime_sha256": "1a146410701ae57e187d33f018d394cf2a6b4a7452afbcacd6d4b3d475954543",
+    "source_model": "assets/verda/characters/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/light hazmat suit.fbx",
+    "source_sha256": "b227682d2d19a4fd2a686387d4b1852f82849ac08ea306e5986258dcb04c0c83",
+    "texture_sha256": "eed1a47c1f18b6672b4c6a462f685691867f3dccc38187c2d81aefb06c7136e9"
+  },
   "rebel_modern_rebel_soldier_character": {
     "dependencies": {
       "assets/verda/characters/rebel/Modern Rebel Soldier Character/Textures/BodyTexture.png": "84248b78e6f212f17595c56499d98f4d9160dd454ea956fd85ad2fba55408eb0",

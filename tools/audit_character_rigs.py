@@ -71,7 +71,7 @@ def generate():
         'The PSX generic Mixamo/Layer0 clips are ~0.067s and have no declared idle/walk/run/attack/death semantics; they are retained but not assigned invented actions.',
         'The rebel body has a rig but no embedded clips. Named idle/attack clips exist on arm-only rigs; they are not transplanted to bodies.',
         'Runtime compatibility additionally checks bone count, names, parents, and mesh bone counts. Cross-model retargeting/blending is not implemented.',
-        'Run falls back to compatible Walk/Idle; other missing living actions use compatible Idle or bind pose. Missing Death keeps bind pose without resurrection or invented motion.','',
+        'AnimationController selects only compatible clips, with Walk/Idle/bind-pose fallbacks. CharacterRenderer adds an explicitly authored procedural Mixamo gait for missing Idle/Walk/Run; this is separate from the embedded-clip audit. Missing Death keeps bind pose without resurrection or invented motion.','',
         '## Topology groups','']
     for key,ids in sorted(groups.items()):text.append(f'- `{key}` ({len(ids)}): '+', '.join(ids))
     text+=['','## Exact rig groups','']

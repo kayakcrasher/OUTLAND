@@ -48,6 +48,7 @@ int main() {
      */
     settlements.clear();
     settlements.emplace_back();
+    settlements.front().id="test_settlement";
 
     world::Settlement& settlement =
         settlements.front();

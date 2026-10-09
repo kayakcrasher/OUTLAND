@@ -34,7 +34,10 @@ void CharacterRenderer::draw(const std::string& id,Vector3 feet,float yaw,float 
     }
     const auto clips=models_.animations(model);
     const auto sample=animation ? animation->sample(*model,clips) : AnimationSample{};
-    models_.mark_posed(model,AnimationController::apply_sample(*model,clips,sample,models_.posed(model)));
+    bool posed=false;
+    if(animation && sample.fallback) posed=gait_.apply(*model,animation->action(),animation->elapsed(),asset->facing_degrees);
+    if(!posed) posed=AnimationController::apply_sample(*model,clips,sample,models_.posed(model));
+    models_.mark_posed(model,posed);
     DrawModelEx(*model,feet,{0,1,0},yaw+asset->facing_degrees,{scale,scale,scale},WHITE);
 }
 void CharacterRenderer::draw_player(Vector3 feet,float yaw) {

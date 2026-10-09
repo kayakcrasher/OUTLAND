@@ -572,6 +572,20 @@ inline void register_character_assets(CreatorAssetRegistry& registry) {
         .tags = {"character", "creature", "npc"}
     });
     (void)registry.add({
+        .id = "character_asset_runtime_hazmat_radiation_workers_retro_psx_character_pack_heavy_radiation_suit", .name = "Radiation Worker Heavy",
+        .category = CreatorAssetCategory::Prop,
+        .model_path = "assets/verda/characters/runtime/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/heavy radiation suit.glb", .thumbnail_path = "",
+        .footprint = {1.587655F, 1.589070F, 1.850000F}, .placement = {}, .default_scale = 1.0F,
+        .tags = {"character", "emergency_hazmat", "npc"}
+    });
+    (void)registry.add({
+        .id = "character_asset_runtime_hazmat_radiation_workers_retro_psx_character_pack_light_hazmat_suit", .name = "Radiation Worker Light",
+        .category = CreatorAssetCategory::Prop,
+        .model_path = "assets/verda/characters/runtime/hazmat/Radiation Workers \u2013 Retro PSX Character Pack/light hazmat suit.glb", .thumbnail_path = "",
+        .footprint = {1.089911F, 0.912785F, 1.850000F}, .placement = {}, .default_scale = 1.0F,
+        .tags = {"character", "emergency_hazmat", "npc"}
+    });
+    (void)registry.add({
         .id = "character_asset_runtime_rebel_modern_rebel_soldier_character_models_modern_rebel_soldier_character", .name = "Modern Rebel Soldier Character",
         .category = CreatorAssetCategory::Prop,
         .model_path = "assets/verda/characters/runtime/rebel/Modern Rebel Soldier Character/Models/Modern Rebel Soldier Character.glb", .thumbnail_path = "",

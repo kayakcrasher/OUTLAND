@@ -14,6 +14,9 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+#include <unordered_set>
+#include <limits>
+#include <cmath>
 
 namespace outland::creator {
 
@@ -22,7 +25,7 @@ namespace {
 constexpr std::string_view magic =
     "OUTLAND_CREATOR_MAP";
 
-constexpr int version = 3;
+constexpr int version = 4;
 
 constexpr std::string_view creator_prefix =
     "creator_";
@@ -59,6 +62,12 @@ bool is_creator_marker(
 
 } // namespace
 
+std::string CreatorMapIO::writable_path(const std::string& application_directory,const std::string& home,const std::string& override_directory) {
+    namespace fs=std::filesystem;
+    const fs::path root=!override_directory.empty() ? fs::path(override_directory) :
+        !home.empty() ? fs::path(home)/".local/share/outland" : fs::path(application_directory);
+    return (root/"maps/verda_creator.map").string();
+}
 #ifdef OUTLAND_DEV_TOOLS
 bool CreatorMapIO::save(
     const world::VerdaRegion& region,
@@ -99,6 +108,7 @@ bool CreatorMapIO::save(
         return false;
     }
 
+    output << std::setprecision(std::numeric_limits<float>::max_digits10);
     output
         << magic
         << ' '
@@ -109,6 +119,14 @@ bool CreatorMapIO::save(
         const world::Settlement& settlement :
         region.settlements()
     ) {
+        output << "SETTLEMENT " << std::quoted(settlement.id) << ' ' << std::quoted(settlement.name)
+            << ' ' << settlement.center.x << ' ' << settlement.center.y << ' ' << settlement.center.z
+            << ' ' << static_cast<int>(settlement.state) << ' ' << settlement.survivors
+            << ' ' << settlement.hostiles << ' ' << settlement.infected << '\n';
+        for(const auto& road:settlement.roads)
+            output << "ROAD " << road.start.x << ' ' << road.start.y << ' ' << road.start.z << ' '
+                << road.end.x << ' ' << road.end.y << ' ' << road.end.z << ' '
+                << road.width << ' ' << static_cast<int>(road.type) << '\n';
         // ----------------------------------------------------
         // CREATOR BUILDINGS
         // ----------------------------------------------------
@@ -117,9 +135,6 @@ bool CreatorMapIO::save(
             const world::Building& building :
             settlement.buildings
         ) {
-            if (!is_creator_building(building)) {
-                continue;
-            }
 
             output
                 << "BUILDING "
@@ -179,9 +194,6 @@ bool CreatorMapIO::save(
             const world::WorldAsset& asset :
             settlement.assets
         ) {
-            if (!is_creator_asset(asset)) {
-                continue;
-            }
 
             output
                 << "ASSET "
@@ -244,9 +256,6 @@ bool CreatorMapIO::save(
             const world::GameplayMarker& marker :
             settlement.gameplay_markers
         ) {
-            if (!is_creator_marker(marker)) {
-                continue;
-            }
 
             output
                 << "MARKER "
@@ -289,6 +298,7 @@ bool CreatorMapIO::save(
     }
 
     output.close();
+    if(!output) {std::error_code cleanup;fs::remove(temp_path,cleanup);return false;}
 
     std::error_code rename_error;
 
@@ -302,37 +312,9 @@ bool CreatorMapIO::save(
         return true;
     }
 
-    /*
-     * Some filesystems will not replace an
-     * existing destination during rename.
-     */
-    std::error_code remove_error;
-
-    fs::remove(
-        final_path,
-        remove_error
-    );
-
-    rename_error.clear();
-
-    fs::rename(
-        temp_path,
-        final_path,
-        rename_error
-    );
-
-    if (rename_error) {
-        std::error_code cleanup_error;
-
-        fs::remove(
-            temp_path,
-            cleanup_error
-        );
-
-        return false;
-    }
-
-    return true;
+    std::error_code cleanup_error;
+    fs::remove(temp_path,cleanup_error);
+    return false; // Keep the previous good destination intact.
 }
 
 #endif
@@ -360,7 +342,7 @@ bool CreatorMapIO::load(
 
     if (
         file_magic != magic ||
-        file_version != version
+        (file_version != 3 && file_version != version)
     ) {
         return false;
     }
@@ -374,9 +356,28 @@ bool CreatorMapIO::load(
     std::vector<world::GameplayMarker>
         loaded_markers;
 
+    std::vector<world::Settlement> snapshot;
+    std::unordered_set<std::string> settlement_ids;
+    const bool full_snapshot=file_version==4;
     std::string record;
 
     while (input >> record) {
+        if(full_snapshot && record=="SETTLEMENT") {
+            world::Settlement settlement;int state=0;
+            input >> std::quoted(settlement.id) >> std::quoted(settlement.name)
+                >> settlement.center.x >> settlement.center.y >> settlement.center.z >> state
+                >> settlement.survivors >> settlement.hostiles >> settlement.infected;
+            if(!input || settlement.id.empty() || !settlement_ids.insert(settlement.id).second || state<0 || state>5) return false;
+            settlement.state=static_cast<world::SettlementState>(state);
+            snapshot.push_back(std::move(settlement));continue;
+        }
+        if(full_snapshot && snapshot.empty()) return false;
+        if(full_snapshot && record=="ROAD") {
+            world::Road road;int type=0;
+            input >> road.start.x >> road.start.y >> road.start.z >> road.end.x >> road.end.y >> road.end.z >> road.width >> type;
+            if(!input || road.width<=0 || type<0 || type>2) return false;
+            road.type=static_cast<world::RoadType>(type);snapshot.back().roads.push_back(road);continue;
+        }
         // ----------------------------------------------------
         // BUILDING
         // ----------------------------------------------------
@@ -428,7 +429,7 @@ bool CreatorMapIO::load(
             }
 
             if (
-                !building.id.starts_with(
+                !full_snapshot && !building.id.starts_with(
                     creator_building_prefix
                 )
             ) {
@@ -457,9 +458,8 @@ bool CreatorMapIO::load(
             building.enterable =
                 enterable_value != 0;
 
-            loaded_buildings.push_back(
-                std::move(building)
-            );
+            if(full_snapshot) snapshot.back().buildings.push_back(std::move(building));
+            else loaded_buildings.push_back(std::move(building));
 
             continue;
         }
@@ -518,7 +518,7 @@ bool CreatorMapIO::load(
             }
 
             if (
-                !asset.id.starts_with(
+                !full_snapshot && !asset.id.starts_with(
                     creator_prefix
                 )
             ) {
@@ -563,9 +563,8 @@ bool CreatorMapIO::load(
             asset.collision =
                 collision_value != 0;
 
-            loaded_assets.push_back(
-                std::move(asset)
-            );
+            if(full_snapshot) snapshot.back().assets.push_back(std::move(asset));
+            else loaded_assets.push_back(std::move(asset));
 
             continue;
         }
@@ -601,7 +600,7 @@ bool CreatorMapIO::load(
             }
 
             if (
-                !marker.id.starts_with(
+                !full_snapshot && !marker.id.starts_with(
                     creator_marker_prefix
                 )
             ) {
@@ -616,14 +615,13 @@ bool CreatorMapIO::load(
             marker.enabled =
                 enabled_value != 0;
 
-            loaded_markers.push_back(
-                std::move(marker)
-            );
+            if(full_snapshot) snapshot.back().gameplay_markers.push_back(std::move(marker));
+            else loaded_markers.push_back(std::move(marker));
 
             continue;
         }
 
-        // Unknown V3 record.
+        // Unknown record: keep the current world unchanged.
         return false;
     }
 
@@ -631,6 +629,12 @@ bool CreatorMapIO::load(
      * Parsing succeeded completely.
      * Only now mutate the live world.
      */
+    if(full_snapshot) {
+        if(snapshot.empty()) return false;
+        region.settlements_.resize(snapshot.size());
+        for(std::size_t i=0;i<snapshot.size();++i)region.settlements_[i]=std::move(snapshot[i]);
+        return true;
+    }
     auto& settlements =
         region.settlements_;
 

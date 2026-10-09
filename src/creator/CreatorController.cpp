@@ -383,13 +383,15 @@ bool CreatorController::enabled() const {
 void CreatorController::update(
     world::VerdaRegion& region,
     const Vector3 camera_position,
-    Vector3 camera_forward
+    Vector3 camera_forward,
+    const bool allow_shortcuts
 ) {
+    (void)region; // Mutations are routed through CreatorSession by the caller.
     if (!state_.enabled) {
         return;
     }
 
-    camera_forward.y = 0.0F;
+    if(state_.snap_to_ground) camera_forward.y = 0.0F;
 
     if (Vector3LengthSqr(camera_forward) > 0.0001F) {
         camera_forward =
@@ -401,12 +403,8 @@ void CreatorController::update(
         camera_forward
     );
 
-    /*
-     * Desktop/X11 DEV controls.
-     *
-     * Mobile Creator controls will call the same
-     * controller operations later.
-     */
+    if(!allow_shortcuts)return;
+    // Desktop shortcuts adjust the preview; world edits use CreatorSession.
 
     if (IsKeyPressed(KEY_Q)) {
         rotate_preview(-15.0F);
@@ -424,10 +422,7 @@ void CreatorController::update(
         decrease_placement_distance();
     }
 
-    if (IsKeyPressed(KEY_DELETE) ||
-        IsKeyPressed(KEY_BACKSPACE)) {
-        delete_selected(region);
-    }
+
 }
 
 void CreatorController::update_preview(
@@ -449,11 +444,12 @@ void CreatorController::update_preview(
         )
     );
 
-    preview_.position.y =
-        world::terrain::TerrainHeight::sample(
-            preview_.position.x,
-            preview_.position.z
-        );
+    if(state_.grid_step>0) {
+        preview_.position.x=std::round(preview_.position.x/state_.grid_step)*state_.grid_step;
+        preview_.position.z=std::round(preview_.position.z/state_.grid_step)*state_.grid_step;
+    }
+    if(state_.snap_to_ground) preview_.position.y=world::terrain::TerrainHeight::sample(preview_.position.x,preview_.position.z);
+    preview_.position.y+=state_.placement_height;
 
     preview_.rotation_y =
         state_.placement_yaw;
@@ -1365,6 +1361,15 @@ bool CreatorController::move_selected(
             selection_.settlement_index
         ];
 
+    if(selection_.type==CreatorSelectionType::Road) {
+        if(selection_.road_index>=settlement.roads.size())return false;
+        auto& road=settlement.roads[selection_.road_index];
+        const auto midpoint=Vector3Scale(Vector3Add(road.start,road.end),.5F);
+        const auto offset=Vector3Subtract(preview_.position,midpoint);
+        road.start=Vector3Add(road.start,offset);road.end=Vector3Add(road.end,offset);
+        selection_.position=preview_.position;return true;
+    }
+
     // --------------------------------------------------------
     // BUILDING
     // --------------------------------------------------------
@@ -1479,6 +1484,16 @@ bool CreatorController::duplicate_selected(
 
     world::Settlement& settlement =
         settlements[settlement_index];
+
+    if(selection_.type==CreatorSelectionType::Road) {
+        if(selection_.road_index>=settlement.roads.size())return false;
+        if(!preview_.valid)return false;
+        auto road=settlement.roads[selection_.road_index];
+        const auto offset=Vector3Subtract(preview_.position,Vector3Scale(Vector3Add(road.start,road.end),.5F));
+        road.start=Vector3Add(road.start,offset);road.end=Vector3Add(road.end,offset);
+        settlement.roads.push_back(road);selection_.road_index=settlement.roads.size()-1;
+        selection_.position=preview_.position;return true;
+    }
 
     // --------------------------------------------------------
     // GAMEPLAY MARKER
@@ -1886,6 +1901,15 @@ bool CreatorController::rotate_selected(
         settlements[
             selection_.settlement_index
         ];
+
+    if(selection_.type==CreatorSelectionType::Road) {
+        if(selection_.road_index>=settlement.roads.size())return false;
+        auto& road=settlement.roads[selection_.road_index];
+        const auto center=Vector3Scale(Vector3Add(road.start,road.end),.5F);
+        road.start=Vector3Add(center,Vector3RotateByAxisAngle(Vector3Subtract(road.start,center),{0,1,0},degrees*DEG2RAD));
+        road.end=Vector3Add(center,Vector3RotateByAxisAngle(Vector3Subtract(road.end,center),{0,1,0},degrees*DEG2RAD));
+        selection_.position=center;return true;
+    }
 
     const auto normalize_rotation =
         [](float& rotation) {

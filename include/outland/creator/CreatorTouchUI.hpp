@@ -50,6 +50,7 @@ struct CreatorTouchActions {
     bool load{false};
 
     bool toggle_fly{false};
+    float fly_vertical{0};
 
     void clear() {
         *this = CreatorTouchActions{};
@@ -60,9 +61,16 @@ struct CreatorTouchActions {
 // CREATOR TOUCH UI
 // ============================================================
 
+enum class BuilderControl { Undo, Redo, Load, Ground, Grid, Near, Far, Lower, Raise, Up, Down, All, Search };
+
 class CreatorTouchUI {
 public:
     CreatorTouchUI() = default;
+    Rectangle control_button(BuilderControl control,int width,int height) const;
+    void set_search(std::string query) {search_=std::move(query);drawer_page_=0;}
+    void show_all_assets() {all_categories_=true;pack_filter_=0;drawer_page_=0;}
+    std::vector<const CreatorAssetDefinition*> drawer_assets(const CreatorController& controller) const;
+    void set_status(std::string text) {status_=std::move(text);}
 
     void update(
         CreatorController& controller,
@@ -126,7 +134,14 @@ private:
     };
 
     std::size_t drawer_page_{0};
-    unsigned pack_filter_{0}; // All, urban, characters.
+    std::string search_,status_;
+    bool all_categories_{true},search_open_{false};
+    float input_scale_{1};
+    int window_width_{0},window_height_{0};
+    Vector2 logical_point(Vector2 point) const {return {point.x/input_scale_,point.y/input_scale_};}
+    int vertical_owner_{-1};
+    float vertical_direction_{0};
+    unsigned pack_filter_{0}; // All, urban, characters, survival.
 
     // ========================================================
     // LAYOUT
@@ -186,7 +201,6 @@ private:
 
     [[nodiscard]] Rectangle page_button(bool next, int width, int height) const;
     [[nodiscard]] Rectangle pack_button(int width, int height) const;
-    [[nodiscard]] std::vector<const CreatorAssetDefinition*> drawer_assets(const CreatorController& controller) const;
 
     // ========================================================
     // INPUT

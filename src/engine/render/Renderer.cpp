@@ -14,6 +14,7 @@
 #ifdef OUTLAND_DEV_TOOLS
 #include "outland/creator/CreatorController.hpp"
 #include "outland/creator/CreatorTouchUI.hpp"
+#include "outland/creator/CreatorSession.hpp"
 #endif
 #include "outland/characters/CharacterRenderer.hpp"
 #include "outland/game/combat/Health.hpp"
@@ -27,6 +28,7 @@
 #include <raymath.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <cmath>
 #include <unordered_map>
 
@@ -268,13 +270,18 @@ void Renderer::run() {
         game::GameMode::Home;
 
     world::VerdaRegion verda_region;
-    const std::string map_path = FileExists("maps/verda_creator.map") ? "maps/verda_creator.map" :
-        std::string(GetApplicationDirectory()) + "maps/verda_creator.map";
-    if (FileExists(map_path.c_str())) {
-        const bool loaded = creator::CreatorMapIO::load(verda_region, map_path);
-        TraceLog(loaded ? LOG_INFO : LOG_ERROR, loaded ? "Creator world loaded for gameplay" :
-            "Creator world failed to load; using training region");
+    const auto environment_path=[](const char* name){const auto* value=std::getenv(name);return value ? std::string(value):std::string{};};
+    const std::string map_path=creator::CreatorMapIO::writable_path(GetApplicationDirectory(),environment_path("HOME"),environment_path("OUTLAND_SAVE_DIR"));
+    const std::string legacy_map=FileExists("maps/verda_creator.map") ? "maps/verda_creator.map" :
+        std::string(GetApplicationDirectory())+"maps/verda_creator.map";
+    const auto& initial_map=FileExists(map_path.c_str()) ? map_path:legacy_map;
+    if(FileExists(initial_map.c_str())) {
+        const bool loaded=creator::CreatorMapIO::load(verda_region,initial_map);
+        TraceLog(loaded ? LOG_INFO:LOG_ERROR,loaded ? "Saved Verda map loaded":"Map load failed - using training region");
     }
+#ifdef OUTLAND_DEV_TOOLS
+    creator::CreatorSession creator_session(map_path);
+#endif
     const std::string character_manifest = "assets/verda/characters/character_manifest.tsv";
     const std::string character_root = FileExists((std::string(GetApplicationDirectory()) + character_manifest).c_str())
         ? GetApplicationDirectory() : ".";
@@ -412,6 +419,13 @@ void Renderer::run() {
                 inventory_open = false;
                 collected_loot.clear();
                 interaction_remaining = 0;
+#ifdef OUTLAND_DEV_TOOLS
+                if(game_mode==game::GameMode::DevLab) {
+                    creator_controller.state().flying=true;creator_controller.state().noclip=true;
+                    creator_touch_ui.show_all_assets();creator_touch_ui.set_inventory_open(true);
+                    creator_controller.clear_selection();
+                }
+#endif
                 input_system.update(screen_width, screen_height, true, true);
             }
 
@@ -425,6 +439,9 @@ void Renderer::run() {
         if (
             IsKeyPressed(KEY_ESCAPE)
         ) {
+#ifdef OUTLAND_DEV_TOOLS
+            if(creator_session.dirty() && !creator_session.save(verda_region))continue;
+#endif
             game_mode =
                 game::GameMode::Home;
             input_system.cancel_controls();
@@ -524,6 +541,9 @@ void Renderer::run() {
             game_mode ==
             game::GameMode::DevLab
         ) {
+#ifdef OUTLAND_DEV_TOOLS
+            if(!creator_touch_ui.inventory_open())
+#endif
             dev_lab.update();
 
             if (
@@ -593,7 +613,12 @@ void Renderer::run() {
             std::sin(player.yaw)
         };
 
-        const float speed = controls.crouch ? walk_speed * 0.45F : controls.aim ? walk_speed * 0.55F :
+        bool creator_flying=false;
+#ifdef OUTLAND_DEV_TOOLS
+        creator_flying=creator_active && creator_controller.state().flying;
+#endif
+        const Vector3 position_before_move=player.position;
+        const float speed = creator_flying ? 12.0F:controls.crouch ? walk_speed * 0.45F : controls.aim ? walk_speed * 0.55F :
                             controls.sprint ? sprint_speed : walk_speed;
 
         Vector3 movement =
@@ -642,7 +667,7 @@ void Renderer::run() {
                     )
                 );
 
-            player.position =
+            player.position = creator_flying ? desired_position :
                 world::physics::WorldCollision::
                     resolve_player_movement(
                         player.position,
@@ -663,7 +688,7 @@ void Renderer::run() {
         // is aligned with and facing a valid window.
 
         bool vaulted = false;
-        if (controls.jump && player.grounded) {
+        if (!creator_flying && controls.jump && player.grounded) {
             Vector3 vault_landing{};
 
             const Vector3 vault_forward{
@@ -706,7 +731,7 @@ void Renderer::run() {
         // TERRAIN FOLLOW
         // ====================================================
 
-        if (player.grounded) {
+        if (!creator_flying && player.grounded) {
             player.position.y =
                 world::terrain::TerrainHeight::sample(
                     player.position.x,
@@ -731,7 +756,7 @@ void Renderer::run() {
         // ====================================================
 
         if (
-            controls.jump && !vaulted &&
+            !creator_flying && controls.jump && !vaulted &&
             player.grounded
         ) {
             player.vertical_velocity =
@@ -741,7 +766,7 @@ void Renderer::run() {
                 false;
         }
 
-        if (!player.grounded) {
+        if (!creator_flying && !player.grounded) {
 
             player.vertical_velocity -=
                 gravity * dt;
@@ -774,6 +799,12 @@ void Renderer::run() {
             }
         }
 
+#ifdef OUTLAND_DEV_TOOLS
+        if(creator_flying) {
+            if(IsWindowFocused() && !creator_touch_ui.inventory_open())player.position.y+=creator_touch_ui.actions().fly_vertical*speed*dt;
+            player.vertical_velocity=0;player.grounded=false;player.third_person=false;
+        }
+#endif
         // ====================================================
         // CAMERA POSITION
         // ====================================================
@@ -828,88 +859,27 @@ void Renderer::run() {
                 creator_controller.update(
                     verda_region,
                     camera.position,
-                    camera_direction
+                    camera_direction,
+                    !creator_touch_ui.inventory_open()
                 );
 
-                // Minecraft-style center-screen targeting:
-                // whatever the camera points at becomes
-                // the current Creator selection.
-                creator_controller.select_target(
-                    verda_region,
-                    camera.position,
-                    camera_direction
-                );
-
-
-                const auto& creator_actions =
-                    creator_touch_ui.actions();
-
-                if (creator_actions.place) {
-                    (void)creator_controller.place_selected(
-                        verda_region
-                    );
+                const auto& action=creator_touch_ui.actions();
+                if(action.select)creator_controller.select_target(verda_region,camera.position,camera_direction);
+                if(action.place && creator_session.edit(verda_region,[&]{return creator_controller.place_selected(verda_region);}))creator_controller.clear_selection();
+                if(action.move)creator_session.edit(verda_region,[&]{return creator_controller.move_selected(verda_region);});
+                if(action.duplicate)creator_session.edit(verda_region,[&]{return creator_controller.duplicate_selected(verda_region);});
+                if(action.erase)creator_session.edit(verda_region,[&]{return creator_controller.delete_selected(verda_region);});
+                if(action.rotate) {
+                    if(creator_controller.selection().valid())creator_session.edit(verda_region,[&]{return creator_controller.rotate_selected(verda_region,15);});
+                    else creator_controller.rotate_preview(15);
                 }
+                if(action.undo){creator_session.undo(verda_region);creator_controller.clear_selection();}
+                if(action.redo){creator_session.redo(verda_region);creator_controller.clear_selection();}
+                if(action.save)creator_session.save(verda_region);
+                if(action.load){creator_session.load(verda_region);creator_controller.clear_selection();}
+                creator_session.update(dt,verda_region);
+                creator_touch_ui.set_status(creator_session.status());
 
-                if (creator_actions.save) {
-                    const bool saved =
-                        creator::CreatorMapIO::save(
-                            verda_region,
-                            "maps/verda_creator.map"
-                        );
-
-                    TraceLog(
-                        saved ? LOG_INFO : LOG_ERROR,
-                        saved
-                            ? "Creator map saved"
-                            : "Creator map save FAILED"
-                    );
-                }
-
-                if (creator_actions.load) {
-                    const bool loaded =
-                        creator::CreatorMapIO::load(
-                            verda_region,
-                            "maps/verda_creator.map"
-                        );
-
-                    TraceLog(
-                        loaded ? LOG_INFO : LOG_ERROR,
-                        loaded
-                            ? "Creator map loaded"
-                            : "Creator map load FAILED"
-                    );
-                }
-
-                if (creator_actions.move) {
-                    (void)creator_controller.move_selected(
-                        verda_region
-                    );
-                }
-
-                if (creator_actions.duplicate) {
-                    (void)creator_controller.duplicate_selected(
-                        verda_region
-                    );
-                }
-
-                if (creator_actions.rotate) {
-                    if (
-                        !creator_controller.rotate_selected(
-                            verda_region,
-                            15.0F
-                        )
-                    ) {
-                        creator_controller.rotate_preview(
-                            15.0F
-                        );
-                    }
-                }
-
-                if (creator_actions.erase) {
-                    creator_controller.delete_selected(
-                        verda_region
-                    );
-                }
             }
         }
 #endif
@@ -948,7 +918,7 @@ void Renderer::run() {
         player_health.damage(npcs.events().player_damage);
         character_renderer.update_player(!player_health.alive() ? characters::AnimationAction::Death :
             weapons.events().shots>0 ? characters::AnimationAction::Attack :
-            movement_amount>.02F ? (controls.sprint ? characters::AnimationAction::Run : characters::AnimationAction::Walk) :
+            Vector3DistanceSqr(position_before_move,player.position)>.000001F && player.grounded ? (controls.sprint ? characters::AnimationAction::Run : characters::AnimationAction::Walk) :
             characters::AnimationAction::Idle,dt);
 
         // ====================================================
@@ -1142,7 +1112,7 @@ void Renderer::run() {
 
         if (
             game_mode ==
-            game::GameMode::DevLab
+            game::GameMode::DevLab && !creator_active
         ) {
             dev_lab.draw_overlay(
                 player.position,
@@ -1158,7 +1128,7 @@ void Renderer::run() {
             game_mode ==
             game::GameMode::DevLab
         ) {
-            creator_controller.draw_hud();
+            // Builder toolbar reports the selected asset and operation status.
 
             creator_touch_ui.draw(
                 creator_controller,
@@ -1203,6 +1173,9 @@ void Renderer::run() {
 
         EndDrawing();
     }
+#ifdef OUTLAND_DEV_TOOLS
+    if(creator_session.dirty() && !creator_session.save(verda_region))TraceLog(LOG_ERROR,"Unsaved Creator edits: %s",creator_session.path().c_str());
+#endif
 }
 
 // ============================================================
