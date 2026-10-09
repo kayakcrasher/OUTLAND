@@ -1,4 +1,5 @@
 #include "outland/assets/ModelCache.hpp"
+#include "raylib_animation_frame.hpp"
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
@@ -18,7 +19,7 @@ ModelAnimation* LoadModelAnimations(const char* path,int* count){
     *count=1;return new ModelAnimation[1]{};
 }
 void UnloadModelAnimations(ModelAnimation* clips,int count){assert(count==1);++animation_unloads;delete[] clips;}
-void UpdateModelAnimation(Model,ModelAnimation,int){}
+void UpdateModelAnimation(Model,ModelAnimation,outland::test::AnimationFrame){}
 const char* GetApplicationDirectory() { return "/mock/"; }
 bool FileExists(const char* path) { return std::strstr(path,"missing")==nullptr; }
 void TraceLog(int, const char*, ...) {}

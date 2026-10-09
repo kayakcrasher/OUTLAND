@@ -1,5 +1,6 @@
 // Headless renderer verification: mock GPU entry points, exercise real registry/cache/preparation.
 #include "outland/characters/CharacterRenderer.hpp"
+#include "raylib_animation_frame.hpp"
 #include <raymath.h>
 #include <rlgl.h>
 #include <cassert>
@@ -20,7 +21,7 @@ Vector3 drawn_feet{};
 extern "C" {
 ModelAnimation* LoadModelAnimations(const char*,int* count){*count=0;return nullptr;}
 void UnloadModelAnimations(ModelAnimation*,int){}
-void UpdateModelAnimation(Model,ModelAnimation,int){}
+void UpdateModelAnimation(Model,ModelAnimation,outland::test::AnimationFrame){}
 const char* GetApplicationDirectory(){return "/mock/";}
 bool FileExists(const char* path){
     if (std::strstr(path,"Character_03.glb")){++missing_checks;return false;}

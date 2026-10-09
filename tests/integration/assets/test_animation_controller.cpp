@@ -1,12 +1,13 @@
 #include "outland/characters/AnimationController.hpp"
+#include "raylib_animation_frame.hpp"
 #include <cassert>
 #include <cstring>
 #include <iostream>
 #include <limits>
 using namespace outland::characters;
 namespace {int updates=0,last_frames=0,last_frame=-1;Transform* last_pose=nullptr;}
-extern "C" void UpdateModelAnimation(Model,ModelAnimation clip,int frame) {
-    ++updates;last_frames=clip.frameCount;last_frame=frame;last_pose=clip.framePoses[frame];
+extern "C" void UpdateModelAnimation(Model,ModelAnimation clip,outland::test::AnimationFrame frame) {
+    ++updates;last_frames=clip.frameCount;last_frame=static_cast<int>(frame);last_pose=clip.framePoses[last_frame];
 }
 int main() {
     BoneInfo bones[2]{};std::strcpy(bones[0].name,"root");bones[0].parent=-1;std::strcpy(bones[1].name,"child");bones[1].parent=0;

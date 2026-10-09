@@ -1,11 +1,12 @@
 #include "outland/characters/SkeletalGait.hpp"
+#include "raylib_animation_frame.hpp"
 #include <raymath.h>
 #include <cassert>
 #include <cstring>
 #include <cmath>
 #include <iostream>
 using namespace outland::characters;
-extern "C" void UpdateModelAnimation(Model,ModelAnimation,int){}
+extern "C" void UpdateModelAnimation(Model,ModelAnimation,outland::test::AnimationFrame){}
 int main() {
     BoneInfo bones[7]{};const char* names[]{"Hips","LeftUpLeg","LeftLeg","LeftFoot","RightUpLeg","RightLeg","RightFoot"};
     const int parents[]{-1,0,1,2,0,4,5};
