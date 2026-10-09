@@ -123,7 +123,12 @@ void CombatWorld::damage_target(int index, float damage) {
     if(target.health==0) target.reset_timer=4.0F;
 }
 
-BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end) const {
+void CombatWorld::damage_hit(const BulletHit& hit,float damage,Vector3 attacker) {
+    if(hit.kind==HitKind::Target) damage_target(hit.target,damage);
+    else if(hit.kind==HitKind::Npc && actor_damage_) actor_damage_(hit.target,damage,attacker);
+}
+
+BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool targets) const {
     BulletHit best;
     const auto delta=sub(end,start);
     const auto record=[&](HitKind kind,float t,Vector3 normal,int target=-1) {
@@ -164,13 +169,17 @@ BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end) const {
             if(trunk(start,end,base,.35F*scale,3.5F*scale,t,n)) record(HitKind::Tree,t,n);
         }
     }
-    for(std::size_t i=0;i<targets_.size();++i) {
+    if(targets) for(std::size_t i=0;i<targets_.size();++i) {
         const auto& target=targets_[i];
         if(target.health<=0)continue;
         if(box(start,end,sub(target.center,{.5F,1,.25F}),add(target.center,{.5F,1,.25F}),t,n)) {
             record(HitKind::Target,t,n,static_cast<int>(i));
             if(best.target==static_cast<int>(i)) best.headshot=best.position.y>target.center.y+.5F;
         }
+    }
+    if(actors && actor_trace_) {
+        const auto actor=actor_trace_(start,end);
+        if(actor.hit() && actor.fraction>=0 && actor.fraction<=1 && (!best.hit() || actor.fraction<best.fraction)) best=actor;
     }
     // Sample each swept segment, then bisect first ground contact.
     const float length=std::sqrt(dot(delta,delta));

@@ -16,6 +16,7 @@
 #include "outland/creator/CreatorTouchUI.hpp"
 #endif
 #include "outland/characters/CharacterRenderer.hpp"
+#include "outland/game/combat/Health.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/terrain/TerrainWorld.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
@@ -293,6 +294,14 @@ void Renderer::run() {
 
     game::combat::WeaponSystem weapons;
     game::combat::CombatWorld combat_world(verda_region);
+    game::Health player_health;
+    combat_world.bind_actors([&](Vector3 start,Vector3 end) {
+        const auto hit=npcs.trace_segment(start,end);
+        return game::combat::BulletHit{hit.actor>=0 ? game::combat::HitKind::Npc : game::combat::HitKind::None,
+            hit.fraction,hit.position,hit.normal,hit.actor,hit.headshot};
+    },[&](int actor,float damage,Vector3 attacker) {
+        if(actor>=0) npcs.damage(static_cast<std::size_t>(actor),damage,attacker);
+    });
     float recoil_pitch = 0.0F, recoil_yaw = 0.0F;
     bool trigger_ready = false;
 
@@ -396,6 +405,8 @@ void Renderer::run() {
 
                 weapons.reset(game_mode == game::GameMode::DevLab);
                 combat_world.reset_targets();
+                npcs.reset_session();
+                player_health.reset();
                 recoil_pitch = recoil_yaw = 0.0F;
                 trigger_ready = false;
                 inventory_open = false;
@@ -475,6 +486,7 @@ void Renderer::run() {
                 input_system.cancel_controls();
             }
         }
+        if(!player_health.alive() && !creator_active) input_system.player()={};
         const input::PlayerInput& controls = input_system.player();
         interaction_remaining = std::max(0.0F, interaction_remaining - dt);
         if (controls.interact && !creator_active) {
@@ -788,7 +800,7 @@ void Renderer::run() {
             const float distance = controls.aim ? 2.5F : 5.0F;
             camera.position = Vector3Add(Vector3Subtract(head_position, Vector3Scale(look_direction,distance)),
                 Vector3Add(Vector3Scale(gun_right,controls.aim ? .4F : .75F), {0,controls.aim ? .25F : .8F,0}));
-            const auto obstruction = combat_world.trace_segment(head_position,camera.position);
+            const auto obstruction = combat_world.trace_segment(head_position,camera.position,false,false);
             if (obstruction.hit()) {
                 camera.position=Vector3Lerp(head_position,camera.position,
                     std::max(0.0F,obstruction.fraction-.08F));
@@ -921,11 +933,23 @@ void Renderer::run() {
         weapon_input.sprint=controls.sprint && !controls.aim && movement_amount>.1F;
         weapon_input.grounded=player.grounded;
         weapon_input.movement=movement_amount;
+        npcs.reconcile(verda_region, character_registry);
         weapons.update(dt,weapon_input,{gun_muzzle,gun_direction},combat_world);
         recoil_pitch=std::min(.20F,recoil_pitch+weapons.events().pitch_kick);
         recoil_yaw+=weapons.events().yaw_kick;
         environment_audio.play_combat(weapons.selected(),weapons.events());
-        npcs.reconcile(verda_region, character_registry);
+        characters::NpcContext npc_context;
+        npc_context.player_position={player.position.x,player.position.y-1.0F,player.position.z};
+        npc_context.player_alive=player_health.alive();
+        npc_context.threatening=weapons.events().shots>0;
+        npc_context.paused=creator_active || inventory_open || !IsWindowFocused();
+        npc_context.visible=[&](Vector3 start,Vector3 end) {return !combat_world.trace_segment(start,end,false,false).hit();};
+        npcs.update(dt,npc_context,verda_region);
+        player_health.damage(npcs.events().player_damage);
+        character_renderer.update_player(!player_health.alive() ? characters::AnimationAction::Death :
+            weapons.events().shots>0 ? characters::AnimationAction::Attack :
+            movement_amount>.02F ? (controls.sprint ? characters::AnimationAction::Run : characters::AnimationAction::Walk) :
+            characters::AnimationAction::Idle,dt);
 
         // ====================================================
         // DRAW
@@ -1103,6 +1127,11 @@ void Renderer::run() {
                 24,screen_height-39,12,RAYWHITE);
         }
 
+        if (!creator_active) {
+            DrawText(TextFormat("HEALTH %.0f / %.0f",player_health.current(),player_health.maximum()),
+                16,16,20,player_health.alive() ? RAYWHITE : RED);
+            if (!player_health.alive()) DrawText("YOU DIED - ESC / BACK TO HOME",screen_width/2-175,screen_height/2,22,RED);
+        }
         if (!inventory_open) touch_hud.draw(
             controls,
             input_system.layout(),

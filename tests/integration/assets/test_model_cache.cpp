@@ -8,11 +8,17 @@
 #include <vector>
 
 namespace {
-int loads=0, unloads=0;
+int loads=0, unloads=0, animation_loads=0, animation_unloads=0;
 unsigned int next_texture=10;
 std::vector<unsigned int> released;
 }
 extern "C" {
+ModelAnimation* LoadModelAnimations(const char* path,int* count){
+    ++animation_loads;if(std::strstr(path,"no_clips")){*count=0;return nullptr;}
+    *count=1;return new ModelAnimation[1]{};
+}
+void UnloadModelAnimations(ModelAnimation* clips,int count){assert(count==1);++animation_unloads;delete[] clips;}
+void UpdateModelAnimation(Model,ModelAnimation,int){}
 const char* GetApplicationDirectory() { return "/mock/"; }
 bool FileExists(const char* path) { return std::strstr(path,"missing")==nullptr; }
 void TraceLog(int, const char*, ...) {}
@@ -61,5 +67,16 @@ int main() {
         assert(cache.size()==1 && unloads==4);
     }
     assert(unloads==5 && released.size()==5);
+    {
+        outland::assets::ModelCache cache(1);
+        auto* a=cache.load("animated.glb");assert(animation_loads==0 && cache.animations(a).empty());
+        assert(cache.load("animated.glb",{},true)==a && animation_loads==1 && cache.animations(a).size()==1);
+        cache.mark_posed(a,true);assert(cache.posed(a));
+        assert(cache.load("animated.glb",{},true)==a && animation_loads==1);
+        auto* b=cache.load("no_clips.glb",{},true);assert(b && animation_loads==2 && animation_unloads==1 && cache.animations(b).empty() && !cache.posed(b));
+        assert(cache.load("no_clips.glb",{},true)==b && animation_loads==2); // Failure remembered, no per-frame retry.
+        assert(cache.load("other.glb",{},true) && animation_loads==3);
+        cache.clear();assert(animation_unloads==2);
+    }
     std::cout << "[PASS] GPU cache hits, LRU eviction, texture ownership, ground pivots and cleanup\n";
 }

@@ -110,6 +110,8 @@ add_library(
     src/characters/CharacterRegistry.cpp
     src/characters/CharacterRenderer.cpp
     src/characters/NpcSystem.cpp
+    src/characters/NpcBehavior.cpp
+    src/characters/AnimationController.cpp
     src/world/physics/WorldCollision.cpp
     src/world/assets/VerdanArchitecture.cpp
     src/world/assets/VerdanProps.cpp
@@ -138,6 +140,14 @@ if(Python3_Interpreter_FOUND)
         VERBATIM)
     add_custom_target(outland_character_catalog DEPENDS "${PROJECT_SOURCE_DIR}/include/outland/creator/CharacterAssetCatalog.hpp")
     add_dependencies(outland_render outland_character_catalog)
+    add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/include/outland/characters/AnimationAssetCatalog.hpp"
+        "${PROJECT_SOURCE_DIR}/docs/character-rig-compatibility.json" "${PROJECT_SOURCE_DIR}/docs/character-rig-compatibility.md"
+        COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/audit_character_rigs.py"
+        DEPENDS tools/audit_character_rigs.py tools/character_manifest.py tools/gltf_import.py
+            assets/verda/characters/character_manifest.tsv ${OUTLAND_CHARACTER_MODELS}
+        VERBATIM)
+    add_custom_target(outland_character_rigs DEPENDS "${PROJECT_SOURCE_DIR}/include/outland/characters/AnimationAssetCatalog.hpp")
+    add_dependencies(outland_render outland_character_rigs)
 endif()
 
 if(OUTLAND_DEV_TOOLS)
@@ -307,7 +317,7 @@ if(OUTLAND_BUILD_TESTS)
     add_test(NAME outland_model_cache_tests COMMAND outland_model_cache_tests)
 
     add_executable(outland_character_renderer_tests tests/integration/assets/test_character_renderer.cpp
-        src/characters/CharacterRegistry.cpp src/characters/CharacterRenderer.cpp src/assets/ModelCache.cpp)
+        src/characters/CharacterRegistry.cpp src/characters/CharacterRenderer.cpp src/characters/AnimationController.cpp src/assets/ModelCache.cpp)
     target_include_directories(outland_character_renderer_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_character_renderer_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_character_renderer_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
@@ -318,6 +328,23 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_character_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_character_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_character_tests COMMAND outland_character_tests)
+
+    add_executable(outland_npc_ai_tests tests/integration/assets/test_npc_ai.cpp)
+    target_link_libraries(outland_npc_ai_tests PRIVATE outland_render)
+    target_compile_options(outland_npc_ai_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_npc_ai_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_npc_ai_tests COMMAND outland_npc_ai_tests)
+
+    add_executable(outland_animation_asset_tests tests/integration/assets/test_animation_assets.cpp)
+    target_link_libraries(outland_animation_asset_tests PRIVATE outland_render)
+    target_compile_options(outland_animation_asset_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_animation_asset_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_animation_asset_tests COMMAND outland_animation_asset_tests)
+
+    add_executable(outland_animation_tests tests/integration/assets/test_animation_controller.cpp src/characters/AnimationController.cpp)
+    target_include_directories(outland_animation_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
+    target_compile_options(outland_animation_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_animation_tests COMMAND outland_animation_tests)
 
     add_executable(outland_runtime_asset_tests tests/integration/assets/test_runtime_assets.cpp)
     target_link_libraries(outland_runtime_asset_tests PRIVATE outland_render)
@@ -369,6 +396,8 @@ if(OUTLAND_BUILD_TESTS)
     if(Python3_Interpreter_FOUND)
         add_test(NAME outland_urban_asset_completeness
             COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/audit_downloaded_assets.py" --pack urban --strict-textures)
+        add_test(NAME outland_character_rig_audit
+            COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/audit_character_rigs.py" --check)
         add_test(NAME outland_character_asset_completeness
             COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/audit_character_assets.py")
         add_test(NAME outland_character_catalog_validation

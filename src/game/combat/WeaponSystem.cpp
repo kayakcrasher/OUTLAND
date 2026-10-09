@@ -66,12 +66,12 @@ void WeaponSystem::simulate(float dt, CombatWorld& world) {
         if(hit.hit()) {
             bullet.position=hit.position;bullet.active=false;
             impacts_[impact_index_++%impacts_.size()]={hit.position,hit.normal,hit.kind,.4F};
-            if(hit.kind==HitKind::Target) {
+            if(hit.kind==HitKind::Target || hit.kind==HitKind::Npc) {
                 ++events_.target_hits;
                 const float speed=length(bullet.velocity);
                 last_damage_=bullet.damage*std::clamp(speed*speed/(bullet.initial_speed*bullet.initial_speed),.35F,1.0F)*
                              (hit.headshot ? 2.0F : 1.0F);
-                world.damage_target(hit.target,last_damage_);
+                world.damage_hit(hit,last_damage_,bullet.previous);
                 hit_marker_=.22F;last_headshot_=hit.headshot;
             }
         } else {

@@ -18,6 +18,9 @@ float drawn_yaw=0;
 Vector3 drawn_feet{};
 }
 extern "C" {
+ModelAnimation* LoadModelAnimations(const char*,int* count){*count=0;return nullptr;}
+void UnloadModelAnimations(ModelAnimation*,int){}
+void UpdateModelAnimation(Model,ModelAnimation,int){}
 const char* GetApplicationDirectory(){return "/mock/";}
 bool FileExists(const char* path){
     if (std::strstr(path,"Character_03.glb")){++missing_checks;return false;}

@@ -43,11 +43,16 @@ BoundingBox transformed_model_bounds(const Model& model) {
 ModelCache::ModelCache(std::size_t capacity) : capacity_(std::max<std::size_t>(1, capacity)) {}
 ModelCache::~ModelCache() { clear(); }
 
-Model* ModelCache::load(const std::string& path, const std::function<bool(Model&)>& prepare) {
+Model* ModelCache::load(const std::string& path, const std::function<bool(Model&)>& prepare, bool animations) {
     if (path.empty()) return nullptr;
     const std::string packaged = std::string(GetApplicationDirectory()) + path;
     const std::string resolved = FileExists(packaged.c_str()) ? packaged : path;
     if (auto found = entries_.find(resolved); found != entries_.end()) {
+        if (animations && !found->second.animation_attempted) {
+            found->second.animation_attempted=true;
+            found->second.clips=LoadModelAnimations(resolved.c_str(),&found->second.clip_count);
+            if(!found->second.clips) found->second.clip_count=0;
+        }
         found->second.last_used = ++sequence_;
         return &found->second.model;
     }
@@ -74,15 +79,36 @@ Model* ModelCache::load(const std::string& path, const std::function<bool(Model&
     if (entries_.size() >= capacity_) {
         auto oldest = std::min_element(entries_.begin(), entries_.end(),
             [](const auto& a, const auto& b) { return a.second.last_used < b.second.last_used; });
+        if(oldest->second.clips) UnloadModelAnimations(oldest->second.clips,oldest->second.clip_count);
         release(oldest->second.model);
         entries_.erase(oldest);
     }
     auto result = entries_.emplace(resolved, Entry{model, ++sequence_});
+    if(animations) {
+        result.first->second.animation_attempted=true;
+        result.first->second.clips=LoadModelAnimations(resolved.c_str(),&result.first->second.clip_count);
+        if(!result.first->second.clips) result.first->second.clip_count=0;
+    }
     return &result.first->second.model;
 }
 
+std::span<const ModelAnimation> ModelCache::animations(const Model* model) const {
+    for(const auto& [path,entry]:entries_) if(&entry.model==model) return {entry.clips,static_cast<std::size_t>(entry.clip_count)};
+    return {};
+}
+bool ModelCache::posed(const Model* model) const {
+    for(const auto& [path,entry]:entries_) if(&entry.model==model) return entry.posed;
+    return false;
+}
+void ModelCache::mark_posed(const Model* model,bool value) {
+    for(auto& [path,entry]:entries_) if(&entry.model==model) {entry.posed=value;return;}
+}
+
 void ModelCache::clear() {
-    for (auto& [path, entry] : entries_) release(entry.model);
+    for (auto& [path, entry] : entries_) {
+        if(entry.clips) UnloadModelAnimations(entry.clips,entry.clip_count);
+        release(entry.model);
+    }
     entries_.clear();
 }
 } // namespace outland::assets

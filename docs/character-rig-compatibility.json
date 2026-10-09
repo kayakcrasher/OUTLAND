@@ -1,0 +1,2982 @@
+{
+  "exact_rig_groups": {
+    "07f8adab1118b2aa37d6606e": [
+      "character_30"
+    ],
+    "0bf1e4af4be0baa04045e96f": [
+      "character_killer_03"
+    ],
+    "0d45e60a415d4946b08adfc6": [
+      "character_female_01"
+    ],
+    "12557e110c0da33faab14eaa": [
+      "character_25_doctor"
+    ],
+    "18d9fb7de6155afb776e2e50": [
+      "arms_arms_rig"
+    ],
+    "1ea890c922a6b48b2f467853": [
+      "character_07"
+    ],
+    "227521e0229e03ff9c10e610": [
+      "character_female_02"
+    ],
+    "227b121b4e42d4c398b46c4e": [
+      "character_10"
+    ],
+    "2695bd98448f807ca81425da": [
+      "character_28_hm"
+    ],
+    "28ab71bec717cc8054306d19": [
+      "character_female_10"
+    ],
+    "294005cfaa4fb91eba9fee42": [
+      "character_05"
+    ],
+    "2b4d4c5ab4e27534487e482f": [
+      "character_female_07"
+    ],
+    "2d9b028107bfe149062493fe": [
+      "character_26_female_police"
+    ],
+    "35e9a2dd9738b144829b0af7": [
+      "character_killer_02"
+    ],
+    "3a0e7912ecd3db95ba4f97b5": [
+      "character_monster_01"
+    ],
+    "44fbb3f5f076d064c8eb1984": [
+      "character_25_female_police"
+    ],
+    "4773ebb02a91e9442b52376b": [
+      "character_female_13"
+    ],
+    "49131c0082eb1a6ae5fed394": [
+      "character_03"
+    ],
+    "4aa0d19dc38d9b8fb62c09d4": [
+      "character_32"
+    ],
+    "4adce8ec283bbd341b803449": [
+      "character_31_female"
+    ],
+    "4d0ca896b92e2ab0ff8f55e4": [
+      "character_13"
+    ],
+    "4e0eb1389753be33fd6a2198": [
+      "character_killer_05"
+    ],
+    "532026aab3b84b1c3d50c72d": [
+      "character_09"
+    ],
+    "535b792bad9d7b10211e8e9d": [
+      "character_monster_04"
+    ],
+    "582b5c29fc88d763e13c0e0c": [
+      "character_27_female_hm"
+    ],
+    "5fac785298d27479b6720f45": [
+      "character_02"
+    ],
+    "60bf01b92ec13cede6aabbe0": [
+      "character_monster"
+    ],
+    "63e478fd46e36f4c35254b6c": [
+      "character_28_female_hm"
+    ],
+    "64358fcb05fa99400321dbde": [
+      "character_female_15"
+    ],
+    "6c841f3a9d8aa870112ff69f": [
+      "character_01"
+    ],
+    "6cb041ae1d3d9c7356ab2943": [
+      "character_female_03"
+    ],
+    "6e8cdd560fd43cb894914c92": [
+      "character_24_firefighter"
+    ],
+    "743d704860257ea8acf2f6e0": [
+      "character_18_police"
+    ],
+    "7640cebbd2459803092cdda0": [
+      "character_11"
+    ],
+    "786e0bd2c550af66701811df": [
+      "character_monster_03"
+    ],
+    "7afbd48c33c85bec2a64020b": [
+      "character_15"
+    ],
+    "82d7d776b5f58aa4f7515c66": [
+      "character_16"
+    ],
+    "839e8e106dc65b9f2042cd3e": [
+      "arms_psx_first_person_arms"
+    ],
+    "846a19babacff0f2aff40029": [
+      "character_17_police"
+    ],
+    "85120521a8b0f378750674bd": [
+      "character_female_09"
+    ],
+    "8535024a2b6a2b09187bbe2a": [
+      "character_31"
+    ],
+    "8554947f57f00289a92ce669": [
+      "character_20_female_police"
+    ],
+    "9076f1c3ba3db1e7860be1e4": [
+      "character_killer_01"
+    ],
+    "929e4963aa58b8d5b17c4d15": [
+      "character_29_female"
+    ],
+    "92a3a8354370363e88540619": [
+      "character_female_14"
+    ],
+    "94c2024ade7277f46a4b6f55": [
+      "character_33_female"
+    ],
+    "9f8707753cd5da8801e4349d": [
+      "character_19_female_police"
+    ],
+    "a83b831c5b072e528aa0b2a8": [
+      "character_29"
+    ],
+    "a8cdcf6a20140f3b2d5767ad": [
+      "character_22_female_firefighter"
+    ],
+    "a8e169e5cfff8230ce49ed51": [
+      "character_20_police"
+    ],
+    "aaa29a5e139f88bed2f658bf": [
+      "character_female_12"
+    ],
+    "ac0e6c1598e857b0667f62f8": [
+      "character_killer_06"
+    ],
+    "b0b9f90b28b69750fd42037d": [
+      "character_24_female_doctor"
+    ],
+    "b1fb77927392f6d7943c9c15": [
+      "character_monster_02"
+    ],
+    "b8d3c37dd8428018b763ad97": [
+      "character_17_female_police"
+    ],
+    "ba82c2ff349024eb671c9e14": [
+      "character_14"
+    ],
+    "bf1ca71f9916cd2cc24f1049": [
+      "character_08"
+    ],
+    "bf80857b9143a7b81f2ec593": [
+      "character_female_04"
+    ],
+    "c158ff30fa2476888ca1370e": [
+      "rebel_modern_rebel_soldier_character"
+    ],
+    "c389d3ea1d231888f0f1e3cb": [
+      "character_female_16"
+    ],
+    "c71b6d6c54f3cb0556b9b9ae": [
+      "character_27_hm"
+    ],
+    "cc48ad8c2efec615deda09bc": [
+      "character_19_police"
+    ],
+    "ce9c58c430f1ad22142587e6": [
+      "character_female_05"
+    ],
+    "d343f572433dadf0f72d5a00": [
+      "character_12"
+    ],
+    "d64216ba768e03641440088e": [
+      "character_32_female"
+    ],
+    "d8d0441322a195c2ec425c92": [
+      "character_30_female"
+    ],
+    "e02715fde76dd66af3da45fe": [
+      "character_21_female_firefighter"
+    ],
+    "e1910ae9bcca627a5b583c0d": [
+      "character_21_police"
+    ],
+    "e766ca4a9506778ebf272078": [
+      "character_22_police"
+    ],
+    "e7c8da508c5e6c66bd457e8d": [
+      "character_04"
+    ],
+    "e7d7d7c721addedcee31598e": [
+      "character_female_06"
+    ],
+    "e998ec606d6f5c71b0d2fd21": [
+      "character_killer_04"
+    ],
+    "eaf5bac6235aa5bb99bc60a2": [
+      "character_23_female_doctor"
+    ],
+    "ec92788727d71acae1a08048": [
+      "character_26_doctor"
+    ],
+    "ecc55175c475efa23db422b3": [
+      "character_06"
+    ],
+    "ee787fc7856e27985a9879de": [
+      "character_female_08"
+    ],
+    "f0044b99a4eadce433f8fa22": [
+      "character_killer"
+    ],
+    "f3419bfa485a29b8bd178b03": [
+      "character_18_female_police"
+    ],
+    "f5310fa58ed83e97cdf6c54b": [
+      "character_killer_07"
+    ],
+    "f79126b3e251f22a075b7c60": [
+      "character_monster_05"
+    ],
+    "ff196ae30c790c0917a68770": [
+      "character_female_11"
+    ],
+    "ff34e9ac96119dcc42151185": [
+      "character_23_firefighter"
+    ]
+  },
+  "models": [
+    {
+      "category": "player_arms",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 2.0,
+          "index": 0,
+          "keyframes": 60,
+          "name": "finger_gun_broken"
+        },
+        {
+          "action": "attack",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.5,
+          "index": 1,
+          "keyframes": 15,
+          "name": "finger_gun_fire"
+        },
+        {
+          "action": "unmapped",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 1.333333,
+          "index": 2,
+          "keyframes": 40,
+          "name": "finger_gun_fix"
+        },
+        {
+          "action": "idle",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 2.0,
+          "index": 3,
+          "keyframes": 60,
+          "name": "finger_gun_idle"
+        },
+        {
+          "action": "unmapped",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.733333,
+          "index": 4,
+          "keyframes": 22,
+          "name": "grab.L"
+        },
+        {
+          "action": "unmapped",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.733333,
+          "index": 5,
+          "keyframes": 22,
+          "name": "grab.R"
+        },
+        {
+          "action": "unmapped",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.633333,
+          "index": 6,
+          "keyframes": 19,
+          "name": "guard_draw"
+        },
+        {
+          "action": "idle",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 2.166667,
+          "index": 7,
+          "keyframes": 65,
+          "name": "guard_idle"
+        },
+        {
+          "action": "attack",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 1.0,
+          "index": 8,
+          "keyframes": 30,
+          "name": "jab.L"
+        },
+        {
+          "action": "attack",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 1.0,
+          "index": 9,
+          "keyframes": 30,
+          "name": "jab.R"
+        },
+        {
+          "action": "unmapped",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.433333,
+          "index": 10,
+          "keyframes": 13,
+          "name": "knife_draw"
+        },
+        {
+          "action": "attack",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.7,
+          "index": 11,
+          "keyframes": 21,
+          "name": "knife_hit_01"
+        },
+        {
+          "action": "attack",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.733333,
+          "index": 12,
+          "keyframes": 22,
+          "name": "knife_hit_02"
+        },
+        {
+          "action": "idle",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 1.666667,
+          "index": 13,
+          "keyframes": 50,
+          "name": "knife_idle"
+        },
+        {
+          "action": "unmapped",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.8,
+          "index": 14,
+          "keyframes": 24,
+          "name": "push.L"
+        },
+        {
+          "action": "unmapped",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.8,
+          "index": 15,
+          "keyframes": 24,
+          "name": "push.R"
+        },
+        {
+          "action": "idle",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 2.0,
+          "index": 16,
+          "keyframes": 60,
+          "name": "relax"
+        },
+        {
+          "action": "idle",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 17,
+          "keyframes": 2,
+          "name": "rest"
+        }
+      ],
+      "id": "arms_arms_rig",
+      "role": "first_person",
+      "runtime_model": "assets/verda/characters/first_person_arms/arms_rig.glb",
+      "skins": [
+        {
+          "exact_rig": "18d9fb7de6155afb776e2e50",
+          "joints": 52,
+          "topology": "2c63a5f691c79988ae3e251a"
+        }
+      ]
+    },
+    {
+      "category": "player_arms",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.733333,
+          "index": 0,
+          "keyframes": 22,
+          "name": "Collect_something"
+        },
+        {
+          "action": "idle",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 2.0,
+          "index": 1,
+          "keyframes": 60,
+          "name": "Combat_idle_loop"
+        },
+        {
+          "action": "idle",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.966667,
+          "index": 2,
+          "keyframes": 29,
+          "name": "Combat_idle_start"
+        },
+        {
+          "action": "attack",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.833333,
+          "index": 3,
+          "keyframes": 25,
+          "name": "Combat_punch_left"
+        },
+        {
+          "action": "attack",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.833333,
+          "index": 4,
+          "keyframes": 25,
+          "name": "Combat_punch_right"
+        },
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 5,
+          "keyframes": 2,
+          "name": "Hands_below"
+        },
+        {
+          "action": "attack",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.9,
+          "index": 6,
+          "keyframes": 27,
+          "name": "Magic_spell_attack"
+        },
+        {
+          "action": "unmapped",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.466667,
+          "index": 7,
+          "keyframes": 14,
+          "name": "Magic_spell_loop"
+        },
+        {
+          "action": "unmapped",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.333333,
+          "index": 8,
+          "keyframes": 10,
+          "name": "Magic_spell_loop_start"
+        },
+        {
+          "action": "idle",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 2.0,
+          "index": 9,
+          "keyframes": 60,
+          "name": "Relax_hands_idle_loop"
+        },
+        {
+          "action": "idle",
+          "animated_values_change": true,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.666667,
+          "index": 10,
+          "keyframes": 20,
+          "name": "Relax_hands_idle_start"
+        }
+      ],
+      "id": "arms_psx_first_person_arms",
+      "role": "legacy_first_person",
+      "runtime_model": "assets/verda/characters/first_person_arms/Old Versions/PSX_First_Person_Arms_Free (2024)/PSX_First_Person_Arms.glb",
+      "skins": [
+        {
+          "exact_rig": "839e8e106dc65b9f2042cd3e",
+          "joints": 50,
+          "topology": "57acfaf026c86c86d30f5bc0"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_01",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_01.glb",
+      "skins": [
+        {
+          "exact_rig": "6c841f3a9d8aa870112ff69f",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_02",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_02.glb",
+      "skins": [
+        {
+          "exact_rig": "5fac785298d27479b6720f45",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_03",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_03.glb",
+      "skins": [
+        {
+          "exact_rig": "49131c0082eb1a6ae5fed394",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_04",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_04.glb",
+      "skins": [
+        {
+          "exact_rig": "e7c8da508c5e6c66bd457e8d",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_05",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_05.glb",
+      "skins": [
+        {
+          "exact_rig": "294005cfaa4fb91eba9fee42",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_06",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_06.glb",
+      "skins": [
+        {
+          "exact_rig": "ecc55175c475efa23db422b3",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_07",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_07.glb",
+      "skins": [
+        {
+          "exact_rig": "1ea890c922a6b48b2f467853",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_08",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_08.glb",
+      "skins": [
+        {
+          "exact_rig": "bf1ca71f9916cd2cc24f1049",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_09",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_09.glb",
+      "skins": [
+        {
+          "exact_rig": "532026aab3b84b1c3d50c72d",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_10",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_10.glb",
+      "skins": [
+        {
+          "exact_rig": "227b121b4e42d4c398b46c4e",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_11",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_11.glb",
+      "skins": [
+        {
+          "exact_rig": "7640cebbd2459803092cdda0",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_12",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_12.glb",
+      "skins": [
+        {
+          "exact_rig": "d343f572433dadf0f72d5a00",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_13",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_13.glb",
+      "skins": [
+        {
+          "exact_rig": "4d0ca896b92e2ab0ff8f55e4",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_14",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_14.glb",
+      "skins": [
+        {
+          "exact_rig": "ba82c2ff349024eb671c9e14",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_15",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_15.glb",
+      "skins": [
+        {
+          "exact_rig": "7afbd48c33c85bec2a64020b",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_16",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_16.glb",
+      "skins": [
+        {
+          "exact_rig": "82d7d776b5f58aa4f7515c66",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_police",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_17_female_police",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_17_Female_Police.glb",
+      "skins": [
+        {
+          "exact_rig": "b8d3c37dd8428018b763ad97",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_police",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_17_police",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_17_Police.glb",
+      "skins": [
+        {
+          "exact_rig": "846a19babacff0f2aff40029",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_police",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_18_female_police",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_18_Female_Police.glb",
+      "skins": [
+        {
+          "exact_rig": "f3419bfa485a29b8bd178b03",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "emergency_police",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_18_police",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_18_Police.glb",
+      "skins": [
+        {
+          "exact_rig": "743d704860257ea8acf2f6e0",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_police",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_19_female_police",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_19_Female_Police.glb",
+      "skins": [
+        {
+          "exact_rig": "9f8707753cd5da8801e4349d",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_police",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_19_police",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_19_Police.glb",
+      "skins": [
+        {
+          "exact_rig": "cc48ad8c2efec615deda09bc",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_police",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_20_female_police",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_20_Female_Police.glb",
+      "skins": [
+        {
+          "exact_rig": "8554947f57f00289a92ce669",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "emergency_police",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_20_police",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_20_Police.glb",
+      "skins": [
+        {
+          "exact_rig": "a8e169e5cfff8230ce49ed51",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_firefighter",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_21_female_firefighter",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_21_Female_Firefighter.glb",
+      "skins": [
+        {
+          "exact_rig": "e02715fde76dd66af3da45fe",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_police",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_21_police",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_21_Police.glb",
+      "skins": [
+        {
+          "exact_rig": "e1910ae9bcca627a5b583c0d",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_firefighter",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_22_female_firefighter",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_22_Female_Firefighter.glb",
+      "skins": [
+        {
+          "exact_rig": "a8cdcf6a20140f3b2d5767ad",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "emergency_police",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_22_police",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_22_Police.glb",
+      "skins": [
+        {
+          "exact_rig": "e766ca4a9506778ebf272078",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_doctor",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_23_female_doctor",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_23_Female_Doctor.glb",
+      "skins": [
+        {
+          "exact_rig": "eaf5bac6235aa5bb99bc60a2",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_firefighter",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_23_firefighter",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_23_Firefighter.glb",
+      "skins": [
+        {
+          "exact_rig": "ff34e9ac96119dcc42151185",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_doctor",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_24_female_doctor",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_24_Female_Doctor.glb",
+      "skins": [
+        {
+          "exact_rig": "b0b9f90b28b69750fd42037d",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "emergency_firefighter",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_24_firefighter",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_24_Firefighter.glb",
+      "skins": [
+        {
+          "exact_rig": "6e8cdd560fd43cb894914c92",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_doctor",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_25_doctor",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_25_Doctor.glb",
+      "skins": [
+        {
+          "exact_rig": "12557e110c0da33faab14eaa",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_police",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_25_female_police",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_25_Female_Police.glb",
+      "skins": [
+        {
+          "exact_rig": "44fbb3f5f076d064c8eb1984",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_doctor",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_26_doctor",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_26_Doctor.glb",
+      "skins": [
+        {
+          "exact_rig": "ec92788727d71acae1a08048",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "emergency_police",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_26_female_police",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_26_Female_Police.glb",
+      "skins": [
+        {
+          "exact_rig": "2d9b028107bfe149062493fe",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_27_female_hm",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_27_Female_HM.glb",
+      "skins": [
+        {
+          "exact_rig": "582b5c29fc88d763e13c0e0c",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_27_hm",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_27_HM.glb",
+      "skins": [
+        {
+          "exact_rig": "c71b6d6c54f3cb0556b9b9ae",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_28_female_hm",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_28_Female_HM.glb",
+      "skins": [
+        {
+          "exact_rig": "63e478fd46e36f4c35254b6c",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_28_hm",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_28_HM.glb",
+      "skins": [
+        {
+          "exact_rig": "2695bd98448f807ca81425da",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_29",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_29.glb",
+      "skins": [
+        {
+          "exact_rig": "a83b831c5b072e528aa0b2a8",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_29_female",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_29_Female.glb",
+      "skins": [
+        {
+          "exact_rig": "929e4963aa58b8d5b17c4d15",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_30",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_30.glb",
+      "skins": [
+        {
+          "exact_rig": "07f8adab1118b2aa37d6606e",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_30_female",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_30_Female.glb",
+      "skins": [
+        {
+          "exact_rig": "d8d0441322a195c2ec425c92",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_31",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_31.glb",
+      "skins": [
+        {
+          "exact_rig": "8535024a2b6a2b09187bbe2a",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_31_female",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_31_Female.glb",
+      "skins": [
+        {
+          "exact_rig": "4adce8ec283bbd341b803449",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_32",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_32.glb",
+      "skins": [
+        {
+          "exact_rig": "4aa0d19dc38d9b8fb62c09d4",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_32_female",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_32_Female.glb",
+      "skins": [
+        {
+          "exact_rig": "d64216ba768e03641440088e",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_33_female",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_33_Female.glb",
+      "skins": [
+        {
+          "exact_rig": "94c2024ade7277f46a4b6f55",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_01",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_01.glb",
+      "skins": [
+        {
+          "exact_rig": "0d45e60a415d4946b08adfc6",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_02",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_02.glb",
+      "skins": [
+        {
+          "exact_rig": "227521e0229e03ff9c10e610",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_03",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_03.glb",
+      "skins": [
+        {
+          "exact_rig": "6cb041ae1d3d9c7356ab2943",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_04",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_04.glb",
+      "skins": [
+        {
+          "exact_rig": "bf80857b9143a7b81f2ec593",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_05",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_05.glb",
+      "skins": [
+        {
+          "exact_rig": "ce9c58c430f1ad22142587e6",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_06",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_06.glb",
+      "skins": [
+        {
+          "exact_rig": "e7d7d7c721addedcee31598e",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_07",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_07.glb",
+      "skins": [
+        {
+          "exact_rig": "2b4d4c5ab4e27534487e482f",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_08",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_08.glb",
+      "skins": [
+        {
+          "exact_rig": "ee787fc7856e27985a9879de",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_09",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_09.glb",
+      "skins": [
+        {
+          "exact_rig": "85120521a8b0f378750674bd",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_10",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_10.glb",
+      "skins": [
+        {
+          "exact_rig": "28ab71bec717cc8054306d19",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_11",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_11.glb",
+      "skins": [
+        {
+          "exact_rig": "ff196ae30c790c0917a68770",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_12",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_12.glb",
+      "skins": [
+        {
+          "exact_rig": "aaa29a5e139f88bed2f658bf",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_13",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_13.glb",
+      "skins": [
+        {
+          "exact_rig": "4773ebb02a91e9442b52376b",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_14",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_14.glb",
+      "skins": [
+        {
+          "exact_rig": "92a3a8354370363e88540619",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_15",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_15.glb",
+      "skins": [
+        {
+          "exact_rig": "64358fcb05fa99400321dbde",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "civilian",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_female_16",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_16.glb",
+      "skins": [
+        {
+          "exact_rig": "c389d3ea1d231888f0f1e3cb",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "hostile",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_killer",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer.glb",
+      "skins": [
+        {
+          "exact_rig": "f0044b99a4eadce433f8fa22",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "hostile",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_killer_01",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_01.glb",
+      "skins": [
+        {
+          "exact_rig": "9076f1c3ba3db1e7860be1e4",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "hostile",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_killer_02",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_02.glb",
+      "skins": [
+        {
+          "exact_rig": "35e9a2dd9738b144829b0af7",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "hostile",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_killer_03",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_03.glb",
+      "skins": [
+        {
+          "exact_rig": "0bf1e4af4be0baa04045e96f",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "hostile",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_killer_04",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_04.glb",
+      "skins": [
+        {
+          "exact_rig": "e998ec606d6f5c71b0d2fd21",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "hostile",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_killer_05",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_05.glb",
+      "skins": [
+        {
+          "exact_rig": "4e0eb1389753be33fd6a2198",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "hostile",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_killer_06",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_06.glb",
+      "skins": [
+        {
+          "exact_rig": "ac0e6c1598e857b0667f62f8",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "hostile",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_killer_07",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_07.glb",
+      "skins": [
+        {
+          "exact_rig": "f5310fa58ed83e97cdf6c54b",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "creature",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_monster",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Monster.glb",
+      "skins": [
+        {
+          "exact_rig": "60bf01b92ec13cede6aabbe0",
+          "joints": 65,
+          "topology": "4be3af9192be4d6f6123596f"
+        }
+      ]
+    },
+    {
+      "category": "creature",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_monster_01",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Monster_01.glb",
+      "skins": [
+        {
+          "exact_rig": "3a0e7912ecd3db95ba4f97b5",
+          "joints": 41,
+          "topology": "14863c2f624ee21ff599adb1"
+        }
+      ]
+    },
+    {
+      "category": "creature",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_monster_02",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Monster_02.glb",
+      "skins": [
+        {
+          "exact_rig": "b1fb77927392f6d7943c9c15",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "creature",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_monster_03",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Monster_03.glb",
+      "skins": [
+        {
+          "exact_rig": "786e0bd2c550af66701811df",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "creature",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_monster_04",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Monster_04.glb",
+      "skins": [
+        {
+          "exact_rig": "535b792bad9d7b10211e8e9d",
+          "joints": 65,
+          "topology": "4be3af9192be4d6f6123596f"
+        }
+      ]
+    },
+    {
+      "category": "creature",
+      "clips": [
+        {
+          "action": "unmapped",
+          "animated_values_change": false,
+          "channels": [
+            "rotation",
+            "scale",
+            "translation"
+          ],
+          "duration_seconds": 0.066667,
+          "index": 0,
+          "keyframes": 2,
+          "name": "Armature|mixamo.com|Layer0"
+        }
+      ],
+      "id": "character_monster_05",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/psx/Character_Monster_05.glb",
+      "skins": [
+        {
+          "exact_rig": "f79126b3e251f22a075b7c60",
+          "joints": 33,
+          "topology": "a43b6fc95c0361f347a0e6d6"
+        }
+      ]
+    },
+    {
+      "category": "hostile",
+      "clips": [],
+      "id": "rebel_modern_rebel_soldier_character",
+      "role": "npc",
+      "runtime_model": "assets/verda/characters/runtime/rebel/Modern Rebel Soldier Character/Models/Modern Rebel Soldier Character.glb",
+      "skins": [
+        {
+          "exact_rig": "c158ff30fa2476888ca1370e",
+          "joints": 30,
+          "topology": "eeb003a825b03c9b9a647450"
+        }
+      ]
+    }
+  ],
+  "policy": "Only own-model clips are loaded. Topology matches are candidates, not permission to retarget; exact signatures include bind transforms and node transforms. Unmapped clips are never guessed.",
+  "topology_groups": {
+    "14863c2f624ee21ff599adb1": [
+      "character_18_female_police",
+      "character_20_female_police",
+      "character_22_female_firefighter",
+      "character_24_female_doctor",
+      "character_26_female_police",
+      "character_28_female_hm",
+      "character_32_female",
+      "character_33_female",
+      "character_female_01",
+      "character_female_06",
+      "character_female_10",
+      "character_female_12",
+      "character_female_16",
+      "character_monster_01"
+    ],
+    "2c63a5f691c79988ae3e251a": [
+      "arms_arms_rig"
+    ],
+    "4be3af9192be4d6f6123596f": [
+      "character_monster",
+      "character_monster_04"
+    ],
+    "57acfaf026c86c86d30f5bc0": [
+      "arms_psx_first_person_arms"
+    ],
+    "a43b6fc95c0361f347a0e6d6": [
+      "character_01",
+      "character_02",
+      "character_03",
+      "character_04",
+      "character_05",
+      "character_06",
+      "character_07",
+      "character_08",
+      "character_09",
+      "character_10",
+      "character_11",
+      "character_12",
+      "character_13",
+      "character_14",
+      "character_15",
+      "character_16",
+      "character_17_female_police",
+      "character_17_police",
+      "character_18_police",
+      "character_19_female_police",
+      "character_19_police",
+      "character_20_police",
+      "character_21_female_firefighter",
+      "character_21_police",
+      "character_22_police",
+      "character_23_female_doctor",
+      "character_23_firefighter",
+      "character_24_firefighter",
+      "character_25_doctor",
+      "character_25_female_police",
+      "character_26_doctor",
+      "character_27_female_hm",
+      "character_27_hm",
+      "character_28_hm",
+      "character_29",
+      "character_29_female",
+      "character_30",
+      "character_30_female",
+      "character_31",
+      "character_31_female",
+      "character_32",
+      "character_female_02",
+      "character_female_03",
+      "character_female_04",
+      "character_female_05",
+      "character_female_07",
+      "character_female_08",
+      "character_female_09",
+      "character_female_11",
+      "character_female_13",
+      "character_female_14",
+      "character_female_15",
+      "character_killer",
+      "character_killer_01",
+      "character_killer_02",
+      "character_killer_03",
+      "character_killer_04",
+      "character_killer_05",
+      "character_killer_06",
+      "character_killer_07",
+      "character_monster_02",
+      "character_monster_03",
+      "character_monster_05"
+    ],
+    "eeb003a825b03c9b9a647450": [
+      "rebel_modern_rebel_soldier_character"
+    ]
+  }
+}
