@@ -104,8 +104,16 @@ int main() {
     settlements.clear();settlements.emplace_back();
     Building b;b.position={0,0,0};b.size={8,4,2};b.rotation_y=90;
     settlements[0].buildings.push_back(b);
-    assert(physics::WorldCollision::blocked({0,0,3},region,.1F));
+    // The rotated hollow shell blocks the side wall, not its playable interior.
+    assert(physics::WorldCollision::blocked({0,0,4},region,.1F));
+    assert(!physics::WorldCollision::blocked({0,0,3},region,.1F));
     assert(!physics::WorldCollision::blocked({3,0,0},region,.1F));
+    // Vaulting crosses a real front window only when facing toward the wall.
+    settlements[0].buildings[0].rotation_y = 0;
+    Vector3 landing{};
+    assert(physics::WorldCollision::window_vault_target({2.32F,1,-2}, {0,0,1}, region, landing));
+    assert(landing.z > -1);
+    assert(!physics::WorldCollision::window_vault_target({2.32F,1,-2}, {0,0,-1}, region, landing));
     region.generate_training_region();
 
     triangles.clear();

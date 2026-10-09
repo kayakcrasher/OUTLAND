@@ -13,6 +13,13 @@ Vector3 cross(Vector3 a,Vector3 b) { return {a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x
 }
 
 WeaponSystem::WeaponSystem() { reset(false); }
+int WeaponSystem::collect_ammo() {
+    if (unlimited_) return 0;
+    auto& reserve = ammo_[static_cast<std::size_t>(selected_)].reserve;
+    const int added = std::max(0, std::min(weapon().magazine, weapon().reserve - reserve));
+    reserve += added;
+    return added;
+}
 void WeaponSystem::reset(bool unlimited) {
     unlimited_=unlimited;selected_=WeaponId::Rifle;previous_fire_=false;
     cooldown_=reload_remaining_=muzzle_flash_=hit_marker_=last_damage_=0;

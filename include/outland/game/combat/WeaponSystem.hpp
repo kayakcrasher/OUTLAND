@@ -39,6 +39,9 @@ public:
     [[nodiscard]] const WeaponDefinition& weapon() const { return definition(selected_); }
     [[nodiscard]] const Magazine& ammo() const { return ammo_[static_cast<std::size_t>(selected_)]; }
     [[nodiscard]] bool unlimited() const { return unlimited_; }
+    [[nodiscard]] const Magazine& ammo(WeaponId id) const { return ammo_[static_cast<std::size_t>(id)]; }
+    // Collect one magazine of reserve rounds, capped at the weapon's starting reserve.
+    int collect_ammo();
     [[nodiscard]] float reload_remaining() const { return reload_remaining_; }
     [[nodiscard]] float muzzle_flash() const { return muzzle_flash_; }
     [[nodiscard]] float hit_marker() const { return hit_marker_; }

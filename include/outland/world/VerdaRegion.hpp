@@ -6,6 +6,8 @@
 #include <string_view>
 #include <vector>
 
+namespace outland::creator { class CreatorMapIO; }
+
 namespace outland::world {
 
 class VerdaRegion {
@@ -57,6 +59,7 @@ public:
     ) const;
 
 private:
+    friend class outland::creator::CreatorMapIO;
     std::vector<Settlement> settlements_;
 
     void create_first_village();

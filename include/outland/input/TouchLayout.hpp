@@ -1,6 +1,13 @@
 #pragma once
 
+#include <algorithm>
+
 namespace outland::input {
+
+// Shared by hit testing, HUD and modal panels; keep geometry identical at every size.
+inline float touch_scale(int width, int height) {
+    return std::clamp(std::min(width / 1280.0F, height / 720.0F), 0.35F, 1.35F);
+}
 
 struct TouchElementLayout {
     float x{0.0F};
@@ -147,6 +154,11 @@ struct TouchLayout {
     // --------------------------------------------------------
     // CAMERA FEEL
     // --------------------------------------------------------
+
+    TouchElementLayout sprint{0.08F, 0.43F, 0.82F, 0.40F};
+    TouchElementLayout crouch{0.91F, 0.81F, 0.82F, 0.40F};
+    TouchElementLayout inventory{0.52F, 0.22F, 0.82F, 0.40F};
+    TouchElementLayout interact{0.49F, 0.40F, 0.82F, 0.40F};
 
     float look_sensitivity{2.25F};
 

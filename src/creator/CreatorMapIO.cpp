@@ -1,7 +1,5 @@
 #include "outland/creator/CreatorMapIO.hpp"
 
-#ifdef OUTLAND_DEV_TOOLS
-
 #include "outland/world/Building.hpp"
 #include "outland/world/GameplayMarker.hpp"
 #include "outland/world/Settlement.hpp"
@@ -61,6 +59,7 @@ bool is_creator_marker(
 
 } // namespace
 
+#ifdef OUTLAND_DEV_TOOLS
 bool CreatorMapIO::save(
     const world::VerdaRegion& region,
     const std::string& path
@@ -335,6 +334,8 @@ bool CreatorMapIO::save(
 
     return true;
 }
+
+#endif
 
 bool CreatorMapIO::load(
     world::VerdaRegion& region,
@@ -631,7 +632,7 @@ bool CreatorMapIO::load(
      * Only now mutate the live world.
      */
     auto& settlements =
-        region.editable_settlements();
+        region.settlements_;
 
     if (
         settlements.empty() &&
@@ -714,5 +715,3 @@ bool CreatorMapIO::load(
 }
 
 } // namespace outland::creator
-
-#endif // OUTLAND_DEV_TOOLS

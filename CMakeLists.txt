@@ -96,6 +96,7 @@ add_library(
     outland_render
     STATIC
 
+    src/assets/ModelCache.cpp
     src/engine/render/Renderer.cpp
     src/engine/audio/EnvironmentAudio.cpp
     src/game/combat/CombatWorld.cpp
@@ -106,7 +107,9 @@ add_library(
     src/game/HomeScreen.cpp
     src/game/GameMode.cpp
     src/world/foliage/FoliageSystem.cpp
-    src/player/VerdanCharacter.cpp
+    src/characters/CharacterRegistry.cpp
+    src/characters/CharacterRenderer.cpp
+    src/characters/NpcSystem.cpp
     src/world/physics/WorldCollision.cpp
     src/world/assets/VerdanArchitecture.cpp
     src/world/assets/VerdanProps.cpp
@@ -114,9 +117,28 @@ add_library(
     src/world/terrain/TerrainChunk.cpp
     src/world/terrain/TerrainWorld.cpp
 
+    src/creator/CreatorMapIO.cpp
     src/input/InputSystem.cpp
     src/input/TouchHUD.cpp
 )
+
+if(Python3_Interpreter_FOUND)
+    file(GLOB_RECURSE OUTLAND_URBAN_MODELS CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/assets/verda/urban/*.glb")
+    add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/include/outland/creator/UrbanAssetCatalog.hpp"
+        COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_urban_catalog.py"
+        DEPENDS tools/generate_urban_catalog.py tools/gltf_import.py ${OUTLAND_URBAN_MODELS}
+        VERBATIM)
+    add_custom_target(outland_urban_catalog DEPENDS "${PROJECT_SOURCE_DIR}/include/outland/creator/UrbanAssetCatalog.hpp")
+    add_dependencies(outland_render outland_urban_catalog)
+    file(GLOB_RECURSE OUTLAND_CHARACTER_MODELS CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/assets/verda/characters/*.glb")
+    add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/include/outland/creator/CharacterAssetCatalog.hpp"
+        COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_character_catalog.py"
+        DEPENDS tools/generate_character_catalog.py tools/gltf_import.py tools/character_manifest.py
+            assets/verda/characters/character_manifest.tsv ${OUTLAND_CHARACTER_MODELS}
+        VERBATIM)
+    add_custom_target(outland_character_catalog DEPENDS "${PROJECT_SOURCE_DIR}/include/outland/creator/CharacterAssetCatalog.hpp")
+    add_dependencies(outland_render outland_character_catalog)
+endif()
 
 if(OUTLAND_DEV_TOOLS)
     target_sources(
@@ -124,7 +146,6 @@ if(OUTLAND_DEV_TOOLS)
         PRIVATE
             src/creator/CreatorController.cpp
             src/creator/CreatorTouchUI.cpp
-        src/creator/CreatorMapIO.cpp
     )
 
     target_compile_definitions(
@@ -149,14 +170,12 @@ target_include_directories(
     outland_render
     PUBLIC
         ${PROJECT_SOURCE_DIR}/include
-
-    PRIVATE
         ${RAYLIB_INCLUDE_DIRS}
 )
 
 target_link_directories(
     outland_render
-    PRIVATE
+    PUBLIC
         ${RAYLIB_LIBRARY_DIRS}
 )
 
@@ -202,6 +221,8 @@ add_custom_command(TARGET outland POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${PROJECT_SOURCE_DIR}/assets"
         "$<TARGET_FILE_DIR:outland>/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/maps" "$<TARGET_FILE_DIR:outland>/maps"
 )
 
 # ============================================================
@@ -280,7 +301,45 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_combat_input_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_combat_input_tests COMMAND outland_combat_input_tests)
 
+    add_executable(outland_model_cache_tests tests/integration/assets/test_model_cache.cpp src/assets/ModelCache.cpp)
+    target_include_directories(outland_model_cache_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
+    target_compile_options(outland_model_cache_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_model_cache_tests COMMAND outland_model_cache_tests)
+
+    add_executable(outland_character_renderer_tests tests/integration/assets/test_character_renderer.cpp
+        src/characters/CharacterRegistry.cpp src/characters/CharacterRenderer.cpp src/assets/ModelCache.cpp)
+    target_include_directories(outland_character_renderer_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
+    target_compile_options(outland_character_renderer_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_character_renderer_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_character_renderer_tests COMMAND outland_character_renderer_tests)
+
+    add_executable(outland_character_tests tests/integration/assets/test_characters.cpp)
+    target_link_libraries(outland_character_tests PRIVATE outland_render)
+    target_compile_options(outland_character_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_character_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_character_tests COMMAND outland_character_tests)
+
+    add_executable(outland_runtime_asset_tests tests/integration/assets/test_runtime_assets.cpp)
+    target_link_libraries(outland_runtime_asset_tests PRIVATE outland_render)
+    target_compile_options(outland_runtime_asset_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_runtime_asset_tests COMMAND outland_runtime_asset_tests)
+
+    # Manual smoke target requires a display; keep headless CTest independent.
+    add_executable(outland_asset_model_smoke tests/integration/assets/smoke_imported_models.cpp)
+    target_link_libraries(outland_asset_model_smoke PRIVATE outland_render)
+    target_compile_options(outland_asset_model_smoke PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+
     if(OUTLAND_DEV_TOOLS)
+        add_executable(outland_creator_touch_tests tests/integration/creator/test_creator_touch_ui.cpp)
+        target_link_libraries(outland_creator_touch_tests PRIVATE outland_render)
+        target_compile_options(outland_creator_touch_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+        # Redirect input polling while retaining real raylib geometry/controller code.
+        target_link_options(outland_creator_touch_tests PRIVATE
+            -Wl,--wrap=GetTouchPointCount -Wl,--wrap=GetTouchPointId
+            -Wl,--wrap=GetTouchPosition -Wl,--wrap=GetMousePosition
+            -Wl,--wrap=IsMouseButtonPressed)
+        add_test(NAME outland_creator_touch_tests COMMAND outland_creator_touch_tests)
+
         add_executable(
             outland_creator_map_tests
             tests/integration/creator/test_creator_map_io.cpp
@@ -308,6 +367,16 @@ if(OUTLAND_BUILD_TESTS)
     endif()
 
     if(Python3_Interpreter_FOUND)
+        add_test(NAME outland_urban_asset_completeness
+            COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/audit_downloaded_assets.py" --pack urban --strict-textures)
+        add_test(NAME outland_character_asset_completeness
+            COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/audit_character_assets.py")
+        add_test(NAME outland_character_catalog_validation
+            COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_character_catalog.py" --check)
+        add_test(NAME outland_urban_catalog_validation
+            COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_urban_catalog.py" --check)
+        add_test(NAME outland_downloaded_asset_geometry
+            COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/audit_downloaded_assets.py")
         add_dependencies(outland_environment_tests verda_assets)
         add_test(NAME outland_asset_validation
             COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/validate_verda_kit.py"

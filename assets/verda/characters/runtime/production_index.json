@@ -1,0 +1,818 @@
+{
+  "arms_arms_rig": {
+    "dependencies": {},
+    "runtime_model": "assets/verda/characters/first_person_arms/arms_rig.glb",
+    "runtime_sha256": "407d6be3cfee18d8d47318d307a6e759f94ed3a1c27e2ab30dd860862b94172b",
+    "source_model": "assets/verda/characters/first_person_arms/arms_rig.glb",
+    "source_sha256": "407d6be3cfee18d8d47318d307a6e759f94ed3a1c27e2ab30dd860862b94172b",
+    "texture_sha256": null
+  },
+  "arms_psx_first_person_arms": {
+    "dependencies": {},
+    "runtime_model": "assets/verda/characters/first_person_arms/Old Versions/PSX_First_Person_Arms_Free (2024)/PSX_First_Person_Arms.glb",
+    "runtime_sha256": "475424186407bc87b013419e107263a9db068459f3d0eacd6b7656faa35e51e0",
+    "source_model": "assets/verda/characters/first_person_arms/Old Versions/PSX_First_Person_Arms_Free (2024)/PSX_First_Person_Arms.glb",
+    "source_sha256": "475424186407bc87b013419e107263a9db068459f3d0eacd6b7656faa35e51e0",
+    "texture_sha256": null
+  },
+  "character_01": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_01.png": "668205966e9ba46be40118a1b8572df460f573cdd6cde4a05d734a2124511d0e"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_01.glb",
+    "runtime_sha256": "47f68d83c5509d43439db1866ed03f750e1ae059b369ea4bf99f50c3a4213425",
+    "source_model": "assets/verda/characters/psx/Character_01.fbx",
+    "source_sha256": "12007c8592561d6e281592f7cf218b3faa0e521c5f9bcfc4fbece21bd20ed86a",
+    "texture_sha256": "668205966e9ba46be40118a1b8572df460f573cdd6cde4a05d734a2124511d0e"
+  },
+  "character_02": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_02.png": "b51bfd9263942c7b09b5ca41d22296dd13bb291d7a51216a669428dd755162f0"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_02.glb",
+    "runtime_sha256": "138e74e86affa423a7595f7684d4b68c665c9199f1ca255859bf7e60f9fa3f1f",
+    "source_model": "assets/verda/characters/psx/Character_02.fbx",
+    "source_sha256": "dfb2d264f2cd9ecd950cf3261a9abcda513ca7e2837f962008b4448f236b6313",
+    "texture_sha256": "b51bfd9263942c7b09b5ca41d22296dd13bb291d7a51216a669428dd755162f0"
+  },
+  "character_03": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_03.png": "0a54845f85f9d5c5fc76b56712af2c3f6117154eea0fd7d3aee377aac45401d6"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_03.glb",
+    "runtime_sha256": "80cc17c609a67b2a14fe9a6ed947b2593f7c2442a76c66ccb560cd03fec9dc83",
+    "source_model": "assets/verda/characters/psx/Character_03.fbx",
+    "source_sha256": "829af9a0e92cd94887dd840794933ba376073ef969431c6527f42fd2784e67c7",
+    "texture_sha256": "0a54845f85f9d5c5fc76b56712af2c3f6117154eea0fd7d3aee377aac45401d6"
+  },
+  "character_04": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_04.png": "e64600b1a74034a5a3aa433ec3203bdf3d0195242045b418b579944134e44f42"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_04.glb",
+    "runtime_sha256": "2a2c703c9f57a7da7ec2d8a661545441ab6afa55c00e3d7d9983f3f697a4c8d4",
+    "source_model": "assets/verda/characters/psx/Character_04.fbx",
+    "source_sha256": "90cb6c4725c8028b658d005ba3e4b8761bce5cd4dddaf1176d8a2ed327cff878",
+    "texture_sha256": "e64600b1a74034a5a3aa433ec3203bdf3d0195242045b418b579944134e44f42"
+  },
+  "character_05": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_05.png": "38c3a42c55feb244e8aa746b27eac088b789d562909e952140bc65882f7d642e"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_05.glb",
+    "runtime_sha256": "04fd51e972c332718c395a66e1ce6443dd5b104ff202b81b2baa93ad8a2669c9",
+    "source_model": "assets/verda/characters/psx/Character_05.fbx",
+    "source_sha256": "fc86215b094978ad5529f698f96f75d475cf0be6cf3d5466bacb164b5cafc1b2",
+    "texture_sha256": "38c3a42c55feb244e8aa746b27eac088b789d562909e952140bc65882f7d642e"
+  },
+  "character_06": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_06.png": "b314bfc1b4ac9139828362dc26017657d0fb664615658a6158e1df52ccb55f1d"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_06.glb",
+    "runtime_sha256": "a31ceb064d70016c411824e33246dc573accbb23e9b02b004864801c2b7b6b05",
+    "source_model": "assets/verda/characters/psx/Character_06.fbx",
+    "source_sha256": "bdd75f03ffb46b0b815d853372cbd6a54b5fe53cff6279924e516b484788b023",
+    "texture_sha256": "b314bfc1b4ac9139828362dc26017657d0fb664615658a6158e1df52ccb55f1d"
+  },
+  "character_07": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_07.png": "2eecacf5e1db139e0067d0fcaa86a4adda668ddb7684ead142d0a2057ffc204e"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_07.glb",
+    "runtime_sha256": "a045b4cf3c4e6b83957f781a687de8b93d68bba0fc26fad8a1e015b455eaeed6",
+    "source_model": "assets/verda/characters/psx/Character_07.fbx",
+    "source_sha256": "2b307c889c10bbdc84c479d213383d7713d2cfa67f4d4468708f0832b04b1efb",
+    "texture_sha256": "2eecacf5e1db139e0067d0fcaa86a4adda668ddb7684ead142d0a2057ffc204e"
+  },
+  "character_08": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_08.png": "18e130f7952ceec0fb0ab1cec119c90ce27a025e8e10bd02f23a22f07df5ecd5"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_08.glb",
+    "runtime_sha256": "73b9521ff10692d305dcd7aab04fa9b365a384820b03c76d165fb0cc8e99f32d",
+    "source_model": "assets/verda/characters/psx/Character_08.fbx",
+    "source_sha256": "33298bbc5c3a2f2467a358c0b33046af549d4f985c376967cf6455cc0feafbbd",
+    "texture_sha256": "18e130f7952ceec0fb0ab1cec119c90ce27a025e8e10bd02f23a22f07df5ecd5"
+  },
+  "character_09": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_09.png": "77e95d7a6de0562c1de17d3a6ff5472059a34418846c5135e3be88eeb89d3bf7"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_09.glb",
+    "runtime_sha256": "a42d31ed1dc4bf8e3a5ef050fe7ab1a7b344e3f5c91533736220eb1cfdd14f3a",
+    "source_model": "assets/verda/characters/psx/Character_09.fbx",
+    "source_sha256": "0cf89f9bf7f28f480afef54aad35932bb5342af45ac05321a1e5ad8ea7abc344",
+    "texture_sha256": "77e95d7a6de0562c1de17d3a6ff5472059a34418846c5135e3be88eeb89d3bf7"
+  },
+  "character_10": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_10.png": "0942abfb41657b349b00909b3a44e5d952a71a36270759fda407b065c0895803"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_10.glb",
+    "runtime_sha256": "6d683bf756749f50af77ccdea0f70fb6b9be2c8dfecef2677b5e6445e27110f8",
+    "source_model": "assets/verda/characters/psx/Character_10.fbx",
+    "source_sha256": "fdeb0f1ce8ec31a5972a7328111c83c3d40ba3b591d89930db6056a9ea08c3e7",
+    "texture_sha256": "0942abfb41657b349b00909b3a44e5d952a71a36270759fda407b065c0895803"
+  },
+  "character_11": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_11.png": "891e1dc5dc185b44fc578c33b1322e198149adfa3e659a72c48746b6e29c842b"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_11.glb",
+    "runtime_sha256": "8f1c12f8d7004cc7f33c6558da7417719cce5bf1af2cdbe2225f6c242f7e1e2a",
+    "source_model": "assets/verda/characters/psx/Character_11.fbx",
+    "source_sha256": "dac4eecaff89940c4fe121aa0eca9982fd8b9401fc67ea931a2060341f2b4341",
+    "texture_sha256": "891e1dc5dc185b44fc578c33b1322e198149adfa3e659a72c48746b6e29c842b"
+  },
+  "character_12": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_12.png": "f35ab9b53e517626ef823819841beb84b12c124df7a9193dd861bd9b5f5d71f5"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_12.glb",
+    "runtime_sha256": "967435cc7e19ff2a4c32a014b5c0501c9bd7f6c0e38ffd2fc2b5708ac43585ec",
+    "source_model": "assets/verda/characters/psx/Character_12.fbx",
+    "source_sha256": "8a260253d9330650815db3446c1048f93e4d0d06397de45111d28e9054d6f6fa",
+    "texture_sha256": "f35ab9b53e517626ef823819841beb84b12c124df7a9193dd861bd9b5f5d71f5"
+  },
+  "character_13": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_13.png": "83540dd9cb74d00aa96d8cf814a278edfddc74577cb9658088a110ac54bac17d"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_13.glb",
+    "runtime_sha256": "fe56cfb64ab66638c34da11d8551ec3dc1f68fd662685d0448e77cb6d996d51d",
+    "source_model": "assets/verda/characters/psx/Character_13.fbx",
+    "source_sha256": "81264cf1b116b9abb7cf871622e33b9afa03a13d1048e81ceab14b364d5ab5f8",
+    "texture_sha256": "83540dd9cb74d00aa96d8cf814a278edfddc74577cb9658088a110ac54bac17d"
+  },
+  "character_14": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_14.png": "e9cae3480c568c449b97195c159bb75b78a121e3406d62e65a433ddf3993b342"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_14.glb",
+    "runtime_sha256": "77b4a6f85a1dfd5e68d2049ee55312ddb2f03839812a58f69535a1342b799576",
+    "source_model": "assets/verda/characters/psx/Character_14.fbx",
+    "source_sha256": "421fff500635617104b620cc654a6ec47d6bb04f2fb50336261a2445c3eec626",
+    "texture_sha256": "e9cae3480c568c449b97195c159bb75b78a121e3406d62e65a433ddf3993b342"
+  },
+  "character_15": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_15.png": "79bd270fa4543a6c0fcd978f10455999ec544343e592c9572857856ea1ea1361"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_15.glb",
+    "runtime_sha256": "1c04b12b667f69d1358b24956ac8b3008f9c051d40939b9f2036b48b2cabbd58",
+    "source_model": "assets/verda/characters/psx/Character_15.fbx",
+    "source_sha256": "e42af273e3b2c64adffe918c8e096a8bc68ce5db50d7246bf094f3b6be69048c",
+    "texture_sha256": "79bd270fa4543a6c0fcd978f10455999ec544343e592c9572857856ea1ea1361"
+  },
+  "character_16": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_16.png": "b55498057b12131033dd26ca6988a4778af48beb78e8bb634dff012c9f9d9528"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_16.glb",
+    "runtime_sha256": "7585fc4297932a039db31eab8ea52851d47271db5303f31ff3eddb7e935197ae",
+    "source_model": "assets/verda/characters/psx/Character_16.fbx",
+    "source_sha256": "be2ce05ea7fca5af3941f3e1fb51cc84dd28ae3076532acdca6b45630a53a96f",
+    "texture_sha256": "b55498057b12131033dd26ca6988a4778af48beb78e8bb634dff012c9f9d9528"
+  },
+  "character_17_female_police": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_17_Female_Police.png": "82b296b118fd92e3f12f02b31751e53e76a173f92f724514ca21593a5c2d9aa4"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_17_Female_Police.glb",
+    "runtime_sha256": "a4b9994bd13a907e416081778b54bf0c43e7065e702c04c32f0125ba8218183d",
+    "source_model": "assets/verda/characters/psx/Character_17_Female_Police.fbx",
+    "source_sha256": "7391f7651586d44cd158f38bc3e608b8112e2549ebd928eee6ce38bfe0037316",
+    "texture_sha256": "82b296b118fd92e3f12f02b31751e53e76a173f92f724514ca21593a5c2d9aa4"
+  },
+  "character_17_police": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_17_Police.png": "732993a5f5b348ecdd8cc16906653ee20727e7e6f3c85bc372dd450b50af4aaf"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_17_Police.glb",
+    "runtime_sha256": "3328f66de84117b1fdb4c209582c6ac00acf6a76428a90a82d6e6a35918b3bcb",
+    "source_model": "assets/verda/characters/psx/Character_17_Police.fbx",
+    "source_sha256": "a1749f79d5cb86f8ce0d22090e1541fbca3516ad1eafcaad596ad2507cf8461a",
+    "texture_sha256": "732993a5f5b348ecdd8cc16906653ee20727e7e6f3c85bc372dd450b50af4aaf"
+  },
+  "character_18_female_police": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_18_Female_Police.png": "f7b008435c147625a7c473aae2651711c8816474abf6792982512434979c58c0"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_18_Female_Police.glb",
+    "runtime_sha256": "477d76df53122caad06ae33c98efd1cf6065bc1901b9a242eb9669520179a31c",
+    "source_model": "assets/verda/characters/psx/Character_18_Female_Police.fbx",
+    "source_sha256": "4054000aac302f6e15ab420f7c3a91dee3d65f91d3798726a04f325fa7a2eeff",
+    "texture_sha256": "f7b008435c147625a7c473aae2651711c8816474abf6792982512434979c58c0"
+  },
+  "character_18_police": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_18_Police.png": "ce39395e4c2adf68d415e4ee46eabd43322a013a260e632d8833bf71ec3722a5"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_18_Police.glb",
+    "runtime_sha256": "8c885999ecd5075f322820e09d139cdc9baaf1c9a8107d28528ca4b2a3fb5895",
+    "source_model": "assets/verda/characters/psx/Character_18_Police.fbx",
+    "source_sha256": "1b21e3dd56c82dc99b9d74c274e593a88a71509f8f0b1b298677303d6b961b20",
+    "texture_sha256": "ce39395e4c2adf68d415e4ee46eabd43322a013a260e632d8833bf71ec3722a5"
+  },
+  "character_19_female_police": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_19_Female_Police.png": "9da6083c253ad11a8bf2fe80df90060edfc4add95207d8ee2c0d71c39167b043"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_19_Female_Police.glb",
+    "runtime_sha256": "6813e083fb0d241b15df3c84cc16583e6134fc7d716234475a697d7e5667b0a7",
+    "source_model": "assets/verda/characters/psx/Character_19_Female_Police.fbx",
+    "source_sha256": "a1bee33435349f36952148aef91e165b5a90ec4d1f55a6cb792116ff5d103834",
+    "texture_sha256": "9da6083c253ad11a8bf2fe80df90060edfc4add95207d8ee2c0d71c39167b043"
+  },
+  "character_19_police": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_19_Police.png": "03fe0fcf4ac618487126352db8414831bdbb7810b385afd347123a41d1e81917"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_19_Police.glb",
+    "runtime_sha256": "658ba9859cb002705699160e5cebe4ece5e03664c325d54723d6c64ea6b6e348",
+    "source_model": "assets/verda/characters/psx/Character_19_Police.fbx",
+    "source_sha256": "beda5ab8c4405a2de698a4a321f601fb6303409089d6b29e5f6f93c676cf9a4d",
+    "texture_sha256": "03fe0fcf4ac618487126352db8414831bdbb7810b385afd347123a41d1e81917"
+  },
+  "character_20_female_police": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_20_Female_Police.png": "b29d43b111fbb8dc63484b219c4ee419bb8387fd1648fd4bf8765ca820dce660"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_20_Female_Police.glb",
+    "runtime_sha256": "a1d04fa3b956ccfd049d769ca7c935a09c067a991e7f31379241ac53de7dfda3",
+    "source_model": "assets/verda/characters/psx/Character_20_Female_Police.fbx",
+    "source_sha256": "9e64c90526567651d8dda334a28538eb68863abcedac5d457084fa6b7034a113",
+    "texture_sha256": "b29d43b111fbb8dc63484b219c4ee419bb8387fd1648fd4bf8765ca820dce660"
+  },
+  "character_20_police": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_20_Police.png": "62e846cfc78c5734f68cede3cb87823eb81a1f2d545dbed9c8296524e06de468"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_20_Police.glb",
+    "runtime_sha256": "431bf7f4431f036731acda1a2495276d67a216baa90181a0c0494c29e2d4519a",
+    "source_model": "assets/verda/characters/psx/Character_20_Police.fbx",
+    "source_sha256": "bade30cd60c2a9f5c43047c79b8f51ef1a3a4e69fca1c8b62ee14bd4e2a14177",
+    "texture_sha256": "62e846cfc78c5734f68cede3cb87823eb81a1f2d545dbed9c8296524e06de468"
+  },
+  "character_21_female_firefighter": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_21_Female_Firefighter.png": "de481fe77fb97cf7b25d079be9acd9656db497fab1626523de8378754faa155c"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_21_Female_Firefighter.glb",
+    "runtime_sha256": "9451f8cac7b186edd5f34062da279da3ed8e8c18220409d3711b11f1e5511513",
+    "source_model": "assets/verda/characters/psx/Character_21_Female_Firefighter.fbx",
+    "source_sha256": "b72e9a16dcb628ee4856beaa62329c6503456e87a19feca8519ebd850d73a2b7",
+    "texture_sha256": "de481fe77fb97cf7b25d079be9acd9656db497fab1626523de8378754faa155c"
+  },
+  "character_21_police": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_21_Police.png": "3ac6da12708834c478c7570d037532895715419da44399d545f3116b8035bf1f"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_21_Police.glb",
+    "runtime_sha256": "1b2c11b4abbe145357bb10e18d13038ca9f2259ace09ced34fcc98cd61487f99",
+    "source_model": "assets/verda/characters/psx/Character_21_Police.fbx",
+    "source_sha256": "09ea4571c3a390c3864144a8bd69feb21057c009527170c1fae7d8bc2a8100e9",
+    "texture_sha256": "3ac6da12708834c478c7570d037532895715419da44399d545f3116b8035bf1f"
+  },
+  "character_22_female_firefighter": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_22_Female_Firefighter.png": "1389dbfe4002f14e62afc025ddce635e170141fff244acf358f209304379d1ef"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_22_Female_Firefighter.glb",
+    "runtime_sha256": "b09af100315986b256c31e64ca70a69e7e54b058b613f9dfe695cad7cf546392",
+    "source_model": "assets/verda/characters/psx/Character_22_Female_Firefighter.fbx",
+    "source_sha256": "8be42ed13d5d7cb5a850e122d51922da3050d4a95d6533c7c09ec17d5aff1dc5",
+    "texture_sha256": "1389dbfe4002f14e62afc025ddce635e170141fff244acf358f209304379d1ef"
+  },
+  "character_22_police": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_22_Police.png": "e3eb1281a32bcbeda0ddaf5f6ae50ed7fd297339b5b18ab07f4e04c5762e0446"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_22_Police.glb",
+    "runtime_sha256": "78d2aff55ad6c2cdfaaa307f2e5a12515e77e5748cb82f2438981446c5aa9630",
+    "source_model": "assets/verda/characters/psx/Character_22_Police.fbx",
+    "source_sha256": "29f2fea1055611257b1c2040226020cd9aec2b5b7d4493c257528461c374c793",
+    "texture_sha256": "e3eb1281a32bcbeda0ddaf5f6ae50ed7fd297339b5b18ab07f4e04c5762e0446"
+  },
+  "character_23_female_doctor": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_23_Female_Doctor.png": "08d9b2145f3d2a5abf69107f335be4b28f5e2c1748a0409c240ce35bd31f2474"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_23_Female_Doctor.glb",
+    "runtime_sha256": "15edae71245aa3bfed2e364186db7448badada9aee4d5dd44990903a72a1332c",
+    "source_model": "assets/verda/characters/psx/Character_23_Female_Doctor.fbx",
+    "source_sha256": "732b67efa3523e48f65e98e686d13f4efdcb334c358fc1c898bf9cc168b33672",
+    "texture_sha256": "08d9b2145f3d2a5abf69107f335be4b28f5e2c1748a0409c240ce35bd31f2474"
+  },
+  "character_23_firefighter": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_23_Firefighter.png": "d0ef18ef4426ba7e5f76f0aa78d9592f1e94bfab66e80e92dcceef0e49763b3c"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_23_Firefighter.glb",
+    "runtime_sha256": "0759dc482e5323b433f8e0f8215d3cfcbec7be129022cba95f0b37c7db5f8a5e",
+    "source_model": "assets/verda/characters/psx/Character_23_Firefighter.fbx",
+    "source_sha256": "f20c851fba06a8ea0c9c3cfbe6e3c7acbadf64e49f720470e71e8669f0b1943e",
+    "texture_sha256": "d0ef18ef4426ba7e5f76f0aa78d9592f1e94bfab66e80e92dcceef0e49763b3c"
+  },
+  "character_24_female_doctor": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_24_Female_Doctor.png": "ccbc522bab58f2fc1ca0320f1b458bd64808e21d5a5fc7e63c5a6708d6b81c24"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_24_Female_Doctor.glb",
+    "runtime_sha256": "978f71a50926637f8d1bbe9c350ecb921213d03cee14dc04fc970996b391dec6",
+    "source_model": "assets/verda/characters/psx/Character_24_Female_Doctor.fbx",
+    "source_sha256": "007e69c03457aca302feab3d97246961948cfc9b5888aa14e1a24b9439540760",
+    "texture_sha256": "ccbc522bab58f2fc1ca0320f1b458bd64808e21d5a5fc7e63c5a6708d6b81c24"
+  },
+  "character_24_firefighter": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_24_Firefighter.png": "747fb3606de2c76b80a15ad0aadc1e684be7e7c1952745486245d0987d4c6e35"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_24_Firefighter.glb",
+    "runtime_sha256": "cacac6b344dce22ce27d123ade8bfd850529ce0e53f2e4e3cb752f3eb0737457",
+    "source_model": "assets/verda/characters/psx/Character_24_Firefighter.fbx",
+    "source_sha256": "f7697fac1fcc76921433c751e32efdaf6a2d6a10a6b32082c03ca2d252dc9997",
+    "texture_sha256": "747fb3606de2c76b80a15ad0aadc1e684be7e7c1952745486245d0987d4c6e35"
+  },
+  "character_25_doctor": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_25_Doctor.png": "ac85c8e82a3afbde50c4fcbb92071ff0874ab36ed7205032349e0adaeb64c96b"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_25_Doctor.glb",
+    "runtime_sha256": "936db736feea926d3f13eceaa226c9c9269f13536b96c8a5a0a834c824351ee1",
+    "source_model": "assets/verda/characters/psx/Character_25_Doctor.fbx",
+    "source_sha256": "c605e3337329adac3d0b56e9e0b27e5bf66e0dd114580225be8d436dde575597",
+    "texture_sha256": "ac85c8e82a3afbde50c4fcbb92071ff0874ab36ed7205032349e0adaeb64c96b"
+  },
+  "character_25_female_police": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_25_Female_Police.png": "dab851ef34b05fe0c69a643f7e2bc5d5570a5acca26b0322962f520444917cd6"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_25_Female_Police.glb",
+    "runtime_sha256": "80ad1ccd5449f8b04a24226a5f0ac24cacd0a5fea45fd9cdeb6dec4170833fb3",
+    "source_model": "assets/verda/characters/psx/Character_25_Female_Police.fbx",
+    "source_sha256": "bcdb4535aef750dc5810ebe1c933d72cb06e716d46a89a89f9d057e1be098ce5",
+    "texture_sha256": "dab851ef34b05fe0c69a643f7e2bc5d5570a5acca26b0322962f520444917cd6"
+  },
+  "character_26_doctor": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_26_Doctor.png": "7b7454bb72637fbfa57bcbea1c2e2f17126b5c4d7049e8a4dcaa0e6dd64c1b0d"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_26_Doctor.glb",
+    "runtime_sha256": "5942cc3c05f48d61dbb9e300f338b74650fad573b479349bacacd31f66b77ba2",
+    "source_model": "assets/verda/characters/psx/Character_26_Doctor.fbx",
+    "source_sha256": "050cf8b353a09b2b59645e691db8d586319bd0248e05befa12789849d157fbb3",
+    "texture_sha256": "7b7454bb72637fbfa57bcbea1c2e2f17126b5c4d7049e8a4dcaa0e6dd64c1b0d"
+  },
+  "character_26_female_police": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_26_Female_Police.png": "b368cb74a75370ed0294a6b8fc2581a44328281432c39f6b221cb92b04c8547f"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_26_Female_Police.glb",
+    "runtime_sha256": "91ed538b818fc3e095f9e888bbcb970cecbbf1a98717c72a4b60936c11bf9ec8",
+    "source_model": "assets/verda/characters/psx/Character_26_Female_Police.fbx",
+    "source_sha256": "f6b08346aca0ddcf7cd32ac13ff62fddb24c31ee2370569b0778833bf312df65",
+    "texture_sha256": "b368cb74a75370ed0294a6b8fc2581a44328281432c39f6b221cb92b04c8547f"
+  },
+  "character_27_female_hm": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_27_Female_HM.png": "d6b01b8d8b152663922e02cd3c74165051d96cbf8d0ebfa722b7198860a83d7a"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_27_Female_HM.glb",
+    "runtime_sha256": "2caecf915a0f0f31bcdf8eeea438c8ab2a7e90aff86cc9a0189517fcdbb99955",
+    "source_model": "assets/verda/characters/psx/Character_27_Female_HM.fbx",
+    "source_sha256": "e341ed66ed1bd103166e92502f4e0e6606e290d03b81f0850e17a97c14b2ccbd",
+    "texture_sha256": "d6b01b8d8b152663922e02cd3c74165051d96cbf8d0ebfa722b7198860a83d7a"
+  },
+  "character_27_hm": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_27_HM.png": "bc36c35b550cbfefec36a8e38e1b01fda0ee37fe4455f4c5ce64c790af314181"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_27_HM.glb",
+    "runtime_sha256": "1c0cea0ff00364cbb4f87a98e073d0b382b9df3a22810cffc8858e8bf4684d97",
+    "source_model": "assets/verda/characters/psx/Character_27_HM.fbx",
+    "source_sha256": "bf7928421a45a7399f041ef95440f644dea2a4efa1edf1534df5e927849420bb",
+    "texture_sha256": "bc36c35b550cbfefec36a8e38e1b01fda0ee37fe4455f4c5ce64c790af314181"
+  },
+  "character_28_female_hm": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_28_Female_HM.png": "6d5c27aaa2ccbc40f437ca5eb30bd805ddd866a9ca9eed7a3a8a19976fa68cf9"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_28_Female_HM.glb",
+    "runtime_sha256": "383b3e1a59e8201ce48fb0100a0df614fb3f0c5d1ed468f33cc77388424fc279",
+    "source_model": "assets/verda/characters/psx/Character_28_Female_HM.fbx",
+    "source_sha256": "2556126077e74bb00a6029140f8ae7a9b3e07c0508aac5426a04f766b2a0bd62",
+    "texture_sha256": "6d5c27aaa2ccbc40f437ca5eb30bd805ddd866a9ca9eed7a3a8a19976fa68cf9"
+  },
+  "character_28_hm": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_28_HM.png": "0588d0bceda30bdbea2896d5e576201b73594a0a790fa20bea5a27fe3b8aa72c"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_28_HM.glb",
+    "runtime_sha256": "4d7dee6867952266e6bad5cba39c6de8cb528d49030e7bc5924bdfd816f9237a",
+    "source_model": "assets/verda/characters/psx/Character_28_HM.fbx",
+    "source_sha256": "327b9220092f1ac4e3cbdfd2e22e41945dcbea53e94c335769bb29c7f89fd233",
+    "texture_sha256": "0588d0bceda30bdbea2896d5e576201b73594a0a790fa20bea5a27fe3b8aa72c"
+  },
+  "character_29": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_29.png": "b7b29f17e3d9dadd2592f4e7f40c84df0e8404e88cf57bd7b065385d817d5d41"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_29.glb",
+    "runtime_sha256": "b443c84fc6f2f5b60fa049b845075470300789ec13727b400fae82748b4df635",
+    "source_model": "assets/verda/characters/psx/Character_29.fbx",
+    "source_sha256": "0d32e6bbda50be4afcbaa033d58ec41a6701f1e4c669b401917cda614062a4b6",
+    "texture_sha256": "b7b29f17e3d9dadd2592f4e7f40c84df0e8404e88cf57bd7b065385d817d5d41"
+  },
+  "character_29_female": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_29_Female.png": "569e6f7977d55293c9da59af6ff6de95d13ee673e7e77f225de748116b06e25f"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_29_Female.glb",
+    "runtime_sha256": "e05a802714dc5da0060a04cc22f3a64d05b02ccb1d54862b11fb2334305cdd90",
+    "source_model": "assets/verda/characters/psx/Character_29_Female.fbx",
+    "source_sha256": "38d4e1c536eadeccf2b1368b89fc4553eefd4454f3b5853fd47707b6d654f41d",
+    "texture_sha256": "569e6f7977d55293c9da59af6ff6de95d13ee673e7e77f225de748116b06e25f"
+  },
+  "character_30": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_30.png": "724e24cee81341769b5dc6acbe423737facec941ea61cf0a492f0c3531ac4d33"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_30.glb",
+    "runtime_sha256": "b87f397f14bf994c1a8d2224ae1e5b2d9b7afbd5e4e8caea7afa09c4ee58b1eb",
+    "source_model": "assets/verda/characters/psx/Character_30.fbx",
+    "source_sha256": "c5927709a546c67a92e9da4b9bf963a15b1ef4a25972bd5d6310d5cc0ada74c8",
+    "texture_sha256": "724e24cee81341769b5dc6acbe423737facec941ea61cf0a492f0c3531ac4d33"
+  },
+  "character_30_female": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_30_Female.png": "22919aa3474beabe1e8d27c662179468c27d0a2b832e5ffdceb2a4b080f8ec64"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_30_Female.glb",
+    "runtime_sha256": "9b186361f13b2a307789b5e9abb6fd273bf3f672418f648ea977505fd51303c3",
+    "source_model": "assets/verda/characters/psx/Character_30_Female.fbx",
+    "source_sha256": "cfd805e8c87e114ac023b24ec83d94ca9b2e27b7e332a841492986aab76a8d70",
+    "texture_sha256": "22919aa3474beabe1e8d27c662179468c27d0a2b832e5ffdceb2a4b080f8ec64"
+  },
+  "character_31": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_31.png": "f14e8b440d2982061464f91945618e487a2cdf956568a222db702c922b975839"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_31.glb",
+    "runtime_sha256": "80c201f13a23021bc2410ff7273ec69b57e122d8d10f4346b6868f8438b82588",
+    "source_model": "assets/verda/characters/psx/Character_31.fbx",
+    "source_sha256": "49d53157cb153be6e9cf09e185e9741c0914dd5814bc933c6249f561038e7a21",
+    "texture_sha256": "f14e8b440d2982061464f91945618e487a2cdf956568a222db702c922b975839"
+  },
+  "character_31_female": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_31_Female.png": "f6f309d82baa799931d317580df745bff9d7f5135300f69c66a78c5c8aae7a53"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_31_Female.glb",
+    "runtime_sha256": "ba33b34ee19172af25405d956ccd135fae33efe3968116e1746ebefb51bdfabd",
+    "source_model": "assets/verda/characters/psx/Character_31_Female.fbx",
+    "source_sha256": "61a7221c4ec1071d65b0dfd38b6a894ab4922fefb812f3d4ab1c3428133720c4",
+    "texture_sha256": "f6f309d82baa799931d317580df745bff9d7f5135300f69c66a78c5c8aae7a53"
+  },
+  "character_32": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_32.png": "dd80f344411f9fbd13a0bda14e07052fca9cd63d72f4a0c68839437e75374020"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_32.glb",
+    "runtime_sha256": "1be287d6ad564265c6e0273fb73e1edb4f893a6cb5fc76652bd09afe2ed0e2fb",
+    "source_model": "assets/verda/characters/psx/Character_32.fbx",
+    "source_sha256": "e00bfdc905c427e0f9a3d9068a14911f7db3929f52f294007c7d802e077ac02b",
+    "texture_sha256": "dd80f344411f9fbd13a0bda14e07052fca9cd63d72f4a0c68839437e75374020"
+  },
+  "character_32_female": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_32_Female.png": "706cfe7eed95d2f7225a7ad160089566986ace0160fffe2ceb17b20105cb60eb"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_32_Female.glb",
+    "runtime_sha256": "fd3c0df57ba13d0a45fa47ff56bd5b64b0816d3158d5a5ea2fc8c85e7618bc18",
+    "source_model": "assets/verda/characters/psx/Character_32_Female.fbx",
+    "source_sha256": "5acd56d86bfbada76bf704b12241a661e48fc89f04ed732880b0acf3f116e0e9",
+    "texture_sha256": "706cfe7eed95d2f7225a7ad160089566986ace0160fffe2ceb17b20105cb60eb"
+  },
+  "character_33_female": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_33_Female.png": "bbee79f5388af6a5a1778b47425bd8bfbd67f784d2d8582587b10e33ae1fdfca"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_33_Female.glb",
+    "runtime_sha256": "15b9b3143fc07e32bd03b0603e503a4c2801db90f2fa009be158a641f874759d",
+    "source_model": "assets/verda/characters/psx/Character_33_Female.fbx",
+    "source_sha256": "d1af35df1d2dd9f03169cb578fb6aedd25a69bdfefa983bcd0ce669df80342d1",
+    "texture_sha256": "bbee79f5388af6a5a1778b47425bd8bfbd67f784d2d8582587b10e33ae1fdfca"
+  },
+  "character_female_01": {
+    "dependencies": {},
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_01.glb",
+    "runtime_sha256": "a7543215caf8f1868a2594c332d9a883117880435163d380f227e0cdbbfacfa3",
+    "source_model": "assets/verda/characters/psx/Character_Female_01.fbx",
+    "source_sha256": "73cf5bd63cef08268a803f8192ecd060b3aebd6df9ff0cb5aa4456a271999ded",
+    "texture_sha256": null
+  },
+  "character_female_02": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_02.png": "bf07c9945dabf8560610fbd8ee5352f06d5615521fc55f9fafb3218c9d537029"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_02.glb",
+    "runtime_sha256": "9ede03b6b20ceb6922e9a146350c117d1ea0b71077d9ebc5929d2c2fd0ffc0a9",
+    "source_model": "assets/verda/characters/psx/Character_Female_02.fbx",
+    "source_sha256": "dd8b5c37540998b3af6fb49a8b6c557c050d5b48e3c6c12fcbef740667d39b30",
+    "texture_sha256": "bf07c9945dabf8560610fbd8ee5352f06d5615521fc55f9fafb3218c9d537029"
+  },
+  "character_female_03": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_03.png": "6d2f80a11bc9c765300a3c52c14163611d0f9bd4d222dab4194906283376a058"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_03.glb",
+    "runtime_sha256": "b394e9a760baea9d769e23dd3f2f33bd2915649dd00333325a34621cfd57849e",
+    "source_model": "assets/verda/characters/psx/Character_Female_03.fbx",
+    "source_sha256": "788b952cc14d243553f544dd1fd5dd26846bb3af5a34f362bcc63e211a5b7c2c",
+    "texture_sha256": "6d2f80a11bc9c765300a3c52c14163611d0f9bd4d222dab4194906283376a058"
+  },
+  "character_female_04": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_04.png": "b8bfce0a030a3738f778b929e4550410521c57c81a7acc64567303033d46c97f"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_04.glb",
+    "runtime_sha256": "54145c4f68949f15d893fc39465912c02ad311535cec4f33dcfdcc810b6aaf27",
+    "source_model": "assets/verda/characters/psx/Character_Female_04.fbx",
+    "source_sha256": "6747bc9128b09aca3c0a0da5a5e30c19a352950554706656023bc803855d88a6",
+    "texture_sha256": "b8bfce0a030a3738f778b929e4550410521c57c81a7acc64567303033d46c97f"
+  },
+  "character_female_05": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_05.png": "012cd54a713aa8a4358870542b67e2356b7230c3ce77829e810d14cfca582d5f"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_05.glb",
+    "runtime_sha256": "a30ddba84cba0ad678bf454a3a6c95c9d9e122f748100d2662fc79f806df01fe",
+    "source_model": "assets/verda/characters/psx/Character_Female_05.fbx",
+    "source_sha256": "2349f78ecca927a1b4d8418653b1b71b6395d4343363023741268098d200df8b",
+    "texture_sha256": "012cd54a713aa8a4358870542b67e2356b7230c3ce77829e810d14cfca582d5f"
+  },
+  "character_female_06": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_06.png": "057ad01015605aa3a3182bdae4cdffc5ee24e6f763512c5591ed8fb208cf7901"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_06.glb",
+    "runtime_sha256": "0188518e7770fe7ec4366f13aec7bb65bdef04fd827e5183815f145d197492a6",
+    "source_model": "assets/verda/characters/psx/Character_Female_06.fbx",
+    "source_sha256": "3aaf6fa89a74b33235db749bc324a19765b0e7a409d1784e6989d3a1dc1ab072",
+    "texture_sha256": "057ad01015605aa3a3182bdae4cdffc5ee24e6f763512c5591ed8fb208cf7901"
+  },
+  "character_female_07": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_07.png": "2b080632ad93eb322680d2c2e53e2ec68c06cdee7e5b68fd04c0afd9f4b8cc41"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_07.glb",
+    "runtime_sha256": "6b0f84ceeb2b6bdf93f8c8b9a8a7724304e6fc594142bb029b3c240a9bed1715",
+    "source_model": "assets/verda/characters/psx/Character_Female_07.fbx",
+    "source_sha256": "a4967711cd15da5fff41b0dc0eafa47bf46d16b14005b6db18297fed8e313938",
+    "texture_sha256": "2b080632ad93eb322680d2c2e53e2ec68c06cdee7e5b68fd04c0afd9f4b8cc41"
+  },
+  "character_female_08": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_08.png": "c0d8ad622baa8d276e3e4b53073801c494ef332b6395624904a45fa6245163fe"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_08.glb",
+    "runtime_sha256": "1d4665860e68fe5c73540d907b494333594b94cbfa822d55388a437121c9a1cf",
+    "source_model": "assets/verda/characters/psx/Character_Female_08.fbx",
+    "source_sha256": "f4339a956fb4f626247cf37855613be9bc986437ef256ba2dca8b2642dd7d314",
+    "texture_sha256": "c0d8ad622baa8d276e3e4b53073801c494ef332b6395624904a45fa6245163fe"
+  },
+  "character_female_09": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_09.png": "f353417e8aab75546733320173528957b5faec8cfd7fde2b1b8ad62526808d03"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_09.glb",
+    "runtime_sha256": "615a642bbcb308120448649b7197f69d89783c02769fefbdb52f53154d7d7496",
+    "source_model": "assets/verda/characters/psx/Character_Female_09.fbx",
+    "source_sha256": "4b5b1d7cb622fb6aa85b4a605b3ae92ee36535f76a45d7d9d6453a4ced88ac82",
+    "texture_sha256": "f353417e8aab75546733320173528957b5faec8cfd7fde2b1b8ad62526808d03"
+  },
+  "character_female_10": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_10.png": "96f821ae0f9993488b601ce032e8002d4060f326e1ed4f9e02512d1755b62477"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_10.glb",
+    "runtime_sha256": "2f3d14f32418532531df6c8e5a6482aa9cca175b1b6884859825fb9443f6fd09",
+    "source_model": "assets/verda/characters/psx/Character_Female_10.fbx",
+    "source_sha256": "d3e86d513d3c67071bfb9ac83d0f18abab53a4b351a3b211f9b5789546795391",
+    "texture_sha256": "96f821ae0f9993488b601ce032e8002d4060f326e1ed4f9e02512d1755b62477"
+  },
+  "character_female_11": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_11.png": "3719e8acd6db7fc4bc4cc7874f836b9c8a5d3369c075b092dc398ead0553cebf"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_11.glb",
+    "runtime_sha256": "78ed874189d93dea9d7932d9a1af62efb25ed80c24fdfeb822cd38e557f60719",
+    "source_model": "assets/verda/characters/psx/Character_Female_11.fbx",
+    "source_sha256": "035cd857bf94e2e7bb3d3e4b77569cbf5f6a1c46aed599240f25942387b78057",
+    "texture_sha256": "3719e8acd6db7fc4bc4cc7874f836b9c8a5d3369c075b092dc398ead0553cebf"
+  },
+  "character_female_12": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_12.png": "9b29c23df6ca2f85f5c69a101d4a94d0cf691608661761237e5f97c32d2849ca"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_12.glb",
+    "runtime_sha256": "2d980fac24acf788dc609b05215687bb963d4d8d70a0806c7cc9b5b1bf8a9023",
+    "source_model": "assets/verda/characters/psx/Character_Female_12.fbx",
+    "source_sha256": "cc17f58f2cff80877f15ff15d11a40fda70f1b71c67add41f4734e935a634cc4",
+    "texture_sha256": "9b29c23df6ca2f85f5c69a101d4a94d0cf691608661761237e5f97c32d2849ca"
+  },
+  "character_female_13": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_13.png": "5fe44e77a5e8742050ce9fa5c0761787b7491bbc96a99070a2eb02f603b4d4ac"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_13.glb",
+    "runtime_sha256": "845af436d98b4268fc49035fde6c878f6427ab980b635eb00c95ef19b7092f6e",
+    "source_model": "assets/verda/characters/psx/Character_Female_13.fbx",
+    "source_sha256": "7dcd1d1e5fe7170fa433e072521e146649bbac0935fc2f01c71b8c7182087455",
+    "texture_sha256": "5fe44e77a5e8742050ce9fa5c0761787b7491bbc96a99070a2eb02f603b4d4ac"
+  },
+  "character_female_14": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_14.png": "1b0241849142610f49ebea397ec0a4b23cdfcb77e1198159a92aa6fb2f8b26ca"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_14.glb",
+    "runtime_sha256": "40093cbfb5db2db4db07e5d5ebef4e2e0dd88672dabbd786bab9b22f95174d64",
+    "source_model": "assets/verda/characters/psx/Character_Female_14.fbx",
+    "source_sha256": "33e3bd4c43c08967945ebcaa1e4404a6d530598fdf07c1bebe513a57e1bc5c3e",
+    "texture_sha256": "1b0241849142610f49ebea397ec0a4b23cdfcb77e1198159a92aa6fb2f8b26ca"
+  },
+  "character_female_15": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_15.png": "ab697c813830a92eb5c634996fcedee0d1f49b6246c089825020250147bae329"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_15.glb",
+    "runtime_sha256": "167a976351fa97387f597341bf8bcd4f9490057f58aa90d7ee63f098947ed46b",
+    "source_model": "assets/verda/characters/psx/Character_Female_15.fbx",
+    "source_sha256": "32b3f415998a2ade7354c858e0710679aeefd1086b7b88ebc4c70c06ea1b636b",
+    "texture_sha256": "ab697c813830a92eb5c634996fcedee0d1f49b6246c089825020250147bae329"
+  },
+  "character_female_16": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Female_16.png": "2919ec7047812e354ff89934b4c28170502bbb74f45360cf79d1d8327441e0fb"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Female_16.glb",
+    "runtime_sha256": "19700f70c41435a041597c1978abbb1f9151adca8b86262754a43199f321f1b2",
+    "source_model": "assets/verda/characters/psx/Character_Female_16.fbx",
+    "source_sha256": "115de9e48523443f5610844f8e6e47c4327c84ade8f63dc58aae210cc7e31ade",
+    "texture_sha256": "2919ec7047812e354ff89934b4c28170502bbb74f45360cf79d1d8327441e0fb"
+  },
+  "character_killer": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Killer.png": "50016be85d511325fb26ab10a44202dcd7e74eacf32875db2dd79b3ee9794a43"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer.glb",
+    "runtime_sha256": "f378d0333912340ca91bae113ceb91b82df385f8c530cb45ab03ffa11bfa6885",
+    "source_model": "assets/verda/characters/psx/Character_Killer.fbx",
+    "source_sha256": "7e3cb1f9211141e5ba532c7aeee5a0c20b71d60269e31f33e65c51cba0c682cc",
+    "texture_sha256": "50016be85d511325fb26ab10a44202dcd7e74eacf32875db2dd79b3ee9794a43"
+  },
+  "character_killer_01": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Killer_01.png": "c148da10975b5d67e8d5cd36cdefc87121187941829fb5af19d72f354d796da7"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_01.glb",
+    "runtime_sha256": "22d8be6cab549d526ad5925b4c5497110db7f7c04244ea3ba7341f76ebc15ca1",
+    "source_model": "assets/verda/characters/psx/Character_Killer_01.fbx",
+    "source_sha256": "e7ddee2114c5f41d13e1e9271ef49038ce62552cf70631795b0286b3cdf674bf",
+    "texture_sha256": "c148da10975b5d67e8d5cd36cdefc87121187941829fb5af19d72f354d796da7"
+  },
+  "character_killer_02": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Killer_02.png": "248416490132ff16787880a95d88b46bf46851637f9fabe267eb27b98abbe62b"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_02.glb",
+    "runtime_sha256": "69b26c90a5203868c1a8522d825a273594949a929626c833266616b0b3121ead",
+    "source_model": "assets/verda/characters/psx/Character_Killer_02.fbx",
+    "source_sha256": "ba3bf5abe708a20ae56a80fcdca0a87ebe66e1eacb0a6cb2ac533cf2eadb49ec",
+    "texture_sha256": "248416490132ff16787880a95d88b46bf46851637f9fabe267eb27b98abbe62b"
+  },
+  "character_killer_03": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Killer_03.png": "0fdf0210a193e9a42425df172085934d754f2533e918f31e7f0799f2f7bb889e"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_03.glb",
+    "runtime_sha256": "9eb582ea3e75210c9528c55aea95593d73fb4500439935a8bcf91c4d749f59c1",
+    "source_model": "assets/verda/characters/psx/Character_Killer_03.fbx",
+    "source_sha256": "782c17617e12145c9248ec5a5e975565c6cb290a7e582b14828e2a1588628ad4",
+    "texture_sha256": "0fdf0210a193e9a42425df172085934d754f2533e918f31e7f0799f2f7bb889e"
+  },
+  "character_killer_04": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Killer_04.png": "6c4ea4dd9d80f177f6bf273da0c3af7df3e905cbeb99d946f3ec4d03eb30a165"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_04.glb",
+    "runtime_sha256": "ce4ffc00a514871ca3f8941ce0ed5778879dc5864a17715062a7ae3e790d8329",
+    "source_model": "assets/verda/characters/psx/Character_Killer_04.fbx",
+    "source_sha256": "0611dbe984a5b0ead20423a195debec5039b19371796be8e2fec851a8a3fa379",
+    "texture_sha256": "6c4ea4dd9d80f177f6bf273da0c3af7df3e905cbeb99d946f3ec4d03eb30a165"
+  },
+  "character_killer_05": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Killer_05.png": "0362ef06d1535154909a270001fece402e093c271426e74fa17594b128862040"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_05.glb",
+    "runtime_sha256": "8f17f214bc755bd9f8783a031dd8ca17f646b3cbf574d3cf46d33c2ad413cdf8",
+    "source_model": "assets/verda/characters/psx/Character_Killer_05.fbx",
+    "source_sha256": "9d1604b076cf65f2da94475006c07a2d829b782a12b50f43dfed3f9ab69ca507",
+    "texture_sha256": "0362ef06d1535154909a270001fece402e093c271426e74fa17594b128862040"
+  },
+  "character_killer_06": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Killer_06.png": "80f0ec48c644f46c613ce541f5d46e5a6dd9683cb8973468ec1e1f17c8a372f7"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_06.glb",
+    "runtime_sha256": "de352340cb548d9ba52c655faaf79c64bf8b5dca2f54448c074b82a13b4c850e",
+    "source_model": "assets/verda/characters/psx/Character_Killer_06.fbx",
+    "source_sha256": "17d089aa1893876e8a03b5c36f1db9ecdee1c730672ea36e46dd17e333ba4ee2",
+    "texture_sha256": "80f0ec48c644f46c613ce541f5d46e5a6dd9683cb8973468ec1e1f17c8a372f7"
+  },
+  "character_killer_07": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Killer_07.png": "19dc0cd3334046d2a06c56a8c33f83c5fe573c9312ffb5b69174cee42dcda162"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Killer_07.glb",
+    "runtime_sha256": "7bad223a2f47c7902c75773b802c3c7578b9eae46841446932f953be19d7fa19",
+    "source_model": "assets/verda/characters/psx/Character_Killer_07.fbx",
+    "source_sha256": "91703932b770d91b68e23a7a5adf3f08f506ff3091ade86adf3f30f658a80c11",
+    "texture_sha256": "19dc0cd3334046d2a06c56a8c33f83c5fe573c9312ffb5b69174cee42dcda162"
+  },
+  "character_monster": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Monster.png": "b44139504c07ec4fd891a7c0f7d500dc28ffdb7cc3eee13016ee9599961a4d41"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Monster.glb",
+    "runtime_sha256": "142f39bc9c426d1f15a19ed28093748fe4919ea2b4ac7219d500d47a8c636667",
+    "source_model": "assets/verda/characters/psx/Character_Monster.fbx",
+    "source_sha256": "7036169249b22a5bca5e7beb793e512650a4da38ad794cacadf2223ff743850c",
+    "texture_sha256": "b44139504c07ec4fd891a7c0f7d500dc28ffdb7cc3eee13016ee9599961a4d41"
+  },
+  "character_monster_01": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Monster_01.png": "70f2e71ebac88fe4b76869792ba0ac26a269a991c7dd95e39bc23bb21c79b1ef"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Monster_01.glb",
+    "runtime_sha256": "b40c6b0ec11dd00256f6ea9b4d6c1a06fff6157afbd97969073eb2443ed040a4",
+    "source_model": "assets/verda/characters/psx/Character_Monster_01.fbx",
+    "source_sha256": "b6073bd568fd6d6c839cfc1a4bc77d8d7c3cd135fb36338e344c3504766d8270",
+    "texture_sha256": "70f2e71ebac88fe4b76869792ba0ac26a269a991c7dd95e39bc23bb21c79b1ef"
+  },
+  "character_monster_02": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Monster_02.png": "69120191f171f9d947795a419623bedb63fd80090867290eb3d7bd6232528ca1"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Monster_02.glb",
+    "runtime_sha256": "28a992d0e8382c8ea0e5c84db723f31341f73276ed9ccd398c2752f856d7e2c1",
+    "source_model": "assets/verda/characters/psx/Character_Monster_02.fbx",
+    "source_sha256": "316c893743fb2e01e8847c67fda93d5d106362afba1d8d0907b9ba3361dd5e85",
+    "texture_sha256": "69120191f171f9d947795a419623bedb63fd80090867290eb3d7bd6232528ca1"
+  },
+  "character_monster_03": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Monster_03.png": "05d55977f938ed643e79f9bd3df6001e582594c4a515976ed32c1b407630c925"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Monster_03.glb",
+    "runtime_sha256": "f33da760ad13730f52080669fd2621a75aa2b890679b2d56bce781015a80ac3a",
+    "source_model": "assets/verda/characters/psx/Character_Monster_03.fbx",
+    "source_sha256": "6efdb43f14b787ff56587b6b05d10b97553316ed52de48d8be532f21dc456feb",
+    "texture_sha256": "05d55977f938ed643e79f9bd3df6001e582594c4a515976ed32c1b407630c925"
+  },
+  "character_monster_04": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Monster_04.png": "3396ff7c7c6b4d4fbdac17e5bd3a7598406233a8dcce33de53324e86dfb08746"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Monster_04.glb",
+    "runtime_sha256": "c0db217c113bfa998e5fc1e4e8f6790ae12b2b632866daa5ae5732e2e2fe3a44",
+    "source_model": "assets/verda/characters/psx/Character_Monster_04.fbx",
+    "source_sha256": "444d68547423aa1334f3b852949ab35fbad3181239730998eba6be8fd719005d",
+    "texture_sha256": "3396ff7c7c6b4d4fbdac17e5bd3a7598406233a8dcce33de53324e86dfb08746"
+  },
+  "character_monster_05": {
+    "dependencies": {
+      "assets/verda/characters/psx/textures/Character_Monster_05.png": "4ca510668158f7fa41923a3191c1985c8be6f94faddbe3f06d989ffb7c3d957e"
+    },
+    "runtime_model": "assets/verda/characters/runtime/psx/Character_Monster_05.glb",
+    "runtime_sha256": "9efb4d7ca9e51134990dc7bf2af72b0df7f83ae1eb4e18b291be1dd3e6a84098",
+    "source_model": "assets/verda/characters/psx/Character_Monster_05.fbx",
+    "source_sha256": "3ba5a6aec861cfedf289ff3d648c43e35b2b0bc3240fb30dbaaa46f2b38075e5",
+    "texture_sha256": "4ca510668158f7fa41923a3191c1985c8be6f94faddbe3f06d989ffb7c3d957e"
+  },
+  "rebel_modern_rebel_soldier_character": {
+    "dependencies": {
+      "assets/verda/characters/rebel/Modern Rebel Soldier Character/Textures/BodyTexture.png": "84248b78e6f212f17595c56499d98f4d9160dd454ea956fd85ad2fba55408eb0",
+      "assets/verda/characters/rebel/Modern Rebel Soldier Character/Textures/BootsAndSkinTexture.png": "f493a9fc7410a2e28755e1d785a7b922bad791ae9256cf983bba15bfeb5793a0",
+      "assets/verda/characters/rebel/Modern Rebel Soldier Character/Textures/HeadTexture.png": "48150cd876e38ebbc3590fa8a26e8c18acbc45ba8d2f7624dd711bbda408c802"
+    },
+    "runtime_model": "assets/verda/characters/runtime/rebel/Modern Rebel Soldier Character/Models/Modern Rebel Soldier Character.glb",
+    "runtime_sha256": "60fe4c52b590d40f4a5f2258e57c278c1a110797b96cbe291b5e0fd185d433fb",
+    "source_model": "assets/verda/characters/rebel/Modern Rebel Soldier Character/Models/Modern Rebel Soldier Character.fbx",
+    "source_sha256": "60e48eb2bde089e52e9230f324925320f15d8698e9ff1d7926329e40c3f12d40",
+    "texture_sha256": null
+  }
+}

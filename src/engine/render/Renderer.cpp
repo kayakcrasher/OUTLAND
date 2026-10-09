@@ -1,19 +1,21 @@
 #include "outland/engine/render/Renderer.hpp"
 #include "outland/engine/audio/EnvironmentAudio.hpp"
 #include "outland/game/combat/CombatRenderer.hpp"
+#include "outland/assets/ModelCache.hpp"
 
 #include "outland/input/InputSystem.hpp"
+#include <unordered_set>
 #include "outland/input/TouchHUD.hpp"
 #include "outland/game/GameMode.hpp"
 #include "outland/game/HomeScreen.hpp"
 #include "outland/dev/DevLab.hpp"
+#include "outland/creator/CreatorMapIO.hpp"
 
 #ifdef OUTLAND_DEV_TOOLS
 #include "outland/creator/CreatorController.hpp"
-#include "outland/creator/CreatorMapIO.hpp"
 #include "outland/creator/CreatorTouchUI.hpp"
 #endif
-#include "outland/player/VerdanCharacter.hpp"
+#include "outland/characters/CharacterRenderer.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/terrain/TerrainWorld.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
@@ -31,58 +33,23 @@ namespace outland::engine {
 
 namespace {
 
-std::unordered_map<std::string, Model>&
-world_asset_model_cache() {
-    static std::unordered_map<std::string, Model> cache;
+assets::ModelCache& world_asset_model_cache() {
+    static assets::ModelCache cache;
     return cache;
 }
 
-Model* get_world_asset_model(
-    const std::string& path
-) {
-    if (path.empty()) {
-        return nullptr;
-    }
-
-    auto& cache = world_asset_model_cache();
-
-    const auto found = cache.find(path);
-
-    if (found != cache.end()) {
-        return &found->second;
-    }
-
-    if (!FileExists(path.c_str())) {
-        TraceLog(
-            LOG_WARNING,
-            "OUTLAND asset missing: %s",
-            path.c_str()
-        );
-        return nullptr;
-    }
-
-    Model model = LoadModel(path.c_str());
-
-    if (model.meshCount <= 0) {
-        TraceLog(
-            LOG_WARNING,
-            "OUTLAND asset failed to load: %s",
-            path.c_str()
-        );
-        return nullptr;
-    }
-
-    auto result = cache.emplace(
-        path,
-        std::move(model)
-    );
-
-    return &result.first->second;
+Model* get_world_asset_model(const std::string& path, const characters::CharacterRegistry& registry) {
+    const auto* character = registry.find_model(path);
+    return world_asset_model_cache().load(path, [character](Model& model) {
+        return !character || character->pool == characters::CharacterPool::Arms ||
+            characters::CharacterRenderer::prepare(*character, model);
+    });
 }
 
 void draw_model_backed_world_assets(
     const world::VerdaRegion& region,
-    const Vector3& camera_position
+    const Vector3& camera_position,
+    const characters::CharacterRegistry& registry
 ) {
     constexpr float max_distance = 320.0F;
     constexpr float max_distance_sq =
@@ -120,7 +87,7 @@ void draw_model_backed_world_assets(
 
             Model* model =
                 get_world_asset_model(
-                    asset.model_path
+                    asset.model_path, registry
                 );
 
             if (model == nullptr) {
@@ -131,7 +98,7 @@ void draw_model_backed_world_assets(
                 *model,
                 asset.position,
                 {0.0F, 1.0F, 0.0F},
-                asset.rotation_y,
+                asset.rotation_y + (registry.find_model(asset.model_path) ? registry.find_model(asset.model_path)->facing_degrees : 0.0F),
                 {1.0F, 1.0F, 1.0F},
                 WHITE
             );
@@ -141,7 +108,8 @@ void draw_model_backed_world_assets(
 
 #ifdef OUTLAND_DEV_TOOLS
 void draw_creator_model_preview(
-    const creator::CreatorController& controller
+    const creator::CreatorController& controller,
+    const characters::CharacterRegistry& registry
 ) {
     const creator::CreatorPreview& preview =
         controller.preview();
@@ -162,7 +130,7 @@ void draw_creator_model_preview(
     }
 
     Model* model =
-        get_world_asset_model(asset->model_path);
+        get_world_asset_model(asset->model_path, registry);
 
     if (model == nullptr) {
         return;
@@ -175,7 +143,7 @@ void draw_creator_model_preview(
         *model,
         preview.position,
         {0.0F, 1.0F, 0.0F},
-        preview.rotation_y,
+        preview.rotation_y + (registry.find_model(asset->model_path) ? registry.find_model(asset->model_path)->facing_degrees : 0.0F),
         {
             asset->default_scale,
             asset->default_scale,
@@ -260,6 +228,8 @@ bool Renderer::initialize(
         return false;
     }
 
+    // Renderer handles Escape as return-to-home; raylib must not close first.
+    SetExitKey(KEY_NULL);
     SetTargetFPS(60);
 
     initialized_ = true;
@@ -280,6 +250,10 @@ void Renderer::run() {
 
     input::InputSystem input_system;
     input::TouchHUD touch_hud;
+    bool inventory_open = false;
+    std::unordered_set<std::string> collected_loot;
+    std::string interaction_message;
+    float interaction_remaining = 0.0F;
 
     game::HomeScreen home_screen;
     dev::DevLab dev_lab;
@@ -293,6 +267,24 @@ void Renderer::run() {
         game::GameMode::Home;
 
     world::VerdaRegion verda_region;
+    const std::string map_path = FileExists("maps/verda_creator.map") ? "maps/verda_creator.map" :
+        std::string(GetApplicationDirectory()) + "maps/verda_creator.map";
+    if (FileExists(map_path.c_str())) {
+        const bool loaded = creator::CreatorMapIO::load(verda_region, map_path);
+        TraceLog(loaded ? LOG_INFO : LOG_ERROR, loaded ? "Creator world loaded for gameplay" :
+            "Creator world failed to load; using training region");
+    }
+    const std::string character_manifest = "assets/verda/characters/character_manifest.tsv";
+    const std::string character_root = FileExists((std::string(GetApplicationDirectory()) + character_manifest).c_str())
+        ? GetApplicationDirectory() : ".";
+    characters::CharacterRegistry character_registry;
+    std::string character_error;
+    if (!character_registry.load(character_root + "/" + character_manifest, character_error)) {
+        TraceLog(LOG_ERROR, "%s", character_error.c_str());
+        return;
+    }
+    characters::CharacterRenderer character_renderer(character_registry, character_root);
+    characters::NpcSystem npcs;
     world::terrain::TerrainWorld terrain_world;
     world::foliage::FoliageSystem foliage_system;
     audio::EnvironmentAudio environment_audio(
@@ -303,7 +295,6 @@ void Renderer::run() {
     game::combat::CombatWorld combat_world(verda_region);
     float recoil_pitch = 0.0F, recoil_yaw = 0.0F;
     bool trigger_ready = false;
-    float character_animation_time = 0.0F;
 
     Camera3D camera{};
 
@@ -359,6 +350,12 @@ void Renderer::run() {
             game_mode ==
             game::GameMode::Home
         ) {
+            if (IsKeyPressed(KEY_ESCAPE)) break;
+            input_system.update(screen_width, screen_height, true, true);
+#ifdef OUTLAND_DEV_TOOLS
+            creator_controller.set_enabled(false);
+            creator_touch_ui.update(creator_controller, screen_width, screen_height);
+#endif
             environment_audio.update(player.position, player.grounded, false, verda_region);
             const game::GameMode selected =
                 home_screen.update(
@@ -397,11 +394,14 @@ void Renderer::run() {
                 player.grounded =
                     true;
 
-                character_animation_time = 0.0F;
                 weapons.reset(game_mode == game::GameMode::DevLab);
                 combat_world.reset_targets();
                 recoil_pitch = recoil_yaw = 0.0F;
                 trigger_ready = false;
+                inventory_open = false;
+                collected_loot.clear();
+                interaction_remaining = 0;
+                input_system.update(screen_width, screen_height, true, true);
             }
 
             continue;
@@ -416,6 +416,11 @@ void Renderer::run() {
         ) {
             game_mode =
                 game::GameMode::Home;
+            input_system.cancel_controls();
+            // Finish this frame so the Home screen does not reuse the same Escape edge.
+            BeginDrawing();
+            home_screen.draw(screen_width, screen_height);
+            EndDrawing();
 
             continue;
         }
@@ -424,14 +429,80 @@ void Renderer::run() {
         // INPUT
         // ====================================================
 
-        input_system.update(
-            screen_width,
-            screen_height
-        );
-
-        const input::PlayerInput&
-            controls =
-                input_system.player();
+        bool creator_active = false;
+        std::function<bool(Vector2)> reserved = [&](Vector2 point) {
+            return CheckCollisionPointRec(point, audio_button);
+        };
+#ifdef OUTLAND_DEV_TOOLS
+        creator_active = game_mode == game::GameMode::DevLab;
+        creator_controller.set_enabled(creator_active);
+        creator_touch_ui.update(creator_controller, screen_width, screen_height);
+        if (creator_active) {
+            reserved = [&](Vector2 point) {
+                return CheckCollisionPointRec(point, audio_button) ||
+                    creator_touch_ui.owns_point(point, screen_width, screen_height);
+            };
+        }
+#endif
+        // The equipment panel is modal: BAG closes it and GUN changes equipment.
+        if (inventory_open) {
+            const auto& layout = input_system.layout();
+            const float scale = input::touch_scale(screen_width, screen_height);
+            input_system.update(screen_width, screen_height, true, !IsWindowFocused(),
+                [&](Vector2 p) {
+                    for (const auto& e : {layout.inventory, layout.weapon})
+                        if (Vector2Distance(p, {e.x * screen_width, e.y * screen_height}) <= 43 * scale * e.scale)
+                            return false;
+                    return true;
+                });
+            const bool switch_weapon = input_system.player().next_weapon;
+            if (input_system.player().inventory) {
+                inventory_open = false;
+                input_system.cancel_controls();
+            }
+            input_system.player() = {};
+            input_system.player().next_weapon = switch_weapon;
+        } else {
+            input_system.update(screen_width, screen_height, !creator_active,
+#ifdef OUTLAND_DEV_TOOLS
+                !IsWindowFocused() || (creator_active && creator_touch_ui.inventory_open()),
+#else
+                !IsWindowFocused(),
+#endif
+                reserved);
+            if (input_system.player().inventory) {
+                inventory_open = true;
+                input_system.cancel_controls();
+            }
+        }
+        const input::PlayerInput& controls = input_system.player();
+        interaction_remaining = std::max(0.0F, interaction_remaining - dt);
+        if (controls.interact && !creator_active) {
+            const world::GameplayMarker* nearest = nullptr;
+            float distance = 3.0F;
+            std::string loot_key;
+            for (const auto& settlement : verda_region.settlements()) {
+                for (const auto& marker : settlement.gameplay_markers) {
+                    const float d = Vector3Distance(player.position, marker.position);
+                    if (marker.enabled && d < distance) {
+                        nearest = &marker; distance = d;
+                        loot_key = settlement.id + "/" + marker.id;
+                    }
+                }
+            }
+            interaction_message = nearest ? "Nearby marker: " + nearest->id : "Nothing to interact with nearby";
+            if (nearest && nearest->type == world::GameplayMarkerType::LootSpawn) {
+                if (collected_loot.contains(loot_key)) interaction_message = "Already collected";
+                else {
+                    const int rounds = weapons.collect_ammo();
+                    if (rounds > 0) {
+                        collected_loot.insert(loot_key);
+                        interaction_message = "Collected " + std::to_string(rounds) + " reserve rounds";
+                    } else interaction_message = "Ammo reserve is full";
+                }
+            }
+            interaction_remaining = 2.5F;
+        }
 
         // ====================================================
         // DEV LAB
@@ -510,7 +581,7 @@ void Renderer::run() {
             std::sin(player.yaw)
         };
 
-        const float speed = controls.aim ? walk_speed * 0.55F :
+        const float speed = controls.crouch ? walk_speed * 0.45F : controls.aim ? walk_speed * 0.55F :
                             controls.sprint ? sprint_speed : walk_speed;
 
         Vector3 movement =
@@ -579,13 +650,14 @@ void Renderer::run() {
         // The collision system determines whether the player
         // is aligned with and facing a valid window.
 
+        bool vaulted = false;
         if (controls.jump && player.grounded) {
             Vector3 vault_landing{};
 
             const Vector3 vault_forward{
-                -forward.x,
+                forward.x,
                 0.0F,
-                -forward.z
+                forward.z
             };
 
             if (
@@ -614,6 +686,7 @@ void Renderer::run() {
                 // does not immediately launch the player.
                 player.vertical_velocity = 0.0F;
                 player.grounded = true;
+                vaulted = true;
             }
         }
 
@@ -641,17 +714,12 @@ void Renderer::run() {
                 1.0F
             );
 
-        if (movement_amount > 0.02F) {
-            character_animation_time +=
-                dt;
-        }
-
         // ====================================================
         // JUMP + GRAVITY
         // ====================================================
 
         if (
-            controls.jump &&
+            controls.jump && !vaulted &&
             player.grounded
         ) {
             player.vertical_velocity =
@@ -710,7 +778,7 @@ void Renderer::run() {
 
         const Vector3 head_position{
             player.position.x,
-            player.position.y + 0.75F,
+            player.position.y + (controls.crouch ? 0.15F : 0.75F),
             player.position.z
         };
 
@@ -751,54 +819,18 @@ void Renderer::run() {
                     camera_direction
                 );
 
-                creator_touch_ui.update(
-                    creator_controller,
-                    screen_width,
-                    screen_height
+                // Minecraft-style center-screen targeting:
+                // whatever the camera points at becomes
+                // the current Creator selection.
+                creator_controller.select_target(
+                    verda_region,
+                    camera.position,
+                    camera_direction
                 );
+
 
                 const auto& creator_actions =
                     creator_touch_ui.actions();
-
-                // ====================================================
-                // CREATOR WORLD PICKING
-                //
-                // X11 mouse clicks use the actual screen position.
-                // UI owns its pixels, so editor buttons never select
-                // world geometry behind them.
-                // ====================================================
-                if (
-                    creator_touch_ui.active_tool() ==
-                        creator::CreatorTouchTool::Select &&
-                    IsMouseButtonPressed(
-                        MOUSE_BUTTON_LEFT
-                    )
-                ) {
-                    const Vector2 pointer =
-                        GetMousePosition();
-
-                    if (
-                        !creator_touch_ui.pointer_over_ui(
-                            pointer,
-                            screen_width,
-                            screen_height
-                        )
-                    ) {
-                        const Ray pick_ray =
-                            GetScreenToWorldRay(
-                                pointer,
-                                camera
-                            );
-
-                        (void)
-                            creator_controller.select_target(
-                                verda_region,
-                                pick_ray.position,
-                                pick_ray.direction
-                            );
-                    }
-                }
-
 
                 if (creator_actions.place) {
                     (void)creator_controller.place_selected(
@@ -893,6 +925,7 @@ void Renderer::run() {
         recoil_pitch=std::min(.20F,recoil_pitch+weapons.events().pitch_kick);
         recoil_yaw+=weapons.events().yaw_kick;
         environment_audio.play_combat(weapons.selected(),weapons.events());
+        npcs.reconcile(verda_region, character_registry);
 
         // ====================================================
         // DRAW
@@ -944,12 +977,7 @@ void Renderer::run() {
         // First region of Verda.
         verda_region.draw(camera.position);
 
-#ifdef OUTLAND_DEV_TOOLS
-        draw_model_backed_world_assets(
-            verda_region,
-            camera.position
-        );
-#endif
+        draw_model_backed_world_assets(verda_region, camera.position, character_registry);
 
 #ifdef OUTLAND_DEV_TOOLS
         if (
@@ -961,7 +989,7 @@ void Renderer::run() {
             );
 
             draw_creator_model_preview(
-                creator_controller
+                creator_controller, character_registry
             );
         }
 #endif
@@ -999,6 +1027,8 @@ void Renderer::run() {
         game::combat::CombatRenderer::draw_gun(gun_muzzle,gun_direction,weapons.selected(),
             weapons.reload_remaining()/weapons.weapon().reload_seconds,weapons.muzzle_flash());
 
+        character_renderer.draw_npcs(npcs, camera.position);
+
         // ----------------------------------------------------
         // PLAYER BODY
         // ----------------------------------------------------
@@ -1007,13 +1037,7 @@ void Renderer::run() {
 
             const Vector3 character_feet{player.position.x,player.position.y-1.0F,player.position.z};
 
-            player::VerdanCharacter::draw(
-                character_feet,
-                player.yaw,
-                movement_amount,
-                character_animation_time,
-                true
-            );
+            character_renderer.draw_player(character_feet, player.yaw);
         }
 
         EndMode3D();
@@ -1066,22 +1090,25 @@ void Renderer::run() {
             DrawText(TextFormat("%s %.0f",weapons.last_headshot() ? "HEAD HIT" : "HIT",weapons.last_damage()),
                 center_x-40,center_y+35,16,crosshair_color);
         }
-        DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
-        DrawText(weapons.weapon().name,24,screen_height-94,19,RAYWHITE);
-        if (weapons.unlimited()) DrawText("AMMO UNLIMITED - DEV LAB",24,screen_height-68,18,YELLOW);
-        else DrawText(TextFormat("%d / %d",weapons.ammo().loaded,weapons.ammo().reserve),
-            24,screen_height-68,22,RAYWHITE);
-        if (weapons.reload_remaining()>0) DrawText(TextFormat("RELOADING %.1fs",weapons.reload_remaining()),
-            24,screen_height-39,16,ORANGE);
-        else DrawText(weapons.ammo().loaded==0 && !weapons.unlimited() ?
-            "EMPTY - R / LOAD TO RELOAD" : "F / FIRE   Q / AIM   R / LOAD   TAB / GUN",
-            24,screen_height-39,12,RAYWHITE);
+        if (!creator_active && !inventory_open) {
+            DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
+            DrawText(weapons.weapon().name,24,screen_height-94,19,RAYWHITE);
+            if (weapons.unlimited()) DrawText("AMMO UNLIMITED - DEV LAB",24,screen_height-68,18,YELLOW);
+            else DrawText(TextFormat("%d / %d",weapons.ammo().loaded,weapons.ammo().reserve),
+                24,screen_height-68,22,RAYWHITE);
+            if (weapons.reload_remaining()>0) DrawText(TextFormat("RELOADING %.1fs",weapons.reload_remaining()),
+                24,screen_height-39,16,ORANGE);
+            else DrawText(weapons.ammo().loaded==0 && !weapons.unlimited() ?
+                "EMPTY - R / LOAD TO RELOAD" : "F / FIRE   Q / AIM   R / LOAD   TAB / GUN",
+                24,screen_height-39,12,RAYWHITE);
+        }
 
-        touch_hud.draw(
+        if (!inventory_open) touch_hud.draw(
             controls,
             input_system.layout(),
             screen_width,
-            screen_height
+            screen_height,
+            !creator_active
         );
 
         if (
@@ -1112,6 +1139,29 @@ void Renderer::run() {
         }
 #endif
 
+        if (inventory_open) {
+            DrawRectangle(0, 80, screen_width, screen_height - 80, Fade(BLACK, .94F));
+            DrawText("EQUIPMENT", 60, 110, 24, RAYWHITE);
+            DrawText(TextFormat("Weapon: %s", weapons.weapon().name), 60, 190, 20, RAYWHITE);
+            DrawText(TextFormat("Loaded: %d   Reserve: %d", weapons.ammo().loaded, weapons.ammo().reserve),
+                60, 225, 20, RAYWHITE);
+            const auto pistol = weapons.ammo(game::combat::WeaponId::Pistol);
+            const auto rifle = weapons.ammo(game::combat::WeaponId::Rifle);
+            DrawText(TextFormat("V9 PISTOL  %d / %d", pistol.loaded, pistol.reserve), 60, 270, 18, GRAY);
+            DrawText(TextFormat("VR30 RIFLE  %d / %d", rifle.loaded, rifle.reserve), 60, 300, 18, GRAY);
+            DrawText("BAG / I: close    GUN / TAB: equip next weapon", 60, 350, 18, GRAY);
+            const auto& gun = input_system.layout().weapon;
+            const Vector2 gun_button{gun.x * screen_width, gun.y * screen_height};
+            DrawCircleV(gun_button, 43 * gun.scale * input::touch_scale(screen_width, screen_height), DARKGRAY);
+            DrawText("GUN", static_cast<int>(gun_button.x) - 16, static_cast<int>(gun_button.y) - 7, 16, WHITE);
+            const auto& bag = input_system.layout().inventory;
+            const Vector2 p{bag.x * screen_width, bag.y * screen_height};
+            DrawCircleV(p, 43 * bag.scale * input::touch_scale(screen_width, screen_height), DARKGRAY);
+            DrawText("BAG", static_cast<int>(p.x) - 16, static_cast<int>(p.y) - 7, 16, WHITE);
+        }
+        if (interaction_remaining > 0)
+            DrawText(interaction_message.c_str(), screen_width / 2 - 170, 100, 18, RAYWHITE);
+
         DrawRectangleRec(audio_button, Fade(BLACK, 0.60F));
         DrawText(environment_audio.ready() ?
                  (environment_audio.muted() ? "AUDIO OFF · M" : "AUDIO ON · M") : "AUDIO UNAVAILABLE",
@@ -1135,6 +1185,7 @@ void Renderer::shutdown() {
         return;
     }
 
+    world_asset_model_cache().clear();
     CloseWindow();
 
     initialized_ = false;

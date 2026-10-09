@@ -586,7 +586,7 @@ void VerdaRegion::draw(const Vector3& camera_position) const {
         ) {
             if (
                 asset.type ==
-                AssetType::Tree
+                AssetType::Tree && asset.model_path.empty()
             ) {
                 draw_tree(
                     asset.position, camera_position

@@ -2,6 +2,9 @@
 
 #include "outland/input/PlayerInput.hpp"
 #include "outland/input/TouchLayout.hpp"
+#include <vector>
+#include <functional>
+#include <raylib.h>
 
 namespace outland::input {
 
@@ -9,9 +12,14 @@ class InputSystem {
 public:
     InputSystem();
 
+    // Gameplay controls are omitted in Creator mode; unreserved sticks still navigate.
+    // blocked cancels all input. reserved is checked only when a contact begins.
     void update(
         int screen_width,
-        int screen_height
+        int screen_height,
+        bool gameplay = true,
+        bool blocked = false,
+        const std::function<bool(Vector2)>& reserved = {}
     );
 
     [[nodiscard]]
@@ -28,34 +36,23 @@ public:
 
     void reset_layout();
 
+    // Keep active contacts quarantined until their release.
+    void cancel_controls();
+
 private:
     PlayerInput player_{};
     TouchLayout layout_{};
 
-    bool previous_jump_{false};
-    bool previous_view_{false};
-    bool previous_reload_{false};
-    bool previous_weapon_{false};
-
-    int movement_touch_id_{-1};
-    int look_touch_id_{-1};
-
-    // X11 development input.
-    enum class MouseControl {
-        None,
-        Movement,
-        Look,
-        Jump,
-        View,
-        Fire,
-        Aim,
-        Reload,
-        Weapon
+    enum class Control {
+        None, Movement, Look, Jump, View, Fire, Aim, Reload, Weapon,
+        Sprint, Crouch, Inventory, Interact
     };
-
-    MouseControl mouse_control_{
-        MouseControl::None
-    };
+    struct TouchOwner { int id; Control control; };
+    std::vector<TouchOwner> owners_;
+    Control mouse_control_{Control::None};
+    bool gameplay_{true};
+    bool blocked_{false};
+    int width_{0}, height_{0};
 };
 
 }

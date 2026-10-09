@@ -11,7 +11,8 @@ public:
         const PlayerInput& input,
         const TouchLayout& layout,
         int screen_width,
-        int screen_height
+        int screen_height,
+        bool gameplay = true
     ) const;
 };
 

@@ -24,6 +24,7 @@ struct PlayerInput {
 
     // World interaction
     bool interact{false};
+    bool inventory{false};
 
     // Camera
     bool toggle_view{false};
@@ -33,6 +34,7 @@ struct PlayerInput {
         reload = false;
         next_weapon = false;
         interact = false;
+        inventory = false;
         toggle_view = false;
     }
 };

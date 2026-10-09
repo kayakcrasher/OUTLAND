@@ -25,14 +25,7 @@ float hud_scale(
     int width,
     int height
 ) {
-    return std::clamp(
-        std::min(
-            static_cast<float>(width) / 1280.0F,
-            static_cast<float>(height) / 720.0F
-        ),
-        0.65F,
-        1.35F
-    );
+    return touch_scale(width, height);
 }
 
 
@@ -536,7 +529,8 @@ void TouchHUD::draw(
     const PlayerInput& input,
     const TouchLayout& layout,
     int screen_width,
-    int screen_height
+    int screen_height,
+    bool gameplay
 ) const {
     const float scale =
         hud_scale(
@@ -550,6 +544,17 @@ void TouchHUD::draw(
     const float base_button_radius =
         43.0F * scale;
 
+
+    const auto button = [&](const TouchElementLayout& e, const char* label, bool active) {
+        draw_text_button(position_of(e, screen_width, screen_height),
+            base_button_radius * e.scale, e.opacity, label, active);
+    };
+    if (gameplay) {
+    button(layout.sprint, "SPRINT", input.sprint);
+    button(layout.crouch, "CROUCH", input.crouch);
+    button(layout.inventory, "BAG", input.inventory);
+    button(layout.interact, "USE", input.interact);
+    }
 
     // ========================================================
     // LEFT THUMB — MOVEMENT
@@ -599,6 +604,8 @@ void TouchHUD::draw(
     // ========================================================
     // PRIMARY COMBAT CLUSTER
     // ========================================================
+
+    if (!gameplay) return;
 
     draw_fire_button(
         position_of(

@@ -79,6 +79,8 @@ int main() {
     input.reload=false;input.fire=false;
     for(int i=0;i<45;++i) gun.update(.05F,input,high,world);
     assert(gun.ammo().loaded==30 && gun.ammo().reserve==90 && gun.reload_remaining()==0);
+    assert(gun.collect_ammo()==30 && gun.ammo().reserve==120);
+    assert(gun.collect_ammo()==0 && gun.ammo().reserve==120);
     input.reload=true;gun.update(.05F,input,high,world);
     assert(!gun.events().reload_started);input.reload=false;
 
@@ -108,7 +110,7 @@ int main() {
     assert(initial.position.y+initial.velocity.y*.2F-falling.position.y>.18F);
 
     // Dev Lab can fire hundreds of rounds without depletion or forced reloads.
-    gun.reset(true);input={};input.fire=true;input.aim=true;
+    gun.reset(true);assert(gun.collect_ammo()==0);input={};input.fire=true;input.aim=true;
     fired=0;
     for(int i=0;i<600;++i) { gun.update(.05F,input,high,world);fired+=gun.events().shots; }
     assert(fired==300 && gun.ammo().loaded==30 && gun.ammo().reserve==120);

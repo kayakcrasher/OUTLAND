@@ -727,7 +727,7 @@ bool CreatorController::place_selected(
     // connected to normal building collision/gameplay.
     // ========================================================
 
-    if (asset->category == CreatorAssetCategory::Building) {
+    if (asset->category == CreatorAssetCategory::Building && asset->model_path.empty()) {
         world::BuildingStyle style =
             world::BuildingStyle::RuralHouse;
 
@@ -854,7 +854,8 @@ bool CreatorController::place_selected(
         } else if (asset->id == "zombie_spawn") {
             marker_type =
                 world::GameplayMarkerType::ZombieSpawn;
-        } else if (asset->id == "npc_spawn") {
+        } else if (asset->id == "npc_spawn" || asset->id == "npc_spawn_emergency" ||
+                   asset->id == "npc_spawn_hostile" || asset->id == "npc_spawn_creature") {
             marker_type =
                 world::GameplayMarkerType::NpcSpawn;
         } else if (asset->id == "vehicle_spawn") {
@@ -1025,7 +1026,10 @@ bool CreatorController::place_selected(
     };
 
     placed.rotation_y = preview_.rotation_y;
-    placed.collision = true;
+    // Road surfaces, markings and flat ground details must not become circular
+    // movement blockers under the existing WorldAsset collision system.
+    placed.collision = asset->category != CreatorAssetCategory::Road &&
+        asset->footprint.height > 0.25F;
 
     return region.place_world_asset(
         std::move(placed)

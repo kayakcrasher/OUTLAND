@@ -1,7 +1,5 @@
 #pragma once
 
-#ifdef OUTLAND_DEV_TOOLS
-
 #include <string>
 
 namespace outland::world {
@@ -12,12 +10,14 @@ namespace outland::creator {
 
 class CreatorMapIO {
 public:
+#ifdef OUTLAND_DEV_TOOLS
     [[nodiscard]]
     static bool save(
         const world::VerdaRegion& region,
         const std::string& path
     );
 
+#endif
     [[nodiscard]]
     static bool load(
         world::VerdaRegion& region,
@@ -26,5 +26,3 @@ public:
 };
 
 } // namespace outland::creator
-
-#endif // OUTLAND_DEV_TOOLS
