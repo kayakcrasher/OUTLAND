@@ -130,6 +130,7 @@ inline void register_urban_assets(CreatorAssetRegistry& registry);
 inline void register_character_assets(CreatorAssetRegistry& registry);
 inline void register_starter_assets(CreatorAssetRegistry& registry);
 inline void register_survival_assets(CreatorAssetRegistry& registry);
+inline void register_industrial_assets(CreatorAssetRegistry& registry);
 
 class CreatorAssetRegistry {
 public:
@@ -139,6 +140,7 @@ public:
         register_character_assets(*this);
         register_starter_assets(*this);
         register_survival_assets(*this);
+        register_industrial_assets(*this);
         // Retain legacy palette IDs while giving their former empty placeholders real geometry.
         const auto reuse_model=[&](const char* alias,const char* source_id) {
             const auto* source=find(source_id);if(!source)return;
@@ -886,5 +888,6 @@ private:
 #include "outland/creator/CharacterAssetCatalog.hpp"
 #include "outland/creator/StarterAssetCatalog.hpp"
 #include "outland/creator/SurvivalAssetCatalog.hpp"
+#include "outland/creator/IndustrialAssetCatalog.hpp"
 
 #endif // OUTLAND_DEV_TOOLS
