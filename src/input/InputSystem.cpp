@@ -159,7 +159,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
             const auto v = analog_value(p, center(layout_.look), 92 * scale * layout_.look.scale);
             player_.look_x = v.x; player_.look_y = v.y; break;
         }
-        case Control::Jump: player_.jump |= fresh; break;
+        case Control::Jump: player_.jump |= fresh; player_.brake = true; break;
         case Control::View: player_.toggle_view |= fresh; break;
         case Control::Reload: player_.reload |= fresh; break;
         case Control::Weapon: player_.next_weapon |= fresh; break;
@@ -194,20 +194,24 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         }
         apply(owner->control, p, fresh);
     }
-    // Android synthesizes mouse events from touch: never process both streams.
+    // Android can synthesize a final mouse press after the last native contact disappears.
     if (count == 0) {
-        const auto p = GetMousePosition();
-        const bool fresh = IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
-        if (fresh && !changed) mouse_control_ = capture(p);
-        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) apply(mouse_control_, p, fresh);
-        else mouse_control_ = Control::None;
-    } else mouse_control_ = Control::None;
+        const auto p=GetMousePosition();const bool down=IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+        const bool fresh=IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+        if(had_native_touch_ && down)mouse_quarantined_=true;
+        if(fresh && !changed && !had_native_touch_ && !mouse_quarantined_)mouse_control_=capture(p);
+        if(down && !mouse_quarantined_)apply(mouse_control_,p,fresh);
+        else mouse_control_=Control::None;
+        if(!down)mouse_quarantined_=false;
+        had_native_touch_=false;
+    } else {mouse_control_=Control::None;had_native_touch_=true;}
     if (blocked) return;
     if (IsKeyDown(KEY_W)) player_.move_y -= 1;
     if (IsKeyDown(KEY_S)) player_.move_y += 1;
     if (IsKeyDown(KEY_A)) player_.move_x -= 1;
     if (IsKeyDown(KEY_D)) player_.move_x += 1;
     player_.jump |= IsKeyPressed(KEY_SPACE);
+    player_.brake |= IsKeyDown(KEY_SPACE);
     player_.sprint |= IsKeyDown(KEY_LEFT_SHIFT);
     player_.toggle_view |= IsKeyPressed(KEY_V);
     if (gameplay) {
@@ -250,7 +254,10 @@ InputSystem::layout() {
 void InputSystem::cancel_controls() {
     player_ = {};
     for (auto& owner : owners_) owner.control = Control::None;
+    // DEV/UI may cancel before this frame's fresh contacts have been captured.
+    for(int i=0;i<GetTouchPointCount();++i){const int id=GetTouchPointId(i);if(std::none_of(owners_.begin(),owners_.end(),[&](const auto& owner){return owner.id==id;}))owners_.push_back({id,Control::None});}
     mouse_control_ = Control::None;
+    mouse_quarantined_|=IsMouseButtonDown(MOUSE_BUTTON_LEFT);
 }
 
 void InputSystem::reset_layout() {

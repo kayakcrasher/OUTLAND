@@ -1,3 +1,4 @@
+#include "outland/assets/RaylibContract.hpp"
 #include "outland/assets/ModelCache.hpp"
 #include <raymath.h>
 #include <rlgl.h>
@@ -66,6 +67,7 @@ Model* ModelCache::load(const std::string& path, const std::function<bool(Model&
         TraceLog(LOG_WARNING, "OUTLAND asset failed to load: %s", path.c_str());
         return nullptr;
     }
+    if(model.skeleton.boneCount>0 && (!model.skeleton.bones || !model.skeleton.bindPose || !model.currentPose || !model.boneMatrices)){release(model);TraceLog(LOG_ERROR,"OUTLAND invalid raylib 6 skeleton: %s",path.c_str());return nullptr;}
     if (prepare && !prepare(model)) {
         release(model);
         TraceLog(LOG_ERROR, "OUTLAND model preparation failed: %s", path.c_str());

@@ -1,3 +1,4 @@
+#include "outland/assets/RaylibContract.hpp"
 #include "outland/characters/CharacterRenderer.hpp"
 #include <raymath.h>
 #include "outland/characters/AnimationAssetCatalog.hpp"
@@ -32,6 +33,8 @@ void CharacterRenderer::draw(const std::string& id,Vector3 feet,float yaw,float 
         TraceLog(LOG_ERROR,"OUTLAND character unavailable: %s (%s)",id.c_str(),path.c_str());
         return; // No placeholder body or procedural fallback.
     }
+    // Clips are loaded only from this model: raylib 6 clips no longer carry rig topology.
+    // Never retarget by bone count alone; the generated audit describes source rigs.
     const auto clips=models_.animations(model);
     const auto sample=animation ? animation->sample(*model,clips) : AnimationSample{};
     bool posed=false;

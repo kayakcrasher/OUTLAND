@@ -96,7 +96,7 @@ Only own-model clips are loaded. Topology matches are candidates, not permission
 82 bodies, 79 body clips; 0 body clips have recognized action names.
 The PSX generic Mixamo/Layer0 clips are ~0.067s and have no declared idle/walk/run/attack/death semantics; they are retained but not assigned invented actions.
 The rebel body has a rig but no embedded clips. Named idle/attack clips exist on arm-only rigs; they are not transplanted to bodies.
-Runtime compatibility additionally checks bone count, names, parents, and mesh bone counts. Cross-model retargeting/blending is not implemented.
+Raylib 6 clips contain joint counts/poses but no skeleton names or hierarchy. Runtime clips are loaded only from the same model source; compatibility checks joint counts, valid model skeleton hierarchy, pose availability and mesh bone counts. Audited topology supplies joint names/hierarchy for offline tests. Cross-model retargeting/blending is not implemented.
 AnimationController selects only compatible clips, with Walk/Idle/bind-pose fallbacks. CharacterRenderer adds an explicitly authored procedural Mixamo gait for missing Idle/Walk/Run; this is separate from the embedded-clip audit. Missing Death keeps bind pose without resurrection or invented motion.
 
 ## Topology groups

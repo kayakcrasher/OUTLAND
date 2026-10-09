@@ -3,6 +3,7 @@
 #include <raylib.h>
 
 #include <string>
+#include <array>
 
 namespace outland::world {
 
@@ -19,6 +20,14 @@ enum class AssetType {
     Sign
 };
 
+struct VehiclePlacementState {
+    std::string definition, marker;
+    Vector3 home{};
+    float home_yaw{0};
+    float health{100}, engine{100}, fuel{1};
+    std::array<float,4> tires{{100,100,100,100}};
+    bool enabled{true}, destroyed{false};
+};
 struct WorldAsset {
     std::string id;
     AssetType type{AssetType::House};
@@ -36,6 +45,7 @@ struct WorldAsset {
     Color secondary_color{DARKGRAY};
 
     bool collision{true};
+    VehiclePlacementState vehicle{};
 };
 
 }

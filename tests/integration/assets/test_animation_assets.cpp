@@ -20,10 +20,10 @@ int main() {
         int count=0;auto* clips=LoadModelAnimations((std::filesystem::path(OUTLAND_SOURCE_DIR)/asset.model_path).c_str(),&count);
         assert(count==info->clips);int mapped=0;
         for(int i=0;i<count;++i) {
-            assert(clips && clips[i].boneCount==info->joints && clips[i].frameCount>=2);
-            for(int frame=0;frame<clips[i].frameCount;++frame) assert(clips[i].framePoses[frame]);
+            assert(clips && clips[i].boneCount==info->joints && clips[i].keyframeCount>=2);
+            for(int frame=0;frame<clips[i].keyframeCount;++frame) assert(clips[i].keyframePoses[frame]);
             if(AnimationController::classify(clips[i].name)!=AnimationAction::None) ++mapped;
-            Model rig{};rig.boneCount=clips[i].boneCount;rig.bones=clips[i].bones;rig.bindPose=clips[i].framePoses[0];
+            Model rig{};rig.skeleton.boneCount=clips[i].boneCount;auto source=audited_bones(info->topology);assert(source.size()==static_cast<std::size_t>(clips[i].boneCount));std::vector<BoneInfo> bones(source.begin(),source.end());rig.skeleton.bones=bones.data();rig.skeleton.bindPose=clips[i].keyframePoses[0];
             assert(AnimationController::compatible(rig,clips[i]));
             if(asset.pool!=CharacterPool::Arms) {
                 rig.transform=asset.z_up ? MatrixRotateX(-PI*.5F):MatrixIdentity();SkeletalGait gait;

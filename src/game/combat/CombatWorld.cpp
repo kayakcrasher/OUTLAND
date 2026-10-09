@@ -124,11 +124,12 @@ void CombatWorld::damage_target(int index, float damage) {
 }
 
 void CombatWorld::damage_hit(const BulletHit& hit,float damage,Vector3 attacker) {
-    if(hit.kind==HitKind::Target) damage_target(hit.target,damage);
+    if((hit.kind==HitKind::Vehicle || hit.kind==HitKind::VehicleWindow || hit.kind==HitKind::VehicleOccupant) && vehicle_damage_)vehicle_damage_(hit,damage);
+    else if(hit.kind==HitKind::Target) damage_target(hit.target,damage);
     else if(hit.kind==HitKind::Npc && actor_damage_) actor_damage_(hit.target,damage,attacker);
 }
 
-BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool targets) const {
+BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool targets,bool vehicles) const {
     BulletHit best;
     const auto delta=sub(end,start);
     const auto record=[&](HitKind kind,float t,Vector3 normal,int target=-1) {
@@ -162,7 +163,10 @@ BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool
             }
         }
         for(const auto& asset:settlement.assets) {
-            if(!asset.collision || asset.type!=world::AssetType::Tree) continue;
+            if(!asset.vehicle.definition.empty())continue;
+            if(!asset.collision)continue;
+            if(!asset.model_path.empty()){const float yaw=asset.rotation_y*DEG2RAD;const auto a=local(start,asset.position,yaw),b=local(end,asset.position,yaw);if(box(a,b,{-asset.size.x*.5F,0,-asset.size.z*.5F},{asset.size.x*.5F,asset.size.y,asset.size.z*.5F},t,n))record(HitKind::Structure,t,world_normal(n,yaw));continue;}
+            if(asset.type!=world::AssetType::Tree) continue;
             const float scale=.85F+world::assets::variation(static_cast<int>(asset.position.x),
                 static_cast<int>(asset.position.z),5)*.45F;
             Vector3 base=asset.position;base.y=world::terrain::TerrainHeight::sample(base.x,base.z);
@@ -180,6 +184,10 @@ BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool
     if(actors && actor_trace_) {
         const auto actor=actor_trace_(start,end);
         if(actor.hit() && actor.fraction>=0 && actor.fraction<=1 && (!best.hit() || actor.fraction<best.fraction)) best=actor;
+    }
+    if(vehicles && vehicle_trace_) {
+        const auto hit=vehicle_trace_(start,end,actors);
+        if(hit.hit()&&hit.fraction>=0&&hit.fraction<=1&&(!best.hit()||hit.fraction<best.fraction))best=hit;
     }
     // Sample each swept segment, then bisect first ground contact.
     const float length=std::sqrt(dot(delta,delta));

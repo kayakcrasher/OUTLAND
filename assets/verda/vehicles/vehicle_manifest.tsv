@@ -1,0 +1,2 @@
+id	name	body	wheel	length	width	height	wheel_radius	front_z	rear_z	track	acceleration	brake	reverse	drag	top_speed	steer	health	engine_health	tire_health	fuel	seat_x	seat_y	seat_z	exit_x	exit_z	camera_distance	camera_height	max_slope	body_offset
+hatchback	Classic hatchback	assets/verda/vehicles/runtime/hatchback_body.glb	assets/verda/vehicles/runtime/hatchback_wheel.glb	4.2	1.64	1.58	0.352	1.356	-1.126	1.412	5.0	12.0	7.0	0.55	28.0	30.0	100	100	100	1	-0.35	1.05	0.1	1.65	0	6.5	3.0	28	0.255

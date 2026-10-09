@@ -1,6 +1,7 @@
 #pragma once
 
 #include <raylib.h>
+#include <string_view>
 
 #include "outland/world/VerdaRegion.hpp"
 
@@ -19,7 +20,8 @@ public:
     static bool blocked(
         Vector3 position,
         const VerdaRegion& region,
-        float player_radius
+        float player_radius,
+        std::string_view ignore_asset = {}
     );
 
     // Find a nearby window that the player can intentionally vault.

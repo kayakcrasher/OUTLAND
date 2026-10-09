@@ -46,7 +46,8 @@ bool WorldCollision::circle_hits_box(
 bool WorldCollision::blocked(
     const Vector3 position,
     const VerdaRegion& region,
-    const float player_radius
+    const float player_radius,
+    const std::string_view ignore_asset
 ) {
     // Shoreline blocks walkers until swimming exists; Creator flight remains independent.
     if(region.coastal_layout() && std::hypot(position.x,position.z)>1950 &&
@@ -64,6 +65,7 @@ bool WorldCollision::blocked(
             const Building& building :
             settlement.buildings
         ) {
+            if(std::abs(position.x-building.position.x)>building.size.x+building.size.z+player_radius || std::abs(position.z-building.position.z)>building.size.x+building.size.z+player_radius)continue;
             const float angle = building.rotation_y * DEG2RAD;
             const float dx = position.x - building.position.x;
             const float dz = position.z - building.position.z;
@@ -253,6 +255,15 @@ bool WorldCollision::blocked(
             const WorldAsset& asset :
             settlement.assets
         ) {
+            if(asset.id==ignore_asset)continue;
+            if(!asset.vehicle.definition.empty() || (!asset.model_path.empty() && asset.collision)) {
+                if(!asset.vehicle.definition.empty() && !asset.vehicle.enabled)continue;
+                const float dx=position.x-asset.position.x,dz=position.z-asset.position.z;
+                const float reach=asset.size.x+asset.size.z+player_radius;if(std::abs(dx)>reach||std::abs(dz)>reach)continue;
+                const float yaw=asset.rotation_y*DEG2RAD;
+                if(circle_hits_box(dx*std::cos(yaw)-dz*std::sin(yaw),dx*std::sin(yaw)+dz*std::cos(yaw),player_radius,0,0,asset.size.x*.5F,asset.size.z*.5F))return true;
+                continue;
+            }
             if (!asset.collision) {
                 continue;
             }

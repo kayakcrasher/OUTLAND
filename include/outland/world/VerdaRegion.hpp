@@ -17,6 +17,8 @@ public:
     [[nodiscard]] bool coastal_layout() const { return coastal_layout_; }
 
     void generate_training_region();
+    // Runtime state updates share the same assets that Creator edits and saves.
+    std::vector<Settlement>& runtime_settlements() { return settlements_; }
 
     [[nodiscard]]
     const std::vector<Settlement>&

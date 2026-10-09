@@ -612,7 +612,7 @@ std::vector<const CreatorAssetDefinition*> CreatorTouchUI::drawer_assets(const C
     const auto query=lower(search_);
     if(!query.empty())std::erase_if(assets,[&](const auto* asset){std::string text=asset->id+" "+asset->name+" "+asset->model_path;for(const auto& tag:asset->tags)text+=" "+tag;return lower(text).find(query)==std::string::npos;});
     if (pack_filter_ != 0) std::erase_if(assets, [this](const auto* asset) {
-        const auto prefix = pack_filter_ == 1 ? "assets/verda/urban/" : pack_filter_ == 2 ? "assets/verda/characters/":"assets/verda/survival/";
+        const auto prefix = pack_filter_ == 1 ? "assets/verda/urban/" : pack_filter_ == 2 ? "assets/verda/characters/" : pack_filter_ == 3 ? "assets/verda/survival/" : pack_filter_ == 4 ? "assets/verda/industrial/" : "assets/verda/vehicles/";
         return !asset->model_path.starts_with(prefix);
     });
     return assets;
@@ -681,8 +681,8 @@ void CreatorTouchUI::update_inventory(
     }
 
     if (pressed(pack_button(screen_width, screen_height))) {
-        pack_filter_ = (pack_filter_ + 1) % 4;
-        if (pack_filter_ == 3)all_categories_=true;
+        pack_filter_ = (pack_filter_ + 1) % 6;
+        if (pack_filter_ >= 3)all_categories_=true;
         if (pack_filter_ == 2) {drawer_category_ = CreatorAssetCategory::Prop;all_categories_=false;}
         drawer_page_ = 0;
         return;
@@ -1174,7 +1174,7 @@ void CreatorTouchUI::draw_inventory(
         return;
     }
     draw_button(pack_button(screen_width, screen_height),
-        pack_filter_ == 3 ? "SURVIVAL" : pack_filter_ == 2 ? "CHARACTERS" : (pack_filter_ == 1 ? "URBAN ONLY" : "ALL ASSETS"), pack_filter_ != 0);
+        pack_filter_ == 5 ? "VEHICLES" : pack_filter_ == 4 ? "INDUSTRIAL" : pack_filter_ == 3 ? "SURVIVAL" : pack_filter_ == 2 ? "CHARACTERS" : (pack_filter_ == 1 ? "URBAN" : "ALL"), pack_filter_ != 0);
 
     const auto category_assets = drawer_assets(controller);
 

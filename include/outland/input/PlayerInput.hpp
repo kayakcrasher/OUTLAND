@@ -13,6 +13,7 @@ struct PlayerInput {
 
     // Movement actions
     bool jump{false};
+    bool brake{false}; // Held Jump/Space, used only by vehicle controls.
     bool sprint{false};
     bool crouch{false};
 

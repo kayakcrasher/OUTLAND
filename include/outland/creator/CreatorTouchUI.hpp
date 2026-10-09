@@ -141,7 +141,7 @@ private:
     Vector2 logical_point(Vector2 point) const {return {point.x/input_scale_,point.y/input_scale_};}
     int vertical_owner_{-1};
     float vertical_direction_{0};
-    unsigned pack_filter_{0}; // All, urban, characters, survival.
+    unsigned pack_filter_{0}; // All, urban, characters, survival, industrial, vehicles.
 
     // ========================================================
     // LAYOUT

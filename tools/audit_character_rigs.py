@@ -21,7 +21,7 @@ def action(name):
     return 'unmapped'
 def fingerprint(value):return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()[:24]
 def generate():
-    entries=[]; groups=defaultdict(list);exact=defaultdict(list)
+    entries=[]; groups=defaultdict(list);exact=defaultdict(list); bone_topologies={}
     for row in read_manifest(ROOT):
         document,binary=read_gltf(ROOT/row['runtime_model']);nodes=document.get('nodes',[]);parents={child:i for i,node in enumerate(nodes) for child in node.get('children',[])}
         skins=[]
@@ -35,7 +35,7 @@ def generate():
             bind=values(document,binary,skin['inverseBindMatrices']) if 'inverseBindMatrices' in skin else []
             # Include mesh/joint node TRS/matrices, not just names or bone counts.
             transform=[{key:node[key] for key in ('matrix','translation','rotation','scale') if key in node} for node in nodes]
-            topo=fingerprint(topology);rig=fingerprint([topology,bind,transform])
+            topo=fingerprint(topology);bone_topologies[topo]=topology;rig=fingerprint([topology,bind,transform])
             skins.append({'joints':len(joints),'topology':topo,'exact_rig':rig})
         clips=[]
         for index,animation in enumerate(document.get('animations',[])):
@@ -59,6 +59,14 @@ def generate():
     header=['#pragma once','#include <array>','#include <string_view>','namespace outland::characters {',
         'struct AnimationAssetInfo { std::string_view id, topology, exact_rig; int joints, clips, mapped_clips; };',
         f'inline constexpr std::array<AnimationAssetInfo,{len(entries)}> animation_asset_catalog = {{{{']
+    catalog_open=header.pop()
+    header[2:2]=['#include <raylib.h>','#include <span>']
+    for key,bones in sorted(bone_topologies.items()):
+        header.append('inline constexpr std::array<BoneInfo,'+str(len(bones))+'> rig_'+key+' = {{'+','.join('{'+json.dumps(name[:31])+','+str(parent)+'}' for name,parent in bones)+'}};')
+    header.append('inline std::span<const BoneInfo> audited_bones(std::string_view topology) {')
+    for key in sorted(bone_topologies):header.append('if(topology=="'+key+'")return rig_'+key+';')
+    header.append('return {}; }')
+    header.append(catalog_open)
     for entry in entries:
         skin=entry['skins'][0] if entry['skins'] else {'joints':0,'topology':'none','exact_rig':'none'}
         mapped=sum(c['action']!='unmapped' and c['keyframes']>=2 for c in entry['clips'])
@@ -70,7 +78,7 @@ def generate():
     text+=['','## Findings','',f'{len(bodies)} bodies, {len(bodyclips)} body clips; {sum(c["action"]!="unmapped" for c in bodyclips)} body clips have recognized action names.',
         'The PSX generic Mixamo/Layer0 clips are ~0.067s and have no declared idle/walk/run/attack/death semantics; they are retained but not assigned invented actions.',
         'The rebel body has a rig but no embedded clips. Named idle/attack clips exist on arm-only rigs; they are not transplanted to bodies.',
-        'Runtime compatibility additionally checks bone count, names, parents, and mesh bone counts. Cross-model retargeting/blending is not implemented.',
+        'Raylib 6 clips contain joint counts/poses but no skeleton names or hierarchy. Runtime clips are loaded only from the same model source; compatibility checks joint counts, valid model skeleton hierarchy, pose availability and mesh bone counts. Audited topology supplies joint names/hierarchy for offline tests. Cross-model retargeting/blending is not implemented.',
         'AnimationController selects only compatible clips, with Walk/Idle/bind-pose fallbacks. CharacterRenderer adds an explicitly authored procedural Mixamo gait for missing Idle/Walk/Run; this is separate from the embedded-clip audit. Missing Death keeps bind pose without resurrection or invented motion.','',
         '## Topology groups','']
     for key,ids in sorted(groups.items()):text.append(f'- `{key}` ({len(ids)}): '+', '.join(ids))

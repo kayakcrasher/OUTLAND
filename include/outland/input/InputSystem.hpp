@@ -50,6 +50,7 @@ private:
     struct TouchOwner { int id; Control control; };
     std::vector<TouchOwner> owners_;
     Control mouse_control_{Control::None};
+    bool mouse_quarantined_{false},had_native_touch_{false};
     bool gameplay_{true};
     bool blocked_{false};
     int width_{0}, height_{0};

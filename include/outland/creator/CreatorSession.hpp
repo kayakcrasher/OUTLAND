@@ -15,6 +15,7 @@ public:
     bool save(const world::VerdaRegion& region);
     bool load(world::VerdaRegion& region);
     void update(float dt,const world::VerdaRegion& region);
+    void runtime_changed(){changed();}
     bool dirty() const {return dirty_;}
     const std::string& status() const {return status_;}
     const std::string& path() const {return path_;}

@@ -3,6 +3,9 @@
 #include "outland/game/combat/CombatRenderer.hpp"
 #include "outland/game/inventory/LootSession.hpp"
 #include "outland/game/inventory/LootUI.hpp"
+#include "outland/game/vehicles/VehicleSystem.hpp"
+#include "outland/game/vehicles/VehicleRenderer.hpp"
+#include "outland/game/vehicles/VehicleAudio.hpp"
 #include "outland/assets/ModelCache.hpp"
 
 #include "outland/input/InputSystem.hpp"
@@ -68,7 +71,7 @@ void draw_model_backed_world_assets(
             const world::WorldAsset& asset :
             settlement.assets
         ) {
-            if (asset.model_path.empty()) {
+            if (!asset.vehicle.definition.empty() || asset.model_path.empty()) {
                 continue;
             }
 
@@ -142,7 +145,7 @@ void draw_creator_model_preview(
     }
 
     const Color ghost_color =
-        Fade(GREEN, 0.58F);
+        Fade(preview.blocked?RED:GREEN, 0.58F);
 
     DrawModelEx(
         *model,
@@ -307,6 +310,23 @@ void Renderer::run() {
     game::inventory::LootSession loot_session(item_registry);
     game::inventory::LootUI loot_ui(character_root);
     characters::NpcSystem npcs;
+    game::vehicles::VehicleRegistry vehicle_registry;
+    std::string vehicle_error;
+    if(!vehicle_registry.load((std::string(character_root)+"/assets/verda/vehicles/vehicle_manifest.tsv"),vehicle_error))
+        TraceLog(LOG_ERROR,"Vehicle catalog: %s",vehicle_error.c_str());
+    game::vehicles::VehicleSystem vehicles(vehicle_registry);
+    game::vehicles::VehicleRenderer vehicle_renderer;
+    vehicles.reconcile(verda_region);
+    const std::string vehicle_state_path=map_path+".vehicles";
+    bool vehicle_save_protected=false,vehicle_dirty=false;
+    float vehicle_save_timer=0,vehicle_reconcile_timer=0,vehicle_orbit=0,vehicle_pitch=0;
+    if(FileExists(vehicle_state_path.c_str()) && !vehicles.load_state(verda_region,vehicle_state_path,vehicle_error)) {
+        vehicle_save_protected=true;TraceLog(LOG_ERROR,"Vehicle state protected: %s",vehicle_error.c_str());
+    }
+#ifdef OUTLAND_DEV_TOOLS
+    bool building_mode=false,has_previous_location=false;
+    Vector3 previous_location{};
+#endif
     world::terrain::TerrainWorld terrain_world;
     world::foliage::FoliageSystem foliage_system;
     audio::EnvironmentAudio environment_audio(
@@ -316,6 +336,9 @@ void Renderer::run() {
     game::combat::WeaponSystem weapons;
     game::combat::CombatWorld combat_world(verda_region);
     game::Health player_health;
+    game::vehicles::VehicleAudio vehicle_audio;
+    vehicles.bind_occupant_damage([&](float amount){player_health.damage(amount);});
+    combat_world.bind_vehicles([&](Vector3 start,Vector3 end,bool occupants){return vehicles.trace(verda_region,start,end,occupants);},[&](const game::combat::BulletHit& hit,float amount){vehicles.damage(verda_region,hit,amount);vehicle_dirty=true;});
     combat_world.bind_actors([&](Vector3 start,Vector3 end) {
         const auto hit=npcs.trace_segment(start,end);
         return game::combat::BulletHit{hit.actor>=0 ? game::combat::HitKind::Npc : game::combat::HitKind::None,
@@ -459,6 +482,7 @@ void Renderer::run() {
             if(game_mode!=game::GameMode::DevLab && !loot_session.save(weapons) && loot_session.can_persist()){
                 interaction_message=loot_session.status();interaction_remaining=3;continue;
             }
+            vehicles.leave_session();vehicle_audio.stop();vehicle_renderer.reset_camera();
             game_mode =
                 game::GameMode::Home;
             input_system.cancel_controls();
@@ -474,20 +498,38 @@ void Renderer::run() {
         // INPUT
         // ====================================================
 
+        vehicles.begin_frame();
         bool creator_active = false;
         std::function<bool(Vector2)> reserved = [&](Vector2 point) {
             return CheckCollisionPointRec(point, audio_button);
         };
 #ifdef OUTLAND_DEV_TOOLS
-        creator_active = game_mode == game::GameMode::DevLab;
+        if(game_mode==game::GameMode::DevLab) {
+            const bool tools_were_open=dev_lab.tools_open();
+            if(!creator_touch_ui.inventory_open())dev_lab.update(screen_width,screen_height);
+            if(tools_were_open && !dev_lab.tools_open())input_system.cancel_controls();
+            if(dev_lab.take_build_toggle()) {
+                Vector3 exit{};
+                if(!vehicles.driver() || vehicles.exit(verda_region,exit,true)) {
+                    if(exit.x!=0||exit.y!=0||exit.z!=0)player.position=Vector3Add(exit,{0,1,0});
+                    building_mode=!building_mode;input_system.cancel_controls();vehicle_renderer.reset_camera();
+                }
+            }
+            if(dev_lab.take_vehicle_spawn() && vehicles.spawn(verda_region,{player.position.x,player.position.y-1,player.position.z},player.yaw*RAD2DEG)){vehicle_dirty=true;creator_session.runtime_changed();}
+            if(dev_lab.take_return()&&has_previous_location){vehicles.leave_session();std::swap(player.position,previous_location);player.vertical_velocity=0;player.grounded=true;vehicle_renderer.reset_camera();}
+        }
+        creator_active = game_mode == game::GameMode::DevLab && building_mode;
         creator_controller.set_enabled(creator_active);
         creator_touch_ui.update(creator_controller, screen_width, screen_height);
         if (creator_active) {
             reserved = [&](Vector2 point) {
-                return CheckCollisionPointRec(point, audio_button) ||
+                return CheckCollisionPointRec(point, audio_button) || dev_lab.owns_point(point,screen_width,screen_height) ||
                     creator_touch_ui.owns_point(point, screen_width, screen_height);
             };
         }
+#endif
+#ifdef OUTLAND_DEV_TOOLS
+        if(game_mode==game::GameMode::DevLab && !creator_active)reserved=[&](Vector2 point){return CheckCollisionPointRec(point,audio_button)||dev_lab.owns_point(point,screen_width,screen_height);};
 #endif
         // The equipment panel is modal: BAG closes it and GUN changes equipment.
         if (inventory_open) {
@@ -509,22 +551,45 @@ void Renderer::run() {
                 !IsWindowFocused(),
 #endif
                 reserved);
-            if (input_system.player().inventory) {
+            if (input_system.player().inventory && game_mode != game::GameMode::DevLab) {
                 inventory_open = true;
                 loot_ui.opened();
                 input_system.cancel_controls();
             }
         }
+#ifdef OUTLAND_DEV_TOOLS
+        if(game_mode==game::GameMode::DevLab && dev_lab.tools_open())input_system.cancel_controls();
+#endif
         if(!player_health.alive() && !creator_active) input_system.player()={};
         const input::PlayerInput& controls = input_system.player();
+        vehicle_reconcile_timer+=dt;
+        if(vehicle_reconcile_timer>=.5F){vehicle_dirty|=vehicles.reconcile(verda_region);vehicle_reconcile_timer=0;}
+        if(controls.interact && !creator_active && !inventory_open) {
+            Vector3 exit{};
+            if(vehicles.driver()){
+                if(vehicles.exit(verda_region,exit)){player.position=Vector3Add(exit,{0,1,0});player.vertical_velocity=0;vehicle_renderer.reset_camera();interaction_message="Exited vehicle";}
+                else interaction_message="Stop and leave space beside the vehicle to exit";
+            }else {const int vehicle=vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z});if(vehicle>=0 && vehicles.enter(verda_region,vehicle,{player.position.x,player.position.y-1,player.position.z})){vehicle_orbit=vehicle_pitch=0;input_system.cancel_controls();interaction_message="Driving - move to accelerate/steer; JUMP brakes; USE exits";}}
+            interaction_remaining=3;
+        }
+        const bool driving=vehicles.driver()!=nullptr;
+        game::vehicles::VehicleInput driving_input{-controls.move_y,-controls.move_x,controls.brake,controls.crouch,controls.sprint};
+        const bool vehicle_paused=creator_active||inventory_open||!IsWindowFocused()
+#ifdef OUTLAND_DEV_TOOLS
+            || (game_mode==game::GameMode::DevLab && dev_lab.tools_open())
+#endif
+            ;
+        vehicle_dirty|=vehicles.update(dt,driving_input,verda_region,{player.position.x,player.position.y-1,player.position.z},vehicle_paused);
+        if(driving){vehicle_orbit-=controls.look_x*80*dt;vehicle_pitch=std::clamp(vehicle_pitch-controls.look_y*dt,-1.0F,1.0F);}
+
         interaction_remaining = std::max(0.0F, interaction_remaining - dt);
         const Vector3 loot_feet{player.position.x,player.position.y-1,player.position.z};
         const auto reachable_pickup=[&](Vector3 point){return !combat_world.trace_segment(
             {player.position.x,player.position.y+.5F,player.position.z},Vector3Add(point,{0,.1F,0}),false,false).hit();};
-        if(!creator_active) {
+        if(!creator_active && game_mode != game::GameMode::DevLab) {
             loot_session.update(dt,verda_region,loot_feet,weapons);
             if(controls.next_weapon)loot_session.changed();
-            if(controls.interact){interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;}
+            if(controls.interact && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;}
             if(inventory_open){
                 const auto action=loot_ui.update(loot_session.inventory(),screen_width,screen_height,IsWindowFocused());
                 if(action.close){inventory_open=false;input_system.cancel_controls();}
@@ -544,14 +609,15 @@ void Renderer::run() {
             game_mode ==
             game::GameMode::DevLab
         ) {
-#ifdef OUTLAND_DEV_TOOLS
-            if(!creator_touch_ui.inventory_open())
-#endif
-            dev_lab.update();
+
 
             if (
                 dev_lab.teleport_requested()
             ) {
+#ifdef OUTLAND_DEV_TOOLS
+                previous_location=player.position;has_previous_location=true;
+#endif
+                vehicles.leave_session();vehicle_renderer.reset_camera();
                 player.position =
                     dev_lab.spawn_position(verda_region);
 
@@ -641,7 +707,7 @@ void Renderer::run() {
 
         if (
             movement_strength >
-            0.01F
+            0.01F && !driving
         ) {
             /*
              * Preserve analog stick magnitude.
@@ -691,7 +757,7 @@ void Renderer::run() {
         // is aligned with and facing a valid window.
 
         bool vaulted = false;
-        if (!creator_flying && controls.jump && player.grounded) {
+        if (!driving && !creator_flying && controls.jump && player.grounded) {
             Vector3 vault_landing{};
 
             const Vector3 vault_forward{
@@ -808,11 +874,13 @@ void Renderer::run() {
             player.vertical_velocity=0;player.grounded=false;player.third_person=false;
         }
 #endif
+        if(vehicles.driver()){player.position=Vector3Add(vehicles.seat(verda_region),{0,1,0});player.vertical_velocity=0;player.grounded=false;}
         // ====================================================
         // CAMERA POSITION
         // ====================================================
 
-        environment_audio.update(player.position, player.grounded, true, verda_region);
+        environment_audio.update(player.position, player.grounded && !driving, !driving, verda_region);
+        vehicle_audio.update(vehicles,verda_region,dt,vehicle_paused || environment_audio.muted(),environment_audio.volume());
 
         recoil_pitch *= std::exp(-dt * 5.0F);
         recoil_yaw *= std::exp(-dt * 7.0F);
@@ -847,6 +915,7 @@ void Renderer::run() {
 
         if (game_mode == game::GameMode::DevLab && IsKeyPressed(KEY_T)) combat_world.reset_targets();
         combat_world.update(dt,game_mode == game::GameMode::DevLab);
+        if(vehicles.driver())vehicle_renderer.camera(camera,vehicles,verda_region,dt,vehicle_orbit,vehicle_pitch,combat_world);
         const Vector3 camera_direction=Vector3Normalize(Vector3Subtract(camera.target,camera.position));
 
 #ifdef OUTLAND_DEV_TOOLS
@@ -880,12 +949,22 @@ void Renderer::run() {
                 if(action.redo){creator_session.redo(verda_region);creator_controller.clear_selection();}
                 if(action.save)creator_session.save(verda_region);
                 if(action.load){creator_session.load(verda_region);creator_controller.clear_selection();}
-                creator_session.update(dt,verda_region);
+                vehicle_dirty|=vehicles.reconcile(verda_region);
                 creator_touch_ui.set_status(creator_session.status());
 
             }
         }
 #endif
+#ifdef OUTLAND_DEV_TOOLS
+        if(game_mode==game::GameMode::DevLab && vehicle_dirty)creator_session.runtime_changed();
+        creator_session.update(dt,verda_region);
+#endif
+        vehicle_save_timer+=dt;
+        if(vehicle_dirty && !vehicle_save_protected && vehicle_save_timer>=2){
+            if(vehicles.save_state(verda_region,vehicle_state_path,vehicle_error))vehicle_dirty=false;
+            else TraceLog(LOG_ERROR,"Vehicle state save: %s",vehicle_error.c_str());
+            vehicle_save_timer=0;
+        }
         const Vector3 far_point=Vector3Add(camera.position,Vector3Scale(camera_direction,500.0F));
         const auto aimed_hit=combat_world.trace_segment(camera.position,far_point);
         const Vector3 aim_point=aimed_hit.hit() ? aimed_hit.position : far_point;
@@ -899,7 +978,7 @@ void Renderer::run() {
         const Vector3 gun_direction=Vector3Normalize(Vector3Subtract(aim_point,gun_muzzle));
         if (!controls.fire) trigger_ready=true;
         game::combat::WeaponInput weapon_input;
-        weapon_input.fire=controls.fire && trigger_ready;
+        weapon_input.fire=controls.fire && trigger_ready && !driving && !creator_active && !inventory_open;
         weapon_input.aim=controls.aim;
         weapon_input.reload=controls.reload;
         weapon_input.next_weapon=controls.next_weapon;
@@ -915,7 +994,7 @@ void Renderer::run() {
         npc_context.player_position={player.position.x,player.position.y-1.0F,player.position.z};
         npc_context.player_alive=player_health.alive();
         npc_context.threatening=weapons.events().shots>0;
-        npc_context.paused=creator_active || inventory_open || !IsWindowFocused();
+        npc_context.paused=vehicle_paused;
         npc_context.visible=[&](Vector3 start,Vector3 end) {return !combat_world.trace_segment(start,end,false,false).hit();};
         npcs.update(dt,npc_context,verda_region);
         player_health.damage(npcs.events().player_damage);
@@ -976,6 +1055,7 @@ void Renderer::run() {
         verda_region.draw(camera.position);
 
         draw_model_backed_world_assets(verda_region, camera.position, character_registry);
+        vehicle_renderer.draw(vehicles,verda_region,camera.position);
 
 #ifdef OUTLAND_DEV_TOOLS
         if (
@@ -1022,7 +1102,7 @@ void Renderer::run() {
         );
 
         game::combat::CombatRenderer::draw_world(weapons,combat_world);
-        if(weapons.available())game::combat::CombatRenderer::draw_gun(gun_muzzle,gun_direction,weapons.selected(),
+        if(weapons.available() && !driving && !creator_active)game::combat::CombatRenderer::draw_gun(gun_muzzle,gun_direction,weapons.selected(),
             weapons.reload_remaining()/weapons.weapon().reload_seconds,weapons.muzzle_flash());
         if(!creator_active)loot_ui.draw_world(item_registry,loot_session.world(),loot_feet,loot_session.inventory().state().light);
 
@@ -1032,7 +1112,7 @@ void Renderer::run() {
         // PLAYER BODY
         // ----------------------------------------------------
 
-        if (player.third_person) {
+        if (player.third_person && !driving) {
 
             const Vector3 character_feet{player.position.x,player.position.y-1.0F,player.position.z};
 
@@ -1159,6 +1239,11 @@ void Renderer::run() {
                  (environment_audio.muted() ? "AUDIO OFF · M" : "AUDIO ON · M") : "AUDIO UNAVAILABLE",
                  screen_width - 165, 53, 14, RAYWHITE);
 
+#ifdef OUTLAND_DEV_TOOLS
+        if(game_mode==game::GameMode::DevLab)dev_lab.draw_tools(screen_width,screen_height,creator_active);
+#endif
+        if(const auto* driver=vehicles.driver())DrawText(TextFormat("%.0f km/h | JUMP: brake | CROUCH: park | SPRINT: horn | USE: exit",std::abs(driver->speed)*3.6F),20,screen_height-32,16,YELLOW);
+        else if(!creator_active && !inventory_open && vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z})>=0)DrawText("USE / E - Enter vehicle",screen_width/2-120,screen_height-100,20,YELLOW);
         DrawFPS(
             screen_width - 90,
             10
@@ -1169,6 +1254,7 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
     if(creator_session.dirty() && !creator_session.save(verda_region))TraceLog(LOG_ERROR,"Unsaved Creator edits: %s",creator_session.path().c_str());
 #endif
+    if(vehicle_dirty && !vehicle_save_protected && !vehicles.save_state(verda_region,vehicle_state_path,vehicle_error))TraceLog(LOG_ERROR,"Vehicle save failed: %s",vehicle_error.c_str());
     if(game_mode!=game::GameMode::Home && game_mode!=game::GameMode::DevLab && !loot_session.save(weapons))
         TraceLog(LOG_ERROR,"Inventory save failed: %s",loot_session.path().c_str());
 }

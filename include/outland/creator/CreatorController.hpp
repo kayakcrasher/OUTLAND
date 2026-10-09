@@ -73,6 +73,7 @@ struct CreatorSelection {
 
 struct CreatorPreview {
     bool valid{false};
+    bool blocked{false};
 
     Vector3 position{
         0.0F,

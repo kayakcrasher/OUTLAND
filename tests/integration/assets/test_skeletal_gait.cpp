@@ -13,7 +13,7 @@ int main() {
     Transform bind[7]{};for(int i=0;i<7;++i){std::strcpy(bones[i].name,names[i]);bones[i].parent=parents[i];bind[i].rotation=QuaternionIdentity();bind[i].scale={1,1,1};}
     bind[0].translation={0,1,0};bind[1].translation={-.2F,1,0};bind[2].translation={-.2F,.5F,0};bind[3].translation={-.2F,0,0};
     bind[4].translation={.2F,1,0};bind[5].translation={.2F,.5F,0};bind[6].translation={.2F,0,0};
-    Model model{};model.transform=MatrixIdentity();model.boneCount=7;model.bones=bones;model.bindPose=bind;
+    Model model{};model.transform=MatrixIdentity();model.skeleton.boneCount=7;model.skeleton.bones=bones;model.skeleton.bindPose=bind;
     SkeletalGait gait;assert(gait.sample(model,AnimationAction::Walk,1.0/6,0));const auto pose=gait.pose();
     assert(pose[3].translation.z*pose[6].translation.z<0); // Opposing steps, not sliding bind pose.
     for(int i=1;i<7;++i)assert(std::abs(Vector3Distance(pose[i].translation,pose[parents[i]].translation)-Vector3Distance(bind[i].translation,bind[parents[i]].translation))<.0001F);

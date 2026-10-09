@@ -10,7 +10,7 @@
 
 namespace outland::assets {
 
-// raylib 5.5 transforms only two AABB corners; this handles rotations correctly.
+// Transform all eight AABB corners so rotated imported geometry remains bounded.
 [[nodiscard]] BoundingBox transformed_model_bounds(const Model& model);
 
 // Lazy GPU model cache. Call clear() before closing the graphics context.

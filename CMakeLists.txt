@@ -33,7 +33,7 @@ find_package(
 pkg_check_modules(
     RAYLIB
     REQUIRED
-    raylib
+    raylib>=6.0
 )
 
 find_package(Python3 COMPONENTS Interpreter QUIET)
@@ -96,6 +96,11 @@ add_library(
     outland_render
     STATIC
 
+    src/game/vehicles/VehicleRegistry.cpp
+    src/game/vehicles/VehicleSystem.cpp
+    src/game/vehicles/VehicleSave.cpp
+    src/game/vehicles/VehicleRenderer.cpp
+    src/game/vehicles/VehicleAudio.cpp
     src/assets/ModelCache.cpp
     src/engine/render/Renderer.cpp
     src/engine/audio/EnvironmentAudio.cpp
@@ -132,6 +137,17 @@ add_library(
 )
 
 if(Python3_Interpreter_FOUND)
+    file(GLOB_RECURSE OUTLAND_VEHICLE_MODELS CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/assets/verda/vehicles/ggbot/*.glb")
+    add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/include/outland/creator/VehicleAssetCatalog.hpp"
+        "${PROJECT_SOURCE_DIR}/assets/verda/vehicles/vehicle_manifest.tsv"
+        "${PROJECT_SOURCE_DIR}/assets/verda/vehicles/runtime/hatchback_body.glb"
+        "${PROJECT_SOURCE_DIR}/assets/verda/vehicles/runtime/hatchback_wheel.glb"
+        "${PROJECT_SOURCE_DIR}/assets/verda/vehicles/runtime/hatchback_preview.glb"
+        COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/prepare_vehicle_assets.py"
+        DEPENDS tools/prepare_vehicle_assets.py assets/verda/vehicles/hatchback/compact_classic.glb ${OUTLAND_VEHICLE_MODELS}
+        VERBATIM)
+    add_custom_target(outland_vehicle_catalog DEPENDS "${PROJECT_SOURCE_DIR}/include/outland/creator/VehicleAssetCatalog.hpp")
+    add_dependencies(outland_render outland_vehicle_catalog)
     file(GLOB_RECURSE OUTLAND_URBAN_MODELS CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/assets/verda/urban/*.glb")
     add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/include/outland/creator/UrbanAssetCatalog.hpp"
         COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_urban_catalog.py"
@@ -238,6 +254,14 @@ add_executable(
 if(TARGET verda_assets)
     add_dependencies(outland verda_assets)
 endif()
+add_custom_target(outland_vehicle_data
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:outland>/assets/verda/vehicles"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/assets/verda/vehicles/vehicle_manifest.tsv" "$<TARGET_FILE_DIR:outland>/assets/verda/vehicles/vehicle_manifest.tsv")
+add_dependencies(outland outland_vehicle_data)
+if(TARGET outland_vehicle_catalog)
+    add_dependencies(outland_vehicle_data outland_vehicle_catalog)
+endif()
+
 
 target_link_libraries(
     outland
@@ -369,6 +393,30 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_definitions(outland_loot_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_loot_tests COMMAND outland_loot_tests)
 
+    if(Python3_Interpreter_FOUND)
+        add_test(NAME outland_vehicle_asset_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/prepare_vehicle_assets.py" --check)
+    endif()
+    add_executable(outland_vehicle_tests tests/integration/vehicles/test_vehicles.cpp)
+    target_link_libraries(outland_vehicle_tests PRIVATE outland_render)
+    target_compile_options(outland_vehicle_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_vehicle_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_vehicle_tests COMMAND outland_vehicle_tests)
+    add_executable(outland_vehicle_audio_tests tests/integration/vehicles/test_vehicle_audio.cpp)
+    target_link_libraries(outland_vehicle_audio_tests PRIVATE outland_render)
+    target_compile_options(outland_vehicle_audio_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_vehicle_audio_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    target_link_options(outland_vehicle_audio_tests PRIVATE
+        -Wl,--wrap=IsAudioDeviceReady -Wl,--wrap=FileExists -Wl,--wrap=GetApplicationDirectory
+        -Wl,--wrap=LoadMusicStream -Wl,--wrap=LoadSound -Wl,--wrap=UnloadMusicStream -Wl,--wrap=UnloadSound
+        -Wl,--wrap=SetMusicVolume -Wl,--wrap=SetSoundVolume -Wl,--wrap=SetMusicPitch
+        -Wl,--wrap=PlayMusicStream -Wl,--wrap=UpdateMusicStream -Wl,--wrap=StopMusicStream
+        -Wl,--wrap=IsSoundPlaying -Wl,--wrap=PlaySound -Wl,--wrap=StopSound)
+    add_test(NAME outland_vehicle_audio_tests COMMAND outland_vehicle_audio_tests)
+    add_executable(outland_raylib6_pose_tests tests/integration/assets/test_raylib6_pose.cpp)
+    target_link_libraries(outland_raylib6_pose_tests PRIVATE outland_render)
+    target_compile_options(outland_raylib6_pose_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_raylib6_pose_tests COMMAND outland_raylib6_pose_tests)
+
     add_executable(outland_model_cache_tests tests/integration/assets/test_model_cache.cpp src/assets/ModelCache.cpp)
     target_include_directories(outland_model_cache_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_model_cache_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -425,6 +473,18 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_asset_model_smoke PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
 
     if(OUTLAND_DEV_TOOLS)
+        add_executable(outland_dev_travel_tests tests/integration/vehicles/test_dev_travel.cpp)
+        target_link_libraries(outland_dev_travel_tests PRIVATE outland_render)
+        target_compile_options(outland_dev_travel_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+        target_link_options(outland_dev_travel_tests PRIVATE
+            -Wl,--wrap=IsKeyPressed -Wl,--wrap=GetTouchPointCount -Wl,--wrap=GetTouchPointId
+            -Wl,--wrap=GetTouchPosition -Wl,--wrap=IsWindowFocused -Wl,--wrap=IsMouseButtonPressed -Wl,--wrap=GetMousePosition)
+        add_test(NAME outland_dev_travel_tests COMMAND outland_dev_travel_tests)
+        add_executable(outland_creator_vehicle_tests tests/integration/vehicles/test_creator_vehicles.cpp)
+        target_link_libraries(outland_creator_vehicle_tests PRIVATE outland_render)
+        target_compile_options(outland_creator_vehicle_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+        target_compile_definitions(outland_creator_vehicle_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+        add_test(NAME outland_creator_vehicle_tests COMMAND outland_creator_vehicle_tests)
         add_executable(outland_creator_session_tests tests/integration/creator/test_creator_session.cpp)
         target_link_libraries(outland_creator_session_tests PRIVATE outland_render)
         target_compile_options(outland_creator_session_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

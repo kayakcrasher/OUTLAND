@@ -129,6 +129,14 @@ int main() {
     touches={{205,{60,195}}}; frame(); release();
     assert(controller.selected_asset()->model_path.starts_with("assets/verda/characters/"));
     assert(controller.selected_asset()->category == CreatorAssetCategory::Prop);
+    release();ui.set_inventory_open(true);
+    for(const auto* prefix:{"assets/verda/survival/","assets/verda/industrial/","assets/verda/vehicles/"}){
+        touches={{800,{640,470}}};frame();release();const auto filtered=ui.drawer_assets(controller);assert(!filtered.empty());
+        for(const auto* asset:filtered)assert(asset->model_path.starts_with(prefix));
+        if(std::string(prefix).find("industrial")!=std::string::npos)assert(filtered.size()==13);
+        if(std::string(prefix).find("vehicles")!=std::string::npos)assert(filtered.size()>=1);
+    }
+    touches={{801,{640,470}}};frame();release();assert(ui.drawer_assets(controller).size()>600);
     ui.set_inventory_open(false);ui.show_all_assets();ui.set_search("");
     assert(ui.drawer_assets(controller).size()==controller.registry().size());
     for(const auto& asset:controller.registry().assets())if(asset.model_path.empty())assert(asset.category==CreatorAssetCategory::Building || asset.category==CreatorAssetCategory::Gameplay);

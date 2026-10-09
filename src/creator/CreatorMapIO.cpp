@@ -26,7 +26,7 @@ namespace {
 constexpr std::string_view magic =
     "OUTLAND_CREATOR_MAP";
 
-constexpr int version = 5;
+constexpr int version = 6;
 
 constexpr std::string_view creator_prefix =
     "creator_";
@@ -250,6 +250,14 @@ bool CreatorMapIO::save(
                 << '\n';
         }
 
+        for(const auto& asset:settlement.assets) if(!asset.vehicle.definition.empty()) {
+            const auto& v=asset.vehicle;
+            output<<"VEHICLE_STATE "<<std::quoted(asset.id)<<' '<<std::quoted(v.definition)<<' '<<std::quoted(v.marker)<<' '
+                <<v.home.x<<' '<<v.home.y<<' '<<v.home.z<<' '<<v.home_yaw<<' '<<v.health<<' '<<v.engine<<' '<<v.fuel<<' '<<v.enabled<<' '<<v.destroyed;
+            for(float tire:v.tires)output<<' '<<tire;
+            output<<'\n';
+        }
+
         // ----------------------------------------------------
         // CREATOR GAMEPLAY MARKERS
         // ----------------------------------------------------
@@ -344,7 +352,7 @@ bool CreatorMapIO::load(
 
     if (
         file_magic != magic ||
-        (file_version != 3 && file_version != 4 && file_version != version)
+        (file_version != 3 && file_version != 4 && file_version != 5 && file_version != version)
     ) {
         return false;
     }
@@ -362,7 +370,7 @@ bool CreatorMapIO::load(
     std::unordered_set<std::string> settlement_ids;
     const bool full_snapshot=file_version>=4;
     bool coastal_layout=false;
-    if(file_version==5) {
+    if(file_version>=5) {
         std::string geography;int flag=-1;
         if(!(input>>geography>>flag) || geography!="GEOGRAPHY" || (flag!=0 && flag!=1)) return false;
         coastal_layout=flag==1;
@@ -380,6 +388,18 @@ bool CreatorMapIO::load(
             snapshot.push_back(std::move(settlement));continue;
         }
         if(full_snapshot && snapshot.empty()) return false;
+        if(file_version>=6 && record=="VEHICLE_STATE") {
+            std::string id;world::VehiclePlacementState state;int enabled=0,destroyed=0;
+            input>>std::quoted(id)>>std::quoted(state.definition)>>std::quoted(state.marker)>>state.home.x>>state.home.y>>state.home.z>>state.home_yaw>>state.health>>state.engine>>state.fuel>>enabled>>destroyed;
+            for(auto& tire:state.tires)input>>tire;
+            const float values[]{state.home.x,state.home.y,state.home.z,state.home_yaw,state.health,state.engine,state.fuel,state.tires[0],state.tires[1],state.tires[2],state.tires[3]};
+            for(float value:values)if(!std::isfinite(value))return false;
+            if(!input||state.definition.empty()||state.definition.size()>80||state.health<0||state.health>100||state.engine<0||state.engine>100||state.fuel<0||state.fuel>1||(enabled!=0&&enabled!=1)||(destroyed!=0&&destroyed!=1))return false;
+            for(float tire:state.tires)if(tire<0||tire>100)return false;
+            auto& assets=snapshot.back().assets;auto found=std::find_if(assets.begin(),assets.end(),[&](const auto& asset){return asset.id==id;});
+            if(found==assets.end()||!found->vehicle.definition.empty())return false;
+            state.enabled=enabled;state.destroyed=destroyed;found->vehicle=std::move(state);continue;
+        }
         if(full_snapshot && record=="ROAD") {
             world::Road road;int type=0;
             input >> road.start.x >> road.start.y >> road.start.z >> road.end.x >> road.end.y >> road.end.z >> road.width >> type;

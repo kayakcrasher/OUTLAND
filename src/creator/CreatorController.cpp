@@ -3,6 +3,7 @@
 #ifdef OUTLAND_DEV_TOOLS
 
 #include "outland/world/terrain/TerrainHeight.hpp"
+#include "outland/world/physics/WorldCollision.hpp"
 
 #include <raymath.h>
 
@@ -386,7 +387,7 @@ void CreatorController::update(
     Vector3 camera_forward,
     const bool allow_shortcuts
 ) {
-    (void)region; // Mutations are routed through CreatorSession by the caller.
+
     if (!state_.enabled) {
         return;
     }
@@ -403,6 +404,15 @@ void CreatorController::update(
         camera_forward
     );
 
+    preview_.blocked=false;
+    const auto* asset=selected_asset();
+    if(asset && asset->category!=CreatorAssetCategory::Gameplay && asset->category!=CreatorAssetCategory::Road && !asset->placement.allow_overlap) {
+        for(float x:{-asset->footprint.width*.5F,0.0F,asset->footprint.width*.5F})
+            for(float z:{-asset->footprint.depth*.5F,0.0F,asset->footprint.depth*.5F}) {
+                const auto point=Vector3Add(preview_.position,Vector3RotateByAxisAngle({x,0,z},{0,1,0},preview_.rotation_y*DEG2RAD));
+                if(world::physics::WorldCollision::blocked(point,region,.15F,selection_.world_asset_id))preview_.blocked=true;
+            }
+    }
     if(!allow_shortcuts)return;
     // Desktop shortcuts adjust the preview; world edits use CreatorSession.
 
@@ -537,37 +547,11 @@ bool CreatorController::select_building(
                     building.position.z
                 );
 
-            /*
-             * Creator picking uses a conservative
-             * world-space box for now.
-             *
-             * Rendering/collision may rotate the
-             * building, but this is intentionally
-             * forgiving for editor selection.
-             */
-            const BoundingBox bounds{
-                {
-                    building.position.x -
-                        building.size.x * 0.5F,
-                    ground_y,
-                    building.position.z -
-                        building.size.z * 0.5F
-                },
-                {
-                    building.position.x +
-                        building.size.x * 0.5F,
-                    ground_y +
-                        building.size.y,
-                    building.position.z +
-                        building.size.z * 0.5F
-                }
-            };
-
-            const RayCollision hit =
-                GetRayCollisionBox(
-                    ray,
-                    bounds
-                );
+            const Vector3 base{building.position.x,ground_y,building.position.z};
+            const float yaw=-building.rotation_y*DEG2RAD;
+            const Ray local_ray{Vector3RotateByAxisAngle(Vector3Subtract(ray.position,base),{0,1,0},yaw),Vector3RotateByAxisAngle(ray.direction,{0,1,0},yaw)};
+            const BoundingBox bounds{{-building.size.x*.5F-.35F,0,-building.size.z*.5F-.35F},{building.size.x*.5F+.35F,building.size.y+.44F+building.size.x*.22F,building.size.z*.5F+.35F}};
+            const RayCollision hit=GetRayCollisionBox(local_ray,bounds);
 
             if (!hit.hit) {
                 continue;
@@ -1012,6 +996,7 @@ bool CreatorController::place_selected(
             break;
     }
 
+    for(const auto& tag:asset->tags)if(tag.starts_with("vehicle_definition:"))placed.vehicle.definition=tag.substr(19);
     placed.model_path = asset->model_path;
     placed.position = preview_.position;
 
@@ -1022,6 +1007,7 @@ bool CreatorController::place_selected(
     };
 
     placed.rotation_y = preview_.rotation_y;
+    placed.vehicle.home=placed.position;placed.vehicle.home_yaw=placed.rotation_y;
     // Road surfaces, markings and flat ground details must not become circular
     // movement blockers under the existing WorldAsset collision system.
     placed.collision = asset->category != CreatorAssetCategory::Road &&
@@ -1060,51 +1046,12 @@ bool CreatorController::select_world_asset(
             const world::WorldAsset& asset :
             settlement.assets
         ) {
-            /*
-             * Creator only edits Creator-owned
-             * WorldAssets here. Bootstrap Verda
-             * assets remain protected.
-             */
-            if (!asset.id.starts_with("creator_")) {
-                continue;
-            }
-
-            const float half_x =
-                std::max(
-                    asset.size.x * 0.5F,
-                    0.25F
-                );
-
-            const float half_z =
-                std::max(
-                    asset.size.z * 0.5F,
-                    0.25F
-                );
-
-            const float height =
-                std::max(
-                    asset.size.y,
-                    0.5F
-                );
-
-            const BoundingBox bounds{
-                {
-                    asset.position.x - half_x,
-                    asset.position.y,
-                    asset.position.z - half_z
-                },
-                {
-                    asset.position.x + half_x,
-                    asset.position.y + height,
-                    asset.position.z + half_z
-                }
-            };
-
-            const RayCollision hit =
-                GetRayCollisionBox(
-                    ray,
-                    bounds
-                );
+            const bool tree=asset.model_path.empty() && asset.type==world::AssetType::Tree;
+            Vector3 base=asset.position;if(tree)base.y=world::terrain::TerrainHeight::sample(base.x,base.z);
+            const float half_x=std::max(asset.size.x*.5F,tree?2.5F:.25F),half_z=std::max(asset.size.z*.5F,tree?2.5F:.25F),height=std::max(asset.size.y,tree?7.0F:.5F);
+            const float yaw=-asset.rotation_y*DEG2RAD;
+            const Ray local_ray{Vector3RotateByAxisAngle(Vector3Subtract(ray.position,base),{0,1,0},yaw),Vector3RotateByAxisAngle(ray.direction,{0,1,0},yaw)};
+            const RayCollision hit=GetRayCollisionBox(local_ray,{{-half_x,0,-half_z},{half_x,height,half_z}});
 
             if (!hit.hit) {
                 continue;
@@ -1453,6 +1400,7 @@ bool CreatorController::move_selected(
 
             asset.position =
                 preview_.position;
+            if(!asset.vehicle.definition.empty()) {asset.vehicle.home=asset.position;for(auto& marker:settlement.gameplay_markers)if(marker.id==asset.vehicle.marker)marker.position=asset.position;}
 
             selection_.position =
                 asset.position;
@@ -1856,6 +1804,7 @@ bool CreatorController::duplicate_selected(
 
     duplicate.position.z +=
         1.0F;
+    if(!duplicate.vehicle.definition.empty()){duplicate.vehicle.home=duplicate.position;duplicate.vehicle.home_yaw=duplicate.rotation_y;duplicate.vehicle.marker.clear();}
 
     if (
         !region.place_world_asset(
@@ -2014,6 +1963,7 @@ bool CreatorController::rotate_selected(
             normalize_rotation(
                 asset.rotation_y
             );
+            if(!asset.vehicle.definition.empty()){asset.vehicle.home_yaw=asset.rotation_y;for(auto& marker:settlement.gameplay_markers)if(marker.id==asset.vehicle.marker)marker.rotation_y=asset.rotation_y;}
 
             selection_.position =
                 asset.position;
@@ -2395,7 +2345,7 @@ void CreatorController::draw_world_overlay(
             2.0F,
             2.0F,
             2.0F,
-            GREEN
+            preview_.blocked ? RED : GREEN
         );
     }
 }

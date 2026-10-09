@@ -107,22 +107,31 @@ void WeaponSystem::simulate(float dt, CombatWorld& world) {
         bullet.velocity.y-=9.81F*dt;
         bullet.velocity=mul(bullet.velocity,std::exp(-bullet.drag*dt));
         bullet.age+=dt;bullet.travelled+=length(sub(end,bullet.position));
-        const auto hit=world.trace_segment(bullet.position,end);
-        if(hit.hit()) {
-            bullet.position=hit.position;bullet.active=false;
+        Vector3 segment_start=bullet.position;
+        bool stopped=false;
+        for(int contact=0;contact<8;++contact) {
+            const auto hit=world.trace_segment(segment_start,end);
+            if(!hit.hit())break;
             impacts_[impact_index_++%impacts_.size()]={hit.position,hit.normal,hit.kind,.4F};
-            if(hit.kind==HitKind::Target || hit.kind==HitKind::Npc) {
-                ++events_.target_hits;
-                const float speed=length(bullet.velocity);
-                last_damage_=bullet.damage*std::clamp(speed*speed/(bullet.initial_speed*bullet.initial_speed),.35F,1.0F)*
-                             (hit.headshot ? 2.0F : 1.0F);
-                world.damage_hit(hit,last_damage_,bullet.previous);
-                hit_marker_=.22F;last_headshot_=hit.headshot;
+            const float speed=length(bullet.velocity);
+            const float damage=bullet.damage*std::clamp(speed*speed/(bullet.initial_speed*bullet.initial_speed),.35F,1.0F)*(hit.headshot?2.0F:1.0F);
+            world.damage_hit(hit,damage,bullet.previous);
+            if(hit.kind==HitKind::Target || hit.kind==HitKind::Npc || hit.kind==HitKind::Vehicle || hit.kind==HitKind::VehicleOccupant) {
+                ++events_.target_hits;last_damage_=damage;hit_marker_=.22F;last_headshot_=hit.headshot;
             }
-        } else {
-            bullet.position=end;
-            if(bullet.age>4.0F || bullet.travelled>900.0F)bullet.active=false;
+            if(hit.penetration>0 && hit.penetration<1) {
+                bullet.damage*=hit.penetration;
+                const auto remaining=sub(end,hit.position);const float distance=length(remaining);
+                if(distance<.03F){segment_start=end;break;}
+                segment_start=add(hit.position,mul(remaining,.03F/distance));
+                if(contact==7){stopped=true;bullet.position=hit.position;}
+                continue;
+            }
+            stopped=true;bullet.position=hit.position;break;
         }
+        if(stopped)bullet.active=false;
+        else {bullet.position=end;if(bullet.age>4.0F || bullet.travelled>900.0F)bullet.active=false;}
+
     }
 }
 

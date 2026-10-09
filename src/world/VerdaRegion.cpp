@@ -257,8 +257,10 @@ bool VerdaRegion::delete_world_asset(
 
         std::erase_if(
             settlement.assets,
-            [asset_id](const WorldAsset& asset) {
-                return asset.id == asset_id;
+            [asset_id,&settlement](const WorldAsset& asset) {
+                if(asset.id!=asset_id)return false;
+                for(auto& marker:settlement.gameplay_markers)if(marker.id==asset.vehicle.marker)marker.enabled=false;
+                return true;
             }
         );
 
@@ -595,6 +597,7 @@ void VerdaRegion::create_coastal_region() {
         settlements_.push_back(std::move(town));
     }
     auto& capital=settlements_[1];
+    capital.gameplay_markers.push_back({"vehicle_spawn_hatchback_capital",GameplayMarkerType::VehicleSpawn,{5,0,8},{3,1.8F,5},180,true});
     const auto link=[&](Vector3 a,Vector3 b){capital.roads.push_back({a,b,8,RoadType::Asphalt});};
     for(std::size_t i=1;i<layout::sites.size();++i) {
         const auto p=layout::sites[i].center;
@@ -648,6 +651,7 @@ void VerdaRegion::draw(const Vector3& camera_position) const {
             const WorldAsset& asset :
             settlement.assets
         ) {
+            if(!asset.vehicle.definition.empty())continue;
             if (
                 asset.type ==
                 AssetType::Tree && asset.model_path.empty()

@@ -59,9 +59,9 @@ int main() {
     touches={{10,point(layout.jump)},{11,point(layout.interact)},
         {12,point(layout.inventory)},{13,point(layout.sprint)}};
     input.update(1280,720);
-    assert(input.player().jump && input.player().interact && input.player().inventory && input.player().sprint);
+    assert(input.player().jump && input.player().brake && input.player().interact && input.player().inventory && input.player().sprint);
     input.update(1280,720);
-    assert(!input.player().jump && !input.player().interact && !input.player().inventory && input.player().sprint);
+    assert(!input.player().jump && input.player().brake && !input.player().interact && !input.player().inventory && input.player().sprint);
     touches.push_back({14,point(layout.crouch)});
     input.update(1280,720); assert(input.player().crouch && !input.player().sprint);
     release();
@@ -99,6 +99,11 @@ int main() {
     touches={{6,point(layout.fire)}}; input.update(1280,720); assert(input.player().fire);
     input.cancel_controls(); input.update(1280,720); assert(!input.player().fire);
     release();
+    // Fresh UI contacts can be cancelled before gameplay capture; synthetic release cannot fire.
+    touches={{700,point(layout.fire)}};input.cancel_controls();input.update(1280,720);assert(!input.player().fire);
+    touches.clear();mouse=point(layout.fire);mouse_down=mouse_pressed=true;input.update(1280,720);assert(!input.player().fire);
+    input.update(1280,720);assert(!input.player().fire);release();
+    mouse=point(layout.fire);mouse_down=mouse_pressed=true;input.cancel_controls();input.update(1280,720);assert(!input.player().fire);release();
     // Resize quarantines contacts; a new contact still gets matching geometry at 480x270.
     touches={{6,point(layout.fire)}}; input.update(1280,720); assert(input.player().fire);
     input.update(480,270); assert(!input.player().fire);
