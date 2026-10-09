@@ -270,12 +270,12 @@ void Renderer::run() {
     game::GameMode game_mode =
         game::GameMode::Home;
 
-    world::VerdaRegion verda_region;
     const auto environment_path=[](const char* name){const auto* value=std::getenv(name);return value ? std::string(value):std::string{};};
     const std::string map_path=creator::CreatorMapIO::writable_path(GetApplicationDirectory(),environment_path("HOME"),environment_path("OUTLAND_SAVE_DIR"));
     const std::string legacy_map=FileExists("maps/verda_creator.map") ? "maps/verda_creator.map" :
         std::string(GetApplicationDirectory())+"maps/verda_creator.map";
     const auto& initial_map=FileExists(map_path.c_str()) ? map_path:legacy_map;
+    world::VerdaRegion verda_region(!FileExists(initial_map.c_str()));
     if(FileExists(initial_map.c_str())) {
         const bool loaded=creator::CreatorMapIO::load(verda_region,initial_map);
         TraceLog(loaded ? LOG_INFO:LOG_ERROR,loaded ? "Saved Verda map loaded":"Map load failed - using training region");
@@ -553,7 +553,7 @@ void Renderer::run() {
                 dev_lab.teleport_requested()
             ) {
                 player.position =
-                    dev_lab.spawn_position();
+                    dev_lab.spawn_position(verda_region);
 
                 player.vertical_velocity =
                     0.0F;
@@ -945,6 +945,7 @@ void Renderer::run() {
         // VERDA TERRAIN
         // ----------------------------------------------------
 
+        terrain_world.update(camera.position);
         terrain_world.draw();
 
         // ----------------------------------------------------

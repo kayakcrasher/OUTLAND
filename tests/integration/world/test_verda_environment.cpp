@@ -79,7 +79,7 @@ int main() {
     Road zero{{1,0,1},{1,0,1},2,RoadType::Dirt};
     assert(!on_road({1,0,1},zero));
 
-    VerdaRegion region;
+    VerdaRegion region(false); // Legacy training-world geometry remains unchanged.
     assert(ground_surface({0,0,-40},region)==GroundSurface::Dirt);
     assert(ground_surface({20,0,-72},region)==GroundSurface::Gravel);
     assert(ground_surface({70,0,-70},region)==GroundSurface::Grass);

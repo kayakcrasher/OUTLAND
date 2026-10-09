@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include "outland/world/terrain/TerrainHeight.hpp"
+#include "outland/world/VerdaLayout.hpp"
 
 namespace outland::world::physics {
 
@@ -46,6 +48,10 @@ bool WorldCollision::blocked(
     const VerdaRegion& region,
     const float player_radius
 ) {
+    // Shoreline blocks walkers until swimming exists; Creator flight remains independent.
+    if(region.coastal_layout() && std::hypot(position.x,position.z)>1950 &&
+       terrain::TerrainHeight::sample(position.x,position.z)<=layout::sea_level) return true;
+
     for (
         const Settlement& settlement :
         region.settlements()

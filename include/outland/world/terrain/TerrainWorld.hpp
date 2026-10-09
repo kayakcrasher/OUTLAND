@@ -12,6 +12,7 @@ public:
     TerrainWorld();
 
     void draw() const;
+    void update(Vector3 position);
 
     [[nodiscard]]
     float height_at(
@@ -23,7 +24,9 @@ public:
     int chunk_count() const;
 
 private:
-    static constexpr int kRadius = 2;
+    static constexpr int kRadius = 3;
+    int center_x_{0}, center_z_{0};
+    bool coastal_layout_{false};
     static constexpr float kChunkSize = 128.0F;
     static constexpr int kResolution = 24;
 

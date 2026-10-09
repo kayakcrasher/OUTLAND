@@ -331,6 +331,13 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_environment_tests PRIVATE -Wall -Wextra -Wpedantic)
     target_compile_options(outland_environment_tests PRIVATE -UNDEBUG)
     add_test(NAME outland_environment_tests COMMAND outland_environment_tests)
+    add_executable(outland_verda_layout_tests tests/integration/world/test_verda_layout.cpp)
+    target_link_libraries(outland_verda_layout_tests PRIVATE outland_render)
+    target_compile_options(outland_verda_layout_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_link_options(outland_verda_layout_tests PRIVATE
+        -Wl,--wrap=UploadMesh -Wl,--wrap=LoadModelFromMesh -Wl,--wrap=UnloadModel
+        -Wl,--wrap=DrawModel -Wl,--wrap=DrawPlane -Wl,--wrap=IsKeyPressed)
+    add_test(NAME outland_verda_layout_tests COMMAND outland_verda_layout_tests)
     add_executable(outland_combat_tests
         tests/integration/world/test_combat.cpp
         src/game/combat/CombatWorld.cpp

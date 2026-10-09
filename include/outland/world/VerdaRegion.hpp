@@ -13,6 +13,8 @@ namespace outland::world {
 class VerdaRegion {
 public:
     VerdaRegion();
+    explicit VerdaRegion(bool coastal_layout);
+    [[nodiscard]] bool coastal_layout() const { return coastal_layout_; }
 
     void generate_training_region();
 
@@ -61,6 +63,8 @@ public:
 private:
     friend class outland::creator::CreatorMapIO;
     std::vector<Settlement> settlements_;
+    bool coastal_layout_{true};
+    void create_coastal_region();
 
     void create_first_village();
 };

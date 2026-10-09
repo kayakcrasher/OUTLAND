@@ -5,6 +5,7 @@
 #include "outland/world/Settlement.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/WorldAsset.hpp"
+#include "outland/world/terrain/TerrainHeight.hpp"
 
 #include <algorithm>
 #include <filesystem>
@@ -25,7 +26,7 @@ namespace {
 constexpr std::string_view magic =
     "OUTLAND_CREATOR_MAP";
 
-constexpr int version = 4;
+constexpr int version = 5;
 
 constexpr std::string_view creator_prefix =
     "creator_";
@@ -114,6 +115,7 @@ bool CreatorMapIO::save(
         << ' '
         << version
         << '\n';
+    output << "GEOGRAPHY " << (region.coastal_layout()?1:0) << '\n';
 
     for (
         const world::Settlement& settlement :
@@ -342,7 +344,7 @@ bool CreatorMapIO::load(
 
     if (
         file_magic != magic ||
-        (file_version != 3 && file_version != version)
+        (file_version != 3 && file_version != 4 && file_version != version)
     ) {
         return false;
     }
@@ -358,7 +360,13 @@ bool CreatorMapIO::load(
 
     std::vector<world::Settlement> snapshot;
     std::unordered_set<std::string> settlement_ids;
-    const bool full_snapshot=file_version==4;
+    const bool full_snapshot=file_version>=4;
+    bool coastal_layout=false;
+    if(file_version==5) {
+        std::string geography;int flag=-1;
+        if(!(input>>geography>>flag) || geography!="GEOGRAPHY" || (flag!=0 && flag!=1)) return false;
+        coastal_layout=flag==1;
+    }
     std::string record;
 
     while (input >> record) {
@@ -633,6 +641,8 @@ bool CreatorMapIO::load(
         if(snapshot.empty()) return false;
         region.settlements_.resize(snapshot.size());
         for(std::size_t i=0;i<snapshot.size();++i)region.settlements_[i]=std::move(snapshot[i]);
+        region.coastal_layout_=coastal_layout;
+        world::terrain::TerrainHeight::set_coastal_layout(coastal_layout);
         return true;
     }
     auto& settlements =

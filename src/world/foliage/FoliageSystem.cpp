@@ -1,6 +1,7 @@
 #include "outland/world/foliage/FoliageSystem.hpp"
 
 #include "outland/world/terrain/TerrainHeight.hpp"
+#include "outland/world/VerdaLayout.hpp"
 
 #include <raylib.h>
 #include <raymath.h>
@@ -361,6 +362,8 @@ void FoliageSystem::draw(
                     world_z
                 ) +
                 0.025F;
+
+            if (region.coastal_layout() && world_y <= layout::sea_level+0.025F && std::hypot(world_x,world_z)>1950) continue;
 
             const Vector3 position{
                 world_x,

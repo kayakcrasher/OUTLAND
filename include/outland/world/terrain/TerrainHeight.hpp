@@ -4,6 +4,9 @@ namespace outland::world::terrain {
 
 class TerrainHeight {
 public:
+    // The game has one active world. Set before constructing terrain meshes.
+    static void set_coastal_layout(bool enabled);
+    [[nodiscard]] static bool coastal_layout();
     [[nodiscard]]
     static float sample(
         float world_x,

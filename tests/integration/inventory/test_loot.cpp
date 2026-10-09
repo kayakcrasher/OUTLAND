@@ -119,9 +119,10 @@ int main() {
                                                 (root / "maps/verda_loot_defaults.map").string()));
     LootWorld defaults;
     assert(defaults.reconcile(region, registry, false, ground()) &&
-           defaults.state().sources.size() == 5);
+           defaults.state().sources.size() == 3);
 
     combat::WeaponSystem weapons;
+    assert(defaults.reconcile(region, registry, false, ground(0,-1800)) && defaults.state().sources.size()==5);
     LootSession session(registry);
     const auto profile_map = (directory / "maps/verda_creator.map").string();
     session.start(GameMode::Explore, profile_map, weapons);

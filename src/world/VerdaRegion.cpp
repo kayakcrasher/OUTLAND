@@ -7,6 +7,7 @@
 #include <rlgl.h>
 #include "outland/world/assets/VerdaGeometry.hpp"
 #include <algorithm>
+#include "outland/world/VerdaLayout.hpp"
 
 #include <cmath>
 
@@ -147,7 +148,7 @@ void draw_building(
 }
 
 void draw_road(
-    const Road& road
+    const Road& road, const Vector3& camera
 ) {
     // Terrain-following ribbon; immediate triangles do not allocate GPU resources.
     const float dx = road.end.x - road.start.x;
@@ -156,7 +157,11 @@ void draw_road(
     if (length < 0.001F || road.width <= 0.0F) return;
     const float side_x = dz / length * road.width * 0.5F;
     const float side_z = -dx / length * road.width * 0.5F;
-    const int segments = std::clamp(static_cast<int>(std::ceil(length / 2.0F)), 1, 512);
+    const float projection=std::clamp(((camera.x-road.start.x)*dx+(camera.z-road.start.z)*dz)/(length*length),0.0F,1.0F);
+    const float nearest_x=road.start.x+dx*projection, nearest_z=road.start.z+dz*projection;
+    if(std::hypot(camera.x-nearest_x,camera.z-nearest_z)>330+road.width) return;
+    const float begin=std::max(0.0F,projection-340.0F/length), end=std::min(1.0F,projection+340.0F/length);
+    const int segments = std::clamp(static_cast<int>(std::ceil(length*(end-begin) / 2.0F)), 1, 512);
     const Color color = road.type == RoadType::Asphalt ? Color{76,80,77,255}
                       : road.type == RoadType::Gravel ? Color{157,151,127,255}
                       : Color{161,128,83,255};
@@ -166,8 +171,8 @@ void draw_road(
         return Vector3{x, terrain::TerrainHeight::sample(x,z) + 0.06F, z};
     };
     for (int i = 0; i < segments; ++i) {
-        const float a = static_cast<float>(i) / segments;
-        const float b = static_cast<float>(i+1) / segments;
+        const float a = begin+(end-begin)*static_cast<float>(i) / segments;
+        const float b = begin+(end-begin)*static_cast<float>(i+1) / segments;
         assets::draw_quad(edge(a, 1), edge(a, -1), edge(b, -1), edge(b, 1), color);
     }
 }
@@ -201,9 +206,8 @@ void draw_tree(Vector3 position, const Vector3& camera_position) {
 
 }
 
-VerdaRegion::VerdaRegion() {
-    generate_training_region();
-}
+VerdaRegion::VerdaRegion() : VerdaRegion(true) {}
+VerdaRegion::VerdaRegion(bool coastal_layout) : coastal_layout_(coastal_layout) { generate_training_region(); }
 
 #ifdef OUTLAND_DEV_TOOLS
 
@@ -317,7 +321,9 @@ bool VerdaRegion::delete_road(
 void VerdaRegion::generate_training_region() {
     settlements_.clear();
 
+    terrain::TerrainHeight::set_coastal_layout(coastal_layout_);
     create_first_village();
+    if(coastal_layout_) create_coastal_region();
 }
 
 void VerdaRegion::create_first_village() {
@@ -554,6 +560,64 @@ void VerdaRegion::create_first_village() {
     );
 }
 
+void VerdaRegion::create_coastal_region() {
+    auto& espera=settlements_.front();
+    const auto target=layout::sites[1].center;
+    const Vector3 delta{target.x-espera.center.x,0,target.z-espera.center.z};
+    const auto move=[&](Vector3& p){p.x+=delta.x;p.z+=delta.z;};
+    move(espera.center);
+    for(auto& b:espera.buildings) move(b.position);
+    for(auto& a:espera.assets) move(a.position);
+    for(auto& m:espera.gameplay_markers) move(m.position);
+    for(auto& r:espera.roads){move(r.start);move(r.end);}
+    for(std::size_t i=0;i<layout::sites.size();++i) {
+        if(i==1) continue;
+        const auto& site=layout::sites[i];
+        Settlement town;town.id=site.id;town.name=site.name;town.center=site.center;
+        town.state=SettlementState::Peaceful;town.survivors=i==0?80:24;
+        const float avenue=i==0?110:22;
+        for(int side:{-1,1}) for(int row=0;row<4;++row) {
+            const float z=(row-1.5F)*30;
+            Building building;
+            building.id=town.id+"_building_"+std::to_string(town.buildings.size());
+            building.position={town.center.x+side*avenue,0,town.center.z+z};
+            building.rotation_y=side<0?0:180;
+            building.style=i==2 || i==4 ? (row%2==0?BuildingStyle::Warehouse:BuildingStyle::Shop) :
+                i==0?BuildingStyle::TwoStoryHouse:BuildingStyle::RuralHouse;
+            building.size=i==2 || i==4?Vector3{18,5,16}:Vector3{12,i==0?7.0F:4.0F,10};
+            building.wall_color=i==2?Color{192,207,215,255}:i==4?Color{155,147,127,255}:Color{225,214,176,255};
+            building.roof_color=i==4?Color{82,86,83,255}:i==3?Color{70,100,70,255}:Color{157,79,54,255};
+            building.enterable=true;town.buildings.push_back(building);
+        }
+        const float span=i==0?160:90;
+        town.roads.push_back({{town.center.x,0,town.center.z-span},{town.center.x,0,town.center.z+span},8,RoadType::Asphalt});
+        town.roads.push_back({{town.center.x-span,0,town.center.z},{town.center.x+span,0,town.center.z},7,RoadType::Gravel});
+        settlements_.push_back(std::move(town));
+    }
+    auto& capital=settlements_[1];
+    const auto link=[&](Vector3 a,Vector3 b){capital.roads.push_back({a,b,8,RoadType::Asphalt});};
+    for(std::size_t i=1;i<layout::sites.size();++i) {
+        const auto p=layout::sites[i].center;
+        Vector3 last{0,0,0};
+        for(float fraction:{0.35F,0.65F,1.0F}) {
+            const Vector3 next{p.x*fraction,0,p.z*fraction};link(last,next);last=next;
+        }
+    }
+    // Inland ring joins neighbouring coastal hubs without cutting through the sea.
+    for(std::size_t i=1;i<layout::sites.size();++i) {
+        const auto a=layout::sites[i].center,b=layout::sites[i==4?1:i+1].center;
+        float angle=std::atan2(a.z,a.x), end=std::atan2(b.z,b.x);
+        while(end<=angle)end+=2*PI;
+        Vector3 last=a;
+        for(int step=0;step<=6;++step) {
+            const float theta=angle+(end-angle)*step/6;
+            const Vector3 next{1500*std::cos(theta),0,1500*std::sin(theta)};
+            link(last,next);last=next;
+        }
+        link(last,b);
+    }
+}
+
 const std::vector<Settlement>&
 VerdaRegion::settlements() const {
     return settlements_;
@@ -568,7 +632,7 @@ void VerdaRegion::draw(const Vector3& camera_position) const {
             const Road& road :
             settlement.roads
         ) {
-            draw_road(road);
+            draw_road(road, camera_position);
         }
 
         for (

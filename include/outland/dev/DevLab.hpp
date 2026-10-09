@@ -2,6 +2,7 @@
 
 #include <raylib.h>
 
+namespace outland::world { class VerdaRegion; }
 namespace outland::dev {
 
 enum class DevLocation {
@@ -11,7 +12,10 @@ enum class DevLocation {
     OpenField,
     BuildingTest,
     VehicleTest,
-    ZombieTest
+    ZombieTest,
+    PortoLuma,
+    SouthHaven,
+    Roka
 };
 
 class DevLab {
@@ -26,7 +30,7 @@ public:
     ) const;
 
     [[nodiscard]]
-    Vector3 spawn_position() const;
+    Vector3 spawn_position(const world::VerdaRegion& region) const;
 
     [[nodiscard]]
     bool teleport_requested() const;

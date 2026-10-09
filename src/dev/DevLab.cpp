@@ -1,6 +1,7 @@
 #include "outland/dev/DevLab.hpp"
 
 #include "outland/world/terrain/TerrainHeight.hpp"
+#include "outland/world/VerdaRegion.hpp"
 
 #include <cstdio>
 
@@ -25,6 +26,9 @@ Vector3 grounded(
 }
 
 void DevLab::update() {
+    if(IsKeyPressed(KEY_EIGHT)) {location_=DevLocation::PortoLuma;teleport_requested_=true;}
+    if(IsKeyPressed(KEY_NINE)) {location_=DevLocation::SouthHaven;teleport_requested_=true;}
+    if(IsKeyPressed(KEY_ZERO)) {location_=DevLocation::Roka;teleport_requested_=true;}
     if (IsKeyPressed(KEY_ONE)) {
         location_ =
             DevLocation::TrainingGround;
@@ -75,8 +79,19 @@ void DevLab::update() {
     }
 }
 
-Vector3 DevLab::spawn_position() const {
+Vector3 DevLab::spawn_position(const world::VerdaRegion& region) const {
+    const auto near_espera=[&](float x,float z){
+        for(const auto& site:region.settlements()) if(site.id=="village_espera") return grounded(site.center.x+x,site.center.z+z);
+        return grounded(x,z-70);
+    };
+    const auto at_site=[&](const char* id){
+        for(const auto& site:region.settlements())if(site.id==id)return grounded(site.center.x,site.center.z+10);
+        return grounded(0,8);
+    };
     switch (location_) {
+    case DevLocation::PortoLuma: return at_site("port_luma");
+    case DevLocation::SouthHaven: return at_site("south_haven");
+    case DevLocation::Roka: return at_site("west_roka");
     case DevLocation::TrainingGround:
         return grounded(
             0.0F,
@@ -84,10 +99,7 @@ Vector3 DevLab::spawn_position() const {
         );
 
     case DevLocation::Espera:
-        return grounded(
-            0.0F,
-            -60.0F
-        );
+        return near_espera(0,10);
 
     case DevLocation::Forest:
         return grounded(
@@ -102,10 +114,7 @@ Vector3 DevLab::spawn_position() const {
         );
 
     case DevLocation::BuildingTest:
-        return grounded(
-            20.0F,
-            -65.0F
-        );
+        return near_espera(0,5);
 
     case DevLocation::VehicleTest:
         return grounded(
@@ -144,7 +153,7 @@ void DevLab::draw_overlay(
         8,
         70,
         330,
-        170,
+        190,
         Fade(
             BLACK,
             0.58F
@@ -221,7 +230,8 @@ void DevLab::draw_overlay(
         14,
         LIGHTGRAY
     );
-    DrawText("T RESET TARGETS  /  UNLIMITED AMMO",18,220,14,YELLOW);
+    DrawText("8 LUMA  9 SOUTH HAVEN  0 ROKA",18,220,14,LIGHTGRAY);
+    DrawText("T RESET TARGETS  /  UNLIMITED AMMO",18,240,14,YELLOW);
 }
 
 } // namespace outland::dev

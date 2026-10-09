@@ -1,10 +1,14 @@
 #include "outland/world/terrain/TerrainHeight.hpp"
 
 #include <cmath>
+#include <algorithm>
+#include "outland/world/VerdaLayout.hpp"
 
 namespace outland::world::terrain {
 
 namespace {
+bool coastal_enabled = false;
+float smooth(float value) { value=std::clamp(value,0.0F,1.0F); return value*value*(3-2*value); }
 
 /*
  * Deterministic pseudo-noise.
@@ -66,6 +70,9 @@ float ridge_noise(
 
 } // namespace
 
+
+void TerrainHeight::set_coastal_layout(bool enabled) { coastal_enabled=enabled; }
+bool TerrainHeight::coastal_layout() { return coastal_enabled; }
 
 float TerrainHeight::large_hills(
     const float x,
@@ -240,6 +247,23 @@ float TerrainHeight::sample(
             natural_weight;
     }
 
+    if (coastal_enabled) {
+        // Flat central building pad, then the original countryside.
+        height *= smooth((distance-layout::capital_flat_radius)/80.0F);
+        // Small building pads retain hills and wilderness between towns.
+        for (std::size_t i=1;i<layout::sites.size();++i) {
+            const auto c=layout::sites[i].center;
+            const float d=std::hypot(world_x-c.x,world_z-c.z);
+            if(d<150) {
+                const float pad=std::max(6.0F,large_hills(c.x,c.z)+rolling_ground(c.x,c.z)+small_variation(c.x,c.z));
+                const float blend=smooth((d-85)/65);
+                height=pad*(1-blend)+height*blend;
+            }
+        }
+        const float shore=layout::shore_radius(world_x,world_z);
+        const float blend=smooth((distance-(shore-layout::shoreline_band))/(2*layout::shoreline_band));
+        if (distance>shore-layout::shoreline_band) height=height*(1-blend)+(layout::sea_level-8.0F)*blend;
+    }
     return height;
 }
 
