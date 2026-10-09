@@ -30,9 +30,11 @@
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include "outland/world/foliage/FoliageSystem.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
+#include "outland/world/physics/MeshCollision.hpp"
 
 #include <raylib.h>
 #include <raymath.h>
+#include <rlgl.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -48,11 +50,104 @@ assets::ModelCache& world_asset_model_cache() {
     return cache;
 }
 
+// Window glass and painted fake-interior panels are knocked out of building models, so what
+// players see matches MeshCollision: every window is an opening for movement, sight and bullets.
+void knock_out_windows(const std::string& path, Model& model) {
+    const auto* shape = world::physics::MeshCollisionLibrary::get(path);
+    if (!shape || shape->knocked_out == 0) return;
+    if (static_cast<int>(shape->mesh_knocked_out.size()) != model.meshCount) {
+        TraceLog(LOG_WARNING, "OUTLAND window knock-out skipped (mesh order differs): %s", path.c_str());
+        return;
+    }
+    // Partly knocked-out meshes: collapse those triangles to a point and re-upload the indices.
+    for (int i = 0; i < model.meshCount; ++i) {
+        const auto& gone = shape->mesh_knocked_triangles[static_cast<std::size_t>(i)];
+        Mesh& mesh = model.meshes[i];
+        if (gone.empty() || shape->mesh_knocked_out[static_cast<std::size_t>(i)]) continue;
+        if (mesh.indices) {
+            for (const auto t : gone) if (static_cast<int>(t) < mesh.triangleCount) mesh.indices[t * 3 + 1] = mesh.indices[t * 3 + 2] = mesh.indices[t * 3];
+            rlUpdateVertexBufferElements(mesh.vboId[RL_DEFAULT_SHADER_ATTRIB_LOCATION_INDICES], mesh.indices, mesh.triangleCount * 3 * static_cast<int>(sizeof(unsigned short)), 0);
+        } else if (mesh.vertices) {
+            for (const auto t : gone) if (static_cast<int>(t) < mesh.triangleCount)
+                for (int corner = 1; corner < 3; ++corner) for (int axis = 0; axis < 3; ++axis)
+                    mesh.vertices[(t * 3 + corner) * 3 + axis] = mesh.vertices[t * 9 + axis];
+            UpdateMeshBuffer(mesh, 0, mesh.vertices, mesh.vertexCount * 3 * static_cast<int>(sizeof(float)), 0);
+        }
+    }
+    int kept = 0;
+    for (int i = 0; i < model.meshCount; ++i) {
+        if (shape->mesh_knocked_out[static_cast<std::size_t>(i)]) { UnloadMesh(model.meshes[i]); continue; }
+        model.meshes[kept] = model.meshes[i];
+        model.meshMaterial[kept] = model.meshMaterial[i];
+        ++kept;
+    }
+    model.meshCount = kept;
+}
+
+Model* get_world_asset_model(const std::string& path, const characters::CharacterRegistry& registry);
+
+#ifdef OUTLAND_DEV_TOOLS
+// 3D previews for the Creator asset browser. Cards ask for a preview; missing ones are queued and
+// rendered a couple per frame before drawing starts, so paging never stalls a phone.
+class AssetThumbnails {
+public:
+    ~AssetThumbnails() { for (auto& [id, entry] : entries_) if (entry.texture.id) UnloadRenderTexture(entry.texture); }
+    const Texture2D* get(const creator::CreatorAssetDefinition& asset) {
+        if (asset.model_path.empty()) return nullptr;
+        auto found = entries_.find(asset.id);
+        if (found == entries_.end()) {
+            if (std::find_if(queue_.begin(), queue_.end(), [&](const auto& q) { return q.first == asset.id; }) == queue_.end())
+                queue_.emplace_back(asset.id, asset.model_path);
+            return nullptr;
+        }
+        found->second.used = ++clock_;
+        return found->second.texture.id ? &found->second.texture.texture : nullptr;
+    }
+    void render_pending(const characters::CharacterRegistry& registry, int budget = 2) {
+        while (budget-- > 0 && !queue_.empty()) {
+            const auto [id, path] = queue_.front();
+            queue_.erase(queue_.begin());
+            Entry entry{{}, ++clock_};
+            if (Model* model = get_world_asset_model(path, registry)) {
+                const auto bounds = assets::transformed_model_bounds(*model);
+                const Vector3 size = Vector3Subtract(bounds.max, bounds.min);
+                const float radius = std::max(.2F, Vector3Length(size) * .5F);
+                const Vector3 centre = Vector3Scale(Vector3Add(bounds.min, bounds.max), .5F);
+                Camera3D camera{};
+                camera.fovy = 30; camera.projection = CAMERA_PERSPECTIVE; camera.up = {0, 1, 0};
+                camera.target = centre;
+                camera.position = Vector3Add(centre, Vector3Scale(Vector3Normalize({.85F, .6F, -1.1F}), radius / std::sin(15 * DEG2RAD) * 1.05F));
+                entry.texture = LoadRenderTexture(160, 120);
+                BeginTextureMode(entry.texture);
+                ClearBackground({58, 64, 62, 255});
+                BeginMode3D(camera);
+                DrawModel(*model, {0, 0, 0}, 1, WHITE);
+                EndMode3D();
+                EndTextureMode();
+            }
+            if (entries_.size() >= 96) {
+                auto oldest = std::min_element(entries_.begin(), entries_.end(), [](const auto& a, const auto& b) { return a.second.used < b.second.used; });
+                if (oldest->second.texture.id) UnloadRenderTexture(oldest->second.texture);
+                entries_.erase(oldest);
+            }
+            entries_.emplace(id, entry);
+        }
+    }
+private:
+    struct Entry { RenderTexture2D texture; std::uint64_t used; };
+    std::unordered_map<std::string, Entry> entries_;
+    std::vector<std::pair<std::string, std::string>> queue_;
+    std::uint64_t clock_{0};
+};
+#endif
+
 Model* get_world_asset_model(const std::string& path, const characters::CharacterRegistry& registry) {
     const auto* character = registry.find_model(path);
-    return world_asset_model_cache().load(path, [character](Model& model) {
-        return !character || character->pool == characters::CharacterPool::Arms ||
+    return world_asset_model_cache().load(path, [character, &path](Model& model) {
+        if (character) return character->pool == characters::CharacterPool::Arms ||
             characters::CharacterRenderer::prepare(*character, model);
+        knock_out_windows(path, model);
+        return model.meshCount > 0;
     });
 }
 
@@ -91,7 +186,12 @@ void draw_model_backed_world_assets(
                 dy * dy +
                 dz * dz;
 
-            if (distance_sq > max_distance_sq) {
+            // Small props fade out early (a phone cannot afford a draw call per distant bollard);
+            // building pieces keep long range so a modular building never comes apart at a distance.
+            const float extent = std::max({asset.size.x, asset.size.y, asset.size.z});
+            const float reach = asset.type == world::AssetType::Wall || extent > 8.0F ? max_distance :
+                std::clamp(55.0F + extent * 12.0F, 55.0F, max_distance);
+            if (distance_sq > max_distance_sq || distance_sq > reach * reach) {
                 continue;
             }
 
@@ -270,6 +370,8 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
     creator::CreatorController creator_controller;
     creator::CreatorTouchUI creator_touch_ui;
+    AssetThumbnails asset_thumbnails;
+    creator_touch_ui.set_thumbnails([&](const creator::CreatorAssetDefinition& asset) { return asset_thumbnails.get(asset); });
 #endif
 
     game::GameMode game_mode =
@@ -310,6 +412,38 @@ void Renderer::run() {
     game::inventory::LootSession loot_session(item_registry);
     game::inventory::LootUI loot_ui(character_root);
     characters::NpcSystem npcs;
+    // Model assets resolve beside the executable first (packaged builds), then the working directory.
+    world::physics::MeshCollisionLibrary::add_root(GetApplicationDirectory());
+#ifdef OUTLAND_DEV_TOOLS
+    // OUTLAND_COLLISION_AUDIT=1: load every catalog model through raylib and confirm the collision
+    // mesh matches what is drawn (mesh order and bounds), then exit.
+    if (const char* audit = std::getenv("OUTLAND_COLLISION_AUDIT"); audit && *audit == '1') {
+        int checked = 0, mismatched = 0, knocked = 0;
+        const creator::CreatorAssetRegistry catalog;
+        for (const auto& asset : catalog.assets()) {
+            const auto* shape = world::physics::MeshCollisionLibrary::get(asset.model_path);
+            if (!shape) continue;
+            const std::string packaged = std::string(GetApplicationDirectory()) + asset.model_path;
+            Model model = LoadModel((FileExists(packaged.c_str()) ? packaged : asset.model_path).c_str());
+            const auto bounds = GetModelBoundingBox(model);
+            const bool same = model.meshCount == static_cast<int>(shape->mesh_knocked_out.size()) &&
+                Vector3Distance(bounds.min, shape->source_min) < .01F && Vector3Distance(bounds.max, shape->source_max) < .01F;
+            if (!same) {
+                ++mismatched;
+                TraceLog(LOG_WARNING, "COLLISION AUDIT mismatch %s: meshes %d/%zu bounds (%.2f %.2f %.2f)-(%.2f %.2f %.2f) vs (%.2f %.2f %.2f)-(%.2f %.2f %.2f)",
+                    asset.model_path.c_str(), model.meshCount, shape->mesh_knocked_out.size(), bounds.min.x, bounds.min.y, bounds.min.z,
+                    bounds.max.x, bounds.max.y, bounds.max.z, shape->source_min.x, shape->source_min.y, shape->source_min.z,
+                    shape->source_max.x, shape->source_max.y, shape->source_max.z);
+            }
+            knocked += shape->knocked_out > 0;
+            ++checked;
+            UnloadModel(model);
+        }
+        TraceLog(LOG_INFO, "COLLISION AUDIT: %d models checked, %d mismatched, %d with windows knocked out", checked, mismatched, knocked);
+        CloseWindow();
+        return;
+    }
+#endif
     game::life::LifeSimulation island_life;
     game::vehicles::VehicleRegistry vehicle_registry;
     std::string vehicle_error;
@@ -452,6 +586,7 @@ void Renderer::run() {
                 if(game_mode!=game::GameMode::DevLab)loot_session.start(game_mode,map_path,weapons);
                 combat_world.reset_targets();
                 npcs.reset_session();
+                world::physics::MeshCollisionLibrary::preload(verda_region);
                 // Explore lives on Verda: rebuild residents from the current (possibly Creator-edited) towns.
                 if(game::rules_for(game_mode).civilian_life) {
                     island_life.build(verda_region,&character_registry);island_life.reset(npcs);
@@ -747,9 +882,10 @@ void Renderer::run() {
 
             player.position = creator_flying ? desired_position :
                 world::physics::WorldCollision::
-                    resolve_player_movement(
+                    resolve_body_movement(
                         player.position,
                         desired_position,
+                        player.position.y - 1.0F,
                         verda_region,
                         0.45F
                     );
@@ -782,6 +918,14 @@ void Renderer::run() {
                         vault_forward,
                         verda_region,
                         vault_landing
+                    ) ||
+                world::physics::WorldCollision::
+                    mesh_vault_target(
+                        player.position,
+                        player.position.y - 1.0F,
+                        vault_forward,
+                        verda_region,
+                        vault_landing
                     )
             ) {
                 player.position.x =
@@ -790,11 +934,12 @@ void Renderer::run() {
                 player.position.z =
                     vault_landing.z;
 
-                // Snap onto terrain on the destination side.
+                // Snap onto the ground (terrain or building floor) on the destination side.
                 player.position.y =
-                    world::terrain::TerrainHeight::sample(
-                        player.position.x,
-                        player.position.z
+                    world::physics::WorldCollision::ground_height(
+                        player.position,
+                        player.position.y - 1.0F,
+                        verda_region
                     ) + 1.0F;
 
                 // Cancel vertical jump velocity so vaulting
@@ -810,11 +955,19 @@ void Renderer::run() {
         // ====================================================
 
         if (!creator_flying && player.grounded) {
-            player.position.y =
-                world::terrain::TerrainHeight::sample(
-                    player.position.x,
-                    player.position.z
-                ) + 1.0F;
+            // Terrain, model floors and stairs (up to a 0.5 m step). Walking off a floor falls.
+            const float ground =
+                world::physics::WorldCollision::ground_height(
+                    player.position,
+                    player.position.y - 1.0F,
+                    verda_region
+                );
+            if (player.position.y - 1.0F - ground > 0.6F) {
+                player.grounded = false;
+                player.vertical_velocity = 0.0F;
+            } else {
+                player.position.y = ground + 1.0F;
+            }
         }
 
         const float movement_amount =
@@ -854,9 +1007,11 @@ void Renderer::run() {
                 dt;
 
             const float terrain_ground =
-                world::terrain::TerrainHeight::sample(
-                    player.position.x,
-                    player.position.z
+                world::physics::WorldCollision::ground_height(
+                    player.position,
+                    player.position.y - 1.0F,
+                    verda_region,
+                    0.25F
                 );
 
             const float player_ground_y =
@@ -944,8 +1099,9 @@ void Renderer::run() {
                 if(action.duplicate)creator_session.edit(verda_region,[&]{return creator_controller.duplicate_selected(verda_region);});
                 if(action.erase)creator_session.edit(verda_region,[&]{return creator_controller.delete_selected(verda_region);});
                 if(action.rotate) {
-                    if(creator_controller.selection().valid())creator_session.edit(verda_region,[&]{return creator_controller.rotate_selected(verda_region,15);});
-                    else creator_controller.rotate_preview(15);
+                    const float step=creator_controller.state().rotation_step();
+                    if(creator_controller.selection().valid())creator_session.edit(verda_region,[&]{return creator_controller.rotate_selected(verda_region,step);});
+                    else creator_controller.rotate_preview(step);
                 }
                 if(action.undo){creator_session.undo(verda_region);creator_controller.clear_selection();}
                 if(action.redo){creator_session.redo(verda_region);creator_controller.clear_selection();}
@@ -1016,6 +1172,9 @@ void Renderer::run() {
         // DRAW
         // ====================================================
 
+#ifdef OUTLAND_DEV_TOOLS
+        if (game_mode == game::GameMode::DevLab && creator_touch_ui.inventory_open()) asset_thumbnails.render_pending(character_registry);
+#endif
         BeginDrawing();
 
         ClearBackground(
@@ -1209,7 +1368,11 @@ void Renderer::run() {
                 16,16,20,player_health.alive() ? RAYWHITE : RED);
             if (!player_health.alive()) DrawText("YOU DIED - ESC / BACK TO HOME",screen_width/2-175,screen_height/2,22,RED);
         }
-        if (!inventory_open) touch_hud.draw(
+        bool asset_drawer_open = false;
+#ifdef OUTLAND_DEV_TOOLS
+        asset_drawer_open = game_mode == game::GameMode::DevLab && creator_touch_ui.inventory_open();
+#endif
+        if (!inventory_open && !asset_drawer_open) touch_hud.draw(
             controls,
             input_system.layout(),
             screen_width,

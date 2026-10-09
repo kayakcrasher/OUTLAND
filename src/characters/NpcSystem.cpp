@@ -81,9 +81,9 @@ void NpcSystem::update(float dt,const NpcContext& input,const world::VerdaRegion
         const auto origin=current;
         for(int i=1;i<=steps;++i) {
             const auto target=Vector3Lerp(origin,desired,static_cast<float>(i)/steps);
-            current=world::physics::WorldCollision::resolve_player_movement(current,target,region,.35F);
+            current=world::physics::WorldCollision::resolve_body_movement(current,target,current.y,region,.35F);
         }
-        current.y=world::terrain::TerrainHeight::sample(current.x,current.z);
+        current.y=world::physics::WorldCollision::ground_height(current,current.y,region);
         return current;
     };
     for(auto& actor:actors_) {

@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <array>
 #include <optional>
+#include <tuple>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -143,6 +144,13 @@ public:
         register_survival_assets(*this);
         register_industrial_assets(*this);
         register_vehicle_assets(*this);
+        // Verda building kit: textured 3 x 3 m slabs that tile with the 3 m Building Parts walls
+        // (tools/generate_kit_slabs.py). Floors, ceilings and roofs for enterable buildings.
+        for (const auto& [id, name, file] : {std::tuple{"verda_kit_floor_slab", "Kit Floor Slab 3x3", "floor_slab_3x3.glb"},
+                                             std::tuple{"verda_kit_roof_slab", "Kit Roof Slab 3x3", "roof_slab_3x3.glb"}})
+            (void)add({.id = id, .name = name, .category = CreatorAssetCategory::BuildingPart,
+                .model_path = std::string("assets/verda/kit/") + file, .thumbnail_path = "",
+                .footprint = {3, 3, .1F}, .placement = {}, .default_scale = 1, .tags = {"verda", "kit", "floor", "roof"}});
         // Retain legacy palette IDs while giving their former empty placeholders real geometry.
         const auto reuse_model=[&](const char* alias,const char* source_id) {
             const auto* source=find(source_id);if(!source)return;

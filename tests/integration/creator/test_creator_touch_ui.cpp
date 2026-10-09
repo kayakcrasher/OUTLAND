@@ -176,6 +176,12 @@ int main() {
     const auto distance=controller.state().placement_distance;tap(BuilderControl::Far);assert(controller.state().placement_distance==distance+1);release();
     tap(BuilderControl::Raise);assert(controller.state().placement_height==.25F);release();
     tap(BuilderControl::Grid);assert(controller.state().grid_step==1);release();
+    // GRID 1.5 is the wall-module grid: quarter turns and whole-storey height steps.
+    tap(BuilderControl::Grid);assert(controller.state().grid_step==1.5F && controller.state().rotation_step()==90);release();
+    tap(BuilderControl::Raise);assert(controller.state().placement_height==3.25F);release();
+    tap(BuilderControl::Lower);assert(controller.state().placement_height==.25F);release();
+    tap(BuilderControl::Grid);assert(controller.state().grid_step==0 && controller.state().rotation_step()==15);release();
+    tap(BuilderControl::Grid);assert(controller.state().grid_step==1);release();
     ui.set_inventory_open(true);tap(BuilderControl::Search);release();typed_letters={'r','o','c','k'};frame();assert(!ui.drawer_assets(controller).empty());
     pressed_key=KEY_ENTER;frame();pressed_key=0;ui.set_inventory_open(false);ui.set_search("");
     // Grid/height controls alter the actual placement ghost, including pitched free placement.
@@ -227,6 +233,19 @@ int main() {
     const auto placed=authored.settlements().front().assets.back().position;
     assert(controller.select_target(authored,Vector3Add(placed,{0,100,0}),{0,-1,0}));
     frame();assert(controller.selection().valid());
+    // Wall pieces meet edge to edge and stack: the preview is never refused for touching parts.
+    {
+        const auto wall=std::find_if(catalog.begin(),catalog.end(),[](const auto& asset){return asset.model_path.ends_with("Building Parts/brick_wall.glb");});
+        assert(wall!=catalog.end() && wall->category==outland::creator::CreatorAssetCategory::BuildingPart);
+        assert(controller.select_asset(static_cast<std::size_t>(wall-catalog.begin())));controller.clear_selection();
+        controller.state().grid_step=1.5F;controller.state().snap_to_ground=true;controller.state().placement_height=0;
+        const auto place_at=[&](float z,float height){
+            controller.state().placement_height=height;controller.update(authored,{30,20,z+8},{0,0,-1});
+            assert(controller.preview().valid && !controller.preview().blocked);return controller.place_selected(authored);
+        };
+        assert(place_at(-1.5F,0) && place_at(1.5F,0) && place_at(-1.5F,3));
+        controller.state().grid_step=0;controller.state().placement_height=0;
+    }
     // Export has touch and X11 mouse edges, and modal contacts cannot leak on release.
     tap(BuilderControl::Export,402);assert(ui.actions().export_world);frame();assert(!ui.actions().export_world);release();
     const auto export_button=ui.control_button(BuilderControl::Export,1280,720);
