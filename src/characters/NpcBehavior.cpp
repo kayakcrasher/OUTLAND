@@ -32,8 +32,14 @@ void enter(NpcInstance& actor,NpcState state,const NpcTuning& tuning) {
     if(actor.state==state) return;
     actor.state=state;actor.state_time=0;
     if(state==NpcState::Attack) actor.attack_clock=tuning.attack_interval;
+    if(state==NpcState::Idle && actor.directed) actor.idle_hold=1+random(actor)*5;
     if(state==NpcState::Wander) {
-        const float angle=random(actor)*2*PI, radius=tuning.wander_radius*std::sqrt(random(actor));
+        const float limit=actor.directed ? actor.anchor_radius : tuning.wander_radius;
+        const float dx=actor.spawn_position.x-actor.position.x, dz=actor.spawn_position.z-actor.position.z;
+        // A directed actor far from its schedule anchor travels there instead of milling about.
+        actor.travelling=actor.directed && dx*dx+dz*dz>(limit+.75F)*(limit+.75F);
+        if(actor.travelling) {actor.waypoint=actor.spawn_position;return;}
+        const float angle=random(actor)*2*PI, radius=limit*std::sqrt(random(actor));
         actor.waypoint=Vector3Add(actor.spawn_position,{std::sin(angle)*radius,0,std::cos(angle)*radius});
     }
 }
@@ -106,11 +112,11 @@ float NpcBehavior::tick(NpcInstance& actor,const NpcTuning& tuning,float dt,
             else {enter(actor,NpcState::Chase,tuning);move(actor,actor.threat_position,tuning.movement_speed*tuning.run_multiplier,dt,environment);return 0;}
         }
     }
-    if(actor.state==NpcState::Idle && actor.state_time>=1.0F) enter(actor,NpcState::Wander,tuning);
+    if(actor.state==NpcState::Idle && actor.state_time>=(actor.directed ? actor.idle_hold : 1.0F)) enter(actor,NpcState::Wander,tuning);
     if(actor.state==NpcState::Wander) {
         const auto delta=Vector3Subtract(actor.waypoint,actor.position);
-        if(delta.x*delta.x+delta.z*delta.z<.09F || actor.state_time>6) enter(actor,NpcState::Idle,tuning);
-        else move(actor,actor.waypoint,tuning.movement_speed,dt,environment);
+        if(delta.x*delta.x+delta.z*delta.z<.09F || (!actor.travelling && actor.state_time>6)) enter(actor,NpcState::Idle,tuning);
+        else move(actor,actor.waypoint,tuning.movement_speed*(actor.hurry ? tuning.run_multiplier : 1.0F),dt,environment);
     }
     return 0;
 }

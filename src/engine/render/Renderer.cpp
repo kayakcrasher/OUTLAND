@@ -13,6 +13,8 @@
 #include "outland/input/TouchHUD.hpp"
 #include "outland/game/GameMode.hpp"
 #include "outland/game/HomeScreen.hpp"
+#include "outland/game/ModeRules.hpp"
+#include "outland/game/life/LifeSimulation.hpp"
 #include "outland/dev/DevLab.hpp"
 #include "outland/creator/CreatorMapIO.hpp"
 
@@ -308,6 +310,7 @@ void Renderer::run() {
     game::inventory::LootSession loot_session(item_registry);
     game::inventory::LootUI loot_ui(character_root);
     characters::NpcSystem npcs;
+    game::life::LifeSimulation island_life;
     game::vehicles::VehicleRegistry vehicle_registry;
     std::string vehicle_error;
     if(!vehicle_registry.load((std::string(character_root)+"/assets/verda/vehicles/vehicle_manifest.tsv"),vehicle_error))
@@ -449,6 +452,10 @@ void Renderer::run() {
                 if(game_mode!=game::GameMode::DevLab)loot_session.start(game_mode,map_path,weapons);
                 combat_world.reset_targets();
                 npcs.reset_session();
+                // Explore lives on Verda: rebuild residents from the current (possibly Creator-edited) towns.
+                if(game::rules_for(game_mode).civilian_life) {
+                    island_life.build(verda_region,&character_registry);island_life.reset(npcs);
+                } else island_life.clear(npcs);
                 player_health.reset();
                 recoil_pitch = recoil_yaw = 0.0F;
                 trigger_ready = false;
@@ -995,6 +1002,10 @@ void Renderer::run() {
         npc_context.paused=vehicle_paused;
         npc_context.visible=[&](Vector3 start,Vector3 end) {return !combat_world.trace_segment(start,end,false,false).hit();};
         npcs.update(dt,npc_context,verda_region);
+        if(!island_life.empty()) {
+            if(weapons.events().shots>0) island_life.report_gunfire(npc_context.player_position);
+            island_life.update(dt,npc_context.player_position,npcs,vehicle_paused);
+        }
         player_health.damage(npcs.events().player_damage);
         character_renderer.update_player(!player_health.alive() ? characters::AnimationAction::Death :
             weapons.events().shots>0 ? characters::AnimationAction::Attack :
@@ -1150,6 +1161,19 @@ void Renderer::run() {
             14,
             BLACK
         );
+
+        if(!island_life.empty() && !creator_active) {
+            const auto clock_label=island_life.clock().label();
+            const int clock_width=MeasureText(clock_label.c_str(),18);
+            DrawText(clock_label.c_str(),screen_width/2-clock_width/2,10,18,BLACK);
+            const Vector3 feet{player.position.x,player.position.y-1.0F,player.position.z};
+            if(const auto* resident=island_life.nearest(feet,3.5F)) {
+                const auto line=island_life.describe(*resident);
+                const int width=MeasureText(line.c_str(),16);
+                DrawRectangle(screen_width/2-width/2-8,screen_height-122,width+16,26,Fade(BLACK,.55F));
+                DrawText(line.c_str(),screen_width/2-width/2,screen_height-117,16,RAYWHITE);
+            }
+        }
 
         const int center_x=screen_width/2, center_y=screen_height/2;
         const int gap=static_cast<int>((controls.aim ? 3 : 8)+movement_amount*5+recoil_pitch*180);

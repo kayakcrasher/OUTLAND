@@ -122,6 +122,9 @@ add_library(
     src/characters/CharacterRenderer.cpp
     src/characters/NpcSystem.cpp
     src/characters/NpcBehavior.cpp
+    src/game/life/LifeTypes.cpp
+    src/game/life/LifePopulation.cpp
+    src/game/life/LifeSimulation.cpp
     src/characters/AnimationController.cpp
     src/characters/SkeletalGait.cpp
     src/world/physics/WorldCollision.cpp
@@ -440,6 +443,12 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_npc_ai_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_npc_ai_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_npc_ai_tests COMMAND outland_npc_ai_tests)
+
+    add_executable(outland_life_tests tests/integration/life/test_life_simulation.cpp)
+    target_link_libraries(outland_life_tests PRIVATE outland_render)
+    target_compile_options(outland_life_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_life_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_life_tests COMMAND outland_life_tests)
 
     add_executable(outland_animation_asset_tests tests/integration/assets/test_animation_assets.cpp)
     target_link_libraries(outland_animation_asset_tests PRIVATE outland_render)

@@ -13,3 +13,6 @@ ctest --test-dir build/dev-raylib6 --output-on-failure
 
 DEV vehicle driving, map building, controls, save compatibility and Termux steps:
 [vehicle and Creator handoff](docs/vehicles-creator-raylib6-handoff.md).
+
+The three player modes are one island lived three ways: [modes roadmap](docs/outland-modes-roadmap.md).
+Explore's resident simulation (homes, jobs, schedules, fear): [Verdan life handoff](docs/verda-life-handoff.md).
