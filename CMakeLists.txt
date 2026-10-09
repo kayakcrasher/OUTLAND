@@ -279,8 +279,8 @@ add_custom_target(outland_loot_data
         "${PROJECT_SOURCE_DIR}/assets/verda/survival/gameplay/items.tsv"
         "${PROJECT_SOURCE_DIR}/assets/verda/survival/gameplay/loot_tables.tsv"
         "$<TARGET_FILE_DIR:outland>/assets/verda/survival/gameplay"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${PROJECT_SOURCE_DIR}/maps/verda_loot_defaults.map"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/maps"
         "$<TARGET_FILE_DIR:outland>/maps"
     VERBATIM
 )
@@ -499,7 +499,7 @@ if(OUTLAND_BUILD_TESTS)
             -Wl,--wrap=GetTouchPointCount -Wl,--wrap=GetTouchPointId
             -Wl,--wrap=GetTouchPosition -Wl,--wrap=GetMousePosition
             -Wl,--wrap=IsMouseButtonPressed -Wl,--wrap=IsMouseButtonDown
-            -Wl,--wrap=IsKeyPressed -Wl,--wrap=IsKeyDown -Wl,--wrap=GetCharPressed)
+            -Wl,--wrap=IsKeyPressed -Wl,--wrap=IsKeyDown -Wl,--wrap=GetCharPressed -Wl,--wrap=IsWindowFocused)
         add_test(NAME outland_creator_touch_tests COMMAND outland_creator_touch_tests)
 
         add_executable(

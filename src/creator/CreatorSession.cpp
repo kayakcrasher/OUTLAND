@@ -2,6 +2,7 @@
 #ifdef OUTLAND_DEV_TOOLS
 #include "outland/creator/CreatorMapIO.hpp"
 #include <cmath>
+#include <filesystem>
 namespace outland::creator {
 void CreatorSession::changed(){dirty_=true;quiet_=0;status_="Unsaved changes - autosaving";}
 bool CreatorSession::edit(world::VerdaRegion& region,const std::function<bool()>& operation) {
@@ -23,6 +24,17 @@ bool CreatorSession::save(const world::VerdaRegion& region) {
     if(result){dirty_=false;status_="SAVED - map restored next launch";}
     else status_="SAVE FAILED - edits kept in memory; try SAVE again";
     quiet_=0;return result;
+}
+std::string CreatorSession::export_path() const {
+    return (std::filesystem::path(path_).parent_path().parent_path()/"exports/verda_world.map").string();
+}
+bool CreatorSession::export_world(const world::VerdaRegion& region) {
+    if(!save(region))return false;
+    if(!CreatorMapIO::save(region,export_path())) {
+        status_="EXPORT FAILED - personal map is saved";return false;
+    }
+    status_="EXPORTED - copy exports/verda_world.map into project maps/";
+    return true;
 }
 bool CreatorSession::load(world::VerdaRegion& region) {
     if(dirty_ && !save(region))return false;

@@ -69,6 +69,16 @@ std::string CreatorMapIO::writable_path(const std::string& application_directory
         !home.empty() ? fs::path(home)/".local/share/outland" : fs::path(application_directory);
     return (root/"maps/verda_creator.map").string();
 }
+std::string CreatorMapIO::startup_map(const std::string& application_directory,const std::string& home,const std::string& override_directory,const std::string& working_directory) {
+    namespace fs=std::filesystem;
+    for(const auto& path:{fs::path(writable_path(application_directory,home,override_directory)),
+        fs::path(working_directory)/"maps/verda_world.map",fs::path(application_directory)/"maps/verda_world.map",
+        fs::path(working_directory)/"maps/verda_creator.map",fs::path(application_directory)/"maps/verda_creator.map"}) {
+        std::error_code error;
+        if(fs::is_regular_file(path,error))return path.string();
+    }
+    return {};
+}
 #ifdef OUTLAND_DEV_TOOLS
 bool CreatorMapIO::save(
     const world::VerdaRegion& region,

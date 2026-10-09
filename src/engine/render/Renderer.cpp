@@ -275,9 +275,7 @@ void Renderer::run() {
 
     const auto environment_path=[](const char* name){const auto* value=std::getenv(name);return value ? std::string(value):std::string{};};
     const std::string map_path=creator::CreatorMapIO::writable_path(GetApplicationDirectory(),environment_path("HOME"),environment_path("OUTLAND_SAVE_DIR"));
-    const std::string legacy_map=FileExists("maps/verda_creator.map") ? "maps/verda_creator.map" :
-        std::string(GetApplicationDirectory())+"maps/verda_creator.map";
-    const auto& initial_map=FileExists(map_path.c_str()) ? map_path:legacy_map;
+    const std::string initial_map=creator::CreatorMapIO::startup_map(GetApplicationDirectory(),environment_path("HOME"),environment_path("OUTLAND_SAVE_DIR"));
     world::VerdaRegion verda_region(!FileExists(initial_map.c_str()));
     if(FileExists(initial_map.c_str())) {
         const bool loaded=creator::CreatorMapIO::load(verda_region,initial_map);
@@ -324,7 +322,7 @@ void Renderer::run() {
         vehicle_save_protected=true;TraceLog(LOG_ERROR,"Vehicle state protected: %s",vehicle_error.c_str());
     }
 #ifdef OUTLAND_DEV_TOOLS
-    bool building_mode=false,has_previous_location=false;
+    bool has_previous_location=false;
     Vector3 previous_location{};
 #endif
     world::terrain::TerrainWorld terrain_world;
@@ -407,7 +405,7 @@ void Renderer::run() {
             input_system.update(screen_width, screen_height, true, true);
 #ifdef OUTLAND_DEV_TOOLS
             creator_controller.set_enabled(false);
-            creator_touch_ui.update(creator_controller, screen_width, screen_height);
+            creator_touch_ui.update(creator_controller, screen_width, screen_height, true);
 #endif
             environment_audio.update(player.position, player.grounded, false, verda_region);
             const game::GameMode selected =
@@ -458,6 +456,7 @@ void Renderer::run() {
                 interaction_remaining = 0;
 #ifdef OUTLAND_DEV_TOOLS
                 if(game_mode==game::GameMode::DevLab) {
+                    dev_lab.begin_builder();
                     creator_controller.state().flying=true;creator_controller.state().noclip=true;
                     creator_touch_ui.show_all_assets();creator_touch_ui.set_inventory_open(true);
                     creator_controller.clear_selection();
@@ -504,23 +503,26 @@ void Renderer::run() {
             return CheckCollisionPointRec(point, audio_button);
         };
 #ifdef OUTLAND_DEV_TOOLS
+        bool dev_modal=false;
         if(game_mode==game::GameMode::DevLab) {
             const bool tools_were_open=dev_lab.tools_open();
-            if(!creator_touch_ui.inventory_open())dev_lab.update(screen_width,screen_height);
-            if(tools_were_open && !dev_lab.tools_open())input_system.cancel_controls();
+            dev_lab.update(screen_width,screen_height,!dev_lab.building());
+            dev_modal=tools_were_open || dev_lab.tools_open();
+            if(dev_modal)input_system.cancel_controls();
             if(dev_lab.take_build_toggle()) {
                 Vector3 exit{};
                 if(!vehicles.driver() || vehicles.exit(verda_region,exit,true)) {
                     if(exit.x!=0||exit.y!=0||exit.z!=0)player.position=Vector3Add(exit,{0,1,0});
-                    building_mode=!building_mode;input_system.cancel_controls();vehicle_renderer.reset_camera();
+                    dev_lab.toggle_build();creator_touch_ui.set_inventory_open(false);
+                    dev_modal=true;input_system.cancel_controls();vehicle_renderer.reset_camera();
                 }
             }
             if(dev_lab.take_vehicle_spawn() && vehicles.spawn(verda_region,{player.position.x,player.position.y-1,player.position.z},player.yaw*RAD2DEG)){vehicle_dirty=true;creator_session.runtime_changed();}
             if(dev_lab.take_return()&&has_previous_location){vehicles.leave_session();std::swap(player.position,previous_location);player.vertical_velocity=0;player.grounded=true;vehicle_renderer.reset_camera();}
         }
-        creator_active = game_mode == game::GameMode::DevLab && building_mode;
+        creator_active = game_mode == game::GameMode::DevLab && dev_lab.building();
         creator_controller.set_enabled(creator_active);
-        creator_touch_ui.update(creator_controller, screen_width, screen_height);
+        creator_touch_ui.update(creator_controller, screen_width, screen_height, dev_modal || !IsWindowFocused());
         if (creator_active) {
             reserved = [&](Vector2 point) {
                 return CheckCollisionPointRec(point, audio_button) || dev_lab.owns_point(point,screen_width,screen_height) ||
@@ -546,7 +548,7 @@ void Renderer::run() {
         } else {
             input_system.update(screen_width, screen_height, !creator_active,
 #ifdef OUTLAND_DEV_TOOLS
-                !IsWindowFocused() || (creator_active && creator_touch_ui.inventory_open()),
+                !IsWindowFocused() || dev_modal || (creator_active && creator_touch_ui.inventory_open()),
 #else
                 !IsWindowFocused(),
 #endif
@@ -920,19 +922,12 @@ void Renderer::run() {
 
 #ifdef OUTLAND_DEV_TOOLS
         {
-            const bool creator_active =
-                game_mode == game::GameMode::DevLab;
-
-            creator_controller.set_enabled(
-                creator_active
-            );
-
             if (creator_active) {
                 creator_controller.update(
                     verda_region,
                     camera.position,
                     camera_direction,
-                    !creator_touch_ui.inventory_open()
+                    !creator_touch_ui.inventory_open() && !dev_modal && IsWindowFocused()
                 );
 
                 const auto& action=creator_touch_ui.actions();
@@ -948,6 +943,9 @@ void Renderer::run() {
                 if(action.undo){creator_session.undo(verda_region);creator_controller.clear_selection();}
                 if(action.redo){creator_session.redo(verda_region);creator_controller.clear_selection();}
                 if(action.save)creator_session.save(verda_region);
+                if(action.export_world) {
+                    if(creator_session.export_world(verda_region))TraceLog(LOG_INFO,"World exported to %s",creator_session.export_path().c_str());
+                }
                 if(action.load){creator_session.load(verda_region);creator_controller.clear_selection();}
                 vehicle_dirty|=vehicles.reconcile(verda_region);
                 creator_touch_ui.set_status(creator_session.status());

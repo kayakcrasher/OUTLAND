@@ -14,6 +14,8 @@ public:
     bool redo(world::VerdaRegion& region);
     bool save(const world::VerdaRegion& region);
     bool load(world::VerdaRegion& region);
+    bool export_world(const world::VerdaRegion& region);
+    std::string export_path() const;
     void update(float dt,const world::VerdaRegion& region);
     void runtime_changed(){changed();}
     bool dirty() const {return dirty_;}

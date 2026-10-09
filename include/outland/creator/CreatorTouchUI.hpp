@@ -47,6 +47,7 @@ struct CreatorTouchActions {
     bool redo{false};
 
     bool save{false};
+    bool export_world{false};
     bool load{false};
 
     bool toggle_fly{false};
@@ -61,7 +62,7 @@ struct CreatorTouchActions {
 // CREATOR TOUCH UI
 // ============================================================
 
-enum class BuilderControl { Undo, Redo, Load, Ground, Grid, Near, Far, Lower, Raise, Up, Down, All, Search };
+enum class BuilderControl { Undo, Redo, Load, Ground, Grid, Near, Far, Lower, Raise, Up, Down, All, Search, Export };
 
 class CreatorTouchUI {
 public:
@@ -75,7 +76,8 @@ public:
     void update(
         CreatorController& controller,
         int screen_width,
-        int screen_height
+        int screen_height,
+        bool blocked=false
     );
 
     void draw(
@@ -119,6 +121,7 @@ public:
     );
 
 private:
+    Rectangle logical_control_button(BuilderControl control,int width,int height) const;
     CreatorTouchActions actions_{};
     std::vector<int> previous_touches_;
     std::vector<Vector2> presses_;

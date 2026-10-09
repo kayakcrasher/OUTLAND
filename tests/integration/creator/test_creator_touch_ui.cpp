@@ -1,4 +1,5 @@
 #include "outland/creator/CreatorTouchUI.hpp"
+#include "outland/dev/DevLab.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include <cassert>
 #include <algorithm>
@@ -18,6 +19,7 @@ bool mouse_pressed=false,mouse_down=false;
 int pressed_key=0,held_key=0;std::deque<int> typed_letters;
 }
 extern "C" {
+bool __wrap_IsWindowFocused(){return true;}
 int __wrap_GetTouchPointCount() { return static_cast<int>(touches.size()); }
 int __wrap_GetTouchPointId(int index) { return touches.at(index).id; }
 Vector2 __wrap_GetTouchPosition(int index) { return touches.at(index).p; }
@@ -32,10 +34,16 @@ bool __wrap_IsMouseButtonPressed(int button) { return button==MOUSE_BUTTON_LEFT 
 int main() {
     using namespace outland::creator;
     CreatorController controller;
-    controller.set_enabled(true);
+    outland::dev::DevLab lab;
+    lab.begin_builder();
+    assert(lab.building());
+    controller.set_enabled(lab.building());
     controller.state().flying = false;
     CreatorTouchUI ui;
-    const auto frame=[&] { ui.update(controller,1280,720); };
+    const auto frame=[&] {
+        controller.set_enabled(lab.building());
+        ui.update(controller,1280,720);
+    };
     const auto release=[&] { touches.clear(); mouse_pressed=false; frame(); };
     touches={{91,{1230,110}}}; frame(); assert(ui.actions().save);
     frame(); assert(!ui.actions().save); // Holding save does not write each frame.
@@ -60,9 +68,9 @@ int main() {
     release();
     mouse_pressed=true; frame(); assert(ui.actions().save);
     release();
-    controller.set_enabled(false);
+    lab.toggle_build();
     touches={{72,{1230,110}}}; frame(); assert(!ui.actions().save);
-    controller.set_enabled(true); frame(); assert(!ui.actions().save);
+    lab.toggle_build(); frame(); assert(!ui.actions().save);
     release();
     touches={{73,{1210,510}}}; frame(); assert(ui.actions().rotate);
     frame(); assert(!ui.actions().rotate);
@@ -185,12 +193,44 @@ int main() {
     controller.update(road_world,{50,ground+20,50},{0,0,-1});assert(controller.selection().valid());assert(controller.move_selected(road_world));
     assert(controller.rotate_selected(road_world,90));assert(std::abs(Vector3Distance(road_world.settlements().front().roads[0].start,road_world.settlements().front().roads[0].end)-10)<.001F);
     assert(controller.duplicate_selected(road_world) && road_world.settlements().front().roads.size()==2);
-    for(const auto viewport:{Vector2{960,540},Vector2{1920,1080}}) {
+    for(const auto viewport:{Vector2{360,640},Vector2{640,240},Vector2{700,393},Vector2{640,360},Vector2{960,540},Vector2{1920,1080}}) {
         touches.clear();ui.update(controller,static_cast<int>(viewport.x),static_cast<int>(viewport.y));
         const auto button=ui.control_button(BuilderControl::Undo,static_cast<int>(viewport.x),static_cast<int>(viewport.y));
         const Vector2 point{button.x+button.width/2,button.y+button.height/2};assert(ui.owns_point(point,static_cast<int>(viewport.x),static_cast<int>(viewport.y)));
         touches={{991,point}};ui.update(controller,static_cast<int>(viewport.x),static_cast<int>(viewport.y));assert(ui.actions().undo);
         touches.clear();ui.update(controller,static_cast<int>(viewport.x),static_cast<int>(viewport.y));
     }
+    // A selection survives later frames in build mode (the former renderer toggled it off).
+    const auto road_center=Vector3Scale(Vector3Add(road_world.settlements().front().roads[0].start,road_world.settlements().front().roads[0].end),.5F);
+    assert(controller.select_target(road_world,Vector3Add(road_center,{0,100,0}),{0,-1,0}));
+    const auto selected=controller.selection().type;
+    release();frame();assert(controller.selection().valid() && controller.selection().type==selected);
+    // DEV tools remain reachable while the asset drawer is open; they own opening/closing taps.
+    ui.set_inventory_open(true);touches={{400,{640,22}}};lab.update(1280,720);
+    assert(lab.tools_open());ui.update(controller,1280,720,true);assert(!ui.actions().save);
+    touches.clear();lab.update(1280,720);ui.update(controller,1280,720,true);
+    touches={{401,{450,100}}};lab.update(1280,720);assert(lab.take_build_toggle());
+    ui.update(controller,1280,720,true);lab.toggle_build();controller.set_enabled(lab.building());
+    assert(!lab.building());frame();assert(!ui.actions().place && !ui.actions().save);
+    lab.begin_builder();ui.set_inventory_open(false);release();
+    // Complete drawer -> placement -> selection flow uses the same mode and frame gate.
+    outland::world::VerdaRegion authored;
+    for(auto& settlement:authored.editable_settlements()){settlement.buildings.clear();settlement.assets.clear();settlement.gameplay_markers.clear();settlement.roads.clear();}
+    const auto& catalog=controller.registry().assets();
+    const auto item=std::find_if(catalog.begin(),catalog.end(),[](const auto& asset){return asset.model_path.starts_with("assets/verda/survival/runtime/");});
+    assert(item!=catalog.end());ui.show_all_assets();ui.set_search(item->id);ui.set_inventory_open(true);
+    touches={{410,{60,195}}};frame();assert(!ui.inventory_open() && controller.selected_asset()->id==item->id);release();
+    controller.state().snap_to_ground=true;controller.state().placement_height=0;controller.state().grid_step=0;
+    controller.update(authored,{0,20,8},{0,0,-1});
+    touches={{411,{1230,460}}};frame();assert(ui.actions().place);
+    assert(controller.place_selected(authored));assert(authored.settlements().front().assets.back().model_path==item->model_path);release();
+    const auto placed=authored.settlements().front().assets.back().position;
+    assert(controller.select_target(authored,Vector3Add(placed,{0,100,0}),{0,-1,0}));
+    frame();assert(controller.selection().valid());
+    // Export has touch and X11 mouse edges, and modal contacts cannot leak on release.
+    tap(BuilderControl::Export,402);assert(ui.actions().export_world);frame();assert(!ui.actions().export_world);release();
+    const auto export_button=ui.control_button(BuilderControl::Export,1280,720);
+    mouse={export_button.x+5,export_button.y+5};mouse_pressed=true;frame();assert(ui.actions().export_world);release();
+    touches={{403,{1230,110}}};ui.update(controller,1280,720,true);frame();assert(!ui.actions().save);release();
     std::cout << "[PASS] Creator touch edges, modal drawer and gameplay pointer separation\n";
 }

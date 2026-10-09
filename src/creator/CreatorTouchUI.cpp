@@ -13,7 +13,8 @@ namespace outland::creator {
 
 namespace {
 
-float ui_scale(int height){return std::max(.5F,height/720.0F);}
+// Fit the complete toolbar/hotbar in narrow or letterboxed Termux-X11 windows.
+float ui_scale(int width,int height){return std::min(std::max(1,height)/720.0F,std::max(1,width)/960.0F);}
 constexpr std::size_t category_count = 7;
 constexpr std::size_t assets_per_page = 8;
 
@@ -82,9 +83,14 @@ void CreatorTouchUI::set_active_tool(
 }
 
 Rectangle CreatorTouchUI::control_button(BuilderControl control,int width,int height) const {
-    const float scale=ui_scale(height);width=static_cast<int>(width/scale);height=static_cast<int>(height/scale);
+    const float scale=ui_scale(width,height);
+    const auto result=logical_control_button(control,static_cast<int>(width/scale),static_cast<int>(height/scale));
+    return {result.x*scale,result.y*scale,result.width*scale,result.height*scale};
+}
+Rectangle CreatorTouchUI::logical_control_button(BuilderControl control,int width,int height) const {
     Rectangle result{};
     if(control==BuilderControl::All)result={24,static_cast<float>(height-260),120,36};
+    else if(control==BuilderControl::Export)result={static_cast<float>(width-108),192,98,44};
     else if(control==BuilderControl::Search)result={22,130,static_cast<float>(width-44),40};
     else if(control==BuilderControl::Up || control==BuilderControl::Down)
         result={10,control==BuilderControl::Up ? 92.0F:142.0F,98,44};
@@ -93,7 +99,7 @@ Rectangle CreatorTouchUI::control_button(BuilderControl control,int width,int he
         const float cell=std::min(98.0F,(width-250.0F)/9);
         result={120+index*cell,92,cell-4,44};
     }
-    return {result.x*scale,result.y*scale,result.width*scale,result.height*scale};
+    return result;
 }
 
 Rectangle CreatorTouchUI::inventory_button(
@@ -231,7 +237,7 @@ bool CreatorTouchUI::pressed(
 }
 
 bool CreatorTouchUI::owns_point(Vector2 point, int width, int height) const {
-    const float scale=ui_scale(height);point={point.x/scale,point.y/scale};
+    const float scale=ui_scale(width,height);point={point.x/scale,point.y/scale};
     width=static_cast<int>(width/scale);height=static_cast<int>(height/scale);
     if (inventory_open_) return true; // Modal drawer owns the entire pointer surface.
     if (CheckCollisionPointRec(point, inventory_button(width, height)) ||
@@ -246,8 +252,8 @@ bool CreatorTouchUI::owns_point(Vector2 point, int width, int height) const {
         if (CheckCollisionPointRec(point, hotbar_slot(slot, width, height))) return true;
     for(auto control:{BuilderControl::Undo,BuilderControl::Redo,BuilderControl::Load,BuilderControl::Ground,
         BuilderControl::Grid,BuilderControl::Near,BuilderControl::Far,BuilderControl::Lower,BuilderControl::Raise,
-        BuilderControl::Up,BuilderControl::Down})
-        if(CheckCollisionPointRec(point,control_button(control,width,height)))return true;
+        BuilderControl::Up,BuilderControl::Down,BuilderControl::Export})
+        if(CheckCollisionPointRec(point,logical_control_button(control,width,height)))return true;
     return false;
 }
 
@@ -259,10 +265,11 @@ bool CreatorTouchUI::owns_point(Vector2 point, int width, int height) const {
 void CreatorTouchUI::update(
     CreatorController& controller,
     const int physical_width,
-    const int physical_height
+    const int physical_height,
+    const bool blocked
 ) {
     const bool resized=window_width_!=0 && (window_width_!=physical_width || window_height_!=physical_height);
-    window_width_=physical_width;window_height_=physical_height;input_scale_=ui_scale(physical_height);
+    window_width_=physical_width;window_height_=physical_height;input_scale_=ui_scale(physical_width,physical_height);
     const int screen_width=static_cast<int>(physical_width/input_scale_);
     const int screen_height=static_cast<int>(physical_height/input_scale_);
     if(resized){vertical_owner_=-1;vertical_direction_=0;}
@@ -286,10 +293,10 @@ void CreatorTouchUI::update(
     if (!resized && GetTouchPointCount() == 0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         presses_.push_back(logical_point(GetMousePosition()));
 
-    if (!controller.enabled()) {vertical_owner_=-1;vertical_direction_=0;return;}
+    if (blocked || !controller.enabled()) {vertical_owner_=-1;vertical_direction_=0;return;}
     if(!inventory_open_) {
         for(const auto control:{BuilderControl::Up,BuilderControl::Down}) {
-            const auto rect=control_button(control,screen_width,screen_height);
+            const auto rect=logical_control_button(control,screen_width,screen_height);
             for(int i=0;i<GetTouchPointCount();++i)
                 if(vertical_owner_==-1 && pressed({logical_point(GetTouchPosition(i)).x-.1F,logical_point(GetTouchPosition(i)).y-.1F,.2F,.2F}) && CheckCollisionPointRec(logical_point(GetTouchPosition(i)),rect)) {
                     vertical_owner_=GetTouchPointId(i);vertical_direction_=control==BuilderControl::Up ? 1.0F:-1.0F;
@@ -302,6 +309,7 @@ void CreatorTouchUI::update(
         if(IsKeyDown(KEY_SPACE)) actions_.fly_vertical=1;
         if(IsKeyDown(KEY_LEFT_CONTROL)) actions_.fly_vertical=-1;
         if(IsKeyPressed(KEY_F5))actions_.save=true;
+        if(IsKeyPressed(KEY_F6))actions_.export_world=true;
         if(IsKeyPressed(KEY_DELETE) || IsKeyPressed(KEY_BACKSPACE))actions_.erase=true;
         if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z))actions_.undo=true;
         if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Y))actions_.redo=true;
@@ -354,6 +362,9 @@ void CreatorTouchUI::update_toolbar(
         return;
     }
 
+    if(pressed(logical_control_button(BuilderControl::Export,screen_width,screen_height))) {
+        actions_.export_world=true;return;
+    }
     if (
         pressed(
             save_button(
@@ -387,7 +398,7 @@ void CreatorTouchUI::update_toolbar(
 
     for(auto control:{BuilderControl::Undo,BuilderControl::Redo,BuilderControl::Load,BuilderControl::Ground,
         BuilderControl::Grid,BuilderControl::Near,BuilderControl::Far,BuilderControl::Lower,BuilderControl::Raise}) {
-        if(!pressed(control_button(control,screen_width,screen_height)))continue;
+        if(!pressed(logical_control_button(control,screen_width,screen_height)))continue;
         switch(control) {
             case BuilderControl::Undo:actions_.undo=true;break;
             case BuilderControl::Redo:actions_.redo=true;break;
@@ -632,8 +643,8 @@ void CreatorTouchUI::update_inventory(
     const int screen_width,
     const int screen_height
 ) {
-    if(pressed(control_button(BuilderControl::All,screen_width,screen_height))) {show_all_assets();return;}
-    if(pressed(control_button(BuilderControl::Search,screen_width,screen_height)))search_open_=!search_open_;
+    if(pressed(logical_control_button(BuilderControl::All,screen_width,screen_height))) {show_all_assets();return;}
+    if(pressed(logical_control_button(BuilderControl::Search,screen_width,screen_height)))search_open_=!search_open_;
     if(search_open_) {
         int code=0;while((code=GetCharPressed())!=0)if(code>=32 && code<127 && search_.size()<60)search_+=static_cast<char>(code);
         if(IsKeyPressed(KEY_BACKSPACE) && !search_.empty())search_.pop_back();
@@ -847,7 +858,7 @@ void CreatorTouchUI::draw(
         return;
     }
 
-    const float scale=ui_scale(physical_height);
+    const float scale=ui_scale(physical_width,physical_height);
     const int screen_width=static_cast<int>(physical_width/scale),screen_height=static_cast<int>(physical_height/scale);
     rlPushMatrix();rlScalef(scale,scale,1);
     draw_toolbar(
@@ -882,10 +893,10 @@ void CreatorTouchUI::draw_toolbar(
     const int screen_height
 ) const {
     constexpr std::array<const char*,9> labels{"UNDO","REDO","LOAD","GROUND","GRID","NEAR","FAR","LOWER","RAISE"};
-    for(std::size_t i=0;i<labels.size();++i)draw_button(control_button(static_cast<BuilderControl>(i),screen_width,screen_height),labels[i],
+    for(std::size_t i=0;i<labels.size();++i)draw_button(logical_control_button(static_cast<BuilderControl>(i),screen_width,screen_height),labels[i],
         i==3 ? controller.state().snap_to_ground:i==4 && controller.state().grid_step>0);
-    draw_button(control_button(BuilderControl::Up,screen_width,screen_height),"UP",actions_.fly_vertical>0);
-    draw_button(control_button(BuilderControl::Down,screen_width,screen_height),"DOWN",actions_.fly_vertical<0);
+    draw_button(logical_control_button(BuilderControl::Up,screen_width,screen_height),"UP",actions_.fly_vertical>0);
+    draw_button(logical_control_button(BuilderControl::Down,screen_width,screen_height),"DOWN",actions_.fly_vertical<0);
     DrawText(status_.c_str(),120,143,16,YELLOW);
     const auto* selected=controller.selected_asset();
     DrawText(selected ? selected->name.c_str():"Choose an asset",120,188,16,RAYWHITE);
@@ -933,6 +944,7 @@ void CreatorTouchUI::draw_toolbar(
         "SAVE",
         false
     );
+    draw_button(logical_control_button(BuilderControl::Export,screen_width,screen_height),"EXPORT",false);
 
     draw_button(
         fly_button(
@@ -1161,8 +1173,8 @@ void CreatorTouchUI::draw_inventory(
         );
     }
 
-    draw_button(control_button(BuilderControl::All,screen_width,screen_height),"ALL TYPES",all_categories_);
-    draw_button(control_button(BuilderControl::Search,screen_width,screen_height),search_.empty() ? "SEARCH ASSETS - TAP TO TYPE" : search_.c_str(),search_open_);
+    draw_button(logical_control_button(BuilderControl::All,screen_width,screen_height),"ALL TYPES",all_categories_);
+    draw_button(logical_control_button(BuilderControl::Search,screen_width,screen_height),search_.empty() ? "SEARCH ASSETS - TAP TO TYPE" : search_.c_str(),search_open_);
     if(search_open_) {
         constexpr std::string_view keys="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_- ";
         for(std::size_t i=0;i<keys.size()+3;++i) {
