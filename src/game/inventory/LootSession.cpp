@@ -22,12 +22,10 @@ int LootSession::take_ammo(combat::WeaponId weapon, int requested) {
     return taken;
 }
 LootSnapshot LootSession::snapshot(const combat::WeaponSystem &weapons) const {
-    return {mode_,
-            inventory_.state(),
-            world_.state(),
-            weapons.selected(),
-            {weapons.ammo(combat::WeaponId::Pistol).loaded,
-             weapons.ammo(combat::WeaponId::Rifle).loaded}, economy_};
+    LootSnapshot state{mode_, inventory_.state(), world_.state(), weapons.selected(), {}, economy_};
+    for (std::size_t i = 0; i < combat::weapon_count; ++i)
+        state.loaded[i] = weapons.ammo(static_cast<combat::WeaponId>(i)).loaded;
+    return state;
 }
 void LootSession::start(GameMode mode, const std::string &map, combat::WeaponSystem &weapons) {
     weapons.unbind_inventory();

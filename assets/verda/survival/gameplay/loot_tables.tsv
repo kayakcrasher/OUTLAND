@@ -65,3 +65,15 @@ weapons	zombie	hunting_rifle	1	1	5	2
 weapons	zombie	pistol	1	1	5	2
 weapons	zombie	pistol_ammo	6	12	18	2
 weapons	zombie	rifle_ammo	6	12	18	2
+weapons	normal	smg	1	1	4	2
+weapons	normal	shotgun	1	1	4	2
+weapons	normal	sniper	1	1	2	2
+weapons	normal	smg_ammo	12	24	15	2
+weapons	normal	shotgun_shells	6	12	15	2
+weapons	normal	sniper_ammo	4	8	10	2
+weapons	zombie	smg	1	1	4	2
+weapons	zombie	shotgun	1	1	4	2
+weapons	zombie	sniper	1	1	2	2
+weapons	zombie	smg_ammo	6	12	10	2
+weapons	zombie	shotgun_shells	3	6	10	2
+weapons	zombie	sniper_ammo	2	4	5	2

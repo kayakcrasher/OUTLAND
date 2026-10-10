@@ -26,11 +26,17 @@ general_soda	general	soda	6	2	24
 general_bandage	general	bandage	15	6	12
 general_pistol_ammo	general	pistol_ammo	2	1	180
 general_rifle_ammo	general	rifle_ammo	3	1	120
+general_smg_ammo	general	smg_ammo	2	1	150
+general_shotgun_shells	general	shotgun_shells	4	1	60
+general_sniper_ammo	general	sniper_ammo	8	3	40
 general_backpack	general	backpack	70	30	4
 general_battery	general	battery	10	4	20
 general_lantern	general	lantern	40	15	5
 general_knife	general	knife	35	14	5
 general_hunting_rifle	general	hunting_rifle	220	90	2
+general_smg	general	smg	260	100	2
+general_shotgun	general	shotgun	180	70	2
+general_sniper	general	sniper	420	160	1
 general_wood_chair	general	wood_chair	40	15	8
 general_wood_table	general	wood_table	80	30	4
 general_wood_shelf	general	wood_shelf	95	35	4

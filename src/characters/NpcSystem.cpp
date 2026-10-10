@@ -231,6 +231,10 @@ void NpcSystem::set_bot(int bot,Vector3 position,float yaw_degrees,float health,
     actor.health=std::isfinite(health) ? std::max(0.0F,health) : actor.health;
     if(actor.state!=state) {actor.state=state;actor.state_time=0;}
 }
+void NpcSystem::set_bot_weapon(int bot,int weapon) {
+    const int index=find_bot(bot);
+    if(index>=0) actors_[static_cast<std::size_t>(index)].weapon=weapon;
+}
 void NpcSystem::clear_bots() {
     std::erase_if(actors_,[](const NpcInstance& actor){return actor.bot>=0;});
 }

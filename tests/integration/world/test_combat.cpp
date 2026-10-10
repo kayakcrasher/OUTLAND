@@ -95,8 +95,7 @@ int main() {
     assert(!gun.events().reload_started);input.reload=false;
 
     // Pistol is semiautomatic, even if fire is held for several seconds.
-    input.next_weapon=true;gun.update(.05F,input,high,world);
-    assert(gun.selected()==WeaponId::Pistol);input.next_weapon=false;
+    assert(gun.select(WeaponId::Pistol) && gun.selected()==WeaponId::Pistol);
     for(int i=0;i<6;++i)gun.update(.05F,input,high,world);
     input.fire=true;gun.update(.05F,input,high,world);assert(gun.events().shots==1);
     fired=0;
@@ -149,6 +148,40 @@ int main() {
         const auto& rifle=definition(WeaponId::Rifle);
         assert(rifle.aimed_spread<rifle.hip_spread*.1F && rifle.head_multiplier>2.3F && rifle.limb_multiplier<1);
         assert(rifle.ads_fov<60 && definition(WeaponId::Pistol).ads_fov>rifle.ads_fov);
+    }
+
+    // The wider armoury: an SMG out-fires the rifle, a shotgun throws a pellet cone, the bolt-action
+    // sniper waits on its bolt, and each weapon has its own item key and hold.
+    {
+        WeaponSystem armoury;armoury.reset(true);WeaponInput hold;hold.fire=true;hold.aim=true;
+        const auto count=[&](WeaponId id,float seconds) {
+            armoury.reset(true);assert(armoury.select(id));
+            for(int i=0;i<10;++i){WeaponInput idle;armoury.update(.05F,idle,high,world);}
+            int shots=0;for(float t=0;t<seconds;t+=.02F){armoury.update(.02F,hold,high,world);shots+=armoury.events().shots;}
+            return shots;
+        };
+        assert(count(WeaponId::Smg,1.5F)>count(WeaponId::Rifle,1.5F));
+        assert(count(WeaponId::Sniper,3)==1);   // bolt-action: holding the trigger never fires again
+        armoury.reset(true);assert(armoury.select(WeaponId::Shotgun));
+        for(int i=0;i<10;++i){WeaponInput idle;armoury.update(.05F,idle,high,world);}
+        armoury.update(.001F,hold,high,world);
+        assert(armoury.events().shots==1);
+        std::vector<Vector3> pellets;
+        for(const auto& bullet:armoury.bullets()) if(bullet.active) pellets.push_back(bullet.velocity);
+        assert(pellets.size()==9);
+        float widest=0;
+        for(const auto& v:pellets) for(const auto& w:pellets) {
+            const float c=(v.x*w.x+v.y*w.y+v.z*w.z)/std::sqrt((v.x*v.x+v.y*v.y+v.z*v.z)*(w.x*w.x+w.y*w.y+w.z*w.z));
+            widest=std::max(widest,std::acos(std::min(1.0F,c)));
+        }
+        assert(widest>.02F && widest<.12F);
+        const auto& sniper=definition(WeaponId::Sniper);
+        assert(sniper.damage*sniper.head_multiplier>=200 && sniper.ads_fov<20);
+        for(std::size_t i=0;i<weapon_count;++i) {
+            WeaponId id{};assert(weapon_from_item(weapons[i].item,id) && id==static_cast<WeaponId>(i));
+            assert(weapons[i].length>.08F && weapons[i].length<.9F);
+        }
+        assert(definition(WeaponId::Pistol).hold==WeaponHold::Pistol && definition(WeaponId::Sniper).hold==WeaponHold::Shouldered);
     }
 
     world.damage_target(6,150);assert(world.targets()[6].health==0);

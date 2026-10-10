@@ -81,9 +81,9 @@ void WeaponSystem::start_reload() {
     reload_remaining_=weapon().reload_seconds;events_.reload_started=true;
 }
 bool WeaponSystem::shoot(const WeaponInput& input, ShotPose pose) {
-    auto slot=std::find_if(bullets_.begin(),bullets_.end(),[](const Bullet& b){return !b.active;});
-    if(slot==bullets_.end())return false;
     const auto& def=weapon();
+    const int pellets=std::max(1,def.pellets);
+    if(std::count_if(bullets_.begin(),bullets_.end(),[](const Bullet& b){return !b.active;})<pellets)return false;
     const auto forward=normalized(pose.direction);
     const auto right=normalized(cross(std::abs(forward.y)>.95F ? Vector3{1,0,0} : Vector3{0,1,0},forward));
     const auto up=normalized(cross(forward,right));
@@ -94,9 +94,19 @@ bool WeaponSystem::shoot(const WeaponInput& input, ShotPose pose) {
     const float spread=(input.aim ? def.aimed_spread*(spray_==0 ? .3F : 1+burst*.12F) : def.hip_spread*(1+burst*def.bloom))*
         (1+movement*(input.aim ? 1.5F : 2.5F))*(input.grounded ? 1 : 3)*(input.crouched ? .8F : 1);
     const float radius=std::sqrt(random())*spread, angle=random()*2*PI;
-    const auto direction=normalized(add(forward,add(mul(right,std::cos(angle)*radius),mul(up,std::sin(angle)*radius))));
-    *slot={true,(shot_number_++%3)==0,pose.origin,pose.origin,mul(direction,def.muzzle_speed),
-           0,0,def.damage,def.muzzle_speed,def.drag,def.head_multiplier,def.limb_multiplier};
+    const auto aim=normalized(add(forward,add(mul(right,std::cos(angle)*radius),mul(up,std::sin(angle)*radius))));
+    const bool tracer=(shot_number_++%3)==0;
+    for(int pellet=0;pellet<pellets;++pellet) {
+        // Shotgun pellets spread in a fixed cone round the aim point, whatever the stance.
+        auto direction=aim;
+        if(def.pattern>0) {
+            const float r=std::sqrt(random())*def.pattern, a=random()*2*PI;
+            direction=normalized(add(aim,add(mul(right,std::cos(a)*r),mul(up,std::sin(a)*r))));
+        }
+        auto slot=std::find_if(bullets_.begin(),bullets_.end(),[](const Bullet& b){return !b.active;});
+        *slot={true,tracer && pellet==0,pose.origin,pose.origin,mul(direction,def.muzzle_speed),
+               0,0,def.damage,def.muzzle_speed,def.drag,def.head_multiplier,def.limb_multiplier};
+    }
     if(!unlimited_) --ammo_[static_cast<std::size_t>(selected_)].loaded;
     cooldown_=def.interval;muzzle_flash_=.035F;
     // Recoil climbs through the burst; crouching steadies it, moving and jumping make it worse.

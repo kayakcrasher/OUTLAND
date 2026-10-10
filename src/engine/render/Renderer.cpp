@@ -610,6 +610,7 @@ void Renderer::run() {
             hit.kind==game::combat::HitKind::VehicleOccupant) combat_world.damage_hit(hit,amount,from);
     };
     float recoil_pitch = 0.0F, recoil_yaw = 0.0F;
+    float fp_aim_blend = 0.0F, crouch_blend = 0.0F;
     float recoil_debt = 0.0F, recoil_settle = 0.0F, recoil_quiet = 0.0F; // climb owed back after a burst
     bool trigger_ready = false;
 
@@ -728,6 +729,19 @@ void Renderer::run() {
 #endif
                 weapons.reset(game_mode == game::GameMode::DevLab);
                 if(game_mode!=game::GameMode::DevLab)loot_session.start(game_mode,map_path,weapons);
+#ifdef OUTLAND_DEV_TOOLS
+                // OUTLAND_DEV_ARMOURY=1: every gun, loaded, for trying them out.
+                if(const char* armoury=std::getenv("OUTLAND_DEV_ARMOURY"); armoury && *armoury=='1' && game_mode!=game::GameMode::DevLab) {
+                    for(std::size_t i=0;i<game::combat::weapon_count;++i) {
+                        const auto id=static_cast<game::combat::WeaponId>(i);
+                        for(const auto& item:item_registry.items())
+                            if(item.weapon==id && item.category==game::inventory::ItemCategory::Weapon && !loot_session.inventory().owns_weapon(item_registry,id)
+                               && loot_session.edit_inventory().add(item_registry,item.id,1)==1)
+                                weapons.set_loaded(id,game::combat::definition(id).magazine);
+                    }
+                    loot_session.changed();
+                }
+#endif
                 combat_world.reset_targets();
                 combat_world.set_training_range(game_mode == game::GameMode::DevLab);
                 vehicles.set_training_structure(game_mode == game::GameMode::DevLab);
@@ -1303,10 +1317,12 @@ void Renderer::run() {
 
         const float desired_fov = controls.aim && !driving ? weapons.weapon().ads_fov : 70.0F;
         camera.fovy += (desired_fov-camera.fovy) * (1.0F-std::exp(-dt*12.0F));
-        if (player.third_person) {
-            const float distance = controls.aim ? 2.5F : 5.0F;
+        // Through a sniper scope the view is the scope itself, in either camera.
+        const bool scoped=controls.aim && !driving && weapons.available() && weapons.weapon().ads_fov<20;
+        if (player.third_person && !scoped) {
+            const float distance = controls.aim ? 1.9F : 3.6F; // close over the right shoulder, as PUBG and Fortnite frame it
             camera.position = Vector3Add(Vector3Subtract(head_position, Vector3Scale(look_direction,distance)),
-                Vector3Add(Vector3Scale(gun_right,controls.aim ? .4F : .75F), {0,controls.aim ? .25F : .8F,0}));
+                Vector3Add(Vector3Scale(gun_right,controls.aim ? -.45F : -.7F), {0,controls.aim ? .25F : .7F,0}));
             const auto obstruction = combat_world.trace_segment(head_position,camera.position,false,false);
             if (obstruction.hit()) {
                 camera.position=Vector3Lerp(head_position,camera.position,
@@ -1385,10 +1401,18 @@ void Renderer::run() {
         const Vector3 far_point=Vector3Add(camera.position,Vector3Scale(camera_direction,500.0F));
         const auto aimed_hit=combat_world.trace_segment(camera.position,far_point);
         const Vector3 aim_point=aimed_hit.hit() ? aimed_hit.position : far_point;
-        Vector3 gun_muzzle=Vector3Add(head_position,
-            Vector3Add(Vector3Scale(look_direction,weapons.selected()==game::combat::WeaponId::Rifle ? .95F : .65F),
-                Vector3Add(Vector3Scale(gun_right,controls.aim && !player.third_person ? 0.0F : .23F),
-                    {0,controls.aim ? -.12F : -.25F,0})));
+        // First-person gun: at the hip, or with the sight line on the eye when aiming. Its muzzle
+        // is also where every shot leaves from, in either view.
+        const auto layout=game::combat::gun_layout(weapons.selected());
+        const Vector3 view_up=Vector3Normalize(Vector3CrossProduct(Vector3CrossProduct(look_direction,{0,1,0}),look_direction));
+        const bool sighted=controls.aim && !player.third_person;
+        const float pistol_reach=weapons.weapon().hold==game::combat::WeaponHold::Pistol ? .14F : 0.0F;
+        fp_aim_blend+=((sighted ? 1.0F : 0.0F)-fp_aim_blend)*(1.0F-std::exp(-dt*14.0F));
+        Vector3 gun_grip=Vector3Add(head_position,Vector3Add(
+            Vector3Scale(look_direction,Lerp(.30F+pistol_reach,.24F+pistol_reach*1.6F,fp_aim_blend)),
+            Vector3Add(Vector3Scale(gun_right,Lerp(-.12F,0.0F,fp_aim_blend)),
+                       Vector3Scale(view_up,Lerp(-.16F,-layout.sight,fp_aim_blend)))));
+        Vector3 gun_muzzle=game::combat::CombatRenderer::muzzle(gun_grip,look_direction,weapons.selected());
         const auto muzzle_obstruction=combat_world.trace_segment(head_position,gun_muzzle);
         if (muzzle_obstruction.hit()) gun_muzzle=Vector3Lerp(head_position,gun_muzzle,
             std::max(0.0F,muzzle_obstruction.fraction-.05F));
@@ -1435,7 +1459,7 @@ void Renderer::run() {
             const Vector3 feet{player.position.x,player.position.y-1.0F,player.position.z};
             if(player_health.alive() && weapons.events().shots>0)
                 sound_bus.emit(game::sound::SoundKind::Gunshot,feet,
-                    weapons.selected()==game::combat::WeaponId::Rifle ? game::sound::radius::rifle : game::sound::radius::pistol,0,match_time);
+                    weapons.weapon().hearing,0,match_time);
             const float moved=dt>0 ? std::hypot(feet.x-last_player_feet.x,feet.z-last_player_feet.z)/dt : 0.0F;
             if(player_health.alive() && !driving && player.grounded && moved>7.0F)
                 sound_bus.emit(game::sound::SoundKind::Footstep,feet,game::sound::radius::sprint,0,match_time);
@@ -1680,12 +1704,31 @@ void Renderer::run() {
 
         game::combat::CombatRenderer::draw_world(weapons,combat_world);
         }
-        if(weapons.available() && !driving && !creator_active)game::combat::CombatRenderer::draw_gun(gun_muzzle,gun_direction,weapons.selected(),
-            weapons.reload_remaining()/weapons.weapon().reload_seconds,weapons.muzzle_flash());
+        // A pump or bolt works through the cycle after each shot of a slow gun.
+        const auto& held_weapon=weapons.weapon();
+        const float gun_work=!held_weapon.automatic && held_weapon.interval>.5F ?
+            std::sin(std::clamp(1-weapons.cooldown()/held_weapon.interval,0.0F,1.0F)*PI)*(weapons.cooldown()>0 ? 1.0F : 0.0F) : 0.0F;
+        const float gun_reload=weapons.reload_remaining()/held_weapon.reload_seconds;
+        if(weapons.available() && !driving && !creator_active && !player.third_person && !scoped)
+            game::combat::CombatRenderer::draw_gun(gun_grip,look_direction,view_up,weapons.selected(),gun_reload,weapons.muzzle_flash(),true,gun_work);
         if(!creator_active)loot_ui.draw_world(item_registry,loot_session.world(),loot_feet,loot_session.inventory().state().light);
 
         if(perf.enabled()) perf.mark(FrameStage::World,GetTime());
-        character_renderer.draw_npcs(npcs, camera.position, &view);
+        // People hold what they carry: police their pistols, Battle Royale bots their loadout.
+        character_renderer.draw_npcs(npcs, camera.position, &view,
+            [](const characters::NpcInstance& actor,characters::BodyPose& body) {
+                const int weapon=actor.weapon>=0 ? actor.weapon : actor.armed ? 0 : -1;
+                if(weapon<0 || weapon>=static_cast<int>(game::combat::weapon_count)) return;
+                const auto id=static_cast<game::combat::WeaponId>(weapon);
+                const auto gun=game::combat::gun_layout(id);
+                body.hold=game::combat::definition(id).hold==game::combat::WeaponHold::Pistol ? characters::BodyHold::Pistol : characters::BodyHold::Shouldered;
+                body.stock=gun.stock;body.support=gun.support;
+                if(actor.state==characters::NpcState::Wander) body.aim_pitch=-.45F; // low ready while walking
+            },
+            [](const characters::NpcInstance& actor,const characters::HeldGun& held) {
+                const int weapon=actor.weapon>=0 ? actor.weapon : 0;
+                game::combat::CombatRenderer::draw_gun(held.grip,held.aim,held.up,static_cast<game::combat::WeaponId>(weapon),0,0,false);
+            });
         for(const auto& tracer:br_bots.tracers()) DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
         for(const auto& tracer:police_tracers) DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
 
@@ -1693,11 +1736,25 @@ void Renderer::run() {
         // PLAYER BODY
         // ----------------------------------------------------
 
-        if (player.third_person && !driving) {
+        if (player.third_person && !driving && !scoped) {
 
             const Vector3 character_feet{player.position.x,player.position.y-1.0F,player.position.z};
 
-            character_renderer.draw_player(character_feet, player.yaw);
+            characters::BodyPose body;
+            crouch_blend+=((controls.crouch ? 1.0F : 0.0F)-crouch_blend)*(1.0F-std::exp(-dt*10.0F));
+            body.crouch=crouch_blend;
+            if(weapons.available() && !creator_active) {
+                const auto gun=game::combat::gun_layout(weapons.selected());
+                body.hold=held_weapon.hold==game::combat::WeaponHold::Pistol ? characters::BodyHold::Pistol : characters::BodyHold::Shouldered;
+                body.stock=gun.stock;body.support=gun.support;
+                // Sprinting carries the gun low; otherwise the chest follows the sights.
+                body.aim_pitch=weapon_input.sprint ? -.55F : shot_pitch;
+            }
+            const auto held=character_renderer.draw_player(character_feet, player.yaw, body);
+            if(held.held && !scoped) {
+                const auto aim=weapon_input.sprint ? held.aim : Vector3Normalize(Vector3Subtract(aim_point,held.grip));
+                game::combat::CombatRenderer::draw_gun(held.grip,aim,held.up,weapons.selected(),gun_reload,weapons.muzzle_flash(),false,gun_work);
+            }
         }
 
         if(perf.enabled()) perf.mark(FrameStage::Characters,GetTime());
@@ -1802,13 +1859,33 @@ void Renderer::run() {
         }
 
         const int center_x=screen_width/2, center_y=screen_height/2;
+        if(scoped && !creator_active) {
+            // 4x scope: a dark tube round a clear lens, fine cross-hairs with a thick outer post.
+            const float lens=std::min(screen_width,screen_height)*.46F;
+            const Vector2 middle{static_cast<float>(center_x),static_cast<float>(center_y)};
+            DrawRing(middle,lens,std::hypot(static_cast<float>(screen_width),static_cast<float>(screen_height)),0,360,96,BLACK);
+            DrawRing(middle,lens-6,lens,0,360,96,Color{25,25,25,255});
+            DrawLineEx({middle.x-lens,middle.y},{middle.x+lens,middle.y},1.2F,BLACK);
+            DrawLineEx({middle.x,middle.y-lens},{middle.x,middle.y+lens},1.2F,BLACK);
+            for(const float side:{-1.0F,1.0F}) {
+                DrawLineEx({middle.x+side*lens*.45F,middle.y},{middle.x+side*lens,middle.y},5,BLACK);
+                DrawLineEx({middle.x,middle.y+side*lens*.45F},{middle.x,middle.y+side*lens},5,BLACK);
+                for(int tick=1;tick<=4;++tick) {
+                    const float at=side*lens*.09F*static_cast<float>(tick);
+                    DrawLineEx({middle.x+at,middle.y-4},{middle.x+at,middle.y+4},1.2F,BLACK);
+                    DrawLineEx({middle.x-4,middle.y+at},{middle.x+4,middle.y+at},1.2F,BLACK);
+                }
+            }
+        }
         const int gap=static_cast<int>((controls.aim ? 3 : 8)+movement_amount*5+recoil_pitch*180);
         const Color crosshair_color=weapons.hit_marker()>0 ?
             (weapons.last_headshot() ? ORANGE : GREEN) : RAYWHITE;
-        DrawLine(center_x-gap-6,center_y,center_x-gap,center_y,crosshair_color);
-        DrawLine(center_x+gap,center_y,center_x+gap+6,center_y,crosshair_color);
-        DrawLine(center_x,center_y-gap-6,center_x,center_y-gap,crosshair_color);
-        DrawLine(center_x,center_y+gap,center_x,center_y+gap+6,crosshair_color);
+        if(!scoped) {
+            DrawLine(center_x-gap-6,center_y,center_x-gap,center_y,crosshair_color);
+            DrawLine(center_x+gap,center_y,center_x+gap+6,center_y,crosshair_color);
+            DrawLine(center_x,center_y-gap-6,center_x,center_y-gap,crosshair_color);
+            DrawLine(center_x,center_y+gap,center_x,center_y+gap+6,crosshair_color);
+        }
         if (weapons.hit_marker()>0) {
             DrawLine(center_x-10,center_y-10,center_x-5,center_y-5,crosshair_color);
             DrawLine(center_x+5,center_y+5,center_x+10,center_y+10,crosshair_color);

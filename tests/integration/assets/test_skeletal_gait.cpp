@@ -66,10 +66,60 @@ int main() {
                 assert(Vector3Distance(Vector3Transform(v,raylib_skin),Vector3Transform(v,wanted))<1e-5F);
         }
     }
-    assert(!gait.sample(model,AnimationAction::Death,0,-1,0));
+    assert(gait.sample(model,AnimationAction::Death,0,-1,0)); // falls procedurally (see the full body below)
     assert(gait.sample(model,AnimationAction::Attack,0,-1,0)); // stance, not a T-pose
     assert(Vector3Distance(bind[3].translation,{-.2F,0,0})==0); // Bind data is never overwritten.
     bones[0].parent=1;assert(!gait.sample(model,AnimationAction::Walk,0,-1,0));bones[0].parent=-1;
     std::strcpy(bones[1].name,"unsupported");assert(!gait.sample(model,AnimationAction::Walk,0,-1,0));
-    std::cout<<"[PASS] Skeletal walking/running, opposing legs, stride loop, limb lengths, idle and unknown/dead rig fallback\n";
+    {
+        // A whole body (metres, T-pose, toes forward along +z) for stances, aiming, crouching,
+        // zombies and falling down.
+        const char* full_names[]{"Hips","Spine","Spine1","Spine2","Neck","Head",
+            "LeftShoulder","LeftArm","LeftForeArm","LeftHand","RightShoulder","RightArm","RightForeArm","RightHand",
+            "LeftUpLeg","LeftLeg","LeftFoot","LeftToeBase","RightUpLeg","RightLeg","RightFoot","RightToeBase"};
+        const int full_parents[]{-1,0,1,2,3,4, 3,6,7,8, 3,10,11,12, 0,14,15,16, 0,18,19,20};
+        const Vector3 at[]{{0,1,0},{0,1.12F,0},{0,1.25F,0},{0,1.38F,0},{0,1.52F,0},{0,1.62F,0},
+            {-.06F,1.45F,0},{-.18F,1.45F,0},{-.46F,1.45F,0},{-.72F,1.45F,0},{.06F,1.45F,0},{.18F,1.45F,0},{.46F,1.45F,0},{.72F,1.45F,0},
+            {-.1F,.98F,0},{-.1F,.52F,0},{-.1F,.08F,0},{-.1F,0,.12F},{.1F,.98F,0},{.1F,.52F,0},{.1F,.08F,0},{.1F,0,.12F}};
+        constexpr int n=22;
+        BoneInfo body_bones[n]{};Transform body_bind[n]{};
+        for(int i=0;i<n;++i){std::strcpy(body_bones[i].name,full_names[i]);body_bones[i].parent=full_parents[i];
+            body_bind[i]={at[i],QuaternionIdentity(),{1,1,1}};}
+        Model body=model;body.skeleton.boneCount=n;body.skeleton.bones=body_bones;body.skeleton.bindPose=body_bind;
+        enum {Hips=0,Head=5,LeftArm=7,LeftHand=9,RightArm=11,RightHand=13,LeftFoot=16,RightFoot=20};
+        const auto lengths_kept=[&]{for(int i=1;i<n;++i) if(std::abs(Vector3Distance(gait.pose()[i].translation,gait.pose()[full_parents[i]].translation)-
+            Vector3Distance(at[i],at[full_parents[i]]))>.001F) return false; return true;};
+        // Idle: arms hang at the sides (not a T), and the body breathes.
+        assert(gait.sample(body,AnimationAction::Idle,0,0,0,{},0,1));
+        assert(gait.pose()[LeftHand].translation.y<1.0F && gait.pose()[RightHand].translation.y<1.0F && !gait.holding() && lengths_kept());
+        const float standing_hips=gait.pose()[Hips].translation.y;
+        // Shouldered: hands on the gun ahead of the chest, the grip in front of the right shoulder.
+        BodyPose rifle;rifle.hold=BodyHold::Shouldered;
+        assert(gait.sample(body,AnimationAction::Idle,0,0,0,rifle,0,1) && gait.holding() && lengths_kept());
+        const auto grip=gait.grip();
+        assert(grip.z>.25F && grip.y>1.25F && grip.y<1.6F && std::abs(gait.aim().z-1)<.01F);
+        assert(Vector3Distance(gait.pose()[RightHand].translation,grip)<.16F);
+        assert(gait.pose()[LeftHand].translation.z>gait.pose()[RightHand].translation.z+.1F); // support hand forward
+        // Aiming up carries the gun and the chest with it.
+        rifle.aim_pitch=.5F;
+        assert(gait.sample(body,AnimationAction::Idle,0,0,0,rifle,0,1) && gait.aim().y>.45F && gait.grip().y>grip.y && lengths_kept());
+        // A pistol is held out in both hands.
+        BodyPose pistol;pistol.hold=BodyHold::Pistol;
+        assert(gait.sample(body,AnimationAction::Walk,.3,1.4F,0,pistol,0,1) && gait.holding() && lengths_kept());
+        assert(Vector3Distance(gait.pose()[LeftHand].translation,gait.pose()[RightHand].translation)<.2F && gait.pose()[RightHand].translation.z>.25F);
+        // Crouching drops the hips and keeps the feet on the ground.
+        BodyPose low;low.crouch=1;
+        assert(gait.sample(body,AnimationAction::Idle,0,0,0,low,0,1));
+        assert(gait.pose()[Hips].translation.y<standing_hips-.2F && std::min(gait.pose()[LeftFoot].translation.y,gait.pose()[RightFoot].translation.y)<.12F);
+        // The infected reach forward with both arms and stoop.
+        BodyPose zombie;zombie.style=BodyStyle::Zombie;
+        assert(gait.sample(body,AnimationAction::Walk,.2,1,0,zombie,0,1));
+        assert(gait.pose()[LeftHand].translation.z>.35F && gait.pose()[RightHand].translation.z>.35F && gait.pose()[Head].translation.z>.05F);
+        // Death: standing at first, flat on the back a second later, never under the ground.
+        assert(gait.sample(body,AnimationAction::Death,0,-1,0,rifle,0,1) && gait.pose()[Head].translation.y>1.4F && !gait.holding());
+        assert(gait.sample(body,AnimationAction::Death,0,-1,0,rifle,2,1));
+        for(int i=0;i<n;++i) assert(gait.pose()[i].translation.y<.45F && gait.pose()[i].translation.y>-.05F);
+        assert(gait.pose()[Head].translation.z<-1.1F); // fell backwards
+    }
+    std::cout<<"[PASS] Skeletal walking/running, opposing legs, stride loop, limb lengths, idle and unknown rig fallback; stances, aiming, crouch, zombie reach and falling\n";
 }

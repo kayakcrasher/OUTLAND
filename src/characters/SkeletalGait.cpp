@@ -13,12 +13,16 @@ bool named(const BoneInfo& bone,const char* suffix) {
     return name==suffix || name.ends_with(std::string(":")+suffix);
 }
 }
-bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle,float ground_speed,float facing) {
+bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle,float ground_speed,float facing,
+                          const BodyPose& body,float time,float metres) {
+    holding_=false;
     if(!model.skeleton.bones || !model.skeleton.bindPose || model.skeleton.boneCount<=0 || model.skeleton.boneCount>256 ||
-       !std::isfinite(cycle) || !std::isfinite(facing)) return false;
-    // Death keeps the caller's fallback; an attack without a clip holds a stance instead of T-posing.
-    if(action==AnimationAction::Death || action==AnimationAction::None) return false;
-    if(action==AnimationAction::Attack) action=AnimationAction::Idle;
+       !std::isfinite(cycle) || !std::isfinite(facing) || !std::isfinite(time)) return false;
+    if(action==AnimationAction::None) return false;
+    const bool dying=action==AnimationAction::Death;
+    const bool attacking=action==AnimationAction::Attack;
+    if(dying || attacking) action=AnimationAction::Idle;
+    const bool zombie=body.style==BodyStyle::Zombie;
     auto find=[&](const char* name) {for(int i=0;i<model.skeleton.boneCount;++i) if(named(model.skeleton.bones[i],name))return i;return -1;};
     const int hips=find("Hips"),left=find("LeftUpLeg"),right=find("RightUpLeg");
     const int left_knee=find("LeftLeg"),right_knee=find("RightLeg");
@@ -47,36 +51,144 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
     }
     // Sign that swings a hanging limb forward about the lateral axis; knees bend the other way.
     const float forward_sign=Vector3DotProduct(Vector3RotateByQuaternion(Vector3Scale(up,-1),QuaternionFromAxisAngle(lateral,.3F)),forward)>0 ? 1.0F : -1.0F;
+    // Sign that turns the left shoulder forward about the up axis (a rifle stance is bladed).
+    const float twist_sign=Vector3DotProduct(Vector3RotateByQuaternion(Vector3Scale(lateral,-1),QuaternionFromAxisAngle(up,.3F)),forward)>0 ? 1.0F : -1.0F;
+    // Metres per skeleton unit: callers pass it; otherwise an adult's hips stand about 0.92 m up.
+    if(!(metres>0) || !std::isfinite(metres)) {
+        const int foot=left_foot>=0 ? left_foot : left_knee;
+        const float hip_height=Vector3DotProduct(Vector3Subtract(bind[hips].translation,bind[foot].translation),up)*(left_foot>=0 ? 1.0F : 2.0F);
+        metres=hip_height>1e-6F ? .92F/hip_height : 1.0F;
+    }
+    const float unit=1/metres; // skeleton units per metre
+    {
+        // The ground: soles sit a few centimetres below the balls of the feet.
+        float ground=Vector3DotProduct(bind[left_foot>=0 ? left_foot : left_knee].translation,up)-(left_foot>=0 ? .08F : .5F)*unit;
+        if(left_toe>=0) ground=std::min(ground,Vector3DotProduct(bind[left_toe].translation,up)-.03F*unit);
+        const auto hip=bind[hips].translation;
+        origin_=Vector3Add(Vector3Subtract(hip,Vector3Scale(up,Vector3DotProduct(hip,up))),Vector3Scale(up,ground));
+        right_=lateral;up_=up;forward_=forward;metres_=metres;
+    }
 
     // Stride follows ground speed so the planted foot keeps pace with the body (leg ~0.9 m).
     float speed=std::isfinite(ground_speed) && ground_speed>=0 ? ground_speed : AnimationController::nominal_speed(action);
     if(action==AnimationAction::Idle && !(std::isfinite(ground_speed) && ground_speed>=0)) speed=0;
+    if(dying) speed=0;
     const float cadence=AnimationController::gait_cadence(speed);
     const float run=std::clamp((speed-2.6F)/2.4F,0.0F,1.0F);     // 0 walk .. 1 run blend
+    const float crouch=dying ? 0 : std::clamp(body.crouch,0.0F,1.0F);
     // Running covers ground in flight, so its thigh swing is shorter than the stride implies.
-    const float swing=std::clamp(std::asin(std::min(1.0F,speed/(3.6F*cadence))),0.0F,.62F-.14F*run);
+    const float swing=std::clamp(std::asin(std::min(1.0F,speed/(3.6F*cadence))),0.0F,.62F-.14F*run)*(1-.35F*crouch);
     const float reach=.12F*run; // runners drive the knee forward more than they extend behind
     const float moving=std::clamp(speed/.6F,0.0F,1.0F);
     const float phase=static_cast<float>(std::fmod(cycle,1.0))*2*PI;
     const float knee_swing=(.45F+1.15F*run)*moving; // flexion while the leg swings through (heel tucks)
     const float knee_stance=(.06F+.18F*run)*moving; // slight give under load
     const float elbow=(.18F+.9F*run)*std::max(moving,.35F);
-    const float lean=.14F*run;
+    // Breathing while still; a zombie stoops and lurches.
+    const float breath=std::sin(time*2*PI*.27F)*(1-moving);
+    float lean=.14F*run+.32F*crouch+(zombie ? .22F+.06F*std::sin(phase*2) : 0);
+    // Aiming: the chest follows the sights up and down; the hips do not.
+    const bool armed=body.hold!=BodyHold::None && !dying && !zombie;
+    const float pitch=armed ? std::clamp(body.aim_pitch,-1.2F,1.2F) : 0;
+    if(armed) lean=.08F*run+.32F*crouch+.06F; // shooters lean into the gun
 
     // Per leg: thigh angle forward, knee flexion (>=0), for phase offset 0 (left) or PI (right).
-    const auto leg=[&](float offset,float& thigh,float& knee) {
+    const auto leg=[&](float offset,float limp,float& thigh,float& knee) {
         const float p=phase+offset;
-        thigh=swing*std::sin(p)+reach*std::max(0.0F,std::sin(p));
+        thigh=(swing*std::sin(p)+reach*std::max(0.0F,std::sin(p)))*limp+crouch*1.05F;
         // Flex peaks mid-swing (thigh moving forward), straight at heel strike, small in stance.
         const float swinging=std::max(0.0F,std::cos(p));
-        knee=knee_swing*swinging*swinging+knee_stance*std::max(0.0F,-std::cos(p));
+        knee=(knee_swing*swinging*swinging+knee_stance*std::max(0.0F,-std::cos(p)))*limp+crouch*1.85F;
     };
     float left_thigh,left_flex,right_thigh,right_flex;
-    leg(0,left_thigh,left_flex);leg(PI,right_thigh,right_flex);
+    leg(0,1,left_thigh,left_flex);leg(PI,zombie ? .55F : 1,right_thigh,right_flex);
+    if(dying) {
+        // Legs give way first.
+        const float give=std::clamp(time/.35F,0.0F,1.0F);
+        left_thigh=right_thigh=.35F*give;left_flex=right_flex=.75F*give;
+    }
+
+    // The gun's frame (skeleton space), built once both shoulders are posed.
+    const int left_arm=find("LeftArm"),right_arm=find("RightArm");
+    const int left_fore=find("LeftForeArm"),right_fore=find("RightForeArm");
+    const int left_hand=find("LeftHand"),right_hand=find("RightHand");
+    const bool can_hold=armed && left_arm>=0 && right_arm>=0 && left_fore>=0 && right_fore>=0 && left_hand>=0 && right_hand>=0;
+    const auto aim=Vector3Normalize(Vector3Add(Vector3Scale(forward,std::cos(pitch)),Vector3Scale(up,std::sin(pitch))));
+    const auto gun_up=Vector3Normalize(Vector3Subtract(Vector3Scale(up,std::cos(pitch)),Vector3Scale(forward,std::sin(pitch))));
+    // Each hand: where its wrist goes, where its fingers point (round the grip), where its palm faces.
+    Vector3 right_wrist{},left_wrist{},right_fingers{},left_fingers{},right_palm{},left_palm{};
+    bool framed=false;
 
     pose_.assign(model.skeleton.bindPose,model.skeleton.bindPose+model.skeleton.boneCount);
     std::vector<unsigned char> done(static_cast<std::size_t>(model.skeleton.boneCount));
-    std::function<bool(int)> build=[&](int i) {
+    std::function<bool(int)> build;
+    // Where a bone sits once its parent is posed (before its own rotation).
+    const auto placed=[&](int i)->Vector3 {
+        const int parent=model.skeleton.bones[i].parent;
+        if(parent<0) return bind[i].translation;
+        const auto inherited=QuaternionMultiply(pose_[parent].rotation,QuaternionInvert(bind[parent].rotation));
+        return Vector3Add(pose_[parent].translation,Vector3RotateByQuaternion(Vector3Subtract(bind[i].translation,bind[parent].translation),inherited));
+    };
+    const auto mix=[&](float r,float u,float f){return Vector3Normalize(Vector3Add(Vector3Add(Vector3Scale(lateral,r),Vector3Scale(gun_up,u)),Vector3Scale(aim,f)));};
+    const auto metres_at=[&](Vector3 from,float r,float u,float f){
+        return Vector3Add(from,Vector3Scale(Vector3Add(Vector3Add(Vector3Scale(lateral,r),Vector3Scale(gun_up,u)),Vector3Scale(aim,f)),unit));};
+    const auto frame=[&]()->bool {
+        if(framed) return true;
+        const int lp=model.skeleton.bones[left_arm].parent,rp=model.skeleton.bones[right_arm].parent;
+        if((lp>=0 && !build(lp)) || (rp>=0 && !build(rp))) return false;
+        const auto left_shoulder=placed(left_arm),right_shoulder=placed(right_arm);
+        Vector3 origin,right_hold,left_hold;
+        if(body.hold==BodyHold::Pistol) {
+            // Both arms out, the gun at chin height in front of the chest; the left hand cups the right.
+            const auto middle=Vector3Lerp(left_shoulder,right_shoulder,.5F);
+            origin=Vector3Add(middle,Vector3Add(Vector3Scale(aim,.42F*unit),Vector3Add(Vector3Scale(up,.01F*unit),Vector3Scale(lateral,.03F*unit))));
+            right_hold=metres_at(origin,0,-.05F,-.035F);left_hold=metres_at(origin,-.02F,-.06F,-.03F);
+            right_fingers=mix(-.85F,-.35F,.15F);left_fingers=mix(.85F,-.3F,.2F);
+            right_palm=Vector3Scale(lateral,-1);left_palm=lateral;
+        } else {
+            // Stock in the right shoulder pocket, cheek on the stock, support hand under the fore-end.
+            // The shoulder joint sits deep in the chest; the pocket is on its front, a little lower.
+            const auto pocket=Vector3Add(right_shoulder,Vector3Add(Vector3Scale(lateral,-.08F*unit),Vector3Add(Vector3Scale(up,-.11F*unit),Vector3Scale(aim,.10F*unit))));
+            origin=Vector3Add(pocket,Vector3Add(Vector3Scale(gun_up,.035F*unit),Vector3Scale(aim,body.stock*.85F*unit)));
+            right_hold=metres_at(origin,0,-.06F,-.035F);left_hold=metres_at(origin,0,-.03F,body.support);
+            right_fingers=mix(-.8F,-.45F,.2F);left_fingers=mix(.65F,.15F,.55F);
+            right_palm=Vector3Scale(lateral,-1);left_palm=gun_up;
+        }
+        // The wrist sits a hand's breadth back from where the hand closes.
+        right_wrist=Vector3Subtract(right_hold,Vector3Scale(right_fingers,.075F*unit));
+        left_wrist=Vector3Subtract(left_hold,Vector3Scale(left_fingers,.075F*unit));
+        grip_=origin;aim_=aim;gun_up_=gun_up;holding_=true;framed=true;
+        return true;
+    };
+    // Two-bone reach: point the upper arm at the elbow, the forearm at the wrist.
+    const auto reach_for=[&](int i,Transform& out,const Quaternion& rest_rotation,bool upper,bool right_side)->bool {
+        if(!frame()) return false;
+        const int elbow_bone=right_side ? right_fore : left_fore,hand_bone=right_side ? right_hand : left_hand;
+        const auto target=right_side ? right_wrist : left_wrist;
+        const auto turn=[&](int child,Vector3 desired) {
+            const auto current=Vector3RotateByQuaternion(Vector3Subtract(bind[child].translation,bind[i].translation),
+                QuaternionMultiply(out.rotation,QuaternionInvert(rest_rotation)));
+            if(Vector3LengthSqr(current)>1e-10F && Vector3LengthSqr(desired)>1e-10F)
+                out.rotation=QuaternionNormalize(QuaternionMultiply(QuaternionFromVector3ToVector3(Vector3Normalize(current),Vector3Normalize(desired)),out.rotation));
+        };
+        if(!upper) { turn(hand_bone,Vector3Subtract(target,out.translation)); return true; }
+        const float a=Vector3Distance(bind[elbow_bone].translation,bind[i].translation);
+        const float b=Vector3Distance(bind[hand_bone].translation,bind[elbow_bone].translation);
+        auto to=Vector3Subtract(target,out.translation);
+        const float d=std::clamp(Vector3Length(to),std::abs(a-b)+1e-4F,(a+b)*.999F);
+        if(Vector3LengthSqr(to)<1e-10F) return true;
+        const auto n=Vector3Normalize(to);
+        // Elbows drop and flare out; the trigger arm's flares more.
+        auto pole=Vector3Add(Vector3Scale(gun_up,-1),Vector3Add(Vector3Scale(lateral,right_side ? .75F : -.45F),Vector3Scale(aim,-.15F)));
+        pole=Vector3Subtract(pole,Vector3Scale(n,Vector3DotProduct(pole,n)));
+        if(Vector3LengthSqr(pole)<1e-8F) pole=Vector3Scale(up,-1);
+        pole=Vector3Normalize(pole);
+        const float along=(a*a-b*b+d*d)/(2*d),side=std::sqrt(std::max(0.0F,a*a-along*along));
+        const auto elbow_at=Vector3Add(out.translation,Vector3Add(Vector3Scale(n,along),Vector3Scale(pole,side)));
+        turn(elbow_bone,Vector3Subtract(elbow_at,out.translation));
+        return true;
+    };
+    build=[&](int i) {
         if(done[i]==2)return true;
         if(done[i]==1)return false;
         done[i]=1;
@@ -91,18 +203,47 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
             out.rotation=QuaternionMultiply(inherited,rest.rotation);
         }
         const auto& bone=model.skeleton.bones[i];
-        if(named(bone,"LeftArm") || named(bone,"RightArm")) {
-            // T-pose arms hang at the sides first.
-            const int elbow_bone=find(named(bone,"LeftArm") ? "LeftForeArm":"RightForeArm");
+        const bool left_upper=named(bone,"LeftArm"),right_upper=named(bone,"RightArm");
+        const bool left_lower=named(bone,"LeftForeArm"),right_lower=named(bone,"RightForeArm");
+        if(can_hold && (left_upper || right_upper || left_lower || right_lower)) {
+            if(!reach_for(i,out,rest.rotation,left_upper || right_upper,right_upper || right_lower)) return false;
+            done[i]=2;return true;
+        }
+        if(can_hold && (i==left_hand || i==right_hand) && frame()) {
+            // Close the hand round the grip: fingers across it, palm against it. A T-pose rig's
+            // hand points along its forearm with the palm down.
+            const bool right_side=i==right_hand;
+            const auto turned=QuaternionMultiply(out.rotation,QuaternionInvert(rest.rotation));
+            const auto along=Vector3RotateByQuaternion(Vector3Normalize(Vector3Subtract(bind[i].translation,bind[right_side ? right_fore : left_fore].translation)),turned);
+            const auto fingers=right_side ? right_fingers : left_fingers;
+            if(Vector3LengthSqr(along)>1e-10F) {
+                const auto bend=QuaternionFromVector3ToVector3(Vector3Normalize(along),fingers);
+                out.rotation=QuaternionNormalize(QuaternionMultiply(bend,out.rotation));
+                auto palm=Vector3RotateByQuaternion(Vector3Scale(up,-1),QuaternionMultiply(bend,turned));
+                auto wanted=right_side ? right_palm : left_palm;
+                palm=Vector3Subtract(palm,Vector3Scale(fingers,Vector3DotProduct(palm,fingers)));
+                wanted=Vector3Subtract(wanted,Vector3Scale(fingers,Vector3DotProduct(wanted,fingers)));
+                if(Vector3LengthSqr(palm)>1e-8F && Vector3LengthSqr(wanted)>1e-8F)
+                    out.rotation=QuaternionNormalize(QuaternionMultiply(QuaternionFromVector3ToVector3(Vector3Normalize(palm),Vector3Normalize(wanted)),out.rotation));
+            }
+            done[i]=2;return true;
+        }
+        if(left_upper || right_upper) {
+            // T-pose arms hang at the sides first, a little away from the hips.
+            const int elbow_bone=find(left_upper ? "LeftForeArm":"RightForeArm");
             if(elbow_bone>=0) {
                 const auto direction=Vector3RotateByQuaternion(Vector3Subtract(model.skeleton.bindPose[elbow_bone].translation,rest.translation),inherited);
-                if(Vector3LengthSqr(direction)>.00001F)out.rotation=QuaternionMultiply(QuaternionFromVector3ToVector3(Vector3Normalize(direction),Vector3Scale(up,-1)),out.rotation);
+                const auto hang=Vector3Normalize(Vector3Add(Vector3Scale(up,-1),Vector3Scale(lateral,(left_upper ? -1.0F : 1.0F)*(.13F+.02F*breath))));
+                if(Vector3LengthSqr(direction)>.00001F)out.rotation=QuaternionMultiply(QuaternionFromVector3ToVector3(Vector3Normalize(direction),hang),out.rotation);
             }
         }
         // All angles below are "forward" angles about the lateral axis: they swing a limb that
         // hangs down forward. The spine points up, so leaning the chest forward is negative.
         float angle=0;
-        if(named(bone,"Spine"))angle=-lean;
+        if(named(bone,"Spine"))angle=-lean*.6F+.012F*breath;
+        if(named(bone,"Spine1"))angle=-lean*.4F+pitch*.3F;
+        if(named(bone,"Spine2"))angle=pitch*.3F+.01F*breath;
+        if(named(bone,"Neck"))angle=pitch*.25F+(zombie ? .25F : crouch*.2F);
         if(named(bone,"LeftUpLeg"))angle=left_thigh;
         if(named(bone,"RightUpLeg"))angle=right_thigh;
         if(named(bone,"LeftLeg"))angle=-left_flex;
@@ -110,11 +251,26 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
         // Feet stay near level: undo the shin's pitch, letting the toes lift a little in swing.
         if(named(bone,"LeftFoot"))angle=-(left_thigh-left_flex)*.85F;
         if(named(bone,"RightFoot"))angle=-(right_thigh-right_flex)*.85F;
-        // Arms swing against the legs (left arm with the right leg); elbows bend forward.
-        if(named(bone,"LeftArm"))angle=-left_thigh*(.75F+.6F*run)+lean;
-        if(named(bone,"RightArm"))angle=-right_thigh*(.75F+.6F*run)+lean;
-        if(named(bone,"LeftForeArm") || named(bone,"RightForeArm"))angle=elbow;
+        if(zombie) {
+            // Arms reach out in front; an attack chops down and back up.
+            const float chop=attacking ? std::sin(std::clamp(time/.45F,0.0F,1.0F)*PI) : 0;
+            const float sway=.08F*std::sin(phase+(left_upper ? 0 : 1.7F))+.04F*std::sin(time*1.3F);
+            if(left_upper || right_upper) angle=1.3F+sway-.75F*chop+lean;
+            if(left_lower || right_lower) angle=.25F+.35F*chop;
+        } else {
+            // Arms swing against the legs (left arm with the right leg); elbows bend forward.
+            if(left_upper)angle=-left_thigh*(.75F+.6F*run)+lean+(attacking ? .9F*std::sin(std::clamp(time/.4F,0.0F,1.0F)*PI) : 0);
+            if(right_upper)angle=-right_thigh*(.75F+.6F*run)+lean+crouch*.3F;
+            if(left_lower || right_lower)angle=elbow+crouch*.3F+(dying ? .5F : 0);
+        }
         if(angle!=0)out.rotation=QuaternionNormalize(QuaternionMultiply(QuaternionFromAxisAngle(lateral,angle*forward_sign),out.rotation));
+        // Hips sway with the stride and the chest counters it; a rifle stance turns the chest.
+        float turn=0;
+        if(named(bone,"Hips"))turn=.09F*std::sin(phase)*moving*(1-.5F*run);
+        if(named(bone,"Spine1"))turn=-.09F*std::sin(phase)*moving*(1-.5F*run);
+        if(named(bone,"Spine2") && armed && body.hold==BodyHold::Shouldered)turn=.32F;
+        if(named(bone,"Neck") && armed && body.hold==BodyHold::Shouldered)turn=-.28F;
+        if(turn!=0)out.rotation=QuaternionNormalize(QuaternionMultiply(QuaternionFromAxisAngle(up,turn*twist_sign),out.rotation));
         done[i]=2;return true;
     };
     for(int i=0;i<model.skeleton.boneCount;++i)if(!build(i))return false;
@@ -127,8 +283,32 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
         // No feet: use the ends of the shins.
         for(const int b:{left_knee,right_knee}) lowest=std::min(lowest,Vector3DotProduct(Vector3Subtract(pose_[b].translation,bind[b].translation),up));
     }
-    if(lowest<1e8F && std::abs(lowest)>1e-7F) for(auto& p:pose_) p.translation=Vector3Subtract(p.translation,Vector3Scale(up,lowest));
+    if(lowest<1e8F && std::abs(lowest)>1e-7F) {
+        for(auto& p:pose_) p.translation=Vector3Subtract(p.translation,Vector3Scale(up,lowest));
+        grip_=Vector3Subtract(grip_,Vector3Scale(up,lowest));
+    }
+    if(dying) {
+        // Topple backwards about the heels and come to rest on the back.
+        const float t=std::clamp((time-.15F)/.65F,0.0F,1.0F);
+        const float fall=t*t*(3-2*t);
+        const int heel=left_foot>=0 ? left_foot : left_knee;
+        const auto pivot=Vector3Add(Vector3Lerp(pose_[heel].translation,pose_[right_foot>=0 ? right_foot : right_knee].translation,.5F),
+            Vector3Scale(forward,-.05F*unit));
+        auto q=QuaternionFromAxisAngle(lateral,PI*.5F*fall);
+        if(Vector3DotProduct(Vector3RotateByQuaternion(up,q),forward)>0) q=QuaternionFromAxisAngle(lateral,-PI*.5F*fall);
+        const auto lift=Vector3Scale(up,.13F*unit*fall);
+        for(auto& p:pose_) {
+            p.translation=Vector3Add(Vector3Add(pivot,Vector3RotateByQuaternion(Vector3Subtract(p.translation,pivot),q)),lift);
+            p.rotation=QuaternionNormalize(QuaternionMultiply(q,p.rotation));
+        }
+    }
     return true;
+}
+Vector3 SkeletalGait::body_direction(Vector3 d) const {
+    return {Vector3DotProduct(d,right_),Vector3DotProduct(d,up_),Vector3DotProduct(d,forward_)};
+}
+Vector3 SkeletalGait::body_point(Vector3 p) const {
+    return Vector3Scale(body_direction(Vector3Subtract(p,origin_)),metres_);
 }
 void SkeletalGait::to_skin_space(const Model& model,const Matrix& skin) {
     // raylib skins with inverse(bind) then pose, both in bone space, but applies the glTF mesh
@@ -144,8 +324,9 @@ void SkeletalGait::to_skin_space(const Model& model,const Matrix& skin) {
         pose_[i]=t;
     }
 }
-bool SkeletalGait::apply(Model& model,AnimationAction action,double cycle,float ground_speed,float facing,const Matrix* skin) {
-    if(!sample(model,action,cycle,ground_speed,facing))return false;
+bool SkeletalGait::apply(Model& model,AnimationAction action,double cycle,float ground_speed,float facing,const Matrix* skin,
+                         const BodyPose& body,float time,float metres) {
+    if(!sample(model,action,cycle,ground_speed,facing,body,time,metres))return false;
     if(skin) to_skin_space(model,*skin);
     auto* frame=pose_.data();ModelAnimation animation{};animation.boneCount=model.skeleton.boneCount;
     animation.keyframeCount=1;animation.keyframePoses=&frame;

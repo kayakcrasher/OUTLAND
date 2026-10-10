@@ -29,6 +29,7 @@ struct NpcInstance {
     float anchor_radius{6}, idle_hold{1};
     // Battle Royale bodies: driven by game::ai, never ticked by NpcBehavior.
     int bot{-1};
+    int weapon{-1}; // what the body carries (game::combat::WeaponId), -1 nothing
     // Police officers never flee gunfire; armed officers pursue the player and shoot (game::law).
     bool police{false}, armed{false}, fired{false};
     Vector3 shot_at{};
@@ -69,6 +70,7 @@ public:
     std::size_t spawn_bot(int bot,const std::string& character_id,Vector3 position,float yaw_degrees);
     int find_bot(int bot) const;
     void set_bot(int bot,Vector3 position,float yaw_degrees,float health,NpcState state);
+    void set_bot_weapon(int bot,int weapon);
     void clear_bots();
     // Routes for NPCs travelling or chasing; without one they walk straight (and slide on walls).
     void set_path_finder(world::navigation::PathFinder finder) { path_finder_=std::move(finder); }

@@ -6,39 +6,158 @@
 
 namespace outland::game::combat {
 
-void CombatRenderer::draw_gun(Vector3 muzzle,Vector3 direction,WeaponId id,float reload_fraction,float flash,bool draw_hands) {
-    const Color steel{65,73,77,255}, polymer{43,48,44,255}, accent{129,133,126,255},skin{181,142,111,255};
-    rlPushMatrix();
-    rlTranslatef(muzzle.x,muzzle.y,muzzle.z);
-    rlRotatef(std::atan2(direction.x,direction.z)*RAD2DEG,0,1,0);
-    rlRotatef(-std::asin(std::clamp(direction.y,-1.0F,1.0F))*RAD2DEG,1,0,0);
-    const float reload_motion=std::sin(std::clamp(reload_fraction,0.0F,1.0F)*PI);
-    rlRotatef(reload_motion*24,0,0,1);
-    if(id==WeaponId::Rifle) {
-        DrawCube({0,0,-.47F},.13F,.15F,.34F,steel);
-        DrawCube({0,0,-.24F},.12F,.12F,.22F,polymer);
-        DrawCylinderEx({0,0,-.13F},{0,0,0},.022F,.022F,8,steel);
-        DrawCube({0,-.14F,-.49F},.075F,.23F,.12F,polymer);
-        DrawCube({0,-.12F-reload_motion*.15F,-.36F},.07F,.22F,.10F,polymer);
-        DrawCube({0,-.02F,-.74F},.12F,.18F,.22F,polymer);
-        DrawCube({0,.09F,-.46F},.08F,.035F,.31F,accent);
-        DrawCube({0,.12F,-.59F},.018F,.04F,.035F,BLACK);
-        DrawCube({0,.12F,-.18F},.018F,.04F,.025F,BLACK);
-        DrawCube({.07F,0,-.45F},.015F,.055F,.09F,BLACK);
-        DrawCube({.083F,.01F,-.42F},.04F,.022F,.022F,accent);
-        if(draw_hands)DrawSphereEx({-.035F,-.09F,-.22F},.06F,4,6,skin);
-    } else {
-        DrawCube({0,.015F,-.15F},.09F,.10F,.28F,steel);
-        DrawCube({0,-.11F-reload_motion*.08F,-.23F},.075F,.19F,.10F,polymer);
-        DrawCube({0,.076F,-.25F},.018F,.025F,.03F,BLACK);
-        DrawCube({0,.076F,-.04F},.015F,.025F,.02F,BLACK);
-        DrawCube({.048F,.02F,-.13F},.012F,.035F,.05F,BLACK);
+namespace {
+// Parts are boxes and cylinders in the gun's own frame (metres; +z to the muzzle, -x is the
+// shooter's right).
+void box(float x,float y,float z,float w,float h,float d,Color c) { DrawCube({x,y,z},w,h,d,c); }
+void tube(float z0,float z1,float r,float y,Color c,float x=0) { DrawCylinderEx({x,y,z0},{x,y,z1},r,r,10,c); }
+// A part tilted about the gun's x axis (grips raked back, magazines raked forward).
+void tilted(float degrees,float x,float y,float z,float w,float h,float d,Color c) {
+    rlPushMatrix();rlTranslatef(x,y,z);rlRotatef(degrees,1,0,0);DrawCube({0,0,0},w,h,d,c);rlPopMatrix();
+}
+const Color black{30,32,33,255}, metal{48,51,54,255}, polymer{58,60,58,255}, dark{20,21,22,255},
+            wood{122,80,46,255}, wood_dark{92,58,34,255}, olive{82,90,62,255}, tan{156,138,104,255},
+            glove{46,44,40,255}, sleeve{72,78,64,255};
+
+void rifle(float reload) {
+    tube(.50F,.53F,.011F,0,dark);                         // flash hider
+    tube(.39F,.50F,.0085F,0,metal);                       // barrel
+    box(0,.024F,.385F,.018F,.045F,.02F,black);            // front sight block
+    box(0,.054F,.385F,.004F,.018F,.004F,black);
+    box(0,0,.27F,.05F,.054F,.24F,polymer);                // quad-rail handguard
+    box(0,.031F,.27F,.022F,.008F,.24F,black);
+    box(0,.012F,.07F,.032F,.034F,.22F,metal);             // upper receiver
+    box(0,.033F,.07F,.022F,.008F,.20F,black);             // top rail
+    box(0,.043F,.05F,.03F,.012F,.06F,black);              // holographic sight
+    box(.0155F,.068F,.05F,.005F,.038F,.05F,black);
+    box(-.0155F,.068F,.05F,.005F,.038F,.05F,black);
+    box(0,.089F,.05F,.036F,.006F,.05F,black);
+    box(0,-.024F,.05F,.03F,.04F,.16F,metal);              // lower receiver
+    box(-.0165F,.012F,.06F,.002F,.012F,.04F,dark);        // ejection port (right side)
+    box(0,.028F,-.045F,.03F,.006F,.012F,black);           // charging handle
+    tilted(-12,0,-.115F-reload*.12F,.095F,.024F,.13F,.06F,polymer); // curved magazine, raked
+    box(0,-.054F,.018F,.006F,.006F,.05F,black);           // trigger guard
+    tilted(20,0,-.083F,-.03F,.028F,.095F,.036F,polymer);  // pistol grip
+    tube(-.06F,-.20F,.015F,-.004F,black);                 // buffer tube
+    box(0,-.012F,-.235F,.04F,.072F,.13F,polymer);         // stock
+    box(0,-.02F,-.304F,.042F,.12F,.012F,dark);            // butt pad
+}
+void pistol(float reload) {
+    box(0,.008F,.025F,.026F,.03F,.19F,black);             // slide
+    box(-.0135F,.012F,.04F,.001F,.012F,.035F,dark);       // ejection port
+    box(0,-.015F,.035F,.024F,.016F,.14F,polymer);         // frame
+    box(0,-.03F,.012F,.005F,.005F,.04F,polymer);          // trigger guard
+    tilted(18,0,-.068F-reload*.06F,-.045F,.028F,.105F,.044F,polymer); // grip
+    box(0,.026F,-.06F,.02F,.006F,.006F,dark);             // rear sight
+    box(0,.026F,.11F,.004F,.006F,.004F,dark);             // front sight
+}
+void smg(float reload) {
+    tube(.24F,.30F,.011F,0,dark);                         // barrel and thread
+    box(0,0,.07F,.04F,.065F,.34F,polymer);                // receiver
+    box(0,.037F,.05F,.022F,.008F,.18F,black);             // rail
+    box(0,.05F,.04F,.026F,.022F,.04F,black);              // red dot
+    tube(.02F,.065F,.012F,.054F,black);
+    box(.021F,.01F,.15F,.002F,.01F,.06F,black);           // cocking slot
+    tilted(-5,0,-.105F-reload*.12F,.10F,.025F,.13F,.045F,black); // straight magazine
+    box(0,-.045F,.018F,.006F,.006F,.045F,black);          // trigger guard
+    tilted(18,0,-.075F,-.03F,.03F,.09F,.036F,polymer);    // grip
+    box(0,0,-.18F,.02F,.02F,.16F,black);                  // folding stock frame
+    box(0,-.045F,-.19F,.02F,.015F,.14F,black);
+    box(0,-.022F,-.258F,.035F,.075F,.012F,dark);          // butt plate
+}
+void shotgun(float reload,float pump) {
+    tube(.10F,.55F,.011F,.012F,metal);                    // barrel
+    box(0,.025F,.54F,.004F,.005F,.004F,tan);              // bead
+    tube(.10F,.46F,.010F,-.014F,metal);                   // magazine tube
+    box(0,-.014F,.26F-pump*.07F,.042F,.042F,.16F,wood);   // pump fore-end
+    box(0,0,.04F,.036F,.06F,.20F,black);                  // receiver
+    box(-.0185F,.01F,.06F,.002F,.022F,.06F,dark);         // ejection port
+    box(0,-.031F-reload*.02F,.07F,.02F,.006F,.06F,dark);  // loading gate
+    box(0,-.04F,0,.006F,.006F,.045F,black);               // trigger guard
+    tilted(-8,0,-.036F,-.11F,.032F,.05F,.12F,wood_dark);  // wrist
+    box(0,-.054F,-.25F,.038F,.11F,.18F,wood);             // butt
+    box(0,-.058F,-.334F,.04F,.122F,.012F,dark);           // recoil pad
+}
+void sniper(float reload,float bolt) {
+    box(0,0,.70F,.026F,.02F,.045F,black);                 // muzzle brake
+    tube(.40F,.68F,.0085F,0,metal);                       // barrel, tapering
+    tube(.14F,.40F,.011F,0,metal);
+    tube(-.08F,.14F,.016F,0,metal);                       // receiver
+    // Bolt on the right: lifts and draws back between shots.
+    const float back=bolt*.07F;
+    DrawCylinderEx({-.016F,0,-.05F-back},{-.048F,-.022F+bolt*.03F,-.06F-back},.005F,.005F,6,metal);
+    DrawSphereEx({-.05F,-.024F+bolt*.03F,-.06F-back},.009F,4,6,metal);
+    tube(-.06F,.20F,.0125F,.06F,black);                   // scope tube
+    tube(.16F,.25F,.021F,.06F,black);                     // objective bell
+    tube(-.115F,-.05F,.018F,.06F,black);                  // eyepiece
+    DrawCylinderEx({0,.072F,.065F},{0,.09F,.065F},.01F,.01F,8,black);   // elevation turret
+    DrawCylinderEx({-.012F,.06F,.065F},{-.03F,.06F,.065F},.01F,.01F,8,black);
+    box(0,.035F,0,.02F,.03F,.014F,black);                 // rings
+    box(0,.035F,.12F,.02F,.03F,.014F,black);
+    box(0,-.02F,.25F,.045F,.05F,.26F,olive);              // fore-end
+    box(0,-.026F,.03F,.045F,.05F,.20F,olive);             // action bed
+    box(0,-.062F-reload*.06F,.04F,.03F,.04F,.06F,black);  // magazine
+    tilted(20,0,-.08F,-.05F,.032F,.09F,.04F,olive);       // grip
+    box(0,-.036F,-.25F,.045F,.12F,.22F,olive);            // butt
+    box(0,.026F,-.22F,.04F,.02F,.14F,olive);              // cheek riser
+    box(0,-.04F,-.364F,.046F,.13F,.012F,dark);            // butt pad
+    DrawCylinderEx({.012F,-.05F,.30F},{.012F,-.05F,.47F},.005F,.005F,6,black); // folded bipod
+    DrawCylinderEx({-.012F,-.05F,.30F},{-.012F,-.05F,.47F},.005F,.005F,6,black);
+}
+// First-person hands and forearms: trigger hand on the grip, support hand under the fore-end.
+void hands(WeaponId id,const GunLayout& layout) {
+    if(id==WeaponId::Pistol) {
+        tilted(18,0,-.068F,-.048F,.05F,.085F,.07F,glove);
+        tilted(18,.026F,-.075F,-.04F,.028F,.08F,.065F,glove);
+        DrawCylinderEx({0,-.09F,-.09F},{-.04F,-.17F,-.36F},.032F,.04F,8,sleeve);
+        DrawCylinderEx({.03F,-.09F,-.08F},{.13F,-.17F,-.34F},.032F,.04F,8,sleeve);
+        return;
     }
-    if(draw_hands)DrawSphereEx({.02F,-.10F,-.24F},.065F,4,6,skin);
-    DrawCylinderEx({0,0,-.002F},{0,0,.002F},.014F,.014F,8,BLACK);
+    tilted(18,0,-.075F,-.035F,.05F,.085F,.065F,glove);
+    DrawCylinderEx({0,-.1F,-.08F},{-.05F,-.19F,-.34F},.033F,.042F,8,sleeve);
+    box(.004F,-.042F,layout.support,.058F,.04F,.085F,glove);
+    DrawCylinderEx({.01F,-.07F,layout.support-.04F},{.14F,-.2F,layout.support-.3F},.032F,.04F,8,sleeve);
+}
+}
+
+GunLayout gun_layout(WeaponId id) {
+    switch(id) {
+        case WeaponId::Pistol: return {0,0,.026F,definition(id).length};
+        case WeaponId::Smg: return {.26F,.17F,.054F,definition(id).length};
+        case WeaponId::Shotgun: return {.34F,.24F,.028F,definition(id).length};
+        case WeaponId::Sniper: return {.36F,.24F,.06F,definition(id).length};
+        default: return {.30F,.22F,.068F,definition(id).length};
+    }
+}
+
+Vector3 CombatRenderer::muzzle(Vector3 grip,Vector3 aim,WeaponId id) {
+    return Vector3Add(grip,Vector3Scale(Vector3Normalize(aim),definition(id).length));
+}
+
+void CombatRenderer::draw_gun(Vector3 grip,Vector3 aim,Vector3 up,WeaponId id,float reload_fraction,float flash,bool draw_hands,float pump) {
+    const auto z=Vector3Normalize(aim);
+    auto y=Vector3Subtract(up,Vector3Scale(z,Vector3DotProduct(up,z)));
+    if(Vector3LengthSqr(y)<1e-6F) y={0,1,0};
+    y=Vector3Normalize(y);
+    const auto x=Vector3CrossProduct(y,z);
+    const Matrix basis{x.x,y.x,z.x,grip.x, x.y,y.y,z.y,grip.y, x.z,y.z,z.z,grip.z, 0,0,0,1};
+    rlPushMatrix();
+    rlMultMatrixf(MatrixToFloat(basis));
+    const float reload=std::sin(std::clamp(reload_fraction,0.0F,1.0F)*PI);
+    rlRotatef(reload*18,0,0,1); // the gun rolls over while the magazine changes
+    const float work=std::clamp(pump,0.0F,1.0F);
+    switch(id) {
+        case WeaponId::Pistol: pistol(reload);break;
+        case WeaponId::Smg: smg(reload);break;
+        case WeaponId::Shotgun: shotgun(reload,work);break;
+        case WeaponId::Sniper: sniper(reload,work);break;
+        default: rifle(reload);break;
+    }
+    if(draw_hands) hands(id,gun_layout(id));
     if(flash>0) {
-        DrawSphereEx({0,0,.06F},.07F,4,6,Color{255,228,135,255});
-        DrawCylinderEx({0,0,.04F},{0,0,.20F},.04F,0,5,Color{255,169,65,255});
+        const float l=definition(id).length+.02F,size=id==WeaponId::Shotgun || id==WeaponId::Sniper ? 1.5F : 1.0F;
+        DrawSphereEx({0,0,l+.03F},.035F*size,4,6,Color{255,228,135,255});
+        DrawCylinderEx({0,0,l},{0,0,l+.16F*size},.03F*size,0,5,Color{255,169,65,255});
     }
     rlPopMatrix();
 }

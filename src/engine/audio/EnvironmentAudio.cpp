@@ -69,8 +69,10 @@ void EnvironmentAudio::set_volume(float volume) {
 void EnvironmentAudio::play_combat(game::combat::WeaponId weapon, const game::combat::WeaponEvents& events) {
     if (!ready_ || muted_) return;
     for (int i = 0; i < events.shots; ++i) {
-        const Sound sound = gunshots_[static_cast<std::size_t>(weapon)][gunshot_index_++ % 3];
-        if (IsSoundValid(sound)) PlaySound(sound);
+        // Two recorded reports; the other guns reuse them at their own pitch.
+        const auto& gun = game::combat::definition(weapon);
+        const Sound sound = gunshots_[static_cast<std::size_t>(gun.sound) % gunshots_.size()][gunshot_index_++ % 3];
+        if (IsSoundValid(sound)) { SetSoundPitch(sound, gun.sound_pitch); PlaySound(sound); }
     }
     if (events.reload_started && IsSoundValid(reload_)) PlaySound(reload_);
     if (events.target_hits > 0 && IsSoundValid(hit_)) PlaySound(hit_);

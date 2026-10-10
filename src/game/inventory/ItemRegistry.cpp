@@ -149,10 +149,8 @@ bool ItemRegistry::load(const std::string &item_path, const std::string &table_p
         for (const auto &part : std::filesystem::path(item.model))
             if (part == ".." || part == ".")
                 return fail("Unsafe item model path");
-        if (c[8] == "pistol")
-            item.weapon = combat::WeaponId::Pistol;
-        else if (c[8] == "rifle")
-            item.weapon = combat::WeaponId::Rifle;
+        if (combat::WeaponId id{}; combat::weapon_from_item(c[8], id))
+            item.weapon = id;
         else if (!c[8].empty())
             return fail("Unknown weapon compatibility");
         const bool firearm = item.category == ItemCategory::Weapon,

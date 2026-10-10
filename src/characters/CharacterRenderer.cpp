@@ -53,7 +53,9 @@ bool CharacterRenderer::prepare(const CharacterDefinition& definition,Model& mod
     // ModelCache applies the final ground/centre translation after preparation.
     return true;
 }
-void CharacterRenderer::draw(const std::string& id,Vector3 feet,float yaw,float scale,const AnimationController* animation) {
+void CharacterRenderer::draw(const std::string& id,Vector3 feet,float yaw,float scale,const AnimationController* animation,
+                             const BodyPose& body,HeldGun* held) {
+    if(held) *held={};
     const auto* asset=registry_.find(id);
     if (!asset || asset->pool==CharacterPool::Arms || failed_.contains(id) ||
         !std::isfinite(feet.x) || !std::isfinite(feet.y) || !std::isfinite(feet.z) ||
@@ -80,20 +82,41 @@ void CharacterRenderer::draw(const std::string& id,Vector3 feet,float yaw,float 
             const bool found=world::physics::skinned_mesh_transform(path,skin) && skeleton_needs_skin_space(*model,skin);
             space=skin_spaces_.emplace(path,std::pair{found,skin}).first;
         }
-        posed=gait_.apply(*model,animation->action(),animation->gait_cycle(),animation->ground_speed(),asset->facing_degrees,space->second.first ? &space->second.second : nullptr);
+        // Skeleton space -> world exactly as the mesh is drawn: the mesh-node transform (when the
+        // bones need it), the model's preparation, then its placement.
+        const Matrix* skin=space->second.first ? &space->second.second : nullptr;
+        const auto placement=MatrixMultiply(MatrixMultiply(MatrixScale(scale,scale,scale),MatrixRotateY((yaw+asset->facing_degrees)*DEG2RAD)),
+            MatrixTranslate(feet.x,feet.y,feet.z));
+        const auto world=MatrixMultiply(MatrixMultiply(skin ? *skin : MatrixIdentity(),model->transform),placement);
+        const float metres=Vector3Distance(Vector3Transform({1,0,0},world),Vector3Transform({0,0,0},world))/scale;
+        posed=gait_.apply(*model,animation->action(),animation->gait_cycle(),animation->ground_speed(),asset->facing_degrees,skin,
+            body,static_cast<float>(animation->elapsed()),metres);
+        if(posed && held && gait_.holding()) {
+            const auto grip=Vector3Transform(gait_.grip(),world);
+            const auto toward=[&](Vector3 d){return Vector3Normalize(Vector3Subtract(Vector3Transform(Vector3Add(gait_.grip(),d),world),grip));};
+            held->held=true;held->grip=grip;held->aim=toward(gait_.aim());held->up=toward(gait_.gun_up());
+        }
     }
     if(!posed) posed=AnimationController::apply_sample(*model,clips,sample,models_.posed(model));
     models_.mark_posed(model,posed);
     DrawModelEx(*model,feet,{0,1,0},yaw+asset->facing_degrees,{scale,scale,scale},WHITE);
 }
-void CharacterRenderer::draw_player(Vector3 feet,float yaw) {
+HeldGun CharacterRenderer::draw_player(Vector3 feet,float yaw,const BodyPose& body) {
+    HeldGun held;
     const auto* asset=registry_.player();
-    if (asset) draw(asset->id,feet,yaw*RAD2DEG,1,&player_animation_);
+    if (asset) draw(asset->id,feet,yaw*RAD2DEG,1,&player_animation_,body,&held);
+    return held;
 }
-void CharacterRenderer::draw_npcs(const NpcSystem& npcs,Vector3 camera,const engine::ViewFrustum* view) {
+void CharacterRenderer::draw_npcs(const NpcSystem& npcs,Vector3 camera,const engine::ViewFrustum* view,const Dress& dress,const Armed& armed) {
     (void)camera; // NpcSystem owns configurable visibility/activation distances.
-    for (const auto& actor:npcs.actors())
-        if(actor.visible && (!view || view->sphere({actor.position.x,actor.position.y+1,actor.position.z},2)))
-            draw(actor.character_id,actor.position,actor.yaw_degrees,1,&actor.animation);
+    for (const auto& actor:npcs.actors()) {
+        if(!actor.visible || (view && !view->sphere({actor.position.x,actor.position.y+1,actor.position.z},2))) continue;
+        BodyPose body;
+        if(actor.pool==CharacterPool::Creature) body.style=BodyStyle::Zombie;
+        if(dress) dress(actor,body);
+        HeldGun held;
+        draw(actor.character_id,actor.position,actor.yaw_degrees,1,&actor.animation,body,&held);
+        if(held.held && armed) armed(actor,held);
+    }
 }
 }

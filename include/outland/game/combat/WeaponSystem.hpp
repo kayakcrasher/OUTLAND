@@ -57,6 +57,7 @@ public:
     void request_reload();
     [[nodiscard]] float reload_remaining() const { return reload_remaining_; }
     [[nodiscard]] float muzzle_flash() const { return muzzle_flash_; }
+    [[nodiscard]] float cooldown() const { return cooldown_; } // seconds until the next shot may fire
     [[nodiscard]] float hit_marker() const { return hit_marker_; }
     [[nodiscard]] bool last_headshot() const { return last_headshot_; }
     [[nodiscard]] float last_damage() const { return last_damage_; }
@@ -73,10 +74,10 @@ private:
     void simulate(float dt, CombatWorld& world);
     float random();
     WeaponId selected_{WeaponId::Rifle};
-    std::array<bool,2> single_{};
+    std::array<bool,weapon_count> single_{};
     int spray_{0};
     float since_shot_{10};
-    std::array<Magazine,2> ammo_{};
+    std::array<Magazine,weapon_count> ammo_{};
     std::array<Bullet,96> bullets_{};
     std::array<BulletImpact,64> impacts_{};
     WeaponEvents events_{};

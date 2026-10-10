@@ -76,7 +76,10 @@ void BattleRoyaleBots::start(const world::VerdaRegion& region,BotLevel level,int
         if(world::physics::WorldCollision::body_blocked(feet,feet.y,region,.35F)) continue;
         if(Vector3Distance(feet,player_feet)<drop_clearance) continue;
         if(std::any_of(placed.begin(),placed.end(),[&](Vector3 p){return Vector3Distance(p,feet)<60;})) continue;
-        const auto weapon=unit(state)<.6F ? combat::WeaponId::Rifle : combat::WeaponId::Pistol;
+        // Loadouts roughly as found in a drop: mostly rifles, then SMGs, pistols, shotguns, a few snipers.
+        const float pick=unit(state);
+        const auto weapon=pick<.40F ? combat::WeaponId::Rifle : pick<.60F ? combat::WeaponId::Smg :
+            pick<.78F ? combat::WeaponId::Pistol : pick<.92F ? combat::WeaponId::Shotgun : combat::WeaponId::Sniper;
         auto& bot=add_bot(feet,weapon,level,state);
         bot.set_roam_center(center,140);
         placed.push_back(feet);
@@ -141,7 +144,7 @@ void BattleRoyaleBots::update(const BattleRoyaleFrame& frame,const BotWorld& wor
     bus.advance(frame.now);
     if(!world.sounds && frame.player_alive) {
         if(frame.player_fired)
-            bus.emit(sound::SoundKind::Gunshot,frame.player_feet,frame.player_weapon==combat::WeaponId::Rifle ? gunshot_radius_rifle : gunshot_radius_pistol,player_id,frame.now);
+            bus.emit(sound::SoundKind::Gunshot,frame.player_feet,combat::definition(frame.player_weapon).hearing,player_id,frame.now);
         if(Vector3Length({player_velocity.x,0,player_velocity.z})>CombatBot::walk_speed+.6F)
             bus.emit(sound::SoundKind::Footstep,frame.player_feet,footstep_radius,player_id,frame.now);
     }
@@ -166,13 +169,13 @@ void BattleRoyaleBots::update(const BattleRoyaleFrame& frame,const BotWorld& wor
         // Heard by everyone from the next frame on.
         const auto* shooter=find(shot.shooter);
         bus.emit(sound::SoundKind::Gunshot,shooter ? shooter->position() : shot.origin,
-            shot.weapon==combat::WeaponId::Rifle ? gunshot_radius_rifle : gunshot_radius_pistol,shot.shooter,frame.now);
+            combat::definition(shot.weapon).hearing,shot.shooter,frame.now);
     }
 }
 
 void BattleRoyaleBots::resolve(const BotShot& shot,const BattleRoyaleFrame& frame,const BotWorld& world) {
     ++events_.shots;
-    const float range=shot.weapon==combat::WeaponId::Rifle ? 220.0F : 90.0F;
+    const float range=std::max(90.0F,combat::definition(shot.weapon).bot_range*1.6F);
     const auto end=Vector3Add(shot.origin,Vector3Scale(shot.direction,range));
     combat::BulletHit world_hit;
     if(world.trace) world_hit=world.trace(shot.origin,end);
@@ -232,6 +235,7 @@ void BattleRoyaleBots::sync_bodies(characters::NpcSystem& npcs,const characters:
             (bot.moving() && speed>CombatBot::walk_speed+.6F) ? characters::NpcState::Chase :
             bot.moving() ? characters::NpcState::Wander : characters::NpcState::Idle;
         npcs.set_bot(bot.id(),bot.position(),bot.yaw(),bot.health(),state);
+        npcs.set_bot_weapon(bot.id(),static_cast<int>(bot.weapon()));
     }
 }
 }

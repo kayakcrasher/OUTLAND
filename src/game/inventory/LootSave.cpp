@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iomanip>
 #include <limits>
+#include <sstream>
 namespace outland::game::inventory {
 namespace {
 bool valid(const ItemRegistry &registry, const LootSnapshot &state) {
@@ -13,7 +14,7 @@ bool valid(const ItemRegistry &registry, const LootSnapshot &state) {
     Inventory bag;
     LootWorld world;
     if (!bag.restore(registry, state.inventory) || !world.restore(registry, state.world) ||
-        static_cast<std::size_t>(state.selected) > 1)
+        static_cast<std::size_t>(state.selected) >= combat::weapon_count)
         return false;
     for (std::size_t i = 0; i < state.loaded.size(); ++i) {
         const auto id = static_cast<combat::WeaponId>(i);
@@ -56,8 +57,9 @@ bool LootSave::save(const ItemRegistry &registry, const LootSnapshot &state,
         << static_cast<int>(state.mode) << '\n';
     out << "BAG " << std::quoted(state.inventory.container) << ' ' << state.inventory.light << ' '
         << state.inventory.food_consumed << ' ' << state.inventory.water_consumed << '\n';
-    out << "WEAPONS " << static_cast<int>(state.selected) << ' ' << state.loaded[0] << ' '
-        << state.loaded[1] << '\n';
+    out << "WEAPONS " << static_cast<int>(state.selected);
+    for (const int rounds : state.loaded) out << ' ' << rounds;
+    out << '\n';
     out << "NEXT " << state.world.next_drop << '\n';
     for (const auto &stack : state.inventory.stacks)
         out << "ITEM " << std::quoted(stack.item) << ' ' << stack.quantity << '\n';
@@ -120,8 +122,18 @@ bool LootSave::load(const ItemRegistry &registry, LootSnapshot &destination,
             bag = true;
         } else if (token == "WEAPONS") {
             int selected = 0;
-            if (weapons || !(input >> selected >> parsed.loaded[0] >> parsed.loaded[1]) ||
-                selected < 0 || selected > 1)
+            // Older saves list fewer weapons; the rest start empty.
+            std::string line;
+            std::getline(input, line);
+            std::istringstream fields(line);
+            if (weapons || !(fields >> selected) || selected < 0 ||
+                selected >= static_cast<int>(combat::weapon_count))
+                return fail();
+            std::size_t listed = 0;
+            for (int rounds = 0; fields >> rounds; ++listed)
+                if (listed >= parsed.loaded.size()) return fail();
+                else parsed.loaded[listed] = rounds;
+            if (listed < 2 || !fields.eof())
                 return fail();
             parsed.selected = static_cast<combat::WeaponId>(selected);
             weapons = true;

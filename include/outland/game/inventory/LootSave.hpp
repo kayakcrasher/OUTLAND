@@ -10,7 +10,7 @@ struct LootSnapshot {
     InventoryState inventory;
     LootWorldState world;
     combat::WeaponId selected{combat::WeaponId::Rifle};
-    std::array<int, 2> loaded{};
+    std::array<int, combat::weapon_count> loaded{};
     economy::EconomyState economy;
 };
 class LootSave {

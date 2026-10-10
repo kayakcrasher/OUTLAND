@@ -85,11 +85,12 @@ const BotContact* CombatBot::target() const {
 }
 
 float CombatBot::effective_range() const {
-    return weapon_==combat::WeaponId::Rifle ? 140.0F : 45.0F;
+    return combat::definition(weapon_).bot_range;
 }
 float CombatBot::preferred_range() const {
     const float caution=1-difficulty_.aggression;
-    return weapon_==combat::WeaponId::Rifle ? 30+caution*28 : 12+caution*10;
+    const float range=combat::definition(weapon_).bot_range;
+    return range*(.22F+caution*.2F);
 }
 
 void CombatBot::on_damage(float amount,Vector3 from,double now) {
@@ -471,9 +472,10 @@ void CombatBot::act(float dt,double now,const BotEnvironment& environment,std::v
     const auto deflect=Vector3Add(Vector3Scale(right,std::cos(spin)),Vector3Scale(up,std::sin(spin)));
     direction=Vector3Normalize(Vector3Add(Vector3Scale(direction,std::cos(cone)),Vector3Scale(deflect,std::sin(cone))));
 
-    shots.push_back({id_,origin,direction,w.damage,weapon_});
+    // Bots trace one ray: a shotgun's pattern lands about three quarters of its pellets.
+    shots.push_back({id_,origin,direction,w.damage*static_cast<float>(std::max(1,w.pellets))*(w.pellets>1 ? .75F : 1.0F),weapon_});
     --loaded_;
-    if(weapon_==combat::WeaponId::Rifle) {
+    if(w.automatic) {
         // Short controlled bursts; the pause lets aim settle again.
         ++burst_;
         if(burst_>=3+static_cast<int>(random()*3)) {burst_=0;cooldown_=.3F+random()*.25F;contact->tracking*=.6F;}

@@ -165,8 +165,9 @@ void LootUI::draw_world(const ItemRegistry &registry, const LootWorld &world, Ve
                                ? Color{255, 244, 200, 255}
                                : WHITE;
         if (item->model.empty()) {
-            combat::CombatRenderer::draw_gun(Vector3Add(pickup.position,{0,item->height*.8F,0}), {0, 0, 1}, *item->weapon, 0, false,
-                                             false);
+            // Lying on its side on the ground.
+            combat::CombatRenderer::draw_gun(Vector3Add(pickup.position, {0, .025F, 0}), {1, 0, 0}, {0, 0, 1},
+                                             *item->weapon, 0, 0, false);
             continue;
         }
         auto *model = models_.load(
