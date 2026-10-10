@@ -133,6 +133,7 @@ add_library(
     src/world/physics/WorldCollision.cpp
     src/world/physics/MeshCollision.cpp
     src/world/navigation/NavGrid.cpp
+    src/world/sky/DayNight.cpp
     src/world/assets/VerdanArchitecture.cpp
     src/world/assets/VerdanProps.cpp
     src/world/terrain/TerrainHeight.cpp
@@ -481,6 +482,12 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_sound_bus_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_sound_bus_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_sound_bus_tests COMMAND outland_sound_bus_tests)
+
+    add_executable(outland_day_night_tests tests/integration/sky/test_day_night.cpp)
+    target_link_libraries(outland_day_night_tests PRIVATE outland_render)
+    target_compile_options(outland_day_night_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_day_night_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_day_night_tests COMMAND outland_day_night_tests)
 
     add_executable(outland_animation_asset_tests tests/integration/assets/test_animation_assets.cpp)
     target_link_libraries(outland_animation_asset_tests PRIVATE outland_render)

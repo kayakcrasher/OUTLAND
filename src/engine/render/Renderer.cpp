@@ -19,6 +19,7 @@
 #include "outland/game/ai/BattleRoyaleBots.hpp"
 #include "outland/game/sound/SoundBus.hpp"
 #include "outland/world/navigation/NavGrid.hpp"
+#include "outland/world/sky/DayNight.hpp"
 #include "outland/dev/DevLab.hpp"
 #include "outland/creator/CreatorMapIO.hpp"
 
@@ -420,6 +421,11 @@ void Renderer::run() {
     game::inventory::LootUI loot_ui(character_root);
     characters::NpcSystem npcs;
     game::ai::BattleRoyaleBots br_bots;
+    // Time of day: Explore follows island life's clock, Zombie Survival runs its own from dusk,
+    // Battle Royale keeps fair afternoon light, the Dev Lab sets the hour by hand (F6 / F7).
+    float zombie_hour=17.5F, dev_hour=12.0F;
+    std::vector<world::sky::LightSource> scene_lights;
+    std::size_t lit_asset_count=static_cast<std::size_t>(-1);
     game::sound::SoundBus sound_bus; // every noise on Verda this session, heard by bots, NPCs and residents
     double match_time=0;
     int match_placement=-1;
@@ -657,6 +663,7 @@ void Renderer::run() {
                     island_life.build(verda_region,&character_registry);island_life.reset(npcs);
                 } else island_life.clear(npcs);
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
+                zombie_hour=17.5F;lit_asset_count=static_cast<std::size_t>(-1);
                 match_time=0;match_placement=-1;
                 last_player_feet={player.position.x,player.position.y-1.0F,player.position.z};
                 if(game::rules_for(game_mode).combat_bots) {
@@ -1310,16 +1317,37 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
         if (game_mode == game::GameMode::DevLab && creator_touch_ui.inventory_open()) asset_thumbnails.render_pending(character_registry);
 #endif
+        // ----------------------------------------------------
+        // TIME OF DAY
+        // ----------------------------------------------------
+        float hour=12;
+        switch(game_mode) {
+            case game::GameMode::Explore:hour=island_life.empty() ? 12.0F : island_life.clock().hour();break;
+            case game::GameMode::ZombieSurvival:
+                if(!vehicle_paused) zombie_hour=std::fmod(zombie_hour+dt/60.0F,24.0F); // an hour a minute
+                hour=zombie_hour;break;
+            case game::GameMode::BattleRoyale:hour=15.5F;break;
+            default:
+                if(IsKeyPressed(KEY_F6)) dev_hour=std::fmod(dev_hour+23,24.0F);
+                if(IsKeyPressed(KEY_F7)) dev_hour=std::fmod(dev_hour+1,24.0F);
+                hour=dev_hour;break;
+        }
+#ifdef OUTLAND_DEV_TOOLS
+        if(const char* forced=std::getenv("OUTLAND_DEV_HOUR")) hour=static_cast<float>(std::atof(forced));
+#endif
+        const auto sky=world::sky::sky_at(hour);
+        {
+            std::size_t assets=0;
+            for(const auto& settlement:verda_region.settlements()) assets+=settlement.assets.size();
+            if(assets!=lit_asset_count) {scene_lights=world::sky::collect_lights(verda_region);lit_asset_count=assets;}
+        }
+
         BeginDrawing();
 
-        ClearBackground(
-            Color{
-                135,
-                180,
-                220,
-                255
-            }
-        );
+        // The sky is drawn before the world, pre-divided by the ambient multiply that follows.
+        ClearBackground(world::sky::before_multiply(sky.horizon,sky.ambient));
+        DrawRectangleGradientV(0,0,screen_width,screen_height*3/5,world::sky::before_multiply(sky.zenith,sky.ambient),
+            world::sky::before_multiply(sky.horizon,sky.ambient));
 
         BeginMode3D(camera);
 
@@ -1429,6 +1457,24 @@ void Renderer::run() {
         }
 
         EndMode3D();
+
+        // Night: darken everything drawn so far, then add what shines (lamps, fires, headlights,
+        // sun, moon, stars) on top, still depth-tested against the world.
+        if(sky.ambient.r<255 || sky.ambient.g<255 || sky.ambient.b<255) {
+            BeginBlendMode(BLEND_MULTIPLIED);
+            DrawRectangle(0,0,screen_width,screen_height,sky.ambient);
+            EndBlendMode();
+        }
+        BeginMode3D(camera);
+        world::sky::draw_sky_objects(sky,camera.position);
+        world::sky::draw_lights(scene_lights,sky,camera.position,static_cast<float>(GetTime()));
+        if(const auto* car=vehicles.driver()) world::sky::draw_headlights(car->position,car->yaw,sky);
+        EndMode3D();
+        if(game_mode==game::GameMode::ZombieSurvival || game_mode==game::GameMode::DevLab) {
+            const int minutes=static_cast<int>(sky.hour*60)%1440;
+            const char* clock=TextFormat("%02d:%02d%s",minutes/60,minutes%60,game_mode==game::GameMode::DevLab ? "  F6/F7" : "");
+            DrawText(clock,screen_width/2-MeasureText(clock,18)/2,40,18,RAYWHITE);
+        }
 
         // ====================================================
         // HUD
