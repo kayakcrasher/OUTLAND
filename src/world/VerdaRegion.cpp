@@ -1,3 +1,4 @@
+#include "outland/engine/render/ViewFrustum.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/assets/VerdanArchitecture.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
@@ -7,6 +8,7 @@
 #include <rlgl.h>
 #include "outland/world/assets/VerdaGeometry.hpp"
 #include <algorithm>
+#include <map>
 #include "outland/world/VerdaLayout.hpp"
 
 #include <cmath>
@@ -160,25 +162,44 @@ void draw_road(
     const float projection=std::clamp(((camera.x-road.start.x)*dx+(camera.z-road.start.z)*dz)/(length*length),0.0F,1.0F);
     const float nearest_x=road.start.x+dx*projection, nearest_z=road.start.z+dz*projection;
     if(std::hypot(camera.x-nearest_x,camera.z-nearest_z)>330+road.width) return;
-    const float begin=std::max(0.0F,projection-340.0F/length), end=std::min(1.0F,projection+340.0F/length);
-    const int segments = std::clamp(static_cast<int>(std::ceil(length*(end-begin) / 2.0F)), 1, 512);
-    const Color color = road.type == RoadType::Asphalt ? Color{76,80,77,255}
-                      : road.type == RoadType::Gravel ? Color{157,151,127,255}
-                      : Color{161,128,83,255};
-    const auto edge = [&](float t, float side) {
-        const float x = road.start.x + dx*t + side_x*side;
-        const float z = road.start.z + dz*t + side_z*side;
-        return Vector3{x, terrain::TerrainHeight::sample(x,z) + 0.06F, z};
+    const int segments=std::max(1,static_cast<int>(std::ceil(length/2.0F)));
+    const int begin=std::max(0,static_cast<int>(std::floor((projection-340.0F/length)*segments)));
+    const int end=std::min(segments,static_cast<int>(std::ceil((projection+340.0F/length)*segments)));
+    const Color color=road.type==RoadType::Asphalt ? Color{76,80,77,255} :
+        road.type==RoadType::Gravel ? Color{157,151,127,255} : Color{161,128,83,255};
+    // CPU ribbon samples keyed by geometry: camera movement no longer resamples terrain.
+    // Replacing/moving a Creator road naturally selects a new key; bound old entries.
+    using Key=std::array<float,6>;
+    static std::map<Key,std::map<int,std::array<Vector3,2>>> ribbons;
+    static bool coast=terrain::TerrainHeight::coastal_layout();
+    if(coast!=terrain::TerrainHeight::coastal_layout()) {ribbons.clear();coast=terrain::TerrainHeight::coastal_layout();}
+    const Key key{road.start.x,road.start.z,road.end.x,road.end.z,road.width,static_cast<float>(segments)};
+    if(!ribbons.contains(key) && ribbons.size()>=64) ribbons.clear();
+    auto& ribbon=ribbons[key];
+    if(ribbon.size()>4096) std::erase_if(ribbon,[&](const auto& sample){return sample.first<begin-512 || sample.first>end+512;});
+    const auto edge=[&](int i)->const std::array<Vector3,2>& {
+        const auto found=ribbon.find(i);
+        if(found!=ribbon.end()) return found->second;
+        const float t=static_cast<float>(i)/segments;
+        std::array<Vector3,2> points{};
+        for(int side=0;side<2;++side) {
+            const float sign=side==0 ? 1.0F : -1.0F;
+            const float x=road.start.x+dx*t+side_x*sign,z=road.start.z+dz*t+side_z*sign;
+            points[side]={x,terrain::TerrainHeight::sample(x,z)+.06F,z};
+        }
+        return ribbon.emplace(i,points).first->second;
     };
-    for (int i = 0; i < segments; ++i) {
-        const float a = begin+(end-begin)*static_cast<float>(i) / segments;
-        const float b = begin+(end-begin)*static_cast<float>(i+1) / segments;
-        assets::draw_quad(edge(a, 1), edge(a, -1), edge(b, -1), edge(b, 1), color);
+    for(int i=begin;i<end;++i) {
+        const auto& a=edge(i);const auto& b=edge(i+1);
+        assets::draw_quad(a[0],a[1],b[1],b[0],color);
     }
 }
 
-void draw_tree(Vector3 position, const Vector3& camera_position) {
+void draw_tree(Vector3 position, const Vector3& camera_position,const engine::ViewFrustum* view) {
+    const float dx=position.x-camera_position.x,dz=position.z-camera_position.z;
+    if(dx*dx+dz*dz>260.0F*260.0F) return;
     position.y = terrain::TerrainHeight::sample(position.x, position.z);
+    if(view && !view->sphere({position.x,position.y+5,position.z},9)) return;
     const float distance = assets::distance_squared(position, camera_position);
     if (distance > 260.0F * 260.0F) return;
     const bool detailed = distance < 65.0F * 65.0F;
@@ -626,7 +647,7 @@ VerdaRegion::settlements() const {
     return settlements_;
 }
 
-void VerdaRegion::draw(const Vector3& camera_position) const {
+void VerdaRegion::draw(const Vector3& camera_position, const engine::ViewFrustum* view) const {
     for (
         const Settlement& settlement :
         settlements_
@@ -642,7 +663,8 @@ void VerdaRegion::draw(const Vector3& camera_position) const {
             const Building& building :
             settlement.buildings
         ) {
-            if (assets::distance_squared(building.position, camera_position) < 320.0F * 320.0F) {
+            if (assets::distance_squared(building.position, camera_position) < 320.0F * 320.0F &&
+                (!view || view->sphere({building.position.x,terrain::TerrainHeight::sample(building.position.x,building.position.z)+building.size.y*.5F,building.position.z},Vector3Length(building.size)))) {
                 draw_building(building, camera_position);
             }
         }
@@ -657,7 +679,7 @@ void VerdaRegion::draw(const Vector3& camera_position) const {
                 AssetType::Tree && asset.model_path.empty()
             ) {
                 draw_tree(
-                    asset.position, camera_position
+                    asset.position, camera_position, view
                 );
             }
         }

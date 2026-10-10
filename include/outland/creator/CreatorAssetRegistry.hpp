@@ -130,6 +130,7 @@ class CreatorAssetRegistry;
 inline void register_urban_assets(CreatorAssetRegistry& registry);
 inline void register_character_assets(CreatorAssetRegistry& registry);
 inline void register_starter_assets(CreatorAssetRegistry& registry);
+inline void register_economy_assets(CreatorAssetRegistry& registry);
 inline void register_survival_assets(CreatorAssetRegistry& registry);
 inline void register_industrial_assets(CreatorAssetRegistry& registry);
 inline void register_vehicle_assets(CreatorAssetRegistry& registry);
@@ -144,6 +145,7 @@ public:
         register_character_assets(*this);
         register_starter_assets(*this);
         register_survival_assets(*this);
+        register_economy_assets(*this);
         register_industrial_assets(*this);
         register_vehicle_assets(*this);
         register_city_assets(*this);
@@ -906,6 +908,7 @@ private:
 #include "outland/creator/CharacterAssetCatalog.hpp"
 #include "outland/creator/StarterAssetCatalog.hpp"
 #include "outland/creator/SurvivalAssetCatalog.hpp"
+#include "outland/creator/EconomyAssetCatalog.hpp"
 #include "outland/creator/IndustrialAssetCatalog.hpp"
 #include "outland/creator/VehicleAssetCatalog.hpp"
 #include "outland/creator/CityAssetCatalog.hpp"

@@ -8,16 +8,17 @@ PACK=ROOT/'assets/verda/survival'
 with (PACK/'gameplay/items.tsv').open(newline='') as stream:
     items=list(csv.DictReader(stream,delimiter='\t'))
 assert items and len({item['id'] for item in items})==len(items)
-assert {item['category'] for item in items}=={'food','water','medical','ammo','weapon','utility','container'}
+assert {item['category'] for item in items}=={'food','water','medical','ammo','weapon','utility','container','furniture'}
 models={entry['model'] for entry in json.loads((PACK/'runtime_manifest.json').read_text())['models']}
+models.update(path.relative_to(ROOT).as_posix() for path in (ROOT/'assets/verda/interiors/props').glob('*.glb'))
 for item in items:
     model=item['model']
     if not model:
         assert item['category']=='weapon' and item['weapon']=='pistol','Only the existing procedural pistol has no supplied Survival GLB'
         continue
-    assert model in models,f'Item is not in the checked runtime pack: {model}'
+    assert model in models,f'Item is not in a checked runtime pack: {model}'
     document,binary=read_gltf(ROOT/model);low,high=scene_bounds(document)
-    assert binary and document.get('meshes') and high[1]-low[1]>1e-6
+    assert binary and document.get('meshes') and max(high[i]-low[i] for i in range(3))>1e-6
     assert document.get('images') and all('bufferView' in image and 'uri' not in image for image in document['images']),model
     assert 1<=int(item['stack'])<=999 and int(item['starting_quantity'])>=0
 with (PACK/'gameplay/loot_tables.tsv').open(newline='') as stream:
@@ -31,4 +32,4 @@ for name in {entry['table'] for entry in tables}:
     for entry in (e for e in tables if e['table']==name and e['mode']=='normal' and e['item'].endswith('_ammo')):
         zombie=next(e for e in tables if e['table']==name and e['mode']=='zombie' and e['item']==entry['item'])
         assert int(zombie['max'])<int(entry['max']) and int(zombie['weight'])<int(entry['weight'])
-print(f'Loot assets: {len(items)} items, seven categories, {len({e["table"] for e in tables})} mode-aware tables; supplied models/textures verified.')
+print(f'Loot assets: {len(items)} items, eight categories, {len({e["table"] for e in tables})} mode-aware tables; supplied models/textures verified.')

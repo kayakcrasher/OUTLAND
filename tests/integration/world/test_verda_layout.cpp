@@ -24,6 +24,13 @@ extern "C" bool __wrap_IsKeyPressed(int key) { return key == pressed_key; }
 extern "C" void __wrap_UploadMesh(Mesh *, bool) {}
 extern "C" Model __wrap_LoadModelFromMesh(Mesh mesh) {
     ++created;
+    assert(mesh.vertexCount==625 && mesh.triangleCount==1152 && mesh.indices);
+    for(int i=0;i<mesh.triangleCount*3;++i) assert(mesh.indices[i]<mesh.vertexCount);
+    for(int i=0;i<mesh.triangleCount*3;i+=3) {
+        const auto a=mesh.indices[i]*3,b=mesh.indices[i+1]*3,c=mesh.indices[i+2]*3;
+        assert((mesh.vertices[b+2]-mesh.vertices[a+2])*(mesh.vertices[c]-mesh.vertices[a])-
+            (mesh.vertices[b]-mesh.vertices[a])*(mesh.vertices[c+2]-mesh.vertices[a+2])>0);
+    }
     meshes.insert({static_cast<int>(std::floor(mesh.vertices[0] / 128)),
                    static_cast<int>(std::floor(mesh.vertices[2] / 128))});
     Model model{};
@@ -44,6 +51,7 @@ extern "C" void __wrap_UnloadModel(Model model) {
     MemFree(mesh.vertices);
     MemFree(mesh.normals);
     MemFree(mesh.texcoords);
+    MemFree(mesh.indices);
     MemFree(model.meshes);
     std::free(model.materials[0].maps);
     std::free(model.materials);
@@ -145,26 +153,34 @@ int main() {
     TerrainHeight::set_coastal_layout(true);
     {
         world::terrain::TerrainWorld terrain;
-        assert(terrain.chunk_count() == 49 && created == 49);
-        terrain.update({127, 0, 0});
-        assert(created == 49);
-        terrain.update({128, 0, 0});
-        assert(created == 56 && unloaded == 7 && meshes.size() == 49);
-        terrain.update({-1, 0, -1});
-        assert(terrain.chunk_count() == 49 && meshes.contains({-4, -4}) && meshes.contains({2, 2}));
-        for (const auto &site : world::layout::sites) {
+        const auto fill=[&](Vector3 position) {
+            for(int i=0;i<30;++i) {
+                const int before=created;
+                terrain.update(position);
+                assert(created-before<=world::terrain::TerrainWorld::build_budget);
+                assert(terrain.chunk_count()<=49);
+            }
+            assert(terrain.chunk_count()==49 && meshes.size()==49);
+        };
+        assert(created<=2);
+        fill({0,0,0});
+        assert(created==49);
+        terrain.update({127,0,0});assert(created==49);
+        terrain.update({128,0,0});
+        assert(created==51 && unloaded==7 && meshes.size()==44);
+        fill({128,0,0});assert(created==56);
+        fill({-1,0,-1});
+        assert(meshes.contains({-4,-4}) && meshes.contains({2,2}));
+        for(const auto& site:world::layout::sites) {
             terrain.update(site.center);
-            assert(terrain.chunk_count() == 49 && meshes.size() == 49);
-            assert(meshes.contains({static_cast<int>(std::floor(site.center.x / 128)),
-                                    static_cast<int>(std::floor(site.center.z / 128))}));
+            assert(meshes.contains({static_cast<int>(std::floor(site.center.x/128)),static_cast<int>(std::floor(site.center.z/128))}));
+            fill(site.center);
         }
-        const int before_mode = created;
-        TerrainHeight::set_coastal_layout(false);
-        terrain.update(world::layout::sites.back().center);
-        assert(created == before_mode + 49 && meshes.size() == 49);
-        TerrainHeight::set_coastal_layout(true);
-        terrain.update(world::layout::sites.back().center);
-        assert(created == before_mode + 98 && meshes.size() == 49);
+        const int before_mode=created;
+        TerrainHeight::set_coastal_layout(false);fill(world::layout::sites.back().center);
+        assert(created==before_mode+49);
+        TerrainHeight::set_coastal_layout(true);fill(world::layout::sites.back().center);
+        assert(created==before_mode+98);
         const int count = created;
         terrain.update({std::numeric_limits<float>::infinity(), 0, 0});
         assert(created == count);

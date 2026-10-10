@@ -21,3 +21,48 @@ sleeping_bag	Sleeping bag	utility	assets/verda/survival/runtime/sleeping_bag.glb
 bonfire	Campfire kit	utility	assets/verda/survival/runtime/bonfire.glb	1	0.3	none	0		0		0	0
 matches	Matches	utility	assets/verda/survival/runtime/match.glb	16	0.1	none	0		0		0	0
 lighter	Lighter	utility	assets/verda/survival/runtime/zippo.glb	1	0.1	none	0		0		0	0
+cup	Cup	utility	assets/verda/survival/runtime/Cup.glb	1	0.12	none	0		0		0	0
+casserole	Cooking pot	utility	assets/verda/survival/runtime/Casserole.glb	1	0.22	none	0		0		0	0
+interior_bathroom_sink	Bathroom sink	furniture	assets/verda/interiors/props/bathroomSink.glb	1	1.256337	none	0		0		0	0
+interior_bathtub	Bathtub	furniture	assets/verda/interiors/props/bathtub.glb	1	0.896066	none	0		0		0	0
+interior_bed	Bed	furniture	assets/verda/interiors/props/bed.glb	1	1.182481	none	0		0		0	0
+interior_bed2	Bed2	furniture	assets/verda/interiors/props/bed2.glb	1	1.814740	none	0		0		0	0
+interior_book_stack	Book stack	utility	assets/verda/interiors/props/bookStack.glb	1	0.283777	none	0		0		0	0
+wood_shelf	Bookshelf	furniture	assets/verda/interiors/props/bookshelf.glb	1	2.508981	none	0		0		0	0
+interior_bottle	Bottle	furniture	assets/verda/interiors/props/bottle.glb	1	0.382660	none	0		0		0	0
+interior_box	Box	furniture	assets/verda/interiors/props/box.glb	1	0.379968	none	0		0		0	0
+interior_breaker_box	Breaker box	furniture	assets/verda/interiors/props/breakerBox.glb	1	0.591805	none	0		0		0	0
+interior_broom	Broom	furniture	assets/verda/interiors/props/broom.glb	1	1.962376	none	0		0		0	0
+interior_bucket	Bucket	furniture	assets/verda/interiors/props/bucket.glb	1	0.504359	none	0		0		0	0
+interior_cabinet	Cabinet	furniture	assets/verda/interiors/props/cabinet.glb	1	2.034769	none	0		0		0	0
+interior_cabinet_high	Cabinet high	furniture	assets/verda/interiors/props/cabinetHigh.glb	1	1.412288	none	0		0		0	0
+interior_cabinet_low	Cabinet low	furniture	assets/verda/interiors/props/cabinetLow.glb	1	1.030922	none	0		0		0	0
+interior_cabinet_sink	Cabinet sink	furniture	assets/verda/interiors/props/cabinetSink.glb	1	1.358895	none	0		0		0	0
+interior_carpet	Carpet	furniture	assets/verda/interiors/props/carpet.glb	1	2.823474	none	0		0		0	0
+interior_ceiling_light	Ceiling light	utility	assets/verda/interiors/props/ceilingLight.glb	1	0.134737	none	0		0		0	0
+wood_chair	Chair	furniture	assets/verda/interiors/props/chair.glb	1	1.196154	none	0		0		0	0
+interior_chair2	Chair2	furniture	assets/verda/interiors/props/chair2.glb	1	1.243235	none	0		0		0	0
+interior_couch_big	Couch big	furniture	assets/verda/interiors/props/couchBig.glb	1	1.100145	none	0		0		0	0
+interior_couch_small	Couch small	furniture	assets/verda/interiors/props/couchSmall.glb	1	1.100145	none	0		0		0	0
+interior_cup	Cup	utility	assets/verda/interiors/props/cup.glb	1	0.122559	none	0		0		0	0
+interior_fridge	Fridge	furniture	assets/verda/interiors/props/fridge.glb	1	2.518623	none	0		0		0	0
+interior_lamp	Lamp	furniture	assets/verda/interiors/props/lamp.glb	1	1.443713	none	0		0		0	0
+interior_light_switch	Light switch	utility	assets/verda/interiors/props/lightSwitch.glb	1	0.187477	none	0		0		0	0
+interior_mirror	Mirror	furniture	assets/verda/interiors/props/mirror.glb	1	0.833726	none	0		0		0	0
+interior_oven	Oven	furniture	assets/verda/interiors/props/oven.glb	1	1.222101	none	0		0		0	0
+interior_painting	Painting	furniture	assets/verda/interiors/props/painting.glb	1	1.178603	none	0		0		0	0
+interior_phone	Phone	utility	assets/verda/interiors/props/phone.glb	1	0.079434	none	0		0		0	0
+interior_plant	Plant	furniture	assets/verda/interiors/props/plant.glb	1	0.945631	none	0		0		0	0
+interior_plate	Plate	utility	assets/verda/interiors/props/plate.glb	1	0.033115	none	0		0		0	0
+interior_power_socket	Power socket	utility	assets/verda/interiors/props/powerSocket.glb	1	0.187478	none	0		0		0	0
+interior_radio	Radio	utility	assets/verda/interiors/props/radio.glb	1	0.231443	none	0		0		0	0
+interior_shelves	Shelves	furniture	assets/verda/interiors/props/shelves.glb	1	1.915920	none	0		0		0	0
+interior_sideboard	Sideboard	furniture	assets/verda/interiors/props/sideboard.glb	1	0.930227	none	0		0		0	0
+wood_table	Table	furniture	assets/verda/interiors/props/table.glb	1	0.720338	none	0		0		0	0
+interior_table_lamp	Table lamp	furniture	assets/verda/interiors/props/tableLamp.glb	1	0.439142	none	0		0		0	0
+interior_table_small	Table small	furniture	assets/verda/interiors/props/tableSmall.glb	1	0.640213	none	0		0		0	0
+interior_toilet	Toilet	furniture	assets/verda/interiors/props/toilet.glb	1	1.292422	none	0		0		0	0
+interior_trash_bin	Trash bin	furniture	assets/verda/interiors/props/trashBin.glb	1	0.842265	none	0		0		0	0
+interior_tv	Tv	furniture	assets/verda/interiors/props/tv.glb	1	0.533375	none	0		0		0	0
+interior_wall_light	Wall light	furniture	assets/verda/interiors/props/wallLight.glb	1	0.370491	none	0		0		0	0
+interior_washing_machine	Washing machine	furniture	assets/verda/interiors/props/washingMachine.glb	1	1.060541	none	0		0		0	0

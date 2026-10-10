@@ -59,6 +59,7 @@ public:
     bool damage_bot(int bot, float amount, Vector3 from, double now);
     // The owner applies player damage; it reports the death back for the kill feed.
     void report_player_death(int killer);
+    void apply_circle(float radius, float damage);
 
     // Keep bot bodies in NpcSystem in step with the brains (spawns missing bodies).
     void sync_bodies(characters::NpcSystem& npcs, const characters::CharacterRegistry* registry) const;

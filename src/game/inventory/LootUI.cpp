@@ -1,6 +1,7 @@
 #include "outland/game/inventory/LootUI.hpp"
 #include "outland/game/combat/CombatRenderer.hpp"
 #include <raymath.h>
+#include "outland/input/PointerEvents.hpp"
 #include <rlgl.h>
 #include <algorithm>
 #include <cmath>
@@ -73,16 +74,18 @@ InventoryActions LootUI::update(const Inventory &bag, int width, int height, boo
                 }
             }
     };
+    const auto buffered=input::PointerEvents::presses();
+    if(focused && !warm_) for(const auto& point:buffered) activate(point);
     std::unordered_set<int> current;
     const int touches = std::max(0, GetTouchPointCount());
     for (int i = 0; i < touches; ++i) {
         const int id = GetTouchPointId(i);
         if (id < 0 || !current.insert(id).second)
             continue;
-        if (focused && !warm_ && !previous_.contains(id))
+        if (focused && !warm_ && buffered.empty() && !previous_.contains(id))
             activate(GetTouchPosition(i));
     }
-    if (focused && !warm_ && touches == 0 && !had_touch_ && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    if (focused && !warm_ && buffered.empty() && touches == 0 && !had_touch_ && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         activate(GetMousePosition());
     if (focused && !warm_) {
         if (IsKeyPressed(KEY_DOWN) && size > 0) {
@@ -170,10 +173,9 @@ void LootUI::draw_world(const ItemRegistry &registry, const LootWorld &world, Ve
             (std::filesystem::path(asset_root_) / item->model).string(), [](Model &value) {
                 value.transform = MatrixIdentity();
                 const auto bounds = assets::transformed_model_bounds(value);
-                const auto height = bounds.max.y - bounds.min.y;
-                if (!std::isfinite(height) || height < .000001F)
-                    return false;
-                value.transform = MatrixScale(1 / height, 1 / height, 1 / height);
+                const float unit = pickup_unit_scale(bounds);
+                if(unit==0) return false;
+                value.transform = MatrixScale(unit,unit,unit);
                 return true;
             });
         if (model)

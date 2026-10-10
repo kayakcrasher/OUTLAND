@@ -1,0 +1,28 @@
+OUTLAND Interior Props
+
+Source:
+PSX Retro Interior Pack
+Creator: Dissonant Void
+Source page:
+https://dissonantvoid.itch.io/psx-retro-interior-pack
+
+Local source archive:
+assets/source/interiors/PSX modular house interior pack.zip
+
+Production selection:
+assets/verda/interiors/props/
+
+Curated production set:
+43 GLB props selected from the original pack for homes, trailers,
+shops, pubs, offices, bathrooms, kitchens, and utility spaces.
+
+Runtime validation:
+- 43 GLB files
+- 0 malformed GLBs
+- 0 JPEG images
+- 93 embedded PNG images
+- 0 external image dependencies
+- 0 textureless models
+
+The original archive and staging files are local source material and are not
+part of the production asset set.

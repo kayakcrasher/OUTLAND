@@ -3,6 +3,7 @@
 #include "outland/characters/CharacterRegistry.hpp"
 #include "outland/characters/NpcSystem.hpp"
 #include <unordered_map>
+namespace outland::engine { class ViewFrustum; }
 #include <unordered_set>
 #include "outland/characters/SkeletalGait.hpp"
 namespace outland::characters {
@@ -10,10 +11,11 @@ namespace outland::characters {
 class CharacterRenderer {
 public:
     CharacterRenderer(const CharacterRegistry& registry,std::string asset_root);
+    void begin_frame() { models_.begin_frame(1); }
     void draw(const std::string& id,Vector3 feet,float yaw_degrees,float scale=1.0F,const AnimationController* animation=nullptr);
     void update_player(AnimationAction action,float dt,float ground_speed=-1) { player_animation_.advance(action,dt,ground_speed); }
     void draw_player(Vector3 feet,float yaw_radians);
-    void draw_npcs(const NpcSystem& npcs,Vector3 camera_position);
+    void draw_npcs(const NpcSystem& npcs,Vector3 camera_position,const engine::ViewFrustum* view = nullptr);
     static bool prepare(const CharacterDefinition& definition,Model& model);
 private:
     AnimationController player_animation_;
