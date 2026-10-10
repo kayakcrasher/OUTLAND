@@ -94,6 +94,7 @@ Rectangle CreatorTouchUI::logical_control_button(BuilderControl control,int widt
     if(control==BuilderControl::All)result={24,static_cast<float>(height-260),120,36};
     else if(control==BuilderControl::Catalog)result={width*.5F-90,40,180,36};
     else if(control==BuilderControl::Export)result={static_cast<float>(width-108),192,98,44};
+    else if(control==BuilderControl::Purpose)result={static_cast<float>(width-138),244,128,44};
     else if(control==BuilderControl::Search)result={22,130,static_cast<float>(width-44),40};
     else if(control==BuilderControl::Up || control==BuilderControl::Down)
         result={10,control==BuilderControl::Up ? 92.0F:142.0F,98,44};
@@ -257,6 +258,7 @@ bool CreatorTouchUI::owns_point(Vector2 point, int width, int height) const {
         BuilderControl::Grid,BuilderControl::Near,BuilderControl::Far,BuilderControl::Lower,BuilderControl::Raise,
         BuilderControl::Up,BuilderControl::Down,BuilderControl::Export,BuilderControl::Catalog})
         if(CheckCollisionPointRec(point,logical_control_button(control,width,height)))return true;
+    if(!purpose_label_.empty() && CheckCollisionPointRec(point,logical_control_button(BuilderControl::Purpose,width,height))) return true;
     return false;
 }
 
@@ -380,7 +382,7 @@ void CreatorTouchUI::resolve_world_press(CreatorController& controller,const wor
     }
     const bool selected=controller.select_target(region,ray.position,ray.direction);
     if(selected) {
-        hint_="Object selected - MOVE, ROTATE, DUP or DELETE; SAVE keeps changes";
+        hint_="Object selected - MOVE, ROTATE, DUP or DELETE; USE sets a building's purpose; SAVE keeps changes";
         if(active_tool_==CreatorTouchTool::Rotate)actions_.rotate=true;
         if(active_tool_==CreatorTouchTool::Duplicate)actions_.duplicate=true;
         if(active_tool_==CreatorTouchTool::Delete)actions_.erase=true;
@@ -415,6 +417,9 @@ void CreatorTouchUI::update_toolbar(
 
     if(pressed(logical_control_button(BuilderControl::Export,screen_width,screen_height))) {
         actions_.export_world=true;return;
+    }
+    if(!purpose_label_.empty() && pressed(logical_control_button(BuilderControl::Purpose,screen_width,screen_height))) {
+        actions_.purpose=true;return;
     }
     if (
         pressed(
@@ -953,6 +958,7 @@ void CreatorTouchUI::draw_toolbar(
         i==3 ? controller.state().snap_to_ground:i==4 && controller.state().grid_step>0);
     draw_button(logical_control_button(BuilderControl::Up,screen_width,screen_height),"UP",actions_.fly_vertical>0);
     draw_button(logical_control_button(BuilderControl::Down,screen_width,screen_height),"DOWN",actions_.fly_vertical<0);
+    if(!purpose_label_.empty()) draw_button(logical_control_button(BuilderControl::Purpose,screen_width,screen_height),purpose_label_.c_str(),false);
     DrawText(status_.c_str(),120,143,16,YELLOW);
     DrawText(hint_.c_str(),120,216,14,RAYWHITE);
     const auto* selected=controller.selected_asset();

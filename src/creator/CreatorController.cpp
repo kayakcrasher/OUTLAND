@@ -881,6 +881,9 @@ bool CreatorController::place_selected(
         } else if (asset->id == "vehicle_spawn") {
             marker_type =
                 world::GameplayMarkerType::VehicleSpawn;
+        } else if (asset->id == "building_purpose") {
+            marker_type =
+                world::GameplayMarkerType::BuildingPurpose;
         } else {
             return false;
         }
@@ -949,6 +952,7 @@ bool CreatorController::place_selected(
 
         marker.enabled =
             true;
+        if(marker_type==world::GameplayMarkerType::BuildingPurpose) marker.purpose=world::BuildingPurpose::Home;
 
         settlements.front()
             .gameplay_markers
@@ -1874,6 +1878,38 @@ bool CreatorController::duplicate_selected(
     return true;
 }
 
+world::BuildingPurpose CreatorController::selected_purpose(const world::VerdaRegion& region,bool& applicable) const {
+    applicable=false;
+    const auto& settlements=region.settlements();
+    if(!selection_.valid() || selection_.settlement_index>=settlements.size()) return world::BuildingPurpose::Auto;
+    const auto& settlement=settlements[selection_.settlement_index];
+    if(selection_.type==CreatorSelectionType::Building)
+        for(const auto& building:settlement.buildings) if(building.id==selection_.building_id) {applicable=true;return building.purpose;}
+    if(selection_.type==CreatorSelectionType::WorldAsset)
+        for(const auto& asset:settlement.assets) if(asset.id==selection_.world_asset_id) {applicable=world::asset_can_have_purpose(asset);return asset.purpose;}
+    if(selection_.type==CreatorSelectionType::GameplayMarker)
+        for(const auto& marker:settlement.gameplay_markers)
+            if(marker.id==selection_.gameplay_marker_id) {applicable=marker.type==world::GameplayMarkerType::BuildingPurpose;return marker.purpose;}
+    return world::BuildingPurpose::Auto;
+}
+
+bool CreatorController::cycle_selected_purpose(world::VerdaRegion& region,int direction) {
+    bool applicable=false;
+    (void)selected_purpose(region,applicable);
+    if(!applicable) return false;
+    auto& settlement=region.editable_settlements()[selection_.settlement_index];
+    if(selection_.type==CreatorSelectionType::Building)
+        for(auto& building:settlement.buildings) if(building.id==selection_.building_id) {building.purpose=world::next_building_purpose(building.purpose,direction);return true;}
+    if(selection_.type==CreatorSelectionType::WorldAsset)
+        for(auto& asset:settlement.assets) if(asset.id==selection_.world_asset_id) {asset.purpose=world::next_building_purpose(asset.purpose,direction);return true;}
+    if(selection_.type==CreatorSelectionType::GameplayMarker)
+        for(auto& marker:settlement.gameplay_markers) if(marker.id==selection_.gameplay_marker_id) {
+            // A purpose marker always means something: it skips AUTO.
+            marker.purpose=world::next_building_purpose(marker.purpose,direction,false);return true;
+        }
+    return false;
+}
+
 bool CreatorController::rotate_selected(
     world::VerdaRegion& region,
     const float degrees
@@ -2265,6 +2301,18 @@ void CreatorController::draw_world_overlay(
                 case world::GameplayMarkerType::VehicleSpawn:
                     marker_color = PURPLE;
                     break;
+
+                case world::GameplayMarkerType::BuildingPurpose: {
+                    marker_color = LIME;
+                    // The arrow points out of the front door, where residents enter.
+                    const float yaw=marker.rotation_y*DEG2RAD;
+                    const Vector3 base{marker.position.x,marker.position.y+.15F,marker.position.z};
+                    const Vector3 front{-std::sin(yaw),0,-std::cos(yaw)};
+                    const auto tip=Vector3Add(base,Vector3Scale(front,2.0F));
+                    DrawLine3D(base,tip,LIME);
+                    DrawSphere(tip,.12F,LIME);
+                    break;
+                }
             }
 
             const float width =

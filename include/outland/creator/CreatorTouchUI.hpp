@@ -56,6 +56,7 @@ struct CreatorTouchActions {
 
     bool toggle_fly{false};
     float fly_vertical{0};
+    bool purpose{false}; // cycle the selected building's purpose (USE button / U key)
 
     void clear() {
         *this = CreatorTouchActions{};
@@ -66,7 +67,7 @@ struct CreatorTouchActions {
 // CREATOR TOUCH UI
 // ============================================================
 
-enum class BuilderControl { Undo, Redo, Load, Ground, Grid, Near, Far, Lower, Raise, Up, Down, All, Search, Export, Catalog };
+enum class BuilderControl { Undo, Redo, Load, Ground, Grid, Near, Far, Lower, Raise, Up, Down, All, Search, Export, Catalog, Purpose };
 
 class CreatorTouchUI {
 public:
@@ -76,6 +77,8 @@ public:
     void show_all_assets() {all_categories_=true;pack_filter_=0;drawer_page_=0;}
     std::vector<const CreatorAssetDefinition*> drawer_assets(const CreatorController& controller) const;
     void set_status(std::string text) {status_=std::move(text);}
+    // Label for the USE button ("" hides it): the purpose of the selected building, if it has one.
+    void set_purpose_label(std::string text) {purpose_label_=std::move(text);}
     // Optional 3D previews for asset cards; returns nullptr while a preview is not ready yet.
     using ThumbnailProvider=std::function<const Texture2D*(const CreatorAssetDefinition&)>;
     void set_thumbnails(ThumbnailProvider provider) {thumbnails_=std::move(provider);}
@@ -279,6 +282,7 @@ private:
         const CreatorAssetDefinition& asset,
         bool selected
     ) const;
+    std::string purpose_label_;
 };
 
 } // namespace outland::creator

@@ -1,4 +1,4 @@
-OUTLAND_CREATOR_MAP 6
+OUTLAND_CREATOR_MAP 7
 GEOGRAPHY 1
 SETTLEMENT "village_espera" "Espera" 0 0 -1800 1 0 0 0
 ROAD 0 0.0299999993 -1750 0 0.0299999993 -1850 6 0
@@ -1513,6 +1513,26 @@ MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_weapons_espera" 0 -12 0 -1800 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_general_espera" 0 12 0 -1795 0.5 0.5 0.5 0 1
+MARKER "creator_marker_building_purpose_kit_1" 4 -1695.19995 14.1573668 411.5 1.20000005 2.20000005 1.20000005 270 1
+MARKER "creator_marker_building_purpose_kit_2" 4 -1695.19995 14.1573668 481.5 1.20000005 2.20000005 1.20000005 270 1
+MARKER "creator_marker_building_purpose_kit_3" 4 1695.19995 6.0999999 -436.5 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_4" 4 1695.19995 6.0999999 -366.5 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_5" 4 245.199997 6.0999999 1768.5 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_6" 4 245.199997 6.0999999 1823.5 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_7" 4 354.799988 6.0999999 1771.5 1.20000005 2.20000005 1.20000005 270 1
+MARKER "creator_marker_building_purpose_kit_8" 4 354.799988 6.0999999 1826.5 1.20000005 2.20000005 1.20000005 270 1
+MARKER "creator_marker_building_purpose_kit_9" 4 -59.7999992 6.0999999 -1846.5 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_10" 4 59.7999992 6.0999999 -1843.5 1.20000005 2.20000005 1.20000005 270 1
+PURPOSE "creator_marker_building_purpose_kit_1" 7
+PURPOSE "creator_marker_building_purpose_kit_2" 9
+PURPOSE "creator_marker_building_purpose_kit_3" 7
+PURPOSE "creator_marker_building_purpose_kit_4" 10
+PURPOSE "creator_marker_building_purpose_kit_5" 1
+PURPOSE "creator_marker_building_purpose_kit_6" 1
+PURPOSE "creator_marker_building_purpose_kit_7" 1
+PURPOSE "creator_marker_building_purpose_kit_8" 1
+PURPOSE "creator_marker_building_purpose_kit_9" 1
+PURPOSE "creator_marker_building_purpose_kit_10" 1
 SETTLEMENT "capital_verda" "Verda" 0 0 0 0 80 0 0
 ROAD 0 0 -166 0 0 -630 8 2
 ROAD 0 0 -630 0 0 -1170 8 2

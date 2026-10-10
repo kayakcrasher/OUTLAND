@@ -81,6 +81,30 @@ bool keyword_kind(const std::string& id,PlaceKind& kind) {
     return false;
 }
 
+PlaceKind kind_of(world::BuildingPurpose purpose) {
+    switch(purpose) {
+        case world::BuildingPurpose::Shop:return PlaceKind::Shop;
+        case world::BuildingPurpose::Pub:return PlaceKind::Pub;
+        case world::BuildingPurpose::Church:return PlaceKind::Church;
+        case world::BuildingPurpose::Police:return PlaceKind::Police;
+        case world::BuildingPurpose::Clinic:return PlaceKind::Clinic;
+        case world::BuildingPurpose::Office:return PlaceKind::Office;
+        case world::BuildingPurpose::Garage:return PlaceKind::Garage;
+        case world::BuildingPurpose::Industrial:return PlaceKind::Industrial;
+        case world::BuildingPurpose::Dock:return PlaceKind::Dock;
+        case world::BuildingPurpose::Farm:return PlaceKind::Farm;
+        default:return PlaceKind::Home;
+    }
+}
+std::size_t nearest_town(const std::vector<world::Settlement>& settlements,Vector3 position) {
+    std::size_t home_town=0;float best=std::numeric_limits<float>::max();
+    for(std::size_t t=0;t<settlements.size();++t) {
+        const float d=flat_distance(position,settlements[t].center);
+        if(d<best) {best=d;home_town=t;}
+    }
+    return home_town;
+}
+
 void build_places(Island& island,const world::VerdaRegion& region) {
     const auto& settlements=region.settlements();
     for(std::size_t s=0;s<settlements.size();++s) {
@@ -96,7 +120,11 @@ void build_places(Island& island,const world::VerdaRegion& region) {
             place.interior=building.position;place.building_yaw=building.rotation_y;place.building_size=building.size;
             place.door=door_position(building.position,building.size,building.rotation_y,1.6F);
             place.indoor=building.enterable;
-            bool explicit_kind=keyword_kind(building.id,place.kind);
+            // Authored in the Creator: the purpose wins; VACANT keeps the building out of island life.
+            if(building.purpose==world::BuildingPurpose::Vacant) continue;
+            bool explicit_kind=building.purpose!=world::BuildingPurpose::Auto;
+            if(explicit_kind) place.kind=kind_of(building.purpose);
+            else explicit_kind=keyword_kind(building.id,place.kind);
             if(!explicit_kind) switch(building.style) {
                 case world::BuildingStyle::Garage:place.kind=PlaceKind::Garage;break;
                 case world::BuildingStyle::Warehouse:place.kind=who==Identity::Port ? PlaceKind::Dock : PlaceKind::Industrial;break;
@@ -107,26 +135,47 @@ void build_places(Island& island,const world::VerdaRegion& region) {
             named.push_back(explicit_kind);
             island.places.push_back(std::move(place));
         }
-        // Model-backed city buildings (downtown kit) belong to the town they stand in, whichever
-        // settlement list the Creator stored them under.
+        // Model-backed buildings (the downtown kit, and any building-sized model given a purpose in
+        // the Creator) belong to the town they stand in, whichever settlement list stores them.
         for(const auto& owner:settlements) for(const auto& asset:owner.assets) {
             const bool main_street=asset.model_path.find("/city/main_street/")!=std::string::npos;
             const bool tower=asset.model_path.find("/city/towers/")!=std::string::npos;
-            if(!main_street && !tower) continue;
-            std::size_t home_town=0;float best=std::numeric_limits<float>::max();
-            for(std::size_t t=0;t<settlements.size();++t) {
-                const float d=flat_distance(asset.position,settlements[t].center);
-                if(d<best) {best=d;home_town=t;}
-            }
-            if(home_town!=s) continue;
+            const bool authored=asset.purpose!=world::BuildingPurpose::Auto && asset.vehicle.definition.empty();
+            if((!main_street && !tower && !authored) || asset.purpose==world::BuildingPurpose::Vacant) continue;
+            if(nearest_town(settlements,asset.position)!=s) continue;
             Place place;place.id=asset.id;place.building_id=asset.id;place.settlement=static_cast<int>(s);
             place.interior=asset.position;place.building_yaw=asset.rotation_y;place.building_size=asset.size;
             // Main Street doors are in the bay at local x = 1.5 (every width has one there).
             place.door=door_position(asset.position,asset.size,asset.rotation_y,1.6F,main_street ? 1.5F : 0.0F);
-            place.kind=tower ? PlaceKind::Office : PlaceKind::Home;
+            place.kind=authored ? kind_of(asset.purpose) : tower ? PlaceKind::Office : PlaceKind::Home;
             place.sealed=tower;
-            named.push_back(tower);
+            named.push_back(tower || authored);
             island.places.push_back(std::move(place));
+        }
+        // Purpose markers: just inside a front door, facing out. Inside a known building they retag
+        // it; anywhere else (a building assembled from Creator parts) they make one.
+        std::vector<bool> vacant(island.places.size()-first,false);
+        for(const auto& owner:settlements) for(const auto& marker:owner.gameplay_markers) {
+            if(marker.type!=world::GameplayMarkerType::BuildingPurpose || !marker.enabled ||
+               marker.purpose==world::BuildingPurpose::Auto || nearest_town(settlements,marker.position)!=s) continue;
+            bool retagged=false;
+            for(std::size_t i=first;i<island.places.size();++i) {
+                if(!inside_footprint(island.places[i],marker.position,0)) continue;
+                if(marker.purpose==world::BuildingPurpose::Vacant) vacant[i-first]=true;
+                else island.places[i].kind=kind_of(marker.purpose);
+                named[i-first]=true;retagged=true;break;
+            }
+            if(retagged || marker.purpose==world::BuildingPurpose::Vacant) continue;
+            Place place;place.id=marker.id;place.building_id=marker.id;place.settlement=static_cast<int>(s);
+            place.interior=marker.position;place.building_yaw=marker.rotation_y;place.building_size={3,3,3};
+            place.door=door_position(marker.position,{0,0,0},marker.rotation_y,2.0F);
+            place.kind=kind_of(marker.purpose);
+            named.push_back(true);vacant.push_back(false);
+            island.places.push_back(std::move(place));
+        }
+        for(std::size_t i=island.places.size();i-->first;) if(vacant[i-first]) {
+            island.places.erase(island.places.begin()+static_cast<std::ptrdiff_t>(i));
+            named.erase(named.begin()+static_cast<std::ptrdiff_t>(i-first));
         }
         // Order this town's buildings from the centre outward for civic designation.
         std::vector<std::size_t> order;
@@ -339,6 +388,23 @@ Island build_island(const world::VerdaRegion& region,const characters::Character
             if(d<best_distance) {best_distance=d;best=resident.id;}
         }
         if(best>=0) hire(i,best);
+    }
+    // Every workplace opens: one worker each (the nearest free one) before the rest choose, so an
+    // outlying office or quay is never left empty while the town centre soaks up every hand.
+    {
+        std::vector<bool> staffed(island.places.size(),false);
+        for(std::size_t i=0;i<slots.size();++i) if(taken[i]) staffed[static_cast<std::size_t>(slots[i].place)]=true;
+        for(std::size_t i=0;i<slots.size();++i) {
+            const auto place=static_cast<std::size_t>(slots[i].place);
+            if(staffed[place] || taken[i]) continue;
+            int best=-1;float best_distance=std::numeric_limits<float>::max();
+            for(const auto& resident:island.residents) {
+                if(employed[static_cast<std::size_t>(resident.id)] || resident.occupation==Occupation::Retired) continue;
+                const float d=flat_distance(home_door(resident),island.places[place].door);
+                if(d<best_distance) {best_distance=d;best=resident.id;}
+            }
+            if(best>=0) {hire(i,best);staffed[place]=true;}
+        }
     }
     // Everyone else of working age takes the nearest open job; a few are out of work.
     for(const auto& resident:island.residents) {

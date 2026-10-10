@@ -163,6 +163,11 @@ public:
         world::VerdaRegion& region
     );
 
+    // Authored building purposes: the selected procedural building, building-sized model, or
+    // purpose marker. `applicable` is false for anything else (walls, props, roads, spawns).
+    [[nodiscard]] world::BuildingPurpose selected_purpose(const world::VerdaRegion& region,bool& applicable) const;
+    bool cycle_selected_purpose(world::VerdaRegion& region,int direction=1);
+
     // --------------------------------------------------------
     // ASSET REGISTRY
     // --------------------------------------------------------

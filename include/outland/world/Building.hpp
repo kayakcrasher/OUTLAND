@@ -2,6 +2,7 @@
 
 #include <raylib.h>
 
+#include "outland/world/BuildingPurpose.hpp"
 #include <string>
 
 namespace outland::world {
@@ -50,6 +51,7 @@ struct Building {
     };
 
     bool enterable{true};
+    BuildingPurpose purpose{BuildingPurpose::Auto}; // authored in the Creator; Auto = designated by island life
 };
 
 }

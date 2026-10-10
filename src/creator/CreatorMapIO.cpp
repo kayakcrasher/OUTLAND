@@ -26,7 +26,7 @@ namespace {
 constexpr std::string_view magic =
     "OUTLAND_CREATOR_MAP";
 
-constexpr int version = 6;
+constexpr int version = 7; // 7: PURPOSE records (authored building purposes)
 
 constexpr std::string_view creator_prefix =
     "creator_";
@@ -300,6 +300,14 @@ bool CreatorMapIO::save(
 
                 << '\n';
         }
+
+        // Authored purposes, after everything they name in this settlement.
+        const auto purpose=[&](const std::string& id,world::BuildingPurpose value) {
+            if(value!=world::BuildingPurpose::Auto) output<<"PURPOSE "<<std::quoted(id)<<' '<<static_cast<int>(value)<<'\n';
+        };
+        for(const auto& building:settlement.buildings) purpose(building.id,building.purpose);
+        for(const auto& asset:settlement.assets) purpose(asset.id,asset.purpose);
+        for(const auto& marker:settlement.gameplay_markers) purpose(marker.id,marker.purpose);
     }
 
     output.flush();
@@ -362,7 +370,7 @@ bool CreatorMapIO::load(
 
     if (
         file_magic != magic ||
-        (file_version != 3 && file_version != 4 && file_version != 5 && file_version != version)
+        (file_version != 3 && file_version != 4 && file_version != 5 && file_version != 6 && file_version != version)
     ) {
         return false;
     }
@@ -409,6 +417,19 @@ bool CreatorMapIO::load(
             auto& assets=snapshot.back().assets;auto found=std::find_if(assets.begin(),assets.end(),[&](const auto& asset){return asset.id==id;});
             if(found==assets.end()||!found->vehicle.definition.empty())return false;
             state.enabled=enabled;state.destroyed=destroyed;found->vehicle=std::move(state);continue;
+        }
+        if(file_version>=7 && full_snapshot && record=="PURPOSE") {
+            std::string id;int value=-1;
+            input>>std::quoted(id)>>value;
+            if(!input || !world::valid_building_purpose(value)) return false;
+            const auto purpose=static_cast<world::BuildingPurpose>(value);
+            auto& settlement=snapshot.back();
+            bool found=false;
+            for(auto& building:settlement.buildings) if(building.id==id) {building.purpose=purpose;found=true;break;}
+            if(!found) for(auto& asset:settlement.assets) if(asset.id==id) {asset.purpose=purpose;found=true;break;}
+            if(!found) for(auto& marker:settlement.gameplay_markers) if(marker.id==id) {marker.purpose=purpose;found=true;break;}
+            if(!found) return false;
+            continue;
         }
         if(full_snapshot && record=="ROAD") {
             world::Road road;int type=0;
@@ -645,6 +666,7 @@ bool CreatorMapIO::load(
                 return false;
             }
 
+            if(type_value<0 || type_value>static_cast<int>(world::GameplayMarkerType::BuildingPurpose)) return false;
             marker.type =
                 static_cast<world::GameplayMarkerType>(
                     type_value

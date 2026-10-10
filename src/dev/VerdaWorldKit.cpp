@@ -100,6 +100,18 @@ public:
         asset.type = world::AssetType::Tree; asset.position = position; asset.size = {1, 7, 1}; asset.collision = true;
         if (region_.place_world_asset(std::move(asset))) ++report.assets;
     }
+    // What a part-built building is for, for Explore's island life: a purpose marker just inside
+    // the front door, facing out - exactly what a builder places by hand.
+    void purpose(Vector3 at, float yaw, world::BuildingPurpose purpose) {
+        auto& settlements = region_.editable_settlements();
+        if (settlements.empty()) return;
+        world::GameplayMarker marker;
+        for (int n = 1;; ++n) { marker.id = "creator_marker_building_purpose_kit_" + std::to_string(n); if (ids_.insert(marker.id).second) break; }
+        marker.type = world::GameplayMarkerType::BuildingPurpose; marker.position = at; marker.rotation_y = yaw;
+        marker.size = {1.2F, 2.2F, 1.2F}; marker.purpose = purpose;
+        settlements.front().gameplay_markers.push_back(std::move(marker));
+        ++report.purposes;
+    }
     WorldKitReport report;
 private:
     world::VerdaRegion& region_;
@@ -125,7 +137,8 @@ const std::string kit_roof = "assets/verda/kit/roof_slab_3x3.glb";
 // One- or two-storey building from the 3 m Building Parts kit and the 3 m kit slabs.
 // Width/depth in 3 m modules (at least 4 x 2). Front (-z) has the doorway; 8-wide buildings also
 // get a back door. Two storeys get a staircase along the back wall under a 6 m gap in the floor.
-bool modular_building(Kit& kit, Vector3 origin, float yaw, int modules_x, int modules_z, const std::string& style, int storeys, std::uint32_t seed) {
+bool modular_building(Kit& kit, Vector3 origin, float yaw, int modules_x, int modules_z, const std::string& style, int storeys, std::uint32_t seed,
+                      world::BuildingPurpose purpose = world::BuildingPurpose::Home) {
     const float w = modules_x * 3.0F, d = modules_z * 3.0F;
     if (!kit.claim(origin, w * .5F + 3, d * .5F + 3, yaw)) return false;
     origin.y = world::terrain::TerrainHeight::sample(origin.x, origin.z);
@@ -169,7 +182,9 @@ bool modular_building(Kit& kit, Vector3 origin, float yaw, int modules_x, int mo
     for (int tx = 0; tx < modules_x; ++tx) for (int tz = 0; tz < modules_z; ++tz)
         kit.put(kit_roof, to_world(origin, yaw, -w * .5F + 1.5F + tx * 3, storeys * 3.0F, -d * .5F + 1.5F + tz * 3), yaw, false);
     ++kit.report.buildings;
-    kit.report.enterable.push_back({origin, yaw, w, d, storeys, -w * .5F + 1.5F + (modules_x / 2) * 3.0F,
+    const float door_x = -w * .5F + 1.5F + (modules_x / 2) * 3.0F;
+    kit.purpose(to_world(origin, yaw, door_x, slab, -d * .5F + 1.2F), yaw, purpose);
+    kit.report.enterable.push_back({origin, yaw, w, d, storeys, door_x,
         {-w * .5F + 4.5F, slab, d * .5F - 1.5F}});
     return true;
 }
@@ -370,8 +385,8 @@ void roka(Kit& kit) {
     for (const auto& [x, z, name, yaw] : std::initializer_list<std::tuple<float, float, const char*, float>>{
             {-88, -62, "Shack A", 0}, {-80, -62, "Leanto A", 0}, {-88, 20, "Leanto B", 90}, {-88, 45, "Shack A", 180}})
         if (kit.claim({c.x + x, 0, c.z + z}, 2, 3.2F, yaw)) kit.put(shacks + name + ".glb", {c.x + x, 0, c.z + z}, yaw);
-    modular_building(kit, {c.x + 50, 0, c.z - 40}, 270, 8, 4, "brick", 2, 21); // works office
-    modular_building(kit, {c.x + 50, 0, c.z + 30}, 270, 4, 4, "stuco", 1, 22);
+    modular_building(kit, {c.x + 50, 0, c.z - 40}, 270, 8, 4, "brick", 2, 21, world::BuildingPurpose::Office); // works office
+    modular_building(kit, {c.x + 50, 0, c.z + 30}, 270, 4, 4, "stuco", 1, 22, world::BuildingPurpose::Industrial);
     const std::vector<std::string> chain{shacks + "Chainlink Fence.glb"};
     fence(kit, {c.x - 96, 0, c.z - 75}, {c.x - 40, 0, c.z - 75}, chain, 2.46F, 3);
     fence(kit, {c.x - 96, 0, c.z - 75}, {c.x - 96, 0, c.z - 8}, chain, 2.46F, 4);
@@ -395,8 +410,8 @@ void porto_luma(Kit& kit) {
     for (const auto& [x, z, name] : std::initializer_list<std::tuple<float, float, const char*>>{
             {60, -45, "Large Shed B"}, {60, 25, "Large Shed A"}, {60, 60, "Large Shed B"}})
         if (kit.claim({c.x + x, 0, c.z + z}, 4.4F, 7.2F, 0)) kit.put(shacks + std::string(name) + ".glb", {c.x + x, 0, c.z + z}, 0);
-    modular_building(kit, {c.x - 50, 0, c.z - 35}, 90, 8, 4, "stuco", 2, 31); // harbour office
-    modular_building(kit, {c.x - 50, 0, c.z + 35}, 90, 4, 4, "brick", 1, 32);
+    modular_building(kit, {c.x - 50, 0, c.z - 35}, 90, 8, 4, "stuco", 2, 31, world::BuildingPurpose::Office); // harbour office
+    modular_building(kit, {c.x - 50, 0, c.z + 35}, 90, 4, 4, "brick", 1, 32, world::BuildingPurpose::Dock);
     for (int i = 0; i < 16; ++i) kit.put(urban + "Cones & Barriers/Bollards/square_bollard.glb", {c.x + 82, 0, c.z - 60 + i * 8.0F}, 0);
     for (int i = 0; i < 6; ++i) prop(kit, urban + "Cones & Barriers/Concrete Barriers/Jersey_barrier_dirty.glb", {c.x + 75, 0, c.z - 50 + i * 20.0F}, 90, 1.4F);
     for (int i = 0; i < 14; ++i) {

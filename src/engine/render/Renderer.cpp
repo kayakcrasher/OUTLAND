@@ -1168,6 +1168,16 @@ void Renderer::run() {
                     if(creator_controller.selection().valid())creator_session.edit(verda_region,[&]{return creator_controller.rotate_selected(verda_region,step);});
                     else creator_controller.rotate_preview(step);
                 }
+                // Building purposes (Explore's homes, shops, pubs...): USE button, U / Shift+U.
+                if(action.purpose || (IsKeyPressed(KEY_U) && creator_controller.selection().valid())) {
+                    const int direction=IsKeyDown(KEY_LEFT_SHIFT) ? -1 : 1;
+                    creator_session.edit(verda_region,[&]{return creator_controller.cycle_selected_purpose(verda_region,direction);});
+                }
+                {
+                    bool applicable=false;
+                    const auto purpose=creator_controller.selected_purpose(verda_region,applicable);
+                    creator_touch_ui.set_purpose_label(applicable ? std::string("USE: ")+world::building_purpose_name(purpose) : std::string());
+                }
                 if(action.undo){creator_session.undo(verda_region);creator_controller.clear_selection();}
                 if(action.redo){creator_session.redo(verda_region);creator_controller.clear_selection();}
                 if(action.save)creator_session.save(verda_region);

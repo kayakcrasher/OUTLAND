@@ -148,6 +148,26 @@ int main() {
     // Explore: downtown is lived in - Main Street homes, shops and pubs, office workers in the towers.
     game::life::LifeSimulation life;
     life.build(region, nullptr);
+    // Part-built buildings carry authored purposes (markers inside the front door), so island life
+    // houses and employs people in them; the works and harbour offices are offices.
+    {
+        int kit_places = 0, offices = 0, docks = 0, staffed = 0;
+        for (std::size_t i = 0; i < life.places().size(); ++i) {
+            const auto& place = life.places()[i];
+            if (!place.building_id.starts_with("creator_marker_building_purpose_kit_")) continue;
+            ++kit_places;
+            offices += place.kind == game::life::PlaceKind::Office;
+            docks += place.kind == game::life::PlaceKind::Dock;
+            bool used = false;
+            for (const auto& r : life.residents()) if (r.work == static_cast<int>(i) || r.home == static_cast<int>(i)) {used = true; break;}
+            staffed += used;
+            if (!used) std::cerr << "  unused " << place.id << " kind " << game::life::place_name(place.kind) << " town " << place.settlement
+                                 << " homes " << place.home_capacity << " jobs " << place.job_capacity << '\n';
+        }
+        check(report.purposes >= 10 && kit_places == report.purposes, "every part-built building is a place: " + std::to_string(kit_places) + "/" + std::to_string(report.purposes));
+        check(offices >= 2 && docks >= 1, "authored offices and dock");
+        check(staffed == kit_places, "people live or work in every part-built building: " + std::to_string(staffed));
+    }
     int capital_homes = 0, offices = 0, office_workers = 0;
     for (const auto& place : life.places())
         if (life.island().settlement_names[static_cast<std::size_t>(place.settlement)] == "Verda") {

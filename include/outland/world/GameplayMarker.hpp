@@ -2,6 +2,7 @@
 
 #include <raylib.h>
 
+#include "outland/world/BuildingPurpose.hpp"
 #include <string>
 
 namespace outland::world {
@@ -10,7 +11,10 @@ enum class GameplayMarkerType {
     LootSpawn,
     ZombieSpawn,
     NpcSpawn,
-    VehicleSpawn
+    VehicleSpawn,
+    // Placed just inside a building's front door, facing out: gives that building (or a building
+    // assembled from Creator parts, which has no single object) its purpose for island life.
+    BuildingPurpose
 };
 
 struct GameplayMarker {
@@ -35,6 +39,7 @@ struct GameplayMarker {
     float rotation_y{0.0F};
 
     bool enabled{true};
+    world::BuildingPurpose purpose{world::BuildingPurpose::Auto}; // BuildingPurpose markers only
 };
 
 } // namespace outland::world

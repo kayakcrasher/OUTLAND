@@ -2,6 +2,7 @@
 
 #include <raylib.h>
 
+#include "outland/world/BuildingPurpose.hpp"
 #include <string>
 #include <array>
 
@@ -46,6 +47,15 @@ struct WorldAsset {
 
     bool collision{true};
     VehiclePlacementState vehicle{};
+    BuildingPurpose purpose{BuildingPurpose::Auto}; // authored use when this model is a building
 };
+
+// Model assets big enough to be a building on their own (a whole house, shop, tower or shed) can
+// carry a purpose; walls, slabs and props cannot - tag part-built buildings with a purpose marker.
+inline bool asset_can_have_purpose(const WorldAsset& asset) {
+    if(asset.model_path.empty() || !asset.vehicle.definition.empty()) return false;
+    if(asset.model_path.find("/city/main_street/")!=std::string::npos || asset.model_path.find("/city/towers/")!=std::string::npos) return true;
+    return asset.size.x*asset.size.z>=24.0F && asset.size.x>=3.5F && asset.size.z>=3.5F && asset.size.y>=2.5F;
+}
 
 }

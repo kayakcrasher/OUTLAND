@@ -874,6 +874,10 @@ private:
                 .placement={}, .default_scale=1.0F, .tags={"npc","spawn","gameplay"}});
         }
 
+        (void)add({.id="building_purpose", .name="Building Purpose", .category=CreatorAssetCategory::Gameplay,
+            .model_path="", .thumbnail_path="", .footprint={1.2F,2.2F,1.2F},
+            .placement={}, .default_scale=1.0F, .tags={"purpose","building","home","shop","pub","explore","gameplay"}});
+
         add({
             .id = "vehicle_spawn",
             .name = "Vehicle Spawn",
