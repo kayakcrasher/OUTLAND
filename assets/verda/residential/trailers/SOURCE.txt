@@ -1,0 +1,12 @@
+Trailer Park asset pack
+Creator: El Bolillo Duro
+Source: https://elbolilloduro.itch.io/trailer-park
+
+Production integration:
+- Six curated trailer prefabs converted from the supplied FBX scene.
+- Original archive and staging files are intentionally not committed here.
+
+License note:
+The source page advertises the models as CC0.
+Some source textures may originate from third-party texture sites.
+Review texture licensing separately before a public/commercial release.
