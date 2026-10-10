@@ -230,7 +230,9 @@ void LifeSimulation::drive(int index, float dt, Vector3 player, const characters
     const float remaining = car.route.length - car.progress, speed = runtime.speed;
     vehicles::VehicleInput input;
     if (remaining < 2.5F || (remaining < 6 && std::abs(speed) < .6F)) {
-        input.brake = input.parking = true;
+        // Stopping is the foot brake (reverse throttle while rolling): the handbrake slides.
+        input.throttle = speed > .5F ? -1.0F : 0.0F;
+        input.parking = std::abs(speed) <= .5F;
         vehicles_->set_autopilot(info.vehicle, input);
         if (std::abs(speed) < .3F) {park_car(index, true); leave_car(r, false);}
         return;
@@ -278,7 +280,9 @@ void LifeSimulation::drive(int index, float dt, Vector3 player, const characters
         if (++car.attempts > 5) {park_car(index, true); leave_car(r, false); return;}
     }
     input.throttle = std::clamp((limit - speed) * .35F, -1.0F, 1.0F);
-    if (limit <= .01F || speed > limit + 1.5F) {input.brake = true; input.throttle = 0;}
+    // Too fast for what is ahead: brake with the pedal; never into reverse.
+    if (limit <= .01F || speed > limit + 1.5F) input.throttle = speed > .5F ? -1.0F : 0.0F;
+    if (limit <= .01F && std::abs(speed) <= .5F) input.parking = true;
     vehicles_->set_autopilot(info.vehicle, input);
 }
 

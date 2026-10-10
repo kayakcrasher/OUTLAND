@@ -196,7 +196,9 @@ void BattleRoyaleBots::resolve(const BotShot& shot,const BattleRoyaleFrame& fram
         if(world_hit.hit() && world.world_damage) world.world_damage(world_hit,shot.damage,shooter_position);
         return;
     }
-    const float damage=shot.damage*(impact.y>victim_feet.y+head_height ? 2.0F : 1.0F);
+    // Same body zones as the player's bullets: heads take the weapon's multiplier, legs less.
+    const auto& gun=combat::definition(shot.weapon);
+    const float damage=shot.damage*(impact.y>victim_feet.y+head_height ? gun.head_multiplier : impact.y<victim_feet.y+.85F ? gun.limb_multiplier : 1.0F);
     ++events_.hits;
     if(auto* shooter=find(shot.shooter)) shooter->on_hit_given(frame.now);
     if(victim==player_id) {

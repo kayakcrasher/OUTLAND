@@ -45,7 +45,7 @@ private:
     TouchLayout layout_{};
 
     enum class Control {
-        None, Movement, Look, Jump, View, Fire, Aim, Reload, Weapon,
+        None, Movement, Look, Jump, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon,
         Sprint, Crouch, Inventory, Interact
     };
     struct TouchOwner { int id; Control control; };
@@ -53,6 +53,9 @@ private:
     Control mouse_control_{Control::None};
     bool mouse_quarantined_{false},had_native_touch_{false};
     bool gameplay_{true};
+    // Aim button: a tap toggles aiming down sights, a hold aims while held.
+    bool aim_toggled_{false}, aim_held_{false};
+    double aim_pressed_at_{0};
     bool blocked_{false};
     int width_{0}, height_{0};
 };

@@ -530,7 +530,8 @@ void TouchHUD::draw(
     const TouchLayout& layout,
     int screen_width,
     int screen_height,
-    bool gameplay
+    bool gameplay,
+    const char* fire_mode
 ) const {
     const float scale =
         hud_scale(
@@ -617,6 +618,32 @@ void TouchHUD::draw(
             layout.fire.scale,
         layout.fire.opacity,
         input.fire
+    );
+
+    // Left trigger: same glyph, smaller, above the movement stick.
+    draw_fire_button(
+        position_of(
+            layout.fire_left,
+            screen_width,
+            screen_height
+        ),
+        base_button_radius *
+            layout.fire_left.scale,
+        layout.fire_left.opacity,
+        input.fire
+    );
+
+    if (fire_mode) draw_text_button(
+        position_of(
+            layout.fire_mode,
+            screen_width,
+            screen_height
+        ),
+        base_button_radius *
+            layout.fire_mode.scale,
+        layout.fire_mode.opacity,
+        fire_mode,
+        input.fire_mode
     );
 
     draw_aim_button(

@@ -22,6 +22,7 @@ struct PlayerInput {
     bool aim{false};
     bool reload{false};
     bool next_weapon{false};
+    bool fire_mode{false};   // switch automatic / single shots
 
     // World interaction
     bool interact{false};
@@ -34,6 +35,7 @@ struct PlayerInput {
         jump = false;
         reload = false;
         next_weapon = false;
+        fire_mode = false;
         interact = false;
         inventory = false;
         toggle_view = false;

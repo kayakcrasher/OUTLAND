@@ -2,6 +2,7 @@
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include "outland/world/assets/VerdaGeometry.hpp"
 #include <cassert>
+#include <vector>
 #include <cmath>
 #include <iostream>
 
@@ -59,12 +60,12 @@ int main() {
     gun.update(.001F,input,{{8,target.y,-12},{0,0,-1}},world);
     assert(gun.events().shots==1 && world.targets()[6].health==100);
     gun.update(.02F,input,{{8,target.y,-12},{0,0,-1}},world);
-    assert(world.targets()[6].health<100 && world.targets()[6].health>65);
+    assert(world.targets()[6].health<100 && world.targets()[6].health>55); // 41 damage per rifle round
     assert(gun.hit_marker()>0 && !gun.last_headshot());
     const float body_damage=gun.last_damage();
     gun.reset(false);world.reset_targets();
     gun.update(.02F,input,{{8,target.y+.75F,-12},{0,0,-1}},world);
-    assert(gun.last_headshot() && gun.last_damage()>body_damage*1.9F);
+    assert(gun.last_headshot() && gun.last_damage()>body_damage*2.2F); // the rifle's 2.35x head multiplier
 
     // Automatic fire has a consistent cadence and finite magazines.
     gun.reset(false);
@@ -100,7 +101,7 @@ int main() {
     input.fire=true;gun.update(.05F,input,high,world);assert(gun.events().shots==1);
     fired=0;
     for(int i=0;i<80;++i) { gun.update(.05F,input,high,world);fired+=gun.events().shots; }
-    assert(fired==0 && gun.ammo().loaded==11);
+    assert(fired==0 && gun.ammo().loaded==14); // 15-round pistol magazine
     input.fire=false;gun.update(.05F,input,high,world);
     input.fire=true;gun.update(.05F,input,high,world);assert(gun.events().shots==1);
     input.fire=false;input.reload=true;gun.update(.05F,input,high,world);
@@ -122,12 +123,33 @@ int main() {
     gun.reset(true);assert(gun.collect_ammo()==0);input={};input.fire=true;input.aim=true;
     fired=0;
     for(int i=0;i<600;++i) { gun.update(.05F,input,high,world);fired+=gun.events().shots; }
-    assert(fired==300 && gun.ammo().loaded==30 && gun.ammo().reserve==120);
+    // 30 s at the rifle's 0.086 s cycle (fired on the 5 ms simulation step that follows it).
+    const float cycle=definition(WeaponId::Rifle).interval;
+    assert(fired>=static_cast<int>(30/(cycle+.005F)) && fired<=static_cast<int>(30/cycle)+1 && gun.ammo().loaded==30 && gun.ammo().reserve==120);
     input.reload=true;gun.update(.05F,input,high,world);
     assert(gun.reload_remaining()==0 && !gun.events().reload_started);
     int active=0;for(const auto& bullet:gun.bullets())if(bullet.active)++active;
     assert(active<96);
     gun.reset(false);assert(!gun.unlimited() && gun.ammo().loaded==30);
+
+    // Battle-royale gunplay: recoil climbs through a spray, crouching steadies it, a tap of the
+    // fire-mode switch makes the rifle fire single shots, and aimed first shots are tighter.
+    {
+        WeaponSystem spray;spray.reset(true);WeaponInput hold;hold.fire=true;hold.aim=true;
+        std::vector<float> kicks;
+        for(int i=0;i<120 && kicks.size()<12;++i) {spray.update(.02F,hold,high,world);if(spray.events().shots) kicks.push_back(spray.events().pitch_kick);}
+        assert(kicks.size()==12 && kicks.back()>kicks.front()*1.5F);
+        WeaponSystem steady;steady.reset(true);WeaponInput crouched=hold;crouched.crouched=true;
+        steady.update(.02F,crouched,high,world);
+        assert(steady.events().shots==1 && steady.events().pitch_kick<kicks.front()*.85F);
+        WeaponSystem single;single.reset(true);WeaponInput toggle;toggle.fire_mode=true;
+        single.update(.02F,toggle,high,world);assert(single.single_fire());
+        int shots=0;for(int i=0;i<50;++i){single.update(.02F,hold,high,world);shots+=single.events().shots;}
+        assert(shots==1);
+        const auto& rifle=definition(WeaponId::Rifle);
+        assert(rifle.aimed_spread<rifle.hip_spread*.1F && rifle.head_multiplier>2.3F && rifle.limb_multiplier<1);
+        assert(rifle.ads_fov<60 && definition(WeaponId::Pistol).ads_fov>rifle.ads_fov);
+    }
 
     world.damage_target(6,150);assert(world.targets()[6].health==0);
     world.update(10,false);assert(world.targets()[6].health==0);

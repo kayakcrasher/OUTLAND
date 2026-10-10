@@ -158,18 +158,19 @@ int main() {
     combat::CombatWorld combat(region);
     for (int i = 0; i < 20; ++i)
         weapons.update(.1F, {}, {{0, 2, 0}, {0, 0, -1}}, combat);
-    assert(weapons.ammo().loaded == 12 &&
-           session.inventory().count("pistol_ammo") == ammo_before - 10 &&
+    const int magazine = combat::definition(combat::WeaponId::Pistol).magazine;
+    assert(weapons.ammo().loaded == magazine &&
+           session.inventory().count("pistol_ammo") == ammo_before - (magazine - 2) &&
            session.inventory().count("rifle_ammo") == 120);
     // Dropped firearm carries its actual magazine. No phantom ammo or duplicate ownership.
     session.drop(slot(session.inventory(), "pistol"), false, ground(2, 8), weapons);
     assert(!session.inventory().owns_weapon(registry, combat::WeaponId::Pistol) &&
            weapons.ammo(combat::WeaponId::Pistol).loaded == 0 && !weapons.available());
-    assert(session.world().state().pickups.back().loaded_rounds == 12);
+    assert(session.world().state().pickups.back().loaded_rounds == magazine);
     assert(session.interact(ground(2, 8), weapons, [](Vector3) { return false; }) ==
            "Nothing to pick up nearby");
     assert(session.interact(ground(2, 8), weapons).starts_with("Picked up") &&
-           weapons.ammo(combat::WeaponId::Pistol).loaded == 12);
+           weapons.ammo(combat::WeaponId::Pistol).loaded == magazine);
     assert(session.edit_inventory().add(registry, "lantern", 1) == 1);
     assert(session.use(slot(session.inventory(), "lantern"), weapons, health) ==
            "A battery is required");
@@ -187,7 +188,7 @@ int main() {
     resumed.start(GameMode::Explore, profile_map, resumed_weapons);
     assert(resumed.inventory().state().stacks == saved.inventory.stacks &&
            resumed.world().state().pickups.size() == saved.world.pickups.size() &&
-           resumed_weapons.ammo(combat::WeaponId::Pistol).loaded == 12 &&
+           resumed_weapons.ammo(combat::WeaponId::Pistol).loaded == magazine &&
            resumed_weapons.selected() == combat::WeaponId::Pistol);
     LootSnapshot wrong;
     wrong.mode = GameMode::ZombieSurvival;

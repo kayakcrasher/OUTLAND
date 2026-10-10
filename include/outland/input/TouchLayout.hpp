@@ -87,6 +87,33 @@ struct TouchLayout {
 
 
     // --------------------------------------------------------
+    // LEFT FIRE
+    // --------------------------------------------------------
+    //
+    // A second trigger above the movement stick: the left thumb
+    // fires while the right thumb keeps aiming.
+
+    TouchElementLayout fire_left{
+        0.20F,
+        0.43F,
+        1.00F,
+        0.48F
+    };
+
+
+    // --------------------------------------------------------
+    // FIRE MODE (automatic weapons: AUTO / SINGLE)
+    // --------------------------------------------------------
+
+    TouchElementLayout fire_mode{
+        0.735F,
+        0.31F,
+        0.62F,
+        0.40F
+    };
+
+
+    // --------------------------------------------------------
     // AIM / ADS
     // --------------------------------------------------------
 

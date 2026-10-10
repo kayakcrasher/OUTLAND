@@ -214,7 +214,8 @@ int main() {
             bot.tick(.02F,i*.02,agents_with(bot,{0,0,15}),{},env,shots);
             reloaded=bot.reserve()<60;
         }
-        check(reloaded && shots.size()>=12 && bot.loaded()==12,"pistol empties and reloads");
+        const int magazine=game::combat::definition(WeaponId::Pistol).magazine;
+        check(reloaded && shots.size()>=static_cast<std::size_t>(magazine) && bot.loaded()==magazine,"pistol empties and reloads");
     }
     // ---- Heal: hurt, alone and unhurt for a while, the bot uses its medkit ----
     {

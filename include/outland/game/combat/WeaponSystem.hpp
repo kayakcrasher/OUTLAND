@@ -10,6 +10,7 @@ namespace outland::game::combat {
 
 struct WeaponInput {
     bool fire{false}, aim{false}, reload{false}, next_weapon{false}, sprint{false}, grounded{true};
+    bool crouched{false}, fire_mode{false}; // fire_mode: toggle automatic / single shots
     float movement{0};
 };
 struct ShotPose { Vector3 origin{}, direction{0,0,-1}; };
@@ -17,6 +18,7 @@ struct Bullet {
     bool active{false}, tracer{false};
     Vector3 position{}, previous{}, velocity{};
     float age{0}, travelled{0}, damage{0}, initial_speed{0}, drag{0};
+    float head{2}, limb{1};
 };
 struct BulletImpact {
     Vector3 position{}, normal{};
@@ -61,6 +63,9 @@ public:
     [[nodiscard]] const WeaponEvents& events() const { return events_; }
     [[nodiscard]] const std::array<Bullet,96>& bullets() const { return bullets_; }
     [[nodiscard]] const std::array<BulletImpact,64>& impacts() const { return impacts_; }
+    // An automatic weapon can be switched to single shots (per weapon).
+    [[nodiscard]] bool single_fire() const { return single_[static_cast<std::size_t>(selected_)] || !weapon().automatic; }
+    [[nodiscard]] int spray() const { return spray_; } // consecutive shots in the current burst
 private:
     void start_reload();
     void refresh_reserves();
@@ -68,6 +73,9 @@ private:
     void simulate(float dt, CombatWorld& world);
     float random();
     WeaponId selected_{WeaponId::Rifle};
+    std::array<bool,2> single_{};
+    int spray_{0};
+    float since_shot_{10};
     std::array<Magazine,2> ammo_{};
     std::array<Bullet,96> bullets_{};
     std::array<BulletImpact,64> impacts_{};

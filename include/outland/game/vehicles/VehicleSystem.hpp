@@ -9,11 +9,15 @@ enum class VehicleZone { Body, Window, Engine, Tire0, Tire1, Tire2, Tire3, Occup
 struct VehicleInput {
     float throttle{}, steer{};
     bool brake{}, parking{}, horn{};
+    // brake is the handbrake: it stops the car and lets the back step out (drifting).
+    bool boost{};   // more power and a little more top speed, burning more fuel
 };
 struct VehicleRuntime {
     std::string id;
     Vector3 position{};
     float yaw{}, speed{}, steering{}, wheel_angle{}, pitch{}, roll{};
+    float slip{};   // sideways velocity (m/s, + to the car's right): momentum carried through a turn
+    bool boosting{false};
     bool sleeping{true};
     float escape{0}; // metres a car that started inside an obstacle may still travel through it
 };

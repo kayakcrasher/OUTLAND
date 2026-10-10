@@ -43,6 +43,7 @@ struct ResidentSpawn {
 };
 struct NpcHit {
     int actor{-1}; float fraction{1}; Vector3 position{}, normal{}; bool headshot{false};
+    bool legs{false}; // below the hips: leg hits do less damage
 };
 struct NpcShot { Vector3 from{}, to{}; bool hit{false}; int resident{-1}; };
 struct NpcEvents { float player_damage{0}; int attacks{0}; std::vector<NpcShot> shots; };

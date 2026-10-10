@@ -1,3 +1,4 @@
+#include <cstdio>
 #include "outland/creator/CreatorMapIO.hpp"
 #include "outland/game/combat/WeaponSystem.hpp"
 #include "outland/game/vehicles/VehicleSystem.hpp"
@@ -112,6 +113,42 @@ int main() {
         assert(car->vehicle.health == 100); // escaping is not a crash
         auto& assets = region.runtime_settlements().front().assets;
         assets.erase(std::remove_if(assets.begin(), assets.end(), [](const auto& a) { return a.id == "test_post"; }), assets.end());
+    }
+    // Battle-royale handling: the handbrake throws the tail out (sideways slip), boost pulls
+    // harder, and a crash costs body health in proportion to the impact.
+    {
+        const auto run = [&](bool boost, bool handbrake) {
+            cars.leave_session();
+            car->position = {25, 0, 25}; car->rotation_y = 0; car->vehicle.health = 100;
+            cars.reconcile(region);
+            assert(cars.enter(region, 0, {25, 0, 27}));
+            for (int i = 0; i < 100; ++i) cars.update(.02F, {1, 0, false, false, false, boost}, region, car->position);
+            const float speed = cars.driver()->speed;
+            float slip = 0;
+            for (int i = 0; i < 20; ++i) {
+                cars.update(.02F, {0, 1, handbrake}, region, car->position);
+                slip = std::max(slip, std::abs(cars.driver()->slip));
+            }
+            return std::pair{speed, slip};
+        };
+        const auto plain = run(false, false), boosted = run(true, false), drift = run(false, true);
+        std::fprintf(stderr, "handling: plain %.2f/%.2f boosted %.2f drift %.2f/%.2f\n", plain.first, plain.second, boosted.first, drift.first, drift.second);
+        assert(boosted.first > plain.first * 1.2F);
+        assert(drift.second > plain.second * 2 && drift.second > 1);
+        cars.leave_session();
+        world::WorldAsset wall;
+        wall.id = "test_wall"; wall.model_path = "assets/missing_wall.glb"; wall.collision = true;
+        wall.position = {25, 0, 45}; wall.size = {8, 3, 1};
+        region.runtime_settlements().front().assets.push_back(wall);
+        car->position = {25, 0, 25}; car->rotation_y = 0; car->vehicle.health = 100;
+        cars.reconcile(region);
+        assert(cars.enter(region, 0, {25, 0, 27}));
+        for (int i = 0; i < 200 && car->vehicle.health == 100; ++i) cars.update(.02F, {1, 0}, region, car->position);
+        assert(car->vehicle.health < 100 && cars.driver()->speed == 0 && car->position.z < 45);
+        cars.leave_session();
+        auto& assets = region.runtime_settlements().front().assets;
+        assets.erase(std::remove_if(assets.begin(), assets.end(), [](const auto& a) { return a.id == "test_wall"; }), assets.end());
+        car->vehicle.health = 100;
     }
     // Body blocks bullets; logical side glass allows a continued shot into the driver.
     car->position = {25, 0, 25};

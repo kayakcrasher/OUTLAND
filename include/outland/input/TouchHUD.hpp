@@ -12,7 +12,8 @@ public:
         const TouchLayout& layout,
         int screen_width,
         int screen_height,
-        bool gameplay = true
+        bool gameplay = true,
+        const char* fire_mode = nullptr   // "AUTO" / "SINGLE" for automatic weapons, else hidden
     ) const;
 };
 

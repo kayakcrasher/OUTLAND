@@ -66,7 +66,7 @@ def generate(check=False):
     center = [(lo + hi) / 2 for lo, hi in zip(wheel_bounds["min"], wheel_bounds["max"])]
     rows = [["hatchback", "Classic hatchback", "assets/verda/vehicles/runtime/hatchback_body.glb",
              "assets/verda/vehicles/runtime/hatchback_wheel.glb", 4.2, 1.64, 1.58, .352,
-             1.356, -1.126, 1.412, 5, 12, 7, .55, 28, 30, 100, 100, 100, 1,
+             1.356, -1.126, 1.412, 7.5, 14, 8, .45, 36, 32, 100, 100, 100, 1,
              -.35, 1.05, .1, 1.65, 0, 6.5, 3, 28, .255]]
     ggbot = ROOT / "assets/verda/vehicles/ggbot"
     models = sorted(ggbot.rglob("*.glb"))
@@ -81,7 +81,7 @@ def generate(check=False):
             ident = ident[:70] + "_" + hashlib.sha256(relative.encode()).hexdigest()[:8]
         rows.append([ident, path.stem, path.relative_to(ROOT).as_posix(),
                      wheels[0].relative_to(ROOT).as_posix() if wheels else "",
-                     4.5, 1.8, 1.6, .35, 1.3, -1.3, 1.5, 4.5, 12, 6, .6, 25, 28,
+                     4.5, 1.8, 1.6, .35, 1.3, -1.3, 1.5, 6.5, 13, 7, .5, 33, 30,
                      100, 100, 100, 1, -.4, 1.1, 0, 1.8, 0, 7, 3.2, 25, .25])
     manifest = ROOT / "assets/verda/vehicles/vehicle_manifest.tsv"
     if manifest.exists():

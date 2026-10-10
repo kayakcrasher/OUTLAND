@@ -66,7 +66,7 @@ int WeaponSystem::collect_ammo() {
 }
 void WeaponSystem::reset(bool unlimited) {
     unbind_inventory();
-    unlimited_=unlimited;selected_=WeaponId::Rifle;previous_fire_=false;
+    unlimited_=unlimited;selected_=WeaponId::Rifle;previous_fire_=false;single_={};spray_=0;since_shot_=10;
     cooldown_=reload_remaining_=muzzle_flash_=hit_marker_=last_damage_=0;
     last_headshot_=false;shot_number_=impact_index_=0;random_state_=0x51f7349aU;
     events_={};bullets_={};impacts_={};
@@ -87,16 +87,23 @@ bool WeaponSystem::shoot(const WeaponInput& input, ShotPose pose) {
     const auto forward=normalized(pose.direction);
     const auto right=normalized(cross(std::abs(forward.y)>.95F ? Vector3{1,0,0} : Vector3{0,1,0},forward));
     const auto up=normalized(cross(forward,right));
-    const float spread=(input.aim ? def.aimed_spread : def.hip_spread)*
-        (1+std::clamp(input.movement,0.0F,1.0F)*(input.aim ? 1.0F : 2.5F))*(input.grounded ? 1 : 3);
+    // A burst: shots fired close together. Aimed first shots are near perfect; hip fire blooms.
+    if(since_shot_>def.interval*2.5F) spray_=0;
+    const float burst=static_cast<float>(std::min(spray_,10));
+    const float movement=std::clamp(input.movement,0.0F,1.0F);
+    const float spread=(input.aim ? def.aimed_spread*(spray_==0 ? .3F : 1+burst*.12F) : def.hip_spread*(1+burst*def.bloom))*
+        (1+movement*(input.aim ? 1.5F : 2.5F))*(input.grounded ? 1 : 3)*(input.crouched ? .8F : 1);
     const float radius=std::sqrt(random())*spread, angle=random()*2*PI;
     const auto direction=normalized(add(forward,add(mul(right,std::cos(angle)*radius),mul(up,std::sin(angle)*radius))));
     *slot={true,(shot_number_++%3)==0,pose.origin,pose.origin,mul(direction,def.muzzle_speed),
-           0,0,def.damage,def.muzzle_speed,def.drag};
+           0,0,def.damage,def.muzzle_speed,def.drag,def.head_multiplier,def.limb_multiplier};
     if(!unlimited_) --ammo_[static_cast<std::size_t>(selected_)].loaded;
     cooldown_=def.interval;muzzle_flash_=.035F;
-    ++events_.shots;events_.pitch_kick+=def.recoil;
-    events_.yaw_kick+=(random()-.5F)*def.recoil*.35F;
+    // Recoil climbs through the burst; crouching steadies it, moving and jumping make it worse.
+    const float stance=(input.crouched ? .8F : 1)*(input.aim ? .9F : 1)*(1+movement*.15F)*(input.grounded ? 1 : 1.4F);
+    ++events_.shots;events_.pitch_kick+=def.recoil*(1+def.recoil_growth*burst)*stance;
+    events_.yaw_kick+=(random()*2-1)*def.recoil_side*(1+burst*.05F)*stance;
+    ++spray_;since_shot_=0;
     return true;
 }
 void WeaponSystem::simulate(float dt, CombatWorld& world) {
@@ -114,7 +121,9 @@ void WeaponSystem::simulate(float dt, CombatWorld& world) {
             if(!hit.hit())break;
             impacts_[impact_index_++%impacts_.size()]={hit.position,hit.normal,hit.kind,.4F};
             const float speed=length(bullet.velocity);
-            const float damage=bullet.damage*std::clamp(speed*speed/(bullet.initial_speed*bullet.initial_speed),.35F,1.0F)*(hit.headshot?2.0F:1.0F);
+            // Body zones: heads take the weapon's multiplier, legs less (zone 2 on people).
+            const float zone=hit.headshot ? bullet.head : hit.kind==HitKind::Npc && hit.zone==2 ? bullet.limb : 1.0F;
+            const float damage=bullet.damage*std::clamp(speed*speed/(bullet.initial_speed*bullet.initial_speed),.35F,1.0F)*zone;
             world.damage_hit(hit,damage,bullet.previous);
             if(hit.kind==HitKind::Target || hit.kind==HitKind::Npc || hit.kind==HitKind::Vehicle || hit.kind==HitKind::VehicleOccupant) {
                 ++events_.target_hits;last_damage_=damage;hit_marker_=.22F;last_headshot_=hit.headshot;
@@ -146,6 +155,8 @@ void WeaponSystem::update(float dt,const WeaponInput& input,ShotPose pose,Combat
             if(select(static_cast<WeaponId>((static_cast<std::size_t>(selected_)+step)%ammo_.size())))break;
     }
     if(input.reload)start_reload();
+    if(input.fire_mode && weapon().automatic) single_[static_cast<std::size_t>(selected_)]=!single_[static_cast<std::size_t>(selected_)];
+    since_shot_+=dt;
     bool pressed=input.fire && !previous_fire_;
     bool dry_announced=false;
     // Small ballistic timesteps plus swept tests avoid frame-rate dependent tunnelling.
@@ -162,7 +173,7 @@ void WeaponSystem::update(float dt,const WeaponInput& input,ShotPose pose,Combat
                 magazine.loaded+=rounds;magazine.reserve-=rounds;events_.reload_finished=true;
             }
         }
-        const bool trigger=available() && input.fire && (weapon().automatic || pressed);
+        const bool trigger=available() && input.fire && (!single_fire() || pressed);
         if(trigger && !input.next_weapon && !input.sprint && reload_remaining_==0 && cooldown_<=.000001F) {
             if(unlimited_ || ammo().loaded>0) {
                 if(shoot(input,pose))pressed=false;

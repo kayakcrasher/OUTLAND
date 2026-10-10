@@ -561,7 +561,7 @@ void Renderer::run() {
     combat_world.bind_actors([&](Vector3 start,Vector3 end) {
         const auto hit=npcs.trace_segment(start,end);
         return game::combat::BulletHit{hit.actor>=0 ? game::combat::HitKind::Npc : game::combat::HitKind::None,
-            hit.fraction,hit.position,hit.normal,hit.actor,hit.headshot};
+            hit.fraction,hit.position,hit.normal,hit.actor,hit.headshot,hit.legs ? 2 : 0};
     },[&](int actor,float damage,Vector3 attacker) {
         if(actor<0) return;
         // Battle Royale bodies belong to their bot brains; everyone else is an NpcSystem actor.
@@ -606,6 +606,7 @@ void Renderer::run() {
             hit.kind==game::combat::HitKind::VehicleOccupant) combat_world.damage_hit(hit,amount,from);
     };
     float recoil_pitch = 0.0F, recoil_yaw = 0.0F;
+    float recoil_debt = 0.0F, recoil_settle = 0.0F, recoil_quiet = 0.0F; // climb owed back after a burst
     bool trigger_ready = false;
 
     Camera3D camera{};
@@ -763,7 +764,7 @@ void Renderer::run() {
                 }
                 mode_session.start(game_mode,static_cast<int>(br_bots.bots().size()),home_screen.bot_level());
                 player_health.reset();
-                recoil_pitch = recoil_yaw = 0.0F;
+                recoil_pitch = recoil_yaw = recoil_debt = recoil_settle = 0.0F;
                 trigger_ready = false;
                 inventory_open = false;
                 interaction_remaining = 0;
@@ -933,7 +934,8 @@ void Renderer::run() {
             interaction_remaining=3;
         }
         const bool driving=vehicles.driver()!=nullptr;
-        game::vehicles::VehicleInput driving_input{-controls.move_y,-controls.move_x,controls.brake,controls.crouch,controls.sprint};
+        // Handbrake on JUMP (Space), boost on SPRINT (Shift), parking brake on CROUCH, horn on H.
+        game::vehicles::VehicleInput driving_input{-controls.move_y,-controls.move_x,controls.brake,controls.crouch,IsKeyDown(KEY_H),controls.sprint};
         const bool vehicle_paused=creator_active||inventory_open||shop_open||mode_session.terminal()||!IsWindowFocused()
 #ifdef OUTLAND_DEV_TOOLS
             || (game_mode==game::GameMode::DevLab && dev_lab.tools_open())
@@ -1016,10 +1018,12 @@ void Renderer::run() {
         // CAMERA LOOK
         // ====================================================
 
+        // Aiming down sights slows the look in proportion to the zoom, as scopes do.
         const float look_speed =
             input_system
                 .layout()
-                .look_sensitivity;
+                .look_sensitivity *
+            (controls.aim && !driving ? weapons.weapon().ads_fov / 70.0F : 1.0F);
 
         player.yaw -=
             controls.look_x *
@@ -1274,8 +1278,9 @@ void Renderer::run() {
         environment_audio.update(player.position, player.grounded && !driving, !driving, verda_region);
         vehicle_audio.update(vehicles,verda_region,dt,vehicle_paused || environment_audio.muted(),environment_audio.volume());
 
-        recoil_pitch *= std::exp(-dt * 5.0F);
-        recoil_yaw *= std::exp(-dt * 7.0F);
+        // The camera punch of each shot fades in a blink; the climb itself is in player.pitch.
+        recoil_pitch *= std::exp(-dt * 14.0F);
+        recoil_yaw *= std::exp(-dt * 14.0F);
         const float shot_pitch = std::clamp(player.pitch + recoil_pitch, -1.2F, 1.15F);
         const float shot_yaw = player.yaw + recoil_yaw;
         const Vector3 look_direction{std::sin(shot_yaw) * std::cos(shot_pitch),
@@ -1288,7 +1293,7 @@ void Renderer::run() {
             player.position.z
         };
 
-        const float desired_fov = controls.aim ? 50.0F : 70.0F;
+        const float desired_fov = controls.aim && !driving ? weapons.weapon().ads_fov : 70.0F;
         camera.fovy += (desired_fov-camera.fovy) * (1.0F-std::exp(-dt*12.0F));
         if (player.third_person) {
             const float distance = controls.aim ? 2.5F : 5.0F;
@@ -1388,6 +1393,8 @@ void Renderer::run() {
         weapon_input.next_weapon=controls.next_weapon;
         weapon_input.sprint=controls.sprint && !controls.aim && movement_amount>.1F;
         weapon_input.grounded=player.grounded;
+        weapon_input.crouched=controls.crouch;
+        weapon_input.fire_mode=controls.fire_mode;
         weapon_input.movement=movement_amount;
         npc_reconcile_timer+=dt;
         if(creator_active || npc_reconcile_timer>=.5F) {
@@ -1395,8 +1402,23 @@ void Renderer::run() {
             npc_reconcile_timer=0;
         }
         weapons.update((shop_open || mode_session.terminal()) ? 0.0F : dt,weapon_input,{gun_muzzle,gun_direction},combat_world);
-        recoil_pitch=std::min(.20F,recoil_pitch+weapons.events().pitch_kick);
-        recoil_yaw+=weapons.events().yaw_kick;
+        // Battle-royale recoil: each shot lifts the aim itself (the player pulls it back down);
+        // once the trigger is released, part of the climb settles back on its own.
+        if(weapons.events().shots>0) {
+            player.pitch=std::clamp(player.pitch+weapons.events().pitch_kick,-1.2F,1.0F);
+            player.yaw+=weapons.events().yaw_kick;
+            recoil_debt+=weapons.events().pitch_kick;recoil_quiet=0;recoil_settle=0;
+            recoil_pitch=std::min(.035F,recoil_pitch+weapons.events().pitch_kick*.6F);
+            recoil_yaw+=weapons.events().yaw_kick*.5F;
+        } else {
+            recoil_quiet+=dt;
+            if(recoil_quiet>.1F && recoil_debt>0) {recoil_settle+=recoil_debt*weapons.weapon().recoil_recovery;recoil_debt=0;}
+            if(recoil_settle>0) {
+                const float step=recoil_settle*(1-std::exp(-dt*9.0F));
+                player.pitch=std::clamp(player.pitch-step,-1.2F,1.0F);recoil_settle-=step;
+                if(recoil_settle<.0003F) recoil_settle=0;
+            }
+        }
         environment_audio.play_combat(weapons.selected(),weapons.events());
         // Session clock for sounds and the match; it stops while the game is paused.
         if(!vehicle_paused) match_time+=dt;
@@ -1819,7 +1841,8 @@ void Renderer::run() {
             input_system.layout(),
             screen_width,
             screen_height,
-            !creator_active
+            !creator_active,
+            weapons.available() && weapons.weapon().automatic && !driving ? (weapons.single_fire() ? "SINGLE" : "AUTO") : nullptr
         );
 
         if (
@@ -1873,7 +1896,7 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
         if(game_mode==game::GameMode::DevLab)dev_lab.draw_tools(screen_width,screen_height,creator_active);
 #endif
-        if(const auto* driver=vehicles.driver())DrawText(TextFormat("%.0f km/h | JUMP: brake | CROUCH: park | SPRINT: horn | USE: exit",std::abs(driver->speed)*3.6F),20,screen_height-32,16,YELLOW);
+        if(const auto* driver=vehicles.driver())DrawText(TextFormat("%.0f km/h%s | JUMP: handbrake | SPRINT: boost | CROUCH: park | H: horn | USE: exit",std::abs(driver->speed)*3.6F,driver->boosting ? "  BOOST" : ""),20,screen_height-32,16,YELLOW);
         else if(!creator_active && !inventory_open && vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z})>=0)DrawText("USE / E - Enter vehicle",screen_width/2-120,screen_height-100,20,YELLOW);
         if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !shop_open && !inventory_open) {
             const int objective_bottom=game::PlayUI::draw_objective(mode_session,screen_width);

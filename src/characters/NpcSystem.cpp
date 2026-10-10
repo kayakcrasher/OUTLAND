@@ -167,7 +167,7 @@ NpcHit NpcSystem::trace_segment(Vector3 start,Vector3 end) const {
         }
         if(hit && enter>=0 && enter<=1 && (best.actor<0 || enter<best.fraction)) {
             const auto point=Vector3Add(start,Vector3Scale(delta,enter));
-            best={static_cast<int>(i),enter,point,normal,point.y>p.y+1.45F};
+            best={static_cast<int>(i),enter,point,normal,point.y>p.y+1.45F,point.y<p.y+.85F};
         }
     }
     return best;

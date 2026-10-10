@@ -1,3 +1,4 @@
+#include <chrono>
 #include "outland/input/InputSystem.hpp"
 
 #include <raylib.h>
@@ -6,6 +7,12 @@
 #include <algorithm>
 
 namespace outland::input {
+namespace {
+// Wall clock for the aim button's tap/hold timing (no window clock needed).
+double seconds_now() {
+    return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+}
 
 namespace {
 
@@ -142,6 +149,8 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
             if (hit(p, layout_.jump, 43)) return Control::Jump;
             if (hit(p, layout_.view, 43)) return Control::View;
             if (hit(p, layout_.fire, 43)) return Control::Fire;
+            if (hit(p, layout_.fire_left, 43)) return Control::FireLeft;
+            if (hit(p, layout_.fire_mode, 43)) return Control::FireMode;
             if (hit(p, layout_.aim, 43)) return Control::Aim;
             if (hit(p, layout_.reload, 43)) return Control::Reload;
             if (hit(p, layout_.weapon, 43)) return Control::Weapon;
@@ -173,11 +182,17 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         case Control::Interact: player_.interact |= fresh; break;
         case Control::Sprint: player_.sprint = true; break;
         case Control::Crouch: player_.crouch = true; break;
-        case Control::Fire: player_.fire = true; break;
-        case Control::Aim: player_.aim = true; break;
+        case Control::Fire: case Control::FireLeft: player_.fire = true; break;
+        case Control::FireMode: player_.fire_mode |= fresh; break;
+        case Control::Aim:
+            if (fresh) aim_pressed_at_ = seconds_now();
+            aim_held_ = true;
+            break;
         case Control::None: break;
         }
     };
+    const bool aim_was_held = aim_held_;
+    aim_held_ = false;
     const int count = GetTouchPointCount();
     std::erase_if(owners_, [&](const TouchOwner& owner) {
         for (int i = 0; i < count; ++i) if (GetTouchPointId(i) == owner.id) return false;
@@ -211,6 +226,10 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         if(!down)mouse_quarantined_=false;
         had_native_touch_=false;
     } else {mouse_control_=Control::None;had_native_touch_=true;}
+    // Aim button released: a quick tap toggles sights, a long hold just ends.
+    if (aim_was_held && !aim_held_ && seconds_now() - aim_pressed_at_ < .3) aim_toggled_ = !aim_toggled_;
+    if (!gameplay || blocked) aim_toggled_ = false;
+    player_.aim = aim_toggled_ || (aim_held_ && seconds_now() - aim_pressed_at_ >= .3);
     if (blocked) return;
     if (IsKeyDown(KEY_W)) player_.move_y -= 1;
     if (IsKeyDown(KEY_S)) player_.move_y += 1;
@@ -226,6 +245,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         player_.aim |= IsKeyDown(KEY_Q) || (count == 0 && IsMouseButtonDown(MOUSE_BUTTON_RIGHT));
         player_.reload |= IsKeyPressed(KEY_R);
         player_.next_weapon |= IsKeyPressed(KEY_TAB);
+        player_.fire_mode |= IsKeyPressed(KEY_B);
         player_.inventory |= IsKeyPressed(KEY_I);
         player_.interact |= IsKeyPressed(KEY_E);
     }
@@ -235,6 +255,8 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         player_.move_x = movement.x; player_.move_y = movement.y;
     }
     if (player_.crouch) player_.sprint = false;
+    // Sprinting lowers the sights, as in any battle royale.
+    if (player_.sprint && Vector2Length(movement) > .1F) {aim_toggled_ = false; player_.aim = false;}
 }
 
 const PlayerInput&

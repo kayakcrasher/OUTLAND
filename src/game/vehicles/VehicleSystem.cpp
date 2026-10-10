@@ -130,7 +130,7 @@ bool VehicleSystem::place(world::VerdaRegion &region, std::string_view id, Vecto
     auto &v = vehicles_[static_cast<std::size_t>(index)];
     v.position = a->position;
     v.yaw = a->rotation_y;
-    v.speed = v.steering = 0;
+    v.speed = v.steering = v.slip = 0;
     v.escape = 0;
     return true;
 }
@@ -238,6 +238,7 @@ bool VehicleSystem::reconcile(world::VerdaRegion &region) {
                 v.id = a.id;
                 if (distance(v.position, a.position) > .001F || v.yaw != a.rotation_y) {
                     v.speed = 0;
+                    v.slip = 0;
                     v.position = a.position;
                     v.yaw = a.rotation_y;
                 }
@@ -406,36 +407,53 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         const float old_speed = v.speed;
         const float throttle = std::clamp(controls.throttle, -1.0F, 1.0F);
         const bool opposing = v.speed * throttle < -.2F;
-        float acceleration = throttle * d->acceleration * performance;
+        // Battle-royale handling: strong pull off the line that tapers toward top speed, a boost,
+        // air drag, and a car whose momentum carries it sideways until the tyres bite.
+        v.boosting = controls.boost && throttle > .1F && a->vehicle.fuel > 0;
+        const float top = d->top_speed * performance * (v.boosting ? 1.12F : 1.0F);
+        const float pull = std::max(.2F, 1 - .75F * (v.speed / std::max(1.0F, top)) * (v.speed / std::max(1.0F, top)));
+        float acceleration = throttle * d->acceleration * performance * (throttle > 0 ? pull : 1.0F) * (v.boosting ? 1.45F : 1.0F);
         if (a->vehicle.fuel <= 0)
             acceleration = 0;
         if (opposing)
             acceleration = throttle * d->brake;
         v.speed += acceleration * dt;
-        const float resistance = d->drag + std::abs(v.speed) * .035F +
-                                 (controls.brake ? d->brake : 0) +
+        const float resistance = d->drag + v.speed * v.speed * .0011F + std::abs(v.speed) * .01F +
+                                 (controls.brake ? d->brake * .6F : 0) +
                                  (controls.parking ? d->brake * 1.8F : 0);
         v.speed = std::copysign(std::max(0.0F, std::abs(v.speed) - resistance * dt), v.speed);
-        v.speed = std::clamp(v.speed, -d->reverse * performance, d->top_speed * performance);
+        v.speed = std::clamp(v.speed, -d->reverse * performance, top);
         const float target =
             std::clamp(controls.steer, -1.0F, 1.0F) * d->steer / (1 + std::abs(v.speed) * .04F);
         v.steering += (target - v.steering) * std::min(1.0F, dt * 8);
+        // The handbrake locks the rear wheels: the tail swings round.
         const float yaw_delta = v.speed / std::max(.5F, (d->front_z - d->rear_z) * scale) *
-                                std::tan(v.steering * DEG2RAD) * RAD2DEG * dt;
+                                std::tan(v.steering * DEG2RAD) * RAD2DEG * dt * (controls.brake ? 1.6F : 1.0F);
         float yaw = std::remainder(v.yaw + yaw_delta, 360.0F);
+        // Turning leaves the old direction of travel behind as sideways slip; grip bleeds it off
+        // (barely, with the handbrake on), which is a drift.
+        v.slip -= v.speed * std::sin(yaw_delta * DEG2RAD);
+        const float grip = controls.brake ? 1.2F : 8.0F * (.5F + .5F * tire);
+        v.slip *= std::exp(-grip * dt);
+        if (std::abs(v.slip) < .01F) v.slip = 0;
+        const float travel = std::sqrt(v.speed * v.speed + v.slip * v.slip);
         const int steps =
-            std::clamp(static_cast<int>(std::ceil(std::abs(v.speed * dt) / .4F)), 1, 12);
+            std::clamp(static_cast<int>(std::ceil(travel * dt / .4F)), 1, 12);
         // A car that already overlaps something (placed on a pole, or a world edit landed on it)
         // gets one body length to drive clear of it; otherwise every move would be refused.
         if (v.escape <= 0 && std::abs(v.speed) > .001F && blocked(r, a->position, a->rotation_y, *d, scale, a->id))
             v.escape = d->length * scale + .5F;
         for (int step = 0; step < steps; ++step) {
-            auto p = world_point({0, 0, v.speed * dt / steps}, a->position, yaw);
+            auto p = world_point({v.slip * dt / steps, 0, v.speed * dt / steps}, a->position, yaw);
             p.y = world::terrain::TerrainHeight::sample(p.x, p.z);
-            if (v.escape > 0) v.escape -= std::abs(v.speed * dt / steps);
+            if (v.escape > 0) v.escape -= travel * dt / steps;
             else if (blocked(r, p, yaw, *d, scale, a->id)) {
-                a->vehicle.health = std::max(0.0F, a->vehicle.health - std::abs(v.speed) * .4F);
+                // Crashes hurt in proportion to the impact; a hard one hurts whoever is driving.
+                const float impact = travel;
+                a->vehicle.health = std::max(0.0F, a->vehicle.health - std::max(0.0F, impact - 3) * 2.2F);
+                if (driving && impact > 14 && occupant_damage_) occupant_damage_((impact - 14) * 3);
                 v.speed = 0;
+                v.slip = 0;
                 events_.collision = true;
                 changed = true;
                 break;
