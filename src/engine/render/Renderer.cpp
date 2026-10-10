@@ -46,6 +46,7 @@
 
 #include "outland/game/culture/SignRenderer.hpp"
 #include "outland/game/life/LifePopulation.hpp"
+#include "outland/game/zombies/ZombieEcology.hpp"
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
@@ -507,6 +508,9 @@ void Renderer::run() {
     }
 #endif
     game::life::LifeSimulation island_life;
+    // Zombie Survival's infected: nests, hordes, noise; bodies near the player (NpcSystem).
+    game::zombies::ZombieEcology zombies;
+    std::uint64_t zombie_seed=0x2b7e1516U;
     // Esperanto signage and the flag. Rebuilt when a mode starts and after Creator edits.
     game::culture::SignRenderer sign_renderer;
     sign_renderer.load(GetApplicationDirectory());
@@ -752,6 +756,10 @@ void Renderer::run() {
                     }
                 } else {island_life.clear(npcs);island_life.bind_vehicles(nullptr,nullptr);}
                 npc_reconcile_timer=.5F;
+                if(game::rules_for(game_mode).zombie_ecology) {
+                    zombies.build(verda_region,&character_registry,++zombie_seed);zombies.reset(npcs);
+                    zombies.clear_area({player.position.x,player.position.y-1,player.position.z},70); // a safe start
+                } else zombies.clear(npcs);
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
                 zombie_hour=17.5F;lit_asset_count=static_cast<std::size_t>(-1);
                 justice.reset(nullptr,nullptr);crimes.clear();police_tracers.clear();
@@ -1434,7 +1442,7 @@ void Renderer::run() {
             if(const auto* car=vehicles.driver()) {
                 if(std::abs(car->speed)>2.0F)
                     sound_bus.emit(game::sound::SoundKind::Engine,car->position,game::sound::radius::engine*std::clamp(std::abs(car->speed)/15.0F,.5F,2.0F),0,match_time);
-                if(controls.sprint) sound_bus.emit(game::sound::SoundKind::Horn,car->position,game::sound::radius::horn,0,match_time);
+                if(IsKeyDown(KEY_H)) sound_bus.emit(game::sound::SoundKind::Horn,car->position,game::sound::radius::horn,0,match_time);
             }
         }
         characters::NpcContext npc_context;
@@ -1450,6 +1458,10 @@ void Renderer::run() {
         if(!island_life.empty()) {
             island_life.hear(sound_bus);
             island_life.update(dt,npc_context.player_position,npcs,vehicle_paused);
+        }
+        if(!zombies.empty()) {
+            zombies.hear(sound_bus);
+            zombies.update(vehicle_paused ? 0.0F : dt,{npc_context.player_position,last_daylight,match_time},npcs);
         }
         player_health.damage(npcs.events().player_damage);
         // Police gunfire is heard like any other and leaves tracers.
@@ -1728,6 +1740,18 @@ void Renderer::run() {
             const int minutes=static_cast<int>(sky.hour*60)%1440;
             const char* clock=TextFormat("%02d:%02d%s",minutes/60,minutes%60,game_mode==game::GameMode::DevLab ? "  F6/F7" : "");
             DrawText(clock,screen_width/2-MeasureText(clock,18)/2,40,18,RAYWHITE);
+            if(!zombies.empty()) {
+                // How bad it is out there, and a warning when a horde is on the move nearby.
+                const auto infected=zombies.stats();
+                const char* line=TextFormat("INFECTED NEAR %d  |  KILLED %d",infected.near,infected.killed);
+                DrawText(line,screen_width/2-MeasureText(line,16)/2,62,16,Color{215,235,190,255});
+                const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+                for(const auto& horde:zombies.hordes()) if(std::hypot(horde.position.x-feet.x,horde.position.z-feet.z)<400) {
+                    const char* warning="A HORDE IS MOVING NEARBY";
+                    DrawText(warning,screen_width/2-MeasureText(warning,18)/2,82,18,Color{255,120,90,255});
+                    break;
+                }
+            }
         }
 
         // ====================================================

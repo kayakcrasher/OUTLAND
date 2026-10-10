@@ -131,6 +131,7 @@ add_library(
     src/game/life/LifePopulation.cpp
     src/game/life/LifeSimulation.cpp
     src/game/life/LifeTraffic.cpp
+    src/game/zombies/ZombieEcology.cpp
     src/game/law/Justice.cpp
     src/game/culture/Esperanto.cpp
     src/game/culture/Signage.cpp
@@ -557,6 +558,12 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_traffic_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_traffic_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_traffic_tests COMMAND outland_traffic_tests)
+
+    add_executable(outland_zombie_ecology_tests tests/integration/zombies/test_zombie_ecology.cpp)
+    target_link_libraries(outland_zombie_ecology_tests PRIVATE outland_render)
+    target_compile_options(outland_zombie_ecology_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_zombie_ecology_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_zombie_ecology_tests COMMAND outland_zombie_ecology_tests)
 
     add_executable(outland_animation_asset_tests tests/integration/assets/test_animation_assets.cpp)
     target_link_libraries(outland_animation_asset_tests PRIVATE outland_render)
