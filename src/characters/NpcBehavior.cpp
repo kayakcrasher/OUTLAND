@@ -65,6 +65,12 @@ void navigate(NpcInstance& actor,Vector3 goal,float speed,float dt,const NpcEnvi
     const float moved=std::hypot(actor.position.x-before.x,actor.position.z-before.z);
     actor.stuck_time=wanted>.01F && moved<wanted*.3F ? actor.stuck_time+dt : 0.0F;
     if(actor.stuck_time>.6F) {actor.stuck_time=0;actor.follower.repath_soon();}
+    const float left=std::hypot(goal.x-actor.position.x,goal.z-actor.position.z);
+    if(std::hypot(goal.x-actor.progress_goal.x,goal.z-actor.progress_goal.z)>1 || left<actor.progress_best-.3F) {
+        actor.progress_goal=goal;actor.progress_best=left;actor.progress_clock=0;
+    } else if((actor.progress_clock+=dt)>1.5F && left>1) {
+        actor.progress_clock=0;actor.progress_best=left;actor.follower.repath_soon();
+    }
 }
 }
 float NpcBehavior::tick(NpcInstance& actor,const NpcTuning& tuning,float dt,

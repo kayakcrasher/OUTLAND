@@ -110,6 +110,30 @@ bool VehicleSystem::spawn(world::VerdaRegion &region, Vector3 near, float yaw,
         }
     return false;
 }
+int VehicleSystem::find(std::string_view id) const {
+    for (std::size_t i = 0; i < vehicles_.size(); ++i)
+        if (vehicles_[i].id == id)
+            return static_cast<int>(i);
+    return -1;
+}
+bool VehicleSystem::place(world::VerdaRegion &region, std::string_view id, Vector3 position,
+                          float yaw) {
+    if (id == driver_id_ || !finite(position) || !std::isfinite(yaw))
+        return false;
+    auto *a = asset(region, id);
+    const int index = find(id);
+    if (!a || index < 0)
+        return false;
+    position.y = world::terrain::TerrainHeight::sample(position.x, position.z);
+    a->position = position;
+    a->rotation_y = std::remainder(yaw, 360.0F);
+    auto &v = vehicles_[static_cast<std::size_t>(index)];
+    v.position = a->position;
+    v.yaw = a->rotation_y;
+    v.speed = v.steering = 0;
+    v.escape = 0;
+    return true;
+}
 bool VehicleSystem::reconcile(world::VerdaRegion &region) {
     bool changed = false;
     std::size_t placed_count = 0;
@@ -329,8 +353,10 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         if (!a)
             continue;
         const bool driving = v.id == driver_id_;
-        v.sleeping = !driving && (paused || distance(a->position, player) > 180 * 180 ||
-                                  std::abs(v.speed) < .02F);
+        const auto pilot = driving ? autopilot_.end() : autopilot_.find(v.id);
+        const bool piloted = pilot != autopilot_.end();
+        v.sleeping = !driving && (paused || (!piloted && (distance(a->position, player) > 180 * 180 ||
+                                                          std::abs(v.speed) < .02F)));
         if (v.sleeping)
             continue;
         const auto *d = definition(*a);
@@ -339,8 +365,10 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         const float scale = scale_of(*a, *d);
         if (!std::isfinite(scale) || scale <= 0)
             continue;
-        VehicleInput controls =
-            driving && !paused && !a->vehicle.destroyed ? input : VehicleInput{};
+        VehicleInput controls = paused || a->vehicle.destroyed ? VehicleInput{}
+                                : driving                          ? input
+                                : piloted                          ? pilot->second
+                                                                   : VehicleInput{};
         if (!std::isfinite(controls.throttle))
             controls.throttle = 0;
         if (!std::isfinite(controls.steer))

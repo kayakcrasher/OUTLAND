@@ -336,6 +336,43 @@ Activity planned_activity(const Resident& resident,Weekday day,int minute) {
     return activity;
 }
 
+// Cars on the map go to the households parked beside them.
+void assign_cars(Island& island,const world::VerdaRegion& region) {
+    std::vector<Car> parked;
+    for(const auto& town:region.settlements()) {
+        for(const auto& marker:town.gameplay_markers)
+            if(marker.type==world::GameplayMarkerType::VehicleSpawn && marker.enabled)
+                parked.push_back({"vehicle_marker_"+town.id+"_"+marker.id,-1,-1,marker.position,marker.rotation_y});
+        for(const auto& asset:town.assets)
+            if(!asset.vehicle.definition.empty() && asset.vehicle.marker.empty() && asset.vehicle.enabled && !asset.vehicle.destroyed)
+                parked.push_back({asset.id,-1,-1,asset.vehicle.home,asset.vehicle.home_yaw});
+    }
+    std::sort(parked.begin(),parked.end(),[](const Car& a,const Car& b){return a.vehicle<b.vehicle;});
+    std::vector<bool> has_car(island.places.size(),false);
+    for(auto& car:parked) {
+        int best=-1;float best_distance=70;
+        for(std::size_t i=0;i<island.places.size();++i) {
+            const auto& place=island.places[i];
+            if(place.home_capacity<=0 || has_car[i]) continue;
+            const float d=flat_distance(place.door,car.spot);
+            if(d<best_distance) {best_distance=d;best=static_cast<int>(i);}
+        }
+        if(best<0) continue;
+        // The driver: whoever lives there with the longest way to work.
+        int driver=-1;float furthest=-1;
+        for(const auto& r:island.residents) {
+            if(r.home!=best || r.car>=0) continue;
+            const float commute=r.work>=0 ? flat_distance(island.places[static_cast<std::size_t>(r.work)].door,car.spot) : 0;
+            if(commute>furthest) {furthest=commute;driver=r.id;}
+        }
+        if(driver<0) continue;
+        has_car[static_cast<std::size_t>(best)]=true;
+        car.owner=driver;car.home=best;
+        island.residents[static_cast<std::size_t>(driver)].car=static_cast<int>(island.cars.size());
+        island.cars.push_back(car);
+    }
+}
+
 Island build_island(const world::VerdaRegion& region,const characters::CharacterRegistry* registry,PopulationOptions options) {
     Island island;
     build_places(island,region);
@@ -498,6 +535,7 @@ Island build_island(const world::VerdaRegion& region,const characters::Character
         }
         r.place=r.home;r.from=r.body=island.places[static_cast<std::size_t>(r.home)].interior;
     }
+    assign_cars(island,region);
     return island;
 }
 }

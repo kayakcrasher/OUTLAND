@@ -17,6 +17,10 @@ struct NpcInstance {
     AnimationController animation;
     world::navigation::PathFollower follower; // route to the current trip or chase target
     float stuck_time{0};
+    // Net progress toward the navigation goal: sliding to and fro along a wall moves the body
+    // without getting it anywhere, which per-step stuck checks miss.
+    Vector3 progress_goal{};
+    float progress_best{0}, progress_clock{0};
     Vector3 animated_position{}; // where the body was last animated; gives gait ground speed
     bool animated{false};
     // Life-driven actors: owned by game::life, kept across marker reconciliation.

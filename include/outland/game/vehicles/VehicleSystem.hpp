@@ -56,6 +56,17 @@ class VehicleSystem {
     }
     void begin_frame() { events_ = {}; }
     const VehicleEvents &events() const { return events_; }
+    // Autopilot: a vehicle driven by someone other than the player (island life's drivers).
+    // Its controls are applied every update until cleared; it never sleeps while set.
+    void set_autopilot(std::string_view id, VehicleInput input) { autopilot_[std::string(id)] = input; }
+    void clear_autopilot(std::string_view id) { autopilot_.erase(std::string(id)); }
+    bool autopiloted(std::string_view id) const { return autopilot_.contains(std::string(id)); }
+    void clear_autopilots() { autopilot_.clear(); }
+    // Index into vehicles(), or -1.
+    int find(std::string_view id) const;
+    // Move a vehicle to a new pose at rest (off-screen traffic, parking it home). Refused while
+    // the player drives it.
+    bool place(world::VerdaRegion &region, std::string_view id, Vector3 position, float yaw);
     void bind_occupant_damage(std::function<void(float)> damage) {
         occupant_damage_ = std::move(damage);
     }
@@ -78,5 +89,6 @@ class VehicleSystem {
     unsigned spawn_counter_{0};
     world::VerdaRegion *owner_{nullptr};
     std::unordered_map<std::string, world::WorldAsset *> assets_;
+    std::unordered_map<std::string, VehicleInput> autopilot_;
 };
 } // namespace outland::game::vehicles

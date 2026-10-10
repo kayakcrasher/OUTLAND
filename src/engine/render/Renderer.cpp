@@ -688,8 +688,10 @@ void Renderer::run() {
                 world::physics::MeshCollisionLibrary::preload(verda_region);
                 // Explore lives on Verda: rebuild residents from the current (possibly Creator-edited) towns.
                 if(game::rules_for(game_mode).civilian_life) {
-                    island_life.build(verda_region,&character_registry);island_life.reset(npcs);
-                } else island_life.clear(npcs);
+                    island_life.build(verda_region,&character_registry);
+                    island_life.bind_vehicles(&vehicles,&verda_region); // residents drive the island's cars
+                    island_life.reset(npcs);
+                } else {island_life.clear(npcs);island_life.bind_vehicles(nullptr,nullptr);}
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
                 zombie_hour=17.5F;lit_asset_count=static_cast<std::size_t>(-1);
                 justice.reset(nullptr,nullptr);crimes.clear();police_tracers.clear();
@@ -826,7 +828,21 @@ void Renderer::run() {
             if(vehicles.driver()){
                 if(vehicles.exit(verda_region,exit)){player.position=Vector3Add(exit,{0,1,0});player.vertical_velocity=0;vehicle_renderer.reset_camera();interaction_message="Exited vehicle";}
                 else interaction_message="Stop and leave space beside the vehicle to exit";
-            }else {const int vehicle=vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z});if(vehicle>=0 && vehicles.enter(verda_region,vehicle,{player.position.x,player.position.y-1,player.position.z})){vehicle_orbit=vehicle_pitch=0;input_system.cancel_controls();interaction_message="Driving - move to accelerate/steer; JUMP brakes; USE exits";}}
+            }else {
+                const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+                const int vehicle=vehicles.nearest(verda_region,feet);
+                // Residents' cars: a moving one can't be boarded; taking one is a crime.
+                const std::string id=vehicle>=0 ? vehicles.vehicles()[static_cast<std::size_t>(vehicle)].id : std::string();
+                if(vehicle>=0 && island_life.car_moving(id) && std::abs(vehicles.vehicles()[static_cast<std::size_t>(vehicle)].speed)>3) interaction_message="It's moving";
+                else if(vehicle>=0 && vehicles.enter(verda_region,vehicle,feet)){
+                    vehicle_orbit=vehicle_pitch=0;input_system.cancel_controls();interaction_message="Driving - move to accelerate/steer; JUMP brakes; USE exits";
+                    if(game::rules_for(game_mode).civilian_life) {
+                        const auto taken=island_life.take_car(id);
+                        if(taken.occupied) {crimes.push_back({game::law::CrimeKind::Assault,taken.owner});interaction_message="You pulled the driver out - carjacking";}
+                        else if(taken.owner>=0) crimes.push_back({game::law::CrimeKind::CarTheft,-1});
+                    }
+                }
+            }
             interaction_remaining=3;
         }
         const bool driving=vehicles.driver()!=nullptr;

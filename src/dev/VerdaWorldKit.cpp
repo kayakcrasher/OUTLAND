@@ -25,22 +25,27 @@ public:
         for (const auto& asset : catalog.assets()) if (!asset.model_path.empty()) by_path_.emplace(asset.model_path, &asset);
         for (const auto& settlement : region.settlements()) {
             for (const auto& asset : settlement.assets) ids_.insert(asset.id);
-            for (const auto& building : settlement.buildings) {
-                const float r = std::max(building.size.x, building.size.z) * .5F + 3;
-                taken_.push_back({building.position.x - r, building.position.z - r, building.position.x + r, building.position.z + r});
-            }
+            for (const auto& building : settlement.buildings) taken_.push_back(building_lot(building));
             for (const auto& road : settlement.roads) roads_.push_back(road);
             for (const auto& marker : settlement.gameplay_markers)
                 taken_.push_back({marker.position.x - 2, marker.position.z - 2, marker.position.x + 2, marker.position.z + 2});
         }
     }
+    // The lot a procedural building reserved (its footprint plus a 3 m margin).
+    static Lot building_lot(const world::Building& building) {
+        const float r = std::max(building.size.x, building.size.z) * .5F + 3;
+        return {building.position.x - r, building.position.z - r, building.position.x + r, building.position.z + r};
+    }
     // Reserve a rectangular lot (world space, axis-aligned bounds); false if anything is there.
-    bool claim(Vector3 centre, float half_x, float half_z, float yaw) {
+    // `own` is a lot the new one may overlap (a driveway inside its house's margin).
+    bool claim(Vector3 centre, float half_x, float half_z, float yaw, const Lot* own = nullptr) {
         const float c = std::abs(std::cos(yaw * DEG2RAD)), s = std::abs(std::sin(yaw * DEG2RAD));
         const float hx = half_x * c + half_z * s, hz = half_x * s + half_z * c;
         const Lot lot{centre.x - hx, centre.z - hz, centre.x + hx, centre.z + hz};
-        for (const auto& other : taken_)
+        for (const auto& other : taken_) {
+            if (own && other.x0 == own->x0 && other.z0 == own->z0 && other.x1 == own->x1 && other.z1 == own->z1) continue;
             if (lot.x0 < other.x1 && lot.x1 > other.x0 && lot.z0 < other.z1 && lot.z1 > other.z0) {++report.skipped_lots; report.skipped.push_back(centre); return false;}
+        }
         // Keep lots off the streets (sampled along each road; long diagonal roads stay precise).
         for (const auto& road : roads_) {
             const float margin = road.width * .5F + 1.5F, length = Vector3Distance(road.start, road.end);
@@ -524,6 +529,38 @@ void espera(Kit& kit) {
     modular_building(kit, {c.x + 55, 0, c.z - 45}, 270, 4, 4, "brick", 2, 66);
     prop(kit, urban + "Bus stops/busstop_single_seat.glb", {c.x + 9, 0, c.z + 34}, 90, 2.5F);
 }
+
+// Island life drives: most houses in the small towns get the family car on the drive beside them.
+void driveways(Kit& kit, world::VerdaRegion& region) {
+    for (auto& town : region.runtime_settlements()) {
+        if (town.id.find("capital") != std::string::npos) continue; // downtown parks at the kerb
+        int parked = 0;
+        std::vector<world::GameplayMarker> cars;
+        for (const auto& house : town.buildings) {
+            if (house.style != world::BuildingStyle::RuralHouse && house.style != world::BuildingStyle::TwoStoryHouse) continue;
+            const auto r = hash(900U + static_cast<std::uint32_t>(std::hash<std::string>{}(house.id) & 0xFFFF));
+            if (r % 4 == 0) continue;
+            const Lot own = Kit::building_lot(house);
+            const float terrain = world::terrain::TerrainHeight::sample(house.position.x, house.position.z);
+            for (const float side : {r % 2 ? 1.0F : -1.0F, r % 2 ? -1.0F : 1.0F}) {
+                // Beside the house, level with its front, nose to the road.
+                Vector3 spot = to_world({house.position.x, terrain, house.position.z}, house.rotation_y, side * (house.size.x * .5F + 2.3F), 0, -house.size.z * .5F + 2.6F);
+                if (!kit.claim(spot, 1.3F, 2.6F, house.rotation_y, &own)) continue;
+                world::GameplayMarker car;
+                car.id = "vehicle_spawn_hatchback_" + town.id + "_drive_" + std::to_string(++parked);
+                car.type = world::GameplayMarkerType::VehicleSpawn;
+                spot.y = world::terrain::TerrainHeight::sample(spot.x, spot.z);
+                car.position = spot;
+                car.size = {2, 1.6F, 4.4F};
+                car.rotation_y = house.rotation_y + 180;
+                cars.push_back(car);
+                ++kit.report.driveways;
+                break;
+            }
+        }
+        town.gameplay_markers.insert(town.gameplay_markers.end(), cars.begin(), cars.end());
+    }
+}
 }
 
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
@@ -535,6 +572,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     porto_luma(kit);
     suda_haveno(kit);
     espera(kit);
+    driveways(kit, region);
     return kit.report;
 }
 }

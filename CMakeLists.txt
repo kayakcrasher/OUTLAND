@@ -125,6 +125,7 @@ add_library(
     src/game/life/LifeTypes.cpp
     src/game/life/LifePopulation.cpp
     src/game/life/LifeSimulation.cpp
+    src/game/life/LifeTraffic.cpp
     src/game/law/Justice.cpp
     src/game/culture/Esperanto.cpp
     src/game/culture/Signage.cpp
@@ -137,6 +138,7 @@ add_library(
     src/world/physics/WorldCollision.cpp
     src/world/physics/MeshCollision.cpp
     src/world/navigation/NavGrid.cpp
+    src/world/roads/RoadGraph.cpp
     src/world/sky/DayNight.cpp
     src/world/assets/VerdanArchitecture.cpp
     src/world/assets/VerdanProps.cpp
@@ -504,6 +506,12 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_signage_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_signage_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_signage_tests COMMAND outland_signage_tests)
+
+    add_executable(outland_traffic_tests tests/integration/life/test_traffic.cpp)
+    target_link_libraries(outland_traffic_tests PRIVATE outland_render)
+    target_compile_options(outland_traffic_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_traffic_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_traffic_tests COMMAND outland_traffic_tests)
 
     add_executable(outland_animation_asset_tests tests/integration/assets/test_animation_assets.cpp)
     target_link_libraries(outland_animation_asset_tests PRIVATE outland_render)

@@ -19,7 +19,7 @@ struct KitBuilding {
     Vector3 upstairs_walk{0, 0, -4}; // from the top of the stairs, a walk across the upper floor
 };
 struct WorldKitReport {
-    int assets{0}, buildings{0}, skipped_lots{0}, purposes{0}, parks{0};
+    int assets{0}, buildings{0}, skipped_lots{0}, purposes{0}, parks{0}, driveways{0};
     std::vector<KitBuilding> enterable;
     std::vector<Vector3> skipped;     // centres of lots left empty because something was there
     std::vector<std::string> missing; // catalog models that could not be placed

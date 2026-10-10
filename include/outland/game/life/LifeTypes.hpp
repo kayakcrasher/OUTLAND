@@ -62,6 +62,19 @@ struct Block { int minute; Activity activity; };
 enum class DayType : std::uint8_t { Weekday, Saturday, Sunday };
 DayType day_type(Weekday day);
 
+// How the current trip is going: on foot (including the walk in from a parked car), walking out
+// to the car, or at the wheel.
+enum class Trip : std::uint8_t { Walk, ToCar, Driving };
+
+// A household's car: one of the world's real vehicles (VehicleSystem), driven by one resident.
+struct Car {
+    std::string vehicle;        // world vehicle asset id
+    int owner{-1};              // resident who drives it
+    int home{-1};               // household's home place
+    Vector3 spot{};             // where it is parked at home
+    float yaw{0};
+};
+
 struct Resident {
     int id{0};
     std::string first_name, family_name, character_id;
@@ -74,6 +87,7 @@ struct Resident {
     std::vector<int> household;        // resident ids sharing this home (including self)
     int visit_home{-1};                // relatives' or a friend's home
     bool churchgoer{false}, pub_regular{false}, works_weekends{false};
+    int car{-1};                       // Island::cars index this resident drives, or -1
     std::array<std::vector<Block>,7> days; // indexed by Weekday
 
     // Runtime state, session only.
@@ -85,6 +99,7 @@ struct Resident {
     Vector3 from{}, body{};          // abstract trip start; last physical position
     double depart{0}, arrive{0};     // island minutes
     int patrol_step{0};
+    Trip trip{Trip::Walk};
     // Police response (game::law::Justice): an officer sent to a location drops the schedule.
     bool responding{false};
     Vector3 response_target{};

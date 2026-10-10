@@ -17,6 +17,7 @@ const char* crime_name(CrimeKind kind) {
         case CrimeKind::Assault: return "assault";
         case CrimeKind::Murder: return "murder";
         case CrimeKind::AttackOnPolice: return "attack on an officer";
+        case CrimeKind::CarTheft: return "car theft";
         default: return "shooting";
     }
 }

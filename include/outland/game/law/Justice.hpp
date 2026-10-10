@@ -14,9 +14,10 @@ namespace outland::game::life { class LifeSimulation; }
 // keep the trail warm, arrest at one star and shoot from two; staying unseen long enough ends it.
 namespace outland::game::law {
 
-enum class CrimeKind : std::uint8_t { ShotsFired, Assault, Murder, AttackOnPolice };
+enum class CrimeKind : std::uint8_t { ShotsFired, Assault, Murder, AttackOnPolice, CarTheft };
 const char* crime_name(CrimeKind kind);
-// Stars for a crime someone saw: shooting 1, assault 2, murder 3, attacking police 4.
+// Stars for a crime someone saw: shooting or stealing a parked car 1, assault (carjacking
+// included) 2, murder 3, attacking police 4.
 int crime_severity(CrimeKind kind);
 
 struct JusticeConfig {

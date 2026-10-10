@@ -1692,6 +1692,8 @@ MARKER "creator_marker_building_purpose_kit_19" 4 354.799988 6.0999999 1771.5 1.
 MARKER "creator_marker_building_purpose_kit_20" 4 354.799988 6.0999999 1826.5 1.20000005 2.20000005 1.20000005 270 1
 MARKER "creator_marker_building_purpose_kit_21" 4 -59.7999992 6.0999999 -1846.5 1.20000005 2.20000005 1.20000005 90 1
 MARKER "creator_marker_building_purpose_kit_22" 4 59.7999992 6.0999999 -1843.5 1.20000005 2.20000005 1.20000005 270 1
+MARKER "vehicle_spawn_hatchback_village_espera_drive_1" 3 -20.2999992 6 -1782.90002 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_village_espera_drive_2" 3 -22.7999992 6 -1819.90002 2 1.60000002 4.4000001 180 1
 PURPOSE "creator_marker_building_purpose_kit_1" 7
 PURPOSE "creator_marker_building_purpose_kit_2" 9
 PURPOSE "creator_marker_building_purpose_kit_3" 1
@@ -1808,6 +1810,14 @@ BUILDING "south_haven_building_4" 0 322 0 1755 12 4 10 180 225 214 176 255 70 10
 BUILDING "south_haven_building_5" 0 322 0 1785 12 4 10 180 225 214 176 255 70 100 70 255 1
 BUILDING "south_haven_building_6" 0 322 0 1815 12 4 10 180 225 214 176 255 70 100 70 255 1
 BUILDING "south_haven_building_7" 0 322 0 1845 12 4 10 180 225 214 176 255 70 100 70 255 1
+MARKER "vehicle_spawn_hatchback_south_haven_drive_1" 3 269.700012 6 1752.59998 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_south_haven_drive_2" 3 286.299988 6 1782.59998 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_south_haven_drive_3" 3 269.700012 6 1812.59998 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_south_haven_drive_4" 3 269.700012 6 1842.59998 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_south_haven_drive_5" 3 330.299988 6 1757.40002 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_south_haven_drive_6" 3 313.700012 6 1787.40002 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_south_haven_drive_7" 3 313.700012 6 1817.40002 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_south_haven_drive_8" 3 330.299988 6 1847.40002 2 1.60000002 4.4000001 360 1
 SETTLEMENT "west_roka" "Roka" -1750 0 450 0 60 0 0
 ROAD -1750 0 360 -1750 0 540 8 2
 ROAD -1840 0 450 -1660 0 450 7 1

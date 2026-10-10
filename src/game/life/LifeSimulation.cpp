@@ -50,28 +50,38 @@ void LifeConfig::sanitize() {
     hearing_radius=bound(hearing_radius,0,3000,260);
     shelter_minutes=bound(shelter_minutes,0,1440,150);
     replan_period=bound(replan_period,.02F,60,.5F);
+    drive_distance=bound(drive_distance,0,100000,200);
+    car_reach=bound(car_reach,0,100000,220);
+    car_speed=bound(car_speed,.5F,100,11);
+    car_radius=bound(car_radius,0,2000,160);
+    car_release=std::max(bound(car_release,0,3000,230),car_radius+10);
+    max_driven=std::clamp(max_driven,0,64);
 }
 
 void LifeSimulation::build(const world::VerdaRegion& region,const characters::CharacterRegistry* registry,PopulationOptions options) {
     island_=build_island(region,registry,options);
+    roads_.build(region);
+    cars_.assign(island_.cars.size(),{});
     cursor_=0;replan_budget_=bridge_clock_=0;
 }
 
 void LifeSimulation::clear(characters::NpcSystem& npcs) {
     for(const auto& r:island_.residents) if(r.physical) npcs.despawn_resident(r.id);
-    island_={};cursor_=0;
+    reset_cars(); // cars go home before island life lets go of them
+    island_={};cars_.clear();cursor_=0;
 }
 
 void LifeSimulation::reset(characters::NpcSystem& npcs,WorldClock start) {
     clock_=start;cursor_=0;replan_budget_=0;heard_up_to_=0;bridge_clock_=std::numeric_limits<float>::max();
     for(auto& r:island_.residents) {
         if(r.physical) npcs.despawn_resident(r.id);
-        r.alive=true;r.physical=false;r.health=100;r.fear=0;r.shelter_until=-1;r.patrol_step=0;r.responding=false;
+        r.alive=true;r.physical=false;r.health=100;r.fear=0;r.shelter_until=-1;r.patrol_step=0;r.responding=false;r.trip=Trip::Walk;
         r.activity=planned_activity(r,clock_.weekday(),clock_.minute_of_day());
         r.place=resolve(r,r.activity);
         r.depart=r.arrive=clock_.minutes;
         r.from=r.body=abstract_position(r);
     }
+    reset_cars();
 }
 
 int LifeSimulation::resolve(const Resident& r,Activity activity) const {
@@ -123,6 +133,11 @@ Vector3 LifeSimulation::abstract_position(const Resident& r) const {
         const float t=distance<.1F ? 1.0F : std::clamp(static_cast<float>(real_seconds)*response_speed/distance,0.0F,1.0F);
         return Vector3Lerp(r.from,r.response_target,t);
     }
+    if(r.trip==Trip::Driving && r.car>=0) return cars_[static_cast<std::size_t>(r.car)].position;
+    if(r.trip==Trip::ToCar && r.car>=0) {
+        const float t=r.arrive>r.depart ? static_cast<float>((clock_.minutes-r.depart)/(r.arrive-r.depart)) : 1.0F;
+        return Vector3Lerp(r.from,car_door(r.car),std::clamp(t,0.0F,1.0F));
+    }
     if(r.place<0) return r.from;
     const auto& place=island_.places[static_cast<std::size_t>(r.place)];
     if(clock_.minutes<r.arrive && r.arrive>r.depart) {
@@ -138,7 +153,7 @@ Vector3 LifeSimulation::abstract_position(const Resident& r) const {
 Vector3 LifeSimulation::position(const Resident& r) const {return r.physical ? r.body : abstract_position(r);}
 
 bool LifeSimulation::indoors(const Resident& r) const {
-    if(r.place<0 || r.responding) return false;
+    if(r.place<0 || r.responding || r.trip!=Trip::Walk) return false;
     const auto& place=island_.places[static_cast<std::size_t>(r.place)];
     if(r.physical) return inside_footprint(place,r.body,0);
     return !travelling(r) && place.indoor && !outdoors_now(r);
@@ -152,12 +167,30 @@ void LifeSimulation::replan(Resident& r) {
     const int place=resolve(r,activity);
     if(activity==r.activity && place==r.place) return;
     const Vector3 current=position(r);
-    r.activity=activity;r.place=place;r.from=current;r.depart=clock_.minutes;
+    r.activity=activity;r.place=place;
+    // Already at the wheel: drive on to wherever the day goes next.
+    if(r.trip==Trip::Driving) {route_car(r);return;}
+    r.from=current;r.depart=clock_.minutes;
+    if(wants_car(r,current)) {
+        r.trip=Trip::ToCar;
+        r.arrive=clock_.minutes+flat_distance(current,car_door(r.car))/1.4/60;
+        return;
+    }
+    r.trip=Trip::Walk;
     r.arrive=clock_.minutes+travel_minutes(flat_distance(current,island_.places[static_cast<std::size_t>(place)].door));
+}
+
+Vector3 LifeSimulation::trip_target(const Resident& r) const {
+    if(r.trip!=Trip::Walk && r.car>=0) return car_door(r.car);
+    return r.place>=0 ? island_.places[static_cast<std::size_t>(r.place)].door : r.from;
 }
 
 LifeSimulation::Anchor LifeSimulation::physical_anchor(const Resident& r,Vector3 body) const {
     if(r.responding) return {r.response_target,1.5F};
+    // Out to the car: one fixed goal, and navigation finds the way out of the house and round it.
+    // (Switching between "the door" and "the car" as a body slides in and out of a doorway would
+    // restart the walk every time.)
+    if(r.trip==Trip::ToCar && r.car>=0) return {car_door(r.car),1.0F};
     const auto& target=island_.places[static_cast<std::size_t>(r.place)];
     const bool want_inside=target.indoor && !target.sealed && !outdoors_now(r);
     const float inside_radius=std::max(.5F,std::min(target.building_size.x,target.building_size.z)*.28F);
@@ -189,6 +222,12 @@ void LifeSimulation::sync_bodies(Vector3 player,characters::NpcSystem& npcs) {
             r.fear=1;r.shelter_until=std::max(r.shelter_until,clock_.minutes+config_.shelter_minutes);
         }
         replan(r);
+        // At the car: in, and the body leaves the world with it.
+        if(r.alive && r.trip==Trip::ToCar && r.car>=0 && flat_distance(r.body,car_door(r.car))<2.2F) {
+            npcs.despawn_resident(r.id);r.physical=false;
+            start_drive(r);
+            continue;
+        }
         const float distance=flat_distance(r.body,player);
         const auto& place=island_.places[static_cast<std::size_t>(r.place)];
         // Into a sealed building (office tower): the body goes in at the door and leaves the world.
@@ -200,11 +239,12 @@ void LifeSimulation::sync_bodies(Vector3 player,characters::NpcSystem& npcs) {
         npcs.despawn_resident(r.id);r.physical=false;
         if(!r.alive) continue;
         r.from=r.body;r.depart=clock_.minutes;
-        r.arrive=clock_.minutes+travel_minutes(flat_distance(r.body,island_.places[static_cast<std::size_t>(r.place)].door));
+        const float left=flat_distance(r.body,trip_target(r));
+        r.arrive=clock_.minutes+(r.trip==Trip::ToCar ? left/1.4/60 : travel_minutes(left));
     }
     std::vector<std::pair<float,int>> candidates;
     for(const auto& r:island_.residents) {
-        if(r.physical || !r.alive) continue;
+        if(r.physical || !r.alive || r.trip==Trip::Driving) continue;
         const float distance=flat_distance(abstract_position(r),player);
         if(indoors(r) && island_.places[static_cast<std::size_t>(r.place)].sealed) continue;
         if(distance<=(indoors(r) ? config_.indoor_radius : config_.materialize_radius)) candidates.emplace_back(distance,r.id);
@@ -237,6 +277,9 @@ void LifeSimulation::dispatch(int resident,Vector3 where) {
     if(resident<0 || static_cast<std::size_t>(resident)>=island_.residents.size() || !std::isfinite(where.x) || !std::isfinite(where.z)) return;
     auto& r=island_.residents[static_cast<std::size_t>(resident)];
     if(!r.alive) return;
+    // An officer at the wheel pulls over and goes the rest of the way as before.
+    if(r.trip==Trip::Driving && r.car>=0) {park_car(r.car,true);leave_car(r,false);}
+    r.trip=Trip::Walk;
     r.from=position(r);r.depart=clock_.minutes;
     r.responding=true;r.response_target=where;r.fear=0;r.shelter_until=-1;
 }
@@ -261,6 +304,7 @@ void LifeSimulation::update(float real_dt,Vector3 player,characters::NpcSystem& 
     auto steps=std::min<std::size_t>(count,static_cast<std::size_t>(replan_budget_));
     replan_budget_-=static_cast<float>(steps);
     while(steps-->0) {replan(island_.residents[cursor_]);cursor_=(cursor_+1)%count;}
+    update_traffic(real_dt,player,npcs);
     bridge_clock_+=real_dt;
     if(bridge_clock_>=.25F) {bridge_clock_=0;sync_bodies(player,npcs);}
 }
@@ -292,6 +336,8 @@ std::string LifeSimulation::describe(const Resident& r) const {
     const std::string town=island_.settlement_names[static_cast<std::size_t>(place.settlement)];
     const std::string where=(r.place==r.home ? std::string("home") : place.kind==PlaceKind::Home ? std::string("a home") :
         std::string("the ")+place_name(place.kind))+" in "+town;
+    if(r.trip==Trip::Driving) return text+" - driving to "+where;
+    if(r.trip==Trip::ToCar) return text+" - going to the car, for "+where;
     const bool moving=r.physical ? flat_distance(r.body,place.door)>8 && !inside_footprint(place,r.body) : travelling(r);
     if(moving) return text+" - on the way to "+where;
     if(r.activity==Activity::Work) return text+" - working at "+where;
