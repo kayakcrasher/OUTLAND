@@ -125,6 +125,7 @@ add_library(
     src/game/life/LifeTypes.cpp
     src/game/life/LifePopulation.cpp
     src/game/life/LifeSimulation.cpp
+    src/game/sound/SoundBus.cpp
     src/game/ai/CombatBot.cpp
     src/game/ai/BattleRoyaleBots.cpp
     src/characters/AnimationController.cpp
@@ -473,6 +474,12 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_combat_bot_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_combat_bot_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_combat_bot_tests COMMAND outland_combat_bot_tests)
+
+    add_executable(outland_sound_bus_tests tests/integration/sound/test_sound_bus.cpp)
+    target_link_libraries(outland_sound_bus_tests PRIVATE outland_render)
+    target_compile_options(outland_sound_bus_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_sound_bus_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_sound_bus_tests COMMAND outland_sound_bus_tests)
 
     add_executable(outland_animation_asset_tests tests/integration/assets/test_animation_assets.cpp)
     target_link_libraries(outland_animation_asset_tests PRIVATE outland_render)

@@ -1,4 +1,5 @@
 #include "outland/game/life/LifeSimulation.hpp"
+#include "outland/game/sound/SoundBus.hpp"
 #include "outland/characters/NpcSystem.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <raymath.h>
@@ -62,7 +63,7 @@ void LifeSimulation::clear(characters::NpcSystem& npcs) {
 }
 
 void LifeSimulation::reset(characters::NpcSystem& npcs,WorldClock start) {
-    clock_=start;cursor_=0;replan_budget_=0;bridge_clock_=std::numeric_limits<float>::max();
+    clock_=start;cursor_=0;replan_budget_=0;heard_up_to_=0;bridge_clock_=std::numeric_limits<float>::max();
     for(auto& r:island_.residents) {
         if(r.physical) npcs.despawn_resident(r.id);
         r.alive=true;r.physical=false;r.health=100;r.fear=0;r.shelter_until=-1;r.patrol_step=0;
@@ -236,6 +237,12 @@ void LifeSimulation::update(float real_dt,Vector3 player,characters::NpcSystem& 
     while(steps-->0) {replan(island_.residents[cursor_]);cursor_=(cursor_+1)%count;}
     bridge_clock_+=real_dt;
     if(bridge_clock_>=.25F) {bridge_clock_=0;sync_bodies(player,npcs);}
+}
+
+void LifeSimulation::hear(const sound::SoundBus& sounds) {
+    for(const auto& event:sounds.events())
+        if(event.serial>heard_up_to_ && event.kind==sound::SoundKind::Gunshot) report_gunfire(event.position);
+    heard_up_to_=sounds.latest();
 }
 
 void LifeSimulation::report_gunfire(Vector3 position) {

@@ -1,5 +1,6 @@
 #include "outland/characters/NpcSystem.hpp"
 #include "outland/world/VerdaRegion.hpp"
+#include "outland/game/sound/SoundBus.hpp"
 #include "outland/world/GameplayMarker.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
@@ -32,7 +33,7 @@ void NpcSystem::configure(CharacterPool pool,NpcTuning value) {
     for(auto& actor:actors_) if(actor.pool==pool) actor.health=std::min(actor.health,value.health);
 }
 void NpcSystem::reset_session() {
-    events_={};player_threat_timer_=0;
+    events_={};player_threat_timer_=0;heard_up_to_=0;
     std::erase_if(actors_,[](const NpcInstance& actor){return actor.resident>=0 || actor.bot>=0;});
     for(auto& actor:actors_) {
         actor.position=actor.spawn_position;actor.yaw_degrees=actor.spawn_yaw;
@@ -83,6 +84,7 @@ void NpcSystem::update(float dt,const NpcContext& input,const world::VerdaRegion
     if(context.threatening) player_threat_timer_=1.5F;
     else player_threat_timer_=std::max(0.0F,player_threat_timer_-dt);
     context.threatening=player_threat_timer_>0;
+    if(context.sounds && !context.paused) hear(*context.sounds);
     NpcEnvironment environment;
     environment.move=[&](Vector3 current,Vector3 desired) {
         // Small collision substeps prevent fast creatures tunnelling through thin walls.
@@ -224,5 +226,29 @@ void NpcSystem::set_bot(int bot,Vector3 position,float yaw_degrees,float health,
 }
 void NpcSystem::clear_bots() {
     std::erase_if(actors_,[](const NpcInstance& actor){return actor.bot>=0;});
+}
+void NpcSystem::hear(const game::sound::SoundBus& sounds) {
+    using game::sound::SoundKind;
+    for(const auto& event:sounds.events()) {
+        if(event.serial<=heard_up_to_) continue;
+        for(auto& actor:actors_) {
+            if(actor.bot>=0 || !actor.active || actor.state==NpcState::Dead || actor.health<=0) continue;
+            if(!game::sound::SoundBus::audible(event,actor.position)) continue;
+            const auto& settings=tuning(actor.pool);
+            const bool aggressive=actor.pool==CharacterPool::Hostile || actor.pool==CharacterPool::Creature;
+            if(aggressive) {
+                // Hunters go and look: any noise they can hear becomes somewhere to search.
+                actor.threat_position=event.position;
+                actor.threat_timer=std::max(actor.threat_timer,settings.memory_seconds*2);
+                if(actor.state==NpcState::Idle || actor.state==NpcState::Wander || actor.state==NpcState::Alert) {actor.state=NpcState::Chase;actor.state_time=0;}
+            } else if(event.kind==SoundKind::Gunshot && game::sound::SoundBus::loudness(event,actor.position)>.5F) {
+                // Close gunfire sends everyone else running, whether or not they saw the shooter.
+                actor.threat_position=event.position;
+                actor.threat_timer=std::max(actor.threat_timer,settings.memory_seconds);
+                if(actor.state!=NpcState::Flee) {actor.state=NpcState::Flee;actor.state_time=0;}
+            }
+        }
+    }
+    heard_up_to_=sounds.latest();
 }
 }

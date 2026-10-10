@@ -63,5 +63,7 @@ private:
     std::vector<NpcInstance> actors_;
     NpcEvents events_;
     float player_threat_timer_{0};
+    std::uint64_t heard_up_to_{0};
+    void hear(const game::sound::SoundBus& sounds);
 };
 }

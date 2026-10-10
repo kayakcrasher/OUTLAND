@@ -17,6 +17,7 @@
 #include "outland/game/ModeRules.hpp"
 #include "outland/game/life/LifeSimulation.hpp"
 #include "outland/game/ai/BattleRoyaleBots.hpp"
+#include "outland/game/sound/SoundBus.hpp"
 #include "outland/dev/DevLab.hpp"
 #include "outland/creator/CreatorMapIO.hpp"
 
@@ -417,6 +418,7 @@ void Renderer::run() {
     game::inventory::LootUI loot_ui(character_root);
     characters::NpcSystem npcs;
     game::ai::BattleRoyaleBots br_bots;
+    game::sound::SoundBus sound_bus; // every noise on Verda this session, heard by bots, NPCs and residents
     double match_time=0;
     int match_placement=-1;
     float damage_flash=0;
@@ -507,6 +509,7 @@ void Renderer::run() {
         return current;
     };
     bot_world.trace=[&](Vector3 a,Vector3 b){return combat_world.trace_segment(a,b,false,false,true);};
+    bot_world.sounds=&sound_bus;
     bot_world.world_damage=[&](const game::combat::BulletHit& hit,float amount,Vector3 from) {
         if(hit.kind==game::combat::HitKind::Vehicle || hit.kind==game::combat::HitKind::VehicleWindow ||
             hit.kind==game::combat::HitKind::VehicleOccupant) combat_world.damage_hit(hit,amount,from);
@@ -624,7 +627,7 @@ void Renderer::run() {
                 if(game::rules_for(game_mode).civilian_life) {
                     island_life.build(verda_region,&character_registry);island_life.reset(npcs);
                 } else island_life.clear(npcs);
-                br_bots.clear();match_time=0;match_placement=-1;
+                br_bots.clear();sound_bus.clear();match_time=0;match_placement=-1;
                 last_player_feet={player.position.x,player.position.y-1.0F,player.position.z};
                 if(game::rules_for(game_mode).combat_bots) {
                     br_bots.start(verda_region,home_screen.bot_level(),23,static_cast<std::uint64_t>(GetTime()*1000.0)+1,last_player_feet);
@@ -1193,7 +1196,25 @@ void Renderer::run() {
         recoil_pitch=std::min(.20F,recoil_pitch+weapons.events().pitch_kick);
         recoil_yaw+=weapons.events().yaw_kick;
         environment_audio.play_combat(weapons.selected(),weapons.events());
+        // Session clock for sounds and the match; it stops while the game is paused.
+        if(!vehicle_paused) match_time+=dt;
+        sound_bus.advance(match_time);
+        {
+            const Vector3 feet{player.position.x,player.position.y-1.0F,player.position.z};
+            if(player_health.alive() && weapons.events().shots>0)
+                sound_bus.emit(game::sound::SoundKind::Gunshot,feet,
+                    weapons.selected()==game::combat::WeaponId::Rifle ? game::sound::radius::rifle : game::sound::radius::pistol,0,match_time);
+            const float moved=dt>0 ? std::hypot(feet.x-last_player_feet.x,feet.z-last_player_feet.z)/dt : 0.0F;
+            if(player_health.alive() && !driving && player.grounded && moved>7.0F)
+                sound_bus.emit(game::sound::SoundKind::Footstep,feet,game::sound::radius::sprint,0,match_time);
+            if(const auto* car=vehicles.driver()) {
+                if(std::abs(car->speed)>2.0F)
+                    sound_bus.emit(game::sound::SoundKind::Engine,car->position,game::sound::radius::engine*std::clamp(std::abs(car->speed)/15.0F,.5F,2.0F),0,match_time);
+                if(controls.sprint) sound_bus.emit(game::sound::SoundKind::Horn,car->position,game::sound::radius::horn,0,match_time);
+            }
+        }
         characters::NpcContext npc_context;
+        npc_context.sounds=&sound_bus;
         npc_context.player_position={player.position.x,player.position.y-1.0F,player.position.z};
         npc_context.player_alive=player_health.alive();
         npc_context.threatening=weapons.events().shots>0;
@@ -1201,14 +1222,13 @@ void Renderer::run() {
         npc_context.visible=[&](Vector3 start,Vector3 end) {return !combat_world.trace_segment(start,end,false,false).hit();};
         npcs.update(dt,npc_context,verda_region);
         if(!island_life.empty()) {
-            if(weapons.events().shots>0) island_life.report_gunfire(npc_context.player_position);
+            island_life.hear(sound_bus);
             island_life.update(dt,npc_context.player_position,npcs,vehicle_paused);
         }
         player_health.damage(npcs.events().player_damage);
         {
             const Vector3 feet{player.position.x,player.position.y-1.0F,player.position.z};
             if(br_bots.active() && !vehicle_paused) {
-                match_time+=dt;
                 game::ai::BattleRoyaleFrame frame;
                 frame.dt=dt;frame.now=match_time;frame.player_feet=feet;
                 frame.player_velocity=dt>0 ? Vector3Scale(Vector3Subtract(feet,last_player_feet),1.0F/dt) : Vector3{};

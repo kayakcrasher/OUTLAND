@@ -3,6 +3,7 @@
 #include "outland/characters/AnimationController.hpp"
 #include <raylib.h>
 #include <functional>
+namespace outland::game::sound { class SoundBus; }
 namespace outland::characters {
 enum class NpcState { Idle, Wander, Alert, Chase, Attack, Flee, Dead };
 struct NpcTuning {
@@ -15,6 +16,8 @@ struct NpcContext {
     Vector3 player_position{};
     bool player_alive{true}, threatening{false}, paused{false};
     std::function<bool(Vector3,Vector3)> visible;
+    // Shared island sounds: hostiles investigate what they hear, civilians flee nearby gunfire.
+    const game::sound::SoundBus* sounds{nullptr};
 };
 struct NpcEnvironment {
     std::function<Vector3(Vector3,Vector3)> move;

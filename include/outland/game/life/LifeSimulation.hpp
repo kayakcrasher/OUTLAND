@@ -1,6 +1,8 @@
 #pragma once
+#include <cstdint>
 #include "outland/game/life/LifePopulation.hpp"
 
+namespace outland::game::sound { class SoundBus; }
 namespace outland::characters { class NpcSystem; }
 
 namespace outland::game::life {
@@ -31,6 +33,8 @@ public:
     void clear(characters::NpcSystem& npcs);
     void update(float real_dt,Vector3 player,characters::NpcSystem& npcs,bool paused=false);
     void report_gunfire(Vector3 position);
+    // Reads new events from the island sound bus: every gunshot anyone fires frightens residents.
+    void hear(const sound::SoundBus& sounds);
 
     const WorldClock& clock() const {return clock_;}
     void set_clock(WorldClock clock) {clock_=clock;}
@@ -46,6 +50,7 @@ public:
     const Resident* nearest(Vector3 position,float max_distance,bool physical_only=true) const;
     LifeStats stats() const;
 private:
+    std::uint64_t heard_up_to_{0};
     struct Anchor {Vector3 point;float radius;};
     void replan(Resident& resident);
     int resolve(const Resident& resident,Activity activity) const;

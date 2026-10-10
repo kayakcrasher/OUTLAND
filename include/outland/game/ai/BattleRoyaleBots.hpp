@@ -1,6 +1,7 @@
 #pragma once
 #include "outland/game/ai/CombatBot.hpp"
 #include "outland/game/combat/CombatWorld.hpp"
+#include "outland/game/sound/SoundBus.hpp"
 #include <string>
 #include <vector>
 
@@ -16,6 +17,10 @@ struct BotWorld {
     BotEnvironment environment;                                    // sight and walking
     std::function<combat::BulletHit(Vector3, Vector3)> trace;     // world + vehicles, no characters
     std::function<void(const combat::BulletHit&, float, Vector3)> world_damage; // vehicles etc.
+    // The island's shared sound bus. When set, bots hear everything on it (and add their own
+    // gunfire and footsteps), and the owner emits the player's sounds. When null the match keeps
+    // a private bus and emits the player's sounds from the frame.
+    sound::SoundBus* sounds{nullptr};
 };
 
 struct BotTracer { Vector3 start{}, end{}; float life{0}; };
@@ -75,7 +80,9 @@ private:
 
     std::vector<CombatBot> bots_;
     std::vector<BotAgent> agents_;
-    std::vector<BotSound> sounds_, next_sounds_;
+    std::vector<BotSound> sounds_;
+    sound::SoundBus own_bus_;
+    std::uint64_t heard_up_to_{0};
     std::vector<BotShot> shots_;
     std::vector<BotTracer> tracers_;
     std::vector<std::string> feed_;

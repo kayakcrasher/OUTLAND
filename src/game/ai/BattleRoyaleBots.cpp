@@ -52,7 +52,7 @@ CombatBot& BattleRoyaleBots::add_bot(Vector3 feet,combat::WeaponId weapon,BotLev
 }
 
 void BattleRoyaleBots::clear() {
-    bots_.clear();agents_.clear();sounds_.clear();next_sounds_.clear();shots_.clear();
+    bots_.clear();agents_.clear();sounds_.clear();own_bus_.clear();heard_up_to_=0;shots_.clear();
     tracers_.clear();feed_.clear();events_={};elapsed_=0;
     player_kills_=0;
 }
@@ -129,21 +129,37 @@ void BattleRoyaleBots::update(const BattleRoyaleFrame& frame,const BotWorld& wor
     for(const auto& bot:bots_) agents_.push_back({bot.id(),bot.position(),bot.velocity(),bot.alive()});
     last_player_=frame.player_feet;
 
-    sounds_.swap(next_sounds_);next_sounds_.clear();
-    if(frame.player_alive && frame.player_fired)
-        sounds_.push_back({frame.player_feet,frame.player_weapon==combat::WeaponId::Rifle ? gunshot_radius_rifle : gunshot_radius_pistol,player_id});
-    for(const auto& agent:agents_) {
-        // Running feet are audible close by; walking is quiet.
-        if(agent.alive && Vector3Length({agent.velocity.x,0,agent.velocity.z})>CombatBot::walk_speed+.6F)
-            sounds_.push_back({agent.position,footstep_radius,agent.id});
+    auto& bus=world.sounds ? *world.sounds : own_bus_;
+    bus.advance(frame.now);
+    if(!world.sounds && frame.player_alive) {
+        if(frame.player_fired)
+            bus.emit(sound::SoundKind::Gunshot,frame.player_feet,frame.player_weapon==combat::WeaponId::Rifle ? gunshot_radius_rifle : gunshot_radius_pistol,player_id,frame.now);
+        if(Vector3Length({player_velocity.x,0,player_velocity.z})>CombatBot::walk_speed+.6F)
+            bus.emit(sound::SoundKind::Footstep,frame.player_feet,footstep_radius,player_id,frame.now);
     }
+    for(const auto& bot:bots_) {
+        // Running feet are audible close by; walking is quiet.
+        if(bot.alive() && Vector3Length({bot.velocity().x,0,bot.velocity().z})>CombatBot::walk_speed+.6F)
+            bus.emit(sound::SoundKind::Footstep,bot.position(),footstep_radius,bot.id(),frame.now);
+    }
+    // Everything new on the bus this frame; each bot judges its own earshot.
+    sounds_.clear();
+    for(const auto& event:bus.events())
+        if(event.serial>heard_up_to_) sounds_.push_back({event.position,event.radius,event.source});
+    heard_up_to_=bus.latest();
 
     shots_.clear();
     for(auto& bot:bots_) {
         if(!bot.alive()) continue;
         bot.tick(dt,frame.now,agents_,sounds_,world.environment,shots_);
     }
-    for(const auto& shot:shots_) resolve(shot,frame,world);
+    for(const auto& shot:shots_) {
+        resolve(shot,frame,world);
+        // Heard by everyone from the next frame on.
+        const auto* shooter=find(shot.shooter);
+        bus.emit(sound::SoundKind::Gunshot,shooter ? shooter->position() : shot.origin,
+            shot.weapon==combat::WeaponId::Rifle ? gunshot_radius_rifle : gunshot_radius_pistol,shot.shooter,frame.now);
+    }
 }
 
 void BattleRoyaleBots::resolve(const BotShot& shot,const BattleRoyaleFrame& frame,const BotWorld& world) {
@@ -167,8 +183,6 @@ void BattleRoyaleBots::resolve(const BotShot& shot,const BattleRoyaleFrame& fram
     }
     const auto impact=Vector3Lerp(shot.origin,end,best);
     tracers_.push_back({Vector3Add(shot.origin,Vector3Scale(shot.direction,.8F)),impact,tracer_seconds});
-    const float sound_radius=shot.weapon==combat::WeaponId::Rifle ? gunshot_radius_rifle : gunshot_radius_pistol;
-    next_sounds_.push_back({shooter_position,sound_radius,shot.shooter});
 
     if(victim<0) {
         if(world_hit.hit() && world.world_damage) world.world_damage(world_hit,shot.damage,shooter_position);
