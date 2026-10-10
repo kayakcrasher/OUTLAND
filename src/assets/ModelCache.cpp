@@ -45,9 +45,13 @@ ModelCache::ModelCache(std::size_t capacity) : capacity_(std::max<std::size_t>(1
 ModelCache::~ModelCache() { clear(); }
 
 Model* ModelCache::load(const std::string& path, const std::function<bool(Model&)>& prepare, bool animations) {
+    deferred_=false;
     if (path.empty()) return nullptr;
-    const std::string packaged = std::string(GetApplicationDirectory()) + path;
-    const std::string resolved = FileExists(packaged.c_str()) ? packaged : path;
+    // A hot draw must not stat the filesystem again (Termux shared storage can be slow).
+    auto known=resolved_paths_.find(path);
+    if(known==resolved_paths_.end() && remaining_loads_==0) {deferred_=true;return nullptr;}
+    const std::string packaged=known==resolved_paths_.end() ? std::string(GetApplicationDirectory())+path : std::string{};
+    const std::string resolved=known!=resolved_paths_.end() ? known->second : (FileExists(packaged.c_str()) ? packaged : path);
     if (auto found = entries_.find(resolved); found != entries_.end()) {
         if (animations && !found->second.animation_attempted) {
             found->second.animation_attempted=true;
@@ -57,10 +61,12 @@ Model* ModelCache::load(const std::string& path, const std::function<bool(Model&
         found->second.last_used = ++sequence_;
         return &found->second.model;
     }
+    if(remaining_loads_==0) {deferred_=true;return nullptr;}
     if (!FileExists(resolved.c_str())) {
         TraceLog(LOG_WARNING, "OUTLAND asset missing: %s", path.c_str());
         return nullptr;
     }
+    --remaining_loads_;
     Model model = LoadModel(resolved.c_str());
     if (model.meshCount <= 0) {
         release(model);
@@ -83,9 +89,11 @@ Model* ModelCache::load(const std::string& path, const std::function<bool(Model&
             [](const auto& a, const auto& b) { return a.second.last_used < b.second.last_used; });
         if(oldest->second.clips) UnloadModelAnimations(oldest->second.clips,oldest->second.clip_count);
         release(oldest->second.model);
+        std::erase_if(resolved_paths_,[&](const auto& alias){return alias.second==oldest->first;});
         entries_.erase(oldest);
     }
     auto result = entries_.emplace(resolved, Entry{model, ++sequence_});
+    resolved_paths_[path]=resolved;
     if(animations) {
         result.first->second.animation_attempted=true;
         result.first->second.clips=LoadModelAnimations(resolved.c_str(),&result.first->second.clip_count);
@@ -112,5 +120,6 @@ void ModelCache::clear() {
         release(entry.model);
     }
     entries_.clear();
+    resolved_paths_.clear();
 }
 } // namespace outland::assets

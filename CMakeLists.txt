@@ -333,6 +333,12 @@ add_custom_command(TARGET outland POST_BUILD
 # ============================================================
 
 if(OUTLAND_BUILD_TESTS)
+    add_executable(outland_render_performance_tests tests/integration/world/test_render_performance.cpp)
+    target_link_libraries(outland_render_performance_tests PRIVATE outland_render)
+    target_compile_options(outland_render_performance_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_render_performance_tests COMMAND outland_render_performance_tests)
+    add_executable(outland_render_benchmark tools/benchmark_world_render.cpp)
+    target_link_libraries(outland_render_benchmark PRIVATE outland_render)
 
     enable_testing()
 

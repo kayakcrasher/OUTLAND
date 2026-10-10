@@ -3,6 +3,7 @@
 #include "outland/world/terrain/TerrainChunk.hpp"
 
 #include <memory>
+namespace outland::engine { class ViewFrustum; }
 #include <vector>
 
 namespace outland::world::terrain {
@@ -11,7 +12,8 @@ class TerrainWorld {
 public:
     TerrainWorld();
 
-    void draw() const;
+    void draw(const engine::ViewFrustum* view = nullptr) const;
+    static constexpr int build_budget = 2;
     void update(Vector3 position);
 
     [[nodiscard]]

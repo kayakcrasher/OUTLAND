@@ -118,8 +118,15 @@ int main() {
 
     triangles.clear();
     foliage::FoliageSystem foliage;
-    foliage.draw({0,1,-70},region);
-    assert(!triangles.empty());
+    for(int i=0;i<120;++i) {
+        triangles.clear();foliage.draw({0,1,-70},region);
+        assert(foliage.evaluations_last_frame()<=foliage::FoliageSystem::evaluation_budget);
+        assert(foliage.cached_cells()<=2809);
+    }
+    assert(foliage.evaluations_last_frame()==0 && !triangles.empty());
+    const auto steady_triangles=triangles.size();
+    triangles.clear();foliage.draw({0,1,-70},region);
+    assert(foliage.evaluations_last_frame()==0 && triangles.size()==steady_triangles);
     assert(triangles.size()%2==0);
     for(std::size_t i=0;i<triangles.size();i+=2) {
         const auto& a=triangles[i];const auto& b2=triangles[i+1];
@@ -129,6 +136,9 @@ int main() {
             for(const auto& road : settlement.roads)
                 assert(!on_road(a.a,road));
     }
+    foliage.invalidate();assert(foliage.cached_cells()==0);
+    foliage.draw({0,1,-70},region);assert(foliage.evaluations_last_frame()>0);
+    foliage.draw({-2100,1,400},region);assert(foliage.cached_cells()<=24);
     {
         outland::engine::audio::EnvironmentAudio audio("test-assets");
         assert(audio.ready());

@@ -1,3 +1,4 @@
+#include "outland/engine/render/ViewFrustum.hpp"
 #include "outland/world/foliage/FoliageSystem.hpp"
 
 #include "outland/world/terrain/TerrainHeight.hpp"
@@ -241,8 +242,16 @@ void FoliageSystem::draw_flower(
 
 void FoliageSystem::draw(
     const Vector3& camera_position,
-    const VerdaRegion& region
+    const VerdaRegion& region,
+    const engine::ViewFrustum* view
 ) const {
+    evaluations_=0;
+    if(!std::isfinite(camera_position.x) || !std::isfinite(camera_position.z) ||
+       std::abs(camera_position.x)>1e7F || std::abs(camera_position.z)>1e7F) return;
+    std::size_t count=0;
+    for(const auto& town:region.settlements()) count+=town.assets.size()+town.buildings.size()+town.roads.size();
+    if(region_!=&region || coastal_!=region.coastal_layout() || object_count_!=count) invalidate();
+    region_=&region;coastal_=region.coastal_layout();object_count_=count;
     const int camera_cell_x =
         static_cast<int>(
             std::floor(
@@ -259,16 +268,14 @@ void FoliageSystem::draw(
             )
         );
 
-    for (
-        int dz = -grass_radius_cells;
-        dz <= grass_radius_cells;
-        ++dz
-    ) {
-        for (
-            int dx = -grass_radius_cells;
-            dx <= grass_radius_cells;
-            ++dx
-        ) {
+    // Nearest cells first; keep only the local footprint, including after teleporting.
+    std::erase_if(cells_,[&](const auto& entry) {
+        const int x=static_cast<std::int32_t>(entry.first>>32), z=static_cast<std::int32_t>(entry.first);
+        return std::abs(x-camera_cell_x)>grass_radius_cells+1 || std::abs(z-camera_cell_z)>grass_radius_cells+1;
+    });
+    for(int ring=0;ring<=grass_radius_cells;++ring) {
+        for(int dz=-ring;dz<=ring;++dz) for(int dx=-ring;dx<=ring;++dx) {
+            if(std::max(std::abs(dx),std::abs(dz))!=ring) continue;
             const int cell_x =
                 camera_cell_x + dx;
 
@@ -347,23 +354,23 @@ void FoliageSystem::draw(
             // Thin the outer rings deterministically, before expensive height sampling.
             if ((distance_squared > 40.0F * 40.0F && density < 0.55F) ||
                 (distance_squared > 58.0F * 58.0F && density < 0.78F)) continue;
-            if (physics::WorldCollision::blocked({world_x, 0.0F, world_z}, region, 0.35F)) continue;
-            bool on_road = false;
-            for (const auto& settlement : region.settlements()) {
-                for (const auto& road : settlement.roads) {
-                    if (assets::on_road({world_x, 0.0F, world_z}, road, 0.25F)) on_road = true;
+            const auto key=(static_cast<std::uint64_t>(static_cast<std::uint32_t>(cell_x))<<32)|static_cast<std::uint32_t>(cell_z);
+            auto found=cells_.find(key);
+            if(found==cells_.end()) {
+                if(evaluations_>=evaluation_budget) continue;
+                ++evaluations_;
+                bool allowed=!physics::WorldCollision::blocked({world_x,0,world_z},region,.35F);
+                if(allowed) for(const auto& town:region.settlements()) {
+                    for(const auto& road:town.roads) if(assets::on_road({world_x,0,world_z},road,.25F)) {allowed=false;break;}
+                    if(!allowed) break;
                 }
+                const float y=allowed ? terrain::TerrainHeight::sample(world_x,world_z)+.025F : 0;
+                if(region.coastal_layout() && y<=layout::sea_level+.025F && std::hypot(world_x,world_z)>1950) allowed=false;
+                found=cells_.emplace(key,Cell{y,allowed}).first;
             }
-            if (on_road) continue;
-
-            const float world_y =
-                terrain::TerrainHeight::sample(
-                    world_x,
-                    world_z
-                ) +
-                0.025F;
-
-            if (region.coastal_layout() && world_y <= layout::sea_level+0.025F && std::hypot(world_x,world_z)>1950) continue;
+            if(!found->second.allowed) continue;
+            const float world_y=found->second.y;
+            if(view && !view->sphere({world_x,world_y+1,world_z},2.0F)) continue;
 
             const Vector3 position{
                 world_x,

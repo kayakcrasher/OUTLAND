@@ -1,3 +1,4 @@
+#include "outland/engine/render/ViewFrustum.hpp"
 #include "outland/assets/RaylibContract.hpp"
 #include "outland/characters/CharacterRenderer.hpp"
 #include <raymath.h>
@@ -62,6 +63,7 @@ void CharacterRenderer::draw(const std::string& id,Vector3 feet,float yaw,float 
     const bool load_clips=animation && info!=animation_asset_catalog.end() && info->mapped_clips>0;
     auto* model=models_.load(path,[&](Model& value){return prepare(*asset,value);},load_clips);
     if (!model) {
+        if(models_.deferred()) return;
         failed_.insert(id);
         TraceLog(LOG_ERROR,"OUTLAND character unavailable: %s (%s)",id.c_str(),path.c_str());
         return; // No placeholder body or procedural fallback.
@@ -88,9 +90,10 @@ void CharacterRenderer::draw_player(Vector3 feet,float yaw) {
     const auto* asset=registry_.player();
     if (asset) draw(asset->id,feet,yaw*RAD2DEG,1,&player_animation_);
 }
-void CharacterRenderer::draw_npcs(const NpcSystem& npcs,Vector3 camera) {
+void CharacterRenderer::draw_npcs(const NpcSystem& npcs,Vector3 camera,const engine::ViewFrustum* view) {
     (void)camera; // NpcSystem owns configurable visibility/activation distances.
     for (const auto& actor:npcs.actors())
-        if(actor.visible) draw(actor.character_id,actor.position,actor.yaw_degrees,1,&actor.animation);
+        if(actor.visible && (!view || view->sphere({actor.position.x,actor.position.y+1,actor.position.z},2)))
+            draw(actor.character_id,actor.position,actor.yaw_degrees,1,&actor.animation);
 }
 }

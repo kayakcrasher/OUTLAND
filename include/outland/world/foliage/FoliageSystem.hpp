@@ -1,6 +1,9 @@
 #pragma once
 
 #include <raylib.h>
+#include <unordered_map>
+#include <cstdint>
+namespace outland::engine { class ViewFrustum; }
 
 namespace outland::world { class VerdaRegion; }
 
@@ -12,10 +15,22 @@ public:
 
     void draw(
         const Vector3& camera_position,
-        const VerdaRegion& region
+        const VerdaRegion& region,
+        const engine::ViewFrustum* view = nullptr
     ) const;
 
+    void invalidate() const { cells_.clear(); }
+    std::size_t cached_cells() const { return cells_.size(); }
+    int evaluations_last_frame() const { return evaluations_; }
+    static constexpr int evaluation_budget = 24;
+
 private:
+    struct Cell { float y; bool allowed; };
+    mutable std::unordered_map<std::uint64_t, Cell> cells_;
+    mutable const VerdaRegion* region_{nullptr};
+    mutable std::size_t object_count_{0};
+    mutable bool coastal_{false};
+    mutable int evaluations_{0};
     static float hash(
         int x,
         int z,

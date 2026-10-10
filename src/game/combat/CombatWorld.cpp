@@ -143,6 +143,10 @@ BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool
     if(training_range_ && box(start,end,{-2,ground,-2},{2,ground+3,2},t,n)) record(HitKind::Structure,t,n);
     for(const auto& settlement:region_.settlements()) {
         for(const auto& building:settlement.buildings) {
+            // Cheap conservative XZ broad phase before terrain samples and rotated wall tests.
+            const float reach=std::abs(building.size.x)+std::abs(building.size.z)+2;
+            if(std::max(start.x,end.x)<building.position.x-reach || std::min(start.x,end.x)>building.position.x+reach ||
+               std::max(start.z,end.z)<building.position.z-reach || std::min(start.z,end.z)>building.position.z+reach) continue;
             const float yaw=building.rotation_y*DEG2RAD;
             const Vector3 origin{building.position.x,
                 world::terrain::TerrainHeight::sample(building.position.x,building.position.z),building.position.z};
@@ -181,6 +185,10 @@ BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool
         for(const auto& asset:settlement.assets) {
             if(!asset.vehicle.definition.empty())continue;
             if(!asset.collision)continue;
+            const float reach=std::abs(asset.size.x)+std::abs(asset.size.z)+2;
+            if(asset.size.x>0 && asset.size.z>0 &&
+               (std::max(start.x,end.x)<asset.position.x-reach || std::min(start.x,end.x)>asset.position.x+reach ||
+                std::max(start.z,end.z)<asset.position.z-reach || std::min(start.z,end.z)>asset.position.z+reach)) continue;
             if(!asset.model_path.empty()){const float yaw=asset.rotation_y*DEG2RAD;const auto a=local(start,asset.position,yaw),b=local(end,asset.position,yaw);
                 if(const auto* mesh=world::physics::MeshCollisionLibrary::get(asset.model_path)) {
                     float f=best.hit() ? best.fraction : 1.0F;Vector3 mesh_normal{};

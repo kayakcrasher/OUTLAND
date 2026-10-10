@@ -9,7 +9,7 @@
 #include <vector>
 
 namespace {
-int loads=0, unloads=0, animation_loads=0, animation_unloads=0;
+int loads=0, unloads=0, animation_loads=0, animation_unloads=0, file_checks=0;
 unsigned int next_texture=10;
 std::vector<unsigned int> released;
 }
@@ -21,7 +21,7 @@ ModelAnimation* LoadModelAnimations(const char* path,int* count){
 void UnloadModelAnimations(ModelAnimation* clips,int count){assert(count==1);++animation_unloads;delete[] clips;}
 void UpdateModelAnimation(Model,ModelAnimation,outland::test::AnimationFrame){}
 const char* GetApplicationDirectory() { return "/mock/"; }
-bool FileExists(const char* path) { return std::strstr(path,"missing")==nullptr; }
+bool FileExists(const char* path) { ++file_checks;return std::strstr(path,"missing")==nullptr; }
 void TraceLog(int, const char*, ...) {}
 unsigned int rlGetTextureIdDefault() { return 1; }
 Model LoadModel(const char*) {
@@ -52,7 +52,8 @@ int main() {
         Model* a=cache.load("a.glb");
         assert(a && cache.size()==1 && loads==1);
         assert(a->transform.m12==-3 && a->transform.m13==1 && a->transform.m14==-5);
-        assert(cache.load("a.glb")==a && loads==1);
+        const int checks=file_checks;
+        assert(cache.load("a.glb")==a && loads==1 && file_checks==checks);
         assert(cache.load("b.glb") && loads==2);
         assert(cache.load("a.glb")==a); // A is most recently used.
         assert(cache.load("c.glb") && cache.size()==2 && loads==3);
@@ -78,6 +79,19 @@ int main() {
         assert(cache.load("no_clips.glb",{},true)==b && animation_loads==2); // Failure remembered, no per-frame retry.
         assert(cache.load("other.glb",{},true) && animation_loads==3);
         cache.clear();assert(animation_unloads==2);
+    }
+    {
+        outland::assets::ModelCache cache(2);
+        cache.begin_frame(1);
+        auto* a=cache.load("budget_a.glb");assert(a && !cache.deferred());
+        const int before=loads;
+        assert(!cache.load("budget_b.glb") && cache.deferred() && loads==before);
+        assert(cache.load("budget_a.glb")==a && !cache.deferred() && loads==before);
+        cache.begin_frame(1);
+        assert(cache.load("budget_b.glb") && loads==before+1);
+        cache.begin_frame(0);
+        assert(cache.load("budget_a.glb")==a && !cache.deferred());
+        assert(!cache.load("budget_c.glb") && cache.deferred());
     }
     std::cout << "[PASS] GPU cache hits, LRU eviction, texture ownership, ground pivots and cleanup\n";
 }

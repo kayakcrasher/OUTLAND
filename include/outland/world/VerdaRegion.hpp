@@ -3,6 +3,7 @@
 #include "outland/world/Settlement.hpp"
 
 #include <cstddef>
+namespace outland::engine { class ViewFrustum; }
 #include <string_view>
 #include <vector>
 
@@ -59,7 +60,8 @@ public:
 #endif // OUTLAND_DEV_TOOLS
 
     void draw(
-        const Vector3& camera_position
+        const Vector3& camera_position,
+        const engine::ViewFrustum* view = nullptr
     ) const;
 
 private:

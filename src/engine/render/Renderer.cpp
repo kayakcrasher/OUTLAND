@@ -1,3 +1,4 @@
+#include "outland/engine/render/ViewFrustum.hpp"
 #include "outland/engine/render/Renderer.hpp"
 #include "outland/engine/audio/EnvironmentAudio.hpp"
 #include "outland/game/combat/CombatRenderer.hpp"
@@ -7,6 +8,7 @@
 #include "outland/game/vehicles/VehicleRenderer.hpp"
 #include "outland/game/vehicles/VehicleAudio.hpp"
 #include "outland/assets/ModelCache.hpp"
+#include "outland/engine/render/FrameTimings.hpp"
 
 #include "outland/input/InputSystem.hpp"
 #include "outland/input/PointerEvents.hpp"
@@ -136,6 +138,9 @@ public:
                 EndMode3D();
                 EndTextureMode();
             }
+            else if(world_asset_model_cache().deferred()) {
+                queue_.emplace_back(id,path);break; // retry, never cache a deferred preview as missing
+            }
             if (entries_.size() >= 96) {
                 auto oldest = std::min_element(entries_.begin(), entries_.end(), [](const auto& a, const auto& b) { return a.second.used < b.second.used; });
                 if (oldest->second.texture.id) UnloadRenderTexture(oldest->second.texture);
@@ -165,7 +170,8 @@ Model* get_world_asset_model(const std::string& path, const characters::Characte
 void draw_model_backed_world_assets(
     const world::VerdaRegion& region,
     const Vector3& camera_position,
-    const characters::CharacterRegistry& registry
+    const characters::CharacterRegistry& registry,
+    const ViewFrustum& view
 ) {
     constexpr float max_distance = 320.0F;
     constexpr float max_distance_sq =
@@ -206,6 +212,8 @@ void draw_model_backed_world_assets(
                 continue;
             }
 
+            if(!view.sphere({asset.position.x,asset.position.y+asset.size.y*.5F,asset.position.z},
+                std::max(2.0F,Vector3Length(asset.size)))) continue;
             Model* model =
                 get_world_asset_model(
                     asset.model_path, registry
@@ -368,6 +376,8 @@ void Renderer::run() {
     }
 
     PlayerState player;
+    FrameTimings perf;
+    float npc_reconcile_timer=.5F;
 
     input::PointerEvents pointer_events;
     TraceLog(LOG_INFO,pointer_events.installed() ? "Desktop click capture enabled":"Desktop click capture unavailable - using raylib input polling");
@@ -612,6 +622,9 @@ void Renderer::run() {
 
     while (!WindowShouldClose()) {
         nav_searches_this_frame=0;
+        world_asset_model_cache().begin_frame(1);
+        character_renderer.begin_frame();
+        perf.begin(GetTime());
         pointer_events.begin_frame();
 
         const float dt =
@@ -722,6 +735,7 @@ void Renderer::run() {
                             player.position=Vector3Add(door,{0,1,0});
                     }
                 } else island_life.clear(npcs);
+                npc_reconcile_timer=.5F;
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
                 zombie_hour=17.5F;lit_asset_count=static_cast<std::size_t>(-1);
                 justice.reset(nullptr,nullptr);crimes.clear();police_tracers.clear();
@@ -1305,6 +1319,8 @@ void Renderer::run() {
                     if(creator_session.export_world(verda_region))TraceLog(LOG_INFO,"World exported to %s",creator_session.export_path().c_str());
                 }
                 if(action.load){creator_session.load(verda_region);creator_controller.clear_selection();}
+                if(action.place || action.move || action.duplicate || action.erase || action.rotate || action.undo || action.redo || action.load)
+                    foliage_system.invalidate();
                 vehicle_dirty|=vehicles.reconcile(verda_region);
                 creator_touch_ui.set_status(creator_session.status());
 
@@ -1341,7 +1357,11 @@ void Renderer::run() {
         weapon_input.sprint=controls.sprint && !controls.aim && movement_amount>.1F;
         weapon_input.grounded=player.grounded;
         weapon_input.movement=movement_amount;
-        npcs.reconcile(verda_region, character_registry);
+        npc_reconcile_timer+=dt;
+        if(creator_active || npc_reconcile_timer>=.5F) {
+            npcs.reconcile(verda_region,character_registry);
+            npc_reconcile_timer=0;
+        }
         weapons.update((shop_open || mode_session.terminal()) ? 0.0F : dt,weapon_input,{gun_muzzle,gun_direction},combat_world);
         recoil_pitch=std::min(.20F,recoil_pitch+weapons.events().pitch_kick);
         recoil_yaw+=weapons.events().yaw_kick;
@@ -1466,6 +1486,7 @@ void Renderer::run() {
             if(!creator_active && game_mode!=game::GameMode::Home && world_size()!=signed_world) rebuild_signs();
         }
 
+        if(perf.enabled()) perf.mark(FrameStage::Simulation,GetTime());
         BeginDrawing();
 
         // The sky is drawn before the world, pre-divided by the ambient multiply that follows.
@@ -1479,16 +1500,19 @@ void Renderer::run() {
         // VERDA TERRAIN
         // ----------------------------------------------------
 
+        const ViewFrustum view(camera,static_cast<float>(screen_width)/std::max(1,screen_height));
         terrain_world.update(camera.position);
-        terrain_world.draw();
+        terrain_world.draw(&view);
+        if(perf.enabled()) perf.mark(FrameStage::Terrain,GetTime());
 
         // ----------------------------------------------------
         // VERDA FOLIAGE
         // ----------------------------------------------------
 
         foliage_system.draw(
-            camera.position, verda_region
+            camera.position, verda_region, &view
         );
+        if(perf.enabled()) perf.mark(FrameStage::Foliage,GetTime());
 
 
         // ----------------------------------------------------
@@ -1507,9 +1531,9 @@ void Renderer::run() {
          */
 
         // First region of Verda.
-        verda_region.draw(camera.position);
+        verda_region.draw(camera.position,&view);
 
-        draw_model_backed_world_assets(verda_region, camera.position, character_registry);
+        draw_model_backed_world_assets(verda_region, camera.position, character_registry, view);
         vehicle_renderer.draw(vehicles,verda_region,camera.position);
         sign_renderer.draw(camera.position,camera.target,static_cast<float>(GetTime()));
 
@@ -1567,7 +1591,8 @@ void Renderer::run() {
             weapons.reload_remaining()/weapons.weapon().reload_seconds,weapons.muzzle_flash());
         if(!creator_active)loot_ui.draw_world(item_registry,loot_session.world(),loot_feet,loot_session.inventory().state().light);
 
-        character_renderer.draw_npcs(npcs, camera.position);
+        if(perf.enabled()) perf.mark(FrameStage::World,GetTime());
+        character_renderer.draw_npcs(npcs, camera.position, &view);
         for(const auto& tracer:br_bots.tracers()) DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
         for(const auto& tracer:police_tracers) DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
 
@@ -1582,6 +1607,7 @@ void Renderer::run() {
             character_renderer.draw_player(character_feet, player.yaw);
         }
 
+        if(perf.enabled()) perf.mark(FrameStage::Characters,GetTime());
         EndMode3D();
 
         // Night: darken everything drawn so far, then add what shines (lamps, fires, headlights,
@@ -1802,6 +1828,16 @@ void Renderer::run() {
             10
         );
 
+        if(perf.enabled()) {
+            DrawRectangle(8,screen_height-102,std::min(screen_width-16,670),70,Fade(BLACK,.8F));
+            DrawText(TextFormat("CPU ms: sim %.1f | terrain %.1f | grass %.1f | world %.1f | bodies %.1f",
+                perf.average(FrameStage::Simulation),perf.average(FrameStage::Terrain),perf.average(FrameStage::Foliage),
+                perf.average(FrameStage::World),perf.average(FrameStage::Characters)),16,screen_height-94,14,RAYWHITE);
+            DrawText(TextFormat("peak ms: %.1f / %.1f / %.1f / %.1f / %.1f | terrain %d | grass work %d (max 24)",
+                perf.peak(FrameStage::Simulation),perf.peak(FrameStage::Terrain),perf.peak(FrameStage::Foliage),
+                perf.peak(FrameStage::World),perf.peak(FrameStage::Characters),terrain_world.chunk_count(),foliage_system.evaluations_last_frame()),16,screen_height-70,14,GOLD);
+            DrawText("Submission timings only; compare FPS on device. OUTLAND_PERF=0 hides this panel.",16,screen_height-48,12,LIGHTGRAY);
+        }
         EndDrawing();
     }
 #ifdef OUTLAND_DEV_TOOLS
