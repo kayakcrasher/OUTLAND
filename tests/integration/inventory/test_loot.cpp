@@ -37,7 +37,7 @@ int main() {
     ItemRegistry registry;
     std::string error;
     assert(registry.load(items.string(), tables.string(), error));
-    assert(registry.items().size() == 22);
+    assert(registry.items().size() == 67);
     for (const auto &item : registry.items())
         if (!item.model.empty())
             assert(fs::exists(root / item.model));
@@ -61,7 +61,7 @@ int main() {
         file << "bad header\n";
     }
     assert(!registry.load(invalid.string(), tables.string(), error) &&
-           registry.items().size() == 22);
+           registry.items().size() == 67);
 
     Inventory bag;
     assert(bag.add(registry, "water", 8) == 8);

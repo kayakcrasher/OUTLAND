@@ -27,13 +27,15 @@ LootSnapshot LootSession::snapshot(const combat::WeaponSystem &weapons) const {
             world_.state(),
             weapons.selected(),
             {weapons.ammo(combat::WeaponId::Pistol).loaded,
-             weapons.ammo(combat::WeaponId::Rifle).loaded}};
+             weapons.ammo(combat::WeaponId::Rifle).loaded}, economy_};
 }
 void LootSession::start(GameMode mode, const std::string &map, combat::WeaponSystem &weapons) {
     weapons.unbind_inventory();
     inventory_.clear();
     world_.clear();
     mode_ = mode;
+    economy_ = {};
+    if(mode != GameMode::Explore) economy_.money=0;
     path_ = LootSave::profile_path(map, mode);
     blocked_save_ = false;
     dirty_ = false;
@@ -50,7 +52,7 @@ void LootSession::start(GameMode mode, const std::string &map, combat::WeaponSys
                 weapons.set_loaded(*item.weapon, item.starting_loaded);
         }
     std::error_code ec;
-    if (std::filesystem::exists(path_, ec)) {
+    if (mode != GameMode::BattleRoyale && std::filesystem::exists(path_, ec)) {
         LootSnapshot state;
         state.mode = mode;
         if (LootSave::load(registry_, state, path_, status_)) {
@@ -59,6 +61,7 @@ void LootSession::start(GameMode mode, const std::string &map, combat::WeaponSys
             for (std::size_t i = 0; i < state.loaded.size(); ++i)
                 weapons.set_loaded(static_cast<combat::WeaponId>(i), state.loaded[i]);
             weapons.select(state.selected);
+            economy_ = std::move(state.economy);
             status_ = "Inventory restored";
         } else {
             blocked_save_ = true;
@@ -91,9 +94,34 @@ void LootSession::update(float dt, const world::VerdaRegion &region, Vector3 pla
             save(weapons);
     }
 }
+std::string LootSession::trade(const economy::Economy& market, const economy::Shop& shop,
+                               const economy::Offer& offer, int quantity, bool selling,
+                               combat::WeaponSystem& weapons) {
+    if(mode_!=GameMode::Explore) return "Stores are available in Explore";
+    if(blocked_save_) return "Saved profile unavailable; trade disabled to protect it";
+    const auto* item=registry_.find(offer.item);
+    if(!item) return "Unknown store item";
+    if(selling && item->category==ItemCategory::Weapon && weapons.ammo(*item->weapon).loaded>0)
+        return "Spend loaded rounds or drop the weapon before selling it";
+    std::string result=market.trade(economy_,inventory_,registry_,shop,offer,quantity,selling);
+    if(!result.starts_with("Bought ") && !result.starts_with("Sold ")) return result;
+    if(item->category==ItemCategory::Weapon) {
+        weapons.set_loaded(*item->weapon,0);
+        if(!selling) weapons.select(*item->weapon);
+        else if(!weapons.available()) for(std::size_t i=0;i<combat::weapons.size();++i) {
+            const auto id=static_cast<combat::WeaponId>(i);
+            if(inventory_.owns_weapon(registry_,id)) {weapons.select(id);break;}
+        }
+    }
+    changed();
+    if(!save(weapons)) result+=" - SAVE FAILED; kept in memory, retry before exit";
+    return result;
+}
 bool LootSession::save(const combat::WeaponSystem &weapons) {
-    if (mode_ == GameMode::Home || mode_ == GameMode::DevLab)
+    if (mode_ == GameMode::Home || mode_ == GameMode::DevLab || mode_ == GameMode::BattleRoyale) {
+        dirty_ = false;
         return true;
+    }
     if (blocked_save_)
         return false;
     std::string error;

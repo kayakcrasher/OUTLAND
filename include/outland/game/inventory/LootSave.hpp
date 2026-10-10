@@ -3,6 +3,7 @@
 #include "outland/game/inventory/LootWorld.hpp"
 #include "outland/game/GameMode.hpp"
 #include <array>
+#include "outland/game/economy/Economy.hpp"
 namespace outland::game::inventory {
 struct LootSnapshot {
     GameMode mode{GameMode::Explore};
@@ -10,6 +11,7 @@ struct LootSnapshot {
     LootWorldState world;
     combat::WeaponId selected{combat::WeaponId::Rifle};
     std::array<int, 2> loaded{};
+    economy::EconomyState economy;
 };
 class LootSave {
   public:

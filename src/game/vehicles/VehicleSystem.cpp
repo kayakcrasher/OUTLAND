@@ -110,6 +110,30 @@ bool VehicleSystem::spawn(world::VerdaRegion &region, Vector3 near, float yaw,
         }
     return false;
 }
+std::vector<world::WorldAsset> VehicleSystem::checkpoint(const world::VerdaRegion& region) const {
+    std::vector<world::WorldAsset> saved;
+    for(const auto& town:region.settlements()) for(const auto& a:town.assets)
+        if(!a.vehicle.definition.empty()) saved.push_back(a);
+    return saved;
+}
+void VehicleSystem::restore_checkpoint(world::VerdaRegion& region,const std::vector<world::WorldAsset>& saved) {
+    leave_session();
+    for(auto& town:region.runtime_settlements()) for(auto& a:town.assets) if(!a.vehicle.definition.empty()) {
+        const auto at=std::find_if(saved.begin(),saved.end(),[&](const auto& original){return original.id==a.id;});
+        if(at!=saved.end()) a=*at;
+    }
+    vehicles_.clear();reconcile(region);
+}
+void VehicleSystem::reset_match_fleet(world::VerdaRegion& region) {
+    leave_session();
+    for(auto& town:region.runtime_settlements()) for(auto& a:town.assets) if(!a.vehicle.definition.empty()) {
+        a.position=a.vehicle.home;a.position.y=world::terrain::TerrainHeight::sample(a.position.x,a.position.z);
+        a.rotation_y=a.vehicle.home_yaw;a.vehicle.health=a.vehicle.engine=100;a.vehicle.fuel=1;
+        a.vehicle.tires.fill(100);a.vehicle.destroyed=false;
+    }
+    vehicles_.clear();reconcile(region);
+}
+
 bool VehicleSystem::reconcile(world::VerdaRegion &region) {
     bool changed = false;
     std::size_t placed_count = 0;

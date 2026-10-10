@@ -1,327 +1,60 @@
 #include "outland/game/HomeScreen.hpp"
 #include "outland/input/PointerEvents.hpp"
-
-#include <raylib.h>
-
+#include <algorithm>
+#include <array>
 namespace outland::game {
-
 namespace {
-
+constexpr std::array<GameMode,4> modes{GameMode::BattleRoyale,GameMode::ZombieSurvival,GameMode::Explore,GameMode::DevLab};
 #ifdef OUTLAND_DEV_TOOLS
 constexpr const char* dev_label="CREATIVE BUILDER (DEV)";
 #else
 constexpr const char* dev_label="DEV LAB";
 #endif
-struct MenuButton {
-    Rectangle bounds;
-    const char* label;
-    GameMode mode;
-};
-
-MenuButton make_button(
-    const int screen_width,
-    const float y,
-    const char* label,
-    const GameMode mode
-) {
-    constexpr float width = 360.0F;
-    constexpr float height = 58.0F;
-
-    return {
-        {
-            static_cast<float>(screen_width) *
-                    0.5F -
-                width * 0.5F,
-            y,
-            width,
-            height
-        },
-        label,
-        mode
-    };
+constexpr const char* labels[]{"BATTLE ROYALE","ZOMBIE SURVIVAL","EXPLORE VERDA",dev_label};
+float scale(int w,int h) { return std::max(.1F,std::min(w/900.0F,h/720.0F)); }
+Rectangle box(float x,float y,float w,float h,int width,int height) {
+    const float s=scale(width,height);return {(width-900*s)/2+x*s,(height-720*s)/2+y*s,w*s,h*s};
 }
-
-Rectangle bot_toggle_bounds(
-    const int screen_width,
-    const float y
-) {
-    constexpr float width = 220.0F;
-    return {static_cast<float>(screen_width) * 0.5F + 190.0F, y + 9.0F, width, 40.0F};
+void button(Rectangle r,const char* text,float s) {
+    const bool hovered=CheckCollisionPointRec(GetMousePosition(),r);
+    DrawRectangleRounded(r,.15F,8,hovered ? Color{80,100,72,240} : Color{38,45,38,230});
+    DrawRectangleRoundedLines(r,.15F,8,WHITE);
+    const int font=std::max(10,static_cast<int>(22*s));
+    DrawText(text,static_cast<int>(r.x+r.width/2-MeasureText(text,font)/2),static_cast<int>(r.y+(r.height-font)/2),font,RAYWHITE);
 }
-
-const char* bot_toggle_label(
-    const ai::BotLevel level
-) {
-    switch (level) {
-        case ai::BotLevel::Easy: return "BOTS: EASY";
-        case ai::BotLevel::Hard: return "BOTS: HARD";
-        default: return "BOTS: MEDIUM";
+}
+Rectangle HomeScreen::mode_button(int index,int w,int h) { return box(240,290+index*72,420,58,w,h); }
+Rectangle HomeScreen::difficulty_button(int w,int h) { return box(300,225,300,46,w,h); }
+GameMode HomeScreen::update(int w,int h) {
+    std::vector<Vector2> points;
+    const auto buffered=input::PointerEvents::presses();
+    points.assign(buffered.begin(),buffered.end());std::unordered_set<int> current;
+    const int count=std::max(0,GetTouchPointCount());
+    for(int i=0;i<count;++i) {
+        const int id=GetTouchPointId(i);
+        if(id>=0 && current.insert(id).second && buffered.empty() && !previous_.contains(id)) points.push_back(GetTouchPosition(i));
     }
-}
-
-void draw_button(
-    const MenuButton& button
-) {
-    const Vector2 pointer =
-        GetMousePosition();
-
-    const bool hovered =
-        CheckCollisionPointRec(
-            pointer,
-            button.bounds
-        );
-
-    const Color fill =
-        hovered
-            ? Color{80, 100, 72, 240}
-            : Color{38, 45, 38, 230};
-
-    DrawRectangleRounded(
-        button.bounds,
-        0.18F,
-        8,
-        fill
-    );
-
-    DrawRectangleRoundedLines(
-        button.bounds,
-        0.18F,
-        8,
-        WHITE
-    );
-
-    const int font_size = 24;
-
-    const int text_width =
-        MeasureText(
-            button.label,
-            font_size
-        );
-
-    DrawText(
-        button.label,
-        static_cast<int>(
-            button.bounds.x +
-            button.bounds.width * 0.5F -
-            static_cast<float>(text_width) * 0.5F
-        ),
-        static_cast<int>(
-            button.bounds.y + 16.0F
-        ),
-        font_size,
-        RAYWHITE
-    );
-}
-
-}
-
-GameMode HomeScreen::update(
-    const int screen_width,
-    const int screen_height
-) {
-    (void)screen_height;
-
-    const float start_y = 270.0F;
-    const float spacing = 70.0F;
-
-    const MenuButton buttons[] = {
-        make_button(
-            screen_width,
-            start_y,
-            "BATTLE ROYALE",
-            GameMode::BattleRoyale
-        ),
-        make_button(
-            screen_width,
-            start_y + spacing,
-            "ZOMBIE SURVIVAL",
-            GameMode::ZombieSurvival
-        ),
-        make_button(
-            screen_width,
-            start_y + spacing * 2.0F,
-            "EXPLORE VERDA",
-            GameMode::Explore
-        ),
-        make_button(
-            screen_width,
-            start_y + spacing * 3.0F,
-            dev_label,
-            GameMode::DevLab
-        )
-    };
-
-    if (
-        !input::PointerEvents::presses().empty() || IsMouseButtonPressed(
-            MOUSE_BUTTON_LEFT
-        )
-    ) {
-        const auto buffered=input::PointerEvents::presses();
-        const Vector2 pointer =buffered.empty()?GetMousePosition():buffered.front();
-
-        if (CheckCollisionPointRec(pointer, bot_toggle_bounds(screen_width, start_y))) {
-            bot_level_ = bot_level_ == ai::BotLevel::Easy ? ai::BotLevel::Medium :
-                bot_level_ == ai::BotLevel::Medium ? ai::BotLevel::Hard : ai::BotLevel::Easy;
+    if(buffered.empty() && count==0 && previous_.empty() && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) points.push_back(GetMousePosition());
+    previous_=std::move(current);
+    for(const auto p:points) {
+        if(CheckCollisionPointRec(p,difficulty_button(w,h))) {
+            bot_level_=bot_level_==ai::BotLevel::Easy ? ai::BotLevel::Medium : bot_level_==ai::BotLevel::Medium ? ai::BotLevel::Hard : ai::BotLevel::Easy;
             return GameMode::Home;
         }
-
-        for (
-            const MenuButton& button :
-            buttons
-        ) {
-            if (
-                CheckCollisionPointRec(
-                    pointer,
-                    button.bounds
-                )
-            ) {
-                selected_ =
-                    button.mode;
-
-                return selected_;
-            }
-        }
+        for(int i=0;i<4;++i) if(CheckCollisionPointRec(p,mode_button(i,w,h))) {selected_=modes[i];return selected_;}
     }
-
     return GameMode::Home;
 }
-
-void HomeScreen::draw(
-    const int screen_width,
-    const int screen_height
-) const {
-    ClearBackground(
-        Color{
-            24,
-            31,
-            25,
-            255
-        }
-    );
-
-    DrawRectangleGradientV(
-        0,
-        0,
-        screen_width,
-        screen_height,
-        Color{
-            52,
-            73,
-            56,
-            255
-        },
-        Color{
-            17,
-            20,
-            17,
-            255
-        }
-    );
-
-    const char* title =
-        "OUTLAND";
-
-    const int title_size =
-        72;
-
-    const int title_width =
-        MeasureText(
-            title,
-            title_size
-        );
-
-    DrawText(
-        title,
-        screen_width / 2 -
-            title_width / 2,
-        90,
-        title_size,
-        RAYWHITE
-    );
-
-    const char* subtitle =
-        "BONVENON AL VERDA"; // the island speaks Esperanto
-
-    const int subtitle_size =
-        22;
-
-    const int subtitle_width =
-        MeasureText(
-            subtitle,
-            subtitle_size
-        );
-
-    DrawText(
-        subtitle,
-        screen_width / 2 -
-            subtitle_width / 2,
-        180,
-        subtitle_size,
-        Color{
-            190,
-            205,
-            175,
-            255
-        }
-    );
-
-    constexpr float start_y =
-        270.0F;
-
-    constexpr float spacing =
-        70.0F;
-
-    const MenuButton buttons[] = {
-        make_button(
-            screen_width,
-            start_y,
-            "BATTLE ROYALE",
-            GameMode::BattleRoyale
-        ),
-        make_button(
-            screen_width,
-            start_y + spacing,
-            "ZOMBIE SURVIVAL",
-            GameMode::ZombieSurvival
-        ),
-        make_button(
-            screen_width,
-            start_y + spacing * 2.0F,
-            "EXPLORE VERDA",
-            GameMode::Explore
-        ),
-        make_button(
-            screen_width,
-            start_y + spacing * 3.0F,
-            dev_label,
-            GameMode::DevLab
-        )
-    };
-
-    for (
-        const MenuButton& button :
-        buttons
-    ) {
-        draw_button(button);
-    }
-
-    // Battle Royale difficulty: changes how bots think and shoot, never their health or senses.
-    const Rectangle toggle = bot_toggle_bounds(screen_width, start_y);
-    const bool toggle_hovered = CheckCollisionPointRec(GetMousePosition(), toggle);
-    DrawRectangleRounded(toggle, 0.25F, 8, toggle_hovered ? Color{110, 84, 52, 240} : Color{58, 46, 34, 230});
-    DrawRectangleRoundedLines(toggle, 0.25F, 8, Color{230, 200, 150, 255});
-    const char* toggle_label = bot_toggle_label(bot_level_);
-    DrawText(toggle_label,
-        static_cast<int>(toggle.x + toggle.width * 0.5F - static_cast<float>(MeasureText(toggle_label, 20)) * 0.5F),
-        static_cast<int>(toggle.y + 10.0F), 20, Color{245, 225, 190, 255});
-
-    DrawText(
-        "VERDA DEVELOPMENT BUILD",
-        18,
-        screen_height - 34,
-        16,
-        GRAY
-    );
+void HomeScreen::draw(int w,int h) const {
+    ClearBackground(Color{24,31,25,255});DrawRectangleGradientV(0,0,w,h,Color{52,73,56,255},Color{17,20,17,255});
+    const float s=scale(w,h);const auto title=box(0,70,900,80,w,h);
+    const int size=std::max(16,static_cast<int>(72*s));
+    DrawText("OUTLAND",w/2-MeasureText("OUTLAND",size)/2,static_cast<int>(title.y),size,RAYWHITE);
+    const auto subtitle=box(0,165,900,40,w,h);const int small=std::max(10,static_cast<int>(22*s));
+    DrawText("BONVENON AL VERDA",w/2-MeasureText("BONVENON AL VERDA",small)/2,static_cast<int>(subtitle.y),small,LIGHTGRAY);
+    button(difficulty_button(w,h),TextFormat("BR BOTS: %s",ai::bot_level_name(bot_level_)),s);
+    for(int i=0;i<4;++i) button(mode_button(i,w,h),labels[i],s);
+    const auto footer=box(30,650,840,35,w,h);
+    DrawText("BR: last survivor | Explore: free roam, stores and police",static_cast<int>(footer.x),static_cast<int>(footer.y),std::max(10,static_cast<int>(16*s)),GRAY);
 }
-
-} // namespace outland::game
+}

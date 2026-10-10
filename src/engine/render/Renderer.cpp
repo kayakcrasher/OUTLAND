@@ -15,6 +15,8 @@
 #include "outland/game/GameMode.hpp"
 #include "outland/game/HomeScreen.hpp"
 #include "outland/game/ModeRules.hpp"
+#include "outland/game/ModeSession.hpp"
+#include "outland/game/PlayUI.hpp"
 #include "outland/game/life/LifeSimulation.hpp"
 #include "outland/game/ai/BattleRoyaleBots.hpp"
 #include "outland/game/sound/SoundBus.hpp"
@@ -424,6 +426,16 @@ void Renderer::run() {
     game::inventory::LootUI loot_ui(character_root);
     characters::NpcSystem npcs;
     game::ai::BattleRoyaleBots br_bots;
+    game::ModeSession mode_session;
+    game::PlayUI play_ui;
+    game::economy::Economy economy;
+    std::string economy_error;
+    if(!economy.load(item_registry,character_root+"/assets/verda/economy/offers.tsv",economy_error))
+        TraceLog(LOG_WARNING,"Economy unavailable: %s",economy_error.c_str());
+    bool shop_open=false;
+    const game::economy::Shop* current_shop=nullptr;
+    std::string shop_status;
+    game::GameMode queued_mode=game::GameMode::Home;
     // Time of day: Explore follows island life's clock, Zombie Survival runs its own from dusk,
     // Battle Royale keeps fair afternoon light, the Dev Lab sets the hour by hand (F6 / F7).
     float zombie_hour=17.5F, dev_hour=12.0F, last_daylight=1.0F;
@@ -436,7 +448,7 @@ void Renderer::run() {
     std::size_t lit_asset_count=static_cast<std::size_t>(-1);
     game::sound::SoundBus sound_bus; // every noise on Verda this session, heard by bots, NPCs and residents
     double match_time=0;
-    int match_placement=-1;
+
     float damage_flash=0;
     Vector3 damage_source{};
     Vector3 last_player_feet{};
@@ -497,6 +509,13 @@ void Renderer::run() {
     vehicles.reconcile(verda_region);
     const std::string vehicle_state_path=map_path+".vehicles";
     bool vehicle_save_protected=false,vehicle_dirty=false;
+    std::vector<world::WorldAsset> match_fleet;
+    bool match_fleet_active=false, fleet_was_dirty=false;
+    const auto restore_match_fleet=[&]{
+        if(!match_fleet_active) return;
+        vehicles.restore_checkpoint(verda_region,match_fleet);
+        vehicle_dirty=fleet_was_dirty;match_fleet.clear();match_fleet_active=false;
+    };
     float vehicle_save_timer=0,vehicle_reconcile_timer=0,vehicle_orbit=0,vehicle_pitch=0;
     if(FileExists(vehicle_state_path.c_str()) && !vehicles.load_state(verda_region,vehicle_state_path,vehicle_error)) {
         vehicle_save_protected=true;TraceLog(LOG_ERROR,"Vehicle state protected: %s",vehicle_error.c_str());
@@ -630,12 +649,13 @@ void Renderer::run() {
             creator_touch_ui.update(creator_controller, screen_width, screen_height, true);
 #endif
             environment_audio.update(player.position, player.grounded, false, verda_region);
-            const game::GameMode selected =
+            const game::GameMode selected = queued_mode != game::GameMode::Home ? queued_mode :
                 home_screen.update(
                     screen_width,
                     screen_height
                 );
 
+            queued_mode=game::GameMode::Home;
             BeginDrawing();
 
             home_screen.draw(
@@ -652,14 +672,10 @@ void Renderer::run() {
                 game_mode =
                     selected;
 
-                player.position = {
-                    0.0F,
-                    world::terrain::TerrainHeight::sample(
-                        0.0F,
-                        8.0F
-                    ) + 1.0F,
-                    8.0F
-                };
+                bool explicit_spawn=false;
+                const auto session_seed=static_cast<std::uint64_t>(GetTime()*1000.0)+1;
+                player.position=Vector3Add(game::session_spawn(verda_region,game_mode,session_seed),{0,1,0});
+                player.yaw=player.pitch=0;
 
                 player.vertical_velocity =
                     0.0F;
@@ -675,7 +691,7 @@ void Renderer::run() {
                     if(std::sscanf(spawn,"%f,%f,%f",&x,&z,&yaw_degrees)==3 && std::isfinite(x) && std::isfinite(z) && std::isfinite(yaw_degrees)) {
                         const float ground=world::terrain::TerrainHeight::sample(x,z);
                         player.position={x,world::physics::WorldCollision::ground_height({x,ground,z},ground+.5F,verda_region)+1.0F,z};
-                        player.yaw=yaw_degrees*DEG2RAD;
+                        player.yaw=yaw_degrees*DEG2RAD;explicit_spawn=true;
                     }
                 }
 #endif
@@ -684,22 +700,39 @@ void Renderer::run() {
                 combat_world.reset_targets();
                 combat_world.set_training_range(game_mode == game::GameMode::DevLab);
                 vehicles.set_training_structure(game_mode == game::GameMode::DevLab);
+                vehicles.reconcile(verda_region);
+                if(game_mode==game::GameMode::BattleRoyale) {
+                    match_fleet=vehicles.checkpoint(verda_region);match_fleet_active=true;fleet_was_dirty=vehicle_dirty;
+                    vehicles.reset_match_fleet(verda_region);
+                }
                 npcs.reset_session();
                 world::physics::MeshCollisionLibrary::preload(verda_region);
                 // Explore lives on Verda: rebuild residents from the current (possibly Creator-edited) towns.
                 if(game::rules_for(game_mode).civilian_life) {
-                    island_life.build(verda_region,&character_registry);island_life.reset(npcs);
+                    island_life.build(verda_region,&character_registry);island_life.reset(npcs,game::life::WorldClock::at(0,9,30));
+                    economy.build(island_life.places());
+                    // Start outside a populated public shop, using authored purpose/door data.
+                    if(!explicit_spawn && !economy.shops().empty()) {
+                        const auto start_feet=Vector3Subtract(player.position,{0,1,0});
+                        const auto shop=std::min_element(economy.shops().begin(),economy.shops().end(),[&](const auto& a,const auto& b){
+                            return Vector3DistanceSqr(start_feet,a.door)<Vector3DistanceSqr(start_feet,b.door);
+                        });
+                        const auto door=shop->door;
+                        if(!world::physics::WorldCollision::body_blocked(door,door.y,verda_region,.4F))
+                            player.position=Vector3Add(door,{0,1,0});
+                    }
                 } else island_life.clear(npcs);
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
                 zombie_hour=17.5F;lit_asset_count=static_cast<std::size_t>(-1);
                 justice.reset(nullptr,nullptr);crimes.clear();police_tracers.clear();
                 rebuild_signs();
-                match_time=0;match_placement=-1;
+                match_time=0;shop_open=false;current_shop=nullptr;
                 last_player_feet={player.position.x,player.position.y-1.0F,player.position.z};
                 if(game::rules_for(game_mode).combat_bots) {
-                    br_bots.start(verda_region,home_screen.bot_level(),23,static_cast<std::uint64_t>(GetTime()*1000.0)+1,last_player_feet);
+                    br_bots.start(verda_region,home_screen.bot_level(),23,session_seed,last_player_feet);
                     br_bots.sync_bodies(npcs,&character_registry);
                 }
+                mode_session.start(game_mode,static_cast<int>(br_bots.bots().size()),home_screen.bot_level());
                 player_health.reset();
                 recoil_pitch = recoil_yaw = 0.0F;
                 trigger_ready = false;
@@ -732,6 +765,7 @@ void Renderer::run() {
             if(game_mode!=game::GameMode::DevLab && !loot_session.save(weapons) && loot_session.can_persist()){
                 interaction_message=loot_session.status();interaction_remaining=3;continue;
             }
+            restore_match_fleet();
             vehicles.leave_session();vehicle_audio.stop();vehicle_renderer.reset_camera();
             game_mode =
                 game::GameMode::Home;
@@ -742,6 +776,21 @@ void Renderer::run() {
             EndDrawing();
 
             continue;
+        }
+
+        if(mode_session.terminal()) {
+            const auto action=play_ui.result_input(screen_width,screen_height,IsWindowFocused());
+            if(action!=game::ResultAction::None) {
+                if(!loot_session.save(weapons) && loot_session.can_persist()) {
+                    interaction_message=loot_session.status();interaction_remaining=3;
+                } else {
+                    queued_mode=action==game::ResultAction::Restart ? game_mode : game::GameMode::Home;
+                    restore_match_fleet();
+                    vehicles.leave_session();vehicle_audio.stop();vehicle_renderer.reset_camera();
+                    shop_open=inventory_open=false;input_system.cancel_controls();
+                    game_mode=game::GameMode::Home;continue;
+                }
+            }
         }
 
         // ====================================================
@@ -789,7 +838,10 @@ void Renderer::run() {
         if(game_mode==game::GameMode::DevLab && !creator_active)reserved=[&](Vector2 point){return CheckCollisionPointRec(point,audio_button)||dev_lab.owns_point(point,screen_width,screen_height);};
 #endif
         // The equipment panel is modal: BAG closes it and GUN changes equipment.
-        if (inventory_open) {
+        if(shop_open || mode_session.terminal()) {
+            input_system.update(screen_width,screen_height,true,true,[](Vector2){return true;});
+            input_system.player()={};
+        } else if (inventory_open) {
             // The bag owns every touch. Keyboard I/Tab still pass through, then
             // gameplay movement/fire is cleared below.
             input_system.update(screen_width,screen_height,true,!IsWindowFocused(),[](Vector2){return true;});
@@ -817,11 +869,19 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
         if(game_mode==game::GameMode::DevLab && dev_lab.tools_open())input_system.cancel_controls();
 #endif
-        if(!player_health.alive() && !creator_active) input_system.player()={};
+        if((!player_health.alive() || mode_session.terminal()) && !creator_active) input_system.player()={};
         const input::PlayerInput& controls = input_system.player();
         vehicle_reconcile_timer+=dt;
         if(vehicle_reconcile_timer>=.5F){vehicle_dirty|=vehicles.reconcile(verda_region);vehicle_reconcile_timer=0;}
-        if(controls.interact && !creator_active && !inventory_open) {
+        const Vector3 shop_feet{player.position.x,player.position.y-1,player.position.z};
+        const auto reachable_shop=[&](Vector3 door){return !combat_world.trace_segment(
+            {player.position.x,player.position.y+.5F,player.position.z},Vector3Add(door,{0,.8F,0}),false,false).hit();};
+        const auto* nearby_shop=game_mode==game::GameMode::Explore && !vehicles.driver() ? economy.nearest(shop_feet,reachable_shop) : nullptr;
+        if(controls.interact && nearby_shop && !inventory_open && !shop_open && !mode_session.terminal()) {
+            current_shop=nearby_shop;shop_open=true;shop_status="Select supplies, equipment or furniture. BUY / SELL transfers one item.";
+            play_ui.opened();input_system.cancel_controls();
+        }
+        if(controls.interact && !creator_active && !inventory_open && !shop_open) {
             Vector3 exit{};
             if(vehicles.driver()){
                 if(vehicles.exit(verda_region,exit)){player.position=Vector3Add(exit,{0,1,0});player.vertical_velocity=0;vehicle_renderer.reset_camera();interaction_message="Exited vehicle";}
@@ -831,7 +891,7 @@ void Renderer::run() {
         }
         const bool driving=vehicles.driver()!=nullptr;
         game::vehicles::VehicleInput driving_input{-controls.move_y,-controls.move_x,controls.brake,controls.crouch,controls.sprint};
-        const bool vehicle_paused=creator_active||inventory_open||!IsWindowFocused()
+        const bool vehicle_paused=creator_active||inventory_open||shop_open||mode_session.terminal()||!IsWindowFocused()
 #ifdef OUTLAND_DEV_TOOLS
             || (game_mode==game::GameMode::DevLab && dev_lab.tools_open())
 #endif
@@ -844,9 +904,19 @@ void Renderer::run() {
         const auto reachable_pickup=[&](Vector3 point){return !combat_world.trace_segment(
             {player.position.x,player.position.y+.5F,player.position.z},Vector3Add(point,{0,.1F,0}),false,false).hit();};
         if(!creator_active && game_mode != game::GameMode::DevLab) {
-            loot_session.update(dt,verda_region,loot_feet,weapons);
+            loot_session.update(mode_session.terminal() ? 0.0F : dt,verda_region,loot_feet,weapons);
+            if(game_mode==game::GameMode::Explore) {
+                if(economy.update(loot_session.economy(),dt,vehicle_paused)) loot_session.changed();
+                if(shop_open && current_shop) {
+                    const auto action=play_ui.shop_input(economy,*current_shop,screen_width,screen_height,IsWindowFocused());
+                    if(action.close) {shop_open=false;input_system.cancel_controls();}
+                    else if(action.buy || action.sell) {
+                        shop_status=loot_session.trade(economy,*current_shop,economy.offers()[action.offer],1,action.sell,weapons);
+                    }
+                }
+            }
             if(controls.next_weapon)loot_session.changed();
-            if(controls.interact && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;}
+            if(controls.interact && !shop_open && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;}
             if(inventory_open){
                 const auto action=loot_ui.update(loot_session.inventory(),screen_width,screen_height,IsWindowFocused());
                 if(action.close){inventory_open=false;input_system.cancel_controls();}
@@ -1246,7 +1316,7 @@ void Renderer::run() {
         creator_session.update(dt,verda_region);
 #endif
         vehicle_save_timer+=dt;
-        if(vehicle_dirty && !vehicle_save_protected && vehicle_save_timer>=2){
+        if(game_mode!=game::GameMode::BattleRoyale && vehicle_dirty && !vehicle_save_protected && vehicle_save_timer>=2){
             if(vehicles.save_state(verda_region,vehicle_state_path,vehicle_error))vehicle_dirty=false;
             else TraceLog(LOG_ERROR,"Vehicle state save: %s",vehicle_error.c_str());
             vehicle_save_timer=0;
@@ -1272,7 +1342,7 @@ void Renderer::run() {
         weapon_input.grounded=player.grounded;
         weapon_input.movement=movement_amount;
         npcs.reconcile(verda_region, character_registry);
-        weapons.update(dt,weapon_input,{gun_muzzle,gun_direction},combat_world);
+        weapons.update((shop_open || mode_session.terminal()) ? 0.0F : dt,weapon_input,{gun_muzzle,gun_direction},combat_world);
         recoil_pitch=std::min(.20F,recoil_pitch+weapons.events().pitch_kick);
         recoil_yaw+=weapons.events().yaw_kick;
         environment_audio.play_combat(weapons.selected(),weapons.events());
@@ -1327,7 +1397,7 @@ void Renderer::run() {
         crimes.clear();
         {
             const Vector3 feet{player.position.x,player.position.y-1.0F,player.position.z};
-            if(br_bots.active() && !vehicle_paused) {
+            if(game_mode==game::GameMode::BattleRoyale && !vehicle_paused) {
                 game::ai::BattleRoyaleFrame frame;
                 frame.dt=dt;frame.now=match_time;frame.player_feet=feet;
                 frame.player_velocity=dt>0 ? Vector3Scale(Vector3Subtract(feet,last_player_feet),1.0F/dt) : Vector3{};
@@ -1337,13 +1407,15 @@ void Renderer::run() {
                 frame.player_in_vehicle=driving;
                 br_bots.update(frame,bot_world);
                 br_bots.sync_bodies(npcs,&character_registry);
-                const bool was_alive=player_health.alive();
                 player_health.damage(br_bots.events().player_damage);
                 if(br_bots.events().player_damage>0) {damage_flash=1.2F;damage_source=br_bots.events().player_damage_from;}
-                if(was_alive && !player_health.alive() && match_placement<0) {
-                    match_placement=br_bots.alive_bots()+1;
-                    br_bots.report_player_death(br_bots.events().player_damage_by);
-                }
+            }
+            const bool finished=mode_session.terminal();
+            mode_session.update(dt,feet,player_health,br_bots,vehicle_paused);
+            if(game_mode==game::GameMode::BattleRoyale) br_bots.sync_bodies(npcs,&character_registry);
+            if(!finished && mode_session.terminal()) {
+                shop_open=inventory_open=false;play_ui.opened();input_system.cancel_controls();
+                vehicle_audio.stop();
             }
             last_player_feet=feet;
             damage_flash=std::max(0.0F,damage_flash-dt);
@@ -1625,7 +1697,7 @@ void Renderer::run() {
         if (!creator_active) {
             DrawText(TextFormat("HEALTH %.0f / %.0f",player_health.current(),player_health.maximum()),
                 16,16,20,player_health.alive() ? RAYWHITE : RED);
-            if (!player_health.alive()) DrawText("YOU DIED - ESC / BACK TO HOME",screen_width/2-175,screen_height/2,22,RED);
+
             if (br_bots.active()) {
                 const int alive=br_bots.alive_bots()+(player_health.alive() ? 1 : 0);
                 const char* status=TextFormat("ALIVE %d   KILLS %d   BOTS %s",alive,br_bots.player_kills(),game::ai::bot_level_name(br_bots.level()));
@@ -1646,20 +1718,13 @@ void Renderer::run() {
                     DrawTriangle(tip,Vector2Add(base,side),Vector2Subtract(base,side),Color{230,40,30,alpha});
                     DrawTriangle(tip,Vector2Subtract(base,side),Vector2Add(base,side),Color{230,40,30,alpha});
                 }
-                if(player_health.alive() && br_bots.alive_bots()==0) {
-                    const char* win="LAST ONE STANDING - YOU WIN";
-                    DrawText(win,screen_width/2-MeasureText(win,34)/2,screen_height/2-60,34,GOLD);
-                } else if(!player_health.alive()) {
-                    const char* place=TextFormat("PLACED #%d",match_placement>0 ? match_placement : br_bots.alive_bots()+1);
-                    DrawText(place,screen_width/2-MeasureText(place,26)/2,screen_height/2+34,26,RAYWHITE);
-                }
             }
         }
         bool asset_drawer_open = false;
 #ifdef OUTLAND_DEV_TOOLS
         asset_drawer_open = game_mode == game::GameMode::DevLab && creator_touch_ui.inventory_open();
 #endif
-        if (!inventory_open && !asset_drawer_open) touch_hud.draw(
+        if (!inventory_open && !shop_open && !mode_session.terminal() && !asset_drawer_open) touch_hud.draw(
             controls,
             input_system.layout(),
             screen_width,
@@ -1700,7 +1765,7 @@ void Renderer::run() {
 #endif
 
         if(inventory_open)loot_ui.draw_inventory(item_registry,loot_session,weapons,screen_width,screen_height);
-        if(!creator_active && !inventory_open){
+        if(!creator_active && !inventory_open && !shop_open && !mode_session.terminal()){
             const int nearby=loot_session.world().nearest(loot_feet,2.8F,reachable_pickup);
             if(nearby>=0){const auto& pickup=loot_session.world().state().pickups[static_cast<std::size_t>(nearby)];
                 const auto* item=item_registry.find(pickup.item);
@@ -1708,7 +1773,7 @@ void Renderer::run() {
             }
         }
         if (interaction_remaining > 0)
-            DrawText(interaction_message.c_str(), screen_width / 2 - 170, 100, 18, RAYWHITE);
+            DrawText(interaction_message.c_str(), screen_width / 2 - MeasureText(interaction_message.c_str(),18)/2, screen_height-205, 18, RAYWHITE);
 
         DrawRectangleRec(audio_button, Fade(BLACK, 0.60F));
         DrawText(environment_audio.ready() ?
@@ -1720,6 +1785,18 @@ void Renderer::run() {
 #endif
         if(const auto* driver=vehicles.driver())DrawText(TextFormat("%.0f km/h | JUMP: brake | CROUCH: park | SPRINT: horn | USE: exit",std::abs(driver->speed)*3.6F),20,screen_height-32,16,YELLOW);
         else if(!creator_active && !inventory_open && vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z})>=0)DrawText("USE / E - Enter vehicle",screen_width/2-120,screen_height-100,20,YELLOW);
+        if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !shop_open && !inventory_open) {
+            const int objective_bottom=game::PlayUI::draw_objective(mode_session,screen_width);
+            if(game_mode==game::GameMode::BattleRoyale) {
+                DrawText(TextFormat("ZONE %.0fm | distance %.0fm | %s",mode_session.radius(),mode_session.distance(loot_feet),mode_session.distance(loot_feet)>mode_session.radius() ? "DANGER - move toward capital" : "inside safe zone"),20,objective_bottom+6,16,mode_session.distance(loot_feet)>mode_session.radius() ? RED : RAYWHITE);
+            }
+            if(game_mode==game::GameMode::Explore) {
+                DrawText(TextFormat("%lld kronoj | stores: BUY supplies / SELL scavenged goods",static_cast<long long>(loot_session.economy().money)),20,objective_bottom+6,16,GOLD);
+                if(nearby_shop) DrawText(TextFormat("E / USE: %s",nearby_shop->name.c_str()),screen_width/2-160,screen_height-165,20,GOLD);
+            }
+        }
+        if(shop_open && current_shop) play_ui.draw_shop(economy,*current_shop,loot_session.economy(),item_registry,loot_session.inventory(),shop_status,screen_width,screen_height);
+        if(mode_session.terminal()) play_ui.draw_result(mode_session,screen_width,screen_height);
         DrawFPS(
             screen_width - 90,
             10
@@ -1730,6 +1807,7 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
     if(creator_session.dirty() && !creator_session.save(verda_region))TraceLog(LOG_ERROR,"Unsaved Creator edits: %s",creator_session.path().c_str());
 #endif
+    restore_match_fleet();
     if(vehicle_dirty && !vehicle_save_protected && !vehicles.save_state(verda_region,vehicle_state_path,vehicle_error))TraceLog(LOG_ERROR,"Vehicle save failed: %s",vehicle_error.c_str());
     if(game_mode!=game::GameMode::Home && game_mode!=game::GameMode::DevLab && !loot_session.save(weapons))
         TraceLog(LOG_ERROR,"Inventory save failed: %s",loot_session.path().c_str());

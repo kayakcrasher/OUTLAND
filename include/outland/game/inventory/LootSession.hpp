@@ -15,6 +15,8 @@ class LootSession {
     std::string use(std::size_t slot, combat::WeaponSystem &, Health &);
     std::string drop(std::size_t slot, bool whole_stack, Vector3 position, combat::WeaponSystem &,
                      const std::function<bool(Vector3)> &reachable = {});
+    std::string trade(const economy::Economy&, const economy::Shop&, const economy::Offer&,
+                      int quantity, bool selling, combat::WeaponSystem&);
     bool save(const combat::WeaponSystem &);
     void changed() {
         dirty_ = true;
@@ -32,6 +34,8 @@ class LootSession {
     LootWorld &edit_world() {
         return world_;
     }
+    economy::EconomyState& economy() { return economy_; }
+    const economy::EconomyState& economy() const { return economy_; }
     bool dirty() const {
         return dirty_;
     }
@@ -53,6 +57,7 @@ class LootSession {
     int take_ammo(combat::WeaponId, int);
     const ItemRegistry &registry_;
     Inventory inventory_;
+    economy::EconomyState economy_;
     LootWorld world_;
     GameMode mode_{GameMode::Home};
     std::string path_, status_;

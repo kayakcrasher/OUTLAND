@@ -104,6 +104,20 @@ bool BattleRoyaleBots::damage_bot(int bot,float amount,Vector3 from,double now) 
     return true;
 }
 
+void BattleRoyaleBots::apply_circle(float radius, float damage) {
+    for(auto& bot:bots_) if(bot.alive()) {
+        if(std::hypot(bot.position().x,bot.position().z)>radius*.85F)
+            bot.set_roam_center({0,0,0}, std::max(10.0F,radius*.5F));
+        if(std::hypot(bot.position().x,bot.position().z)>radius) {
+            bot.set_health(std::max(0.0F,bot.health()-damage));
+            if(!bot.alive()) {
+                feed_.push_back(bot_name(bot.id())+" LOST TO THE ZONE");
+                if(feed_.size()>feed_lines) feed_.erase(feed_.begin());
+            }
+        }
+    }
+}
+
 void BattleRoyaleBots::report_player_death(int killer) {
     feed_.push_back(killer>0 ? bot_name(killer)+" ELIMINATED YOU" : std::string("YOU WERE ELIMINATED"));
     if(feed_.size()>feed_lines) feed_.erase(feed_.begin());
@@ -116,12 +130,6 @@ void BattleRoyaleBots::update(const BattleRoyaleFrame& frame,const BotWorld& wor
     elapsed_+=dt;
     for(auto& tracer:tracers_) tracer.life-=dt;
     std::erase_if(tracers_,[](const BotTracer& t){return t.life<=0;});
-
-    // The circle: after the opening minute everyone drifts toward the capital, tightening over time.
-    if(elapsed_>90) {
-        const float radius=std::max(60.0F,700.0F-static_cast<float>(elapsed_-90)*1.5F);
-        for(auto& bot:bots_) if(Vector3Distance(bot.position(),{0,0,0})>radius*.6F) bot.set_roam_center({0,0,0},radius*.6F);
-    }
 
     agents_.clear();
     const auto player_velocity=frame.player_velocity;

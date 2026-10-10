@@ -214,6 +214,23 @@ int main() {
     assert(roundtrip->vehicle.health == 62 && roundtrip->vehicle.tires[2] == 33 &&
            roundtrip->vehicle.definition == "hatchback");
 #endif
+    // Battle Royale uses healthy vehicles without changing Explore/Creator placement or damage.
+    auto* persistent=cars.asset(region,cars.vehicles()[0].id);
+    persistent->vehicle.health=42;persistent->vehicle.engine=31;persistent->vehicle.tires[0]=20;
+    persistent->vehicle.destroyed=true;persistent->position.x+=5;
+    cars.reconcile(region);
+    const auto checkpoint=cars.checkpoint(region);
+    const auto vehicle_id=persistent->id;
+    const auto position=persistent->position;
+    cars.reset_match_fleet(region);
+    const auto* match_car=cars.asset(region,vehicle_id);
+    assert(match_car->vehicle.health==100 && match_car->vehicle.engine==100 && !match_car->vehicle.destroyed);
+    assert(match_car->vehicle.tires[0]==100);
+    cars.restore_checkpoint(region,checkpoint);
+    const auto* original=cars.asset(region,vehicle_id);
+    assert(original->vehicle.health==42 && original->vehicle.engine==31 && original->vehicle.destroyed);
+    assert(original->vehicle.tires[0]==20 && original->position.x==position.x);
+    assert(cars.vehicles()[0].position.x==position.x && !cars.driver());
     world::VerdaRegion bounded;
     for (auto &site : bounded.runtime_settlements())
         site.gameplay_markers.clear();

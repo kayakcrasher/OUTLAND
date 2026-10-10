@@ -9,6 +9,7 @@ bool valid(const ItemRegistry &registry, const LootSnapshot &state) {
     if (state.mode != GameMode::Explore && state.mode != GameMode::BattleRoyale &&
         state.mode != GameMode::ZombieSurvival)
         return false;
+    if(!economy::valid_state(state.economy)) return false;
     Inventory bag;
     LootWorld world;
     if (!bag.restore(registry, state.inventory) || !world.restore(registry, state.world) ||
@@ -51,7 +52,7 @@ bool LootSave::save(const ItemRegistry &registry, const LootSnapshot &state,
         error = "Cannot write inventory save";
         return false;
     }
-    out << std::setprecision(std::numeric_limits<float>::max_digits10) << "OUTLAND_LOOT 1 "
+    out << std::setprecision(std::numeric_limits<float>::max_digits10) << "OUTLAND_LOOT 2 "
         << static_cast<int>(state.mode) << '\n';
     out << "BAG " << std::quoted(state.inventory.container) << ' ' << state.inventory.light << ' '
         << state.inventory.food_consumed << ' ' << state.inventory.water_consumed << '\n';
@@ -68,6 +69,9 @@ bool LootSave::save(const ItemRegistry &registry, const LootSnapshot &state,
             << std::quoted(pickup.item) << ' ' << pickup.position.x << ' ' << pickup.position.y
             << ' ' << pickup.position.z << ' ' << pickup.quantity << ' ' << pickup.loaded_rounds
             << '\n';
+    out << "ECONOMY " << state.economy.money << ' ' << state.economy.restock_remaining << '\n';
+    for(const auto& stock : state.economy.stock)
+        out << "STOCK " << std::quoted(stock.shop) << ' ' << std::quoted(stock.offer) << ' ' << stock.quantity << '\n';
     out << "END\n";
     out.flush();
     bool good = out.good();
@@ -94,10 +98,12 @@ bool LootSave::load(const ItemRegistry &registry, LootSnapshot &destination,
         error = "Invalid or incompatible inventory save";
         return false;
     };
-    if (!(input >> token >> version >> mode) || token != "OUTLAND_LOOT" || version != 1 ||
+    if (!(input >> token >> version >> mode) || token != "OUTLAND_LOOT" || (version != 1 && version != 2) ||
         mode != static_cast<int>(destination.mode))
         return fail();
     parsed.mode = static_cast<GameMode>(mode);
+    if(parsed.mode != GameMode::Explore) parsed.economy.money=0;
+    bool cash = false;
     bool bag = false, weapons = false, next = false, end = false;
     int count = 0;
     while (input >> token) {
@@ -144,13 +150,20 @@ bool LootSave::load(const ItemRegistry &registry, LootSnapshot &destination,
                   pickup.position.z >> pickup.quantity >> pickup.loaded_rounds))
                 return fail();
             parsed.world.pickups.push_back(std::move(pickup));
+        } else if (token == "ECONOMY") {
+            if(version!=2 || cash || !(input >> parsed.economy.money >> parsed.economy.restock_remaining)) return fail();
+            cash=true;
+        } else if (token == "STOCK") {
+            economy::Stock stock;
+            if(version!=2 || parsed.economy.stock.size()>=4096 || !(input >> std::quoted(stock.shop) >> std::quoted(stock.offer) >> stock.quantity)) return fail();
+            parsed.economy.stock.push_back(std::move(stock));
         } else if (token == "END") {
             end = true;
             break;
         } else
             return fail();
     }
-    if (!bag || !weapons || !next || !end || (input >> token) || input.bad() ||
+    if ((version==2 && !cash) || !bag || !weapons || !next || !end || (input >> token) || input.bad() ||
         !valid(registry, parsed))
         return fail();
     destination = std::move(parsed);

@@ -1,10 +1,11 @@
 #pragma once
 #include "outland/game/combat/WeaponDefinition.hpp"
 #include <string>
+#include <raylib.h>
 #include <vector>
 #include <optional>
 namespace outland::game::inventory {
-enum class ItemCategory { Food, Water, Medical, Ammo, Weapon, Utility, Container };
+enum class ItemCategory { Food, Water, Medical, Ammo, Weapon, Utility, Container, Furniture };
 enum class ItemAction { None, Eat, Drink, Heal, Ammo, Equip, Container, Light };
 struct ItemDefinition {
     std::string id, name, model, requires_item;
@@ -38,6 +39,8 @@ class ItemRegistry {
     std::vector<ItemDefinition> items_;
     std::vector<LootTable> tables_;
 };
+// Scale to unit height; planar props use their longest horizontal extent. Zero rejects invalid geometry.
+float pickup_unit_scale(BoundingBox bounds);
 const char *category_name(ItemCategory category);
 bool valid_text(const std::string &value);
 } // namespace outland::game::inventory

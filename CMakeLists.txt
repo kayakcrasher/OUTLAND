@@ -113,6 +113,9 @@ add_library(
     src/game/inventory/LootSave.cpp
     src/game/inventory/LootSession.cpp
     src/game/inventory/LootUI.cpp
+    src/game/economy/Economy.cpp
+    src/game/ModeSession.cpp
+    src/game/PlayUI.cpp
     src/world/VerdaRegion.cpp
     src/dev/DevLab.cpp
     src/game/HomeScreen.cpp
@@ -175,6 +178,13 @@ if(Python3_Interpreter_FOUND)
         DEPENDS tools/generate_survival_catalog.py tools/gltf_import.py assets/verda/survival/runtime_manifest.json ${OUTLAND_SURVIVAL_MODELS} VERBATIM)
     add_custom_target(outland_survival_catalog DEPENDS "${PROJECT_SOURCE_DIR}/include/outland/creator/SurvivalAssetCatalog.hpp")
     add_dependencies(outland_render outland_survival_catalog)
+    file(GLOB OUTLAND_INTERIOR_MODELS CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/assets/verda/interiors/props/*.glb")
+    add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/include/outland/creator/EconomyAssetCatalog.hpp"
+        COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_interior_catalog.py"
+        DEPENDS tools/generate_interior_catalog.py tools/gltf_import.py
+            assets/verda/survival/gameplay/items.tsv ${OUTLAND_INTERIOR_MODELS} VERBATIM)
+    add_custom_target(outland_interior_catalog DEPENDS "${PROJECT_SOURCE_DIR}/include/outland/creator/EconomyAssetCatalog.hpp")
+    add_dependencies(outland_render outland_interior_catalog)
     file(GLOB OUTLAND_STARTER_MODELS CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/assets/verda/starter/*.obj")
     add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/include/outland/creator/StarterAssetCatalog.hpp"
         COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_starter_catalog.py"
@@ -295,10 +305,13 @@ add_custom_target(outland_loot_data
     COMMAND ${CMAKE_COMMAND} -E make_directory
         "$<TARGET_FILE_DIR:outland>/assets/verda/survival/gameplay"
         "$<TARGET_FILE_DIR:outland>/maps"
+        "$<TARGET_FILE_DIR:outland>/assets/verda/economy"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${PROJECT_SOURCE_DIR}/assets/verda/survival/gameplay/items.tsv"
         "${PROJECT_SOURCE_DIR}/assets/verda/survival/gameplay/loot_tables.tsv"
         "$<TARGET_FILE_DIR:outland>/assets/verda/survival/gameplay"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${PROJECT_SOURCE_DIR}/assets/verda/economy" "$<TARGET_FILE_DIR:outland>/assets/verda/economy"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${PROJECT_SOURCE_DIR}/maps"
         "$<TARGET_FILE_DIR:outland>/maps"
@@ -409,6 +422,30 @@ if(OUTLAND_BUILD_TESTS)
         -Wl,--wrap=GetMousePosition -Wl,--wrap=IsMouseButtonPressed -Wl,--wrap=IsKeyPressed -Wl,--wrap=IsKeyDown)
     add_test(NAME outland_loot_ui_tests COMMAND outland_loot_ui_tests)
 
+    add_executable(outland_play_ui_tests tests/integration/modes/test_play_ui.cpp)
+    target_link_libraries(outland_play_ui_tests PRIVATE outland_render)
+    target_compile_options(outland_play_ui_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_play_ui_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    target_link_options(outland_play_ui_tests PRIVATE
+        -Wl,--wrap=GetTouchPointCount -Wl,--wrap=GetTouchPointId -Wl,--wrap=GetTouchPosition
+        -Wl,--wrap=GetMousePosition -Wl,--wrap=IsMouseButtonPressed -Wl,--wrap=IsKeyPressed)
+    add_test(NAME outland_play_ui_tests COMMAND outland_play_ui_tests)
+
+    foreach(name IN ITEMS mode_sessions economy explore_flow)
+        if(name STREQUAL "mode_sessions")
+            set(test_source tests/integration/modes/test_mode_sessions.cpp)
+        elseif(name STREQUAL "explore_flow")
+            set(test_source tests/integration/modes/test_explore_flow.cpp)
+        else()
+            set(test_source tests/integration/inventory/test_economy.cpp)
+        endif()
+        add_executable(outland_${name}_tests ${test_source})
+        target_link_libraries(outland_${name}_tests PRIVATE outland_render)
+        target_compile_options(outland_${name}_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+        target_compile_definitions(outland_${name}_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+        add_test(NAME outland_${name}_tests COMMAND outland_${name}_tests)
+    endforeach()
+
     add_executable(outland_loot_tests tests/integration/inventory/test_loot.cpp)
     target_link_libraries(outland_loot_tests PRIVATE outland_render)
     target_compile_options(outland_loot_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -512,6 +549,7 @@ if(OUTLAND_BUILD_TESTS)
     add_test(NAME outland_animation_asset_tests COMMAND outland_animation_asset_tests)
 
     if(Python3_Interpreter_FOUND)
+        add_test(NAME outland_interior_catalog_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_interior_catalog.py" --check)
         add_test(NAME outland_loot_asset_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/audit_loot_assets.py")
         add_test(NAME outland_survival_catalog_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_survival_catalog.py" --check)
         add_test(NAME outland_city_kit_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_city_kit.py" --check)

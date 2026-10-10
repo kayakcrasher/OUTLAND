@@ -50,6 +50,12 @@ bool valid_text(const std::string &value) {
     return value.size() <= 1024 && std::none_of(value.begin(), value.end(),
                                                 [](unsigned char c) { return c < 32 || c == 127; });
 }
+float pickup_unit_scale(BoundingBox bounds) {
+    const float x=bounds.max.x-bounds.min.x,y=bounds.max.y-bounds.min.y,z=bounds.max.z-bounds.min.z;
+    if(!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z) || x<0 || y<0 || z<0) return 0;
+    const float extent=y>.000001F ? y : std::max(x,z);
+    return extent>.000001F ? 1/extent : 0;
+}
 const char *category_name(ItemCategory c) {
     switch (c) {
     case ItemCategory::Food:
@@ -64,6 +70,8 @@ const char *category_name(ItemCategory c) {
         return "Weapon";
     case ItemCategory::Container:
         return "Container";
+    case ItemCategory::Furniture:
+        return "Furniture";
     default:
         return "Utility";
     }
@@ -108,7 +116,7 @@ bool ItemRegistry::load(const std::string &item_path, const std::string &table_p
                                                   "starting_loaded"})
         return fail("Invalid item manifest header");
     const std::vector<std::string> categories{"food",   "water",   "medical",  "ammo",
-                                              "weapon", "utility", "container"},
+                                              "weapon", "utility", "container", "furniture"},
         actions{"none", "eat", "drink", "heal", "ammo", "equip", "container", "light"};
     while (std::getline(input, line)) {
         if (line.empty() || line.starts_with('#'))

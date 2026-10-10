@@ -62,6 +62,10 @@ class VehicleSystem {
     void bind_fuel(std::function<float(const std::string &, float)> consume) {
         fuel_hook_ = std::move(consume);
     }
+    // Match-local damage/driving must not alter the persistent Explore/Creator fleet.
+    std::vector<world::WorldAsset> checkpoint(const world::VerdaRegion&) const;
+    void restore_checkpoint(world::VerdaRegion&, const std::vector<world::WorldAsset>&);
+    void reset_match_fleet(world::VerdaRegion&);
     bool save_state(const world::VerdaRegion &region, const std::string &path,
                     std::string &error) const;
     bool load_state(world::VerdaRegion &region, const std::string &path, std::string &error);
