@@ -15,6 +15,7 @@ struct VehicleRuntime {
     Vector3 position{};
     float yaw{}, speed{}, steering{}, wheel_angle{}, pitch{}, roll{};
     bool sleeping{true};
+    float escape{0}; // metres a car that started inside an obstacle may still travel through it
 };
 struct VehicleEvents {
     bool started{}, stopped{}, door{}, horn{}, parking{}, collision{};
@@ -25,7 +26,9 @@ class VehicleSystem {
     bool reconcile(world::VerdaRegion &region);
     bool spawn(world::VerdaRegion &region, Vector3 near, float yaw,
                std::string_view definition = "hatchback");
-    int nearest(const world::VerdaRegion &region, Vector3 player, float radius = 3) const;
+    // Nearest usable vehicle whose body (not just its centre) is within `radius` of the player.
+    int nearest(const world::VerdaRegion &region, Vector3 player, float radius = 2) const;
+    void set_training_structure(bool solid) { training_structure_ = solid; }
     bool enter(world::VerdaRegion &region, int index, Vector3 player);
     bool exit(world::VerdaRegion &region, Vector3 &destination, bool forced = false);
     bool update(float dt, VehicleInput input, world::VerdaRegion &region, Vector3 player,
@@ -65,6 +68,7 @@ class VehicleSystem {
     static Vector3 world_point(Vector3 local, Vector3 origin, float yaw, float scale = 1);
 
   private:
+    bool training_structure_{true};
     const VehicleRegistry &registry_;
     std::vector<VehicleRuntime> vehicles_;
     std::string driver_id_;

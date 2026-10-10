@@ -409,11 +409,11 @@ void CreatorController::update(
     // Desktop shortcuts adjust the preview; world edits use CreatorSession.
 
     if (IsKeyPressed(KEY_Q)) {
-        rotate_preview(-15.0F);
+        rotate_preview(-state_.rotation_step());
     }
 
     if (IsKeyPressed(KEY_E)) {
-        rotate_preview(15.0F);
+        rotate_preview(state_.rotation_step());
     }
 
     if (IsKeyPressed(KEY_EQUAL)) {
@@ -430,7 +430,10 @@ void CreatorController::update(
 void CreatorController::check_preview_collision(const world::VerdaRegion& region) {
     preview_.blocked=false;
     const auto* asset=selected_asset();
-    if(asset && asset->category!=CreatorAssetCategory::Gameplay && asset->category!=CreatorAssetCategory::Road && !asset->placement.allow_overlap) {
+    // Building parts touch and stack (walls meet at corners, storeys sit on storeys), so only
+    // whole objects are refused when they would overlap something already there.
+    if(asset && asset->category!=CreatorAssetCategory::Gameplay && asset->category!=CreatorAssetCategory::Road &&
+       asset->category!=CreatorAssetCategory::BuildingPart && !asset->placement.allow_overlap) {
         for(float x:{-asset->footprint.width*.5F,0.0F,asset->footprint.width*.5F})
             for(float z:{-asset->footprint.depth*.5F,0.0F,asset->footprint.depth*.5F}) {
                 const auto point=Vector3Add(preview_.position,Vector3RotateByAxisAngle({x,0,z},{0,1,0},preview_.rotation_y*DEG2RAD));
@@ -1047,8 +1050,10 @@ bool CreatorController::place_selected(
     placed.vehicle.home=placed.position;placed.vehicle.home_yaw=placed.rotation_y;
     // Road surfaces, markings and flat ground details must not become circular
     // movement blockers under the existing WorldAsset collision system.
+    // Building parts always collide: floor and roof slabs are thin but must stop bullets and
+    // carry walkers (walkers use the real mesh, so a slab never becomes a circular blocker).
     placed.collision = asset->category != CreatorAssetCategory::Road &&
-        asset->footprint.height > 0.25F;
+        (asset->footprint.height > 0.25F || asset->category == CreatorAssetCategory::BuildingPart);
 
     return region.place_world_asset(
         std::move(placed)

@@ -35,6 +35,10 @@ struct CreatorState {
     bool snap_to_ground{true};
     float placement_height{0.0F};
     float grid_step{0.0F};
+    // GRID cycles off -> 1 m -> 1.5 m. At 1.5 m (half a 3 m wall module) walls snap edge to edge,
+    // ROTATE turns a quarter and RAISE/LOWER move a whole storey.
+    [[nodiscard]] float rotation_step() const { return grid_step >= 1.5F ? 90.0F : 15.0F; }
+    [[nodiscard]] float height_step() const { return grid_step >= 1.5F ? 3.0F : 0.25F; }
     bool show_collision{false};
     bool show_grid{false};
 

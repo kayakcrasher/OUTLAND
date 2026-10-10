@@ -2,6 +2,7 @@
 #include "outland/game/combat/WeaponSystem.hpp"
 #include "outland/game/vehicles/VehicleSystem.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
+#include <algorithm>
 #include <cassert>
 #include <filesystem>
 #include <fstream>
@@ -89,6 +90,29 @@ int main() {
     assert(!world::physics::WorldCollision::blocked(exit, region, .45F));
     cars.update(.02F, {}, region, {1500, 0, 1500});
     assert(cars.vehicles()[0].sleeping);
+    // Reach is measured to the car body: standing at the bumper 1.5 m away is close enough.
+    car->position = {25, 0, 25};
+    car->rotation_y = 0;
+    cars.reconcile(region);
+    assert(cars.nearest(region, {25, 0, 25 + def->length * .5F + 1.5F}) == 0);
+    assert(cars.nearest(region, {25, 0, 25 + def->length * .5F + 3}) == -1);
+    // A car placed overlapping something (a post landed on its spawn) can still drive out.
+    {
+        world::WorldAsset post;
+        post.id = "test_post"; post.model_path = "assets/missing_post.glb"; post.collision = true;
+        post.position = {25, 0, 25.3F}; post.size = {.6F, 3, .6F};
+        region.runtime_settlements().front().assets.push_back(post);
+        assert(cars.enter(region, 0, {23.5F, 0, 25}));
+        assert(world::physics::WorldCollision::blocked(car->position, region, .2F, car->id));
+        const float start = car->position.z;
+        for (int i = 0; i < 60; ++i) cars.update(.02F, {-1, 0}, region, car->position);
+        assert(car->position.z < start - 1);
+        for (int i = 0; i < 60; ++i) cars.update(.02F, {0, 0, true}, region, car->position);
+        assert(cars.exit(region, exit));
+        assert(car->vehicle.health == 100); // escaping is not a crash
+        auto& assets = region.runtime_settlements().front().assets;
+        assets.erase(std::remove_if(assets.begin(), assets.end(), [](const auto& a) { return a.id == "test_post"; }), assets.end());
+    }
     // Body blocks bullets; logical side glass allows a continued shot into the driver.
     car->position = {25, 0, 25};
     car->rotation_y = 0;

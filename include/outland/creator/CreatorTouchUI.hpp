@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 
 #ifdef OUTLAND_DEV_TOOLS
 
@@ -75,6 +76,9 @@ public:
     void show_all_assets() {all_categories_=true;pack_filter_=0;drawer_page_=0;}
     std::vector<const CreatorAssetDefinition*> drawer_assets(const CreatorController& controller) const;
     void set_status(std::string text) {status_=std::move(text);}
+    // Optional 3D previews for asset cards; returns nullptr while a preview is not ready yet.
+    using ThumbnailProvider=std::function<const Texture2D*(const CreatorAssetDefinition&)>;
+    void set_thumbnails(ThumbnailProvider provider) {thumbnails_=std::move(provider);}
 
     void update(
         CreatorController& controller,
@@ -127,6 +131,7 @@ public:
     );
 
 private:
+    ThumbnailProvider thumbnails_;
     bool key_pressed(int key) const;
     std::vector<int> queued_keys_;
     Rectangle logical_control_button(BuilderControl control,int width,int height) const;

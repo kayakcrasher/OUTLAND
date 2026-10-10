@@ -24,6 +24,7 @@ void NpcSystem::configure(CharacterPool pool,NpcTuning value) {
 }
 void NpcSystem::reset_session() {
     events_={};player_threat_timer_=0;
+    std::erase_if(actors_,[](const NpcInstance& actor){return actor.resident>=0;});
     for(auto& actor:actors_) {
         actor.position=actor.spawn_position;actor.yaw_degrees=actor.spawn_yaw;
         actor.health=tuning(actor.pool).health;actor.state=NpcState::Idle;
@@ -37,6 +38,7 @@ void NpcSystem::reconcile(const world::VerdaRegion& region,const CharacterRegist
     for(std::size_t i=0;i<actors_.size();++i) previous.emplace(actors_[i].spawn_key,i);
     std::vector<NpcInstance> next;
     std::unordered_set<std::string> seen;
+    for(auto& actor:actors_) if(actor.resident>=0) next.push_back(std::move(actor));
     for(const auto& settlement:region.settlements()) for(const auto& marker:settlement.gameplay_markers) {
         if(!marker.enabled || marker.type!=world::GameplayMarkerType::NpcSpawn) continue;
         if(!std::isfinite(marker.position.x) || !std::isfinite(marker.position.y) ||
@@ -48,7 +50,7 @@ void NpcSystem::reconcile(const world::VerdaRegion& region,const CharacterRegist
         if(!definition) continue;
         NpcInstance actor;
         const auto old=previous.find(key);
-        if(old!=previous.end() && actors_[old->second].character_id==definition->id) actor=std::move(actors_[old->second]);
+        if(old!=previous.end() && actors_[old->second].resident<0 && actors_[old->second].character_id==definition->id) actor=std::move(actors_[old->second]);
         else {
             actor.spawn_key=key;actor.character_id=definition->id;actor.pool=pool;
             actor.health=tuning(pool).health;actor.random_state=character_seed(key)|1;
@@ -79,16 +81,18 @@ void NpcSystem::update(float dt,const NpcContext& input,const world::VerdaRegion
         const auto origin=current;
         for(int i=1;i<=steps;++i) {
             const auto target=Vector3Lerp(origin,desired,static_cast<float>(i)/steps);
-            current=world::physics::WorldCollision::resolve_player_movement(current,target,region,.35F);
+            current=world::physics::WorldCollision::resolve_body_movement(current,target,current.y,region,.35F);
         }
-        current.y=world::terrain::TerrainHeight::sample(current.x,current.z);
+        current.y=world::physics::WorldCollision::ground_height(current,current.y,region);
         return current;
     };
     for(auto& actor:actors_) {
         const auto& settings=tuning(actor.pool);
         const float distance_sq=Vector3DistanceSqr(actor.position,context.player_position);
         actor.visible=distance_sq<=settings.despawn_distance*settings.despawn_distance;
-        if(!actor.visible) actor.active=false;
+        // Residents exist physically only while game::life keeps them near the player.
+        if(actor.resident>=0) actor.active=true;
+        else if(!actor.visible) actor.active=false;
         else if(!actor.active && distance_sq<=settings.activation_distance*settings.activation_distance) actor.active=true;
         if(context.paused || !actor.active) {actor.decision_clock=0;continue;}
         if(actor.state!=NpcState::Dead) {
@@ -142,5 +146,40 @@ NpcHit NpcSystem::trace_segment(Vector3 start,Vector3 end) const {
         }
     }
     return best;
+}
+std::size_t NpcSystem::spawn_resident(const ResidentSpawn& spawn) {
+    if(const int existing=find_resident(spawn.resident);existing>=0) return static_cast<std::size_t>(existing);
+    NpcInstance actor;
+    actor.spawn_key="resident:"+std::to_string(spawn.resident);actor.character_id=spawn.character_id;
+    actor.pool=spawn.pool;actor.resident=spawn.resident;actor.directed=true;
+    actor.position=spawn.position;actor.spawn_position=spawn.anchor;actor.waypoint=spawn.anchor;
+    actor.yaw_degrees=actor.spawn_yaw=spawn.yaw_degrees;
+    actor.health=std::isfinite(spawn.health) ? std::clamp(spawn.health,0.0F,tuning(spawn.pool).health) : tuning(spawn.pool).health;
+    actor.anchor_radius=std::isfinite(spawn.anchor_radius) ? std::clamp(spawn.anchor_radius,.25F,60.0F) : 2;
+    actor.random_state=character_seed(actor.spawn_key)|1;
+    actor.state=actor.health<=0 ? NpcState::Dead : NpcState::Idle;actor.state_time=1;
+    actors_.push_back(std::move(actor));
+    return actors_.size()-1;
+}
+bool NpcSystem::despawn_resident(int resident) {
+    const int index=find_resident(resident);
+    if(index<0) return false;
+    actors_.erase(actors_.begin()+index);
+    return true;
+}
+int NpcSystem::find_resident(int resident) const {
+    if(resident<0) return -1;
+    for(std::size_t i=0;i<actors_.size();++i) if(actors_[i].resident==resident) return static_cast<int>(i);
+    return -1;
+}
+void NpcSystem::direct_resident(int resident,Vector3 anchor,float radius,bool hurry) {
+    const int index=find_resident(resident);
+    if(index<0 || !std::isfinite(anchor.x) || !std::isfinite(anchor.z) || !std::isfinite(radius)) return;
+    auto& actor=actors_[static_cast<std::size_t>(index)];
+    actor.hurry=hurry;actor.anchor_radius=std::clamp(radius,.25F,60.0F);
+    if(Vector3DistanceSqr(actor.spawn_position,anchor)<.25F) return;
+    actor.spawn_position=anchor;
+    // Only everyday states follow the schedule; fear and combat keep control until they settle.
+    if(actor.state==NpcState::Idle || actor.state==NpcState::Wander) {actor.state=NpcState::Idle;actor.state_time=actor.idle_hold=1;}
 }
 }

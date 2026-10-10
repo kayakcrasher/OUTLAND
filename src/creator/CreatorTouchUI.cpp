@@ -455,11 +455,11 @@ void CreatorTouchUI::update_toolbar(
             case BuilderControl::Redo:actions_.redo=true;break;
             case BuilderControl::Load:actions_.load=true;break;
             case BuilderControl::Ground:controller.state().snap_to_ground=!controller.state().snap_to_ground;break;
-            case BuilderControl::Grid:controller.state().grid_step=controller.state().grid_step>0 ? 0:1;break;
+            case BuilderControl::Grid:controller.state().grid_step=controller.state().grid_step<=0 ? 1.0F : controller.state().grid_step<1.5F ? 1.5F : 0.0F;break;
             case BuilderControl::Near:controller.decrease_placement_distance();break;
             case BuilderControl::Far:controller.increase_placement_distance();break;
-            case BuilderControl::Lower:controller.state().placement_height-=.25F;break;
-            case BuilderControl::Raise:controller.state().placement_height+=.25F;break;
+            case BuilderControl::Lower:controller.state().placement_height-=controller.state().height_step();break;
+            case BuilderControl::Raise:controller.state().placement_height+=controller.state().height_step();break;
             default:break;
         }
         return;
@@ -947,7 +947,8 @@ void CreatorTouchUI::draw_toolbar(
     const int screen_width,
     const int screen_height
 ) const {
-    constexpr std::array<const char*,9> labels{"UNDO","REDO","LOAD","GROUND","GRID","NEAR","FAR","LOWER","RAISE"};
+    const float grid=controller.state().grid_step;
+    const std::array<const char*,9> labels{"UNDO","REDO","LOAD","GROUND",grid>=1.5F ? "GRID 1.5" : grid>0 ? "GRID 1" : "GRID","NEAR","FAR","LOWER","RAISE"};
     for(std::size_t i=0;i<labels.size();++i)draw_button(logical_control_button(static_cast<BuilderControl>(i),screen_width,screen_height),labels[i],
         i==3 ? controller.state().snap_to_ground:i==4 && controller.state().grid_step>0);
     draw_button(logical_control_button(BuilderControl::Up,screen_width,screen_height),"UP",actions_.fly_vertical>0);
@@ -1157,12 +1158,22 @@ void CreatorTouchUI::draw_asset_card(
             : Fade(RAYWHITE, 0.55F)
     );
 
+    // Live 3D preview on the right of the card; the name wraps in the space that remains.
+    float text_width=rectangle.width-12;
+    if(const Texture2D* preview=thumbnails_ ? thumbnails_(asset) : nullptr) {
+        const float side=rectangle.height-8;
+        const Rectangle target{rectangle.x+rectangle.width-side-4,rectangle.y+4,side*1.33F>rectangle.width*.55F ? side : side*1.33F,side};
+        const Rectangle placed{rectangle.x+rectangle.width-target.width-4,target.y,target.width,target.height};
+        // Render textures are stored upside down.
+        DrawTexturePro(*preview,{0,0,static_cast<float>(preview->width),-static_cast<float>(preview->height)},placed,{0,0},0,WHITE);
+        text_width=placed.x-rectangle.x-10;
+    }
     const int font=rectangle.height<60 ? 12:14;
     const int lines=std::max(1,static_cast<int>((rectangle.height-12)/(font+3)));
     std::string remaining=asset.name;
     for(int line=0;line<lines && !remaining.empty();++line) {
         std::size_t length=remaining.size();
-        while(length>1 && MeasureText(remaining.substr(0,length).c_str(),font)>rectangle.width-12)--length;
+        while(length>1 && MeasureText(remaining.substr(0,length).c_str(),font)>text_width)--length;
         if(length<remaining.size() && line+1<lines) {
             const auto space=remaining.rfind(' ',length);if(space!=std::string::npos && space>0)length=space;
         }

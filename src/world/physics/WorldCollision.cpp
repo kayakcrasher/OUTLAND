@@ -4,6 +4,7 @@
 #include <cmath>
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include "outland/world/VerdaLayout.hpp"
+#include "outland/world/physics/MeshCollision.hpp"
 
 namespace outland::world::physics {
 
@@ -48,6 +49,37 @@ bool WorldCollision::blocked(
     const VerdaRegion& region,
     const float player_radius,
     const std::string_view ignore_asset
+) {
+    return blocked_impl(position, region, player_radius, ignore_asset, nullptr);
+}
+
+bool WorldCollision::body_blocked(
+    const Vector3 position,
+    const float feet_y,
+    const VerdaRegion& region,
+    const float player_radius,
+    const std::string_view ignore_asset
+) {
+    return blocked_impl(position, region, player_radius, ignore_asset, &feet_y);
+}
+
+namespace {
+// Body volume above step height: anything lower than 0.5 m is stepped onto, not walked into.
+// Against real geometry the torso is 0.32 m: a 1 m doorway or a stair between side rails fits.
+bool mesh_body_blocked(const CollisionMesh& mesh, Vector3 local, float local_feet, float radius) {
+    radius = std::min(radius, .32F);
+    for (const float height : {0.85F, 1.3F, 1.7F})
+        if (mesh.sphere_blocked({local.x, local_feet + height, local.z}, radius)) return true;
+    return false;
+}
+}
+
+bool WorldCollision::blocked_impl(
+    const Vector3 position,
+    const VerdaRegion& region,
+    const float player_radius,
+    const std::string_view ignore_asset,
+    const float* feet_y
 ) {
     // Shoreline blocks walkers until swimming exists; Creator flight remains independent.
     if(region.coastal_layout() && std::hypot(position.x,position.z)>1950 &&
@@ -261,6 +293,11 @@ bool WorldCollision::blocked(
                 const float dx=position.x-asset.position.x,dz=position.z-asset.position.z;
                 const float reach=asset.size.x+asset.size.z+player_radius;if(std::abs(dx)>reach||std::abs(dz)>reach)continue;
                 const float yaw=asset.rotation_y*DEG2RAD;
+                // Walkers use the asset's real shape: doorways, windows and hollow interiors.
+                if(feet_y && asset.vehicle.definition.empty())if(const auto* mesh=MeshCollisionLibrary::get(asset.model_path)) {
+                    if(mesh_body_blocked(*mesh,{dx*std::cos(yaw)-dz*std::sin(yaw),0,dx*std::sin(yaw)+dz*std::cos(yaw)},*feet_y-asset.position.y,player_radius))return true;
+                    continue;
+                }
                 if(circle_hits_box(dx*std::cos(yaw)-dz*std::sin(yaw),dx*std::sin(yaw)+dz*std::cos(yaw),player_radius,0,0,asset.size.x*.5F,asset.size.z*.5F))return true;
                 continue;
             }
@@ -356,6 +393,81 @@ Vector3 WorldCollision::resolve_player_movement(
     return resolved;
 }
 
+
+Vector3 WorldCollision::resolve_body_movement(
+    const Vector3 current_position,
+    const Vector3 desired_position,
+    const float feet_y,
+    const VerdaRegion& region,
+    const float player_radius
+) {
+    Vector3 resolved = current_position;
+    Vector3 test_x = resolved; test_x.x = desired_position.x;
+    if (!body_blocked(test_x, feet_y, region, player_radius)) resolved.x = desired_position.x;
+    Vector3 test_z = resolved; test_z.z = desired_position.z;
+    if (!body_blocked(test_z, feet_y, region, player_radius)) resolved.z = desired_position.z;
+    return resolved;
+}
+
+float WorldCollision::ground_height(
+    const Vector3 position,
+    const float feet_y,
+    const VerdaRegion& region,
+    const float step
+) {
+    float ground = terrain::TerrainHeight::sample(position.x, position.z);
+    for (const Settlement& settlement : region.settlements()) for (const WorldAsset& asset : settlement.assets) {
+        // Anything model-backed can be stood on (road pieces, floor slabs), whatever its blocker flag.
+        if (asset.model_path.empty() || !asset.vehicle.definition.empty()) continue;
+        const float dx = position.x - asset.position.x, dz = position.z - asset.position.z;
+        const float reach = asset.size.x + asset.size.z + 2;
+        if (std::abs(dx) > reach || std::abs(dz) > reach) continue;
+        const auto* mesh = MeshCollisionLibrary::get(asset.model_path);
+        if (!mesh) continue;
+        const float yaw = asset.rotation_y * DEG2RAD;
+        float floor = 0;
+        if (mesh->floor_below(dx * std::cos(yaw) - dz * std::sin(yaw), dx * std::sin(yaw) + dz * std::cos(yaw),
+                feet_y + step - asset.position.y, floor))
+            ground = std::max(ground, floor + asset.position.y);
+    }
+    return ground;
+}
+
+bool WorldCollision::mesh_vault_target(
+    const Vector3 position,
+    const float feet_y,
+    Vector3 forward,
+    const VerdaRegion& region,
+    Vector3& landing_position
+) {
+    forward.y = 0;
+    const float length = std::sqrt(forward.x * forward.x + forward.z * forward.z);
+    if (length < .01F) return false;
+    forward = {forward.x / length, 0, forward.z / length};
+    // Only vault when something waist-high blocks the way but the chest-high gap is open.
+    if (!body_blocked({position.x + forward.x * .6F, position.y, position.z + forward.z * .6F}, feet_y, region, .45F)) return false;
+    for (const Settlement& settlement : region.settlements()) for (const WorldAsset& asset : settlement.assets) {
+        if (asset.model_path.empty() || !asset.collision || !asset.vehicle.definition.empty()) continue;
+        const auto* mesh = MeshCollisionLibrary::get(asset.model_path);
+        if (!mesh) continue;
+        const float dx = position.x - asset.position.x, dz = position.z - asset.position.z;
+        const float reach = asset.size.x + asset.size.z + 3;
+        if (std::abs(dx) > reach || std::abs(dz) > reach) continue;
+        const float yaw = asset.rotation_y * DEG2RAD, c = std::cos(yaw), s = std::sin(yaw);
+        const Vector3 local{dx * c - dz * s, feet_y - asset.position.y, dx * s + dz * c};
+        const Vector3 local_forward{forward.x * c - forward.z * s, 0, forward.x * s + forward.z * c};
+        for (float distance = 1.2F; distance <= 2.21F; distance += .25F) {
+            // The chest-height path must pass through an opening (no wall at 1.25-1.75 m).
+            bool clear = true;
+            for (float along = .2F; along <= distance && clear; along += .2F)
+                clear = !mesh->sphere_blocked({local.x + local_forward.x * along, local.y + 1.5F, local.z + local_forward.z * along}, .22F);
+            if (!clear) break;
+            const Vector3 landing{position.x + forward.x * distance, position.y, position.z + forward.z * distance};
+            if (!body_blocked(landing, feet_y, region, .45F)) {landing_position = landing; return true;}
+        }
+    }
+    return false;
+}
 
 bool WorldCollision::window_vault_target(
     Vector3 position,
@@ -491,4 +603,10 @@ bool WorldCollision::window_vault_target(
     return false;
 }
 
+// Lives here (not MeshCollision.cpp) so the mesh loader stays free of world dependencies.
+void MeshCollisionLibrary::preload(const VerdaRegion& region) {
+    for (const auto& settlement : region.settlements())
+        for (const auto& asset : settlement.assets)
+            if (asset.collision && asset.vehicle.definition.empty()) get(asset.model_path);
+}
 } // namespace outland::world::physics

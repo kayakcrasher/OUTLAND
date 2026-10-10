@@ -1,5 +1,6 @@
 #include "outland/game/combat/CombatWorld.hpp"
 #include "outland/world/assets/VerdaGeometry.hpp"
+#include "outland/world/physics/MeshCollision.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <algorithm>
 #include <cmath>
@@ -139,7 +140,7 @@ BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool
     };
     float t=0;Vector3 n{};
     const float ground=world::terrain::TerrainHeight::sample(0,0);
-    if(box(start,end,{-2,ground,-2},{2,ground+3,2},t,n)) record(HitKind::Structure,t,n);
+    if(training_range_ && box(start,end,{-2,ground,-2},{2,ground+3,2},t,n)) record(HitKind::Structure,t,n);
     for(const auto& settlement:region_.settlements()) {
         for(const auto& building:settlement.buildings) {
             const float yaw=building.rotation_y*DEG2RAD;
@@ -150,9 +151,24 @@ BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool
             if(box(a,b,{-size.x*.5F-.125F,0,-size.z*.5F-.125F},
                        {size.x*.5F+.125F,.44F,size.z*.5F+.125F},t,n))
                 record(HitKind::Building,t,world_normal(n,yaw));
-            if(box(a,b,{-size.x*.5F,.44F,-size.z*.5F},
-                       {size.x*.5F,size.y+.44F,size.z*.5F},t,n))
-                record(HitKind::Building,t,world_normal(n,yaw));
+            // The shell VerdanArchitecture draws: solid back/side walls, and a front wall with
+            // a real doorway and two real window openings that bullets and sight pass through.
+            const float hw=size.x*.5F,hd=size.z*.5F,wall=.12F,top=size.y+.44F;
+            const auto wall_box=[&](Vector3 lo,Vector3 hi){if(box(a,b,lo,hi,t,n))record(HitKind::Building,t,world_normal(n,yaw));};
+            wall_box({-hw,.44F,hd-wall},{hw,top,hd+wall});
+            wall_box({-hw-wall,.44F,-hd},{-hw+wall,top,hd});
+            wall_box({hw-wall,.44F,-hd},{hw+wall,top,hd});
+            constexpr float window_half=.625F,door_half=.725F,door_top=.44F+2.35F;
+            constexpr float sill=.44F+(1.75F-.44F)-1.35F*.5F,lintel=.44F+(1.75F-.44F)+1.35F*.5F;
+            const float window_x=size.x*.29F;
+            const auto front=[&](float x0,float x1,float y0,float y1){if(x1>x0 && y1>y0)wall_box({x0,y0,-hd-wall},{x1,y1,-hd+wall});};
+            front(-hw,-window_x-window_half,.44F,top);
+            front(-window_x+window_half,-door_half,.44F,top);
+            front(door_half,window_x-window_half,.44F,top);
+            front(window_x+window_half,hw,.44F,top);
+            for(const float x:{-window_x,window_x}) {front(x-window_half,x+window_half,.44F,sill);front(x-window_half,x+window_half,lintel,top);}
+            front(-door_half,door_half,door_top,top);
+            wall_box({-hw,top-.12F,-hd},{hw,top,hd}); // ceiling
             // Match pitched roof geometry rather than allowing shots through roof slopes.
             if(box(a,b,{-size.x*.5F-.35F,size.y+.44F,-size.z*.5F-.35F},
                        {size.x*.5F+.35F,size.y+.44F+size.x*.22F,size.z*.5F+.35F},t,n)) {
@@ -165,7 +181,15 @@ BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool
         for(const auto& asset:settlement.assets) {
             if(!asset.vehicle.definition.empty())continue;
             if(!asset.collision)continue;
-            if(!asset.model_path.empty()){const float yaw=asset.rotation_y*DEG2RAD;const auto a=local(start,asset.position,yaw),b=local(end,asset.position,yaw);if(box(a,b,{-asset.size.x*.5F,0,-asset.size.z*.5F},{asset.size.x*.5F,asset.size.y,asset.size.z*.5F},t,n))record(HitKind::Structure,t,world_normal(n,yaw));continue;}
+            if(!asset.model_path.empty()){const float yaw=asset.rotation_y*DEG2RAD;const auto a=local(start,asset.position,yaw),b=local(end,asset.position,yaw);
+                if(const auto* mesh=world::physics::MeshCollisionLibrary::get(asset.model_path)) {
+                    float f=best.hit() ? best.fraction : 1.0F;Vector3 mesh_normal{};
+                    if(mesh->segment(a,b,f,mesh_normal))record(HitKind::Structure,f,world_normal(mesh_normal,yaw));
+                    continue;
+                }
+                if(box(a,b,{-asset.size.x*.5F,0,-asset.size.z*.5F},{asset.size.x*.5F,asset.size.y,asset.size.z*.5F},t,n))record(HitKind::Structure,t,world_normal(n,yaw));
+                continue;
+            }
             if(asset.type!=world::AssetType::Tree) continue;
             const float scale=.85F+world::assets::variation(static_cast<int>(asset.position.x),
                 static_cast<int>(asset.position.z),5)*.45F;
@@ -173,7 +197,7 @@ BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool
             if(trunk(start,end,base,.35F*scale,3.5F*scale,t,n)) record(HitKind::Tree,t,n);
         }
     }
-    if(targets) for(std::size_t i=0;i<targets_.size();++i) {
+    if(targets && training_range_) for(std::size_t i=0;i<targets_.size();++i) {
         const auto& target=targets_[i];
         if(target.health<=0)continue;
         if(box(start,end,sub(target.center,{.5F,1,.25F}),add(target.center,{.5F,1,.25F}),t,n)) {

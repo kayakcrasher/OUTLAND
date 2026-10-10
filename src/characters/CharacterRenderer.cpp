@@ -2,6 +2,7 @@
 #include "outland/characters/CharacterRenderer.hpp"
 #include <raymath.h>
 #include "outland/characters/AnimationAssetCatalog.hpp"
+#include "outland/world/physics/MeshCollision.hpp"
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
@@ -38,7 +39,15 @@ void CharacterRenderer::draw(const std::string& id,Vector3 feet,float yaw,float 
     const auto clips=models_.animations(model);
     const auto sample=animation ? animation->sample(*model,clips) : AnimationSample{};
     bool posed=false;
-    if(animation && sample.fallback) posed=gait_.apply(*model,animation->action(),animation->elapsed(),asset->facing_degrees);
+    if(animation && sample.fallback) {
+        auto space=skin_spaces_.find(path);
+        if(space==skin_spaces_.end()) {
+            Matrix skin=MatrixIdentity();
+            const bool found=world::physics::skinned_mesh_transform(path,skin);
+            space=skin_spaces_.emplace(path,std::pair{found,skin}).first;
+        }
+        posed=gait_.apply(*model,animation->action(),animation->elapsed(),asset->facing_degrees,space->second.first ? &space->second.second : nullptr);
+    }
     if(!posed) posed=AnimationController::apply_sample(*model,clips,sample,models_.posed(model));
     models_.mark_posed(model,posed);
     DrawModelEx(*model,feet,{0,1,0},yaw+asset->facing_degrees,{scale,scale,scale},WHITE);

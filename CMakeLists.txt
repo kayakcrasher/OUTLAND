@@ -122,9 +122,13 @@ add_library(
     src/characters/CharacterRenderer.cpp
     src/characters/NpcSystem.cpp
     src/characters/NpcBehavior.cpp
+    src/game/life/LifeTypes.cpp
+    src/game/life/LifePopulation.cpp
+    src/game/life/LifeSimulation.cpp
     src/characters/AnimationController.cpp
     src/characters/SkeletalGait.cpp
     src/world/physics/WorldCollision.cpp
+    src/world/physics/MeshCollision.cpp
     src/world/assets/VerdanArchitecture.cpp
     src/world/assets/VerdanProps.cpp
     src/world/terrain/TerrainHeight.cpp
@@ -206,6 +210,11 @@ if(OUTLAND_DEV_TOOLS)
         PUBLIC
             OUTLAND_DEV_TOOLS=1
     )
+
+    # Generates maps/verda_world.map from the default towns and the Creator catalog.
+    add_executable(outland_build_world src/dev/BuildVerdaWorld.cpp src/dev/VerdaWorldKit.cpp)
+    target_link_libraries(outland_build_world PRIVATE outland_render)
+    target_compile_options(outland_build_world PRIVATE -Wall -Wextra -Wpedantic)
 
     message(
         STATUS
@@ -348,6 +357,7 @@ if(OUTLAND_BUILD_TESTS)
         src/world/assets/VerdanArchitecture.cpp
         src/world/foliage/FoliageSystem.cpp
         src/world/physics/WorldCollision.cpp
+        src/world/physics/MeshCollision.cpp
         src/world/terrain/TerrainHeight.cpp
         src/engine/audio/EnvironmentAudio.cpp
     )
@@ -367,6 +377,7 @@ if(OUTLAND_BUILD_TESTS)
     add_executable(outland_combat_tests
         tests/integration/world/test_combat.cpp
         src/game/combat/CombatWorld.cpp
+        src/world/physics/MeshCollision.cpp
         src/game/combat/WeaponSystem.cpp
         src/world/terrain/TerrainHeight.cpp
     )
@@ -425,7 +436,7 @@ if(OUTLAND_BUILD_TESTS)
     add_test(NAME outland_model_cache_tests COMMAND outland_model_cache_tests)
 
     add_executable(outland_character_renderer_tests tests/integration/assets/test_character_renderer.cpp
-        src/characters/CharacterRegistry.cpp src/characters/CharacterRenderer.cpp src/characters/AnimationController.cpp src/characters/SkeletalGait.cpp src/assets/ModelCache.cpp)
+        src/characters/CharacterRegistry.cpp src/characters/CharacterRenderer.cpp src/characters/AnimationController.cpp src/characters/SkeletalGait.cpp src/assets/ModelCache.cpp src/world/physics/MeshCollision.cpp)
     target_include_directories(outland_character_renderer_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_character_renderer_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_character_renderer_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
@@ -443,6 +454,18 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_definitions(outland_npc_ai_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_npc_ai_tests COMMAND outland_npc_ai_tests)
 
+    add_executable(outland_mesh_collision_tests tests/integration/world/test_mesh_collision.cpp)
+    target_link_libraries(outland_mesh_collision_tests PRIVATE outland_render)
+    target_compile_options(outland_mesh_collision_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_mesh_collision_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_mesh_collision_tests COMMAND outland_mesh_collision_tests)
+
+    add_executable(outland_life_tests tests/integration/life/test_life_simulation.cpp)
+    target_link_libraries(outland_life_tests PRIVATE outland_render)
+    target_compile_options(outland_life_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_life_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_life_tests COMMAND outland_life_tests)
+
     add_executable(outland_animation_asset_tests tests/integration/assets/test_animation_assets.cpp)
     target_link_libraries(outland_animation_asset_tests PRIVATE outland_render)
     target_compile_options(outland_animation_asset_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -452,6 +475,8 @@ if(OUTLAND_BUILD_TESTS)
     if(Python3_Interpreter_FOUND)
         add_test(NAME outland_loot_asset_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/audit_loot_assets.py")
         add_test(NAME outland_survival_catalog_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_survival_catalog.py" --check)
+        add_test(NAME outland_city_kit_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_city_kit.py" --check)
+        add_test(NAME outland_kit_slab_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_kit_slabs.py" --check)
         add_test(NAME outland_starter_catalog_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_starter_catalog.py" --check)
     endif()
     add_executable(outland_skeletal_gait_tests tests/integration/assets/test_skeletal_gait.cpp src/characters/SkeletalGait.cpp)
@@ -475,6 +500,12 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_asset_model_smoke PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
 
     if(OUTLAND_DEV_TOOLS)
+        add_executable(outland_world_kit_tests tests/integration/world/test_world_kit.cpp src/dev/VerdaWorldKit.cpp)
+        target_link_libraries(outland_world_kit_tests PRIVATE outland_render)
+        target_compile_options(outland_world_kit_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+        target_compile_definitions(outland_world_kit_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+        add_test(NAME outland_world_kit_tests COMMAND outland_world_kit_tests)
+
         add_executable(outland_dev_travel_tests tests/integration/vehicles/test_dev_travel.cpp)
         target_link_libraries(outland_dev_travel_tests PRIVATE outland_render)
         target_compile_options(outland_dev_travel_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

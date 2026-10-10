@@ -39,7 +39,16 @@ int main() {
     Building building;building.position={60,0,0};building.size={8,4,2};building.rotation_y=90;
     settlements[0].buildings.push_back(building);
     const float y=terrain::TerrainHeight::sample(60,0);
-    hit=world.trace_segment({56,y+2,0},{64,y+2,0});
+    // Local front-wall x = -world dz here: x=1.2 is solid wall between the doorway and a window.
+    hit=world.trace_segment({56,y+2,-1.2F},{64,y+2,-1.2F});
+    assert(hit.kind==HitKind::Building && hit.position.x<60);
+    // The doorway (x=0) and the window openings (x=+-2.32, 1.1-2.4 m) let bullets and sight through
+    // to the back wall; the window sill below them does not.
+    for(const float z:{0.0F,-2.32F,2.32F}) {
+        hit=world.trace_segment({56,y+2,z},{64,y+2,z});
+        assert(hit.kind==HitKind::Building && hit.position.x>60.5F);
+    }
+    hit=world.trace_segment({56,y+.8F,-2.32F},{64,y+.8F,-2.32F});
     assert(hit.kind==HitKind::Building && hit.position.x<60);
     hit=world.trace_segment({60,y+10,0},{60,y+4,0});
     assert(hit.kind==HitKind::Building && std::abs(hit.position.y-(y+6.2F))<.001F);
