@@ -38,9 +38,24 @@ bool AnimationController::compatible(const Model& model,const ModelAnimation& cl
         if(model.meshes[i].boneCount>0 && model.meshes[i].boneCount!=clip.boneCount) return false;
     return true;
 }
-void AnimationController::advance(AnimationAction action,float dt) {
+float AnimationController::nominal_speed(AnimationAction action) {
+    return action==AnimationAction::Run ? 4.6F : action==AnimationAction::Walk ? 1.5F : 0.0F;
+}
+float AnimationController::gait_cadence(float ground_speed) {
+    if(!std::isfinite(ground_speed) || ground_speed<0) ground_speed=0;
+    return std::clamp(.55F+.25F*ground_speed,.7F,2.6F);
+}
+void AnimationController::advance(AnimationAction action,float dt,float ground_speed) {
     if(action!=action_) { action_=action;elapsed_=0; }
-    if(std::isfinite(dt) && dt>0) elapsed_+=dt;
+    if(!std::isfinite(dt) || dt<=0) return;
+    elapsed_+=dt;
+    const bool measured=std::isfinite(ground_speed) && ground_speed>=0;
+    const float target=measured ? std::min(ground_speed,20.0F) : nominal_speed(action_);
+    // Smooth measured speed: NPC bodies move in 10 Hz steps and players stop on a frame.
+    if(speed_<0) speed_=target;
+    else speed_+=(target-speed_)*std::min(1.0F,dt*8.0F);
+    if(action_==AnimationAction::Walk || action_==AnimationAction::Run) cycle_+=static_cast<double>(dt*gait_cadence(speed_));
+    if(cycle_>1e6) cycle_=std::fmod(cycle_,1.0);
 }
 AnimationSample AnimationController::sample(const Model& model,std::span<const ModelAnimation> clips) const {
     if(action_==AnimationAction::None) return {};

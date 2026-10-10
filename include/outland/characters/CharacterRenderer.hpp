@@ -11,7 +11,7 @@ class CharacterRenderer {
 public:
     CharacterRenderer(const CharacterRegistry& registry,std::string asset_root);
     void draw(const std::string& id,Vector3 feet,float yaw_degrees,float scale=1.0F,const AnimationController* animation=nullptr);
-    void update_player(AnimationAction action,float dt) { player_animation_.advance(action,dt); }
+    void update_player(AnimationAction action,float dt,float ground_speed=-1) { player_animation_.advance(action,dt,ground_speed); }
     void draw_player(Vector3 feet,float yaw_radians);
     void draw_npcs(const NpcSystem& npcs,Vector3 camera_position);
     static bool prepare(const CharacterDefinition& definition,Model& model);

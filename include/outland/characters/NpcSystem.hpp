@@ -15,6 +15,8 @@ struct NpcInstance {
     float state_time{0}, decision_clock{0}, reaction_clock{0}, threat_timer{0}, attack_clock{0};
     std::uint64_t random_state{1};
     AnimationController animation;
+    Vector3 animated_position{}; // where the body was last animated; gives gait ground speed
+    bool animated{false};
     // Life-driven actors: owned by game::life, kept across marker reconciliation.
     int resident{-1};
     bool directed{false}, travelling{false}, hurry{false};

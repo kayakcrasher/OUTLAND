@@ -27,7 +27,7 @@ int main() {
             assert(AnimationController::compatible(rig,clips[i]));
             if(asset.pool!=CharacterPool::Arms) {
                 rig.transform=asset.z_up ? MatrixRotateX(-PI*.5F):MatrixIdentity();SkeletalGait gait;
-                assert(gait.sample(rig,AnimationAction::Walk,.16,asset.facing_degrees));
+                assert(gait.sample(rig,AnimationAction::Walk,.25,-1,asset.facing_degrees));
                 for(const auto& pose:gait.pose())assert(std::isfinite(pose.translation.x) && std::isfinite(pose.rotation.w));
             }
         }

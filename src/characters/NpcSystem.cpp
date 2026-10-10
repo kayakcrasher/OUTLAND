@@ -9,7 +9,15 @@
 #include <unordered_map>
 #include <unordered_set>
 namespace outland::characters {
-namespace { constexpr float bot_draw_distance=320; }
+namespace {
+constexpr float bot_draw_distance=320;
+void animate(NpcInstance& actor,float dt) {
+    float speed=-1;
+    if(actor.animated && dt>0) speed=std::hypot(actor.position.x-actor.animated_position.x,actor.position.z-actor.animated_position.z)/dt;
+    actor.animated_position=actor.position;actor.animated=true;
+    actor.animation.advance(NpcBehavior::animation(actor.state),dt,speed);
+}
+}
 NpcSystem::NpcSystem() {
     tuning_[static_cast<std::size_t>(CharacterPool::Emergency)].health=120;
     auto& hostile=tuning_[static_cast<std::size_t>(CharacterPool::Hostile)];
@@ -31,7 +39,7 @@ void NpcSystem::reset_session() {
         actor.health=tuning(actor.pool).health;actor.state=NpcState::Idle;
         actor.active=actor.visible=false;actor.state_time=actor.decision_clock=actor.reaction_clock=actor.threat_timer=actor.attack_clock=0;
         actor.random_state=character_seed(actor.spawn_key)|1;
-        actor.animation={};
+        actor.animation={};actor.animated=false;
     }
 }
 void NpcSystem::reconcile(const world::VerdaRegion& region,const CharacterRegistry& registry) {
@@ -93,7 +101,7 @@ void NpcSystem::update(float dt,const NpcContext& input,const world::VerdaRegion
         if(actor.bot>=0) {
             // Bots fight at rifle range, so their bodies stay visible well beyond civilians.
             actor.visible=distance_sq<=bot_draw_distance*bot_draw_distance;actor.active=true;
-            if(!context.paused) actor.animation.advance(NpcBehavior::animation(actor.state),dt);
+            if(!context.paused) animate(actor,dt);
             continue;
         }
         actor.visible=distance_sq<=settings.despawn_distance*settings.despawn_distance;
@@ -101,7 +109,7 @@ void NpcSystem::update(float dt,const NpcContext& input,const world::VerdaRegion
         if(actor.resident>=0) actor.active=true;
         else if(!actor.visible) actor.active=false;
         else if(!actor.active && distance_sq<=settings.activation_distance*settings.activation_distance) actor.active=true;
-        if(context.paused || !actor.active) {actor.decision_clock=0;continue;}
+        if(context.paused || !actor.active) {actor.decision_clock=0;actor.animated=false;continue;}
         if(actor.state!=NpcState::Dead) {
             actor.decision_clock+=dt;
             constexpr float interval=.1F; // 10Hz decisions; no catch-up burst for sleeping actors.
@@ -111,7 +119,7 @@ void NpcSystem::update(float dt,const NpcContext& input,const world::VerdaRegion
                 if(damage>0) {events_.player_damage+=damage;++events_.attacks;}
             }
         }
-        actor.animation.advance(NpcBehavior::animation(actor.state),dt);
+        animate(actor,dt);
     }
 }
 bool NpcSystem::damage(std::size_t index,float amount,Vector3 attacker) {

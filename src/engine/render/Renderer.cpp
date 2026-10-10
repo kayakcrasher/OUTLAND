@@ -1229,10 +1229,16 @@ void Renderer::run() {
             last_player_feet=feet;
             damage_flash=std::max(0.0F,damage_flash-dt);
         }
-        character_renderer.update_player(!player_health.alive() ? characters::AnimationAction::Death :
-            weapons.events().shots>0 ? characters::AnimationAction::Attack :
-            Vector3DistanceSqr(position_before_move,player.position)>.000001F && player.grounded ? (controls.sprint ? characters::AnimationAction::Run : characters::AnimationAction::Walk) :
-            characters::AnimationAction::Idle,dt);
+        {
+            // Gait follows real ground speed (walk 6 m/s is a jog, sprint 10 m/s a run); firing a
+            // gun keeps the legs moving rather than switching to a melee "attack" pose.
+            const float ground_speed=dt>0 ? std::hypot(player.position.x-position_before_move.x,player.position.z-position_before_move.z)/dt : 0.0F;
+            const auto locomotion=!player.grounded ? characters::AnimationAction::Idle :
+                ground_speed>3.2F ? characters::AnimationAction::Run :
+                ground_speed>.15F ? characters::AnimationAction::Walk : characters::AnimationAction::Idle;
+            character_renderer.update_player(!player_health.alive() ? characters::AnimationAction::Death : locomotion,dt,
+                player.grounded ? ground_speed : -1.0F);
+        }
 
         // ====================================================
         // DRAW
