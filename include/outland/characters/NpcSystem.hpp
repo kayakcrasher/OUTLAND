@@ -15,6 +15,8 @@ struct NpcInstance {
     float state_time{0}, decision_clock{0}, reaction_clock{0}, threat_timer{0}, attack_clock{0};
     std::uint64_t random_state{1};
     AnimationController animation;
+    world::navigation::PathFollower follower; // route to the current trip or chase target
+    float stuck_time{0};
     Vector3 animated_position{}; // where the body was last animated; gives gait ground speed
     bool animated{false};
     // Life-driven actors: owned by game::life, kept across marker reconciliation.
@@ -56,6 +58,8 @@ public:
     int find_bot(int bot) const;
     void set_bot(int bot,Vector3 position,float yaw_degrees,float health,NpcState state);
     void clear_bots();
+    // Routes for NPCs travelling or chasing; without one they walk straight (and slide on walls).
+    void set_path_finder(world::navigation::PathFinder finder) { path_finder_=std::move(finder); }
     const NpcEvents& events() const { return events_; }
     const std::vector<NpcInstance>& actors() const { return actors_; }
 private:
@@ -64,6 +68,8 @@ private:
     NpcEvents events_;
     float player_threat_timer_{0};
     std::uint64_t heard_up_to_{0};
+    world::navigation::PathFinder path_finder_;
+    double clock_{0};
     void hear(const game::sound::SoundBus& sounds);
 };
 }

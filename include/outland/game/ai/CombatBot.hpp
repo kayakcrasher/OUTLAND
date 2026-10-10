@@ -1,5 +1,6 @@
 #pragma once
 #include "outland/game/combat/WeaponDefinition.hpp"
+#include "outland/world/navigation/NavGrid.hpp"
 #include <raylib.h>
 #include <cstdint>
 #include <functional>
@@ -44,6 +45,7 @@ struct BotShot { int shooter{0}; Vector3 origin{}, direction{}; float damage{0};
 struct BotEnvironment {
     std::function<bool(Vector3, Vector3)> line_of_sight;       // eye to eye, true if clear
     std::function<Vector3(Vector3 from, Vector3 to)> move;     // collision-resolved walk, returns feet
+    world::navigation::PathFinder find_path;                   // optional routes through doors, stairs, round buildings
 };
 
 enum class BotIntent : std::uint8_t { Roam, Investigate, Engage, TakeCover, Reload, Heal, Push, Flank, Retreat, Dead };
@@ -91,6 +93,7 @@ public:
     void give_medkits(int count) { medkits_ += count; }
     combat::WeaponId weapon() const { return weapon_; }
     Vector3 destination() const { return destination_; }
+    const world::navigation::PathFollower& follower() const { return follower_; }
     const BotContact* target() const;
     const std::vector<BotContact>& contacts() const { return contacts_; }
     void set_roam_center(Vector3 center, float radius) { roam_center_ = center; roam_radius_ = radius; }
@@ -126,6 +129,8 @@ private:
     float decision_clock_{0}, stuck_time_{0};
     int loaded_{0}, reserve_{0}, medkits_{1}, burst_{0};
     float cooldown_{0}, reload_left_{0}, heal_left_{0};
+    world::navigation::PathFollower follower_;
+    bool repathed_{false};
     Vector3 roam_center_{};
     float roam_radius_{120};
 };

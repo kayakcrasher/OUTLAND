@@ -40,7 +40,7 @@ void NpcSystem::reset_session() {
         actor.health=tuning(actor.pool).health;actor.state=NpcState::Idle;
         actor.active=actor.visible=false;actor.state_time=actor.decision_clock=actor.reaction_clock=actor.threat_timer=actor.attack_clock=0;
         actor.random_state=character_seed(actor.spawn_key)|1;
-        actor.animation={};actor.animated=false;
+        actor.animation={};actor.animated=false;actor.follower.reset();
     }
 }
 void NpcSystem::reconcile(const world::VerdaRegion& region,const CharacterRegistry& registry) {
@@ -85,7 +85,9 @@ void NpcSystem::update(float dt,const NpcContext& input,const world::VerdaRegion
     else player_threat_timer_=std::max(0.0F,player_threat_timer_-dt);
     context.threatening=player_threat_timer_>0;
     if(context.sounds && !context.paused) hear(*context.sounds);
+    clock_+=dt;
     NpcEnvironment environment;
+    environment.find_path=path_finder_;environment.now=clock_;
     environment.move=[&](Vector3 current,Vector3 desired) {
         // Small collision substeps prevent fast creatures tunnelling through thin walls.
         const int steps=std::max(1,static_cast<int>(std::ceil(Vector3Distance(current,desired)/.2F)));

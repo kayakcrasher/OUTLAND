@@ -1,6 +1,7 @@
 #pragma once
 #include "outland/characters/CharacterRegistry.hpp"
 #include "outland/characters/AnimationController.hpp"
+#include "outland/world/navigation/NavGrid.hpp"
 #include <raylib.h>
 #include <functional>
 namespace outland::game::sound { class SoundBus; }
@@ -21,6 +22,8 @@ struct NpcContext {
 };
 struct NpcEnvironment {
     std::function<Vector3(Vector3,Vector3)> move;
+    world::navigation::PathFinder find_path; // optional: routes for longer trips and chases
+    double now{0};
 };
 struct NpcInstance;
 class NpcBehavior {

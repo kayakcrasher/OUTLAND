@@ -132,6 +132,7 @@ add_library(
     src/characters/SkeletalGait.cpp
     src/world/physics/WorldCollision.cpp
     src/world/physics/MeshCollision.cpp
+    src/world/navigation/NavGrid.cpp
     src/world/assets/VerdanArchitecture.cpp
     src/world/assets/VerdanProps.cpp
     src/world/terrain/TerrainHeight.cpp
@@ -520,6 +521,11 @@ if(OUTLAND_BUILD_TESTS)
         target_compile_options(outland_world_kit_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
         target_compile_definitions(outland_world_kit_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
         add_test(NAME outland_world_kit_tests COMMAND outland_world_kit_tests)
+        add_executable(outland_navigation_tests tests/integration/navigation/test_navigation.cpp src/dev/VerdaWorldKit.cpp)
+        target_link_libraries(outland_navigation_tests PRIVATE outland_render)
+        target_compile_options(outland_navigation_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+        target_compile_definitions(outland_navigation_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+        add_test(NAME outland_navigation_tests COMMAND outland_navigation_tests)
 
         add_executable(outland_dev_travel_tests tests/integration/vehicles/test_dev_travel.cpp)
         target_link_libraries(outland_dev_travel_tests PRIVATE outland_render)

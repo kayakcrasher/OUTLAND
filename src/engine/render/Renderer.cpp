@@ -18,6 +18,7 @@
 #include "outland/game/life/LifeSimulation.hpp"
 #include "outland/game/ai/BattleRoyaleBots.hpp"
 #include "outland/game/sound/SoundBus.hpp"
+#include "outland/world/navigation/NavGrid.hpp"
 #include "outland/dev/DevLab.hpp"
 #include "outland/creator/CreatorMapIO.hpp"
 
@@ -510,6 +511,20 @@ void Renderer::run() {
     };
     bot_world.trace=[&](Vector3 a,Vector3 b){return combat_world.trace_segment(a,b,false,false,true);};
     bot_world.sounds=&sound_bus;
+    // Walkable-space graph shared by bots and NPCs. Exploring new ground is spread over frames
+    // (cell budget per search) and at most two searches run per frame across every mover.
+    world::navigation::NavGrid nav_grid(verda_region);
+    nav_grid.set_max_new_cells(250);
+    nav_grid.set_max_expansions(8000);
+    int nav_searches_this_frame=0;
+    bool nav_was_building=false;
+    const world::navigation::PathFinder nav_finder=[&](Vector3 from,Vector3 to,world::navigation::NavPath& path) {
+        if(nav_searches_this_frame>=2) return false;
+        ++nav_searches_this_frame;
+        return nav_grid.find_path(from,to,path);
+    };
+    bot_world.environment.find_path=nav_finder;
+    npcs.set_path_finder(nav_finder);
     bot_world.world_damage=[&](const game::combat::BulletHit& hit,float amount,Vector3 from) {
         if(hit.kind==game::combat::HitKind::Vehicle || hit.kind==game::combat::HitKind::VehicleWindow ||
             hit.kind==game::combat::HitKind::VehicleOccupant) combat_world.damage_hit(hit,amount,from);
@@ -542,6 +557,7 @@ void Renderer::run() {
         8.5F;
 
     while (!WindowShouldClose()) {
+        nav_searches_this_frame=0;
         pointer_events.begin_frame();
 
         const float dt =
@@ -627,7 +643,8 @@ void Renderer::run() {
                 if(game::rules_for(game_mode).civilian_life) {
                     island_life.build(verda_region,&character_registry);island_life.reset(npcs);
                 } else island_life.clear(npcs);
-                br_bots.clear();sound_bus.clear();match_time=0;match_placement=-1;
+                br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
+                match_time=0;match_placement=-1;
                 last_player_feet={player.position.x,player.position.y-1.0F,player.position.z};
                 if(game::rules_for(game_mode).combat_bots) {
                     br_bots.start(verda_region,home_screen.bot_level(),23,static_cast<std::uint64_t>(GetTime()*1000.0)+1,last_player_feet);
@@ -705,6 +722,9 @@ void Renderer::run() {
             if(dev_lab.take_return()&&has_previous_location){vehicles.leave_session();std::swap(player.position,previous_location);player.vertical_velocity=0;player.grounded=true;vehicle_renderer.reset_camera();}
         }
         creator_active = game_mode == game::GameMode::DevLab && dev_lab.building();
+        // Leaving the builder: whatever was placed or removed changes where bodies can walk.
+        if(nav_was_building && !creator_active) nav_grid.clear();
+        nav_was_building=creator_active;
         creator_controller.set_enabled(creator_active);
         creator_touch_ui.update(creator_controller, screen_width, screen_height, dev_modal || !IsWindowFocused(),
             [&](Vector2 p){return CheckCollisionPointRec(p,audio_button) || dev_lab.owns_point(p,screen_width,screen_height) || input_system.navigation_owns_point(p,screen_width,screen_height);});

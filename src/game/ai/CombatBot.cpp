@@ -295,7 +295,7 @@ void CombatBot::decide(double now,const BotEnvironment& environment) {
     if(count>1 && options[1].score>.2F && random()>difficulty_.decision_quality) choice=1;
     const auto next=options[choice].intent;
     if(next!=intent_) {
-        intent_=next;intent_since_=now;stuck_time_=0;
+        intent_=next;intent_since_=now;stuck_time_=0;repathed_=false;
         has_destination_=false;
         switch(next) {
             case BotIntent::TakeCover:destination_=cover;has_destination_=cover_found;break;
@@ -384,11 +384,15 @@ void CombatBot::act(float dt,double now,const BotEnvironment& environment,std::v
     previous_=position_;
     moving_=false;
     if(want_move && environment.move) {
+        // Trips to a destination follow a route; engagement footwork stays local and direct.
+        const bool travelling=intent_!=BotIntent::Engage && has_destination_;
+        if(travelling) move_to=follower_.steer(position_,destination_,now,environment.find_path);
         auto delta=flat(Vector3Subtract(move_to,position_));
         const float remaining=Vector3Length(delta);
-        const bool arrived=remaining<.6F && intent_!=BotIntent::Engage;
+        const bool arrived=travelling && Vector3Length(flat(Vector3Subtract(destination_,position_)))<.6F &&
+            std::abs(destination_.y-position_.y)<1.2F;
         if(arrived) {
-            has_destination_=false;
+            has_destination_=false;repathed_=false;
             if(intent_==BotIntent::Investigate) sound_pending_=false;
         } else if(remaining>.001F) {
             const float speed=(run ? run_speed : walk_speed)*(reload_left_>0 ? .75F : 1.0F);
@@ -398,9 +402,12 @@ void CombatBot::act(float dt,double now,const BotEnvironment& environment,std::v
             const float moved=Vector3Length(flat(Vector3Subtract(position_,previous_)));
             moving_=moved>step*.2F;
             stuck_time_=moved<step*.3F ? stuck_time_+dt : std::max(0.0F,stuck_time_-dt);
-            if(stuck_time_>1.0F) {
+            if(stuck_time_>1.0F && travelling && !repathed_ && environment.find_path) {
+                // Blocked on a route: plan again from here once before giving up on the trip.
+                stuck_time_=0;repathed_=true;follower_.repath_soon();
+            } else if(stuck_time_>1.0F) {
                 // Blocked: try somewhere else rather than walking into the wall forever.
-                stuck_time_=0;has_destination_=false;
+                stuck_time_=0;has_destination_=false;repathed_=false;
                 if(intent_==BotIntent::Investigate) sound_pending_=false;
                 if(intent_!=BotIntent::Engage) intent_=BotIntent::Roam;
                 const float angle=random()*2*PI;

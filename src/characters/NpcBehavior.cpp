@@ -55,6 +55,17 @@ void move(NpcInstance& actor,Vector3 toward,float speed,float dt,const NpcEnviro
     const auto moved=Vector3Subtract(actor.position,before);
     if(Vector3LengthSqr(moved)>.000001F) actor.yaw_degrees=std::atan2(moved.x,moved.z)*RAD2DEG;
 }
+// Longer trips follow a route through doors and round buildings instead of a straight line.
+void navigate(NpcInstance& actor,Vector3 goal,float speed,float dt,const NpcEnvironment& environment) {
+    const auto before=actor.position;
+    const auto target=actor.follower.steer(actor.position,goal,environment.now,environment.find_path);
+    move(actor,target,speed,dt,environment);
+    // Walking straight into a wall: ask for a route (open ground never needs one).
+    const float wanted=std::min(speed*dt,std::hypot(target.x-before.x,target.z-before.z));
+    const float moved=std::hypot(actor.position.x-before.x,actor.position.z-before.z);
+    actor.stuck_time=wanted>.01F && moved<wanted*.3F ? actor.stuck_time+dt : 0.0F;
+    if(actor.stuck_time>.6F) {actor.stuck_time=0;actor.follower.repath_soon();}
+}
 }
 float NpcBehavior::tick(NpcInstance& actor,const NpcTuning& tuning,float dt,
     const NpcContext& context,const NpcEnvironment& environment) {
@@ -109,13 +120,14 @@ float NpcBehavior::tick(NpcInstance& actor,const NpcTuning& tuning,float dt,
                 return 0;
             }
             if(actor.threat_timer<=0) enter(actor,NpcState::Idle,tuning);
-            else {enter(actor,NpcState::Chase,tuning);move(actor,actor.threat_position,tuning.movement_speed*tuning.run_multiplier,dt,environment);return 0;}
+            else {enter(actor,NpcState::Chase,tuning);navigate(actor,actor.threat_position,tuning.movement_speed*tuning.run_multiplier,dt,environment);return 0;}
         }
     }
     if(actor.state==NpcState::Idle && actor.state_time>=(actor.directed ? actor.idle_hold : 1.0F)) enter(actor,NpcState::Wander,tuning);
     if(actor.state==NpcState::Wander) {
         const auto delta=Vector3Subtract(actor.waypoint,actor.position);
         if(delta.x*delta.x+delta.z*delta.z<.09F || (!actor.travelling && actor.state_time>6)) enter(actor,NpcState::Idle,tuning);
+        else if(actor.travelling) navigate(actor,actor.waypoint,tuning.movement_speed*(actor.hurry ? tuning.run_multiplier : 1.0F),dt,environment);
         else move(actor,actor.waypoint,tuning.movement_speed*(actor.hurry ? tuning.run_multiplier : 1.0F),dt,environment);
     }
     return 0;
