@@ -1,5 +1,4 @@
 #include "outland/world/physics/MeshCollision.hpp"
-#include "outland/world/VerdaRegion.hpp"
 #include <raymath.h>
 #include <algorithm>
 #include <cctype>
@@ -185,10 +184,10 @@ struct Library {
 Library& library() { static Library value; return value; }
 }
 
-bool load_collision_mesh(const std::string& path, CollisionMesh& mesh, std::string& error) {
+namespace {
+bool parse_gltf(const std::string& path, Json& root, std::vector<unsigned char>& glb_bin, std::string& error) {
     std::vector<unsigned char> file;
     if (!read_file(path, file)) { error = "cannot read " + path; return false; }
-    std::vector<unsigned char> glb_bin;
     const char* json_begin = reinterpret_cast<const char*>(file.data());
     const char* json_end = json_begin + file.size();
     if (file.size() >= 12 && std::memcmp(file.data(), "glTF", 4) == 0) {
@@ -203,8 +202,43 @@ bool load_collision_mesh(const std::string& path, CollisionMesh& mesh, std::stri
             offset += 8 + length;
         }
     }
-    Json root;
     if (!JsonParser(json_begin, json_end).parse(root) || root.type != Json::Type::Object) { error = "invalid glTF JSON"; return false; }
+    return true;
+}
+std::vector<long> parents_of(const Json& nodes) {
+    std::vector<long> parent(nodes.items.size(), -1);
+    for (std::size_t i = 0; i < nodes.items.size(); ++i)
+        if (const auto* children = nodes.items[i].get("children"))
+            for (const auto& child : children->items)
+                if (child.number >= 0 && static_cast<std::size_t>(child.number) < parent.size()) parent[static_cast<std::size_t>(child.number)] = static_cast<long>(i);
+    return parent;
+}
+Matrix world_of(const Json& nodes, const std::vector<long>& parent, std::size_t index) {
+    Matrix result = matrix_from(nodes.items[index]);
+    long up = parent[index];
+    for (int guard = 0; up >= 0 && guard < 256; ++guard) {
+        result = MatrixMultiply(result, matrix_from(nodes.items[static_cast<std::size_t>(up)]));
+        up = parent[static_cast<std::size_t>(up)];
+    }
+    return result;
+}
+}
+
+bool skinned_mesh_transform(const std::string& path, Matrix& transform) {
+    Json root; std::vector<unsigned char> bin; std::string error;
+    if (!parse_gltf(path, root, bin, error)) return false;
+    const auto* nodes = root.get("nodes");
+    if (!nodes) return false;
+    const auto parent = parents_of(*nodes);
+    for (std::size_t i = 0; i < nodes->items.size(); ++i)
+        if (nodes->items[i].get("skin") && nodes->items[i].get("mesh")) { transform = world_of(*nodes, parent, i); return true; }
+    return false;
+}
+
+bool load_collision_mesh(const std::string& path, CollisionMesh& mesh, std::string& error) {
+    Json root;
+    std::vector<unsigned char> glb_bin;
+    if (!parse_gltf(path, root, glb_bin, error)) return false;
     const auto directory = std::filesystem::path(path).parent_path();
     std::vector<std::vector<unsigned char>> buffers;
     if (const auto* list = root.get("buffers")) for (const auto& buffer : list->items) {
@@ -239,20 +273,8 @@ bool load_collision_mesh(const std::string& path, CollisionMesh& mesh, std::stri
     const auto* materials = root.get("materials");
     if (!nodes || !meshes) { error = "no meshes"; return false; }
     // World transforms through the parent chain (raylib applies them to every node, scenes ignored).
-    std::vector<long> parent(nodes->items.size(), -1);
-    for (std::size_t i = 0; i < nodes->items.size(); ++i)
-        if (const auto* children = nodes->items[i].get("children"))
-            for (const auto& child : children->items)
-                if (child.number >= 0 && static_cast<std::size_t>(child.number) < parent.size()) parent[static_cast<std::size_t>(child.number)] = static_cast<long>(i);
-    const auto world = [&](std::size_t index) {
-        Matrix result = matrix_from(nodes->items[index]);
-        long up = parent[index];
-        for (int guard = 0; up >= 0 && guard < 256; ++guard) {
-            result = MatrixMultiply(result, matrix_from(nodes->items[static_cast<std::size_t>(up)]));
-            up = parent[static_cast<std::size_t>(up)];
-        }
-        return result;
-    };
+    const auto parent = parents_of(*nodes);
+    const auto world = [&](std::size_t index) { return world_of(*nodes, parent, index); };
     struct Raw { Vector3 a, b, c; int material; Vector2 uv; std::size_t primitive, index; };
     std::vector<Raw> raw;
     std::vector<int> primitive_material;
@@ -478,11 +500,6 @@ void MeshCollisionLibrary::add_root(const std::string& directory) {
     auto& roots = library().roots;
     if (std::find(roots.begin(), roots.end(), directory) == roots.end()) roots.insert(roots.begin(), directory);
     library().failed.clear();
-}
-void MeshCollisionLibrary::preload(const VerdaRegion& region) {
-    for (const auto& settlement : region.settlements())
-        for (const auto& asset : settlement.assets)
-            if (asset.collision && asset.vehicle.definition.empty()) get(asset.model_path);
 }
 void MeshCollisionLibrary::clear() { library().meshes.clear(); library().failed.clear(); }
 }

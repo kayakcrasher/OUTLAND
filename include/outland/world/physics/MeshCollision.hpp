@@ -48,6 +48,9 @@ public:
     static void clear();
 };
 
+// World transform of the first skinned mesh node (what raylib bakes into skinned vertices).
+// False if the file has no skinned mesh or cannot be read.
+bool skinned_mesh_transform(const std::string& path, Matrix& transform);
 // Parses glTF/GLB bytes; exposed for tests. `base_directory` resolves external buffers.
 bool load_collision_mesh(const std::string& path, CollisionMesh& mesh, std::string& error);
 }

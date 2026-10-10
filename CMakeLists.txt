@@ -434,7 +434,7 @@ if(OUTLAND_BUILD_TESTS)
     add_test(NAME outland_model_cache_tests COMMAND outland_model_cache_tests)
 
     add_executable(outland_character_renderer_tests tests/integration/assets/test_character_renderer.cpp
-        src/characters/CharacterRegistry.cpp src/characters/CharacterRenderer.cpp src/characters/AnimationController.cpp src/characters/SkeletalGait.cpp src/assets/ModelCache.cpp)
+        src/characters/CharacterRegistry.cpp src/characters/CharacterRenderer.cpp src/characters/AnimationController.cpp src/characters/SkeletalGait.cpp src/assets/ModelCache.cpp src/world/physics/MeshCollision.cpp)
     target_include_directories(outland_character_renderer_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_character_renderer_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_character_renderer_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")

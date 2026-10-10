@@ -2,6 +2,7 @@
 #include "outland/assets/ModelCache.hpp"
 #include "outland/characters/CharacterRegistry.hpp"
 #include "outland/characters/NpcSystem.hpp"
+#include <unordered_map>
 #include <unordered_set>
 #include "outland/characters/SkeletalGait.hpp"
 namespace outland::characters {
@@ -21,5 +22,6 @@ private:
     std::string asset_root_;
     assets::ModelCache models_{64};
     std::unordered_set<std::string> failed_;
+    std::unordered_map<std::string,std::pair<bool,Matrix>> skin_spaces_; // glTF mesh-node transform per model
 };
 }

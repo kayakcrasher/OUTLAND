@@ -603,4 +603,10 @@ bool WorldCollision::window_vault_target(
     return false;
 }
 
+// Lives here (not MeshCollision.cpp) so the mesh loader stays free of world dependencies.
+void MeshCollisionLibrary::preload(const VerdaRegion& region) {
+    for (const auto& settlement : region.settlements())
+        for (const auto& asset : settlement.assets)
+            if (asset.collision && asset.vehicle.definition.empty()) get(asset.model_path);
+}
 } // namespace outland::world::physics

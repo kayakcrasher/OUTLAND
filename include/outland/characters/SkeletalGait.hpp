@@ -8,7 +8,9 @@ class SkeletalGait {
 public:
     bool sample(const Model& model,AnimationAction action,double seconds,float facing_degrees);
     const std::vector<Transform>& pose() const {return pose_;}
-    bool apply(Model& model,AnimationAction action,double seconds,float facing_degrees);
+    // `skin`: world transform of the glTF mesh node, which raylib bakes into vertices but not bones.
+    bool apply(Model& model,AnimationAction action,double seconds,float facing_degrees,const Matrix* skin=nullptr);
+    void to_skin_space(const Model& model,const Matrix& skin);
 private:
     std::vector<Transform> pose_;
 };
