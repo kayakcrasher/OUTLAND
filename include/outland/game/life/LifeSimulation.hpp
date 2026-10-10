@@ -48,6 +48,11 @@ public:
     bool travelling(const Resident& resident) const {return clock_.minutes<resident.arrive;}
     std::string describe(const Resident& resident) const; // "Ivan Kovac, mechanic - working at the garage in Roka"
     const Resident* nearest(Vector3 position,float max_distance,bool physical_only=true) const;
+    // Police response: send a resident (an officer) to a location at car speed while off-screen,
+    // running once a body; release returns them to their schedule.
+    static constexpr float response_speed=14; // m/s while abstract (patrol car)
+    void dispatch(int resident,Vector3 where);
+    void release(int resident);
     LifeStats stats() const;
 private:
     std::uint64_t heard_up_to_{0};

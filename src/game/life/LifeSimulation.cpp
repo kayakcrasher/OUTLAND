@@ -66,7 +66,7 @@ void LifeSimulation::reset(characters::NpcSystem& npcs,WorldClock start) {
     clock_=start;cursor_=0;replan_budget_=0;heard_up_to_=0;bridge_clock_=std::numeric_limits<float>::max();
     for(auto& r:island_.residents) {
         if(r.physical) npcs.despawn_resident(r.id);
-        r.alive=true;r.physical=false;r.health=100;r.fear=0;r.shelter_until=-1;r.patrol_step=0;
+        r.alive=true;r.physical=false;r.health=100;r.fear=0;r.shelter_until=-1;r.patrol_step=0;r.responding=false;
         r.activity=planned_activity(r,clock_.weekday(),clock_.minute_of_day());
         r.place=resolve(r,r.activity);
         r.depart=r.arrive=clock_.minutes;
@@ -116,6 +116,13 @@ bool LifeSimulation::outdoors_now(const Resident& r) const {
 }
 
 Vector3 LifeSimulation::abstract_position(const Resident& r) const {
+    if(r.responding) {
+        // Driving to the scene: straight line at car speed in real seconds.
+        const double real_seconds=(clock_.minutes-r.depart)*60.0/std::max(.01F,config_.time_scale);
+        const float distance=flat_distance(r.from,r.response_target);
+        const float t=distance<.1F ? 1.0F : std::clamp(static_cast<float>(real_seconds)*response_speed/distance,0.0F,1.0F);
+        return Vector3Lerp(r.from,r.response_target,t);
+    }
     if(r.place<0) return r.from;
     const auto& place=island_.places[static_cast<std::size_t>(r.place)];
     if(clock_.minutes<r.arrive && r.arrive>r.depart) {
@@ -131,14 +138,14 @@ Vector3 LifeSimulation::abstract_position(const Resident& r) const {
 Vector3 LifeSimulation::position(const Resident& r) const {return r.physical ? r.body : abstract_position(r);}
 
 bool LifeSimulation::indoors(const Resident& r) const {
-    if(r.place<0) return false;
+    if(r.place<0 || r.responding) return false;
     const auto& place=island_.places[static_cast<std::size_t>(r.place)];
     if(r.physical) return inside_footprint(place,r.body,0);
     return !travelling(r) && place.indoor && !outdoors_now(r);
 }
 
 void LifeSimulation::replan(Resident& r) {
-    if(!r.alive) return;
+    if(!r.alive || r.responding) return;
     if(r.shelter_until>=0 && r.shelter_until<=clock_.minutes) {r.shelter_until=-1;r.fear=0;}
     const Activity activity=r.shelter_until>clock_.minutes ? Activity::Shelter :
         planned_activity(r,clock_.weekday(),clock_.minute_of_day());
@@ -150,6 +157,7 @@ void LifeSimulation::replan(Resident& r) {
 }
 
 LifeSimulation::Anchor LifeSimulation::physical_anchor(const Resident& r,Vector3 body) const {
+    if(r.responding) return {r.response_target,1.5F};
     const auto& target=island_.places[static_cast<std::size_t>(r.place)];
     const bool want_inside=target.indoor && !target.sealed && !outdoors_now(r);
     const float inside_radius=std::max(.5F,std::min(target.building_size.x,target.building_size.z)*.28F);
@@ -184,7 +192,7 @@ void LifeSimulation::sync_bodies(Vector3 player,characters::NpcSystem& npcs) {
         const float distance=flat_distance(r.body,player);
         const auto& place=island_.places[static_cast<std::size_t>(r.place)];
         // Into a sealed building (office tower): the body goes in at the door and leaves the world.
-        const bool entered_sealed=r.alive && place.sealed && !outdoors_now(r) && flat_distance(r.body,place.door)<3;
+        const bool entered_sealed=r.alive && !r.responding && place.sealed && !outdoors_now(r) && flat_distance(r.body,place.door)<3;
         const bool keep=!entered_sealed && distance<=config_.dematerialize_radius &&
             (!r.alive || !indoors(r) || distance<=config_.indoor_radius+12);
         if(keep) {++bodies;continue;}
@@ -213,6 +221,7 @@ void LifeSimulation::sync_bodies(Vector3 player,characters::NpcSystem& npcs) {
         spawn.anchor_radius=anchor.radius;spawn.health=r.health;
         spawn.pool=r.occupation==Occupation::PoliceOfficer || r.occupation==Occupation::Doctor ?
             characters::CharacterPool::Emergency : characters::CharacterPool::Civilian;
+        spawn.police=r.occupation==Occupation::PoliceOfficer;
         spawn.yaw_degrees=std::atan2(anchor.point.x-start.x,anchor.point.z-start.z)*RAD2DEG;
         npcs.spawn_resident(spawn);
         r.physical=true;r.body=start;++bodies;
@@ -220,8 +229,25 @@ void LifeSimulation::sync_bodies(Vector3 player,characters::NpcSystem& npcs) {
     for(const auto& r:island_.residents) {
         if(!r.physical || !r.alive) continue;
         const auto anchor=physical_anchor(r,r.body);
-        npcs.direct_resident(r.id,anchor.point,anchor.radius,r.fear>0);
+        npcs.direct_resident(r.id,anchor.point,anchor.radius,r.fear>0 || r.responding);
     }
+}
+
+void LifeSimulation::dispatch(int resident,Vector3 where) {
+    if(resident<0 || static_cast<std::size_t>(resident)>=island_.residents.size() || !std::isfinite(where.x) || !std::isfinite(where.z)) return;
+    auto& r=island_.residents[static_cast<std::size_t>(resident)];
+    if(!r.alive) return;
+    r.from=position(r);r.depart=clock_.minutes;
+    r.responding=true;r.response_target=where;r.fear=0;r.shelter_until=-1;
+}
+
+void LifeSimulation::release(int resident) {
+    if(resident<0 || static_cast<std::size_t>(resident)>=island_.residents.size()) return;
+    auto& r=island_.residents[static_cast<std::size_t>(resident)];
+    if(!r.responding) return;
+    const auto here=position(r);
+    r.responding=false;r.from=here;r.depart=clock_.minutes;r.activity=Activity::Sleep;r.place=-1;
+    replan(r);
 }
 
 void LifeSimulation::update(float real_dt,Vector3 player,characters::NpcSystem& npcs,bool paused) {

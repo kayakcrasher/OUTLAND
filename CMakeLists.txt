@@ -125,6 +125,7 @@ add_library(
     src/game/life/LifeTypes.cpp
     src/game/life/LifePopulation.cpp
     src/game/life/LifeSimulation.cpp
+    src/game/law/Justice.cpp
     src/game/sound/SoundBus.cpp
     src/game/ai/CombatBot.cpp
     src/game/ai/BattleRoyaleBots.cpp
@@ -488,6 +489,12 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_day_night_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_day_night_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_day_night_tests COMMAND outland_day_night_tests)
+
+    add_executable(outland_justice_tests tests/integration/law/test_justice.cpp)
+    target_link_libraries(outland_justice_tests PRIVATE outland_render)
+    target_compile_options(outland_justice_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_justice_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_justice_tests COMMAND outland_justice_tests)
 
     add_executable(outland_animation_asset_tests tests/integration/assets/test_animation_assets.cpp)
     target_link_libraries(outland_animation_asset_tests PRIVATE outland_render)

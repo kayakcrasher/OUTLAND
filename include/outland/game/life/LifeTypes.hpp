@@ -85,6 +85,9 @@ struct Resident {
     Vector3 from{}, body{};          // abstract trip start; last physical position
     double depart{0}, arrive{0};     // island minutes
     int patrol_step{0};
+    // Police response (game::law::Justice): an officer sent to a location drops the schedule.
+    bool responding{false};
+    Vector3 response_target{};
     std::string full_name() const { return first_name+" "+family_name; }
 };
 

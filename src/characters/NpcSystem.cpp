@@ -121,6 +121,10 @@ void NpcSystem::update(float dt,const NpcContext& input,const world::VerdaRegion
                 actor.decision_clock-=interval;
                 const float damage=NpcBehavior::tick(actor,settings,interval,context,environment);
                 if(damage>0) {events_.player_damage+=damage;++events_.attacks;}
+                if(actor.fired) {
+                    actor.fired=false;
+                    events_.shots.push_back({Vector3Add(actor.position,{0,1.45F,0}),actor.shot_at,damage>0,actor.resident});
+                }
             }
         }
         animate(actor,dt);
@@ -135,7 +139,8 @@ bool NpcSystem::damage(std::size_t index,float amount,Vector3 attacker) {
     actor.health=std::max(0.0F,actor.health-amount);
     actor.threat_position=attacker;actor.threat_timer=tuning(actor.pool).memory_seconds;actor.state_time=0;
     actor.state=actor.health==0 ? NpcState::Dead :
-        (actor.pool==CharacterPool::Hostile || actor.pool==CharacterPool::Creature ? NpcState::Chase : NpcState::Flee);
+        (actor.pool==CharacterPool::Hostile || actor.pool==CharacterPool::Creature ? NpcState::Chase :
+         actor.police ? (actor.armed ? NpcState::Chase : NpcState::Idle) : NpcState::Flee);
     actor.animation.advance(NpcBehavior::animation(actor.state),0);
     return true;
 }
@@ -176,7 +181,7 @@ std::size_t NpcSystem::spawn_resident(const ResidentSpawn& spawn) {
     actor.yaw_degrees=actor.spawn_yaw=spawn.yaw_degrees;
     actor.health=std::isfinite(spawn.health) ? std::clamp(spawn.health,0.0F,tuning(spawn.pool).health) : tuning(spawn.pool).health;
     actor.anchor_radius=std::isfinite(spawn.anchor_radius) ? std::clamp(spawn.anchor_radius,.25F,60.0F) : 2;
-    actor.random_state=character_seed(actor.spawn_key)|1;
+    actor.random_state=character_seed(actor.spawn_key)|1;actor.police=spawn.police;
     actor.state=actor.health<=0 ? NpcState::Dead : NpcState::Idle;actor.state_time=1;
     actors_.push_back(std::move(actor));
     return actors_.size()-1;
@@ -238,6 +243,7 @@ void NpcSystem::hear(const game::sound::SoundBus& sounds) {
             if(!game::sound::SoundBus::audible(event,actor.position)) continue;
             const auto& settings=tuning(actor.pool);
             const bool aggressive=actor.pool==CharacterPool::Hostile || actor.pool==CharacterPool::Creature;
+            if(actor.police) continue; // officers hold their ground and report; game::law decides
             if(aggressive) {
                 // Hunters go and look: any noise they can hear becomes somewhere to search.
                 actor.threat_position=event.position;
@@ -252,5 +258,13 @@ void NpcSystem::hear(const game::sound::SoundBus& sounds) {
         }
     }
     heard_up_to_=sounds.latest();
+}
+void NpcSystem::arm_resident(int resident,bool armed) {
+    const int index=find_resident(resident);
+    if(index<0) return;
+    auto& actor=actors_[static_cast<std::size_t>(index)];
+    if(actor.armed==armed) return;
+    actor.armed=armed;
+    if(!armed && actor.state!=NpcState::Dead) {actor.threat_timer=0;actor.state=NpcState::Idle;actor.state_time=0;}
 }
 }

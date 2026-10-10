@@ -25,6 +25,9 @@ struct NpcInstance {
     float anchor_radius{6}, idle_hold{1};
     // Battle Royale bodies: driven by game::ai, never ticked by NpcBehavior.
     int bot{-1};
+    // Police officers never flee gunfire; armed officers pursue the player and shoot (game::law).
+    bool police{false}, armed{false}, fired{false};
+    Vector3 shot_at{};
 };
 struct ResidentSpawn {
     int resident{-1};
@@ -32,11 +35,13 @@ struct ResidentSpawn {
     CharacterPool pool{CharacterPool::Civilian};
     Vector3 position{}, anchor{};
     float yaw_degrees{0}, health{100}, anchor_radius{2};
+    bool police{false};
 };
 struct NpcHit {
     int actor{-1}; float fraction{1}; Vector3 position{}, normal{}; bool headshot{false};
 };
-struct NpcEvents { float player_damage{0}; int attacks{0}; };
+struct NpcShot { Vector3 from{}, to{}; bool hit{false}; int resident{-1}; };
+struct NpcEvents { float player_damage{0}; int attacks{0}; std::vector<NpcShot> shots; };
 class NpcSystem {
 public:
     NpcSystem();
@@ -52,6 +57,8 @@ public:
     int find_resident(int resident) const;
     // Moves the schedule anchor; Idle/Wander actors walk there, threat states are untouched.
     void direct_resident(int resident,Vector3 anchor,float radius,bool hurry);
+    // Armed officers chase and shoot the player; disarming returns them to their anchor.
+    void arm_resident(int resident,bool armed);
     // Bot bodies are puppets: game::ai owns their brain, health and position; the system only
     // draws them, animates them and lets bullets find them.
     std::size_t spawn_bot(int bot,const std::string& character_id,Vector3 position,float yaw_degrees);

@@ -80,13 +80,40 @@ float NpcBehavior::tick(NpcInstance& actor,const NpcTuning& tuning,float dt,
     const Vector3 eye=Vector3Add(actor.position,{0,1.45F,0}), player_eye=Vector3Add(context.player_position,{0,1.45F,0});
     const bool sees=in_range && (!context.visible || context.visible(eye,player_eye));
     const bool aggressive=actor.pool==CharacterPool::Hostile || actor.pool==CharacterPool::Creature;
-    if(sees && (aggressive || context.threatening)) {
+    if(actor.armed && context.player_alive) {
+        // Armed officer: pursue, and from cover of distance shoot when the player is in sight.
+        const float sight=60;
+        const bool in_sight=distance<=sight && (!context.visible || context.visible(eye,player_eye));
+        if(in_sight) {actor.threat_position=context.player_position;actor.threat_timer=tuning.memory_seconds*3;}
+        if(in_sight && distance<=28) {
+            enter(actor,NpcState::Attack,tuning);
+            actor.yaw_degrees=std::atan2(difference.x,difference.z)*RAD2DEG;
+            actor.attack_clock-=dt;
+            if(actor.attack_clock<=0) {
+                actor.attack_clock=.8F+random(actor)*.6F;actor.animation.restart();
+                actor.fired=true;actor.shot_at=player_eye;
+                // Pistol accuracy falls off with range; one hit is a fifth of the player's health.
+                const float hit=std::clamp(.75F-distance/40.0F,.12F,.75F);
+                if(random(actor)<hit) return 18;
+                actor.shot_at=Vector3Add(player_eye,{(random(actor)-.5F)*2.0F,(random(actor)-.5F)*1.0F,(random(actor)-.5F)*2.0F});
+            }
+            return 0;
+        }
+        if(actor.threat_timer>0) {
+            enter(actor,NpcState::Chase,tuning);
+            navigate(actor,actor.threat_position,tuning.movement_speed*tuning.run_multiplier,dt,environment);
+            return 0;
+        }
+    }
+    if(actor.police && !actor.armed) actor.reaction_clock=0; // officers don't panic at a gun
+    if(sees && (aggressive || context.threatening) && !actor.police) {
         actor.threat_position=context.player_position;
         actor.threat_timer=tuning.memory_seconds;
         actor.reaction_clock+=dt;
     } else actor.reaction_clock=0;
     if(!aggressive) {
-        if(actor.threat_timer>0 && (actor.state==NpcState::Flee || actor.reaction_clock>=tuning.reaction_delay)) enter(actor,NpcState::Flee,tuning);
+        if(actor.police && actor.state==NpcState::Flee) enter(actor,NpcState::Idle,tuning);
+        if(!actor.police && actor.threat_timer>0 && (actor.state==NpcState::Flee || actor.reaction_clock>=tuning.reaction_delay)) enter(actor,NpcState::Flee,tuning);
         if(actor.state==NpcState::Flee) {
             if(actor.threat_timer<=0) enter(actor,NpcState::Idle,tuning);
             else {

@@ -20,6 +20,7 @@
 #include "outland/game/sound/SoundBus.hpp"
 #include "outland/world/navigation/NavGrid.hpp"
 #include "outland/world/sky/DayNight.hpp"
+#include "outland/game/law/Justice.hpp"
 #include "outland/dev/DevLab.hpp"
 #include "outland/creator/CreatorMapIO.hpp"
 
@@ -423,7 +424,12 @@ void Renderer::run() {
     game::ai::BattleRoyaleBots br_bots;
     // Time of day: Explore follows island life's clock, Zombie Survival runs its own from dusk,
     // Battle Royale keeps fair afternoon light, the Dev Lab sets the hour by hand (F6 / F7).
-    float zombie_hour=17.5F, dev_hour=12.0F;
+    float zombie_hour=17.5F, dev_hour=12.0F, last_daylight=1.0F;
+    // Crime and the police (Explore): crimes queue up during the frame and are judged after it.
+    game::law::Justice justice;
+    struct QueuedCrime {game::law::CrimeKind kind;int victim;};
+    std::vector<QueuedCrime> crimes;
+    std::vector<game::ai::BotTracer> police_tracers;
     std::vector<world::sky::LightSource> scene_lights;
     std::size_t lit_asset_count=static_cast<std::size_t>(-1);
     game::sound::SoundBus sound_bus; // every noise on Verda this session, heard by bots, NPCs and residents
@@ -503,7 +509,12 @@ void Renderer::run() {
         // Battle Royale bodies belong to their bot brains; everyone else is an NpcSystem actor.
         const int bot=static_cast<std::size_t>(actor)<npcs.actors().size() ? npcs.actors()[static_cast<std::size_t>(actor)].bot : -1;
         if(bot>=0) br_bots.damage_bot(bot,damage,attacker,match_time);
-        else npcs.damage(static_cast<std::size_t>(actor),damage,attacker);
+        else if(npcs.damage(static_cast<std::size_t>(actor),damage,attacker)) {
+            // Hurting a resident is a crime if anyone saw it.
+            const auto& victim=npcs.actors()[static_cast<std::size_t>(actor)];
+            if(victim.resident>=0) crimes.push_back({victim.police ? game::law::CrimeKind::AttackOnPolice :
+                victim.health<=0 ? game::law::CrimeKind::Murder : game::law::CrimeKind::Assault,victim.resident});
+        }
     });
     // Battle Royale bots see, walk and shoot through the same world as the player.
     game::ai::BotWorld bot_world;
@@ -664,6 +675,7 @@ void Renderer::run() {
                 } else island_life.clear(npcs);
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
                 zombie_hour=17.5F;lit_asset_count=static_cast<std::size_t>(-1);
+                justice.reset(nullptr,nullptr);crimes.clear();police_tracers.clear();
                 match_time=0;match_placement=-1;
                 last_player_feet={player.position.x,player.position.y-1.0F,player.position.z};
                 if(game::rules_for(game_mode).combat_bots) {
@@ -1276,6 +1288,25 @@ void Renderer::run() {
             island_life.update(dt,npc_context.player_position,npcs,vehicle_paused);
         }
         player_health.damage(npcs.events().player_damage);
+        // Police gunfire is heard like any other and leaves tracers.
+        for(auto& tracer:police_tracers) tracer.life-=dt;
+        std::erase_if(police_tracers,[](const auto& tracer){return tracer.life<=0;});
+        for(const auto& shot:npcs.events().shots) {
+            sound_bus.emit(game::sound::SoundKind::Gunshot,shot.from,game::sound::radius::pistol,-2,match_time);
+            police_tracers.push_back({shot.from,shot.to,.09F});
+        }
+        if(game::rules_for(game_mode).civilian_life && !island_life.empty()) {
+            game::law::JusticeFrame frame;
+            frame.dt=vehicle_paused ? 0.0F : dt;frame.now=match_time;
+            frame.player={player.position.x,player.position.y-1.0F,player.position.z};
+            frame.player_alive=player_health.alive();frame.player_fired=weapons.events().shots>0;
+            frame.daylight=last_daylight;
+            frame.line_of_sight=[&](Vector3 a,Vector3 b){return !combat_world.trace_segment(a,b,false,false,true).hit();};
+            if(frame.player_fired) justice.crime(game::law::CrimeKind::ShotsFired,frame.player,-1,frame,island_life);
+            for(const auto& c:crimes) justice.crime(c.kind,frame.player,c.victim,frame,island_life);
+            if(!vehicle_paused) justice.update(frame,island_life,npcs);
+        }
+        crimes.clear();
         {
             const Vector3 feet{player.position.x,player.position.y-1.0F,player.position.z};
             if(br_bots.active() && !vehicle_paused) {
@@ -1336,6 +1367,7 @@ void Renderer::run() {
         if(const char* forced=std::getenv("OUTLAND_DEV_HOUR")) hour=static_cast<float>(std::atof(forced));
 #endif
         const auto sky=world::sky::sky_at(hour);
+        last_daylight=sky.daylight;
         {
             std::size_t assets=0;
             for(const auto& settlement:verda_region.settlements()) assets+=settlement.assets.size();
@@ -1444,6 +1476,7 @@ void Renderer::run() {
 
         character_renderer.draw_npcs(npcs, camera.position);
         for(const auto& tracer:br_bots.tracers()) DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
+        for(const auto& tracer:police_tracers) DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
 
         // ----------------------------------------------------
         // PLAYER BODY
@@ -1470,6 +1503,22 @@ void Renderer::run() {
         world::sky::draw_lights(scene_lights,sky,camera.position,static_cast<float>(GetTime()));
         if(const auto* car=vehicles.driver()) world::sky::draw_headlights(car->position,car->yaw,sky);
         EndMode3D();
+        if(justice.wanted()>0 || justice.message_time()>0) {
+            // Wanted stars and what the police just did.
+            if(justice.wanted()>0) {
+                const char* label="WANTED";
+                const int x=screen_width/2-(MeasureText(label,20)+4*26)/2;
+                DrawText(label,x,64,20,Color{255,90,80,255});
+                for(int star=0;star<4;++star) {
+                    const Vector2 c{static_cast<float>(x+MeasureText(label,20)+16+star*26),74};
+                    DrawPoly(c,5,10,-90,star<justice.wanted() ? Color{255,215,80,255} : Color{90,90,90,200});
+                }
+            }
+            if(justice.message_time()>0) {
+                const auto& text=justice.message();
+                DrawText(text.c_str(),screen_width/2-MeasureText(text.c_str(),18)/2,92,18,RAYWHITE);
+            }
+        }
         if(game_mode==game::GameMode::ZombieSurvival || game_mode==game::GameMode::DevLab) {
             const int minutes=static_cast<int>(sky.hour*60)%1440;
             const char* clock=TextFormat("%02d:%02d%s",minutes/60,minutes%60,game_mode==game::GameMode::DevLab ? "  F6/F7" : "");
