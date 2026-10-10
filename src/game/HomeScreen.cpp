@@ -240,7 +240,7 @@ void HomeScreen::draw(
     );
 
     const char* subtitle =
-        "WELCOME TO VERDA";
+        "BONVENON AL VERDA"; // the island speaks Esperanto
 
     const int subtitle_size =
         22;

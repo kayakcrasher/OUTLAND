@@ -38,6 +38,8 @@
 #include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
 
+#include "outland/game/culture/SignRenderer.hpp"
+#include "outland/game/life/LifePopulation.hpp"
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
@@ -471,6 +473,21 @@ void Renderer::run() {
     }
 #endif
     game::life::LifeSimulation island_life;
+    // Esperanto signage and the flag. Rebuilt when a mode starts and after Creator edits.
+    game::culture::SignRenderer sign_renderer;
+    sign_renderer.load(GetApplicationDirectory());
+    std::size_t signed_world=static_cast<std::size_t>(-1);
+    const auto world_size=[&]{
+        std::size_t n=0;
+        for(const auto& settlement:verda_region.settlements()) n+=settlement.assets.size()+settlement.buildings.size()+settlement.gameplay_markers.size();
+        return n;
+    };
+    const auto rebuild_signs=[&]{
+        world::physics::MeshCollisionLibrary::preload(verda_region);
+        sign_renderer.set(game::culture::build_signage(verda_region,island_life.island().places.empty() ?
+            game::life::build_island(verda_region,&character_registry) : island_life.island()));
+        signed_world=world_size();
+    };
     game::vehicles::VehicleRegistry vehicle_registry;
     std::string vehicle_error;
     if(!vehicle_registry.load((std::string(character_root)+"/assets/verda/vehicles/vehicle_manifest.tsv"),vehicle_error))
@@ -676,6 +693,7 @@ void Renderer::run() {
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
                 zombie_hour=17.5F;lit_asset_count=static_cast<std::size_t>(-1);
                 justice.reset(nullptr,nullptr);crimes.clear();police_tracers.clear();
+                rebuild_signs();
                 match_time=0;match_placement=-1;
                 last_player_feet={player.position.x,player.position.y-1.0F,player.position.z};
                 if(game::rules_for(game_mode).combat_bots) {
@@ -1372,6 +1390,8 @@ void Renderer::run() {
             std::size_t assets=0;
             for(const auto& settlement:verda_region.settlements()) assets+=settlement.assets.size();
             if(assets!=lit_asset_count) {scene_lights=world::sky::collect_lights(verda_region);lit_asset_count=assets;}
+            // Signs follow Creator edits once the builder is closed (a rebuild takes a moment).
+            if(!creator_active && game_mode!=game::GameMode::Home && world_size()!=signed_world) rebuild_signs();
         }
 
         BeginDrawing();
@@ -1419,6 +1439,7 @@ void Renderer::run() {
 
         draw_model_backed_world_assets(verda_region, camera.position, character_registry);
         vehicle_renderer.draw(vehicles,verda_region,camera.position);
+        sign_renderer.draw(camera.position,camera.target,static_cast<float>(GetTime()));
 
 #ifdef OUTLAND_DEV_TOOLS
         if (
@@ -1563,10 +1584,12 @@ void Renderer::run() {
             DrawText(clock_label.c_str(),screen_width/2-clock_width/2,10,18,BLACK);
             const Vector3 feet{player.position.x,player.position.y-1.0F,player.position.z};
             if(const auto* resident=island_life.nearest(feet,3.5F)) {
+                // Names are Esperanto (Paŭlo, Kovač): drawn with the sign font, which has the letters.
                 const auto line=island_life.describe(*resident);
-                const int width=MeasureText(line.c_str(),16);
+                const Font& font=sign_renderer.font();
+                const int width=static_cast<int>(MeasureTextEx(font,line.c_str(),17,1).x);
                 DrawRectangle(screen_width/2-width/2-8,screen_height-122,width+16,26,Fade(BLACK,.55F));
-                DrawText(line.c_str(),screen_width/2-width/2,screen_height-117,16,RAYWHITE);
+                DrawTextEx(font,line.c_str(),{static_cast<float>(screen_width/2-width/2),static_cast<float>(screen_height-118)},17,1,RAYWHITE);
             }
         }
 

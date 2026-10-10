@@ -24,12 +24,15 @@ struct Random {
     int range(int low,int high) {return low+static_cast<int>(next()%static_cast<std::uint64_t>(high-low+1));}
     bool chance(float p) {return unit()<p;}
 };
-constexpr const char* male_names[]{"Ivan","Petro","Marko","Janko","Tomaso","Paulo","Luko","Stefano","Andreo","Mikaelo",
-    "Jozefo","Karlo","Davido","Viktoro","Adamo","Bruno","Emilo","Frederiko","Gustavo","Henriko","Leono","Oskaro","Rikardo","Teodoro"};
-constexpr const char* female_names[]{"Ana","Maria","Klara","Elena","Sofia","Lidia","Roza","Marta","Eva","Helena","Kata",
-    "Vera","Irena","Julia","Nadia","Olga","Paula","Silvia","Tereza","Zofia","Agata","Berta","Dora","Lucia"};
-constexpr const char* family_names[]{"Novak","Horvat","Kovac","Marin","Petrov","Babic","Rossi","Costa","Ferro","Varga",
-    "Dobra","Stelo","Montero","Kardo","Lindo","Verdano","Ruzic","Moreno","Sorensen","Bianki","Tamas","Ostrova","Lazar","Pajic"};
+// The Esperantists of Verda descend from the Slavic and English-speaking staff of a forgotten Cold
+// War station (docs/verda-lore.md): Esperantised first names, Slavic and English family names, and
+// a few island-made ones.
+constexpr const char* male_names[]{"Ivan","Petro","Marko","Janko","Tomaso","Paŭlo","Luko","Stefano","Andreo","Mikaelo",
+    "Jozefo","Karlo","Davido","Viktoro","Johano","Georgo","Edvardo","Vilhelmo","Arturo","Henriko","Bogdan","Oskaro","Rikardo","Teodoro"};
+constexpr const char* female_names[]{"Ana","Maria","Klara","Elena","Sonja","Lidia","Ludmila","Marta","Eva","Helena","Kata",
+    "Vera","Irena","Julia","Nadia","Olga","Margareta","Svetlana","Tereza","Zofia","Agata","Elizabeta","Dora","Ketlin"};
+constexpr const char* family_names[]{"Novak","Horvat","Kovač","Walker","Petrov","Babić","Smith","Fletcher","Cooper","Varga",
+    "Dobra","Stelo","Wright","Kardo","Lindo","Verdano","Ružić","Baker","Morgan","Harris","Kowalski","Ostrova","Lazar","Hughes"};
 template<class T,std::size_t N> const T& pick(const T (&values)[N],Random& random) {return values[random.next()%N];}
 
 float flat_distance(Vector3 a,Vector3 b) {const float x=a.x-b.x,z=a.z-b.z;return std::sqrt(x*x+z*z);}
