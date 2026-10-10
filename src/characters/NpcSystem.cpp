@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 namespace outland::characters {
+namespace { constexpr float bot_draw_distance=320; }
 NpcSystem::NpcSystem() {
     tuning_[static_cast<std::size_t>(CharacterPool::Emergency)].health=120;
     auto& hostile=tuning_[static_cast<std::size_t>(CharacterPool::Hostile)];
@@ -24,7 +25,7 @@ void NpcSystem::configure(CharacterPool pool,NpcTuning value) {
 }
 void NpcSystem::reset_session() {
     events_={};player_threat_timer_=0;
-    std::erase_if(actors_,[](const NpcInstance& actor){return actor.resident>=0;});
+    std::erase_if(actors_,[](const NpcInstance& actor){return actor.resident>=0 || actor.bot>=0;});
     for(auto& actor:actors_) {
         actor.position=actor.spawn_position;actor.yaw_degrees=actor.spawn_yaw;
         actor.health=tuning(actor.pool).health;actor.state=NpcState::Idle;
@@ -38,7 +39,7 @@ void NpcSystem::reconcile(const world::VerdaRegion& region,const CharacterRegist
     for(std::size_t i=0;i<actors_.size();++i) previous.emplace(actors_[i].spawn_key,i);
     std::vector<NpcInstance> next;
     std::unordered_set<std::string> seen;
-    for(auto& actor:actors_) if(actor.resident>=0) next.push_back(std::move(actor));
+    for(auto& actor:actors_) if(actor.resident>=0 || actor.bot>=0) next.push_back(std::move(actor));
     for(const auto& settlement:region.settlements()) for(const auto& marker:settlement.gameplay_markers) {
         if(!marker.enabled || marker.type!=world::GameplayMarkerType::NpcSpawn) continue;
         if(!std::isfinite(marker.position.x) || !std::isfinite(marker.position.y) ||
@@ -89,6 +90,12 @@ void NpcSystem::update(float dt,const NpcContext& input,const world::VerdaRegion
     for(auto& actor:actors_) {
         const auto& settings=tuning(actor.pool);
         const float distance_sq=Vector3DistanceSqr(actor.position,context.player_position);
+        if(actor.bot>=0) {
+            // Bots fight at rifle range, so their bodies stay visible well beyond civilians.
+            actor.visible=distance_sq<=bot_draw_distance*bot_draw_distance;actor.active=true;
+            if(!context.paused) actor.animation.advance(NpcBehavior::animation(actor.state),dt);
+            continue;
+        }
         actor.visible=distance_sq<=settings.despawn_distance*settings.despawn_distance;
         // Residents exist physically only while game::life keeps them near the player.
         if(actor.resident>=0) actor.active=true;
@@ -111,6 +118,7 @@ bool NpcSystem::damage(std::size_t index,float amount,Vector3 attacker) {
     if(index>=actors_.size() || !std::isfinite(amount) || amount<=0 ||
         !std::isfinite(attacker.x) || !std::isfinite(attacker.y) || !std::isfinite(attacker.z)) return false;
     auto& actor=actors_[index];
+    if(actor.bot>=0) return false; // the bot's owner applies its damage
     if(actor.state==NpcState::Dead || actor.health<=0) return false;
     actor.health=std::max(0.0F,actor.health-amount);
     actor.threat_position=attacker;actor.threat_timer=tuning(actor.pool).memory_seconds;actor.state_time=0;
@@ -126,7 +134,7 @@ NpcHit NpcSystem::trace_segment(Vector3 start,Vector3 end) const {
     const auto delta=Vector3Subtract(end,start);
     for(std::size_t i=0;i<actors_.size();++i) {
         const auto& actor=actors_[i];
-        if(!actor.visible || actor.health<=0 || actor.state==NpcState::Dead) continue;
+        if((!actor.visible && actor.bot<0) || actor.health<=0 || actor.state==NpcState::Dead) continue;
         const auto p=actor.position;
         const float lo[3]{p.x-.35F,p.y,p.z-.35F}, hi[3]{p.x+.35F,p.y+1.85F,p.z+.35F};
         const float origin[3]{start.x,start.y,start.z}, direction[3]{delta.x,delta.y,delta.z};
@@ -181,5 +189,32 @@ void NpcSystem::direct_resident(int resident,Vector3 anchor,float radius,bool hu
     actor.spawn_position=anchor;
     // Only everyday states follow the schedule; fear and combat keep control until they settle.
     if(actor.state==NpcState::Idle || actor.state==NpcState::Wander) {actor.state=NpcState::Idle;actor.state_time=actor.idle_hold=1;}
+}
+std::size_t NpcSystem::spawn_bot(int bot,const std::string& character_id,Vector3 position,float yaw_degrees) {
+    if(const int existing=find_bot(bot);existing>=0) return static_cast<std::size_t>(existing);
+    NpcInstance actor;
+    actor.spawn_key="bot:"+std::to_string(bot);actor.character_id=character_id;
+    actor.pool=CharacterPool::Hostile;actor.bot=bot;
+    actor.position=actor.spawn_position=actor.waypoint=position;
+    actor.yaw_degrees=actor.spawn_yaw=yaw_degrees;actor.health=100;actor.active=true;
+    actor.random_state=character_seed(actor.spawn_key)|1;
+    actors_.push_back(std::move(actor));
+    return actors_.size()-1;
+}
+int NpcSystem::find_bot(int bot) const {
+    if(bot<0) return -1;
+    for(std::size_t i=0;i<actors_.size();++i) if(actors_[i].bot==bot) return static_cast<int>(i);
+    return -1;
+}
+void NpcSystem::set_bot(int bot,Vector3 position,float yaw_degrees,float health,NpcState state) {
+    const int index=find_bot(bot);
+    if(index<0 || !std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z)) return;
+    auto& actor=actors_[static_cast<std::size_t>(index)];
+    actor.position=position;actor.yaw_degrees=std::isfinite(yaw_degrees) ? yaw_degrees : actor.yaw_degrees;
+    actor.health=std::isfinite(health) ? std::max(0.0F,health) : actor.health;
+    if(actor.state!=state) {actor.state=state;actor.state_time=0;}
+}
+void NpcSystem::clear_bots() {
+    std::erase_if(actors_,[](const NpcInstance& actor){return actor.bot>=0;});
 }
 }

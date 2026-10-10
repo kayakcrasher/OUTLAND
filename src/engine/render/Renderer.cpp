@@ -16,6 +16,7 @@
 #include "outland/game/HomeScreen.hpp"
 #include "outland/game/ModeRules.hpp"
 #include "outland/game/life/LifeSimulation.hpp"
+#include "outland/game/ai/BattleRoyaleBots.hpp"
 #include "outland/dev/DevLab.hpp"
 #include "outland/creator/CreatorMapIO.hpp"
 
@@ -415,6 +416,12 @@ void Renderer::run() {
     game::inventory::LootSession loot_session(item_registry);
     game::inventory::LootUI loot_ui(character_root);
     characters::NpcSystem npcs;
+    game::ai::BattleRoyaleBots br_bots;
+    double match_time=0;
+    int match_placement=-1;
+    float damage_flash=0;
+    Vector3 damage_source{};
+    Vector3 last_player_feet{};
     // Model assets resolve beside the executable first (packaged builds), then the working directory.
     world::physics::MeshCollisionLibrary::add_root(GetApplicationDirectory());
 #ifdef OUTLAND_DEV_TOOLS
@@ -482,8 +489,28 @@ void Renderer::run() {
         return game::combat::BulletHit{hit.actor>=0 ? game::combat::HitKind::Npc : game::combat::HitKind::None,
             hit.fraction,hit.position,hit.normal,hit.actor,hit.headshot};
     },[&](int actor,float damage,Vector3 attacker) {
-        if(actor>=0) npcs.damage(static_cast<std::size_t>(actor),damage,attacker);
+        if(actor<0) return;
+        // Battle Royale bodies belong to their bot brains; everyone else is an NpcSystem actor.
+        const int bot=static_cast<std::size_t>(actor)<npcs.actors().size() ? npcs.actors()[static_cast<std::size_t>(actor)].bot : -1;
+        if(bot>=0) br_bots.damage_bot(bot,damage,attacker,match_time);
+        else npcs.damage(static_cast<std::size_t>(actor),damage,attacker);
     });
+    // Battle Royale bots see, walk and shoot through the same world as the player.
+    game::ai::BotWorld bot_world;
+    bot_world.environment.line_of_sight=[&](Vector3 a,Vector3 b){return !combat_world.trace_segment(a,b,false,false,true).hit();};
+    bot_world.environment.move=[&](Vector3 current,Vector3 desired) {
+        const int steps=std::max(1,static_cast<int>(std::ceil(Vector3Distance(current,desired)/.2F)));
+        const auto origin=current;
+        for(int i=1;i<=steps;++i) current=world::physics::WorldCollision::resolve_body_movement(
+            current,Vector3Lerp(origin,desired,static_cast<float>(i)/steps),current.y,verda_region,.35F);
+        current.y=world::physics::WorldCollision::ground_height(current,current.y,verda_region);
+        return current;
+    };
+    bot_world.trace=[&](Vector3 a,Vector3 b){return combat_world.trace_segment(a,b,false,false,true);};
+    bot_world.world_damage=[&](const game::combat::BulletHit& hit,float amount,Vector3 from) {
+        if(hit.kind==game::combat::HitKind::Vehicle || hit.kind==game::combat::HitKind::VehicleWindow ||
+            hit.kind==game::combat::HitKind::VehicleOccupant) combat_world.damage_hit(hit,amount,from);
+    };
     float recoil_pitch = 0.0F, recoil_yaw = 0.0F;
     bool trigger_ready = false;
 
@@ -597,6 +624,12 @@ void Renderer::run() {
                 if(game::rules_for(game_mode).civilian_life) {
                     island_life.build(verda_region,&character_registry);island_life.reset(npcs);
                 } else island_life.clear(npcs);
+                br_bots.clear();match_time=0;match_placement=-1;
+                last_player_feet={player.position.x,player.position.y-1.0F,player.position.z};
+                if(game::rules_for(game_mode).combat_bots) {
+                    br_bots.start(verda_region,home_screen.bot_level(),23,static_cast<std::uint64_t>(GetTime()*1000.0)+1,last_player_feet);
+                    br_bots.sync_bodies(npcs,&character_registry);
+                }
                 player_health.reset();
                 recoil_pitch = recoil_yaw = 0.0F;
                 trigger_ready = false;
@@ -1172,6 +1205,30 @@ void Renderer::run() {
             island_life.update(dt,npc_context.player_position,npcs,vehicle_paused);
         }
         player_health.damage(npcs.events().player_damage);
+        {
+            const Vector3 feet{player.position.x,player.position.y-1.0F,player.position.z};
+            if(br_bots.active() && !vehicle_paused) {
+                match_time+=dt;
+                game::ai::BattleRoyaleFrame frame;
+                frame.dt=dt;frame.now=match_time;frame.player_feet=feet;
+                frame.player_velocity=dt>0 ? Vector3Scale(Vector3Subtract(feet,last_player_feet),1.0F/dt) : Vector3{};
+                frame.player_alive=player_health.alive();
+                frame.player_fired=weapons.events().shots>0;
+                frame.player_weapon=weapons.selected();
+                frame.player_in_vehicle=driving;
+                br_bots.update(frame,bot_world);
+                br_bots.sync_bodies(npcs,&character_registry);
+                const bool was_alive=player_health.alive();
+                player_health.damage(br_bots.events().player_damage);
+                if(br_bots.events().player_damage>0) {damage_flash=1.2F;damage_source=br_bots.events().player_damage_from;}
+                if(was_alive && !player_health.alive() && match_placement<0) {
+                    match_placement=br_bots.alive_bots()+1;
+                    br_bots.report_player_death(br_bots.events().player_damage_by);
+                }
+            }
+            last_player_feet=feet;
+            damage_flash=std::max(0.0F,damage_flash-dt);
+        }
         character_renderer.update_player(!player_health.alive() ? characters::AnimationAction::Death :
             weapons.events().shots>0 ? characters::AnimationAction::Attack :
             Vector3DistanceSqr(position_before_move,player.position)>.000001F && player.grounded ? (controls.sprint ? characters::AnimationAction::Run : characters::AnimationAction::Walk) :
@@ -1289,6 +1346,7 @@ void Renderer::run() {
         if(!creator_active)loot_ui.draw_world(item_registry,loot_session.world(),loot_feet,loot_session.inventory().state().light);
 
         character_renderer.draw_npcs(npcs, camera.position);
+        for(const auto& tracer:br_bots.tracers()) DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
 
         // ----------------------------------------------------
         // PLAYER BODY
@@ -1381,6 +1439,34 @@ void Renderer::run() {
             DrawText(TextFormat("HEALTH %.0f / %.0f",player_health.current(),player_health.maximum()),
                 16,16,20,player_health.alive() ? RAYWHITE : RED);
             if (!player_health.alive()) DrawText("YOU DIED - ESC / BACK TO HOME",screen_width/2-175,screen_height/2,22,RED);
+            if (br_bots.active()) {
+                const int alive=br_bots.alive_bots()+(player_health.alive() ? 1 : 0);
+                const char* status=TextFormat("ALIVE %d   KILLS %d   BOTS %s",alive,br_bots.player_kills(),game::ai::bot_level_name(br_bots.level()));
+                DrawText(status,screen_width/2-MeasureText(status,20)/2,16,20,RAYWHITE);
+                int line=0;
+                // Kill feed under the match status, clear of the HUD labels and touch buttons.
+                for(const auto& entry:br_bots.feed()) DrawText(entry.c_str(),screen_width/2-MeasureText(entry.c_str(),16)/2,44+20*line++,16,Color{235,215,180,255});
+                if(damage_flash>0 && player_health.alive()) {
+                    // Where the shot came from, relative to where the camera looks.
+                    const Vector3 look=Vector3Subtract(camera.target,camera.position);
+                    const Vector3 to=Vector3Subtract(damage_source,camera.position);
+                    const float angle=std::atan2(to.x,to.z)-std::atan2(look.x,look.z);
+                    const float sx=-std::sin(angle), sy=-std::cos(angle);
+                    const Vector2 c{screen_width*.5F,screen_height*.5F};
+                    const unsigned char alpha=static_cast<unsigned char>(std::min(1.0F,damage_flash)*220);
+                    const Vector2 tip{c.x+sx*150,c.y+sy*150}, base{c.x+sx*118,c.y+sy*118};
+                    const Vector2 side{-sy*20,sx*20};
+                    DrawTriangle(tip,Vector2Add(base,side),Vector2Subtract(base,side),Color{230,40,30,alpha});
+                    DrawTriangle(tip,Vector2Subtract(base,side),Vector2Add(base,side),Color{230,40,30,alpha});
+                }
+                if(player_health.alive() && br_bots.alive_bots()==0) {
+                    const char* win="LAST ONE STANDING - YOU WIN";
+                    DrawText(win,screen_width/2-MeasureText(win,34)/2,screen_height/2-60,34,GOLD);
+                } else if(!player_health.alive()) {
+                    const char* place=TextFormat("PLACED #%d",match_placement>0 ? match_placement : br_bots.alive_bots()+1);
+                    DrawText(place,screen_width/2-MeasureText(place,26)/2,screen_height/2+34,26,RAYWHITE);
+                }
+            }
         }
         bool asset_drawer_open = false;
 #ifdef OUTLAND_DEV_TOOLS

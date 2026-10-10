@@ -41,6 +41,24 @@ MenuButton make_button(
     };
 }
 
+Rectangle bot_toggle_bounds(
+    const int screen_width,
+    const float y
+) {
+    constexpr float width = 220.0F;
+    return {static_cast<float>(screen_width) * 0.5F + 190.0F, y + 9.0F, width, 40.0F};
+}
+
+const char* bot_toggle_label(
+    const ai::BotLevel level
+) {
+    switch (level) {
+        case ai::BotLevel::Easy: return "BOTS: EASY";
+        case ai::BotLevel::Hard: return "BOTS: HARD";
+        default: return "BOTS: MEDIUM";
+    }
+}
+
 void draw_button(
     const MenuButton& button
 ) {
@@ -140,6 +158,12 @@ GameMode HomeScreen::update(
     ) {
         const auto buffered=input::PointerEvents::presses();
         const Vector2 pointer =buffered.empty()?GetMousePosition():buffered.front();
+
+        if (CheckCollisionPointRec(pointer, bot_toggle_bounds(screen_width, start_y))) {
+            bot_level_ = bot_level_ == ai::BotLevel::Easy ? ai::BotLevel::Medium :
+                bot_level_ == ai::BotLevel::Medium ? ai::BotLevel::Hard : ai::BotLevel::Easy;
+            return GameMode::Home;
+        }
 
         for (
             const MenuButton& button :
@@ -280,6 +304,16 @@ void HomeScreen::draw(
     ) {
         draw_button(button);
     }
+
+    // Battle Royale difficulty: changes how bots think and shoot, never their health or senses.
+    const Rectangle toggle = bot_toggle_bounds(screen_width, start_y);
+    const bool toggle_hovered = CheckCollisionPointRec(GetMousePosition(), toggle);
+    DrawRectangleRounded(toggle, 0.25F, 8, toggle_hovered ? Color{110, 84, 52, 240} : Color{58, 46, 34, 230});
+    DrawRectangleRoundedLines(toggle, 0.25F, 8, Color{230, 200, 150, 255});
+    const char* toggle_label = bot_toggle_label(bot_level_);
+    DrawText(toggle_label,
+        static_cast<int>(toggle.x + toggle.width * 0.5F - static_cast<float>(MeasureText(toggle_label, 20)) * 0.5F),
+        static_cast<int>(toggle.y + 10.0F), 20, Color{245, 225, 190, 255});
 
     DrawText(
         "VERDA DEVELOPMENT BUILD",

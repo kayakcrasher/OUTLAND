@@ -19,6 +19,8 @@ struct NpcInstance {
     int resident{-1};
     bool directed{false}, travelling{false}, hurry{false};
     float anchor_radius{6}, idle_hold{1};
+    // Battle Royale bodies: driven by game::ai, never ticked by NpcBehavior.
+    int bot{-1};
 };
 struct ResidentSpawn {
     int resident{-1};
@@ -46,6 +48,12 @@ public:
     int find_resident(int resident) const;
     // Moves the schedule anchor; Idle/Wander actors walk there, threat states are untouched.
     void direct_resident(int resident,Vector3 anchor,float radius,bool hurry);
+    // Bot bodies are puppets: game::ai owns their brain, health and position; the system only
+    // draws them, animates them and lets bullets find them.
+    std::size_t spawn_bot(int bot,const std::string& character_id,Vector3 position,float yaw_degrees);
+    int find_bot(int bot) const;
+    void set_bot(int bot,Vector3 position,float yaw_degrees,float health,NpcState state);
+    void clear_bots();
     const NpcEvents& events() const { return events_; }
     const std::vector<NpcInstance>& actors() const { return actors_; }
 private:
