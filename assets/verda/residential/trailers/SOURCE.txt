@@ -10,3 +10,9 @@ License note:
 The source page advertises the models as CC0.
 Some source textures may originate from third-party texture sites.
 Review texture licensing separately before a public/commercial release.
+
+Runtime preparation:
+- Embedded JPEG textures re-encoded as PNG (tools/convert_glb_jpeg_to_png.py), because raylib's
+  default build cannot decode JPEG. CTest outland_trailer_texture_validation keeps it that way.
+- Door and screen-door nodes ("Door*") are knocked out of collision and drawing in MeshCollision so
+  the trailers can be entered; insect-screen ("Mesh") panels are knocked out too (open windows).

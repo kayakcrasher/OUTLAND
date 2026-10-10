@@ -95,6 +95,43 @@ int main() {
     }
     check(two_storey >= 30, "many multi-storey buildings: " + std::to_string(two_storey));
 
+    // Roka's trailer park: twelve mobile homes, every one walkable from the lane through its door.
+    {
+        check(report.parks == 1, "trailer park built");
+        int trailers = 0, entered = 0;
+        for (const auto& settlement : region.settlements()) for (const auto& asset : settlement.assets) {
+            const auto at = asset.model_path.find("residential/trailers/trailer_0");
+            if (at == std::string::npos) continue;
+            ++trailers;
+            const int model = asset.model_path[at + 30] - '0';
+            const float a = asset.rotation_y * DEG2RAD;
+            const auto local = [&](float x, float z) {
+                return Vector3{asset.position.x + x * std::cos(a) + z * std::sin(a), asset.position.y, asset.position.z - x * std::sin(a) + z * std::cos(a)};
+            };
+            const auto step_to = [&](Vector3 p, Vector3 target) {
+                for (int i = 0; i < 600; ++i) {
+                    const float dx = target.x - p.x, dz = target.z - p.z, l = std::sqrt(dx * dx + dz * dz);
+                    if (l < .05F) break;
+                    const float st = std::min(.05F, l);
+                    p = WorldCollision::resolve_body_movement(p, {p.x + dx / l * st, p.y, p.z + dz / l * st}, p.y, region, .35F);
+                    p.y = WorldCollision::ground_height(p, p.y, region);
+                }
+                return p;
+            };
+            // From the lane end of the lot: up the side steps (models 1-4) or the front steps (5-6).
+            auto p = local(model <= 4 ? -1.5F : -4.0F, 8.0F);
+            p.y = WorldCollision::ground_height(p, asset.position.y + .5F, region);
+            if (model <= 4) p = step_to(step_to(p, local(-1.5F, 1.6F)), local(-1.5F, .56F));
+            else p = step_to(p, local(-4.0F, .56F));
+            p = step_to(p, local(.6F, .56F));
+            const auto inside = local(.6F, .56F);
+            if (std::hypot(p.x - inside.x, p.z - inside.z) < .2F && p.y > asset.position.y + .6F) ++entered;
+            else std::cerr << "  could not enter trailer " << model << " at " << asset.position.x << "," << asset.position.z << '\n';
+        }
+        check(trailers == 12, "twelve trailers: " + std::to_string(trailers));
+        check(entered == trailers, "walk into every trailer: " + std::to_string(entered) + "/" + std::to_string(trailers));
+    }
+
     // Downtown: the old capital is gone, the grid is in, highways meet the grid edge.
     const world::Settlement* capital = nullptr;
     for (const auto& s : region.settlements()) if (s.id == "capital_verda") capital = &s;

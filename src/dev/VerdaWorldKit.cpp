@@ -404,6 +404,71 @@ void roka(Kit& kit) {
     for (int i = 0; i < 4; ++i) kit.put(urban + "Pipes/pipe_rusted.glb", {c.x - 75, 0, c.z - 25 + i * 2.0F}, 0);
 }
 
+// ------------------------------------------------------------------ Roka trailer park
+// Single-wide mobile homes (Trailer Park pack) south-west of Roka, on the flat ground between the
+// industrial yard and the hills: two rows of lots off a gravel lane, porches and steps toward the
+// lane, cars on pads, a fire pit, a chainlink perimeter, and a gravel road into town. The trailers
+// are enterable (their doors are knocked out in MeshCollision) and every one is a HOME.
+const std::string trailers = "assets/verda/residential/trailers/";
+void trailer_park(Kit& kit, world::VerdaRegion& region) {
+    world::Settlement* town = nullptr;
+    for (auto& settlement : region.runtime_settlements()) if (settlement.id == "west_roka") town = &settlement;
+    if (!town) return;
+    const auto c = site("west_roka");
+    const Vector3 park{c.x - 150, 0, c.z + 160};
+    const auto at = [&](float x, float z) { return Vector3{park.x + x, 0, park.z + z}; };
+    constexpr float lane_half = 3, row = 13.5F, lot = 13;
+    // The lane and the road into town (Roka's north-south street ends at z = +100 from the centre).
+    town->roads.push_back({{park.x - 50, 0, park.z}, {park.x + 52, 0, park.z}, lane_half * 2, world::RoadType::Gravel});
+    town->roads.push_back({{park.x + 52, 0, park.z}, {c.x, 0, c.z + 100}, 5, world::RoadType::Gravel});
+    int parked = 0, homes = 0;
+    for (int side = 0; side < 2; ++side) for (int i = 0; i < 6; ++i) {
+        const auto r = hash(700U + static_cast<std::uint32_t>(side * 6 + i));
+        const float x = -32.5F + i * lot, z = side == 0 ? -row : row;
+        // Steps descend along the model's +Z: north row faces it south (yaw 0), south row north (180).
+        const float yaw = (side == 0 ? 0.0F : 180.0F) + static_cast<float>(static_cast<int>(r % 7) - 3);
+        const int model = 1 + static_cast<int>((side * 7 + i * 5 + r) % 6);
+        const auto centre = at(x, z);
+        if (!kit.claim(centre, 3.4F, 7.8F, yaw)) continue;
+        if (!kit.put(trailers + "trailer_0" + std::to_string(model) + ".glb", centre, yaw)) continue;
+        // HOME marker just inside the door (model-local x = -0.75, z = 0.56; floor 0.85 m), facing out.
+        auto inside = to_world(centre, yaw, .25F, 0, .56F);
+        inside.y = world::terrain::TerrainHeight::sample(centre.x, centre.z) + .85F;
+        kit.purpose(inside, 90 + yaw, world::BuildingPurpose::Home);
+        ++homes;
+        // The yard: a car on the pad beside most homes, junk out back, shade trees on alternate lots.
+        const float pad_x = side == 0 ? 6.6F : -6.6F;
+        if (r % 4 != 0) {
+            world::GameplayMarker car;
+            car.id = "vehicle_spawn_hatchback_trailer_park_" + std::to_string(++parked);
+            car.type = world::GameplayMarkerType::VehicleSpawn;
+            car.position = to_world(centre, yaw, pad_x, 0, 4.0F);
+            car.position.y = world::terrain::TerrainHeight::sample(car.position.x, car.position.z);
+            car.size = {2, 1.6F, 4.4F};
+            car.rotation_y = yaw + (r % 2 ? 180.0F : 0.0F);
+            town->gameplay_markers.push_back(car);
+        }
+        prop(kit, shacks + (r % 3 == 0 ? "Pallet.glb" : "Barrel.glb"), to_world(centre, yaw, 2.2F, 0, -9.0F), static_cast<float>(r % 360), .8F);
+        if (r % 5 == 1) prop(kit, shacks + "Barrel.glb", to_world(centre, yaw, 3.4F, 0, -8.6F), static_cast<float>(r % 90), .8F);
+        if (i % 2 == side) kit.tree(to_world(centre, yaw, -1.0F, 0, -10.0F));
+    }
+    // Common ground at the west end: a fire pit ringed by benches.
+    prop(kit, "assets/verda/survival/runtime/bonfire.glb", at(-44, 0), 0, 1.2F);
+    for (const auto& [x, z, yaw] : std::initializer_list<std::tuple<float, float, float>>{{-44, -4.2F, 0}, {-44, 4.2F, 180}, {-48.2F, 0, 90}})
+        prop(kit, urban + "Bus stops/busstop_bench.glb", at(x, z), yaw, 1.6F);
+    // Street lights along the lane, and the chainlink perimeter with the gate at the lane.
+    for (const float x : {-26.0F, 0.0F, 26.0F}) kit.put(urban + "Traffic lights/street_light.glb", at(x, lane_half + 1.2F), 180, false);
+    const std::vector<std::string> chain{shacks + "Chainlink Fence.glb"};
+    fence(kit, at(-52, -24), at(52, -24), chain, 2.46F, 71);
+    fence(kit, at(-52, 24), at(52, 24), chain, 2.46F, 72);
+    fence(kit, at(-52, -24), at(-52, 24), chain, 2.46F, 73);
+    fence(kit, at(52, -24), at(52, -lane_half - 2), chain, 2.46F, 74);
+    fence(kit, at(52, lane_half + 2), at(52, 24), chain, 2.46F, 75);
+    // The park brings its own people: about three per home (a stated population caps island life).
+    if (town->survivors > 0) town->survivors += homes * 3;
+    ++kit.report.parks;
+}
+
 void porto_luma(Kit& kit) {
     const auto c = site("port_luma");
     // Waterfront to the east: warehouses, a quay of bollards and barriers, and stacked cargo.
@@ -466,6 +531,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     Kit kit(region, catalog);
     downtown(kit, region);
     roka(kit);
+    trailer_park(kit, region);
     porto_luma(kit);
     suda_haveno(kit);
     espera(kit);

@@ -41,6 +41,7 @@
 #include <rlgl.h>
 
 #include <algorithm>
+#include <cstdio>
 #include <cstdlib>
 #include <cmath>
 #include <unordered_map>
@@ -632,6 +633,18 @@ void Renderer::run() {
                 player.grounded =
                     true;
 
+#ifdef OUTLAND_DEV_TOOLS
+                // Dev builds: OUTLAND_DEV_SPAWN="x,z,yaw_degrees" starts every mode at that spot
+                // (screenshots, checking a far corner of the island without a long walk).
+                if(const char* spawn=std::getenv("OUTLAND_DEV_SPAWN")) {
+                    float x=0,z=0,yaw_degrees=0;
+                    if(std::sscanf(spawn,"%f,%f,%f",&x,&z,&yaw_degrees)==3 && std::isfinite(x) && std::isfinite(z) && std::isfinite(yaw_degrees)) {
+                        const float ground=world::terrain::TerrainHeight::sample(x,z);
+                        player.position={x,world::physics::WorldCollision::ground_height({x,ground,z},ground+.5F,verda_region)+1.0F,z};
+                        player.yaw=yaw_degrees*DEG2RAD;
+                    }
+                }
+#endif
                 weapons.reset(game_mode == game::GameMode::DevLab);
                 if(game_mode!=game::GameMode::DevLab)loot_session.start(game_mode,map_path,weapons);
                 combat_world.reset_targets();

@@ -278,6 +278,11 @@ bool load_collision_mesh(const std::string& path, CollisionMesh& mesh, std::stri
     struct Raw { Vector3 a, b, c; int material; Vector2 uv; std::size_t primitive, index; };
     std::vector<Raw> raw;
     std::vector<int> primitive_material;
+    std::vector<bool> primitive_knock; // whole primitives knocked out by node (trailer doors)
+    // Trailer park homes are hollow with real floors: the front door and its screen door (nodes
+    // "Door", "Door_Mesh", ...) are knocked out so the doorway at the top of the porch steps can be
+    // walked and shot through.
+    const bool trailer = path.find("residential/trailers/") != std::string::npos;
     Vector3 lo{1e30F, 1e30F, 1e30F}, hi{-1e30F, -1e30F, -1e30F};
     for (std::size_t n = 0; n < nodes->items.size(); ++n) {
         const long mesh_index = nodes->items[n].integer("mesh", -1);
@@ -289,6 +294,7 @@ bool load_collision_mesh(const std::string& path, CollisionMesh& mesh, std::stri
             if (primitive.integer("mode", 4) != 4) continue; // raylib only loads triangle primitives
             const int material = static_cast<int>(primitive.integer("material", -1));
             primitive_material.push_back(material);
+            primitive_knock.push_back(trailer && nodes->items[n].str("name").starts_with("Door"));
             const auto* attributes = primitive.get("attributes");
             const long position_index = attributes ? attributes->integer("POSITION", -1) : -1;
             const auto* position_accessor = accessors ? accessors->at(static_cast<std::size_t>(position_index)) : nullptr;
@@ -340,8 +346,8 @@ bool load_collision_mesh(const std::string& path, CollisionMesh& mesh, std::stri
     std::vector<bool> knock;
     if (materials) for (const auto& material : materials->items) {
         const auto name = lower(material.str("name"));
-        knock.push_back(building_scale && (name.find("glass") != std::string::npos || name.find("fakeinterior") != std::string::npos ||
-            name.find("fake_interior") != std::string::npos));
+        knock.push_back((building_scale && (name.find("glass") != std::string::npos || name.find("fakeinterior") != std::string::npos ||
+            name.find("fake_interior") != std::string::npos)) || (trailer && name == "mesh")); // trailer insect screens: open windows
     }
     // The modular "Building Parts" kit paints its windows onto flat panels of the shared Houses
     // atlas. Those panels are knocked out too, leaving a real opening above the sill.
@@ -351,6 +357,7 @@ bool load_collision_mesh(const std::string& path, CollisionMesh& mesh, std::stri
     constexpr Rectangle window_tiles[]{{.124F, .124F, .062F, .12F}, {.184F, .124F, .054F, .069F}, {.389F, .124F, .062F, .121F},
         {.675F, 0, .074F, .095F}, {.675F, .092F, .076F, .094F}, {.748F, 0, .04F, .085F}};
     const auto knocked = [&](const Raw& t) {
+        if (t.primitive < primitive_knock.size() && primitive_knock[t.primitive]) return true;
         if (t.material < 0) return false;
         const auto m = static_cast<std::size_t>(t.material);
         if (m < knock.size() && knock[m]) return true;
