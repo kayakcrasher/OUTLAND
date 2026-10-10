@@ -24,6 +24,6 @@ Island build_island(const world::VerdaRegion& region,const characters::Character
 // Day plan lookup; minute is 0..1439.
 Activity planned_activity(const Resident& resident,Weekday day,int minute);
 // Outside the doorway of a building, in world space.
-Vector3 door_position(Vector3 center,Vector3 size,float yaw_degrees,float outside);
+Vector3 door_position(Vector3 center,Vector3 size,float yaw_degrees,float outside,float local_x=0);
 bool inside_footprint(const Place& place,Vector3 position,float margin=.3F);
 }

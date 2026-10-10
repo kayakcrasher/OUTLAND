@@ -208,7 +208,15 @@ int VehicleSystem::nearest(const world::VerdaRegion &r, Vector3 p, float radius)
         const auto *a = asset(r, vehicles_[i].id);
         if (!a || !a->vehicle.enabled || a->vehicle.destroyed)
             continue;
-        const float d = distance(p, a->position);
+        // Distance to the car body: standing at a door or bumper counts, not only near its centre.
+        float d = distance(p, a->position);
+        if (const auto *def = definition(*a)) {
+            const float scale = scale_of(*a, *def);
+            const auto local = Vector3RotateByAxisAngle(Vector3Subtract(p, a->position), {0, 1, 0}, -a->rotation_y * DEG2RAD);
+            const float dx = std::max(0.0F, std::abs(local.x) - def->width * scale * .5F),
+                        dz = std::max(0.0F, std::abs(local.z) - def->length * scale * .5F);
+            d = dx * dx + dz * dz;
+        }
         if (d < best) {
             best = d;
             result = static_cast<int>(i);
@@ -221,11 +229,18 @@ bool VehicleSystem::enter(world::VerdaRegion &r, int index, Vector3 p) {
         return false;
     auto *a = asset(r, vehicles_[index].id);
     if (!a || !a->vehicle.enabled || a->vehicle.destroyed || a->vehicle.engine <= 0 ||
-        distance(p, a->position) > 16)
+        distance(p, a->position) > 49) // nearest() already measures to the body
         return false;
-    // Test the approach against the same world collision used by pedestrians.
+    // Test the approach against the same world collision used by pedestrians, up to the body:
+    // whatever is under the car itself does not stand between the player and the door.
+    const auto *def = definition(*a);
+    const float half_w = def ? def->width * scale_of(*a, *def) * .5F : 0,
+                half_l = def ? def->length * scale_of(*a, *def) * .5F : 0;
     for (int step = 1; step < 8; ++step) {
         auto point = Vector3Lerp(p, a->position, step / 8.0F);
+        const auto local = Vector3RotateByAxisAngle(Vector3Subtract(point, a->position), {0, 1, 0}, -a->rotation_y * DEG2RAD);
+        if (std::abs(local.x) < half_w && std::abs(local.z) < half_l)
+            break;
         if (world::physics::WorldCollision::blocked(point, r, .15F, a->id))
             return false;
     }
@@ -274,7 +289,7 @@ bool VehicleSystem::blocked(const world::VerdaRegion &r, Vector3 p, float yaw,
                             std::string_view ignore) const {
     // The existing central inspection structure is solid to a vehicle footprint.
     // Its conservative broad phase runs only near the capital's origin.
-    if (std::abs(p.x) < 2 + d.length * scale && std::abs(p.z) < 2 + d.length * scale) {
+    if (training_structure_ && std::abs(p.x) < 2 + d.length * scale && std::abs(p.z) < 2 + d.length * scale) {
         const float yaw_r = -yaw * DEG2RAD;
         const auto origin =
             Vector3RotateByAxisAngle(Vector3Scale(Vector3Negate(p), 1 / scale), {0, 1, 0}, yaw_r);
@@ -358,10 +373,15 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         float yaw = std::remainder(v.yaw + yaw_delta, 360.0F);
         const int steps =
             std::clamp(static_cast<int>(std::ceil(std::abs(v.speed * dt) / .4F)), 1, 12);
+        // A car that already overlaps something (placed on a pole, or a world edit landed on it)
+        // gets one body length to drive clear of it; otherwise every move would be refused.
+        if (v.escape <= 0 && std::abs(v.speed) > .001F && blocked(r, a->position, a->rotation_y, *d, scale, a->id))
+            v.escape = d->length * scale + .5F;
         for (int step = 0; step < steps; ++step) {
             auto p = world_point({0, 0, v.speed * dt / steps}, a->position, yaw);
             p.y = world::terrain::TerrainHeight::sample(p.x, p.z);
-            if (blocked(r, p, yaw, *d, scale, a->id)) {
+            if (v.escape > 0) v.escape -= std::abs(v.speed * dt / steps);
+            else if (blocked(r, p, yaw, *d, scale, a->id)) {
                 a->vehicle.health = std::max(0.0F, a->vehicle.health - std::abs(v.speed) * .4F);
                 v.speed = 0;
                 events_.collision = true;

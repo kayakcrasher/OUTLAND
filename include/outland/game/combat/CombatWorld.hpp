@@ -38,7 +38,12 @@ public:
     void update(float dt, bool respawn_targets);
     void reset_targets();
     [[nodiscard]] const std::array<RangeTarget, 9>& targets() const { return targets_; }
+    // The DEV training range (targets and the grey inspection cube at the origin) exists only
+    // where it is wanted; downtown's main intersection is at the origin in the played modes.
+    void set_training_range(bool enabled) { training_range_=enabled; }
+    [[nodiscard]] bool training_range() const { return training_range_; }
 private:
+    bool training_range_{true};
     std::function<BulletHit(Vector3,Vector3,bool)> vehicle_trace_;
     std::function<void(const BulletHit&,float)> vehicle_damage_;
     std::function<BulletHit(Vector3,Vector3)> actor_trace_;

@@ -133,6 +133,7 @@ inline void register_starter_assets(CreatorAssetRegistry& registry);
 inline void register_survival_assets(CreatorAssetRegistry& registry);
 inline void register_industrial_assets(CreatorAssetRegistry& registry);
 inline void register_vehicle_assets(CreatorAssetRegistry& registry);
+inline void register_city_assets(CreatorAssetRegistry& registry);
 
 class CreatorAssetRegistry {
 public:
@@ -144,6 +145,7 @@ public:
         register_survival_assets(*this);
         register_industrial_assets(*this);
         register_vehicle_assets(*this);
+        register_city_assets(*this);
         // Verda building kit: textured 3 x 3 m slabs that tile with the 3 m Building Parts walls
         // (tools/generate_kit_slabs.py). Floors, ceilings and roofs for enterable buildings.
         for (const auto& [id, name, file] : {std::tuple{"verda_kit_floor_slab", "Kit Floor Slab 3x3", "floor_slab_3x3.glb"},
@@ -900,5 +902,6 @@ private:
 #include "outland/creator/SurvivalAssetCatalog.hpp"
 #include "outland/creator/IndustrialAssetCatalog.hpp"
 #include "outland/creator/VehicleAssetCatalog.hpp"
+#include "outland/creator/CityAssetCatalog.hpp"
 
 #endif // OUTLAND_DEV_TOOLS

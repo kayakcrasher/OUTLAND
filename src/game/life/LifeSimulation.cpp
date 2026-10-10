@@ -150,7 +150,7 @@ void LifeSimulation::replan(Resident& r) {
 
 LifeSimulation::Anchor LifeSimulation::physical_anchor(const Resident& r,Vector3 body) const {
     const auto& target=island_.places[static_cast<std::size_t>(r.place)];
-    const bool want_inside=target.indoor && !outdoors_now(r);
+    const bool want_inside=target.indoor && !target.sealed && !outdoors_now(r);
     const float inside_radius=std::max(.5F,std::min(target.building_size.x,target.building_size.z)*.28F);
     // Leave any other building through its doorway before heading off; walls have no shortcuts.
     for(const auto& place:island_.places) {
@@ -181,7 +181,10 @@ void LifeSimulation::sync_bodies(Vector3 player,characters::NpcSystem& npcs) {
         }
         replan(r);
         const float distance=flat_distance(r.body,player);
-        const bool keep=distance<=config_.dematerialize_radius &&
+        const auto& place=island_.places[static_cast<std::size_t>(r.place)];
+        // Into a sealed building (office tower): the body goes in at the door and leaves the world.
+        const bool entered_sealed=r.alive && place.sealed && !outdoors_now(r) && flat_distance(r.body,place.door)<3;
+        const bool keep=!entered_sealed && distance<=config_.dematerialize_radius &&
             (!r.alive || !indoors(r) || distance<=config_.indoor_radius+12);
         if(keep) {++bodies;continue;}
         // Back to the abstract tier from exactly where the body stood.
@@ -194,6 +197,7 @@ void LifeSimulation::sync_bodies(Vector3 player,characters::NpcSystem& npcs) {
     for(const auto& r:island_.residents) {
         if(r.physical || !r.alive) continue;
         const float distance=flat_distance(abstract_position(r),player);
+        if(indoors(r) && island_.places[static_cast<std::size_t>(r.place)].sealed) continue;
         if(distance<=(indoors(r) ? config_.indoor_radius : config_.materialize_radius)) candidates.emplace_back(distance,r.id);
     }
     std::sort(candidates.begin(),candidates.end());

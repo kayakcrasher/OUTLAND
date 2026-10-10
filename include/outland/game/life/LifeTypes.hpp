@@ -38,6 +38,7 @@ struct Place {
     float building_yaw{0};
     Vector3 building_size{};
     bool indoor{true};
+    bool sealed{false};     // solid shell (office tower): people go in and out of the door, never walk inside
     bool mixed_home{false}; // shop/pub with a flat above: also a home
     int home_capacity{0}, job_capacity{0};
 };

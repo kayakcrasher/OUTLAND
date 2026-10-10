@@ -77,3 +77,36 @@ The phone has not been profiled. Watch FPS in the capital, where several hundred
 - Doors you can open, breakable glass, and ladders to roofs.
 - Bots navigating multi-storey interiors: NPCs now collide with walls and use floors, but there is no navmesh.
 - Thumbnails for procedural (code-drawn) houses.
+
+## Downtown Verda: a mid-sized American grid city
+
+The capital has been wiped and rebuilt (`outland_build_world` → `maps/verda_world.map`). It follows the downtown street standards of US cities: roughly 60 ft rights-of-way with 10–18 ft sidewalks, street trees and lights in the curb zone, and signals at corners. The building stock is modelled on mid-sized downtowns: attached 2–3 storey flat-roofed brick commercial rows around a taller core.
+
+- **Grid:** 80 m blocks (4 × 4) and ten 12 m asphalt streets. Every crossing has a crosswalk plate. Each block is a 68 m sidewalk pad 0.15 m above the street, so cars are kept off it by the curb. The four highways now meet the grid at the ends of the two main streets.
+- **Core blocks:** a dark-glass bank tower (20 floors), a blue-glass office tower, an art-deco stone tower with a setback, and mid-rises. The empty quadrants are tree-lined office plazas with benches.
+- **Courthouse square:** a lawn with crossing paths, a monument on a plinth, a ring of trees and a bus stop.
+- **Main Street blocks:** rows of attached brick buildings in red, brown, tan, cream and dark brick. They have stone lintels and sills, cornices, sign bands and striped awnings. Every one is **enterable**:
+  - storefront doors and low-sill display windows;
+  - open upper windows with no glass;
+  - wooden floors;
+  - switchback stairs to every floor.
+- **Edges:** two corner parking lots and two mixed blocks (a brick row plus a mid-rise).
+- **Street life:**
+  - about 200 street trees;
+  - a lamp on every block face;
+  - signals on the nine core crossings;
+  - bus stops;
+  - **16 parallel-parked hatchbacks** that you can get into and drive. The capital's own hatchback now waits in a lane.
+
+70 buildings in Verda can be entered in all. The models come from `tools/generate_city_kit.py`. It uses the standard library only, draws every texture procedurally, and writes the Creator catalog header (`CityAssetCatalog.hpp`). CTest checks that both the city kit and the slabs are up to date. All 24 city models are in MAP BUILDER for hand placement.
+
+**Explore** uses the new city:
+- Main Street buildings are homes (flats above shops), shops, a pub, a church, police and a clinic.
+- The towers are offices. Office workers go in and out through the entrance, and no body is ever simulated inside a solid tower.
+
+**Driving fixes:**
+- **Getting in:** reach is measured to the car body (2 m from a door or bumper), and things under the car no longer block the approach.
+- **Escaping an overlap:** a car that starts overlapping something (a post on its spawn) gets one body length to drive clear, instead of being stuck forever.
+- **Training range:** the DEV training range (grey cube and target dummies at the origin) now exists only in DEV, because the origin is downtown's main crossing.
+
+Validation: `outland_world_kit_tests` enters every building through its door, climbs every staircase, checks that towers are solid, enters and drives all 16 parked cars plus the capital car, and checks downtown residents. `outland_vehicle_tests` covers body reach and drive-out-of-overlap.

@@ -2,6 +2,9 @@
 #include "outland/creator/CreatorMapIO.hpp"
 #include "outland/dev/VerdaWorldKit.hpp"
 #include "outland/game/combat/CombatWorld.hpp"
+#include "outland/game/vehicles/VehicleSystem.hpp"
+#include "outland/game/life/LifeSimulation.hpp"
+#include "outland/characters/NpcSystem.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
@@ -53,7 +56,7 @@ int main() {
     std::cout << report.buildings << " buildings, " << report.assets << " pieces, " << report.skipped_lots << " skipped lots\n";
     for (const auto& p : report.skipped) std::cout << "  skipped lot " << p.x << ", " << p.z << '\n';
     check(report.missing.empty(), "every kit model is in the catalog");
-    check(report.buildings >= 15 && report.assets > 400, "towns dressed");
+    check(report.buildings >= 40 && report.assets > 400, "towns dressed: " + std::to_string(report.buildings));
     check(count_assets(region) == before + static_cast<std::size_t>(report.assets), "every piece is a world asset");
     world::VerdaRegion again(true);
     const auto repeat = make(again);
@@ -69,25 +72,102 @@ int main() {
     game::combat::CombatWorld combat(region);
     int two_storey = 0;
     for (const auto& b : report.enterable) {
-        auto start = world_of(b, b.door_x, -b.depth * .5F - 2.5F);
+        // 1.2 m out: on downtown sidewalks the street trees stand 2.4 m from the shopfronts.
+        auto start = world_of(b, b.door_x, -b.depth * .5F - 1.2F);
         start.y = WorldCollision::ground_height(start, b.origin.y, region);
         const auto inside = walk(region, b, start, b.door_x, -b.depth * .5F + 2.5F);
         check(near(inside, world_of(b, b.door_x, -b.depth * .5F + 2.5F), .2F), "walk in through the front door");
-        check(std::abs(inside.y - (b.origin.y + .1F)) < .05F, "stand on the ground-floor slab");
+        check(std::abs(inside.y - (b.origin.y + b.ground_floor)) < .05F, "stand on the ground-floor slab");
         // Bullets fly in through the doorway at chest height.
         const auto shot = combat.trace_segment(Vector3Add(world_of(b, b.door_x, -b.depth * .5F - 3), {0, 1.4F, 0}),
                                                Vector3Add(world_of(b, b.door_x, -b.depth * .5F + 1), {0, 1.4F, 0}), false, false, false);
         check(!shot.hit() || shot.kind == game::combat::HitKind::Ground, "doorway is open to bullets");
         if (b.storeys < 2) continue;
         ++two_storey;
-        // Upstairs: walk up the flight along +X and step off onto the upper floor.
+        // Upstairs: walk up the flight and step off onto the upper floor, then across it.
         auto foot = world_of(b, b.stairs_start.x, b.stairs_start.z);
-        foot.y = b.origin.y + .1F;
-        foot = walk(region, b, foot, b.stairs_start.x + 6.0F, b.stairs_start.z);
-        check(foot.y > b.origin.y + 3.0F, "climb to the upper floor: " + std::to_string(foot.y - b.origin.y));
-        foot = walk(region, b, foot, b.stairs_start.x + 6.0F, b.stairs_start.z - 4);
-        check(std::abs(foot.y - (b.origin.y + 3.1F)) < .05F, "walk around upstairs");
+        foot.y = b.origin.y + b.ground_floor;
+        const auto top = Vector3Add(b.stairs_start, Vector3Scale(b.stairs_direction, b.stairs_length));
+        foot = walk(region, b, foot, top.x, top.z);
+        check(std::abs(foot.y - (b.origin.y + b.upper_floor)) < .05F, "climb to the upper floor: " + std::to_string(foot.y - b.origin.y));
+        foot = walk(region, b, foot, top.x + b.upstairs_walk.x, top.z + b.upstairs_walk.z);
+        check(std::abs(foot.y - (b.origin.y + b.upper_floor)) < .05F, "walk around upstairs");
     }
-    check(two_storey >= 5, "several two-storey buildings");
+    check(two_storey >= 30, "many multi-storey buildings: " + std::to_string(two_storey));
+
+    // Downtown: the old capital is gone, the grid is in, highways meet the grid edge.
+    const world::Settlement* capital = nullptr;
+    for (const auto& s : region.settlements()) if (s.id == "capital_verda") capital = &s;
+    check(capital && capital->buildings.empty(), "old capital houses wiped");
+    int grid_streets = 0, highways = 0;
+    for (const auto& road : capital->roads) {
+        const bool inside = std::abs(road.start.x) <= 167 && std::abs(road.start.z) <= 167 && std::abs(road.end.x) <= 167 && std::abs(road.end.z) <= 167;
+        if (inside) { ++grid_streets; check(road.width == 12 && road.type == world::RoadType::Asphalt, "grid streets are 12 m asphalt"); }
+        else if (std::abs(road.start.x) < 167 && std::abs(road.start.z) < 167) {
+            ++highways;
+            check((road.start.x == 0 && std::abs(road.start.z) == 166) || (road.start.z == 0 && std::abs(road.start.x) == 166), "highway joins a main street at the grid edge");
+        }
+    }
+    check(grid_streets == 10 && highways == 4, "grid and four highways: " + std::to_string(grid_streets) + "/" + std::to_string(highways));
+    int towers = 0;
+    for (const auto& s : region.settlements()) for (const auto& a : s.assets) if (a.model_path.find("/city/towers/") != std::string::npos) {
+        ++towers;
+        // Towers are solid cover: walking at one from the street stops at its wall.
+        Vector3 p{a.position.x + std::max(a.size.x, a.size.z) * .5F + 3, a.position.y, a.position.z};
+        for (int i = 0; i < 400; ++i) {
+            p = WorldCollision::resolve_body_movement(p, {p.x - .05F, p.y, p.z}, p.y, region, .45F);
+            p.y = WorldCollision::ground_height(p, p.y, region);
+        }
+        check(p.x > a.position.x + std::min(a.size.x, a.size.z) * .5F - 1, "tower is solid");
+    }
+    check(towers >= 8, "tower core");
+
+    // Every parked car downtown can be entered and driven along its street.
+    game::vehicles::VehicleRegistry vehicle_types; std::string error;
+    check(vehicle_types.load(std::string(OUTLAND_SOURCE_DIR) + "/assets/verda/vehicles/vehicle_manifest.tsv", error), error);
+    game::vehicles::VehicleSystem cars(vehicle_types);
+    cars.set_training_structure(false);
+    cars.reconcile(region);
+    int downtown_cars = 0;
+    for (std::size_t i = 0; i < cars.vehicles().size(); ++i) {
+        auto* car = cars.asset(region, cars.vehicles()[i].id);
+        if (!car || (car->vehicle.marker.find("downtown") == std::string::npos && car->vehicle.marker.find("capital") == std::string::npos)) continue;
+        ++downtown_cars;
+        const Vector3 start = car->position;
+        const Vector3 beside = Vector3Add(start, Vector3RotateByAxisAngle({2.2F, 0, 0}, {0, 1, 0}, car->rotation_y * DEG2RAD));
+        const int found = cars.nearest(region, beside);
+        check(found == static_cast<int>(i) && cars.enter(region, found, beside), "get into parked car " + car->vehicle.marker);
+        for (int f = 0; f < 120; ++f) { cars.begin_frame(); cars.update(.02F, {1, 0}, region, car->position); }
+        check(Vector3Distance(start, car->position) > 8, "drive away: " + car->vehicle.marker + " moved " + std::to_string(Vector3Distance(start, car->position)));
+        for (int f = 0; f < 100; ++f) cars.update(.02F, {0, 0, true}, region, car->position);
+        Vector3 out{};
+        check(cars.exit(region, out), "get out of " + car->vehicle.marker);
+    }
+    check(downtown_cars >= 12, "parked cars downtown: " + std::to_string(downtown_cars));
+
+    // Explore: downtown is lived in - Main Street homes, shops and pubs, office workers in the towers.
+    game::life::LifeSimulation life;
+    life.build(region, nullptr);
+    int capital_homes = 0, offices = 0, office_workers = 0;
+    for (const auto& place : life.places())
+        if (life.island().settlement_names[static_cast<std::size_t>(place.settlement)] == "Verda") {
+            capital_homes += place.home_capacity > 0;
+            offices += place.sealed;
+        }
+    for (const auto& r : life.residents())
+        if (r.work >= 0 && life.places()[static_cast<std::size_t>(r.work)].sealed) ++office_workers;
+    check(capital_homes >= 20 && offices >= 8 && office_workers >= 20,
+          "downtown residents: homes " + std::to_string(capital_homes) + " offices " + std::to_string(offices) + " office workers " + std::to_string(office_workers));
+    // Office workers stay abstract while inside a tower even with the player at the door.
+    game::life::LifeConfig config; config.time_scale = 60; life.configure(config);
+    characters::NpcSystem npcs;
+    life.reset(npcs, game::life::WorldClock::at(0, 10, 0));
+    for (int i = 0; i < 40; ++i) life.update(.25F, {0, 0, 9000}, npcs);
+    for (const auto& r : life.residents()) {
+        if (r.work < 0 || !life.places()[static_cast<std::size_t>(r.work)].sealed || r.place != r.work || !life.indoors(r)) continue;
+        life.update(.3F, life.places()[static_cast<std::size_t>(r.work)].door, npcs);
+        check(npcs.find_resident(r.id) < 0, "nobody materialises inside a solid tower");
+        break;
+    }
     std::cout << "world kit tests passed\n";
 }

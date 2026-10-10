@@ -585,6 +585,8 @@ void Renderer::run() {
                 weapons.reset(game_mode == game::GameMode::DevLab);
                 if(game_mode!=game::GameMode::DevLab)loot_session.start(game_mode,map_path,weapons);
                 combat_world.reset_targets();
+                combat_world.set_training_range(game_mode == game::GameMode::DevLab);
+                vehicles.set_training_structure(game_mode == game::GameMode::DevLab);
                 npcs.reset_session();
                 world::physics::MeshCollisionLibrary::preload(verda_region);
                 // Explore lives on Verda: rebuild residents from the current (possibly Creator-edited) towns.
@@ -1240,7 +1242,8 @@ void Renderer::run() {
         }
 #endif
 
-        // Central training structure.
+        // Central training structure (DEV only; downtown's main intersection is here otherwise).
+        if (combat_world.training_range()) {
         const float structure_ground_y =
             world::terrain::TerrainHeight::sample(
                 0.0F,
@@ -1268,6 +1271,7 @@ void Renderer::run() {
             4.0F,
             BLACK
         );
+        }
 
         game::combat::CombatRenderer::draw_world(weapons,combat_world);
         if(weapons.available() && !driving && !creator_active)game::combat::CombatRenderer::draw_gun(gun_muzzle,gun_direction,weapons.selected(),

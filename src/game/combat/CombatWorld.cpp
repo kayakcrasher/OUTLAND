@@ -140,7 +140,7 @@ BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool
     };
     float t=0;Vector3 n{};
     const float ground=world::terrain::TerrainHeight::sample(0,0);
-    if(box(start,end,{-2,ground,-2},{2,ground+3,2},t,n)) record(HitKind::Structure,t,n);
+    if(training_range_ && box(start,end,{-2,ground,-2},{2,ground+3,2},t,n)) record(HitKind::Structure,t,n);
     for(const auto& settlement:region_.settlements()) {
         for(const auto& building:settlement.buildings) {
             const float yaw=building.rotation_y*DEG2RAD;
@@ -197,7 +197,7 @@ BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool
             if(trunk(start,end,base,.35F*scale,3.5F*scale,t,n)) record(HitKind::Tree,t,n);
         }
     }
-    if(targets) for(std::size_t i=0;i<targets_.size();++i) {
+    if(targets && training_range_) for(std::size_t i=0;i<targets_.size();++i) {
         const auto& target=targets_[i];
         if(target.health<=0)continue;
         if(box(start,end,sub(target.center,{.5F,1,.25F}),add(target.center,{.5F,1,.25F}),t,n)) {

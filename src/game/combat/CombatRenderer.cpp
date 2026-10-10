@@ -44,7 +44,7 @@ void CombatRenderer::draw_gun(Vector3 muzzle,Vector3 direction,WeaponId id,float
 }
 
 void CombatRenderer::draw_world(const WeaponSystem& weapons,const CombatWorld& world) {
-    for(const auto& target:world.targets()) {
+    if(world.training_range()) for(const auto& target:world.targets()) {
         if(target.health<=0) {
             DrawCube({target.center.x,target.center.y-.88F,target.center.z},1,.16F,1.7F,Color{102,88,72,255});
             continue;

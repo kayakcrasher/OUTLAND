@@ -107,6 +107,27 @@ void build_places(Island& island,const world::VerdaRegion& region) {
             named.push_back(explicit_kind);
             island.places.push_back(std::move(place));
         }
+        // Model-backed city buildings (downtown kit) belong to the town they stand in, whichever
+        // settlement list the Creator stored them under.
+        for(const auto& owner:settlements) for(const auto& asset:owner.assets) {
+            const bool main_street=asset.model_path.find("/city/main_street/")!=std::string::npos;
+            const bool tower=asset.model_path.find("/city/towers/")!=std::string::npos;
+            if(!main_street && !tower) continue;
+            std::size_t home_town=0;float best=std::numeric_limits<float>::max();
+            for(std::size_t t=0;t<settlements.size();++t) {
+                const float d=flat_distance(asset.position,settlements[t].center);
+                if(d<best) {best=d;home_town=t;}
+            }
+            if(home_town!=s) continue;
+            Place place;place.id=asset.id;place.building_id=asset.id;place.settlement=static_cast<int>(s);
+            place.interior=asset.position;place.building_yaw=asset.rotation_y;place.building_size=asset.size;
+            // Main Street doors are in the bay at local x = 1.5 (every width has one there).
+            place.door=door_position(asset.position,asset.size,asset.rotation_y,1.6F,main_street ? 1.5F : 0.0F);
+            place.kind=tower ? PlaceKind::Office : PlaceKind::Home;
+            place.sealed=tower;
+            named.push_back(tower);
+            island.places.push_back(std::move(place));
+        }
         // Order this town's buildings from the centre outward for civic designation.
         std::vector<std::size_t> order;
         for(std::size_t i=first;i<island.places.size();++i) order.push_back(i);
@@ -138,7 +159,8 @@ void build_places(Island& island,const world::VerdaRegion& region) {
         for(std::size_t i=first;i<island.places.size();++i) {
             auto& place=island.places[i];
             const bool two_story=place.building_size.y>5.5F;
-            if(place.kind==PlaceKind::Home) place.home_capacity=tenement[i-first] ? 6 : two_story ? 8 : 4;
+            if(place.kind==PlaceKind::Home) place.home_capacity=tenement[i-first] || place.building_id.starts_with("creator_city_main_street") ? 6 : two_story ? 8 : 4;
+            if(place.sealed) {place.job_capacity=24;continue;}
             if(place.kind==PlaceKind::Shop || place.kind==PlaceKind::Pub) {place.mixed_home=true;place.home_capacity=3;}
             place.job_capacity=job_capacity(place.kind);
             place.id=town.id+":"+place_name(place.kind)+":"+place.building_id;
@@ -244,10 +266,10 @@ const characters::CharacterDefinition* choose_model(const characters::CharacterR
 }
 }
 
-Vector3 door_position(Vector3 center,Vector3 size,float yaw_degrees,float outside) {
-    // Inverse of WorldCollision's local frame; the doorway is centred in the -Z (front) wall.
+Vector3 door_position(Vector3 center,Vector3 size,float yaw_degrees,float outside,float local_x) {
+    // Inverse of WorldCollision's local frame; the doorway is in the -Z (front) wall at local_x.
     const float angle=yaw_degrees*DEG2RAD, local_z=-(size.z*.5F+outside);
-    return {center.x+local_z*std::sin(angle),center.y,center.z+local_z*std::cos(angle)};
+    return {center.x+local_x*std::cos(angle)+local_z*std::sin(angle),center.y,center.z-local_x*std::sin(angle)+local_z*std::cos(angle)};
 }
 bool inside_footprint(const Place& place,Vector3 position,float margin) {
     if(!place.indoor || place.building_id.empty()) return false;
