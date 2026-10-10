@@ -1,4 +1,5 @@
 #include "outland/game/HomeScreen.hpp"
+#include "outland/input/PointerEvents.hpp"
 
 #include <raylib.h>
 
@@ -7,7 +8,7 @@ namespace outland::game {
 namespace {
 
 #ifdef OUTLAND_DEV_TOOLS
-constexpr const char* dev_label="MAP BUILDER (DEV)";
+constexpr const char* dev_label="CREATIVE BUILDER (DEV)";
 #else
 constexpr const char* dev_label="DEV LAB";
 #endif
@@ -133,12 +134,12 @@ GameMode HomeScreen::update(
     };
 
     if (
-        IsMouseButtonPressed(
+        !input::PointerEvents::presses().empty() || IsMouseButtonPressed(
             MOUSE_BUTTON_LEFT
         )
     ) {
-        const Vector2 pointer =
-            GetMousePosition();
+        const auto buffered=input::PointerEvents::presses();
+        const Vector2 pointer =buffered.empty()?GetMousePosition():buffered.front();
 
         for (
             const MenuButton& button :

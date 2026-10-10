@@ -1,4 +1,6 @@
 #include "outland/creator/CreatorTouchUI.hpp"
+#include "outland/input/PointerEvents.hpp"
+#include "outland/input/TouchLayout.hpp"
 
 #ifdef OUTLAND_DEV_TOOLS
 
@@ -14,7 +16,7 @@ namespace outland::creator {
 namespace {
 
 // Fit the complete toolbar/hotbar in narrow or letterboxed Termux-X11 windows.
-float ui_scale(int width,int height){return std::min(std::max(1,height)/720.0F,std::max(1,width)/960.0F);}
+float ui_scale(int width,int height){return input::editor_scale(width,height);}
 constexpr std::size_t category_count = 7;
 constexpr std::size_t assets_per_page = 8;
 
@@ -90,6 +92,7 @@ Rectangle CreatorTouchUI::control_button(BuilderControl control,int width,int he
 Rectangle CreatorTouchUI::logical_control_button(BuilderControl control,int width,int height) const {
     Rectangle result{};
     if(control==BuilderControl::All)result={24,static_cast<float>(height-260),120,36};
+    else if(control==BuilderControl::Catalog)result={width*.5F-90,40,180,36};
     else if(control==BuilderControl::Export)result={static_cast<float>(width-108),192,98,44};
     else if(control==BuilderControl::Search)result={22,130,static_cast<float>(width-44),40};
     else if(control==BuilderControl::Up || control==BuilderControl::Down)
@@ -252,7 +255,7 @@ bool CreatorTouchUI::owns_point(Vector2 point, int width, int height) const {
         if (CheckCollisionPointRec(point, hotbar_slot(slot, width, height))) return true;
     for(auto control:{BuilderControl::Undo,BuilderControl::Redo,BuilderControl::Load,BuilderControl::Ground,
         BuilderControl::Grid,BuilderControl::Near,BuilderControl::Far,BuilderControl::Lower,BuilderControl::Raise,
-        BuilderControl::Up,BuilderControl::Down,BuilderControl::Export})
+        BuilderControl::Up,BuilderControl::Down,BuilderControl::Export,BuilderControl::Catalog})
         if(CheckCollisionPointRec(point,logical_control_button(control,width,height)))return true;
     return false;
 }
@@ -262,11 +265,16 @@ bool CreatorTouchUI::owns_point(Vector2 point, int width, int height) const {
 // FRAME UPDATE
 // ============================================================
 
+bool CreatorTouchUI::key_pressed(int key) const {
+    return IsKeyPressed(key) || std::find(queued_keys_.begin(),queued_keys_.end(),key)!=queued_keys_.end();
+}
+
 void CreatorTouchUI::update(
     CreatorController& controller,
     const int physical_width,
     const int physical_height,
-    const bool blocked
+    const bool blocked,
+    const std::function<bool(Vector2)>& world_reserved
 ) {
     const bool resized=window_width_!=0 && (window_width_!=physical_width || window_height_!=physical_height);
     window_width_=physical_width;window_height_=physical_height;input_scale_=ui_scale(physical_width,physical_height);
@@ -274,6 +282,9 @@ void CreatorTouchUI::update(
     const int screen_height=static_cast<int>(physical_height/input_scale_);
     if(resized){vertical_owner_=-1;vertical_direction_=0;}
     actions_.clear();
+    queued_keys_.clear();
+    // Raylib queues key-down events even if a software keyboard releases within one poll.
+    for(int i=0;i<16;++i){const int key=GetKeyPressed();if(key==0)break;queued_keys_.push_back(key);}
     presses_.clear();
     if(vertical_owner_!=-1) {
         bool held=false;
@@ -281,6 +292,7 @@ void CreatorTouchUI::update(
         for(int i=0;i<GetTouchPointCount();++i) if(GetTouchPointId(i)==vertical_owner_)held=true;
         if(!held){vertical_owner_=-1;vertical_direction_=0;}
     }
+    const bool had_native_touch=!previous_touches_.empty();
     std::vector<int> current;
     for (int i = 0; i < GetTouchPointCount(); ++i) {
         const int id = GetTouchPointId(i);
@@ -290,10 +302,16 @@ void CreatorTouchUI::update(
     }
     previous_touches_ = std::move(current);
     if(resized)presses_.clear();
-    if (!resized && GetTouchPointCount() == 0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-        presses_.push_back(logical_point(GetMousePosition()));
+    if (!resized && GetTouchPointCount() == 0 && !had_native_touch) {
+        const auto buffered=input::PointerEvents::presses();
+        if(!buffered.empty())presses_.push_back(logical_point(buffered.front()));
+        else if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT))presses_.push_back(logical_point(GetMousePosition()));
+    }
 
     if (blocked || !controller.enabled()) {vertical_owner_=-1;vertical_direction_=0;return;}
+    if(key_pressed(KEY_B) || key_pressed(KEY_TAB) || (!search_open_ && key_pressed(KEY_I))) {
+        toggle_inventory();return;
+    }
     if(!inventory_open_) {
         for(const auto control:{BuilderControl::Up,BuilderControl::Down}) {
             const auto rect=logical_control_button(control,screen_width,screen_height);
@@ -308,13 +326,16 @@ void CreatorTouchUI::update(
         actions_.fly_vertical=vertical_direction_;
         if(IsKeyDown(KEY_SPACE)) actions_.fly_vertical=1;
         if(IsKeyDown(KEY_LEFT_CONTROL)) actions_.fly_vertical=-1;
-        if(IsKeyPressed(KEY_F5))actions_.save=true;
-        if(IsKeyPressed(KEY_F6))actions_.export_world=true;
-        if(IsKeyPressed(KEY_DELETE) || IsKeyPressed(KEY_BACKSPACE))actions_.erase=true;
-        if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Z))actions_.undo=true;
-        if(IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_Y))actions_.redo=true;
+        if(key_pressed(KEY_F5))actions_.save=true;
+        if(key_pressed(KEY_F6))actions_.export_world=true;
+        if(key_pressed(KEY_DELETE) || key_pressed(KEY_BACKSPACE))actions_.erase=true;
+        if(IsKeyDown(KEY_LEFT_CONTROL) && key_pressed(KEY_Z))actions_.undo=true;
+        if(IsKeyDown(KEY_LEFT_CONTROL) && key_pressed(KEY_Y))actions_.redo=true;
     }
     const bool was_open = inventory_open_;
+    const auto world_presses=presses_;
+    bool ui_press=false;
+    for(const auto p:presses_)if(owns_point({p.x*input_scale_,p.y*input_scale_},physical_width,physical_height))ui_press=true;
     if (!inventory_open_) update_toolbar(
         controller,
         screen_width,
@@ -329,7 +350,8 @@ void CreatorTouchUI::update(
 
     if (inventory_open_) {
         vertical_owner_=-1;vertical_direction_=0;actions_.fly_vertical=0;
-        if (was_open && pressed(inventory_button(screen_width, screen_height))) {
+        if (was_open && (pressed(inventory_button(screen_width, screen_height)) ||
+            pressed(logical_control_button(BuilderControl::Catalog,screen_width,screen_height)))) {
             inventory_open_ = false;
             return;
         }
@@ -339,6 +361,35 @@ void CreatorTouchUI::update(
             screen_height
         );
     }
+    if(!was_open && !inventory_open_ && !ui_press) {
+        for(const auto point:world_presses) {
+            const Vector2 physical{point.x*input_scale_,point.y*input_scale_};
+            if(point.y<80 || (world_reserved && world_reserved(physical)))continue;
+            actions_.world_pointer=true;actions_.world_point=physical;break;
+        }
+    }
+}
+
+void CreatorTouchUI::resolve_world_press(CreatorController& controller,const world::VerdaRegion& region,Ray ray) {
+    if(!actions_.world_pointer || !controller.enabled() || inventory_open_)return;
+    actions_.world_pointer=false;
+    if(active_tool_==CreatorTouchTool::Move) {
+        if(controller.selection().valid() && controller.point_preview(region,ray) && !controller.preview().blocked)actions_.move=true;
+        else hint_="SELECT an object, then MOVE and tap its destination";
+        return;
+    }
+    const bool selected=controller.select_target(region,ray.position,ray.direction);
+    if(selected) {
+        hint_="Object selected - MOVE, ROTATE, DUP or DELETE; SAVE keeps changes";
+        if(active_tool_==CreatorTouchTool::Rotate)actions_.rotate=true;
+        if(active_tool_==CreatorTouchTool::Duplicate)actions_.duplicate=true;
+        if(active_tool_==CreatorTouchTool::Delete)actions_.erase=true;
+        return;
+    }
+    if(active_tool_!=CreatorTouchTool::Place){hint_="No object here - tap a visible building or model";return;}
+    if(!controller.point_preview(region,ray)){hint_="Aim at ground within 120m, or turn GROUND off for free placement";return;}
+    if(controller.preview().blocked){hint_="Placement blocked - choose clear ground";return;}
+    actions_.place=true;hint_="Placed asset - keep building; SAVE / EXPORT preserve your world";
 }
 
 // ============================================================
@@ -356,7 +407,7 @@ void CreatorTouchUI::update_toolbar(
                 screen_width,
                 screen_height
             )
-        )
+        ) || pressed(logical_control_button(BuilderControl::Catalog,screen_width,screen_height))
     ) {
         toggle_inventory();
         return;
@@ -450,7 +501,7 @@ void CreatorTouchUI::update_toolbar(
                 break;
 
             case CreatorTouchTool::Move:
-                actions_.move = true;
+                hint_="MOVE: tap clear ground to move the selected object";
                 break;
 
             case CreatorTouchTool::Rotate:
@@ -482,6 +533,9 @@ void CreatorTouchUI::update_hotbar(
 ) {
     if (inventory_open_) {
         return;
+    }
+    for(int slot=0;slot<static_cast<int>(CreatorController::hotbar_size);++slot)if(key_pressed(KEY_ONE+slot)) {
+        controller.select_hotbar_slot(static_cast<std::size_t>(slot));controller.clear_selection();active_tool_=CreatorTouchTool::Place;return;
     }
 
     for (
@@ -647,8 +701,8 @@ void CreatorTouchUI::update_inventory(
     if(pressed(logical_control_button(BuilderControl::Search,screen_width,screen_height)))search_open_=!search_open_;
     if(search_open_) {
         int code=0;while((code=GetCharPressed())!=0)if(code>=32 && code<127 && search_.size()<60)search_+=static_cast<char>(code);
-        if(IsKeyPressed(KEY_BACKSPACE) && !search_.empty())search_.pop_back();
-        if(IsKeyPressed(KEY_ENTER))search_open_=false;
+        if(key_pressed(KEY_BACKSPACE) && !search_.empty())search_.pop_back();
+        if(key_pressed(KEY_ENTER))search_open_=false;
         constexpr std::string_view keys="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_- ";
         for(std::size_t i=0;i<keys.size()+3;++i) {
             const float cell=(screen_width-44.0F)/10;
@@ -880,6 +934,7 @@ void CreatorTouchUI::draw(
             screen_height
         );
     }
+    draw_button(logical_control_button(BuilderControl::Catalog,screen_width,screen_height),inventory_open_ ? "CLOSE ASSETS [B]":"ASSETS [B]",inventory_open_);
     rlPopMatrix();
 }
 
@@ -899,6 +954,7 @@ void CreatorTouchUI::draw_toolbar(
     draw_button(logical_control_button(BuilderControl::Up,screen_width,screen_height),"UP",actions_.fly_vertical>0);
     draw_button(logical_control_button(BuilderControl::Down,screen_width,screen_height),"DOWN",actions_.fly_vertical<0);
     DrawText(status_.c_str(),120,143,16,YELLOW);
+    DrawText(hint_.c_str(),120,216,14,RAYWHITE);
     const auto* selected=controller.selected_asset();
     DrawText(selected ? selected->name.c_str():"Choose an asset",120,188,16,RAYWHITE);
     DrawText(TextFormat("Distance %.0fm  Height %+.2fm - SELECT object, look at destination, MOVE",controller.state().placement_distance,controller.state().placement_height),120,165,14,RAYWHITE);
@@ -1155,7 +1211,7 @@ void CreatorTouchUI::draw_inventory(
     );
 
     DrawText(
-        "MAP BUILDER - CHOOSE AN ASSET",
+        "CREATIVE BUILDER - UNLIMITED ASSETS",
         24,
         52,
         18,

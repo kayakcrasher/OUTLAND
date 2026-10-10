@@ -114,6 +114,8 @@ public:
         bool allow_shortcuts = true
     );
 
+    bool point_preview(const world::VerdaRegion& region,Ray ray);
+
     void draw_world_overlay(
         const world::VerdaRegion& region
     ) const;
@@ -274,6 +276,8 @@ private:
     // --------------------------------------------------------
     // INTERNAL UPDATE
     // --------------------------------------------------------
+
+    void check_preview_collision(const world::VerdaRegion& region);
 
     void update_preview(
         Vector3 camera_position,

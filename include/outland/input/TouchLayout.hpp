@@ -9,6 +9,11 @@ inline float touch_scale(int width, int height) {
     return std::clamp(std::min(width / 1280.0F, height / 720.0F), 0.35F, 1.35F);
 }
 
+// Shared canvas for Creator and its DEV tools; their buttons must never overlap.
+inline float editor_scale(int width,int height) {
+    return std::min(std::max(1,height)/720.0F,std::max(1,width)/960.0F);
+}
+
 struct TouchElementLayout {
     float x{0.0F};
     float y{0.0F};

@@ -404,18 +404,7 @@ void CreatorController::update(
         camera_forward
     );
 
-    preview_.blocked=false;
-    const auto* asset=selected_asset();
-    // Building parts touch and stack (walls meet at corners, storeys sit on storeys), so only
-    // whole objects are refused when they would overlap something already there.
-    if(asset && asset->category!=CreatorAssetCategory::Gameplay && asset->category!=CreatorAssetCategory::Road &&
-       asset->category!=CreatorAssetCategory::BuildingPart && !asset->placement.allow_overlap) {
-        for(float x:{-asset->footprint.width*.5F,0.0F,asset->footprint.width*.5F})
-            for(float z:{-asset->footprint.depth*.5F,0.0F,asset->footprint.depth*.5F}) {
-                const auto point=Vector3Add(preview_.position,Vector3RotateByAxisAngle({x,0,z},{0,1,0},preview_.rotation_y*DEG2RAD));
-                if(world::physics::WorldCollision::blocked(point,region,.15F,selection_.world_asset_id))preview_.blocked=true;
-            }
-    }
+    check_preview_collision(region);
     if(!allow_shortcuts)return;
     // Desktop shortcuts adjust the preview; world edits use CreatorSession.
 
@@ -436,6 +425,54 @@ void CreatorController::update(
     }
 
 
+}
+
+void CreatorController::check_preview_collision(const world::VerdaRegion& region) {
+    preview_.blocked=false;
+    const auto* asset=selected_asset();
+    // Building parts touch and stack (walls meet at corners, storeys sit on storeys), so only
+    // whole objects are refused when they would overlap something already there.
+    if(asset && asset->category!=CreatorAssetCategory::Gameplay && asset->category!=CreatorAssetCategory::Road &&
+       asset->category!=CreatorAssetCategory::BuildingPart && !asset->placement.allow_overlap) {
+        for(float x:{-asset->footprint.width*.5F,0.0F,asset->footprint.width*.5F})
+            for(float z:{-asset->footprint.depth*.5F,0.0F,asset->footprint.depth*.5F}) {
+                const auto point=Vector3Add(preview_.position,Vector3RotateByAxisAngle({x,0,z},{0,1,0},preview_.rotation_y*DEG2RAD));
+                if(world::physics::WorldCollision::blocked(point,region,.15F,selection_.world_asset_id))preview_.blocked=true;
+            }
+    }
+}
+
+bool CreatorController::point_preview(const world::VerdaRegion& region,Ray ray) {
+    preview_.valid=false;
+    if(!enabled() || Vector3LengthSqr(ray.direction)<.0001F)return false;
+    ray.direction=Vector3Normalize(ray.direction);
+    Vector3 target{};
+    bool found=false;
+    if(!state_.snap_to_ground) {
+        target=Vector3Add(ray.position,Vector3Scale(ray.direction,state_.placement_distance));found=true;
+    } else {
+        // Only evaluated on an editor tap. Bounded terrain queries, no mesh ray tests.
+        float previous=ray.position.y-world::terrain::TerrainHeight::sample(ray.position.x,ray.position.z);
+        for(float distance=.5F;distance<=120.0F;distance+=.5F) {
+            const auto point=Vector3Add(ray.position,Vector3Scale(ray.direction,distance));
+            const float above=point.y-world::terrain::TerrainHeight::sample(point.x,point.z);
+            if(previous>=0 && above<=0) {
+                const float fraction=previous/std::max(.0001F,previous-above);
+                target=Vector3Add(ray.position,Vector3Scale(ray.direction,distance-.5F+.5F*fraction));
+                found=true;break;
+            }
+            previous=above;
+        }
+    }
+    if(!found)return false;
+    if(state_.grid_step>0) {
+        target.x=std::round(target.x/state_.grid_step)*state_.grid_step;
+        target.z=std::round(target.z/state_.grid_step)*state_.grid_step;
+    }
+    if(state_.snap_to_ground)target.y=world::terrain::TerrainHeight::sample(target.x,target.z);
+    target.y+=state_.placement_height;
+    preview_.position=target;preview_.rotation_y=state_.placement_yaw;preview_.valid=true;
+    check_preview_collision(region);return true;
 }
 
 void CreatorController::update_preview(

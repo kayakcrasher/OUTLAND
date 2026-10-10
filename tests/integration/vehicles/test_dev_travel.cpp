@@ -80,7 +80,7 @@ int main() {
     assert(!lab.tools_open());
     // All travel buttons, including CLOSE, fit a short letterboxed X11 viewport.
     touches.clear();lab.update(640,240);
-    touches={{201,{320,22}}};lab.update(640,240);assert(lab.tools_open());
+    touches={{201,{320,8}}};lab.update(640,240);assert(lab.tools_open());
     touches.clear();lab.update(640,240);
     const float panel=240.0F/350.0F;
     touches={{202,{320-100*panel,(82+4*54+22)*panel}}};lab.update(640,240);

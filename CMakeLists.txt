@@ -137,6 +137,7 @@ add_library(
 
     src/creator/CreatorMapIO.cpp
     src/input/InputSystem.cpp
+        src/input/PointerEvents.cpp
     src/input/TouchHUD.cpp
 )
 
@@ -241,6 +242,7 @@ target_link_libraries(
 
     PRIVATE
         ${RAYLIB_LIBRARIES}
+        ${CMAKE_DL_LIBS}
 )
 
 target_compile_options(
@@ -532,6 +534,18 @@ if(OUTLAND_BUILD_TESTS)
             -Wl,--wrap=IsMouseButtonPressed -Wl,--wrap=IsMouseButtonDown
             -Wl,--wrap=IsKeyPressed -Wl,--wrap=IsKeyDown -Wl,--wrap=GetCharPressed -Wl,--wrap=IsWindowFocused)
         add_test(NAME outland_creator_touch_tests COMMAND outland_creator_touch_tests)
+
+        if(UNIX)
+            add_executable(outland_creative_builder_tests tests/integration/creator/test_creative_builder.cpp)
+            target_link_libraries(outland_creative_builder_tests PRIVATE outland_render)
+            target_compile_options(outland_creative_builder_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+            target_link_options(outland_creative_builder_tests PRIVATE
+                -Wl,--wrap=dlsym -Wl,--wrap=GetTouchPointCount -Wl,--wrap=GetTouchPointId
+                -Wl,--wrap=GetTouchPosition -Wl,--wrap=GetMousePosition -Wl,--wrap=IsMouseButtonPressed
+                -Wl,--wrap=IsMouseButtonDown -Wl,--wrap=IsKeyPressed -Wl,--wrap=IsKeyDown
+                -Wl,--wrap=GetCharPressed -Wl,--wrap=GetKeyPressed -Wl,--wrap=IsWindowFocused)
+            add_test(NAME outland_creative_builder_tests COMMAND outland_creative_builder_tests)
+        endif()
 
         add_executable(
             outland_creator_map_tests
