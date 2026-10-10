@@ -16,6 +16,10 @@ public:
         float player_radius = 0.45F
     );
 
+    // The static-asset spatial index rebuilds itself when assets are added or removed; call this
+    // after moving or reshaping assets in place (Creator move/rotate, undo, load).
+    static void invalidate_index();
+
     // Shared occupancy query for collision and vegetation exclusion.
     static bool blocked(
         Vector3 position,

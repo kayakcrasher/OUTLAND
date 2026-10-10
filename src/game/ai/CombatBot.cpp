@@ -231,8 +231,12 @@ bool CombatBot::find_flank(Vector3 threat,const BotEnvironment& environment,Vect
         const float a=swing*DEG2RAD;
         const auto direction=Vector3Add(Vector3Scale(away,std::cos(a)),Vector3Scale(side,sign*std::sin(a)));
         const Vector3 wanted=Vector3Add(threat,Vector3Scale(direction,range));
-        const auto reached=environment.move(position_,wanted);
-        if(Vector3Distance(flat(reached),flat(wanted))>2.0F) continue;
+        // Only whether there is room to stand there: the way to it is the router's job. (Walking
+        // the whole way in collision steps to find out cost a bot milliseconds per decision.)
+        const auto approach=Vector3Subtract(wanted,Vector3Scale(flat(Vector3Subtract(wanted,position_)),
+            1.5F/std::max(.01F,Vector3Length(flat(Vector3Subtract(wanted,position_))))));
+        const auto reached=environment.move({approach.x,wanted.y,approach.z},wanted);
+        if(Vector3Distance(flat(reached),flat(wanted))>.6F) continue;
         if(!environment.line_of_sight(eye(reached),eye(threat))) continue;
         const float cost=Vector3Distance(position_,reached)+random()*3;
         if(cost<best) {best=cost;out=reached;found=true;}
@@ -281,7 +285,11 @@ void CombatBot::decide(double now,const BotEnvironment& environment) {
         add(BotIntent::Push,.38F+aggression*.5F+(now-last_hit_given_at_<5 ? .2F : 0));
     if(contact && !contact->visible && since_seen<10 && h>.4F && loaded_>0) {
         if(intent_==BotIntent::Flank && has_destination_) add(BotIntent::Flank,.42F+aggression*.15F);
-        else if((flank_found=find_flank(contact->last_seen,environment,flank))) add(BotIntent::Flank,.42F+aggression*.15F);
+        else if(now-flank_searched_at_>=1.5) {
+            // Searching is the costliest thing a bot thinks about: at most every 1.5 s.
+            flank_searched_at_=now;
+            if((flank_found=find_flank(contact->last_seen,environment,flank))) add(BotIntent::Flank,.42F+aggression*.15F);
+        }
     }
     if(has_threat && h<.35F && medkits_==0 && (aware || under_fire) && (!contact || distance<preferred_range()*1.5F))
         add(BotIntent::Retreat,.65F+(1-h)-aggression*.4F);

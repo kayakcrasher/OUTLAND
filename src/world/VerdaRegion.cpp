@@ -8,6 +8,7 @@
 #include <rlgl.h>
 #include "outland/world/assets/VerdaGeometry.hpp"
 #include <algorithm>
+#include <array>
 #include <map>
 #include "outland/world/VerdaLayout.hpp"
 
@@ -18,9 +19,9 @@ namespace outland::world {
 
 namespace {
 
-void draw_building(
+void draw_building_lod(
     const Building& building,
-    const Vector3& camera_position
+    bool detailed
 ) {
     using assets::HouseStyle;
     using assets::VerdanArchitecture;
@@ -144,9 +145,12 @@ void draw_building(
     rlPushMatrix();
     rlTranslatef(building.position.x, ground_y, building.position.z);
     rlRotatef(building.rotation_y, 0.0F, 1.0F, 0.0F);
-    VerdanArchitecture::draw_house({0.0F, 0.0F, 0.0F}, building.size, style,
-        assets::distance_squared(building.position, camera_position) < 90.0F * 90.0F);
+    VerdanArchitecture::draw_house({0.0F, 0.0F, 0.0F}, building.size, style, detailed);
     rlPopMatrix();
+}
+
+void draw_building(const Building& building, const Vector3& camera_position) {
+    draw_building_lod(building, assets::distance_squared(building.position, camera_position) < 90.0F * 90.0F);
 }
 
 void draw_road(
@@ -195,14 +199,10 @@ void draw_road(
     }
 }
 
-void draw_tree(Vector3 position, const Vector3& camera_position,const engine::ViewFrustum* view) {
-    const float dx=position.x-camera_position.x,dz=position.z-camera_position.z;
-    if(dx*dx+dz*dz>260.0F*260.0F) return;
+// lod 0: within 65 m (branches), 1: within 140 m (three crowns), 2: further (one crown).
+void draw_tree_lod(Vector3 position, int lod) {
     position.y = terrain::TerrainHeight::sample(position.x, position.z);
-    if(view && !view->sphere({position.x,position.y+5,position.z},9)) return;
-    const float distance = assets::distance_squared(position, camera_position);
-    if (distance > 260.0F * 260.0F) return;
-    const bool detailed = distance < 65.0F * 65.0F;
+    const bool detailed = lod == 0;
     const float variant = assets::variation(static_cast<int>(position.x), static_cast<int>(position.z), 5);
     const float scale = 0.85F + variant * 0.45F;
     const Color bark{115,83,52,255};
@@ -217,7 +217,7 @@ void draw_tree(Vector3 position, const Vector3& camera_position,const engine::Vi
     }
     DrawSphereEx({position.x, position.y+4.4F*scale, position.z}, 1.6F*scale,
                  detailed ? 6 : 4, detailed ? 8 : 6, Color{103,157,67,255});
-    if (distance < 140.0F * 140.0F) {
+    if (lod <= 1) {
         DrawSphereEx({position.x-1.0F*scale, position.y+3.6F*scale, position.z+0.35F*scale},
                      1.25F*scale, 4, 6, Color{79,133,58,255});
         DrawSphereEx({position.x+1.1F*scale, position.y+3.8F*scale, position.z-0.25F*scale},
@@ -225,6 +225,50 @@ void draw_tree(Vector3 position, const Vector3& camera_position,const engine::Vi
     }
 }
 
+void draw_tree(Vector3 position, const Vector3& camera_position,const engine::ViewFrustum* view) {
+    const float dx=position.x-camera_position.x,dz=position.z-camera_position.z;
+    if(dx*dx+dz*dz>260.0F*260.0F) return;
+    const float ground = terrain::TerrainHeight::sample(position.x, position.z);
+    if(view && !view->sphere({position.x,ground+5,position.z},9)) return;
+    const float distance = assets::distance_squared({position.x,ground,position.z}, camera_position);
+    if (distance > 260.0F * 260.0F) return;
+    draw_tree_lod(position, distance < 65.0F * 65.0F ? 0 : distance < 140.0F * 140.0F ? 1 : 2);
+}
+
+}
+
+namespace geometry {
+void building(const Building& value, bool detailed) { draw_building_lod(value, detailed); }
+void tree(Vector3 position, int lod) { draw_tree_lod(position, lod); }
+int road_segments(const Road& road) {
+    const float length = std::hypot(road.end.x - road.start.x, road.end.z - road.start.z);
+    return length < .001F || road.width <= 0 ? 0 : std::max(1, static_cast<int>(std::ceil(length / 2.0F)));
+}
+void road(const Road& road, int begin, int end) {
+    const int segments = road_segments(road);
+    if (segments == 0) return;
+    const float dx = road.end.x - road.start.x, dz = road.end.z - road.start.z, length = std::sqrt(dx * dx + dz * dz);
+    const float side_x = dz / length * road.width * .5F, side_z = -dx / length * road.width * .5F;
+    const Color color = road.type == RoadType::Asphalt ? Color{76, 80, 77, 255} :
+        road.type == RoadType::Gravel ? Color{157, 151, 127, 255} : Color{161, 128, 83, 255};
+    const auto edge = [&](int i) {
+        const float t = static_cast<float>(i) / segments;
+        std::array<Vector3, 2> points{};
+        for (int side = 0; side < 2; ++side) {
+            const float sign = side == 0 ? 1.0F : -1.0F;
+            const float x = road.start.x + dx * t + side_x * sign, z = road.start.z + dz * t + side_z * sign;
+            points[static_cast<std::size_t>(side)] = {x, terrain::TerrainHeight::sample(x, z) + .06F, z};
+        }
+        return points;
+    };
+    begin = std::max(0, begin); end = std::min(segments, end);
+    auto a = edge(begin);
+    for (int i = begin; i < end; ++i) {
+        const auto b = edge(i + 1);
+        assets::draw_quad(a[0], a[1], b[1], b[0], color);
+        a = b;
+    }
+}
 }
 
 VerdaRegion::VerdaRegion() : VerdaRegion(true) {}

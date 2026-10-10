@@ -9,6 +9,8 @@
 #include "outland/game/vehicles/VehicleAudio.hpp"
 #include "outland/assets/ModelCache.hpp"
 #include "outland/engine/render/FrameTimings.hpp"
+#include "outland/engine/render/RenderScale.hpp"
+#include "outland/engine/render/StaticWorld.hpp"
 
 #include "outland/input/InputSystem.hpp"
 #include "outland/input/PointerEvents.hpp"
@@ -97,6 +99,8 @@ void knock_out_windows(const std::string& path, Model& model) {
     model.meshCount = kept;
 }
 
+struct WorldDrawStats { int models{0}, meshes{0}; double region{0}, assets{0}, cars{0}, signs{0}, bots{0}, npcs{0}, vehicles{0}; };
+WorldDrawStats& world_draw_stats() { static WorldDrawStats stats; return stats; }
 Model* get_world_asset_model(const std::string& path, const characters::CharacterRegistry& registry);
 
 #ifdef OUTLAND_DEV_TOOLS
@@ -223,6 +227,7 @@ void draw_model_backed_world_assets(
                 continue;
             }
 
+            ++world_draw_stats().models; world_draw_stats().meshes += model->meshCount;
             DrawModelEx(
                 *model,
                 asset.position,
@@ -341,8 +346,11 @@ bool Renderer::initialize(
     width_ = width;
     height_ = height;
 
+    // No multisampling by default: on phones it multiplies the pixel work of every frame, and the
+    // world is drawn into a scaled render target anyway (OUTLAND_MSAA=1 brings it back).
+    const char* msaa = std::getenv("OUTLAND_MSAA");
     SetConfigFlags(
-        FLAG_MSAA_4X_HINT |
+        (msaa && *msaa == '1' ? FLAG_MSAA_4X_HINT : 0) |
         FLAG_WINDOW_RESIZABLE
     );
 
@@ -377,6 +385,10 @@ void Renderer::run() {
 
     PlayerState player;
     FrameTimings perf;
+    RenderScale render_scale;
+    float last_submit_seconds=0;
+    StaticWorld static_world;
+    RenderTexture2D scene_target{};
     float npc_reconcile_timer=.5F;
 
     input::PointerEvents pointer_events;
@@ -625,6 +637,7 @@ void Renderer::run() {
         world_asset_model_cache().begin_frame(1);
         character_renderer.begin_frame();
         perf.begin(GetTime());
+        const double frame_start=GetTime();
         pointer_events.begin_frame();
 
         const float dt =
@@ -741,7 +754,7 @@ void Renderer::run() {
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
                 zombie_hour=17.5F;lit_asset_count=static_cast<std::size_t>(-1);
                 justice.reset(nullptr,nullptr);crimes.clear();police_tracers.clear();
-                rebuild_signs();
+                rebuild_signs();static_world.invalidate();
                 match_time=0;shop_open=false;current_shop=nullptr;
                 last_player_feet={player.position.x,player.position.y-1.0F,player.position.z};
                 if(game::rules_for(game_mode).combat_bots) {
@@ -926,7 +939,9 @@ void Renderer::run() {
             || (game_mode==game::GameMode::DevLab && dev_lab.tools_open())
 #endif
             ;
+        const double cars_t0=GetTime();
         vehicle_dirty|=vehicles.update(dt,driving_input,verda_region,{player.position.x,player.position.y-1,player.position.z},vehicle_paused);
+        world_draw_stats().vehicles=world_draw_stats().vehicles*.9+(GetTime()-cars_t0)*1000*.1;
         if(driving){vehicle_orbit-=controls.look_x*80*dt;vehicle_pitch=std::clamp(vehicle_pitch-controls.look_y*dt,-1.0F,1.0F);}
 
         interaction_remaining = std::max(0.0F, interaction_remaining - dt);
@@ -1335,8 +1350,9 @@ void Renderer::run() {
                     if(creator_session.export_world(verda_region))TraceLog(LOG_INFO,"World exported to %s",creator_session.export_path().c_str());
                 }
                 if(action.load){creator_session.load(verda_region);creator_controller.clear_selection();}
-                if(action.place || action.move || action.duplicate || action.erase || action.rotate || action.undo || action.redo || action.load)
-                    foliage_system.invalidate();
+                if(action.place || action.move || action.duplicate || action.erase || action.rotate || action.undo || action.redo || action.load) {
+                    foliage_system.invalidate();world::physics::WorldCollision::invalidate_index();
+                }
                 vehicle_dirty|=vehicles.reconcile(verda_region);
                 creator_touch_ui.set_status(creator_session.status());
 
@@ -1406,7 +1422,9 @@ void Renderer::run() {
         npc_context.threatening=weapons.events().shots>0;
         npc_context.paused=vehicle_paused;
         npc_context.visible=[&](Vector3 start,Vector3 end) {return !combat_world.trace_segment(start,end,false,false).hit();};
+        const double npcs_t0=GetTime();
         npcs.update(dt,npc_context,verda_region);
+        world_draw_stats().npcs=world_draw_stats().npcs*.9+(GetTime()-npcs_t0)*1000*.1;
         if(!island_life.empty()) {
             island_life.hear(sound_bus);
             island_life.update(dt,npc_context.player_position,npcs,vehicle_paused);
@@ -1441,8 +1459,10 @@ void Renderer::run() {
                 frame.player_fired=weapons.events().shots>0;
                 frame.player_weapon=weapons.selected();
                 frame.player_in_vehicle=driving;
+                const double bots_t0=GetTime();
                 br_bots.update(frame,bot_world);
                 br_bots.sync_bodies(npcs,&character_registry);
+                world_draw_stats().bots=world_draw_stats().bots*.9+(GetTime()-bots_t0)*1000*.1;
                 player_health.damage(br_bots.events().player_damage);
                 if(br_bots.events().player_damage>0) {damage_flash=1.2F;damage_source=br_bots.events().player_damage_from;}
             }
@@ -1503,11 +1523,23 @@ void Renderer::run() {
         }
 
         if(perf.enabled()) perf.mark(FrameStage::Simulation,GetTime());
-        BeginDrawing();
+        // The world is drawn at a scaled resolution and stretched to the screen; the HUD stays sharp.
+        // The scale follows the frame rate unless OUTLAND_RENDER_SCALE fixes it.
+        render_scale.update(GetFrameTime(),last_submit_seconds);
+        world_draw_stats().models=world_draw_stats().meshes=0;
+        const int scene_width=std::max(64,static_cast<int>(screen_width*render_scale.scale()));
+        const int scene_height=std::max(64,static_cast<int>(screen_height*render_scale.scale()));
+        if(scene_target.id==0 || scene_target.texture.width!=scene_width || scene_target.texture.height!=scene_height) {
+            if(scene_target.id!=0) UnloadRenderTexture(scene_target);
+    static_world.invalidate();
+            scene_target=LoadRenderTexture(scene_width,scene_height);
+            SetTextureFilter(scene_target.texture,TEXTURE_FILTER_BILINEAR);
+        }
+        BeginTextureMode(scene_target);
 
         // The sky is drawn before the world, pre-divided by the ambient multiply that follows.
         ClearBackground(world::sky::before_multiply(sky.horizon,sky.ambient));
-        DrawRectangleGradientV(0,0,screen_width,screen_height*3/5,world::sky::before_multiply(sky.zenith,sky.ambient),
+        DrawRectangleGradientV(0,0,scene_width,scene_height*3/5,world::sky::before_multiply(sky.zenith,sky.ambient),
             world::sky::before_multiply(sky.horizon,sky.ambient));
 
         BeginMode3D(camera);
@@ -1547,11 +1579,22 @@ void Renderer::run() {
          */
 
         // First region of Verda.
-        verda_region.draw(camera.position,&view);
+        double sub_t0=GetTime();
+        // Houses, street trees and roads come from static meshes, except while the Creator is
+        // moving them about.
+        if(creator_active) {verda_region.draw(camera.position,&view);static_world.invalidate();}
+        else static_world.draw(verda_region,camera.position,&view);
+        double sub_t1=GetTime();
 
         draw_model_backed_world_assets(verda_region, camera.position, character_registry, view);
+        double sub_t2=GetTime();
         vehicle_renderer.draw(vehicles,verda_region,camera.position);
+        double sub_t3=GetTime();
         sign_renderer.draw(camera.position,camera.target,static_cast<float>(GetTime()));
+        double sub_t4=GetTime();
+        static double sub_avg[4]{};
+        for(int k=0;k<4;++k) {const double t[]{sub_t0,sub_t1,sub_t2,sub_t3,sub_t4};sub_avg[k]=sub_avg[k]*.9+(t[k+1]-t[k])*1000*.1;}
+        world_draw_stats().region=sub_avg[0];world_draw_stats().assets=sub_avg[1];world_draw_stats().cars=sub_avg[2];world_draw_stats().signs=sub_avg[3];
 
 #ifdef OUTLAND_DEV_TOOLS
         if (
@@ -1630,7 +1673,7 @@ void Renderer::run() {
         // sun, moon, stars) on top, still depth-tested against the world.
         if(sky.ambient.r<255 || sky.ambient.g<255 || sky.ambient.b<255) {
             BeginBlendMode(BLEND_MULTIPLIED);
-            DrawRectangle(0,0,screen_width,screen_height,sky.ambient);
+            DrawRectangle(0,0,scene_width,scene_height,sky.ambient);
             EndBlendMode();
         }
         BeginMode3D(camera);
@@ -1638,6 +1681,11 @@ void Renderer::run() {
         world::sky::draw_lights(scene_lights,sky,camera.position,static_cast<float>(GetTime()));
         if(const auto* car=vehicles.driver()) world::sky::draw_headlights(car->position,car->yaw,sky);
         EndMode3D();
+        EndTextureMode();
+        BeginDrawing();
+        ClearBackground(BLACK);
+        DrawTexturePro(scene_target.texture,{0,0,static_cast<float>(scene_width),-static_cast<float>(scene_height)},
+            {0,0,static_cast<float>(screen_width),static_cast<float>(screen_height)},{0,0},0,WHITE);
         if(justice.wanted()>0 || justice.message_time()>0) {
             // Wanted stars and what the police just did.
             if(justice.wanted()>0) {
@@ -1853,9 +1901,20 @@ void Renderer::run() {
                 perf.peak(FrameStage::Simulation),perf.peak(FrameStage::Terrain),perf.peak(FrameStage::Foliage),
                 perf.peak(FrameStage::World),perf.peak(FrameStage::Characters),terrain_world.chunk_count(),foliage_system.evaluations_last_frame()),16,screen_height-70,14,GOLD);
             DrawText("Submission timings only; compare FPS on device. OUTLAND_PERF=0 hides this panel.",16,screen_height-48,12,LIGHTGRAY);
+            // The same numbers in the log every two seconds, for runs nobody is watching.
+            static double next_log=0;
+            if(GetTime()>=next_log) {
+                next_log=GetTime()+2;
+                TraceLog(LOG_INFO,"PERF fps %d frame %.1f ms scale %.2f models %d meshes %d [region %.2f assets %.2f cars %.2f signs %.2f] {bots %.2f npcs %.2f vehicles %.2f} | sim %.2f terrain %.2f grass %.2f world %.2f bodies %.2f",GetFPS(),GetFrameTime()*1000,render_scale.scale(),world_draw_stats().models,world_draw_stats().meshes,world_draw_stats().region,world_draw_stats().assets,world_draw_stats().cars,world_draw_stats().signs,world_draw_stats().bots,world_draw_stats().npcs,world_draw_stats().vehicles,
+                    perf.average(FrameStage::Simulation),perf.average(FrameStage::Terrain),perf.average(FrameStage::Foliage),
+                    perf.average(FrameStage::World),perf.average(FrameStage::Characters));
+            }
         }
+        last_submit_seconds=static_cast<float>(GetTime()-frame_start);
         EndDrawing();
     }
+    if(scene_target.id!=0) UnloadRenderTexture(scene_target);
+    static_world.invalidate();
 #ifdef OUTLAND_DEV_TOOLS
     if(creator_session.dirty() && !creator_session.save(verda_region))TraceLog(LOG_ERROR,"Unsaved Creator edits: %s",creator_session.path().c_str());
 #endif

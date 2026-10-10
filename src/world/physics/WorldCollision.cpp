@@ -2,6 +2,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <unordered_map>
+#include <vector>
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include "outland/world/VerdaLayout.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
@@ -73,6 +76,58 @@ bool mesh_body_blocked(const CollisionMesh& mesh, Vector3 local, float local_fee
     return false;
 }
 }
+
+namespace {
+// Spatial index of the world's static assets (16 m cells; each asset is listed in every cell its
+// reach overlaps), so a collision query looks at the few assets near it instead of all ~1,700.
+// Vehicles move every frame and are checked separately. Rebuilt when the asset count changes or
+// on invalidate_index() (Creator edits).
+struct AssetIndex {
+    static constexpr float cell = 16, margin = 3.5F;
+    const VerdaRegion* region{nullptr};
+    std::size_t signature{0};
+    unsigned generation{0};
+    std::unordered_map<std::int64_t, std::vector<const WorldAsset*>> cells;
+    std::vector<const WorldAsset*> moving;
+    static std::int64_t key(int x, int z) { return (static_cast<std::int64_t>(x) << 32) ^ static_cast<std::uint32_t>(z); }
+};
+unsigned index_generation = 1;
+std::size_t signature_of(const VerdaRegion& region) {
+    std::size_t signature = region.settlements().size();
+    for (const auto& town : region.settlements()) {
+        signature = signature * 1000003 + town.assets.size();
+        // The vectors' storage: assets added (or a vector reallocated) is a new index.
+        signature = signature * 31 + reinterpret_cast<std::uintptr_t>(town.assets.data());
+    }
+    return signature;
+}
+AssetIndex& asset_index(const VerdaRegion& region) {
+    static AssetIndex index;
+    const auto signature = signature_of(region);
+    if (index.region == &region && index.signature == signature && index.generation == index_generation) return index;
+    index.region = &region; index.signature = signature; index.generation = index_generation;
+    index.cells.clear(); index.moving.clear();
+    for (const auto& town : region.settlements()) for (const auto& asset : town.assets) {
+        if (!asset.vehicle.definition.empty()) {index.moving.push_back(&asset); continue;}
+        const float reach = asset.size.x + asset.size.z + AssetIndex::margin;
+        const int x0 = static_cast<int>(std::floor((asset.position.x - reach) / AssetIndex::cell));
+        const int x1 = static_cast<int>(std::floor((asset.position.x + reach) / AssetIndex::cell));
+        const int z0 = static_cast<int>(std::floor((asset.position.z - reach) / AssetIndex::cell));
+        const int z1 = static_cast<int>(std::floor((asset.position.z + reach) / AssetIndex::cell));
+        for (int x = x0; x <= x1; ++x) for (int z = z0; z <= z1; ++z) index.cells[AssetIndex::key(x, z)].push_back(&asset);
+    }
+    return index;
+}
+template <class F> bool any_asset_near(const VerdaRegion& region, float x, float z, F&& test) {
+    const auto& index = asset_index(region);
+    const auto found = index.cells.find(AssetIndex::key(static_cast<int>(std::floor(x / AssetIndex::cell)), static_cast<int>(std::floor(z / AssetIndex::cell))));
+    if (found != index.cells.end()) for (const auto* asset : found->second) if (test(*asset)) return true;
+    for (const auto* asset : index.moving) if (test(*asset)) return true;
+    return false;
+}
+}
+
+void WorldCollision::invalidate_index() { ++index_generation; }
 
 bool WorldCollision::blocked_impl(
     const Vector3 position,
@@ -279,30 +334,28 @@ bool WorldCollision::blocked_impl(
             }
         }
 
-        // ----------------------------------------------------
-        // WORLD ASSETS
-        // ----------------------------------------------------
+    }
 
-        for (
-            const WorldAsset& asset :
-            settlement.assets
-        ) {
-            if(asset.id==ignore_asset)continue;
+    // ----------------------------------------------------
+    // WORLD ASSETS (only those near: spatial index)
+    // ----------------------------------------------------
+    const auto check = [&](const WorldAsset& asset) -> bool {
+            if(asset.id==ignore_asset)return false;
             if(!asset.vehicle.definition.empty() || (!asset.model_path.empty() && asset.collision)) {
-                if(!asset.vehicle.definition.empty() && !asset.vehicle.enabled)continue;
+                if(!asset.vehicle.definition.empty() && !asset.vehicle.enabled)return false;
                 const float dx=position.x-asset.position.x,dz=position.z-asset.position.z;
-                const float reach=asset.size.x+asset.size.z+player_radius;if(std::abs(dx)>reach||std::abs(dz)>reach)continue;
+                const float reach=asset.size.x+asset.size.z+player_radius;if(std::abs(dx)>reach||std::abs(dz)>reach)return false;
                 const float yaw=asset.rotation_y*DEG2RAD;
                 // Walkers use the asset's real shape: doorways, windows and hollow interiors.
                 if(feet_y && asset.vehicle.definition.empty())if(const auto* mesh=MeshCollisionLibrary::get(asset.model_path)) {
                     if(mesh_body_blocked(*mesh,{dx*std::cos(yaw)-dz*std::sin(yaw),0,dx*std::sin(yaw)+dz*std::cos(yaw)},*feet_y-asset.position.y,player_radius))return true;
-                    continue;
+                    return false;
                 }
                 if(circle_hits_box(dx*std::cos(yaw)-dz*std::sin(yaw),dx*std::sin(yaw)+dz*std::cos(yaw),player_radius,0,0,asset.size.x*.5F,asset.size.z*.5F))return true;
-                continue;
+                return false;
             }
             if (!asset.collision) {
-                continue;
+                return false;
             }
 
             float radius = 0.75F;
@@ -334,10 +387,9 @@ bool WorldCollision::blocked_impl(
             ) {
                 return true;
             }
-        }
-    }
-
-    return false;
+        return false;
+    };
+    return any_asset_near(region, position.x, position.z, [&](const WorldAsset& asset) {return check(asset);});
 }
 
 Vector3 WorldCollision::resolve_player_movement(
@@ -416,20 +468,21 @@ float WorldCollision::ground_height(
     const float step
 ) {
     float ground = terrain::TerrainHeight::sample(position.x, position.z);
-    for (const Settlement& settlement : region.settlements()) for (const WorldAsset& asset : settlement.assets) {
+    any_asset_near(region, position.x, position.z, [&](const WorldAsset& asset) {
         // Anything model-backed can be stood on (road pieces, floor slabs), whatever its blocker flag.
-        if (asset.model_path.empty() || !asset.vehicle.definition.empty()) continue;
+        if (asset.model_path.empty() || !asset.vehicle.definition.empty()) return false;
         const float dx = position.x - asset.position.x, dz = position.z - asset.position.z;
         const float reach = asset.size.x + asset.size.z + 2;
-        if (std::abs(dx) > reach || std::abs(dz) > reach) continue;
+        if (std::abs(dx) > reach || std::abs(dz) > reach) return false;
         const auto* mesh = MeshCollisionLibrary::get(asset.model_path);
-        if (!mesh) continue;
+        if (!mesh) return false;
         const float yaw = asset.rotation_y * DEG2RAD;
         float floor = 0;
         if (mesh->floor_below(dx * std::cos(yaw) - dz * std::sin(yaw), dx * std::sin(yaw) + dz * std::cos(yaw),
                 feet_y + step - asset.position.y, floor))
             ground = std::max(ground, floor + asset.position.y);
-    }
+        return false;
+    });
     return ground;
 }
 

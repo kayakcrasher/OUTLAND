@@ -1,4 +1,5 @@
 #pragma once
+#include "outland/engine/render/GeometryRecorder.hpp"
 #include "outland/game/culture/Signage.hpp"
 #include <raylib.h>
 #include <string>
@@ -37,5 +38,8 @@ private:
     bool own_font_{false};
     Texture2D flag_{};
     bool loaded_{false};
+    mutable engine::GeometryRecorder recorder_;
+    mutable engine::RecordedGeometry baked_;
+    mutable bool baked_ready_{false}, bake_failed_{false};
 };
 }

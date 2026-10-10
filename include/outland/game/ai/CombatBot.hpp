@@ -124,7 +124,7 @@ private:
     int target_{-1};
     bool moving_{false}, has_destination_{false}, sound_pending_{false};
     Vector3 heard_{};
-    double last_damage_at_{-1e9}, last_hit_given_at_{-1e9}, decided_at_{-1e9}, intent_since_{0};
+    double last_damage_at_{-1e9}, last_hit_given_at_{-1e9}, decided_at_{-1e9}, intent_since_{0}, flank_searched_at_{-1e9};
     Vector3 damage_from_{};
     float decision_clock_{0}, stuck_time_{0};
     int loaded_{0}, reserve_{0}, medkits_{1}, burst_{0};

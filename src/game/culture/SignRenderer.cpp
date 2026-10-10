@@ -46,6 +46,7 @@ void SignRenderer::load(const std::string& application_dir) {
 }
 
 void SignRenderer::unload() {
+    baked_.unload(); baked_ready_ = bake_failed_ = false;
     if (!loaded_) return;
     if (own_font_) UnloadFont(font_);
     if (flag_.id) UnloadTexture(flag_);
@@ -55,6 +56,7 @@ void SignRenderer::unload() {
 void SignRenderer::set(Signage signage) {
     signage_ = std::move(signage);
     layout();
+    baked_.unload(); baked_ready_ = bake_failed_ = false;
 }
 
 float SignRenderer::measure(const std::string& text, float height) const {
@@ -131,8 +133,9 @@ void SignRenderer::draw(Vector3 camera, Vector3 camera_target, float time_second
     std::vector<std::size_t> shown;
     for (std::size_t i = 0; i < signage_.signs.size(); ++i) if (visible(signage_.signs[i].position, sign_range)) shown.push_back(i);
 
-    // 1. Boards, frames and posts.
-    for (const auto i : shown) {
+    // Boards, frames and posts, then all lettering under one texture.
+    const auto boards = [&](const std::vector<std::size_t>& which) {
+    for (const auto i : which) {
         const auto& sign = signage_.signs[i];
         const auto& m = measured_[i];
         rlPushMatrix();
@@ -148,20 +151,12 @@ void SignRenderer::draw(Vector3 camera, Vector3 camera_target, float time_second
         }
         rlPopMatrix();
     }
-    std::vector<std::size_t> flags;
-    for (std::size_t i = 0; i < signage_.flags.size(); ++i) if (visible(signage_.flags[i].tip, flag_range)) flags.push_back(i);
-    for (const auto i : flags) {
-        const auto& flag = signage_.flags[i];
-        const float r = flag.width > 3 ? .09F : .05F;
-        DrawCylinderEx(flag.base, flag.tip, r, r * .75F, 6, Color{205, 208, 212, 255});
-        DrawCube(Vector3Add(flag.tip, {0, .06F, 0}), r * 3, r * 2.4F, r * 3, Color{214, 180, 70, 255});
-    }
-
-    // 2. Lettering, one texture for every sign in range.
+    };
+    const auto lettering = [&](const std::vector<std::size_t>& which, bool ranged) {
     rlSetTexture(font_.texture.id);
-    for (const auto i : shown) {
+    for (const auto i : which) {
         const auto& sign = signage_.signs[i];
-        if (Vector3DistanceSqr(sign.position, camera) > text_range * text_range) continue;
+        if (ranged && Vector3DistanceSqr(sign.position, camera) > text_range * text_range) continue;
         const auto& m = measured_[i];
         const auto face = [&](const std::vector<SignLine>& lines, const std::vector<float>& scales, bool back) {
             if (lines.empty()) return;
@@ -180,6 +175,26 @@ void SignRenderer::draw(Vector3 camera, Vector3 camera_target, float time_second
         face(sign.back, m.back_scale, true);
     }
     rlSetTexture(0);
+
+    };
+    // Signs never move: recorded once into two static meshes (boards, lettering) and drawn from
+    // the GPU every frame after. If they do not fit one recording, they are drawn as they come.
+    if (!baked_ready_ && !bake_failed_) {
+        std::vector<std::size_t> all(signage_.signs.size());
+        for (std::size_t i = 0; i < all.size(); ++i) all[i] = i;
+        bake_failed_ = !recorder_.record([&] {boards(all); lettering(all, false);}, baked_);
+        baked_ready_ = !bake_failed_;
+    } else if (baked_ready_) baked_.draw();
+    else {boards(shown); lettering(shown, true);}
+
+    std::vector<std::size_t> flags;
+    for (std::size_t i = 0; i < signage_.flags.size(); ++i) if (visible(signage_.flags[i].tip, flag_range)) flags.push_back(i);
+    for (const auto i : flags) {
+        const auto& flag = signage_.flags[i];
+        const float r = flag.width > 3 ? .09F : .05F;
+        DrawCylinderEx(flag.base, flag.tip, r, r * .75F, 6, Color{205, 208, 212, 255});
+        DrawCube(Vector3Add(flag.tip, {0, .06F, 0}), r * 3, r * 2.4F, r * 3, Color{214, 180, 70, 255});
+    }
 
     // 3. Flags: the cloth ripples away from the staff, more toward the free end.
     if (flags.empty()) return;

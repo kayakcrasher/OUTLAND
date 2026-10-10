@@ -103,6 +103,8 @@ add_library(
     src/game/vehicles/VehicleAudio.cpp
     src/assets/ModelCache.cpp
     src/engine/render/Renderer.cpp
+    src/engine/render/GeometryRecorder.cpp
+    src/engine/render/StaticWorld.cpp
     src/engine/audio/EnvironmentAudio.cpp
     src/game/combat/CombatWorld.cpp
     src/game/combat/WeaponSystem.cpp
