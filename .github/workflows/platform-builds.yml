@@ -21,7 +21,10 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: android-actions/setup-android@v3
-      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;28.2.13676358'
+        with:
+          cmdline-tools-version: '13114758'
+          # Override the action's obsolete default "tools platform-tools".
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0 ndk;28.2.13676358'
       - run: tools/build_android.sh
       - run: python3 tools/validate_platform_artifacts.py --apk build/android-arm64/OUTLAND.apk
       - uses: actions/upload-artifact@v4
