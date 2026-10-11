@@ -119,6 +119,22 @@ public:
         settlements.front().gameplay_markers.push_back(std::move(marker));
         ++report.purposes;
     }
+    // Forget the streets and lots of a district that is being rebuilt from scratch.
+    void clear_area(Vector3 centre, float half) {
+        const auto in = [&](Vector3 p) { return std::abs(p.x - centre.x) <= half && std::abs(p.z - centre.z) <= half; };
+        std::erase_if(roads_, [&](const world::Road& r) { return in(r.start) && in(r.end); });
+        std::erase_if(taken_, [&](const Lot& l) { return in({l.x0, 0, l.z0}) && in({l.x1, 0, l.z1}); });
+    }
+    void forget_road(const world::Road& old) {
+        std::erase_if(roads_, [&](const world::Road& r) { return Vector3Equals(r.start, old.start) && Vector3Equals(r.end, old.end); });
+    }
+    // Streets laid after the kit was opened keep later lots off them too.
+    void add_roads(const std::vector<world::Road>& roads) {
+        for (const auto& road : roads)
+            if (std::find_if(roads_.begin(), roads_.end(), [&](const world::Road& r) {
+                    return Vector3Equals(r.start, road.start) && Vector3Equals(r.end, road.end); }) == roads_.end())
+                roads_.push_back(road);
+    }
     WorldKitReport report;
 private:
     world::VerdaRegion& region_;
@@ -249,6 +265,41 @@ void wipe_downtown(world::VerdaRegion& region) {
     }
 }
 
+// Attached Main Street buildings along one edge of a 68 m block, fronts on the street.
+void main_street_row(Kit& kit, float ground, float bx, float bz, int side, std::uint32_t seed) {
+    const auto at = [&](float x, float z) { return Vector3{x, ground + pad_top, z}; };
+    // side: 0 = -z edge (faces -z), 1 = +x, 2 = +z, 3 = -x
+    static constexpr const char* colors[]{"red", "brown", "tan", "cream", "dark"};
+    const float yaw = side == 0 ? 0 : side == 1 ? 270 : side == 2 ? 180 : 90;
+    float along = -30;
+    for (int k = 0; along < 29; ++k) {
+        const auto roll = hash(seed + static_cast<std::uint32_t>(k) * 31U);
+        const bool wide = along <= 12 && roll % 3 == 0;
+        const float width = wide ? 18 : 12;
+        if (along + width > 30.01F) break;
+        const char* color = colors[(roll / 3) % 5];
+        int storeys = (roll / 15) % 2 ? 3 : 2;
+        if (wide) storeys = 3;
+        if (!wide && storeys == 3 && (std::string(color) == "dark" || std::string(color) == "cream")) storeys = 2;
+        const std::string model = city + "main_street/main_street_" + color + "_" + (wide ? "18" : "12") + "m_" + std::to_string(storeys) + "st.glb";
+        const float mid = along + width * .5F, inset = -30 + 10; // 20 m deep, front on the lot line
+        Vector3 position{};
+        if (side == 0) position = at(bx + mid, bz + inset);
+        if (side == 2) position = at(bx - mid, bz - inset);
+        if (side == 1) position = at(bx - inset, bz + mid);
+        if (side == 3) position = at(bx + inset, bz - mid);
+        if (kit.put(model, position, yaw, false)) {
+            constexpr float floor = 3.6F, slab = .2F, wall = .3F;
+            const float w = width * .5F;
+            // Doors are in the first bay pair: local x = -4.5 on both widths.
+            kit.report.enterable.push_back({position, yaw, width, 20, storeys, -4.5F,
+                {w - wall - .65F, slab, -10 + 1.5F}, {0, 0, 1}, 5.04F + 2.2F, slab, floor + slab, {-3, 0, 0}});
+            ++kit.report.buildings;
+        }
+        along += width;
+    }
+}
+
 void downtown(Kit& kit, world::VerdaRegion& region) {
     world::Settlement* capital = nullptr;
     for (auto& settlement : region.runtime_settlements()) if (settlement.id == "capital_verda") capital = &settlement;
@@ -271,40 +322,7 @@ void downtown(Kit& kit, world::VerdaRegion& region) {
         return (bx + bz) % 160 == 0 ? Zone::Mixed : Zone::MainStreet;
     };
     const auto at = [&](float x, float z) { return Vector3{x, ground + pad_top, z}; };
-    // Rows of attached Main Street buildings along one block edge, fronts facing the street.
-    struct Lot { const char* model; float width; float storeys; };
-    const auto row = [&](float bx, float bz, int side, std::uint32_t seed) {
-        // side: 0 = -z edge (faces -z), 1 = +x, 2 = +z, 3 = -x
-        static constexpr const char* colors[]{"red", "brown", "tan", "cream", "dark"};
-        const float yaw = side == 0 ? 0 : side == 1 ? 270 : side == 2 ? 180 : 90;
-        float along = -30;
-        for (int k = 0; along < 29; ++k) {
-            const auto roll = hash(seed + static_cast<std::uint32_t>(k) * 31U);
-            const bool wide = along <= 12 && roll % 3 == 0;
-            const float width = wide ? 18 : 12;
-            if (along + width > 30.01F) break;
-            const char* color = colors[(roll / 3) % 5];
-            int storeys = (roll / 15) % 2 ? 3 : 2;
-            if (wide) storeys = 3;
-            if (!wide && storeys == 3 && (std::string(color) == "dark" || std::string(color) == "cream")) storeys = 2;
-            const std::string model = city + "main_street/main_street_" + color + "_" + (wide ? "18" : "12") + "m_" + std::to_string(storeys) + "st.glb";
-            const float mid = along + width * .5F, inset = -30 + 10; // 20 m deep, front on the lot line
-            Vector3 position{};
-            if (side == 0) position = at(bx + mid, bz + inset);
-            if (side == 2) position = at(bx - mid, bz - inset);
-            if (side == 1) position = at(bx - inset, bz + mid);
-            if (side == 3) position = at(bx + inset, bz - mid);
-            if (kit.put(model, position, yaw, false)) {
-                constexpr float floor = 3.6F, slab = .2F, wall = .3F;
-                const float w = width * .5F;
-                // Doors are in the first bay pair: local x = -4.5 on both widths.
-                kit.report.enterable.push_back({position, yaw, width, 20, storeys, -4.5F,
-                    {w - wall - .65F, slab, -10 + 1.5F}, {0, 0, 1}, 5.04F + 2.2F, slab, floor + slab, {-3, 0, 0}});
-                ++kit.report.buildings;
-            }
-            along += width;
-        }
-    };
+    const auto row = [&](float bx, float bz, int side, std::uint32_t seed) { main_street_row(kit, ground, bx, bz, side, seed); };
     int parked = 0;
     for (const float bx : {-120.0F, -40.0F, 40.0F, 120.0F}) for (const float bz : {-120.0F, -40.0F, 40.0F, 120.0F}) {
         const auto kind = zone(static_cast<int>(bx), static_cast<int>(bz));
@@ -707,25 +725,6 @@ void trailer_park(Kit& kit, world::VerdaRegion& region) {
     ++kit.report.parks;
 }
 
-void porto_luma(Kit& kit) {
-    const auto c = site("port_luma");
-    // Waterfront to the east: warehouses, a quay of bollards and barriers, and stacked cargo.
-    for (const auto& [x, z, name] : std::initializer_list<std::tuple<float, float, const char*>>{
-            {60, -45, "Large Shed B"}, {60, 25, "Large Shed A"}, {60, 60, "Large Shed B"}})
-        if (kit.claim({c.x + x, 0, c.z + z}, 4.4F, 7.2F, 0)) kit.put(shacks + std::string(name) + ".glb", {c.x + x, 0, c.z + z}, 0);
-    modular_building(kit, {c.x - 50, 0, c.z - 35}, 90, 8, 4, "stuco", 2, 31, world::BuildingPurpose::Office); // harbour office
-    modular_building(kit, {c.x - 50, 0, c.z + 35}, 90, 4, 4, "brick", 1, 32, world::BuildingPurpose::Dock);
-    for (int i = 0; i < 16; ++i) kit.put(urban + "Cones & Barriers/Bollards/square_bollard.glb", {c.x + 82, 0, c.z - 60 + i * 8.0F}, 0);
-    for (int i = 0; i < 6; ++i) prop(kit, urban + "Cones & Barriers/Concrete Barriers/Jersey_barrier_dirty.glb", {c.x + 75, 0, c.z - 50 + i * 20.0F}, 90, 1.4F);
-    for (int i = 0; i < 14; ++i) {
-        const auto r = hash(500U + static_cast<std::uint32_t>(i));
-        const Vector3 at{c.x + 70 + static_cast<float>(r % 8), 0, c.z - 55 + static_cast<float>((r / 9) % 110)};
-        prop(kit, shacks + (i % 2 ? "Pallet.glb" : "Barrel.glb"), at, static_cast<float>(r % 360), 1);
-    }
-    prop(kit, urban + "Bus stops/busstop_two_seats.glb", {c.x + 9, 0, c.z - 25}, 90, 2.5F);
-    for (int i = -3; i <= 3; ++i) kit.put(urban + "Traffic lights/street_light_clean.glb", {c.x + 6.5F, 0, c.z + i * 25.0F + 12}, 90);
-}
-
 void suda_haveno(Kit& kit) {
     const auto c = site("south_haven");
     // Residential lanes: small homes with picket-fenced front gardens.
@@ -794,6 +793,216 @@ void driveways(Kit& kit, world::VerdaRegion& region) {
         town.gameplay_markers.insert(town.gameplay_markers.end(), cars.begin(), cars.end());
     }
 }
+world::Settlement* settlement(world::VerdaRegion& region, std::string_view id) {
+    for (auto& town : region.runtime_settlements()) if (town.id == id) return &town;
+    return nullptr;
+}
+
+void vehicle_marker(world::Settlement& town, const std::string& id, Vector3 at, float yaw) {
+    world::GameplayMarker car;
+    car.id = id;
+    car.type = world::GameplayMarkerType::VehicleSpawn;
+    car.position = {at.x, world::terrain::TerrainHeight::sample(at.x, at.z), at.z};
+    car.size = {2, 1.6F, 4.4F};
+    car.rotation_y = yaw;
+    town.gameplay_markers.push_back(car);
+}
+
+// ------------------------------------------------------------------ West Verda (Okcidenta Verda)
+// Classic suburban blocks west of downtown on level ground: the downtown streets carry on west as
+// tree-lined residential streets, a boulevard on the old Roka road, and rows of detached homes -
+// ranches and two-storey houses on 24 m lots with front yards, picket fences, a car on the drive -
+// backing onto each other across the blocks. A park, a strip of shops, a church and a clinic sit
+// on the boulevard. Houses are procedural buildings (cheap to draw, enterable) owned by the capital.
+constexpr float suburb_east_x = -grid_edge, suburb_mid_x = -330, suburb_west_x = -476;
+
+// One detached house facing a street (`facing`: +1 the street is at larger z, -1 smaller z).
+bool suburban_house(Kit& kit, world::Settlement& capital, Vector3 at, int facing, std::uint32_t seed, int& cars) {
+    const auto r = hash(seed);
+    const bool two = r % 5 < 2;
+    const Vector3 size = two ? Vector3{11, 7, 9} : Vector3{13, 4, 10};
+    const float yaw = facing > 0 ? 180 : 0; // procedural houses front on local -z
+    if (!kit.claim(at, size.x * .5F + 1, size.z * .5F + 1, yaw)) return false;
+    static constexpr Color walls[]{{236, 232, 220, 255}, {226, 214, 170, 255}, {176, 198, 214, 255}, {184, 196, 160, 255},
+        {214, 196, 172, 255}, {196, 198, 196, 255}, {232, 206, 196, 255}, {150, 168, 182, 255}};
+    static constexpr Color roofs[]{{72, 74, 78, 255}, {104, 78, 60, 255}, {128, 66, 52, 255}, {86, 96, 104, 255}, {58, 62, 58, 255}};
+    world::Building house;
+    house.id = "verda_okcidento_house_" + std::to_string(capital.buildings.size() + 1);
+    house.style = two ? world::BuildingStyle::TwoStoryHouse : world::BuildingStyle::RuralHouse;
+    house.position = {at.x, 0, at.z};
+    house.size = size;
+    house.rotation_y = yaw;
+    house.wall_color = walls[(r / 5) % 8];
+    house.roof_color = roofs[(r / 40) % 5];
+    house.enterable = true;
+    house.purpose = world::BuildingPurpose::Home;
+    capital.buildings.push_back(house);
+    ++kit.report.houses;
+    const Vector3 ground{at.x, 0, at.z};
+    const float side = r % 2 ? 1.0F : -1.0F;
+    // The family car on the drive beside the house, nose to the street.
+    if ((r / 200) % 5 < 2) {
+        vehicle_marker(capital, "vehicle_spawn_hatchback_okcidento_" + std::to_string(++cars),
+                       to_world(ground, yaw, side * (size.x * .5F + 2.4F), 0, -size.z * .5F + 2.2F), yaw + 180);
+        ++kit.report.driveways;
+    }
+    // Front yard: a tree, sometimes a white picket fence with a gate on the path, a bin by the drive.
+    if ((r / 1000) % 3 != 0) kit.tree(to_world(ground, yaw, -side * (size.x * .5F - 1.5F), 0, -size.z * .5F - 4.2F));
+    if ((r / 3000) % 3 == 0) {
+        const float z = -size.z * .5F - 6.2F, half = 10.5F;
+        fence(kit, to_world(ground, yaw, -half, 0, z), to_world(ground, yaw, -1.2F, 0, z),
+              {urban + "Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb"}, 2.38F, r);
+        fence(kit, to_world(ground, yaw, 1.2F, 0, z), to_world(ground, yaw, half, 0, z),
+              {urban + "Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb"}, 2.38F, r + 1);
+    }
+    kit.put(urban + "Litter/TrashCan/trash_can_alt1.glb", to_world(ground, yaw, side * (size.x * .5F + .8F), 0, -size.z * .5F - 3.4F), yaw);
+    return true;
+}
+
+void west_suburbs(Kit& kit, world::VerdaRegion& region) {
+    auto* capital = settlement(region, "capital_verda");
+    if (!capital) return;
+    // The Roka highway now leaves from the boulevard's west end instead of downtown's edge.
+    for (auto& road : capital->roads)
+        for (auto* end : {&road.start, &road.end})
+            if (std::abs(end->x + grid_edge) < .5F && std::abs(end->z) < .5F) {
+                const auto& other = end == &road.start ? road.end : road.start;
+                if (other.x < suburb_west_x) {kit.forget_road(road); *end = {suburb_west_x, end->y, 0};}
+            }
+    // Streets: the boulevard on z = 0, the downtown streets carried west, two cross streets.
+    capital->roads.push_back({{suburb_east_x, 0, 0}, {suburb_west_x, 0, 0}, 10, world::RoadType::Asphalt});
+    for (const float z : {-160.0F, -80.0F, 80.0F, 160.0F})
+        capital->roads.push_back({{suburb_east_x, 0, z}, {suburb_west_x, 0, z}, 8, world::RoadType::Asphalt});
+    for (const float x : {suburb_mid_x, suburb_west_x})
+        capital->roads.push_back({{x, 0, -160}, {x, 0, 160}, 8, world::RoadType::Asphalt});
+    kit.add_roads(capital->roads);
+    // Homes on both sides of every residential street, 24 m lots, set back 14 m from the centreline.
+    int cars = 0;
+    std::uint32_t seed = 7000;
+    for (const float street_z : {-160.0F, -80.0F, 80.0F, 160.0F})
+        for (const int facing : {1, -1}) {
+            const float z = street_z - facing * 14.0F;
+            for (const auto& [from, count] : std::initializer_list<std::pair<float, int>>{{-190, 6}, {-348, 5}})
+                for (int i = 0; i < count; ++i) suburban_house(kit, *capital, {from - i * 24.0F, 0, z}, facing, ++seed, cars);
+        }
+    // Street lights at lot lines, alternating sides.
+    for (const float street_z : {-160.0F, -80.0F, 0.0F, 80.0F, 160.0F})
+        for (int i = 0; i < 6; ++i) {
+            const float x = suburb_east_x - 26 - i * 50.0F, side = i % 2 ? 1.0F : -1.0F;
+            if (std::abs(x - suburb_mid_x) < 8) continue;
+            kit.put(urban + "Traffic lights/street_light.glb", {x, 0, street_z + side * (street_z == 0 ? 6.4F : 5.4F)}, side > 0 ? 0.0F : 180.0F);
+        }
+    // On the boulevard: the park (north-east), shops (south-east), a church and a clinic (west).
+    for (int i = 0; i < 5; ++i) for (int j = 0; j < 3; ++j) {
+        const auto r = hash(7500U + static_cast<std::uint32_t>(i * 3 + j));
+        kit.tree({-196 - i * 27.0F + static_cast<float>(r % 7), 0, -18 - j * 14.0F - static_cast<float>((r / 7) % 5)});
+    }
+    for (int i = 0; i < 4; ++i)
+        kit.put(urban + "Bus stops/busstop_bench.glb", {-210 - i * 32.0F, 0, -9}, 180);
+    modular_building(kit, {-212, 0, 20}, 0, 8, 4, "stuco", 1, 7601, world::BuildingPurpose::Shop);
+    modular_building(kit, {-270, 0, 20}, 0, 8, 4, "brick", 1, 7602, world::BuildingPurpose::Shop);
+    modular_building(kit, {-376, 0, -20}, 180, 4, 4, "fancy_brick", 1, 7603, world::BuildingPurpose::Church);
+    modular_building(kit, {-420, 0, 20}, 0, 8, 4, "stuco", 1, 7604, world::BuildingPurpose::Clinic);
+    for (int i = 0; i < 3; ++i)
+        vehicle_marker(*capital, "vehicle_spawn_hatchback_okcidento_shops_" + std::to_string(i + 1), {-226 - i * 22.0F, 0, 9.3F}, 270);
+    capital->survivors += kit.report.houses;
+}
+
+// ------------------------------------------------------------------ Porto Luma
+// The eastern trading port is a city now: a 3 x 3 grid of 80 m blocks round Placo Luma (the
+// civic square), Main Street rows, two harbour towers, a car park, and the waterfront district on
+// the east side - warehouses, the harbour office and a quay of bollards facing the Sea of Light.
+void porto_luma_city(Kit& kit, world::VerdaRegion& region) {
+    auto* port = settlement(region, "port_luma");
+    auto* capital = settlement(region, "capital_verda");
+    if (!port || !capital) return;
+    const auto c = site("port_luma");
+    const float edge = pitch + street * .5F + 40; // 126: avenues at +-40 and +-120
+    const float ground = world::terrain::TerrainHeight::sample(c.x, c.z);
+    port->buildings.clear();
+    port->roads.clear();
+    kit.clear_area(c, 140);
+    // Highways that ran to the old crossing stop at the grid's west edge, on the street north of
+    // the square (Placo Luma fills the centre).
+    for (auto& road : capital->roads)
+        for (auto* end : {&road.start, &road.end})
+            if (std::abs(end->x - c.x) < .5F && std::abs(end->z - c.z) < .5F) {kit.forget_road(road); *end = {c.x - edge, end->y, c.z - 40};}
+    for (const float o : {-120.0F, -40.0F, 40.0F, 120.0F}) {
+        port->roads.push_back({{c.x + o, 0, c.z - edge}, {c.x + o, 0, c.z + edge}, street, world::RoadType::Asphalt});
+        port->roads.push_back({{c.x - edge, 0, c.z + o}, {c.x + edge, 0, c.z + o}, street, world::RoadType::Asphalt});
+    }
+    // The quay road along the waterfront.
+    port->roads.push_back({{c.x + edge, 0, c.z - 40}, {c.x + 196, 0, c.z - 40}, 9, world::RoadType::Asphalt});
+    port->roads.push_back({{c.x + edge, 0, c.z + 40}, {c.x + 196, 0, c.z + 40}, 9, world::RoadType::Asphalt});
+    port->roads.push_back({{c.x + 196, 0, c.z - 110}, {c.x + 196, 0, c.z + 110}, 9, world::RoadType::Asphalt});
+    kit.add_roads(port->roads);
+    kit.add_roads(capital->roads);
+    for (const float i : {-120.0F, -40.0F, 40.0F, 120.0F}) for (const float j : {-120.0F, -40.0F, 40.0F, 120.0F})
+        kit.put(city + "ground/intersection_12.glb", {c.x + i, ground, c.z + j}, 0, false);
+    const auto at = [&](float x, float z) { return Vector3{c.x + x, ground + pad_top, c.z + z}; };
+    int parked = 0;
+    for (const float bx : {-80.0F, 0.0F, 80.0F}) for (const float bz : {-80.0F, 0.0F, 80.0F}) {
+        const auto seed = static_cast<std::uint32_t>((bx + 300) * 11 + (bz + 300) * 17 + 9000);
+        const bool square = bx == 0 && bz == 0, parking = bx == 80 && bz == 80, tower = bx == 80 && bz == -80;
+        kit.put(city + (square ? "ground/courthouse_square_68.glb" : parking ? "ground/parking_lot_68.glb" : "ground/sidewalk_block_68.glb"),
+                {c.x + bx, ground, c.z + bz}, 0, false);
+        // Rows face the square first (the side toward the centre), then the street behind.
+        const int toward = bx > 0 ? 3 : bx < 0 ? 1 : bz > 0 ? 0 : 2;
+        if (square) {
+            for (int i = 0; i < 4; ++i) for (const float t : {-22.0F, 22.0F})
+                kit.tree(at(i % 2 ? t : (i < 2 ? -27 : 27), i % 2 ? (i < 2 ? -27 : 27) : t));
+            kit.put(urban + "Bus stops/busstop_clean_bench.glb", at(31, 12), 270, false);
+            kit.put(urban + "Bus stops/busstop_clean_bench.glb", at(-31, -12), 90, false);
+        } else if (tower) {
+            kit.put(city + "towers/glass_blue_tower.glb", at(bx - 14, bz + 14), 270, false);
+            kit.put(city + "towers/concrete_office.glb", at(bx + 14, bz - 14), 0, false);
+            for (const auto& [dx, dz] : std::initializer_list<std::pair<float, float>>{{-6, -6}, {6, -6}, {-6, 6}, {6, 6}})
+                kit.tree(at(bx + 14 + dx, bz + 14 + dz));
+        } else if (!parking) {
+            main_street_row(kit, ground, c.x + bx, c.z + bz, toward, seed);
+            if (std::abs(bx) + std::abs(bz) == 160) // corner blocks: a mid-rise behind the row
+                kit.put(city + "towers/" + (seed % 2 ? "brick_midrise" : "stone_midrise") + ".glb",
+                        at(bx + (bx > 0 ? 14 : -14), bz + (bz > 0 ? 14 : -14)), 0, false);
+            else
+                main_street_row(kit, ground, c.x + bx, c.z + bz, (toward + 2) % 4, seed + 7);
+        }
+        for (int side = 0; side < 4; ++side) {
+            const float e = pad_size * .5F - 1.6F;
+            const auto spot = [&](float along) {
+                return side == 0 ? at(bx + along, bz - e) : side == 1 ? at(bx + e, bz + along) : side == 2 ? at(bx - along, bz + e) : at(bx - e, bz - along);
+            };
+            if (!square) for (const float along : {-16.0F, 16.0F}) kit.tree(spot(along));
+            kit.put(urban + "Traffic lights/street_light.glb", spot(0), side == 0 ? 0.0F : side == 1 ? 270.0F : side == 2 ? 180.0F : 90.0F, false);
+        }
+        // Kerbside cars on the streets round the square.
+        if (!square && (bx == 0 || bz == 0)) for (const float along : {8.0F, -18.0F}) {
+            const bool along_z = bz == 0;
+            const float curb = pad_size * .5F + 2.2F;
+            const Vector3 p = along_z ? Vector3{c.x + bx + (bx > 0 ? -curb : curb), 0, c.z + along} : Vector3{c.x + along, 0, c.z + bz + (bz > 0 ? -curb : curb)};
+            vehicle_marker(*port, "vehicle_spawn_hatchback_porto_" + std::to_string(++parked), p, along_z ? 0.0F : 90.0F);
+        }
+    }
+    for (const float i : {-40.0F, 40.0F}) for (const float j : {-40.0F, 40.0F}) {
+        const float o = street * .5F + 1.2F;
+        kit.put(urban + "Traffic lights/traffic_light.glb", at(i + o, j - o), 0, false);
+        kit.put(urban + "Traffic lights/traffic_light.glb", at(i - o, j + o), 180, false);
+    }
+    kit.claim(c, edge + 2, edge + 2, 0);
+    // Waterfront: warehouses between the quay roads, the harbour office, the quay edge.
+    for (const auto& [z, name] : std::initializer_list<std::pair<float, const char*>>{
+            {-95, "Large Shed B"}, {-75, "Large Shed A"}, {-10, "Large Shed B"}, {10, "Large Shed A"}, {75, "Large Shed B"}, {95, "Large Shed A"}})
+        if (kit.claim({c.x + 160, 0, c.z + z}, 7.2F, 4.4F, 0)) kit.put(shacks + std::string(name) + ".glb", {c.x + 160, 0, c.z + z}, 90);
+    modular_building(kit, {c.x + 158, 0, c.z - 118}, 0, 8, 4, "stuco", 2, 9101, world::BuildingPurpose::Office); // harbour office
+    modular_building(kit, {c.x + 158, 0, c.z + 118}, 180, 4, 4, "brick", 1, 9102, world::BuildingPurpose::Dock);
+    for (int i = 0; i < 28; ++i) kit.put(urban + "Cones & Barriers/Bollards/square_bollard.glb", {c.x + 204, 0, c.z - 108 + i * 8.0F}, 0);
+    for (int i = 0; i < 18; ++i) {
+        const auto r = hash(9200U + static_cast<std::uint32_t>(i));
+        const Vector3 p{c.x + 140 + static_cast<float>(r % 40), 0, c.z + (i % 2 ? 50.0F : -50.0F) + static_cast<float>((r / 41) % 14) - 7};
+        prop(kit, shacks + (i % 3 ? "Pallet.glb" : "Barrel.glb"), p, static_cast<float>(r % 360), 1);
+    }
+    for (int i = -4; i <= 4; ++i) kit.put(urban + "Traffic lights/street_light_clean.glb", {c.x + 201, 0, c.z + i * 25.0F}, 90);
+    port->survivors = std::max(port->survivors, 60);
+}
 }
 
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
@@ -802,12 +1011,13 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     downtown(kit, region);
     roka(kit);
     trailer_park(kit, region);
-    porto_luma(kit);
     suda_haveno(kit);
     espera(kit);
     driveways(kit, region);
     // Last, so every older piece keeps its id (saves refer to them).
     sovagejo_homesteads(kit, region);
+    west_suburbs(kit, region);
+    porto_luma_city(kit, region);
     bus_stops(kit, region);
     return kit.report;
 }

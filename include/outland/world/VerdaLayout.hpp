@@ -19,6 +19,10 @@ inline constexpr std::array<Site, 5> sites{
 inline constexpr Vector3 legacy_espera{0, 0, -70};
 inline constexpr float sea_level = -32;
 inline constexpr float capital_flat_radius = 180;
+// Verda's western suburbs: level ground beside downtown, x in [suburb_west, suburb_east], |z| <= suburb_half.
+inline constexpr float suburb_west = -485, suburb_east = -150, suburb_half = 190;
+// Porto Luma is a city now: its building pad is wider than the other towns'.
+inline constexpr float town_flat_radius = 85, port_flat_radius = 205;
 inline constexpr float shoreline_band = 160;
 inline float shore_radius(float x, float z) {
     const float angle = std::atan2(z, x);

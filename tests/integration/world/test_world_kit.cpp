@@ -8,7 +8,9 @@
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
+#include "outland/world/terrain/TerrainHeight.hpp"
 #include <raymath.h>
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
@@ -76,7 +78,8 @@ int main() {
         auto start = world_of(b, b.door_x, -b.depth * .5F - 1.2F);
         start.y = WorldCollision::ground_height(start, b.origin.y, region);
         const auto inside = walk(region, b, start, b.door_x, -b.depth * .5F + 2.5F);
-        check(near(inside, world_of(b, b.door_x, -b.depth * .5F + 2.5F), .2F), "walk in through the front door");
+        check(near(inside, world_of(b, b.door_x, -b.depth * .5F + 2.5F), .2F),
+              "walk in through the front door at " + std::to_string(b.origin.x) + ", " + std::to_string(b.origin.z));
         check(std::abs(inside.y - (b.origin.y + b.ground_floor)) < .05F, "stand on the ground-floor slab");
         // Bullets fly in through the doorway at chest height.
         const auto shot = combat.trace_segment(Vector3Add(world_of(b, b.door_x, -b.depth * .5F - 3), {0, 1.4F, 0}),
@@ -135,17 +138,62 @@ int main() {
     // Downtown: the old capital is gone, the grid is in, highways meet the grid edge.
     const world::Settlement* capital = nullptr;
     for (const auto& s : region.settlements()) if (s.id == "capital_verda") capital = &s;
-    check(capital && capital->buildings.empty(), "old capital houses wiped");
-    int grid_streets = 0, highways = 0;
+    // The old capital's houses are gone; what the capital owns now are the western suburbs' homes.
+    check(capital != nullptr, "capital");
+    int suburb_homes = 0;
+    for (const auto& house : capital->buildings) {
+        check(house.position.x < -170 && house.position.x > -476 && std::abs(house.position.z) < 190, "old capital houses wiped");
+        check(house.purpose == world::BuildingPurpose::Home && house.enterable, "suburban homes are enterable homes");
+        // Every home fronts a street: 14 m in front of its centre is a street centreline (within 2 m).
+        const float a = house.rotation_y * DEG2RAD;
+        const Vector3 front{house.position.x - std::sin(a) * 14, 0, house.position.z - std::cos(a) * 14};
+        bool fronts = false;
+        for (const auto& road : capital->roads) {
+            const auto ab = Vector3Subtract(road.end, road.start), ap = Vector3Subtract(front, road.start);
+            const float t = std::clamp((ab.x * ap.x + ab.z * ap.z) / (ab.x * ab.x + ab.z * ab.z), 0.0F, 1.0F);
+            fronts |= std::hypot(road.start.x + ab.x * t - front.x, road.start.z + ab.z * t - front.z) < 2;
+        }
+        check(fronts, "home faces its street");
+        // Level ground: the suburbs are on the capital's building pad.
+        check(std::abs(world::terrain::TerrainHeight::sample(house.position.x, house.position.z)) < .05F, "suburbs are level");
+        ++suburb_homes;
+    }
+    check(suburb_homes >= 80, "western suburbs: " + std::to_string(suburb_homes) + " homes");
+    int grid_streets = 0, highways = 0, suburb_streets = 0;
     for (const auto& road : capital->roads) {
+        const auto in_suburbs = [](Vector3 p) { return p.x <= -166 && p.x >= -476 && std::abs(p.z) <= 160; };
         const bool inside = std::abs(road.start.x) <= 167 && std::abs(road.start.z) <= 167 && std::abs(road.end.x) <= 167 && std::abs(road.end.z) <= 167;
         if (inside) { ++grid_streets; check(road.width == 12 && road.type == world::RoadType::Asphalt, "grid streets are 12 m asphalt"); }
+        else if (in_suburbs(road.start) && in_suburbs(road.end)) ++suburb_streets;
         else if (std::abs(road.start.x) < 167 && std::abs(road.start.z) < 167) {
             ++highways;
             check((road.start.x == 0 && std::abs(road.start.z) == 166) || (road.start.z == 0 && std::abs(road.start.x) == 166), "highway joins a main street at the grid edge");
-        }
+        } else if (road.start.x == -476 && road.start.z == 0) ++highways; // Roka road leaves from the boulevard
     }
-    check(grid_streets == 10 && highways == 4, "grid and four highways: " + std::to_string(grid_streets) + "/" + std::to_string(highways));
+    check(grid_streets == 10 && highways == 4 && suburb_streets == 7,
+          "grid, suburbs and four highways: " + std::to_string(grid_streets) + "/" + std::to_string(suburb_streets) + "/" + std::to_string(highways));
+
+    // Porto Luma: a 4 x 4 street grid round Placo Luma, Main Street rows and harbour towers.
+    {
+        const world::Settlement* port = nullptr;
+        for (const auto& s : region.settlements()) if (s.id == "port_luma") port = &s;
+        check(port && port->buildings.empty(), "Porto Luma rebuilt");
+        int streets = 0;
+        for (const auto& road : port->roads) streets += road.width == 12;
+        check(streets == 8, "Porto Luma grid");
+        int rows = 0, port_towers = 0;
+        for (const auto& b : report.enterable) rows += std::hypot(b.origin.x - 1750, b.origin.z + 400) < 140 && b.width >= 12;
+        for (const auto& s : region.settlements()) for (const auto& a : s.assets)
+            port_towers += a.model_path.find("/city/towers/") != std::string::npos && std::hypot(a.position.x - 1750, a.position.z + 400) < 140;
+        check(rows >= 30, "Porto Luma Main Street: " + std::to_string(rows));
+        check(port_towers >= 4, "Porto Luma towers");
+        for (const auto& road : capital->roads)
+            for (const auto& end : {road.start, road.end})
+                check(std::hypot(end.x - 1750, end.z + 400) > 100, "highways stop at the Porto Luma grid edge");
+        const float h = world::terrain::TerrainHeight::sample(1750, -400);
+        for (const float o : {-126.0F, 126.0F}) for (const float q : {-126.0F, 126.0F})
+            check(std::abs(world::terrain::TerrainHeight::sample(1750 + o, -400 + q) - h) < .05F, "Porto Luma grid is level");
+    }
     int towers = 0;
     for (const auto& s : region.settlements()) for (const auto& a : s.assets) if (a.model_path.find("/city/towers/") != std::string::npos) {
         ++towers;

@@ -248,15 +248,18 @@ float TerrainHeight::sample(
     }
 
     if (coastal_enabled) {
-        // Flat central building pad, then the original countryside.
-        height *= smooth((distance-layout::capital_flat_radius)/80.0F);
+        // Flat central building pad (downtown and the western suburbs), then the original countryside.
+        const float suburb=std::hypot(std::max({layout::suburb_west-world_x,world_x-layout::suburb_east,0.0F}),
+                                      std::max(std::abs(world_z)-layout::suburb_half,0.0F));
+        height *= smooth(std::min(distance-layout::capital_flat_radius,suburb)/80.0F);
         // Small building pads retain hills and wilderness between towns.
         for (std::size_t i=1;i<layout::sites.size();++i) {
             const auto c=layout::sites[i].center;
             const float d=std::hypot(world_x-c.x,world_z-c.z);
-            if(d<150) {
+            const float flat=layout::sites[i].id=="port_luma"?layout::port_flat_radius:layout::town_flat_radius;
+            if(d<flat+65) {
                 const float pad=std::max(6.0F,large_hills(c.x,c.z)+rolling_ground(c.x,c.z)+small_variation(c.x,c.z));
-                const float blend=smooth((d-85)/65);
+                const float blend=smooth((d-flat)/65);
                 height=pad*(1-blend)+height*blend;
             }
         }

@@ -19,7 +19,7 @@ struct KitBuilding {
     Vector3 upstairs_walk{0, 0, -4}; // from the top of the stairs, a walk across the upper floor
 };
 struct WorldKitReport {
-    int assets{0}, buildings{0}, skipped_lots{0}, purposes{0}, parks{0}, driveways{0}, homesteads{0}, bus_stops{0}, turnarounds{0};
+    int assets{0}, buildings{0}, skipped_lots{0}, purposes{0}, parks{0}, driveways{0}, homesteads{0}, bus_stops{0}, turnarounds{0}, houses{0};
     std::vector<KitBuilding> enterable;
     std::vector<Vector3> skipped;     // centres of lots left empty because something was there
     std::vector<std::string> missing; // catalog models that could not be placed
@@ -27,6 +27,8 @@ struct WorldKitReport {
 // Downtown Verda (the capital) is wiped and rebuilt as a mid-sized American grid city: 80 m blocks,
 // 12 m streets with crosswalks, sidewalks, a tower core round a courthouse square, enterable
 // Main Street brick rows, parking lots, street trees, lights, signals and parked cars.
+// West of downtown, Okcidenta Verda: suburban blocks of detached homes on a boulevard. Porto Luma
+// is rebuilt as a grid city round Placo Luma with a waterfront district (see docs/cities.md).
 // Dresses Verda's five towns with the Creator catalog: enterable modular buildings (doorways,
 // open windows, floors, roofs, stairs to upper floors) and town-specific props. Every piece is an
 // ordinary Creator world asset, so the result is edited, saved and exported like hand-built work.
