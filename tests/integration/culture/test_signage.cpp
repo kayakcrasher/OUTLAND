@@ -54,17 +54,24 @@ int main() {
     check(same(at(.6F, .1F), verda_green), "stripes beyond the triangle");
     if (const char* out = std::getenv("OUTLAND_FLAG_PNG")) ExportImage(flag, out);
     UnloadImage(flag);
-    {   // The Suda Kruco: a navy saltire edged white on green, white stars, the green star at the crossing.
-        Image cross = suda_kruco_image(256);
-        check(cross.width == 256 && cross.height == 128, "Suda Kruco is 2:1");
-        const auto px = [&](float x, float y) { return GetImageColor(cross, static_cast<int>(x * 255), static_cast<int>(y * 127)); };
-        const auto green = [](Color c) { return c.g > 120 && c.r < 60 && c.b < 60; };
-        const auto navy = [](Color c) { return c.b > 70 && c.r < 50 && c.g < 70; };
-        check(green(px(.5F, .06F)) && green(px(.06F, .5F)), "Suda Kruco field is green");
-        check(navy(px(.05F, .07F)) || navy(px(.06F, .06F)), "Suda Kruco saltire is navy");
-        check(green(px(.5F, .5F)), "Suda Kruco carries the green star at the crossing");
-        if (const char* out = std::getenv("OUTLAND_SUDA_KRUCO_PNG")) ExportImage(cross, out);
-        UnloadImage(cross);
+    {   // The Apelacio: a green pine on white under "APELACIO AL LA ĈIELO".
+        std::vector<int> codepoints;
+        for (int c = 32; c < 127; ++c) codepoints.push_back(c);
+        for (const int c : {0x108, 0x109}) codepoints.push_back(c); // Ĉ ĉ
+        Font font = LoadFontEx((std::string(OUTLAND_SOURCE_DIR) + "/assets/fonts/DejaVuSans-Bold.ttf").c_str(), 64, codepoints.data(), static_cast<int>(codepoints.size()));
+        Image cloth = apelacio_image(256, &font);
+        if (const char* out = std::getenv("OUTLAND_APELACIO_PNG")) ExportImage(cloth, out);
+        check(cloth.width == 256 && cloth.height == 128, "Apelacio is 2:1");
+        const auto px = [&](float x, float y) { return GetImageColor(cloth, static_cast<int>(x * 255), static_cast<int>(y * 127)); };
+        const auto white = [](Color c) { return c.r > 220 && c.g > 220 && c.b > 210; };
+        const auto pine = [](Color c) { return c.g > 80 && c.r < 70 && c.b < 90; };
+        check(white(px(.05F, .5F)) && white(px(.95F, .9F)), "Apelacio field is white");
+        check(pine(px(.5F, .7F)) && pine(px(.5F, .45F)) && !pine(px(.2F, .7F)), "Apelacio flies a pine in the middle");
+        int ink = 0;
+        for (int x = 0; x < 256; ++x) for (int y = 4; y < 26; ++y) { const Color c = GetImageColor(cloth, x, y); ink += c.r < 120 && c.g < 120; }
+        check(font.glyphCount > 0 && ink > 150, "Apelacio carries the motto across the top: " + std::to_string(ink));
+        UnloadImage(cloth);
+        UnloadFont(font);
     }
 
     // The published world.
@@ -184,12 +191,12 @@ int main() {
     check(square_flags == static_cast<int>(region.settlements().size()), "a flag on every town square: " + std::to_string(square_flags));
     check(wall_flags >= 2 && roof_flags >= 2, "police, town hall and tower flags");
     int sovagejo_crosses = 0, crosses = 0;
-    for (const auto& flag : signage.flags) if (flag.design == FlagDesign::SudaKruco) {
+    for (const auto& flag : signage.flags) if (flag.design == FlagDesign::Apelacio) {
         ++crosses;
         if (std::hypot(flag.base.x + 1900, flag.base.z - 610) < 140) ++sovagejo_crosses;
         check(!world::physics::WorldCollision::body_blocked(flag.base, flag.base.y, region, .4F), "trailer flagpole stands clear: " + flag.place);
     }
-    check(sovagejo_crosses >= 10 && sovagejo_crosses * 2 > crosses, "Sovaĝejo's trailer park flies the most Suda Kruco flags: " + std::to_string(sovagejo_crosses));
+    check(sovagejo_crosses >= 10 && sovagejo_crosses * 2 > crosses, "Sovaĝejo's trailer park flies the most Apelacio flags: " + std::to_string(sovagejo_crosses));
 
     // Ferarbaro's back roads carry hand-painted boards, and only Ferarbaro's.
     {

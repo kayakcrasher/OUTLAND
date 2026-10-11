@@ -36,7 +36,7 @@ private:
     std::vector<Measured> measured_;
     Font font_{};
     bool own_font_{false};
-    Texture2D flag_{}, suda_kruco_{};
+    Texture2D flag_{}, apelacio_{};
     bool loaded_{false};
     mutable engine::GeometryRecorder recorder_;
     mutable engine::RecordedGeometry baked_;

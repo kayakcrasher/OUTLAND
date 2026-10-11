@@ -224,7 +224,7 @@ void squares(const world::VerdaRegion& region, const life::Island& island, Signa
     }
 }
 
-// Sovaĝejo's trailer park flies the Suda Kruco from a pole beside every trailer (and its town
+// Sovaĝejo's trailer park flies the Apelacio flag from a pole beside every trailer (and its town
 // flag is one too); Ruldomaro, out east, has a couple. Trailers are found by where they stand,
 // whichever settlement the map files them under.
 void trailer_flags(const world::VerdaRegion& region, Signage& out) {
@@ -232,7 +232,7 @@ void trailer_flags(const world::VerdaRegion& region, Signage& out) {
     for (const auto& town : towns) {
         const bool sovagejo = town.id == "ferarbaro_sovagejo";
         if (sovagejo)
-            for (auto& flag : out.flags) if (flag.place == town.id + ":square") flag.design = FlagDesign::SudaKruco;
+            for (auto& flag : out.flags) if (flag.place == town.id + ":square") flag.design = FlagDesign::Apelacio;
         if (!sovagejo && town.id != "hamlet_ruldomaro") continue;
         int trailer = 0;
         for (const auto& owner : towns) for (const auto& asset : owner.assets) {
@@ -255,7 +255,7 @@ void trailer_flags(const world::VerdaRegion& region, Signage& out) {
             flag.tip = {spot.x, base + 5.0F, spot.z};
             flag.fly = Vector3Normalize(wind);
             flag.width = 1.6F;
-            flag.design = FlagDesign::SudaKruco;
+            flag.design = FlagDesign::Apelacio;
             out.flags.push_back(flag);
         }
     }
@@ -581,58 +581,53 @@ Image flag_image(int width) {
     return image;
 }
 
-Image suda_kruco_image(int width) {
+Image apelacio_image(int width, const Font* font) {
     width = std::max(16, width);
     const int height = width / 2;
     const int W = width * 2, H = height * 2;
-    Image image = GenImageColor(W, H, verda_green);
+    Image image = GenImageColor(W, H, Color{246, 244, 236, 255});
     auto* pixels = static_cast<Color*>(image.data);
     const float w = static_cast<float>(W), h = static_cast<float>(H);
-    const Color navy{18, 38, 92, 255};
-    // Distance from a point to each diagonal of the field, in pixels.
-    const float diagonal = std::hypot(w, h);
-    const auto off_diagonals = [&](float x, float y) {
-        const float a = std::abs(h * x - w * y) / diagonal;            // top-left to bottom-right
-        const float b = std::abs(h * x + w * y - w * h) / diagonal;    // bottom-left to top-right
-        return std::min(a, b);
-    };
-    const float arm = h * .085F, edge = h * .025F;
-    // Twelve stars down the arms (three each side of the crossing), one big green star in the middle.
-    std::vector<std::pair<Vector2, float>> stars;
-    for (const float t : {.12F, .24F, .36F, .64F, .76F, .88F}) {
-        stars.push_back({{w * t, h * t}, h * .045F});
-        stars.push_back({{w * t, h * (1 - t)}, h * .045F});
-    }
-    const auto star_points = [](Vector2 c, float r) {
-        std::vector<Vector2> points;
-        for (int k = 0; k < 10; ++k) {
-            const float angle = -PI / 2 + k * PI / 5, radius = (k % 2 ? .38F : 1.0F) * r;
-            points.push_back({c.x + std::cos(angle) * radius, c.y + std::sin(angle) * radius});
-        }
-        return points;
-    };
-    const auto in_polygon = [](const std::vector<Vector2>& polygon, float x, float y) {
-        bool inside = false;
-        for (std::size_t i = 0, j = polygon.size() - 1; i < polygon.size(); j = i++)
-            if ((polygon[i].y > y) != (polygon[j].y > y) &&
-                x < (polygon[j].x - polygon[i].x) * (y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x) inside = !inside;
-        return inside;
-    };
-    std::vector<std::vector<Vector2>> star_shapes;
-    for (const auto& [centre, r] : stars) star_shapes.push_back(star_points(centre, r));
-    const Vector2 middle{w / 2, h / 2};
-    const auto big_star = star_points(middle, h * .13F);
+    const Color pine{22, 110, 48, 255}, trunk{96, 64, 36, 255};
+    // The pine: a trunk and five tiers of boughs, widest at the bottom, under the motto.
+    const float cx = w * .5F, top = h * .27F, base = h * .9F;
     for (int y = 0; y < H; ++y) for (int x = 0; x < W; ++x) {
         const float fx = x + .5F, fy = y + .5F;
-        const float d = off_diagonals(fx, fy);
-        Color c = verda_green;
-        if (d < arm + edge) c = WHITE;
-        if (d < arm) c = navy;
-        if (d < arm) for (const auto& shape : star_shapes) if (in_polygon(shape, fx, fy)) {c = WHITE; break;}
-        const float centre = std::hypot(fx - middle.x, fy - middle.y);
-        if (centre < h * .16F) c = centre < h * .145F ? WHITE : navy;
-        if (in_polygon(big_star, fx, fy)) c = verda_green;
-        pixels[y * W + x] = c;
+        if (std::abs(fx - cx) < h * .035F && fy > base - h * .1F && fy < base) pixels[y * W + x] = trunk;
+        for (int tier = 0; tier < 5; ++tier) {
+            const float t0 = top + (base - h * .1F - top) * tier / 5.0F * .92F, t1 = t0 + (base - top) * .26F;
+            if (fy < t0 || fy > t1) continue;
+            const float half = (fy - t0) / (t1 - t0) * h * (.12F + tier * .045F);
+            if (std::abs(fx - cx) < half) pixels[y * W + x] = pine;
+        }
+    }
+    if (font && font->glyphCount > 0 && font->baseSize > 0) {
+        // Laid out glyph by glyph from the font's CPU images (raylib's text measuring needs a GPU).
+        std::vector<std::pair<int, int>> glyphs; // glyph index, advance at base size
+        float advance = 0;
+        const float spacing = font->baseSize * .06F;
+        for (int i = 0; apelacio_motto[i];) {
+            int bytes = 0;
+            const int codepoint = GetCodepointNext(&apelacio_motto[i], &bytes);
+            i += std::max(1, bytes);
+            const int index = GetGlyphIndex(*font, codepoint);
+            const auto& glyph = font->glyphs[index];
+            const int step = glyph.advanceX ? glyph.advanceX : static_cast<int>(font->recs[index].width);
+            glyphs.push_back({index, step});
+            advance += step + spacing;
+        }
+        const float scale = std::min(h * .15F / font->baseSize, w * .9F / std::max(1.0F, advance));
+        float x = (w - advance * scale) * .5F;
+        const float y = h * .06F;
+        for (const auto& [index, step] : glyphs) {
+            const auto& glyph = font->glyphs[index];
+            if (glyph.image.data && glyph.image.width > 0) {
+                const Rectangle source{0, 0, static_cast<float>(glyph.image.width), static_cast<float>(glyph.image.height)};
+                const Rectangle target{x + glyph.offsetX * scale, y + glyph.offsetY * scale, glyph.image.width * scale, glyph.image.height * scale};
+                ImageDraw(&image, glyph.image, source, target, Color{24, 30, 26, 255});
+            }
+            x += (step + spacing) * scale;
+        }
     }
     ImageResize(&image, width, height);
     return image;
