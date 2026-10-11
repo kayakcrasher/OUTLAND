@@ -151,7 +151,7 @@ NpcHit NpcSystem::trace_segment(Vector3 start,Vector3 end) const {
     const auto delta=Vector3Subtract(end,start);
     for(std::size_t i=0;i<actors_.size();++i) {
         const auto& actor=actors_[i];
-        if((!actor.visible && actor.bot<0) || actor.health<=0 || actor.state==NpcState::Dead) continue;
+        if((!actor.visible && actor.bot<0) || actor.hidden || actor.health<=0 || actor.state==NpcState::Dead) continue;
         const auto p=actor.position;
         const float lo[3]{p.x-.35F,p.y,p.z-.35F}, hi[3]{p.x+.35F,p.y+1.85F,p.z+.35F};
         const float origin[3]{start.x,start.y,start.z}, direction[3]{delta.x,delta.y,delta.z};
@@ -234,6 +234,10 @@ void NpcSystem::set_bot(int bot,Vector3 position,float yaw_degrees,float health,
 void NpcSystem::set_bot_weapon(int bot,int weapon) {
     const int index=find_bot(bot);
     if(index>=0) actors_[static_cast<std::size_t>(index)].weapon=weapon;
+}
+void NpcSystem::set_bot_hidden(int bot,bool hidden) {
+    const int index=find_bot(bot);
+    if(index>=0) actors_[static_cast<std::size_t>(index)].hidden=hidden;
 }
 void NpcSystem::clear_bots() {
     std::erase_if(actors_,[](const NpcInstance& actor){return actor.bot>=0;});

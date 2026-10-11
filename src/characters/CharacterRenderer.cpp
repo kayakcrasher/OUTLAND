@@ -110,7 +110,7 @@ HeldGun CharacterRenderer::draw_player(Vector3 feet,float yaw,const BodyPose& bo
 void CharacterRenderer::draw_npcs(const NpcSystem& npcs,Vector3 camera,const engine::ViewFrustum* view,const Dress& dress,const Armed& armed) {
     (void)camera; // NpcSystem owns configurable visibility/activation distances.
     for (const auto& actor:npcs.actors()) {
-        if(!actor.visible || (view && !view->sphere({actor.position.x,actor.position.y+1,actor.position.z},2))) continue;
+        if(!actor.visible || actor.hidden || (view && !view->sphere({actor.position.x,actor.position.y+1,actor.position.z},2))) continue;
         BodyPose body;
         if(actor.pool==CharacterPool::Creature) body.style=BodyStyle::Zombie;
         if(dress) dress(actor,body);

@@ -127,3 +127,36 @@ gun through the optics it fits and the bag holds. Selling or dropping an optic t
 gun. Scopes are viewed through, filling the screen like the sniper's; the gun model shows the
 mounted optic on its rail. Look speed while aiming scales with the zoom. The Dev Lab has every
 optic. Logic: `game/combat/Sights` (tested by `outland_sight_tests`); models: `tools/generate_sight_models.py`.
+
+## Bots on the road
+At the start of a match, up to seven bots that dropped within 140 m of a running car take it
+(`game::ai::BotDrivers`) and drive the roads in toward the zone (a road-graph route to a point
+well inside the circle), at up to ~60 km/h on the straight and slower on bends, backing off when
+stuck. A driver gets out and fights on foot when it arrives, when the player is within 55 m and
+in sight, after four failed tries at getting unstuck, or after four minutes. While driving a bot
+is *mounted*: it does not think or shoot, other bots cannot hit it, its body is hidden and its
+car takes the bullets - shots through the windows (or into the cabin) hurt the driver, and a
+wrecked car throws it out hurt. The car is handed back at the end of the match.
+
+## The zone wall
+The circle's edge stands in the world as a wall of blue light (`game::draw_zone_wall`): a curtain
+120 m tall following the ground, strong at the foot and fading upward, streaks drifting along it,
+a bright band along the ground; only the stretch within ~950 m of the camera is drawn. Outside
+it the screen edges glow blue, pulsing, with "OUTSIDE THE ZONE - n m TO SAFETY - n HP/s", and
+the zone bites harder as it closes: 6 HP/s at first, up to 24 at the end (`zone_damage`). Dev:
+`OUTLAND_DEV_ZONE=<metres>` starts the circle smaller.
+
+## Loot
+- **Rarity**: common (white), uncommon (green: pistol, rifle, red dot, grenades, bandages),
+  rare (blue: SMG, shotgun, 2x, light vest, antibiotics, backpack) and epic (purple: sniper, 4x,
+  plate carrier) - `rarity_of`. Anything better than common glows in a ring of its colour, turns
+  and bobs; rare and epic finds send up a beam seen from 140 m. The pickup prompt shows the tier.
+- **Loot in buildings**: every enterable building (kit buildings, procedural and model houses,
+  Main Street rows) has a loot spot on its ground floor - 55% general, 20% medical, 25% weapons;
+  541 loot spots on the island, up from 43. Pickups are capped at 4096.
+- **Fallen bots drop their kit**: their gun (loaded), two magazines of ammo, and sometimes
+  bandages, a vest or a grenade.
+- **Armour**: a light vest (armour I, 30% less damage) and a plate carrier (armour II, 45%) from
+  weapons caches, general loot, bots and stores (120 / 260 kronoj). The best vest in the bag
+  soaks bullets, blasts and bites (not the zone or crashes); the HUD shows ARMOUR I / II.
+  Models: `tools/generate_armour_models.py`.

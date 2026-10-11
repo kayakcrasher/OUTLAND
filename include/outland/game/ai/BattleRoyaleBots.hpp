@@ -60,6 +60,10 @@ public:
     // The owner applies player damage; it reports the death back for the kill feed.
     void report_player_death(int killer);
     void apply_circle(float radius, float damage);
+    // A bot at the wheel (game::ai::BotDrivers) is mounted: its car carries it, it does not think,
+    // shoot or get hit (bullets hit the car), and its body is hidden.
+    void set_mounted(int bot, bool mounted);
+    [[nodiscard]] bool mounted(int bot) const;
 
     // Keep bot bodies in NpcSystem in step with the brains (spawns missing bodies).
     void sync_bodies(characters::NpcSystem& npcs, const characters::CharacterRegistry* registry) const;
@@ -87,6 +91,7 @@ private:
     std::vector<BotShot> shots_;
     std::vector<BotTracer> tracers_;
     std::vector<std::string> feed_;
+    std::vector<int> mounted_;
     BattleRoyaleEvents events_;
     BotLevel level_{BotLevel::Medium};
     Vector3 last_player_{};

@@ -22,7 +22,7 @@ struct LootWorldState {
 };
 class LootWorld {
   public:
-    static constexpr std::size_t max_pickups = 1024;
+    static constexpr std::size_t max_pickups = 4096;
     bool reconcile(const world::VerdaRegion &, const ItemRegistry &, bool zombie, Vector3 player,
                    float radius = 90);
     int nearest(Vector3 player, float radius = 2.8F,

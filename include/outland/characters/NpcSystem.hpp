@@ -12,6 +12,7 @@ struct NpcInstance {
     CharacterPool pool{CharacterPool::Civilian};
     NpcState state{NpcState::Idle};
     bool active{false}, visible{false};
+    bool hidden{false};              // a bot at the wheel: not drawn, not hit (the car is)
     float state_time{0}, decision_clock{0}, reaction_clock{0}, threat_timer{0}, attack_clock{0};
     std::uint64_t random_state{1};
     AnimationController animation;
@@ -71,6 +72,7 @@ public:
     int find_bot(int bot) const;
     void set_bot(int bot,Vector3 position,float yaw_degrees,float health,NpcState state);
     void set_bot_weapon(int bot,int weapon);
+    void set_bot_hidden(int bot,bool hidden);
     void clear_bots();
     // Routes for NPCs travelling or chasing; without one they walk straight (and slide on walls).
     void set_path_finder(world::navigation::PathFinder finder) { path_finder_=std::move(finder); }

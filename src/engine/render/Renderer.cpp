@@ -9,6 +9,8 @@
 #include "outland/game/combat/Sights.hpp"
 #include "outland/game/build/BuildMode.hpp"
 #include "outland/game/hud/Instruments.hpp"
+#include "outland/game/ai/BotDrivers.hpp"
+#include "outland/game/ZoneWall.hpp"
 #include "outland/game/inventory/LootSave.hpp"
 #include "outland/game/inventory/LootSession.hpp"
 #include "outland/game/inventory/LootUI.hpp"
@@ -467,6 +469,8 @@ void Renderer::run() {
     game::inventory::LootUI loot_ui(character_root);
     characters::NpcSystem npcs;
     game::ai::BattleRoyaleBots br_bots;
+    game::ai::BotDrivers bot_drivers; // Battle Royale bots on the road
+    std::vector<int> bots_looted;      // fallen bots whose gear already lies on the ground
     game::ModeSession mode_session;
     game::PlayUI play_ui;
     game::economy::Economy economy;
@@ -563,6 +567,7 @@ void Renderer::run() {
     std::vector<world::WorldAsset> match_fleet;
     bool match_fleet_active=false, fleet_was_dirty=false;
     const auto restore_match_fleet=[&]{
+        bot_drivers.clear(br_bots,vehicles);
         if(!match_fleet_active) return;
         vehicles.restore_checkpoint(verda_region,match_fleet);
         vehicle_dirty=fleet_was_dirty;match_fleet.clear();match_fleet_active=false;
@@ -618,9 +623,27 @@ void Renderer::run() {
     game::combat::WeaponSystem weapons;
     game::combat::CombatWorld combat_world(verda_region);
     game::Health player_health;
+    // Armour from the bag: the best vest carried soaks part of every bullet, blast and bite.
+    const auto armour_level=[&]{
+        if(game_mode==game::GameMode::DevLab) return 0;
+        const auto& bag=loot_session.inventory();
+        return bag.count("vest_heavy")>0 ? 2 : bag.count("vest_light")>0 ? 1 : 0;
+    };
+    const auto hurt_player=[&](float amount){
+        static constexpr float soak[]{0.0F,.30F,.45F};
+        if(amount>0) player_health.damage(amount*(1-soak[armour_level()]));
+    };
     game::vehicles::VehicleAudio vehicle_audio;
     vehicles.bind_occupant_damage([&](float amount){player_health.damage(amount);});
-    combat_world.bind_vehicles([&](Vector3 start,Vector3 end,bool occupants){return vehicles.trace(verda_region,start,end,occupants);},[&](const game::combat::BulletHit& hit,float amount){vehicles.damage(verda_region,hit,amount);vehicle_dirty=true;});
+    combat_world.bind_vehicles([&](Vector3 start,Vector3 end,bool occupants){return vehicles.trace(verda_region,start,end,occupants);},[&](const game::combat::BulletHit& hit,float amount){
+        vehicles.damage(verda_region,hit,amount);vehicle_dirty=true;
+        // Through the glass into a bot at the wheel.
+        if((hit.kind==game::combat::HitKind::VehicleWindow || hit.kind==game::combat::HitKind::VehicleOccupant) &&
+           hit.target>=0 && static_cast<std::size_t>(hit.target)<vehicles.vehicles().size()) {
+            const int driver=bot_drivers.driver_of(vehicles.vehicles()[static_cast<std::size_t>(hit.target)].id);
+            if(driver>=0 && br_bots.damage_bot(driver,amount*.8F,hit.position,match_time)) pending_kills.push_back(hit.position);
+        }
+    });
     // The player's damage to a person (bullets and grenades): bots, residents, police, zombies.
     // Returns true when it kills. Hurting a resident is a crime if anyone saw it.
     const auto damage_actor=[&](int actor,float damage,Vector3 attacker) -> bool {
@@ -864,6 +887,7 @@ void Renderer::run() {
                     zombies.build(verda_region,&character_registry,++zombie_seed);zombies.reset(npcs);
                     zombies.clear_area({player.position.x,player.position.y-1,player.position.z},70); // a safe start
                 } else zombies.clear(npcs);
+                bot_drivers.clear(br_bots,vehicles);bots_looted.clear();
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
                 zombie_hour=17.5F;lit_asset_count=static_cast<std::size_t>(-1);
                 justice.reset(nullptr,nullptr);crimes.clear();police_tracers.clear();
@@ -872,9 +896,15 @@ void Renderer::run() {
                 last_player_feet={player.position.x,player.position.y-1.0F,player.position.z};
                 if(game::rules_for(game_mode).combat_bots) {
                     br_bots.start(verda_region,home_screen.bot_level(),23,session_seed,last_player_feet);
+                    // Some of them find a car near where they land and drive in toward the zone.
+                    bot_drivers.start(br_bots,vehicles,verda_region,session_seed,mode_session.circle.start_radius);
                     br_bots.sync_bodies(npcs,&character_registry);
                 }
                 mode_session.start(game_mode,static_cast<int>(br_bots.bots().size()),home_screen.bot_level());
+#ifdef OUTLAND_DEV_TOOLS
+                // OUTLAND_DEV_ZONE=<metres>: start the Battle Royale circle smaller, to see its wall up close.
+                if(const char* zone=std::getenv("OUTLAND_DEV_ZONE")) mode_session.circle.start_radius=std::max(30.0F,static_cast<float>(std::atof(zone)));
+#endif
                 player_health.reset();
                 health_seen=player_health.current();hurt_directional=false;pending_kills.clear();
                 combat_feedback.reset();
@@ -1686,7 +1716,7 @@ void Renderer::run() {
             const float near=Vector3Distance(core,chest);
             combat_feedback.blast(std::clamp(1-near/45,0.0F,1.0F)*.6F);
             if(!driving && near<game::combat::Grenades::blast_radius && open(chest)) {
-                player_health.damage(game::combat::Grenades::damage_at(near));
+                hurt_player(game::combat::Grenades::damage_at(near));
                 hurt_from=blast;hurt_directional=true;
             }
             for(std::size_t i=0;i<npcs.actors().size();++i) {
@@ -1778,7 +1808,7 @@ void Renderer::run() {
             zombies.hear(sound_bus);
             zombies.update(vehicle_paused ? 0.0F : dt,{npc_context.player_position,last_daylight,match_time},npcs);
         }
-        player_health.damage(npcs.events().player_damage);
+        hurt_player(npcs.events().player_damage);
         if(npcs.events().player_damage>0) {hurt_from=npcs.events().player_damage_from;hurt_directional=true;}
         // Police gunfire is heard like any other and leaves tracers.
         for(auto& tracer:police_tracers) tracer.life-=dt;
@@ -1810,15 +1840,38 @@ void Renderer::run() {
                 frame.player_weapon=weapons.selected();
                 frame.player_in_vehicle=driving;
                 const double bots_t0=GetTime();
+                bot_drivers.update(dt,br_bots,vehicles,verda_region,feet,player_health.alive(),mode_session.radius(),bot_world.environment.line_of_sight);
                 br_bots.update(frame,bot_world);
                 br_bots.sync_bodies(npcs,&character_registry);
                 world_draw_stats().bots=world_draw_stats().bots*.9+(GetTime()-bots_t0)*1000*.1;
-                player_health.damage(br_bots.events().player_damage);
+                hurt_player(br_bots.events().player_damage);
                 if(br_bots.events().player_damage>0) {hurt_from=br_bots.events().player_damage_from;hurt_directional=true;}
             }
             const bool finished=mode_session.terminal();
             mode_session.update(dt,feet,player_health,br_bots,vehicle_paused);
-            if(game_mode==game::GameMode::BattleRoyale) br_bots.sync_bodies(npcs,&character_registry);
+            if(game_mode==game::GameMode::BattleRoyale) {
+                br_bots.sync_bodies(npcs,&character_registry);
+                // A fallen bot leaves its kit: its gun (loaded), ammo, and sometimes meds or a vest.
+                for(const auto& bot:br_bots.bots()) {
+                    if(bot.alive() || std::find(bots_looted.begin(),bots_looted.end(),bot.id())!=bots_looted.end()) continue;
+                    bots_looted.push_back(bot.id());
+                    const Vector3 at=bot.position();
+                    const auto spot=[&](int k){const float a=static_cast<float>(k)*2.1F+static_cast<float>(bot.id());return Vector3{at.x+std::cos(a)*.7F,at.y,at.z+std::sin(a)*.7F};};
+                    const auto weapon=bot.weapon();
+                    const std::uint32_t roll=static_cast<std::uint32_t>(bot.id())*2654435761U;
+                    int k=0;
+                    for(const auto& item:item_registry.items()) {
+                        if(!item.weapon || *item.weapon!=weapon) continue;
+                        if(item.category==game::inventory::ItemCategory::Weapon)
+                            loot_session.edit_world().drop(item_registry,item.id,1,spot(k++),game::combat::definition(weapon).magazine);
+                        else if(item.category==game::inventory::ItemCategory::Ammo)
+                            loot_session.edit_world().drop(item_registry,item.id,std::max(4,game::combat::definition(weapon).magazine*2),spot(k++));
+                    }
+                    if(roll%2==0) loot_session.edit_world().drop(item_registry,"bandage",1+static_cast<int>(roll%3),spot(k++));
+                    if(roll%5==1) loot_session.edit_world().drop(item_registry,roll%3==0 ? "vest_heavy" : "vest_light",1,spot(k++));
+                    if(roll%4==3) loot_session.edit_world().drop(item_registry,"frag_grenade",1,spot(k++));
+                }
+            }
             if(!finished && mode_session.terminal()) {
                 shop_open=inventory_open=false;play_ui.opened();input_system.cancel_controls();
                 vehicle_audio.stop();
@@ -2103,6 +2156,9 @@ void Renderer::run() {
         }
 
         build_mode.draw_world(static_cast<float>(GetTime()));
+        // The circle's edge stands in the world as a wall of blue light.
+        if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal())
+            game::draw_zone_wall(mode_session.radius(),camera.position,static_cast<float>(GetTime()));
         if(perf.enabled()) perf.mark(FrameStage::Characters,GetTime());
         EndMode3D();
 
@@ -2258,6 +2314,8 @@ void Renderer::run() {
             DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
             DrawText(weapons.available()?weapons.weapon().name:"NO WEAPON - OPEN BAG",24,screen_height-94,19,RAYWHITE);
             DrawText(TextFormat("NADES %d  G",grenades.count()),222,screen_height-68,16,grenades.count()>0 ? Color{190,220,150,255} : GRAY);
+            if(const int armour=armour_level(); armour>0)
+                DrawText(armour==2 ? "ARMOUR II  -45%" : "ARMOUR I  -30%",200,screen_height-112,14,game::inventory::LootUI::rarity_color(armour==2 ? game::inventory::Rarity::Epic : game::inventory::Rarity::Rare));
             if(weapons.available()) DrawText(TextFormat("%s%s",game::combat::sight_info(sight).name,sight==game::combat::Sight::Sniper ? "" : "  X"),
                 200,screen_height-92,14,sight==game::combat::Sight::Iron ? GRAY : Color{235,120,110,255});
             if (weapons.unlimited()) DrawText("AMMO UNLIMITED - DEV LAB",24,screen_height-68,18,YELLOW);
@@ -2365,7 +2423,12 @@ void Renderer::run() {
             const int nearby=loot_session.world().nearest(loot_feet,2.8F,reachable_pickup);
             if(nearby>=0){const auto& pickup=loot_session.world().state().pickups[static_cast<std::size_t>(nearby)];
                 const auto* item=item_registry.find(pickup.item);
-                if(item)DrawText(TextFormat("E / USE: %s x%d",item->name.c_str(),pickup.quantity),screen_width/2-180,screen_height-140,18,YELLOW);
+                if(item) {
+                    const auto rarity=game::inventory::rarity_of(item->id);
+                    const char* line=TextFormat("E / USE: %s x%d  %s",item->name.c_str(),pickup.quantity,game::inventory::rarity_name(rarity));
+                    DrawRectangle(screen_width/2-190,screen_height-146,MeasureText(line,18)+20,30,Fade(BLACK,.5F));
+                    DrawText(line,screen_width/2-180,screen_height-140,18,game::inventory::LootUI::rarity_color(rarity));
+                }
             }
         }
         if (interaction_remaining > 0)
@@ -2431,6 +2494,23 @@ void Renderer::run() {
         }
         if(shop_open && current_shop) play_ui.draw_shop(economy,*current_shop,loot_session.economy(),item_registry,loot_session.inventory(),shop_status,screen_width,screen_height);
         if(mode_session.terminal()) play_ui.draw_result(mode_session,screen_width,screen_height);
+        // Outside the circle: red at the edges of the screen, pulsing, and the way back.
+        if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal() && player_health.alive()) {
+            const float outside=mode_session.distance(loot_feet)-mode_session.radius();
+            if(outside>0) {
+                const float pulse=.55F+.45F*std::sin(static_cast<float>(GetTime())*5);
+                const auto edge=static_cast<unsigned char>(110*pulse);
+                const int band=std::max(40,screen_height/7);
+                DrawRectangleGradientV(0,0,screen_width,band,Color{90,140,255,edge},Color{90,140,255,0});
+                DrawRectangleGradientV(0,screen_height-band,screen_width,band,Color{90,140,255,0},Color{90,140,255,edge});
+                DrawRectangleGradientH(0,0,band,screen_height,Color{90,140,255,edge},Color{90,140,255,0});
+                DrawRectangleGradientH(screen_width-band,0,band,screen_height,Color{90,140,255,0},Color{90,140,255,edge});
+                const char* warning=TextFormat("OUTSIDE THE ZONE - %.0f m TO SAFETY - %.0f HP/s",outside,mode_session.zone_damage());
+                const int ww=MeasureText(warning,22);
+                DrawRectangle(screen_width/2-ww/2-12,screen_height/2+90,ww+24,34,Fade(BLACK,.6F));
+                DrawText(warning,screen_width/2-ww/2,screen_height/2+96,22,Color{150,190,255,255});
+            }
+        }
         // The compass, in every circumstance: where the camera looks.
         if(!map_screen.is_open())
             game::hud::draw_compass(game::hud::bearing(Vector3Subtract(camera.target,camera.position)),screen_width,32);

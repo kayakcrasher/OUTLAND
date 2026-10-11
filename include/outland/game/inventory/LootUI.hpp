@@ -10,6 +10,8 @@ struct InventoryActions {
 class LootUI {
   public:
     explicit LootUI(std::string asset_root) : asset_root_(std::move(asset_root)) {}
+    // White, green, blue, purple.
+    static Color rarity_color(Rarity rarity);
     void opened() {
         warm_ = true;
     }

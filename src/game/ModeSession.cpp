@@ -14,6 +14,10 @@ float ModeSession::radius() const {
     return circle.start_radius+(circle.end_radius-circle.start_radius)*progress;
 }
 float ModeSession::distance(Vector3 feet) const { return std::hypot(feet.x,feet.z); }
+float ModeSession::zone_damage() const {
+    const float progress=std::clamp((elapsed_-circle.opening_seconds)/std::max(1.0F,circle.shrink_seconds),0.0F,1.0F);
+    return circle.damage_per_second*(1+3*progress);
+}
 const char* ModeSession::objective() const {
     if(mode_==GameMode::BattleRoyale) return "Be the last survivor.";
     if(mode_==GameMode::Explore) return "Free roam: explore, drive, interact, visit towns, obey or break the law.";
@@ -29,8 +33,8 @@ void ModeSession::update(float dt, Vector3 feet, Health& health, ai::BattleRoyal
     elapsed_+=step;
     // Check every damage source before victory (including mutual final eliminations).
     if(health.alive()) {
-        if(distance(feet)>radius()) health.damage(circle.damage_per_second*step);
-        bots.apply_circle(radius(),circle.damage_per_second*step);
+        if(distance(feet)>radius()) health.damage(zone_damage()*step);
+        bots.apply_circle(radius(),zone_damage()*step);
     }
     if(!health.alive()) {
         phase_=SessionPhase::Dead; result_.placement=std::max(result_.participants>1 ? 2 : 1,bots.alive_bots()+1);

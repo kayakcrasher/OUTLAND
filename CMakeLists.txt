@@ -181,6 +181,8 @@ add_library(
     src/game/sound/SoundBus.cpp
     src/game/ai/CombatBot.cpp
     src/game/ai/BattleRoyaleBots.cpp
+    src/game/ai/BotDrivers.cpp
+    src/game/ZoneWall.cpp
     src/characters/AnimationController.cpp
     src/characters/SkeletalGait.cpp
     src/world/physics/WorldCollision.cpp
@@ -669,6 +671,12 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_definitions(outland_player_build_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_player_build_tests COMMAND outland_player_build_tests)
 
+    add_executable(outland_bot_driver_tests tests/integration/ai/test_bot_drivers.cpp)
+    target_link_libraries(outland_bot_driver_tests PRIVATE outland_render)
+    target_compile_options(outland_bot_driver_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_bot_driver_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_bot_driver_tests COMMAND outland_bot_driver_tests)
+
     add_executable(outland_bus_line_tests tests/integration/transit/test_bus_line.cpp)
     target_link_libraries(outland_bus_line_tests PRIVATE outland_render)
     target_compile_options(outland_bus_line_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -703,6 +711,7 @@ if(OUTLAND_BUILD_TESTS)
         add_test(NAME outland_generated_vehicle_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_truck_model.py" --check)
         add_test(NAME outland_generated_grenade_model COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_grenade_model.py" --check)
         add_test(NAME outland_generated_sight_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_sight_models.py" --check)
+        add_test(NAME outland_generated_armour_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_armour_models.py" --check)
         add_test(NAME outland_generated_weapon_audio COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_weapon_audio.py" --check)
         add_test(NAME outland_city_kit_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_city_kit.py" --check)
         file(GLOB OUTLAND_TRAILER_MODELS "${PROJECT_SOURCE_DIR}/assets/verda/residential/trailers/*.glb")

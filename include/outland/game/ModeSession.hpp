@@ -17,6 +17,8 @@ public:
     bool terminal() const { return phase_ != SessionPhase::Playing; }
     const MatchResult& result() const { return result_; }
     float radius() const;
+    // Damage per second outside the circle: it bites harder as the circle closes (x4 at the end).
+    float zone_damage() const;
     float distance(Vector3 feet) const;
     float elapsed() const { return elapsed_; }
     const char* objective() const;

@@ -5,6 +5,7 @@
 #include "outland/world/roads/RoadGraph.hpp"
 #include "outland/world/roads/Turnaround.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
+#include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
 #include <raymath.h>
 #include <algorithm>
@@ -1356,6 +1357,41 @@ void highway_hamlets(Kit& kit, world::VerdaRegion& region) {
         trailer_hamlet(kit, region, world::layout::hamlets[i], 2000U + static_cast<std::uint32_t>(i) * 100U, 3);
 }
 
+// ------------------------------------------------------------------ loot in buildings
+// Every enterable building gets a loot spot on its ground floor: the modular buildings the kit
+// raised, the procedural houses, the house models and the Main Street rows. Mostly general
+// supplies, some medical, a quarter weapons caches - so a raid on a street is worth the risk.
+void building_loot(Kit& kit, world::VerdaRegion& region) {
+    auto& towns = region.runtime_settlements();
+    if (towns.empty()) return;
+    std::vector<Vector3> spots;
+    for (const auto& b : kit.report.enterable) spots.push_back(b.origin);
+    for (const auto& town : towns) {
+        for (const auto& b : town.buildings) if (b.enterable) spots.push_back(b.position);
+        for (const auto& asset : town.assets)
+            if (asset.model_path.find("residential/houses/") != std::string::npos || asset.model_path.find("/city/main_street/") != std::string::npos)
+                spots.push_back(asset.position);
+    }
+    int n = 0;
+    for (const auto& p : spots) {
+        const auto r = hash(5000U + static_cast<std::uint32_t>(n));
+        const int pick = static_cast<int>(r % 100);
+        const char* table = pick < 55 ? "general" : pick < 75 ? "medical" : "weapons";
+        const float terrain = world::terrain::TerrainHeight::sample(p.x, p.z);
+        world::GameplayMarker marker;
+        marker.id = std::string("loot_spawn_") + table + "_bldg_" + std::to_string(++n);
+        marker.type = world::GameplayMarkerType::LootSpawn;
+        marker.position = {p.x, world::physics::WorldCollision::ground_height({p.x, terrain + 1.2F, p.z}, terrain + 1.2F, region), p.z};
+        marker.size = {.5F, .5F, .5F};
+        // Filed under the nearest town.
+        std::size_t best = 0;
+        for (std::size_t t = 1; t < towns.size(); ++t)
+            if (std::hypot(towns[t].center.x - p.x, towns[t].center.z - p.z) < std::hypot(towns[best].center.x - p.x, towns[best].center.z - p.z)) best = t;
+        towns[best].gameplay_markers.push_back(marker);
+        ++kit.report.loot_spots;
+    }
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     Kit kit(region, catalog);
@@ -1374,6 +1410,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     highway_hamlets(kit, region);
     bus_stops(kit, region);
     trucks(kit, region);
+    building_loot(kit, region);
     return kit.report;
 }
 }

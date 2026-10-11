@@ -5,6 +5,7 @@
 #include <sstream>
 #include <filesystem>
 #include <cmath>
+#include <string_view>
 namespace outland::game::inventory {
 namespace {
 std::vector<std::string> columns(std::string line) {
@@ -236,4 +237,25 @@ bool ItemRegistry::load(const std::string &item_path, const std::string &table_p
     *this = std::move(parsed);
     return true;
 }
-} // namespace outland::game::inventory
+
+Rarity rarity_of(const std::string& item) {
+    static const std::vector<std::pair<std::string_view, Rarity>> tiers{
+        {"sniper", Rarity::Epic}, {"scope_4x", Rarity::Epic}, {"vest_heavy", Rarity::Epic},
+        {"smg", Rarity::Rare}, {"shotgun", Rarity::Rare}, {"scope_2x", Rarity::Rare}, {"vest_light", Rarity::Rare},
+        {"antibiotics", Rarity::Rare}, {"backpack", Rarity::Rare},
+        {"pistol", Rarity::Uncommon}, {"hunting_rifle", Rarity::Uncommon}, {"red_dot_sight", Rarity::Uncommon},
+        {"frag_grenade", Rarity::Uncommon}, {"bandage", Rarity::Uncommon}, {"antiseptic", Rarity::Uncommon},
+        {"trunk", Rarity::Uncommon}, {"sniper_ammo", Rarity::Uncommon},
+    };
+    for (const auto& [id, tier] : tiers) if (item == id) return tier;
+    return Rarity::Common;
+}
+const char* rarity_name(Rarity rarity) {
+    switch (rarity) {
+        case Rarity::Epic: return "EPIC";
+        case Rarity::Rare: return "RARE";
+        case Rarity::Uncommon: return "UNCOMMON";
+        default: return "COMMON";
+    }
+}
+}

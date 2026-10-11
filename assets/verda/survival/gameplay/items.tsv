@@ -16,6 +16,8 @@ frag_grenade	Frag grenade	utility	assets/verda/combat/frag_grenade.glb	6	0.12	no
 red_dot_sight	Red dot sight	utility	assets/verda/combat/red_dot_sight.glb	3	0.08	none	0		0		0	0
 scope_2x	2x scope	utility	assets/verda/combat/scope_2x.glb	3	0.08	none	0		0		0	0
 scope_4x	4x scope	utility	assets/verda/combat/scope_4x.glb	3	0.08	none	0		0		0	0
+vest_light	Light vest (armour I)	utility	assets/verda/combat/vest_light.glb	1	0.5	none	0		0		0	0
+vest_heavy	Plate carrier (armour II)	utility	assets/verda/combat/vest_heavy.glb	1	0.55	none	0		0		0	0
 smg	VK45 SMG	weapon		1	0.3	equip	0	smg	0		0	0
 shotgun	VS12 shotgun	weapon		1	0.3	equip	0	shotgun	0		0	0
 sniper	VP7 sniper rifle	weapon		1	0.3	equip	0	sniper	0		0	0

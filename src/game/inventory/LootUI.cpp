@@ -153,8 +153,40 @@ void LootUI::draw_inventory(const ItemRegistry &registry, const LootSession &ses
     DrawText(session.status().c_str(), 20, 640, 15, GRAY);
     rlPopMatrix();
 }
+Color LootUI::rarity_color(Rarity rarity) {
+    switch (rarity) {
+        case Rarity::Epic: return {196, 92, 255, 255};
+        case Rarity::Rare: return {70, 150, 255, 255};
+        case Rarity::Uncommon: return {90, 220, 110, 255};
+        default: return {235, 235, 225, 255};
+    }
+}
+
 void LootUI::draw_world(const ItemRegistry &registry, const LootWorld &world, Vector3 player,
                         bool light) {
+    const float time = static_cast<float>(GetTime());
+    // Glow and beams first, without writing depth, so the models stand in them.
+    rlDrawRenderBatchActive();
+    rlDisableDepthMask();
+    for (const auto &pickup : world.state().pickups) {
+        const float d2 = Vector3DistanceSqr(player, pickup.position);
+        const auto rarity = rarity_of(pickup.item);
+        // The best finds show from further off: a beam of their colour over them.
+        if (d2 > (rarity >= Rarity::Rare ? 140.0F * 140.0F : 60.0F * 60.0F) || rarity == Rarity::Common)
+            continue;
+        const Color c = rarity_color(rarity);
+        const float pulse = .75F + .25F * std::sin(time * 3 + pickup.position.x);
+        DrawCylinder({pickup.position.x, pickup.position.y + .01F, pickup.position.z}, .42F, .42F, .02F, 16,
+                     Fade(c, .28F * pulse));
+        DrawCircle3D({pickup.position.x, pickup.position.y + .03F, pickup.position.z}, .45F, {1, 0, 0}, 90, Fade(c, .9F));
+        if (rarity >= Rarity::Rare) {
+            const float tall = rarity == Rarity::Epic ? 5.0F : 2.6F;
+            DrawCylinder(pickup.position, .05F, .02F, tall, 6, Fade(c, .55F * pulse));
+            DrawCylinder(pickup.position, .16F, .02F, tall * .7F, 8, Fade(c, .16F * pulse));
+        }
+    }
+    rlDrawRenderBatchActive();
+    rlEnableDepthMask();
     for (const auto &pickup : world.state().pickups) {
         if (Vector3DistanceSqr(player, pickup.position) > 60 * 60)
             continue;
@@ -179,8 +211,12 @@ void LootUI::draw_world(const ItemRegistry &registry, const LootWorld &world, Ve
                 value.transform = MatrixScale(unit,unit,unit);
                 return true;
             });
+        // Anything better than common turns slowly and bobs, catching the eye.
+        const bool show = rarity_of(pickup.item) != Rarity::Common;
+        const float spin = show ? std::fmod(time * 40 + pickup.position.x * 13, 360.0F) : 0;
+        const Vector3 at = show ? Vector3Add(pickup.position, {0, .06F + .04F * std::sin(time * 2.2F + pickup.position.z), 0}) : pickup.position;
         if (model)
-            DrawModelEx(*model, pickup.position, {0, 1, 0}, 0,
+            DrawModelEx(*model, at, {0, 1, 0}, spin,
                         {item->height, item->height, item->height}, tint);
     }
     if (light)

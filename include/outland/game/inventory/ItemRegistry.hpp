@@ -15,6 +15,11 @@ struct ItemDefinition {
     float height{.25F}, value{0};
     std::optional<combat::WeaponId> weapon;
 };
+// How rare a find is: battle-royale colour tiers (white, green, blue, purple) for the glow on the
+// ground, the beam over the best finds, and the pickup prompt.
+enum class Rarity : unsigned char { Common, Uncommon, Rare, Epic };
+Rarity rarity_of(const std::string& item);
+const char* rarity_name(Rarity rarity);
 struct LootEntry {
     std::string item;
     int minimum{1}, maximum{1}, weight{1};
