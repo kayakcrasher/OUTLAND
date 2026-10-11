@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cmath>
+#include <map>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -1093,6 +1094,32 @@ void east_suburbs(Kit& kit, world::VerdaRegion& region) {
     modular_building(kit, {380, 0, 24}, 0, 8, 4, "fancy_brick", 2, 8601, world::BuildingPurpose::Pub); // clubhouse
     capital->survivors += (kit.report.houses - before) * 3; // a family in every home
 }
+// ------------------------------------------------------------------ pickup trucks
+// Working pickups where a truck belongs: Roka's industrial yard, the Porto Luma waterfront,
+// Espera's farm and a Sovaĝejo homestead. Each takes the first clear spot near where it is wanted.
+void trucks(Kit& kit, world::VerdaRegion& region) {
+    struct Want { const char* town; Vector3 at; float yaw; };
+    const auto roka = site("west_roka"), port = site("port_luma"), espera = site("village_espera");
+    const Want wanted[]{
+        {"west_roka", {roka.x - 50, 0, roka.z - 20}, 0}, {"west_roka", {roka.x - 50, 0, roka.z + 15}, 180},
+        {"port_luma", {port.x + 186, 0, port.z - 62}, 0}, {"port_luma", {port.x + 186, 0, port.z + 62}, 180},
+        {"village_espera", {espera.x - 50, 0, espera.z + 58}, 90},
+        {"ferarbaro_sovagejo", {roka.x + 16, 0, roka.z + 150}, 0},
+    };
+    std::map<std::string, int> count;
+    for (const auto& want : wanted) {
+        auto* town = settlement(region, want.town);
+        if (!town) continue;
+        for (const float shift : {0.0F, 4.0F, -4.0F, 8.0F, -8.0F, 12.0F}) {
+            const float a = want.yaw * DEG2RAD;
+            const Vector3 spot{want.at.x + std::cos(a) * shift, 0, want.at.z - std::sin(a) * shift};
+            if (!kit.claim(spot, 1.3F, 3.0F, want.yaw)) continue;
+            vehicle_marker(*town, "vehicle_spawn_truck_" + town->id + "_" + std::to_string(++count[town->id]), spot, want.yaw);
+            ++kit.report.trucks;
+            break;
+        }
+    }
+}
 }
 
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
@@ -1110,6 +1137,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     porto_luma_city(kit, region);
     east_suburbs(kit, region);
     bus_stops(kit, region);
+    trucks(kit, region);
     return kit.report;
 }
 }

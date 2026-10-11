@@ -26,21 +26,19 @@ void VehicleRenderer::draw(const VehicleSystem &system, const world::VerdaRegion
         DrawModelEx(*body, {0, d->body_offset * scale, 0}, {0, 1, 0}, 0, {scale, scale, scale},
                     tint);
         if (!d->wheel.empty()) {
+            // Cached at a 1 m diameter (vehicles share wheel models) and sized per vehicle below.
             auto *wheel = models_.load(d->wheel, [&](Model &model) {
                 const auto b = assets::transformed_model_bounds(model);
                 const float diameter = b.max.y - b.min.y;
                 if (diameter <= .0001F)
                     return false;
-                model.transform =
-                    MatrixMultiply(model.transform, MatrixScale(d->wheel_radius * 2 / diameter,
-                                                                d->wheel_radius * 2 / diameter,
-                                                                d->wheel_radius * 2 / diameter));
+                model.transform = MatrixMultiply(model.transform, MatrixScale(1 / diameter, 1 / diameter, 1 / diameter));
                 return true;
             });
             if (wheel) {
                 Model centered = *wheel;
-                centered.transform =
-                    MatrixMultiply(centered.transform, MatrixTranslate(0, -d->wheel_radius, 0));
+                centered.transform = MatrixMultiply(centered.transform, MatrixTranslate(0, -.5F, 0));
+                const float wheel_scale = scale * d->wheel_radius * 2;
                 const auto anchors = d->anchors();
                 for (std::size_t i = 0; i < 4; ++i) {
                     const auto p = Vector3Scale(anchors[i], scale);
@@ -56,7 +54,7 @@ void VehicleRenderer::draw(const VehicleSystem &system, const world::VerdaRegion
                     if (i < 2)
                         rlRotatef(v.steering, 0, 1, 0);
                     rlRotatef(v.wheel_angle, 1, 0, 0);
-                    DrawModelEx(centered, {0, 0, 0}, {0, 1, 0}, 0, {scale, scale, scale},
+                    DrawModelEx(centered, {0, 0, 0}, {0, 1, 0}, 0, {wheel_scale, wheel_scale, wheel_scale},
                                 a->vehicle.tires[i] > 0 ? tint : Color{65, 65, 65, 255});
                     rlPopMatrix();
                 }

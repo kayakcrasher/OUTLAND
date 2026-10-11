@@ -59,4 +59,30 @@ int main() {
     std::cout << samples << " lane samples, " << blocked << " blocked\n";
     check(samples > 2000, "city streets sampled");
     check(blocked == 0, "every city lane is drivable: " + std::to_string(blocked) + " blocked");
+
+    // Pickup trucks: a real-size vehicle type, parked where the work is, and they drive.
+    const auto* truck = types.find("truck");
+    check(truck && truck->length > 5.3F && truck->width > 1.9F && truck->wheel_radius >= .4F, "the pickup is a vehicle type");
+    game::vehicles::VehicleSystem fleet(types);
+    fleet.set_training_structure(false);
+    fleet.reconcile(region);
+    int trucks = 0, cars = 0;
+    for (std::size_t i = 0; i < fleet.vehicles().size(); ++i) {
+        const auto* a = fleet.asset(region, fleet.vehicles()[i].id);
+        check(a && std::abs(a->size.x - fleet.definition(*a)->width) < .01F, "every vehicle at its real size");
+        trucks += a->vehicle.definition == "truck";
+        cars += a->vehicle.definition == "hatchback";
+    }
+    check(trucks >= 5 && cars >= 80, "trucks and cars parked: " + std::to_string(trucks) + "/" + std::to_string(cars));
+    int index = -1;
+    for (std::size_t i = 0; i < fleet.vehicles().size(); ++i)
+        if (fleet.vehicles()[i].id.find("truck_port_luma_1") != std::string::npos) index = static_cast<int>(i);
+    check(index >= 0, "a truck on the Porto Luma quay");
+    auto* pickup = fleet.asset(region, fleet.vehicles()[static_cast<std::size_t>(index)].id);
+    const Vector3 start = pickup->position;
+    check(fleet.enter(region, index, Vector3Add(start, {1.5F, 0, 0})), "climb into the pickup");
+    for (int i = 0; i < 150; ++i) fleet.update(.02F, {1, 0}, region, pickup->position);
+    const float moved = Vector3Distance(start, pickup->position);
+    std::cout << "pickup drove " << moved << " m in 3 s\n";
+    check(moved > 15 && pickup->vehicle.health == 100, "the pickup drives off down the quay");
 }
