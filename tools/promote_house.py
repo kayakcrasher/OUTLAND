@@ -38,9 +38,7 @@ def convert(filename, target):
 
     print("IMPORTING:", filename)
 
-    bpy.ops.import_scene.fbx(
-        filepath=str(models / filename)
-    )
+    bpy.ops.wm.fbx_import(filepath=str(models / filename))
 
     relink()
 
