@@ -47,3 +47,33 @@ About 200 older urban models (fences, dumpsters, road pieces) also embed JPEG. T
 - every trailer is a home with residents.
 
 `maps/verda_world.map` was regenerated with the park. Kit asset IDs in the towns generated after it were renumbered.
+
+## Ruldomaro, the eastern trailer park
+*Ruldomaro* is "a gathering of ruldomoj": *ruldomo* is Esperanto for a mobile home (a rolling
+house). It is a small hamlet built by `ruldomaro()` in `src/dev/VerdaWorldKit.cpp`.
+
+**Where:** off the eastern ring road between Espera and Porto Luma, at (997, -997) in the
+Lumamaro zone. It sits on its own level pad (`world::layout::hamlets`, levelled by
+`TerrainHeight`).
+
+**Roads:** a gravel spur leaves the highway square-on and becomes the gravel lane that runs
+east–west through the park.
+
+**What's there:**
+- **Homes:** eight trailers in two rows, doors and steps to the lane. Each is a Home with yard
+  junk and shade trees; there are a few cars and a pickup.
+- **Shop:** a general store by the gate, which the economy opens as a shop.
+- **Common ground:** a storage shed, a fire pit with benches, street lights and a chainlink fence
+  with the gate at the spur.
+
+**Loot:**
+- **camp:** in most trailers;
+- **general:** in some trailers and in the store;
+- **weapons:** in the shed;
+- **medical:** by the fire pit.
+
+**Bus:** a Linio 1 stop on the highway by the gate. A hamlet's stop always goes on the highway,
+not down its own lanes.
+
+**Collision fix:** the world kit now tests lots against roads using the lot's real, rotated
+rectangle rather than its bounding box. Before, nothing could be placed beside a diagonal road.

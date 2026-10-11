@@ -16,6 +16,11 @@ inline constexpr std::array<Site, 5> sites{
      {"port_luma", "Porto Luma", "eastern trading port", {1750, 0, -400}},
      {"south_haven", "Suda Haveno", "southern residential haven", {300, 0, 1800}},
      {"west_roka", "Roka", "western industrial town", {-1750, 0, 450}}}};
+// Hamlets: small places the world kit builds off the highways, each on its own level pad. They
+// are not sites (no highway of their own); the ring road passes them.
+inline constexpr std::array<Site, 1> hamlets{
+    {{"hamlet_ruldomaro", "Ruldomaro", "trailer-park hamlet on the eastern ring road", {997, 0, -997}}}};
+inline constexpr float hamlet_flat_radius = 72;
 inline constexpr Vector3 legacy_espera{0, 0, -70};
 inline constexpr float sea_level = -32;
 inline constexpr float capital_flat_radius = 180;

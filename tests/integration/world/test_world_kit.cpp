@@ -11,6 +11,7 @@
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <raymath.h>
 #include <algorithm>
+#include <set>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
@@ -98,7 +99,8 @@ int main() {
     }
     check(two_storey >= 30, "many multi-storey buildings: " + std::to_string(two_storey));
 
-    // Roka's trailer park: twelve mobile homes, every one walkable from the lane through its door.
+    // Roka's trailer park (twelve mobile homes) and Ruldomaro's (eight): every one walkable from
+    // the lane through its door.
     {
         check(report.parks == 1, "trailer park built");
         int trailers = 0, entered = 0;
@@ -131,8 +133,31 @@ int main() {
             if (std::hypot(p.x - inside.x, p.z - inside.z) < .2F && p.y > asset.position.y + .6F) ++entered;
             else std::cerr << "  could not enter trailer " << model << " at " << asset.position.x << "," << asset.position.z << '\n';
         }
-        check(trailers == 12, "twelve trailers: " + std::to_string(trailers));
+        check(trailers == 20, "twenty trailers: " + std::to_string(trailers));
         check(entered == trailers, "walk into every trailer: " + std::to_string(entered) + "/" + std::to_string(trailers));
+    }
+
+    // Ruldomaro: a trailer-park hamlet off the eastern ring road, on a level pad, with gravel
+    // roads to the highway, a general store, loot of every kind, and people.
+    {
+        check(report.hamlets == 1, "Ruldomaro built");
+        const world::Settlement* hamlet = nullptr;
+        for (const auto& s : region.settlements()) if (s.id == "hamlet_ruldomaro") hamlet = &s;
+        check(hamlet && hamlet->name == "Ruldomaro" && hamlet->survivors >= 20, "Ruldomaro is a settlement with people");
+        int gravel = 0;
+        for (const auto& road : hamlet->roads) gravel += road.type == world::RoadType::Gravel;
+        check(gravel == 2, "a gravel lane and a gravel spur to the highway");
+        std::set<std::string> tables;
+        for (const auto& m : hamlet->gameplay_markers)
+            if (m.type == world::GameplayMarkerType::LootSpawn) tables.insert(m.id.substr(11, m.id.find('_', 11) - 11));
+        check(tables.count("camp") && tables.count("general") && tables.count("weapons") && tables.count("medical"), "loot of every kind");
+        int homes = 0;
+        for (const auto& s : region.settlements()) for (const auto& m : s.gameplay_markers)
+            homes += m.type == world::GameplayMarkerType::BuildingPurpose && m.purpose == world::BuildingPurpose::Home &&
+                     std::hypot(m.position.x - hamlet->center.x, m.position.z - hamlet->center.z) < 70;
+        check(homes == 8, "eight homes: " + std::to_string(homes));
+        const float h = world::terrain::TerrainHeight::sample(hamlet->center.x, hamlet->center.z);
+        for (const float o : {-60.0F, 60.0F}) check(std::abs(world::terrain::TerrainHeight::sample(hamlet->center.x + o, hamlet->center.z + o * .4F) - h) < .05F, "on a level pad");
     }
 
     // Downtown: the old capital is gone, the grid is in, highways meet the grid edge.
@@ -283,6 +308,12 @@ int main() {
     // Explore: downtown is lived in - Main Street homes, shops and pubs, office workers in the towers.
     game::life::LifeSimulation life;
     life.build(region, nullptr);
+    {   // Ruldomaro's store is a shop (the economy opens one at every Shop place).
+        bool store = false;
+        for (const auto& place : life.places())
+            store |= place.kind == game::life::PlaceKind::Shop && std::hypot(place.door.x - 997, place.door.z + 997) < 70;
+        check(store, "Ruldomaro has a store");
+    }
     // Part-built buildings carry authored purposes (markers inside the front door), so island life
     // houses and employs people in them; the works and harbour offices are offices.
     {

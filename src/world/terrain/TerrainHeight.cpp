@@ -263,6 +263,15 @@ float TerrainHeight::sample(
                 height=pad*(1-blend)+height*blend;
             }
         }
+        for (const auto& hamlet:layout::hamlets) {
+            const auto c=hamlet.center;
+            const float d=std::hypot(world_x-c.x,world_z-c.z);
+            if(d<layout::hamlet_flat_radius+60) {
+                const float pad=std::max(6.0F,large_hills(c.x,c.z)+rolling_ground(c.x,c.z)+small_variation(c.x,c.z));
+                const float blend=smooth((d-layout::hamlet_flat_radius)/60);
+                height=pad*(1-blend)+height*blend;
+            }
+        }
         const float shore=layout::shore_radius(world_x,world_z);
         const float blend=smooth((distance-(shore-layout::shoreline_band))/(2*layout::shoreline_band));
         if (distance>shore-layout::shoreline_band) height=height*(1-blend)+(layout::sea_level-8.0F)*blend;

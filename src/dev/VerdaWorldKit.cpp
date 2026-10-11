@@ -49,12 +49,17 @@ public:
             if (own && other.x0 == own->x0 && other.z0 == own->z0 && other.x1 == own->x1 && other.z1 == own->z1) continue;
             if (lot.x0 < other.x1 && lot.x1 > other.x0 && lot.z0 < other.z1 && lot.z1 > other.z0) {++report.skipped_lots; report.skipped.push_back(centre); return false;}
         }
-        // Keep lots off the streets (sampled along each road; long diagonal roads stay precise).
+        // Keep lots off the streets (sampled along each road), tested against the lot's real,
+        // rotated rectangle so lots beside a diagonal road are not refused by their bounding box.
+        const float ca = std::cos(yaw * DEG2RAD), sa = std::sin(yaw * DEG2RAD);
         for (const auto& road : roads_) {
             const float margin = road.width * .5F + 1.5F, length = Vector3Distance(road.start, road.end);
             for (float t = 0; t <= length; t += 2) {
                 const auto p = Vector3Lerp(road.start, road.end, length > 0 ? t / length : 0);
-                if (p.x > lot.x0 - margin && p.x < lot.x1 + margin && p.z > lot.z0 - margin && p.z < lot.z1 + margin) {++report.skipped_lots; report.skipped.push_back(centre); return false;}
+                if (!(p.x > lot.x0 - margin && p.x < lot.x1 + margin && p.z > lot.z0 - margin && p.z < lot.z1 + margin)) continue;
+                const float dx = p.x - centre.x, dz = p.z - centre.z;
+                const float lx = dx * ca - dz * sa, lz = dx * sa + dz * ca; // world -> lot local (to_world inverse)
+                if (std::abs(lx) < half_x + margin && std::abs(lz) < half_z + margin) {++report.skipped_lots; report.skipped.push_back(centre); return false;}
             }
         }
         taken_.push_back(lot);
@@ -536,9 +541,12 @@ void bus_stops(Kit& kit, world::VerdaRegion& region) {
     for (std::size_t t = 0; t < region.runtime_settlements().size(); ++t) {
         const auto& town = region.runtime_settlements()[t];
         const bool capital = town.id == "capital_verda";
-        const float near = capital ? 235 : 12, far = capital ? 360 : 170, ideal = capital ? 255 : 35;
+        // A hamlet's stop is out on the highway by its gate, not down its own lanes.
+        const bool hamlet = town.id.starts_with("hamlet_");
+        const float near = capital ? 235 : hamlet ? 45 : 12, far = capital ? 360 : 170, ideal = capital ? 255 : hamlet ? 80 : 35;
         Stop stop{t, {}};
         for (const auto& other : region.settlements()) for (const auto& road : other.roads) {
+            if (hamlet && &other == &town) continue;
             // Any road a bus fits (the backcountry's dirt roads too), long enough to pull in.
             if (road.width < 5 || world::roads::turnaround_road(road.width)) continue;
             const float length = std::hypot(road.end.x - road.start.x, road.end.z - road.start.z);
@@ -1120,6 +1128,101 @@ void trucks(Kit& kit, world::VerdaRegion& region) {
         }
     }
 }
+// ------------------------------------------------------------------ Ruldomaro
+// "Ruldomaro" - a gathering of ruldomoj (mobile homes): a small trailer-park hamlet on its own
+// level pad off the eastern ring road, between Espera and Porto Luma. A gravel spur leaves the
+// highway (the bus stops there) into a gravel lane with two rows of trailers, a general store
+// by the gate, a storage shed, a fire pit with benches, street lights and a chainlink fence.
+// Loot lies in the homes (camp), the store (general), the shed (weapons) and by the fire pit
+// (medical). Its own settlement, so it has people, a name on the map and a stop on the line.
+void ruldomaro(Kit& kit, world::VerdaRegion& region) {
+    const auto& hamlet = world::layout::hamlets[0];
+    const Vector3 c = hamlet.center;
+    world::Settlement* town = settlement(region, hamlet.id);
+    if (!town) {
+        world::Settlement fresh;
+        fresh.id = std::string(hamlet.id);
+        fresh.name = std::string(hamlet.name);
+        fresh.center = c;
+        fresh.state = world::SettlementState::Peaceful;
+        fresh.survivors = 0;
+        region.runtime_settlements().push_back(std::move(fresh));
+        town = &region.runtime_settlements().back();
+    }
+    // Local frame: the lane runs east (+a) toward the ring road, +b is south.
+    const Vector3 u{1, 0, 0}, v{0, 0, 1};
+    const auto at = [&](float a, float b) { return Vector3{c.x + u.x * a + v.x * b, 0, c.z + u.z * a + v.z * b}; };
+    const float lane_yaw = std::atan2(u.x, u.z) * RAD2DEG; // facing out along the lane
+    // The spur meets the highway square-on: the nearest point of the ring road.
+    Vector3 junction = at(80, 0);
+    float best = 1e9F;
+    if (auto* capital = settlement(region, "capital_verda"))
+        for (const auto& road : capital->roads) {
+            const float dx = road.end.x - road.start.x, dz = road.end.z - road.start.z, l2 = dx * dx + dz * dz;
+            if (l2 < 1) continue;
+            const Vector3 from = at(48, 0);
+            const float t = std::clamp(((from.x - road.start.x) * dx + (from.z - road.start.z) * dz) / l2, 0.0F, 1.0F);
+            const Vector3 p{road.start.x + dx * t, 0, road.start.z + dz * t};
+            const float d = std::hypot(p.x - from.x, p.z - from.z);
+            if (d < best) { best = d; junction = p; }
+        }
+    constexpr float lane_half = 3;
+    town->roads.push_back({at(-58, 0), at(48, 0), lane_half * 2, world::RoadType::Gravel});
+    town->roads.push_back({at(48, 0), junction, 6, world::RoadType::Gravel});
+    kit.add_roads(town->roads);
+    int homes = 0, cars = 0, loot = 0;
+    const auto loot_marker = [&](const char* table, Vector3 p, float height) {
+        world::GameplayMarker marker;
+        marker.id = std::string("loot_spawn_") + table + "_ruldomaro_" + std::to_string(++loot);
+        marker.type = world::GameplayMarkerType::LootSpawn;
+        marker.position = {p.x, world::terrain::TerrainHeight::sample(p.x, p.z) + height, p.z};
+        marker.size = {.5F, .5F, .5F};
+        town->gameplay_markers.push_back(marker);
+    };
+    // Two rows of four trailers either side of the lane, doors and steps to the lane.
+    for (int side = 0; side < 2; ++side) for (int i = 0; i < 4; ++i) {
+        const auto r = hash(1700U + static_cast<std::uint32_t>(side * 4 + i));
+        const float a = -42 + i * 14.0F, b = side == 0 ? -13.5F : 13.5F;
+        // The model's steps are on its +Z: the -b row faces +b, the +b row faces -b.
+        const float yaw = lane_yaw + (side == 0 ? -90.0F : 90.0F) + static_cast<float>(static_cast<int>(r % 7) - 3);
+        const int model = 1 + static_cast<int>((side * 5 + i * 3 + r) % 6);
+        const auto centre = at(a, b);
+        if (!kit.claim(centre, 3.4F, 7.8F, yaw)) continue;
+        if (!kit.put(trailers + "trailer_0" + std::to_string(model) + ".glb", centre, yaw)) continue;
+        auto inside = to_world(centre, yaw, .25F, 0, .56F);
+        inside.y = world::terrain::TerrainHeight::sample(centre.x, centre.z) + .85F;
+        kit.purpose(inside, 90 + yaw, world::BuildingPurpose::Home);
+        ++homes;
+        loot_marker(i % 3 == 2 ? "general" : "camp", to_world(centre, yaw, .25F, 0, -2.2F), .9F);
+        if (r % 3 != 0) {
+            const bool pickup = cars == 1;
+            vehicle_marker(*town, std::string(pickup ? "vehicle_spawn_truck_" : "vehicle_spawn_hatchback_") + "ruldomaro_" + std::to_string(++cars),
+                           to_world(centre, yaw, side == 0 ? 6.8F : -6.8F, 0, 3.0F), yaw + (r % 2 ? 180.0F : 0.0F));
+        }
+        prop(kit, shacks + (r % 2 ? "Barrel.glb" : "Pallet.glb"), to_world(centre, yaw, 2.4F, 0, -9.2F), static_cast<float>(r % 360), .8F);
+        if (i % 2 == side) kit.tree(to_world(centre, yaw, -1.2F, 0, -10.5F));
+    }
+    // The general store by the gate, facing the lane; the shed and the fire pit at the far end.
+    modular_building(kit, at(30, -17), lane_yaw + 90, 5, 4, "stuco", 1, 1711, world::BuildingPurpose::Shop);
+    loot_marker("general", at(30, -21), .3F);
+    if (kit.claim(at(-55, -16), 2.4F, 3.4F, lane_yaw)) {
+        kit.put(shacks + "Shack A.glb", at(-55, -16), lane_yaw);
+        loot_marker("weapons", at(-55, -16), .15F);
+    }
+    prop(kit, "assets/verda/survival/runtime/bonfire.glb", at(-52, 12), 0, 1.2F);
+    for (const auto& [da, db, yaw] : std::initializer_list<std::tuple<float, float, float>>{{-52, 7.8F, 0}, {-52, 16.2F, 180}, {-47.8F, 12, 90}})
+        prop(kit, urban + "Bus stops/busstop_bench.glb", at(da, db), lane_yaw + yaw, 1.6F);
+    loot_marker("medical", at(-49, 15), .1F);
+    for (const float a : {-36.0F, -8.0F, 20.0F}) kit.put(urban + "Traffic lights/street_light.glb", at(a, lane_half + 1.2F), lane_yaw + 90, false);
+    const std::vector<std::string> chain{shacks + "Chainlink Fence.glb"};
+    fence(kit, at(-62, -26), at(44, -26), chain, 2.46F, 1771);
+    fence(kit, at(-62, 26), at(44, 26), chain, 2.46F, 1772);
+    fence(kit, at(-62, -26), at(-62, 26), chain, 2.46F, 1773);
+    fence(kit, at(44, -26), at(44, -lane_half - 2), chain, 2.46F, 1774);
+    fence(kit, at(44, lane_half + 2), at(44, 26), chain, 2.46F, 1775);
+    town->survivors += homes * 3 + 2;
+    ++kit.report.hamlets;
+}
 }
 
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
@@ -1136,6 +1239,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     west_suburbs(kit, region);
     porto_luma_city(kit, region);
     east_suburbs(kit, region);
+    ruldomaro(kit, region);
     bus_stops(kit, region);
     trucks(kit, region);
     return kit.report;

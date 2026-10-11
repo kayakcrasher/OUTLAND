@@ -66,7 +66,9 @@ int main() {
     for (const auto& town : region.settlements()) {
         const auto route = graph.route({3, 0, -30}, town.center);
         check(route.complete, "a road from downtown to " + town.name);
-        check(route.length < flat({3, 0, -30}, town.center) * 1.7F + 60, "the route to " + town.name + " is direct enough: " + std::to_string(route.length));
+        // Hamlets sit off the ring road, reached round it rather than by their own highway.
+        const float detour = town.id.starts_with("hamlet_") ? 1.9F : 1.7F;
+        check(route.length < flat({3, 0, -30}, town.center) * detour + 60, "the route to " + town.name + " is direct enough: " + std::to_string(route.length));
         for (std::size_t i = 1; i + 1 < route.points.size(); ++i) check(to_road(region, route.points[i]) < .6F, "route stays on roads to " + town.name);
     }
     check(graph.route({-1900, 0, 612}, {0, 0, 0}).complete, "the trailer park's lane joins the island's roads");
