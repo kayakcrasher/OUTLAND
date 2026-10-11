@@ -111,3 +111,9 @@ All distances and speeds are in `LifeConfig`: `drive_distance`, `car_reach`, `ca
   - a stolen parked car has no one inside;
   - cars are home again next session;
   - unbinding releases every autopilot.
+
+## More traffic (update)
+Households now claim parked cars within 95 m (`car_claim_radius`), up to two each, and drive any trip
+over 110 m when their car is within 320 m. Up to 14 cars are driven for real near the player
+(inside 220 m, handed back beyond 290 m). On the published map 99 of 119 cars have owners and 68
+residents drive on a weekday morning (was 96 and 57; at most 6 cars were driven for real).

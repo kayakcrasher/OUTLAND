@@ -104,11 +104,11 @@ int main() {
     life.build(region, &characters);
     const auto& cars = life.island().cars;
     std::cout << cars.size() << " resident cars of " << vehicles.vehicles().size() << " vehicles\n";
-    check(cars.size() >= 20, "most cars have owners");
+    check(cars.size() >= 50, "most cars have owners");
     for (std::size_t i = 0; i < cars.size(); ++i) {
         const auto& owner = life.residents()[static_cast<std::size_t>(cars[i].owner)];
         check(owner.car == static_cast<int>(i) && owner.home == cars[i].home, "owner and car agree");
-        check(flat(life.places()[static_cast<std::size_t>(cars[i].home)].door, cars[i].spot) < 70, "parked near home");
+        check(flat(life.places()[static_cast<std::size_t>(cars[i].home)].door, cars[i].spot) < car_claim_radius, "parked near home");
         check(vehicles.find(cars[i].vehicle) >= 0, "a real vehicle: " + cars[i].vehicle);
     }
     life.bind_vehicles(&vehicles, &region);

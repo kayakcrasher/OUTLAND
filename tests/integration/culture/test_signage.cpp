@@ -54,6 +54,18 @@ int main() {
     check(same(at(.6F, .1F), verda_green), "stripes beyond the triangle");
     if (const char* out = std::getenv("OUTLAND_FLAG_PNG")) ExportImage(flag, out);
     UnloadImage(flag);
+    {   // The Suda Kruco: a navy saltire edged white on green, white stars, the green star at the crossing.
+        Image cross = suda_kruco_image(256);
+        check(cross.width == 256 && cross.height == 128, "Suda Kruco is 2:1");
+        const auto px = [&](float x, float y) { return GetImageColor(cross, static_cast<int>(x * 255), static_cast<int>(y * 127)); };
+        const auto green = [](Color c) { return c.g > 120 && c.r < 60 && c.b < 60; };
+        const auto navy = [](Color c) { return c.b > 70 && c.r < 50 && c.g < 70; };
+        check(green(px(.5F, .06F)) && green(px(.06F, .5F)), "Suda Kruco field is green");
+        check(navy(px(.05F, .07F)) || navy(px(.06F, .06F)), "Suda Kruco saltire is navy");
+        check(green(px(.5F, .5F)), "Suda Kruco carries the green star at the crossing");
+        if (const char* out = std::getenv("OUTLAND_SUDA_KRUCO_PNG")) ExportImage(cross, out);
+        UnloadImage(cross);
+    }
 
     // The published world.
     world::physics::MeshCollisionLibrary::add_root(OUTLAND_SOURCE_DIR);
@@ -171,6 +183,13 @@ int main() {
     if (square_flags != static_cast<int>(region.settlements().size())) for (const auto& flag : signage.flags) std::cerr << "  flag " << flag.place << '\n';
     check(square_flags == static_cast<int>(region.settlements().size()), "a flag on every town square: " + std::to_string(square_flags));
     check(wall_flags >= 2 && roof_flags >= 2, "police, town hall and tower flags");
+    int sovagejo_crosses = 0, crosses = 0;
+    for (const auto& flag : signage.flags) if (flag.design == FlagDesign::SudaKruco) {
+        ++crosses;
+        if (std::hypot(flag.base.x + 1900, flag.base.z - 610) < 140) ++sovagejo_crosses;
+        check(!world::physics::WorldCollision::body_blocked(flag.base, flag.base.y, region, .4F), "trailer flagpole stands clear: " + flag.place);
+    }
+    check(sovagejo_crosses >= 10 && sovagejo_crosses * 2 > crosses, "Sovaĝejo's trailer park flies the most Suda Kruco flags: " + std::to_string(sovagejo_crosses));
 
     // Ferarbaro's back roads carry hand-painted boards, and only Ferarbaro's.
     {

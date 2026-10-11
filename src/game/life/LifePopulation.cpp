@@ -119,6 +119,7 @@ void build_places(Island& island,const world::VerdaRegion& region) {
         std::vector<bool> named;
         for(const auto& building:town.buildings) {
             if(!std::isfinite(building.position.x) || !std::isfinite(building.position.z)) continue;
+            if(building.id.starts_with("player_")) continue; // empty until newcomers arrive (add_household)
             Place place;place.id=building.id;place.building_id=building.id;place.settlement=static_cast<int>(s);
             place.interior=building.position;place.building_yaw=building.rotation_y;place.building_size=building.size;
             place.door=door_position(building.position,building.size,building.rotation_y,1.6F);
@@ -336,7 +337,7 @@ Activity planned_activity(const Resident& resident,Weekday day,int minute) {
     return activity;
 }
 
-// Cars on the map go to the households parked beside them.
+// Cars on the map go to the households parked beside them (two at most, each to its own driver).
 void assign_cars(Island& island,const world::VerdaRegion& region) {
     std::vector<Car> parked;
     for(const auto& town:region.settlements()) {
@@ -348,12 +349,12 @@ void assign_cars(Island& island,const world::VerdaRegion& region) {
                 parked.push_back({asset.id,-1,-1,asset.vehicle.home,asset.vehicle.home_yaw});
     }
     std::sort(parked.begin(),parked.end(),[](const Car& a,const Car& b){return a.vehicle<b.vehicle;});
-    std::vector<bool> has_car(island.places.size(),false);
+    std::vector<int> has_car(island.places.size(),0); // up to two cars a household
     for(auto& car:parked) {
-        int best=-1;float best_distance=70;
+        int best=-1;float best_distance=car_claim_radius;
         for(std::size_t i=0;i<island.places.size();++i) {
             const auto& place=island.places[i];
-            if(place.home_capacity<=0 || has_car[i]) continue;
+            if(place.home_capacity<=0 || has_car[i]>=2) continue;
             const float d=flat_distance(place.door,car.spot);
             if(d<best_distance) {best_distance=d;best=static_cast<int>(i);}
         }
@@ -366,7 +367,7 @@ void assign_cars(Island& island,const world::VerdaRegion& region) {
             if(commute>furthest) {furthest=commute;driver=r.id;}
         }
         if(driver<0) continue;
-        has_car[static_cast<std::size_t>(best)]=true;
+        ++has_car[static_cast<std::size_t>(best)];
         car.owner=driver;car.home=best;
         island.residents[static_cast<std::size_t>(driver)].car=static_cast<int>(island.cars.size());
         island.cars.push_back(car);
@@ -537,5 +538,57 @@ Island build_island(const world::VerdaRegion& region,const characters::Character
     }
     assign_cars(island,region);
     return island;
+}
+
+int add_household(Island& island,const world::Building& building,int settlement,int members,
+                  const characters::CharacterRegistry* registry,std::uint64_t seed) {
+    Random random{seed|1};
+    Place home;
+    home.kind=PlaceKind::Home;home.settlement=settlement;home.building_id=building.id;
+    home.interior=building.position;home.building_yaw=building.rotation_y;home.building_size=building.size;
+    home.door=door_position(building.position,building.size,building.rotation_y,1.6F);
+    home.indoor=building.enterable;
+    home.home_capacity=building.size.y>5.5F ? 8 : 4;
+    const std::string town=settlement>=0 && settlement<static_cast<int>(island.settlement_names.size()) ? island.settlement_names[static_cast<std::size_t>(settlement)] : "town";
+    home.id=town+":"+place_name(PlaceKind::Home)+":"+building.id;
+    const int home_index=static_cast<int>(island.places.size());
+    island.places.push_back(home);
+    const std::string family=pick(family_names,random);
+    const int first=static_cast<int>(island.residents.size());
+    std::vector<int> household;
+    for(int m=0;m<std::clamp(members,1,home.home_capacity);++m) household.push_back(first+m);
+    for(const int id:household) {
+        Resident r;r.id=id;r.family_name=family;r.settlement=settlement;r.home=home_index;r.household=household;
+        r.female=id==first ? random.chance(.5F) : !island.residents.back().female;
+        // Grown-ups look for work at the nearest workplace; the odd one has retired or has none yet.
+        if(random.chance(.15F)) r.occupation=Occupation::Retired;
+        else if(!random.chance(.1F)) {
+            float best=1500;
+            for(std::size_t i=0;i<island.places.size();++i) {
+                const auto& place=island.places[i];
+                if(place.job_capacity<=0 || place.kind==PlaceKind::Police || place.kind==PlaceKind::Church) continue;
+                const float d=flat_distance(place.door,home.door);
+                if(d<best) {best=d;r.work=static_cast<int>(i);}
+            }
+            if(r.work>=0) r.occupation=occupation_for(island.places[static_cast<std::size_t>(r.work)].kind);
+        }
+        r.pub=nearest(island,home.door,PlaceKind::Pub,settlement);
+        r.church=nearest(island,home.door,PlaceKind::Church,settlement);
+        r.shop=nearest(island,home.door,PlaceKind::Shop,settlement);
+        r.lunch=r.work>=0 ? r.work : r.home;
+        r.churchgoer=random.chance(r.occupation==Occupation::Retired ? .8F : .45F);
+        r.pub_regular=random.chance(.35F);
+        r.works_weekends=r.occupation==Occupation::Shopkeeper || r.occupation==Occupation::Publican || r.occupation==Occupation::Farmer;
+        r.first_name=r.female ? pick(female_names,random) : pick(male_names,random);
+        if(registry) if(const auto* model=choose_model(*registry,r.occupation,random)) {
+            r.character_id=model->id;r.female=model->name.find("Female")!=std::string::npos;
+            r.first_name=r.female ? pick(female_names,random) : pick(male_names,random);
+        }
+        const int jitter=random.range(-25,25);
+        for(int d=0;d<7;++d) r.days[static_cast<std::size_t>(d)]=day_plan(r,static_cast<Weekday>(d),jitter);
+        r.place=r.home;r.from=r.body=home.interior;
+        island.residents.push_back(std::move(r));
+    }
+    return first;
 }
 }

@@ -7,6 +7,8 @@
 #include "outland/engine/audio/GunAudio.hpp"
 #include "outland/game/combat/Grenades.hpp"
 #include "outland/game/combat/Sights.hpp"
+#include "outland/game/build/BuildMode.hpp"
+#include "outland/game/inventory/LootSave.hpp"
 #include "outland/game/inventory/LootSession.hpp"
 #include "outland/game/inventory/LootUI.hpp"
 #include "outland/game/vehicles/VehicleSystem.hpp"
@@ -586,6 +588,12 @@ void Renderer::run() {
     // The island bus line and its drivers' animation clocks.
     game::transit::BusLine bus_line;
     std::uint64_t bus_seed=0;
+    // Explore's BUILD mode: the player's roads, homes and bus stops, saved per profile; buses
+    // calling at the player's stops bring newcomers to the empty homes.
+    game::build::PlayerBuilds player_builds;
+    game::build::BuildMode build_mode;
+    std::string builds_path;
+    std::vector<float> bus_dwell_seen;
     std::array<characters::AnimationController,8> bus_drivers{};
     game::GameSettings settings;
     const std::string settings_path=game::GameSettings::path_for(map_path);
@@ -820,10 +828,20 @@ void Renderer::run() {
                     vehicles.reset_match_fleet(verda_region);
                 }
                 npcs.reset_session();
+                build_mode.set_active(false);bus_dwell_seen.clear();
+                if(game::rules_for(game_mode).civilian_life) {
+                    builds_path=game::build::PlayerBuilds::path_beside(game::inventory::LootSave::profile_path(map_path,game_mode));
+                    std::string builds_error;
+                    if(!player_builds.load(builds_path,builds_error)) {TraceLog(LOG_WARNING,"Player builds: %s",builds_error.c_str());player_builds.clear();}
+                } else player_builds.clear();
+                player_builds.apply(verda_region); // other modes take the player's town away again
                 world::physics::MeshCollisionLibrary::preload(verda_region);
                 // Explore lives on Verda: rebuild residents from the current (possibly Creator-edited) towns.
                 if(game::rules_for(game_mode).civilian_life) {
                     island_life.build(verda_region,&character_registry);
+                    // Families who came by bus to the player's homes in earlier sessions.
+                    for(const auto& piece:player_builds.placed()) if(piece.home() && piece.residents>0)
+                        island_life.move_in(player_builds.building(piece),piece.residents,static_cast<std::uint64_t>(piece.serial)*7919U);
                     island_life.bind_vehicles(&vehicles,&verda_region); // residents drive the island's cars
                     island_life.reset(npcs,game::life::WorldClock::at(0,9,30));
                     // Linio 1: the island buses, each with a driver.
@@ -993,7 +1011,9 @@ void Renderer::run() {
             input_system.player() = {};
             input_system.player().next_weapon = switch_weapon;
         } else {
-            input_system.update(screen_width, screen_height, !creator_active,
+            const bool town_building=game::rules_for(game_mode).civilian_life;
+            if(town_building) reserved=[&,base=reserved](Vector2 point){return base(point) || build_mode.owns_point(point,screen_width,screen_height);};
+            input_system.update(screen_width, screen_height, !creator_active && !build_mode.active(),
 #ifdef OUTLAND_DEV_TOOLS
                 !IsWindowFocused() || dev_modal || (creator_active && creator_touch_ui.inventory_open()),
 #else
@@ -1011,6 +1031,34 @@ void Renderer::run() {
 #endif
         if((!player_health.alive() || mode_session.terminal()) && !creator_active) input_system.player()={};
         const input::PlayerInput& controls = input_system.player();
+        {
+            // BUILD (K): lay roads, homes and bus stops in Explore, on foot.
+            const bool can_build=game::rules_for(game_mode).civilian_life && !vehicles.driver() && !map_screen.is_open() &&
+                !inventory_open && !shop_open && !mode_session.terminal() && player_health.alive();
+            build_mode.tick(dt);
+            bool toggled_now=false;
+            if(can_build && build_mode.toggled(screen_width,screen_height,IsWindowFocused())) {
+                build_mode.set_active(!build_mode.active());input_system.cancel_controls();toggled_now=true;
+            }
+            if(!can_build && build_mode.active()) build_mode.set_active(false);
+            if(build_mode.active() && !toggled_now) {
+                const auto change=build_mode.update(verda_region,player_builds,camera.position,Vector3Subtract(camera.target,camera.position),
+                    {player.position.x,player.position.y-1,player.position.z},screen_width,screen_height,IsWindowFocused());
+                if(change.changed) {
+                    player_builds.apply(verda_region);
+                    world::physics::MeshCollisionLibrary::preload(verda_region);
+                    nav_grid.clear();rebuild_signs();static_world.invalidate();
+                    if(change.transit && bus_line.running()) {
+                        // New stops and streets join Linio 1: the line is laid out again.
+                        bus_line.stop(verda_region,vehicles);
+                        if(bus_line.build(verda_region,vehicles,&character_registry,++bus_seed)) bus_line.start(verda_region,vehicles);
+                        bus_dwell_seen.clear();
+                    }
+                    std::string builds_error;
+                    if(!player_builds.save(builds_path,builds_error)) TraceLog(LOG_WARNING,"Player builds: %s",builds_error.c_str());
+                }
+            }
+        }
         vehicle_reconcile_timer+=dt;
         if(vehicle_reconcile_timer>=.5F){vehicle_dirty|=vehicles.reconcile(verda_region);vehicle_reconcile_timer=0;}
         const Vector3 shop_feet{player.position.x,player.position.y-1,player.position.z};
@@ -1689,6 +1737,30 @@ void Renderer::run() {
         if(bus_line.running()) {
             bus_line.update(vehicle_paused ? 0.0F : dt,verda_region,vehicles,Vector3Subtract(player.position,{0,1,0}),&npcs);
             for(std::size_t i=0;i<bus_drivers.size() && i<bus_line.buses().size();++i) bus_drivers[i].advance(characters::AnimationAction::Idle,dt,0);
+            // A bus pulling in at one of the player's stops brings a family for an empty home nearby.
+            const auto& buses=bus_line.buses();
+            bus_dwell_seen.resize(buses.size(),0.0F);
+            for(std::size_t i=0;i<buses.size();++i) {
+                const bool arrived=buses[i].dwell>0 && bus_dwell_seen[i]<=0;
+                bus_dwell_seen[i]=buses[i].dwell;
+                if(!arrived || island_life.empty()) continue;
+                const game::transit::BusStop* stop=nullptr;float nearest_stop=30;
+                for(const auto& candidate:bus_line.stops())
+                    if(const float d=Vector3Distance(candidate.kerb,buses[i].position);d<nearest_stop) {nearest_stop=d;stop=&candidate;}
+                if(!stop || !stop->asset.starts_with("player_stop")) continue;
+                const int home_index=player_builds.vacant_home_near(stop->shelter,600);
+                if(home_index<0) continue;
+                auto* home=player_builds.find(player_builds.placed()[static_cast<std::size_t>(home_index)].id());
+                const int beds=game::build::piece_info(home->piece).beds;
+                const int members=std::clamp(2+static_cast<int>((home->serial*37+static_cast<int>(bus_seed))%3)+(beds>4 ? 2 : 0),1,beds);
+                const auto ids=island_life.move_in(player_builds.building(*home),members,static_cast<std::uint64_t>(home->serial)*7919U,&stop->shelter);
+                if(ids.empty()) continue;
+                home->residents=static_cast<int>(ids.size());
+                build_mode.notify(TextFormat("The %s family (%d) got off the bus and moved in",
+                    island_life.residents()[static_cast<std::size_t>(ids.front())].family_name.c_str(),home->residents),6);
+                std::string builds_error;
+                if(!player_builds.save(builds_path,builds_error)) TraceLog(LOG_WARNING,"Player builds: %s",builds_error.c_str());
+            }
         }
         if(!zombies.empty()) {
             zombies.hear(sound_bus);
@@ -2018,6 +2090,7 @@ void Renderer::run() {
             }
         }
 
+        build_mode.draw_world(static_cast<float>(GetTime()));
         if(perf.enabled()) perf.mark(FrameStage::Characters,GetTime());
         EndMode3D();
 
@@ -2169,7 +2242,7 @@ void Renderer::run() {
                 DrawText(text,static_cast<int>(at.x)-MeasureText(text,size)/2,static_cast<int>(at.y),size,colour);
             }
         }
-        if (!creator_active && !inventory_open) {
+        if (!creator_active && !inventory_open && !build_mode.active()) {
             DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
             DrawText(weapons.available()?weapons.weapon().name:"NO WEAPON - OPEN BAG",24,screen_height-94,19,RAYWHITE);
             DrawText(TextFormat("NADES %d  G",grenades.count()),222,screen_height-68,16,grenades.count()>0 ? Color{190,220,150,255} : GRAY);
@@ -2234,7 +2307,7 @@ void Renderer::run() {
             input_system.layout(),
             screen_width,
             screen_height,
-            !creator_active,
+            !creator_active && !build_mode.active(),
             weapons.available() && weapons.weapon().automatic && !driving ? (weapons.single_fire() ? "SINGLE" : "AUTO") : nullptr,
             weapons.available() && !driving && sight!=game::combat::Sight::Sniper ?
                 (sight==game::combat::Sight::RedDot ? "DOT" : sight==game::combat::Sight::Scope2x ? "2X" : sight==game::combat::Sight::Scope4x ? "4X" : "IRON") : nullptr
@@ -2293,6 +2366,8 @@ void Renderer::run() {
             const auto map_button=game::MapScreen::map_button(screen_width,screen_height);
             DrawRectangleRec(map_button,Fade(BLACK,.60F));
             DrawText("MAP · M",static_cast<int>(map_button.x)+14,53,14,RAYWHITE);
+            if(game::rules_for(game_mode).civilian_life && !map_screen.is_open() && !inventory_open && !shop_open)
+                build_mode.draw_hud(player_builds,screen_width,screen_height);
             // Entering a zone: its name, what it means, and what it is like.
             const int here=static_cast<int>(world::zones::zone_at(player.position));
             if(here!=shown_zone) {shown_zone=here;zone_banner=4.5F;}

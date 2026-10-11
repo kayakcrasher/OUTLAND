@@ -20,12 +20,12 @@ struct LifeConfig {
     float replan_period{.5F};       // real seconds for every resident to be re-planned once
     // Cars (when bound to the world's vehicles): trips longer than drive_distance are driven if
     // the resident's car is within car_reach. Near the player the real vehicle is driven.
-    float drive_distance{200};
-    float car_reach{220};
+    float drive_distance{110};
+    float car_reach{320};
     float car_speed{11};            // m/s of island time off-screen
-    float car_radius{160};          // driven for real inside this
-    float car_release{230};         // and handed back to the abstract tier beyond this
-    int max_driven{6};
+    float car_radius{220};          // driven for real inside this
+    float car_release{290};         // and handed back to the abstract tier beyond this
+    int max_driven{14};
     void sanitize();
 };
 struct CarState {
@@ -52,6 +52,10 @@ class LifeSimulation {
 public:
     void build(const world::VerdaRegion& region,const characters::CharacterRegistry* registry,PopulationOptions options={});
     void configure(LifeConfig config) {config.sanitize();config_=config;}
+    // Newcomers move into a player-built home: a family of `members` steps off at `arrive_from`
+    // (a bus stop) and walks home, or is already in (`arrive_from` = nullptr: a saved household).
+    // Returns the new residents' ids.
+    std::vector<int> move_in(const world::Building& home,int members,std::uint64_t seed,const Vector3* arrive_from=nullptr);
     const LifeConfig& config() const {return config_;}
     // New play session: everyone alive at home-plan positions, no bodies, clock at `start`.
     void reset(characters::NpcSystem& npcs,WorldClock start=WorldClock::at(0,7,30));
@@ -117,6 +121,7 @@ private:
     Anchor physical_anchor(const Resident& resident,Vector3 body) const;
     void sync_bodies(Vector3 player,characters::NpcSystem& npcs);
     Island island_;
+    const characters::CharacterRegistry* registry_{nullptr};
     LifeConfig config_{};
     WorldClock clock_{};
     std::size_t cursor_{0};

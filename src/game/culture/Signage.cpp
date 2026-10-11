@@ -224,6 +224,43 @@ void squares(const world::VerdaRegion& region, const life::Island& island, Signa
     }
 }
 
+// Sovaĝejo's trailer park flies the Suda Kruco from a pole beside every trailer (and its town
+// flag is one too); Ruldomaro, out east, has a couple. Trailers are found by where they stand,
+// whichever settlement the map files them under.
+void trailer_flags(const world::VerdaRegion& region, Signage& out) {
+    const auto& towns = region.settlements();
+    for (const auto& town : towns) {
+        const bool sovagejo = town.id == "ferarbaro_sovagejo";
+        if (sovagejo)
+            for (auto& flag : out.flags) if (flag.place == town.id + ":square") flag.design = FlagDesign::SudaKruco;
+        if (!sovagejo && town.id != "hamlet_ruldomaro") continue;
+        int trailer = 0;
+        for (const auto& owner : towns) for (const auto& asset : owner.assets) {
+            if (asset.model_path.find("/residential/trailers/") == std::string::npos || flat(asset.position, town.center) > 220) continue;
+            if (trailer++ % (sovagejo ? 1 : 4) != 0) continue;
+            const float reach = std::max(asset.size.x, asset.size.z) * .5F;
+            Vector3 spot{};
+            bool found = false;
+            for (float radius = std::min(asset.size.x, asset.size.z) * .5F + .8F; radius < reach + 5 && !found; radius += .7F)
+                for (int a = 0; a < 12 && !found; ++a) {
+                    const float angle = (a + .25F * trailer) * 2 * PI / 12;
+                    const Vector3 p{asset.position.x + std::cos(angle) * radius, asset.position.y, asset.position.z + std::sin(angle) * radius};
+                    if (clear_spot(region, p, .5F)) {spot = p; found = true;}
+                }
+            if (!found) continue;
+            const float base = ground(region, spot, spot.y);
+            FlagPole flag;
+            flag.place = asset.id;
+            flag.base = {spot.x, base, spot.z};
+            flag.tip = {spot.x, base + 5.0F, spot.z};
+            flag.fly = Vector3Normalize(wind);
+            flag.width = 1.6F;
+            flag.design = FlagDesign::SudaKruco;
+            out.flags.push_back(flag);
+        }
+    }
+}
+
 void bus_stops(const world::VerdaRegion& region, Signage& out) {
     for (const auto& town : region.settlements()) for (const auto& asset : town.assets) {
         // The island line's stops (Transit kit shelters) carry their town's name.
@@ -494,6 +531,7 @@ Signage build_signage(const world::VerdaRegion& region, const life::Island& isla
     Signage out;
     shopfronts(region, island, out);
     squares(region, island, out);
+    trailer_flags(region, out);
     bus_stops(region, out);
     street_blades(region, out);
     town_roads(region, island, out);
@@ -537,6 +575,63 @@ Image flag_image(int width) {
             c = (half - off) * std::cos(PI / 6) < rim ? verda_green : WHITE;
             if (in_polygon(star, fx, fy)) c = verda_green;
         }
+        pixels[y * W + x] = c;
+    }
+    ImageResize(&image, width, height);
+    return image;
+}
+
+Image suda_kruco_image(int width) {
+    width = std::max(16, width);
+    const int height = width / 2;
+    const int W = width * 2, H = height * 2;
+    Image image = GenImageColor(W, H, verda_green);
+    auto* pixels = static_cast<Color*>(image.data);
+    const float w = static_cast<float>(W), h = static_cast<float>(H);
+    const Color navy{18, 38, 92, 255};
+    // Distance from a point to each diagonal of the field, in pixels.
+    const float diagonal = std::hypot(w, h);
+    const auto off_diagonals = [&](float x, float y) {
+        const float a = std::abs(h * x - w * y) / diagonal;            // top-left to bottom-right
+        const float b = std::abs(h * x + w * y - w * h) / diagonal;    // bottom-left to top-right
+        return std::min(a, b);
+    };
+    const float arm = h * .085F, edge = h * .025F;
+    // Twelve stars down the arms (three each side of the crossing), one big green star in the middle.
+    std::vector<std::pair<Vector2, float>> stars;
+    for (const float t : {.12F, .24F, .36F, .64F, .76F, .88F}) {
+        stars.push_back({{w * t, h * t}, h * .045F});
+        stars.push_back({{w * t, h * (1 - t)}, h * .045F});
+    }
+    const auto star_points = [](Vector2 c, float r) {
+        std::vector<Vector2> points;
+        for (int k = 0; k < 10; ++k) {
+            const float angle = -PI / 2 + k * PI / 5, radius = (k % 2 ? .38F : 1.0F) * r;
+            points.push_back({c.x + std::cos(angle) * radius, c.y + std::sin(angle) * radius});
+        }
+        return points;
+    };
+    const auto in_polygon = [](const std::vector<Vector2>& polygon, float x, float y) {
+        bool inside = false;
+        for (std::size_t i = 0, j = polygon.size() - 1; i < polygon.size(); j = i++)
+            if ((polygon[i].y > y) != (polygon[j].y > y) &&
+                x < (polygon[j].x - polygon[i].x) * (y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x) inside = !inside;
+        return inside;
+    };
+    std::vector<std::vector<Vector2>> star_shapes;
+    for (const auto& [centre, r] : stars) star_shapes.push_back(star_points(centre, r));
+    const Vector2 middle{w / 2, h / 2};
+    const auto big_star = star_points(middle, h * .13F);
+    for (int y = 0; y < H; ++y) for (int x = 0; x < W; ++x) {
+        const float fx = x + .5F, fy = y + .5F;
+        const float d = off_diagonals(fx, fy);
+        Color c = verda_green;
+        if (d < arm + edge) c = WHITE;
+        if (d < arm) c = navy;
+        if (d < arm) for (const auto& shape : star_shapes) if (in_polygon(shape, fx, fy)) {c = WHITE; break;}
+        const float centre = std::hypot(fx - middle.x, fy - middle.y);
+        if (centre < h * .16F) c = centre < h * .145F ? WHITE : navy;
+        if (in_polygon(big_star, fx, fy)) c = verda_green;
         pixels[y * W + x] = c;
     }
     ImageResize(&image, width, height);

@@ -145,6 +145,8 @@ add_library(
     src/game/combat/CombatFeedback.cpp
     src/game/combat/Grenades.cpp
     src/game/combat/Sights.cpp
+    src/game/build/PlayerBuilds.cpp
+    src/game/build/BuildMode.cpp
     src/game/combat/CombatRenderer.cpp
     src/game/inventory/ItemRegistry.cpp
     src/game/inventory/Inventory.cpp
@@ -654,6 +656,12 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_traffic_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_traffic_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_traffic_tests COMMAND outland_traffic_tests)
+
+    add_executable(outland_player_build_tests tests/integration/world/test_player_builds.cpp)
+    target_link_libraries(outland_player_build_tests PRIVATE outland_render)
+    target_compile_options(outland_player_build_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_player_build_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_player_build_tests COMMAND outland_player_build_tests)
 
     add_executable(outland_bus_line_tests tests/integration/transit/test_bus_line.cpp)
     target_link_libraries(outland_bus_line_tests PRIVATE outland_render)

@@ -41,6 +41,11 @@ void SignRenderer::load(const std::string& application_dir) {
     UnloadImage(cloth);
     GenTextureMipmaps(&flag_);
     SetTextureFilter(flag_, TEXTURE_FILTER_TRILINEAR);
+    Image cross = suda_kruco_image(256);
+    suda_kruco_ = LoadTextureFromImage(cross);
+    UnloadImage(cross);
+    GenTextureMipmaps(&suda_kruco_);
+    SetTextureFilter(suda_kruco_, TEXTURE_FILTER_TRILINEAR);
     loaded_ = true;
     layout();
 }
@@ -50,7 +55,8 @@ void SignRenderer::unload() {
     if (!loaded_) return;
     if (own_font_) UnloadFont(font_);
     if (flag_.id) UnloadTexture(flag_);
-    font_ = {}; flag_ = {}; own_font_ = false; loaded_ = false;
+    if (suda_kruco_.id) UnloadTexture(suda_kruco_);
+    font_ = {}; flag_ = {}; suda_kruco_ = {}; own_font_ = false; loaded_ = false;
 }
 
 void SignRenderer::set(Signage signage) {
@@ -200,10 +206,12 @@ void SignRenderer::draw(Vector3 camera, Vector3 camera_target, float time_second
     if (flags.empty()) return;
     rlDrawRenderBatchActive();
     rlDisableBackfaceCulling();
-    rlSetTexture(flag_.id);
     constexpr int columns = 12, rows = 4;
+    for (const auto design : {FlagDesign::Verda, FlagDesign::SudaKruco}) {
+    rlSetTexture(design == FlagDesign::Verda ? flag_.id : suda_kruco_.id);
     for (const auto i : flags) {
         const auto& flag = signage_.flags[i];
+        if (flag.design != design) continue;
         const float W = flag.width, H = flag.width * .5F;
         const Vector3 across{-flag.fly.z, 0, flag.fly.x};
         const float phase = static_cast<float>(i) * 1.7F;
@@ -229,6 +237,8 @@ void SignRenderer::draw(Vector3 camera, Vector3 camera_target, float time_second
             }
             rlEnd();
         }
+    }
+    rlDrawRenderBatchActive();
     }
     rlSetTexture(0);
     rlDrawRenderBatchActive();

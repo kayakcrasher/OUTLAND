@@ -1,4 +1,5 @@
 #include "outland/game/life/LifeSimulation.hpp"
+#include "outland/world/Building.hpp"
 #include "outland/game/sound/SoundBus.hpp"
 #include "outland/characters/NpcSystem.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
@@ -60,9 +61,33 @@ void LifeConfig::sanitize() {
 
 void LifeSimulation::build(const world::VerdaRegion& region,const characters::CharacterRegistry* registry,PopulationOptions options) {
     island_=build_island(region,registry,options);
+    registry_=registry;
     roads_.build(region);
     cars_.assign(island_.cars.size(),{});
     cursor_=0;replan_budget_=bridge_clock_=0;
+}
+
+std::vector<int> LifeSimulation::move_in(const world::Building& home,int members,std::uint64_t seed,const Vector3* arrive_from) {
+    std::vector<int> ids;
+    if(island_.settlement_centers.empty()) return ids;
+    int town=0;float best=std::numeric_limits<float>::max();
+    for(std::size_t i=0;i<island_.settlement_centers.size();++i) {
+        const float d=flat_distance(island_.settlement_centers[i],home.position);
+        if(d<best) {best=d;town=static_cast<int>(i);}
+    }
+    const int first=add_household(island_,home,town,members,registry_,seed);
+    for(int id=first;id<static_cast<int>(island_.residents.size());++id) {
+        auto& r=island_.residents[static_cast<std::size_t>(id)];
+        r.activity=Activity::Home;
+        if(arrive_from) {
+            // Off the bus with their bags: the walk home, then their new life's schedule.
+            const Vector3 jitter{static_cast<float>((id%3)-1)*.8F,0,static_cast<float>((id/3)%2)*.8F};
+            r.from=Vector3Add(*arrive_from,jitter);r.depart=clock_.minutes;
+            r.arrive=clock_.minutes+travel_minutes(flat_distance(r.from,island_.places[static_cast<std::size_t>(r.home)].door));
+        } else r.depart=r.arrive=clock_.minutes;
+        ids.push_back(id);
+    }
+    return ids;
 }
 
 void LifeSimulation::clear(characters::NpcSystem& npcs) {

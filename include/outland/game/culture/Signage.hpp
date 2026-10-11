@@ -32,12 +32,16 @@ struct Sign {
     float post{0};              // >0: one post this tall from the ground up to the board's bottom
 };
 
+// Which cloth a pole flies: the national flag, or the Suda Kruco - the backcountry's saltire.
+enum class FlagDesign : unsigned char { Verda, SudaKruco };
+
 struct FlagPole {
     std::string place;
     Vector3 base{};             // foot of the staff
     Vector3 tip{};              // top of the staff; the flag's hoist hangs from here
     Vector3 fly{1, 0, 0};       // horizontal direction the cloth streams toward
     float width{2.4F};          // cloth length along `fly`; height is half of it
+    FlagDesign design{FlagDesign::Verda};
 };
 
 struct Signage {
@@ -52,5 +56,9 @@ Signage build_signage(const world::VerdaRegion& region, const life::Island& isla
 // The Verda flag: five green and white stripes with a white hoist triangle carrying a green star,
 // Cuba's layout in Esperanto's colours. CPU image, `width` x width/2.
 Image flag_image(int width);
+// The Suda Kruco ("southern cross"), flown in the Ferarbaro backcountry and above all in Sovaĝejo's
+// trailer park: the old rebel saltire in Esperanto's colours - a navy, white-edged saltire with
+// twelve white stars on a green field, and at the crossing a white disc with the green star.
+Image suda_kruco_image(int width);
 inline constexpr Color verda_green{0, 153, 0, 255};
 }

@@ -83,3 +83,9 @@ All flags ripple in the wind.
 - **Determinism.**
 
 The published map gets 110 signs and 12 flags, built in about 50 ms.
+
+## The Suda Kruco
+The backcountry flies its own flag: the old rebel saltire in Esperanto's colours - a navy,
+white-edged saltire with twelve white stars on a green field, and at the crossing a white disc with
+the green star (`suda_kruco_image`). Sovaĝejo's trailer park flies it from a 5 m pole beside every
+trailer, and Sovaĝejo's town flag is one; Ruldomaro has two. `FlagPole::design` picks the cloth.
