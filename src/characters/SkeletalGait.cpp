@@ -102,6 +102,12 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
     };
     float left_thigh,left_flex,right_thigh,right_flex;
     leg(0,1,left_thigh,left_flex);leg(PI,zombie ? .55F : 1,right_thigh,right_flex);
+    const bool seated=body.seated && !dying;
+    if(seated) {
+        // Sitting at a wheel: thighs level, shins down to the pedals, a slight lean back.
+        left_thigh=right_thigh=1.45F;left_flex=right_flex=1.4F;
+        lean=-.08F;
+    }
     if(dying) {
         // Legs give way first.
         const float give=std::clamp(time/.35F,0.0F,1.0F);
@@ -262,6 +268,9 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
             if(left_upper)angle=-left_thigh*(.75F+.6F*run)+lean+(attacking ? .9F*std::sin(std::clamp(time/.4F,0.0F,1.0F)*PI) : 0);
             if(right_upper)angle=-right_thigh*(.75F+.6F*run)+lean+crouch*.3F;
             if(left_lower || right_lower)angle=elbow+crouch*.3F+(dying ? .5F : 0);
+            // A driver's hands rest on the wheel, turning it a little now and then.
+            if(seated && (left_upper || right_upper)) angle=.85F+.05F*std::sin(time*.7F+(left_upper ? 0 : 2));
+            if(seated && (left_lower || right_lower)) angle=.75F;
         }
         if(angle!=0)out.rotation=QuaternionNormalize(QuaternionMultiply(QuaternionFromAxisAngle(lateral,angle*forward_sign),out.rotation));
         // Hips sway with the stride and the chest counters it; a rifle stance turns the chest.
@@ -283,7 +292,7 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
         // No feet: use the ends of the shins.
         for(const int b:{left_knee,right_knee}) lowest=std::min(lowest,Vector3DotProduct(Vector3Subtract(pose_[b].translation,bind[b].translation),up));
     }
-    if(lowest<1e8F && std::abs(lowest)>1e-7F) {
+    if(!seated && lowest<1e8F && std::abs(lowest)>1e-7F) {
         for(auto& p:pose_) p.translation=Vector3Subtract(p.translation,Vector3Scale(up,lowest));
         grip_=Vector3Subtract(grip_,Vector3Scale(up,lowest));
     }

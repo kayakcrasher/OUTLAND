@@ -146,8 +146,18 @@ int main() {
     check(streets.size() >= 6 && streets.contains("ZAMENHOF-STRATO"), "downtown has its streets: " + std::to_string(streets.size()));
 
     int stops = 0;
-    for (const auto& town : region.settlements()) for (const auto& asset : town.assets) stops += asset.model_path.find("Bus stops/") != std::string::npos;
-    check(kinds[SignKind::BusStop] == stops, "every bus stop is signed");
+    int line_stops = 0;
+    for (const auto& town : region.settlements()) for (const auto& asset : town.assets) {
+        stops += asset.model_path.find("Bus stops/") != std::string::npos;
+        line_stops += asset.model_path.ends_with("transit/bus_stop.glb") || asset.model_path.ends_with("transit/bus_stop_alt.glb");
+    }
+    check(kinds[SignKind::BusStop] == stops + line_stops, "every bus stop is signed");
+    // Linio 1's stops carry their town's name.
+    std::set<std::string> line_towns;
+    for (const auto& sign : signage.signs)
+        if (sign.kind == SignKind::BusStop && all_text(sign).find("LINIO 1 · INSULA RONDO") != std::string::npos) line_towns.insert(sign.front[1].text);
+    check(line_stops == static_cast<int>(region.settlements().size()) && line_towns.size() == region.settlements().size(),
+          "a named Linio 1 stop in every town: " + std::to_string(line_towns.size()));
 
     // Flags: town squares, police and town halls, the tallest towers.
     int square_flags = 0, wall_flags = 0, roof_flags = 0;

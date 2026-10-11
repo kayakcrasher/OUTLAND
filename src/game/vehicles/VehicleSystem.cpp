@@ -134,6 +134,40 @@ bool VehicleSystem::place(world::VerdaRegion &region, std::string_view id, Vecto
     v.escape = 0;
     return true;
 }
+bool VehicleSystem::glide(world::VerdaRegion &region, std::string_view id, Vector3 position, float yaw,
+                          float speed, float steering, float dt) {
+    if (id == driver_id_ || !finite(position) || !std::isfinite(yaw) || !std::isfinite(speed))
+        return false;
+    auto *a = asset(region, id);
+    const int index = find(id);
+    if (!a || index < 0 || a->vehicle.destroyed)
+        return false;
+    const auto *d = definition(*a);
+    if (!d)
+        return false;
+    kinematic_.insert(std::string(id));
+    const float scale = scale_of(*a, *d);
+    position.y = world::terrain::TerrainHeight::sample(position.x, position.z);
+    a->position = position;
+    a->rotation_y = std::remainder(yaw, 360.0F);
+    auto &v = vehicles_[static_cast<std::size_t>(index)];
+    v.position = a->position;
+    v.yaw = a->rotation_y;
+    v.speed = speed;
+    v.steering = std::clamp(steering, -d->steer, d->steer);
+    v.slip = 0;
+    v.sleeping = false;
+    if (std::isfinite(dt) && dt > 0 && d->wheel_radius > 0)
+        v.wheel_angle = std::fmod(v.wheel_angle + speed * dt / (d->wheel_radius * scale) * RAD2DEG, 360.0F);
+    const auto height = [](Vector3 p) { return world::terrain::TerrainHeight::sample(p.x, p.z); };
+    const auto front = world_point({0, 0, d->front_z}, a->position, v.yaw, scale),
+               rear = world_point({0, 0, d->rear_z}, a->position, v.yaw, scale),
+               left = world_point({-d->track * .5F, 0, 0}, a->position, v.yaw, scale),
+               right = world_point({d->track * .5F, 0, 0}, a->position, v.yaw, scale);
+    v.pitch = std::atan2(height(front) - height(rear), (d->front_z - d->rear_z) * scale) * RAD2DEG;
+    v.roll = std::atan2(height(right) - height(left), d->track * scale) * RAD2DEG;
+    return true;
+}
 std::vector<world::WorldAsset> VehicleSystem::checkpoint(const world::VerdaRegion& region) const {
     std::vector<world::WorldAsset> saved;
     for(const auto& town:region.settlements()) for(const auto& a:town.assets)
@@ -262,7 +296,8 @@ int VehicleSystem::nearest(const world::VerdaRegion &r, Vector3 p, float radius)
     float best = radius * radius;
     for (std::size_t i = 0; i < vehicles_.size(); ++i) {
         const auto *a = asset(r, vehicles_[i].id);
-        if (!a || !a->vehicle.enabled || a->vehicle.destroyed || parts_donor(a->vehicle.marker))
+        if (!a || !a->vehicle.enabled || a->vehicle.destroyed || parts_donor(a->vehicle.marker) ||
+            kinematic_.contains(vehicles_[i].id))
             continue;
         // Distance to the car body: standing at a door or bumper counts, not only near its centre.
         float d = distance(p, a->position);
@@ -385,6 +420,8 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         if (!a)
             continue;
         const bool driving = v.id == driver_id_;
+        if (!driving && kinematic_.contains(v.id))
+            continue; // moved by glide()
         const auto pilot = driving ? autopilot_.end() : autopilot_.find(v.id);
         const bool piloted = pilot != autopilot_.end();
         v.sleeping = !driving && (paused || (!piloted && (distance(a->position, player) > 180 * 180 ||

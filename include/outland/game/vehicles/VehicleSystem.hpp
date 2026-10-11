@@ -4,6 +4,7 @@
 #include "outland/world/VerdaRegion.hpp"
 #include <functional>
 #include <unordered_map>
+#include <unordered_set>
 namespace outland::game::vehicles {
 enum class VehicleZone { Body, Window, Engine, Tire0, Tire1, Tire2, Tire3, Occupant };
 struct VehicleInput {
@@ -74,6 +75,13 @@ class VehicleSystem {
     // Move a vehicle to a new pose at rest (off-screen traffic, parking it home). Refused while
     // the player drives it.
     bool place(world::VerdaRegion &region, std::string_view id, Vector3 position, float yaw);
+    // Kinematic driving (a bus line): someone else moves the vehicle along its path each frame,
+    // with this speed and steering for the wheels; physics leaves it alone until release().
+    // Kinematic vehicles can't be entered.
+    bool glide(world::VerdaRegion &region, std::string_view id, Vector3 position, float yaw,
+               float speed, float steering, float dt);
+    void release(std::string_view id) { kinematic_.erase(std::string(id)); }
+    bool kinematic(std::string_view id) const { return kinematic_.contains(std::string(id)); }
     void bind_occupant_damage(std::function<void(float)> damage) {
         occupant_damage_ = std::move(damage);
     }
@@ -101,5 +109,6 @@ class VehicleSystem {
     world::VerdaRegion *owner_{nullptr};
     std::unordered_map<std::string, world::WorldAsset *> assets_;
     std::unordered_map<std::string, VehicleInput> autopilot_;
+    std::unordered_set<std::string> kinematic_;
 };
 } // namespace outland::game::vehicles

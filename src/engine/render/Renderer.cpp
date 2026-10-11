@@ -23,6 +23,7 @@
 #include "outland/game/ModeSession.hpp"
 #include "outland/game/PlayUI.hpp"
 #include "outland/game/MapScreen.hpp"
+#include "outland/game/transit/BusLine.hpp"
 #include "outland/world/Zones.hpp"
 #include "outland/game/life/LifeSimulation.hpp"
 #include "outland/game/ai/BattleRoyaleBots.hpp"
@@ -58,6 +59,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include <array>
 #include <unordered_map>
 
 namespace outland::engine {
@@ -567,6 +569,10 @@ void Renderer::run() {
 
     // The island map (M / MAP) and the player's settings it carries.
     game::MapScreen map_screen;
+    // The island bus line and its drivers' animation clocks.
+    game::transit::BusLine bus_line;
+    std::uint64_t bus_seed=0;
+    std::array<characters::AnimationController,8> bus_drivers{};
     game::GameSettings settings;
     const std::string settings_path=game::GameSettings::path_for(map_path);
     settings.load(settings_path);
@@ -783,6 +789,7 @@ void Renderer::run() {
                 combat_world.reset_targets();
                 combat_world.set_training_range(game_mode == game::GameMode::DevLab);
                 vehicles.set_training_structure(game_mode == game::GameMode::DevLab);
+                if(bus_line.running()) bus_line.stop(verda_region,vehicles);
                 vehicles.reconcile(verda_region);
                 if(game_mode==game::GameMode::BattleRoyale) {
                     match_fleet=vehicles.checkpoint(verda_region);match_fleet_active=true;fleet_was_dirty=vehicle_dirty;
@@ -795,6 +802,8 @@ void Renderer::run() {
                     island_life.build(verda_region,&character_registry);
                     island_life.bind_vehicles(&vehicles,&verda_region); // residents drive the island's cars
                     island_life.reset(npcs,game::life::WorldClock::at(0,9,30));
+                    // Linio 1: the island buses, each with a driver.
+                    if(bus_line.build(verda_region,vehicles,&character_registry,++bus_seed)) bus_line.start(verda_region,vehicles);
                     economy.build(island_life.places());
                     // Start outside a populated public shop, using authored purpose/door data.
                     if(!explicit_spawn && !economy.shops().empty()) {
@@ -1536,6 +1545,10 @@ void Renderer::run() {
             island_life.hear(sound_bus);
             island_life.update(dt,npc_context.player_position,npcs,vehicle_paused);
         }
+        if(bus_line.running()) {
+            bus_line.update(vehicle_paused ? 0.0F : dt,verda_region,vehicles,Vector3Subtract(player.position,{0,1,0}),&npcs);
+            for(std::size_t i=0;i<bus_drivers.size() && i<bus_line.buses().size();++i) bus_drivers[i].advance(characters::AnimationAction::Idle,dt,0);
+        }
         if(!zombies.empty()) {
             zombies.hear(sound_bus);
             zombies.update(vehicle_paused ? 0.0F : dt,{npc_context.player_position,last_daylight,match_time},npcs);
@@ -1699,6 +1712,18 @@ void Renderer::run() {
 
         draw_model_backed_world_assets(verda_region, camera.position, character_registry, view);
         double sub_t2=GetTime();
+        // Bus drivers at the wheel, drawn before the buses so their tinted glass lies over them.
+        if(bus_line.running()) for(std::size_t i=0;i<bus_line.buses().size() && i<bus_drivers.size();++i) {
+            const auto& bus=bus_line.buses()[i];
+            if(!bus.running || bus.driver.empty() || Vector3DistanceSqr(bus.position,camera.position)>120*120) continue;
+            const auto* asset=vehicles.asset(verda_region,bus.vehicle);
+            const auto* type=asset ? vehicles.definition(*asset) : nullptr;
+            if(!asset || !type) continue;
+            const float scale=asset->size.x/type->width;
+            const auto seat=game::vehicles::VehicleSystem::world_point(type->seat,asset->position,asset->rotation_y,scale);
+            characters::BodyPose sitting;sitting.seated=true;
+            character_renderer.draw(bus.driver,{seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y,1,&bus_drivers[i],sitting);
+        }
         vehicle_renderer.draw(vehicles,verda_region,camera.position);
         double sub_t3=GetTime();
         sign_renderer.draw(camera.position,camera.target,static_cast<float>(GetTime()));
@@ -1824,6 +1849,8 @@ void Renderer::run() {
         world::sky::draw_sky_objects(sky,camera.position);
         world::sky::draw_lights(scene_lights,sky,camera.position,static_cast<float>(GetTime()));
         if(const auto* car=vehicles.driver()) world::sky::draw_headlights(car->position,car->yaw,sky);
+        if(bus_line.running()) for(const auto& bus:bus_line.buses())
+            if(bus.running && Vector3DistanceSqr(bus.position,camera.position)<350*350) world::sky::draw_headlights(bus.position,bus.yaw,sky);
         EndMode3D();
         EndTextureMode();
         BeginDrawing();
@@ -2094,6 +2121,8 @@ void Renderer::run() {
             game::MapScreen::View view;
             view.player=player.position;view.yaw=player.yaw;view.font=&sign_renderer.font();
             if(game_mode==game::GameMode::BattleRoyale) view.circle_radius=mode_session.radius();
+            for(const auto& stop:bus_line.stops()) view.stops.push_back(stop.shelter);
+            if(bus_line.running()) for(const auto& bus:bus_line.buses()) if(bus.running) view.buses.push_back({bus.position,bus.yaw});
             map_screen.draw(verda_region,view,settings,screen_width,screen_height);
         }
         DrawFPS(

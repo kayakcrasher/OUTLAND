@@ -269,6 +269,22 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
         text(font, town.name.c_str(), {label_x + 1, at.y - 8 * s}, 18 * s, Color{0, 0, 0, 170});
         text(font, town.name.c_str(), {label_x, at.y - 9 * s}, 18 * s, ink);
     }
+    // The bus line: stops (H) and the buses on their way.
+    for (const auto& stop : view.stops) {
+        const auto at = to_map(area, stop.x, stop.z);
+        DrawRectangleRounded({at.x - 6 * s, at.y - 6 * s, 12 * s, 12 * s}, .3F, 4, Color{250, 205, 40, 255});
+        centred(font, "H", {at.x, at.y}, 11 * s, Color{25, 25, 25, 255});
+    }
+    for (const auto& [where, heading] : view.buses) {
+        const auto at = to_map(area, where.x, where.z);
+        const Vector2 f{std::sin(heading * DEG2RAD), std::cos(heading * DEG2RAD)}, r{-f.y, f.x};
+        const auto corner = [&](float a, float b) { return Vector2Add(at, Vector2Add(Vector2Scale(f, a * s), Vector2Scale(r, b * s))); };
+        DrawTriangle(corner(9, -4), corner(-9, 4), corner(9, 4), Color{0, 140, 60, 255});
+        DrawTriangle(corner(9, -4), corner(-9, -4), corner(-9, 4), Color{0, 140, 60, 255});
+        DrawTriangle(corner(9, 4), corner(-9, 4), corner(9, -4), Color{0, 140, 60, 255});
+        DrawTriangle(corner(-9, 4), corner(-9, -4), corner(9, -4), Color{0, 140, 60, 255});
+        DrawCircleV(corner(9, 0), 2.2F * s, Color{255, 255, 255, 255});
+    }
     // Battle Royale: the safe circle.
     if (view.circle_radius > 0) {
         const auto centre = to_map(area, 0, 0);
@@ -328,6 +344,11 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
         DrawRectangleRec({x, y, 14 * s, 14 * s}, zone.color);
         text(font, TextFormat("%s - %s", std::string(zone.name).c_str(), std::string(zone.meaning).c_str()), {x + 22 * s, y - 1 * s}, 14 * s, ink);
         y += 20 * s;
+    }
+    if (!view.stops.empty()) {
+        DrawRectangleRounded({x, y, 14 * s, 14 * s}, .3F, 4, Color{250, 205, 40, 255});
+        centred(font, "H", {x + 7 * s, y + 7 * s}, 10 * s, Color{25, 25, 25, 255});
+        text(font, "Bus stop  ·  green: a bus on Linio 1", {x + 22 * s, y - 1 * s}, 14 * s, ink);
     }
     button(close_button(width, height), "CLOSE  (M)", true, font, s);
 }

@@ -30,6 +30,8 @@ public:
         Vector3 player{};
         float yaw{0};             // radians; the player faces (sin yaw, cos yaw) in x/z
         float circle_radius{-1};  // Battle Royale safe circle round the island centre, <0 none
+        std::vector<Vector3> stops;                    // bus stops
+        std::vector<std::pair<Vector3, float>> buses;  // buses on the line: where, and heading (degrees)
         const Font* font{nullptr};
     };
     enum class Change { None, Settings, Close };

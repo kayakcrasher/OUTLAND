@@ -12,6 +12,8 @@ struct BodyPose {
     float crouch{0};      // 0 standing .. 1 crouched
     float stock{.30F};    // metres from the shoulder pocket to the gun's grip (shouldered)
     float support{.20F};  // metres from the grip forward to the support hand
+    bool seated{false};   // sitting (a driver): thighs forward, knees bent, hands out to a wheel;
+                          // the hips keep their standing height, so draw it that far below the seat
 };
 // Authored procedural fallback, not a claim that source GLBs contain walk clips.
 // Deforms each body's own bind skeleton; unknown rigs keep their bind pose.

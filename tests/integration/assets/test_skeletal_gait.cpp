@@ -115,6 +115,14 @@ int main() {
         BodyPose zombie;zombie.style=BodyStyle::Zombie;
         assert(gait.sample(body,AnimationAction::Walk,.2,1,0,zombie,0,1));
         assert(gait.pose()[LeftHand].translation.z>.35F && gait.pose()[RightHand].translation.z>.35F && gait.pose()[Head].translation.z>.05F);
+        // Seated at a wheel: thighs level, shins down, hands out in front; the hips keep their height.
+        BodyPose driver;driver.seated=true;
+        assert(gait.sample(body,AnimationAction::Idle,0,0,0,driver,1,1) && lengths_kept());
+        const auto& pose=gait.pose();
+        enum {LeftKnee=15,LeftAnkle=16};
+        assert(std::abs(pose[LeftKnee].translation.y-pose[Hips].translation.y)<.15F && pose[LeftKnee].translation.z>.35F);
+        assert(pose[LeftAnkle].translation.y<pose[LeftKnee].translation.y-.3F);
+        assert(pose[LeftHand].translation.z>.3F && pose[RightHand].translation.z>.3F && std::abs(pose[Hips].translation.y-1)<.01F);
         // Death: standing at first, flat on the back a second later, never under the ground.
         assert(gait.sample(body,AnimationAction::Death,0,-1,0,rifle,0,1) && gait.pose()[Head].translation.y>1.4F && !gait.holding());
         assert(gait.sample(body,AnimationAction::Death,0,-1,0,rifle,2,1));

@@ -226,11 +226,19 @@ void squares(const world::VerdaRegion& region, const life::Island& island, Signa
 
 void bus_stops(const world::VerdaRegion& region, Signage& out) {
     for (const auto& town : region.settlements()) for (const auto& asset : town.assets) {
-        if (asset.model_path.find("Bus stops/") == std::string::npos) continue;
+        // The island line's stops (Transit kit shelters) carry their town's name.
+        const bool line = asset.model_path.ends_with("transit/bus_stop.glb") || asset.model_path.ends_with("transit/bus_stop_alt.glb");
+        if (asset.model_path.find("Bus stops/") == std::string::npos && !line) continue;
         Sign sign;
         sign.kind = SignKind::BusStop;
         sign.place = asset.id;
         sign.front = {{"BUSHALTEJO", .26F}, {"LINIO " + std::to_string(1 + text_hash(asset.id) % 9), .18F}};
+        if (line) {
+            const world::Settlement* nearest = nullptr;
+            for (const auto& other : region.settlements())
+                if (!nearest || flat(other.center, asset.position) < flat(nearest->center, asset.position)) nearest = &other;
+            sign.front = {{"BUSHALTEJO", .26F}, {upper(nearest ? nearest->name : std::string("Verda")), .22F}, {"LINIO 1 · INSULA RONDO", .15F}};
+        }
         sign.back = sign.front;
         sign.board = {250, 205, 40, 255}; sign.ink = {25, 25, 25, 255};
         sign.max_width = 2.2F;

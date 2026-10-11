@@ -154,6 +154,7 @@ add_library(
     src/game/ModeSession.cpp
     src/game/PlayUI.cpp
     src/game/MapScreen.cpp
+    src/game/transit/BusLine.cpp
     src/world/VerdaRegion.cpp
     src/world/Zones.cpp
     src/game/HomeScreen.cpp
@@ -637,6 +638,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_definitions(outland_traffic_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_traffic_tests COMMAND outland_traffic_tests)
 
+    add_executable(outland_bus_line_tests tests/integration/transit/test_bus_line.cpp)
+    target_link_libraries(outland_bus_line_tests PRIVATE outland_render)
+    target_compile_options(outland_bus_line_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_bus_line_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_bus_line_tests COMMAND outland_bus_line_tests)
     add_executable(outland_zones_map_tests tests/integration/world/test_zones_map.cpp)
     target_link_libraries(outland_zones_map_tests PRIVATE outland_render)
     target_compile_options(outland_zones_map_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

@@ -2,6 +2,8 @@
 #include "outland/creator/CreatorAssetRegistry.hpp"
 #include "outland/world/VerdaLayout.hpp"
 #include "outland/world/VerdaRegion.hpp"
+#include "outland/world/roads/RoadGraph.hpp"
+#include "outland/world/roads/Turnaround.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
 #include <raymath.h>
@@ -495,6 +497,158 @@ void sovagejo_homesteads(Kit& kit, world::VerdaRegion& region) {
     town->survivors += 2 * kit.report.homesteads;
 }
 
+// ------------------------------------------------------------------ bus stops
+// Every town gets a stop from the Transit kit beside a main road near its centre: the shelter
+// facing the road, the stop sign at the kerb, kerb pads and a tall street lamp. The capital's
+// stop is on a highway just outside downtown, where a 12 m bus can pull in. Verda also keeps the
+// line's buses, parked on the shoulder across from its stop.
+const std::string transit = "assets/verda/transit/";
+void bus_stops(Kit& kit, world::VerdaRegion& region) {
+    std::vector<Vector3> ends;
+    for (const auto& town : region.settlements()) for (const auto& road : town.roads) {ends.push_back(road.start); ends.push_back(road.end);}
+    const auto clear_of_junctions = [&](Vector3 p) {
+        for (const auto& e : ends) if (std::hypot(p.x - e.x, p.z - e.z) < 24) return false;
+        return true;
+    };
+    // Candidate kerb spots per town, best first.
+    struct Spot { Vector3 at, along; float width, score; world::RoadType type; };
+    struct Stop { std::size_t town; std::vector<Spot> spots; };
+    std::vector<Stop> stops;
+    for (std::size_t t = 0; t < region.runtime_settlements().size(); ++t) {
+        const auto& town = region.runtime_settlements()[t];
+        const bool capital = town.id == "capital_verda";
+        const float near = capital ? 235 : 12, far = capital ? 360 : 170, ideal = capital ? 255 : 35;
+        Stop stop{t, {}};
+        for (const auto& other : region.settlements()) for (const auto& road : other.roads) {
+            // Any road a bus fits (the backcountry's dirt roads too), long enough to pull in.
+            if (road.width < 5 || world::roads::turnaround_road(road.width)) continue;
+            const float length = std::hypot(road.end.x - road.start.x, road.end.z - road.start.z);
+            if (length < 50) continue;
+            const Vector3 along{(road.end.x - road.start.x) / length, 0, (road.end.z - road.start.z) / length};
+            for (float d = 0; d <= length; d += 5) {
+                const Vector3 at{road.start.x + along.x * d, 0, road.start.z + along.z * d};
+                const float r = std::hypot(at.x - town.center.x, at.z - town.center.z);
+                if (r < near || r > far || !clear_of_junctions(at)) continue;
+                // Nearer this town than any other (the stop takes its name).
+                bool own = true;
+                for (const auto& rival : region.settlements())
+                    if (&rival != &town && std::hypot(at.x - rival.center.x, at.z - rival.center.z) < r) own = false;
+                if (!own) continue;
+                stop.spots.push_back({at, along, road.width, std::abs(r - ideal), road.type});
+            }
+        }
+        std::sort(stop.spots.begin(), stop.spots.end(), [](const Spot& a, const Spot& b) {return a.score < b.score;});
+        if (!stop.spots.empty()) stops.push_back(std::move(stop));
+    }
+    // The line runs from the capital, then clockwise from the north (as game::transit::BusLine
+    // does), so each shelter goes on the kerb the bus pulls into: the side traffic keeps to.
+    const auto clockwise = [](Vector3 p) {
+        return std::hypot(p.x, p.z) < 600 ? -1.0F : std::fmod(std::atan2(p.x, -p.z) + 2 * PI, 2 * PI);
+    };
+    std::sort(stops.begin(), stops.end(), [&](const Stop& a, const Stop& b) {return clockwise(a.spots.front().at) < clockwise(b.spots.front().at);});
+    const world::roads::RoadGraph graph(region);
+    for (std::size_t i = 0; i < stops.size(); ++i) {
+        const auto& stop = stops[i];
+        const auto& next = stops[(i + 1) % stops.size()];
+        const bool capital = region.runtime_settlements()[stop.town].id == "capital_verda";
+        const auto& previous = stops[(i + stops.size() - 1) % stops.size()];
+        bool placed = false;
+        for (const auto& spot : stop.spots) {
+            // Which way the bus arrives here, and which way it leaves for the next stop.
+            const Vector3 back{-spot.along.x, 0, -spot.along.z};
+            const auto align = [&](Vector3 a, Vector3 b) { return (b.x - a.x) * spot.along.x + (b.z - a.z) * spot.along.z >= 0 ? spot.along : back; };
+            Vector3 travel = spot.along, leaving = spot.along;
+            const auto in = graph.route(previous.spots.front().at, spot.at);
+            for (std::size_t k = in.points.size(); k-- > 1;)
+                if (std::hypot(in.points[k].x - in.points[k - 1].x, in.points[k].z - in.points[k - 1].z) > 2) {travel = align(in.points[k - 1], in.points[k]); break;}
+            const auto out_leg = graph.route(spot.at, next.spots.front().at);
+            for (std::size_t k = 1; k < out_leg.points.size(); ++k)
+                if (std::hypot(out_leg.points[k].x - spot.at.x, out_leg.points[k].z - spot.at.z) > 2) {leaving = align(spot.at, out_leg.points[k]); break;}
+            const bool reverses = travel.x * leaving.x + travel.z * leaving.z < 0;
+            for (const float flip : {1.0F}) {
+                // Traffic keeps to (-d.z, d.x) of its direction d (world::roads::route_point):
+                // the shelter goes on that kerb or not at all (then the next spot is tried).
+                const Vector3 side{-travel.z * flip, 0, travel.x * flip};
+                const auto out = [&](float off, float ahead) {
+                    return Vector3{spot.at.x + side.x * (spot.width * .5F + off) + travel.x * ahead, 0,
+                                   spot.at.z + side.z * (spot.width * .5F + off) + travel.z * ahead};
+                };
+                const float facing = std::atan2(-side.x, -side.z) * RAD2DEG; // the shelter's front (+Z) to the road
+                const auto shelter = out(3.3F, 0);
+                if (!kit.claim(shelter, 2.4F, 1.3F, facing)) continue;
+                const auto t = stop.town;
+                if (reverses) {
+                    // The line comes back the way it came: a paved turnaround past the stop - off
+                    // to the side if there is room, else a turning circle where the road ends.
+                    std::vector<world::roads::Turnaround> options;
+                    for (const float beyond : world::roads::Turnaround::beyond) for (const float where : {1.0F, -1.0F}) {
+                        const Vector3 junction{spot.at.x + travel.x * beyond, 0, spot.at.z + travel.z * beyond};
+                        if (graph.nearest(junction).distance > 1 || !clear_of_junctions(junction)) continue;
+                        options.push_back(world::roads::turnaround_at(junction, {side.x * where, 0, side.z * where}, spot.width * .5F + 8));
+                    }
+                    for (const auto& end : ends) {
+                        // A dead end ahead on this stop's road.
+                        const float ahead = (end.x - spot.at.x) * travel.x + (end.z - spot.at.z) * travel.z;
+                        const float lateral = std::abs((end.x - spot.at.x) * travel.z - (end.z - spot.at.z) * travel.x);
+                        if (ahead < 15 || ahead > 220 || lateral > 1) continue;
+                        int meeting = 0;
+                        for (const auto& other : ends) meeting += std::hypot(other.x - end.x, other.z - end.z) < 1;
+                        if (meeting == 1) options.push_back(world::roads::turnaround_at(end, travel, 6));
+                    }
+                    bool built = false;
+                    for (const auto& loop : options) {
+                        const float r = world::roads::Turnaround::radius;
+                        bool dry = true;
+                        for (const auto& p : loop.ring) dry = dry && world::terrain::TerrainHeight::sample(p.x, p.z) > world::layout::sea_level + 1;
+                        // Nothing already standing in the way (fences, props, trees).
+                        bool open = true;
+                        for (const auto& town : region.settlements()) for (const auto& asset : town.assets)
+                            if (std::hypot(asset.position.x - loop.centre.x, asset.position.z - loop.centre.z) < r + 5 ||
+                                std::hypot(asset.position.x - (loop.junction.x + loop.stem_end.x) * .5F, asset.position.z - (loop.junction.z + loop.stem_end.z) * .5F) < 5)
+                                open = false;
+                        if (!dry || !open || !kit.claim(loop.centre, r + 1, r + 1, 0)) continue;
+                        auto& roads = region.runtime_settlements()[t].roads;
+                        const float w = world::roads::Turnaround::width;
+                        roads.push_back({loop.junction, loop.stem_end, w, spot.type}); // paved like the road it leaves
+                        for (std::size_t k = 0; k < loop.ring.size(); ++k)
+                            roads.push_back({loop.ring[k], loop.ring[(k + 1) % loop.ring.size()], w, spot.type});
+                        ++kit.report.turnarounds;
+                        built = true;
+                        break;
+                    }
+                    // No room to turn here: try another spot for this town's stop.
+                    if (!built) continue;
+                }
+                kit.put(transit + (t % 2 ? "bus_stop_alt.glb" : "bus_stop.glb"), shelter, facing);
+                for (const float a : {-1.0F, 1.0F}) kit.put(transit + "concrete.glb", out(1.2F, a * 2.1F), facing);
+                kit.put(transit + (t % 3 == 0 ? "bus_stop_sign.glb" : t % 3 == 1 ? "bus_stop_sign_01.glb" : "bus_stop_sign_02.glb"),
+                        out(.7F, 4.0F), facing + 90);
+                const auto lamp = out(2.3F, -6.5F);
+                if (kit.claim(lamp, .5F, .5F, 0)) kit.put(transit + (t % 2 ? "lamppost_01.glb" : "lamppost.glb"), lamp, facing);
+                if (capital) {
+                    // The depot: the line's buses wait on the far shoulder, facing along the road.
+                    auto& verda = region.runtime_settlements()[t];
+                    for (int bus = 0; bus < 3; ++bus) {
+                        const Vector3 at{spot.at.x - side.x * (spot.width * .5F + 2.2F) + travel.x * (18 + bus * 16.0F), 0,
+                                         spot.at.z - side.z * (spot.width * .5F + 2.2F) + travel.z * (18 + bus * 16.0F)};
+                        world::GameplayMarker marker;
+                        marker.id = "vehicle_spawn_bus_linio1_" + std::to_string(bus + 1);
+                        marker.type = world::GameplayMarkerType::VehicleSpawn;
+                        marker.position = {at.x, world::terrain::TerrainHeight::sample(at.x, at.z), at.z};
+                        marker.size = {3, 3.4F, 12.3F};
+                        marker.rotation_y = std::atan2(-travel.x, -travel.z) * RAD2DEG;
+                        verda.gameplay_markers.push_back(marker);
+                    }
+                }
+                ++kit.report.bus_stops;
+                placed = true;
+                break;
+            }
+            if (placed) break;
+        }
+    }
+}
+
 void trailer_park(Kit& kit, world::VerdaRegion& region) {
     world::Settlement* town = sovagejo(region);
     if (!town) return;
@@ -654,6 +808,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     driveways(kit, region);
     // Last, so every older piece keeps its id (saves refer to them).
     sovagejo_homesteads(kit, region);
+    bus_stops(kit, region);
     return kit.report;
 }
 }
