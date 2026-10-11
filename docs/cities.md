@@ -43,8 +43,8 @@ no gable shows sky from within. Upstairs partitions are 2.1 m tall and stop wher
 
 Collision uses the same triangles. Each house is reported as a two-storey enterable building: the
 world-kit test walks in through every front door, climbs every staircase, and reaches every bedroom
-and bathroom and carries a Home purpose marker, so island life houses
-a family in each; the capital's population grows by three per house.
+and bathroom. Each house also carries a Home purpose marker, so island life houses a family in each;
+the capital's population grows by three per house.
 
 ## Porto Luma
 - A 4 × 4 grid of 12 m streets (avenues and streets at ±40 and ±120 from the centre) around
