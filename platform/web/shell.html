@@ -55,7 +55,7 @@ Module.canvas.addEventListener('webglcontextlost',event=>{
 // Safari only lets a page start sound from touchend/click (not touchstart): resume on all of
 // them, everywhere, so the first tap on any control brings the guns' audio up.
 for(const type of ['touchstart','touchend','mousedown','click','keydown'])
- document.addEventListener(type,resumeAudio,{passive:true,capture:true});
+ window.addEventListener(type,resumeAudio,{passive:true,capture:true});
 document.getElementById('fullscreen').addEventListener('click',async function(){
  try{if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else Module.outlandStorageWarning('Safari uses landscape browser mode. Add to Home Screen to hide browser chrome.');
  if(screen.orientation && screen.orientation.lock)await screen.orientation.lock('landscape');}catch(e){/* Safari landscape remains usable without fullscreen. */}
