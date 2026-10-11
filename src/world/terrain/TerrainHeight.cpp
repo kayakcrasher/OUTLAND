@@ -248,8 +248,8 @@ float TerrainHeight::sample(
     }
 
     if (coastal_enabled) {
-        // Flat central building pad (downtown and the western suburbs), then the original countryside.
-        const float suburb=std::hypot(std::max({layout::suburb_west-world_x,world_x-layout::suburb_east,0.0F}),
+        // Flat central building pad (downtown and the suburbs either side), then the original countryside.
+        const float suburb=std::hypot(std::max({layout::suburb_near-std::abs(world_x),std::abs(world_x)-layout::suburb_far,0.0F}),
                                       std::max(std::abs(world_z)-layout::suburb_half,0.0F));
         height *= smooth(std::min(distance-layout::capital_flat_radius,suburb)/80.0F);
         // Small building pads retain hills and wilderness between towns.

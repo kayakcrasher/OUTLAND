@@ -2875,11 +2875,701 @@ ASSET "creator_urban_traffic_lights_street_light_clean_kit6" 9 "assets/verda/urb
 ASSET "creator_urban_traffic_lights_street_light_clean_kit7" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1951 5.98735762 -350 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_clean_kit8" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1951 5.82125473 -325 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_clean_kit9" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1951 5.07086086 -300 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit1" 0 "assets/verda/residential/houses/house_white.glb" 191 0 -181 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_335" 6 "" 179.589996 0 -172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_336" 6 "" 202.809998 0 -188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit1" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 188.049988 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit2" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 185.350006 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit3" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 182.649994 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit4" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 179.950012 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit5" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 202.099991 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit6" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 199.5 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit93" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 198.399994 0 -171.410004 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit2" 0 "assets/verda/residential/houses/house_white.glb" 221 0 -181 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_337" 6 "" 209.589996 0 -172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_338" 6 "" 232.809998 0 -188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit7" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 218.049988 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit8" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 215.350006 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit9" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 212.649994 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit10" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 209.950012 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit11" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 232.099991 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit12" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 229.5 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit94" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 228.399994 0 -171.410004 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit1" 0 "assets/verda/residential/houses/house_sage.glb" 251 0 -181 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_339" 6 "" 239.589996 0 -172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_340" 6 "" 262.809998 0 -188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit13" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 248.049988 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit14" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 245.350006 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit15" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 242.649994 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit16" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 239.950012 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit17" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 262.100006 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit18" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 259.5 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit95" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 258.399994 0 -171.410004 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit3" 0 "assets/verda/residential/houses/house_white.glb" 281 0 -181 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_341" 6 "" 269.589996 0 -172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_342" 6 "" 292.809998 0 -188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit96" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 288.399994 0 -171.410004 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit4" 0 "assets/verda/residential/houses/house_white.glb" 311 0 -181 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_343" 6 "" 299.589996 0 -172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_344" 6 "" 322.809998 0 -188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit97" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 318.399994 0 -171.410004 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit1" 0 "assets/verda/residential/houses/house_cream.glb" 351 0 -181 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_345" 6 "" 339.589996 0 -172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_346" 6 "" 362.809998 0 -188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit98" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 358.399994 0 -171.410004 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit5" 0 "assets/verda/residential/houses/house_white.glb" 381 0 -181 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_347" 6 "" 369.589996 0 -172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_348" 6 "" 392.809998 0 -188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit19" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 378.049988 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit20" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 375.350006 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit21" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 372.649994 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit22" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 369.950012 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit23" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 392.100006 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit24" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 389.5 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit99" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 388.399994 0 -171.410004 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit2" 0 "assets/verda/residential/houses/house_sage.glb" 411 0 -181 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_349" 6 "" 399.589996 0 -172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_350" 6 "" 422.809998 0 -188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit25" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 408.049988 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit26" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 405.350006 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit27" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 402.649994 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit28" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 399.950012 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit29" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 422.100006 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit30" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 419.5 0 -164.509995 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit100" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 418.399994 0 -171.410004 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit3" 0 "assets/verda/residential/houses/house_sage.glb" 441 0 -181 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_351" 6 "" 429.589996 0 -172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_352" 6 "" 452.809998 0 -188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit101" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 448.399994 0 -171.410004 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit1" 0 "assets/verda/residential/houses/house_blue.glb" 191 0 -139 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_353" 6 "" 202.410004 0 -147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_354" 6 "" 179.190002 0 -131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit102" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 183.600006 0 -148.589996 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit2" 0 "assets/verda/residential/houses/house_cream.glb" 221 0 -139 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_355" 6 "" 232.410004 0 -147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_356" 6 "" 209.190002 0 -131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit103" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 213.600006 0 -148.589996 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit4" 0 "assets/verda/residential/houses/house_sage.glb" 251 0 -139 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_357" 6 "" 262.410004 0 -147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_358" 6 "" 239.190002 0 -131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit104" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 243.600006 0 -148.589996 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit2" 0 "assets/verda/residential/houses/house_blue.glb" 281 0 -139 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_359" 6 "" 292.410004 0 -147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_360" 6 "" 269.190002 0 -131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit105" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 273.600006 0 -148.589996 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit3" 0 "assets/verda/residential/houses/house_blue.glb" 311 0 -139 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_361" 6 "" 322.410004 0 -147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_362" 6 "" 299.190002 0 -131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit31" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 313.950012 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit32" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 316.649994 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit33" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 319.350006 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit34" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 322.049988 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit35" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 299.899994 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit36" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 302.5 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit106" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 303.600006 0 -148.589996 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit3" 0 "assets/verda/residential/houses/house_cream.glb" 351 0 -139 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_363" 6 "" 362.410004 0 -147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_364" 6 "" 339.190002 0 -131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit37" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 353.950012 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit38" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 356.649994 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit39" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 359.350006 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit40" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 362.049988 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit41" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 339.899994 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit42" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 342.5 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit107" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 343.600006 0 -148.589996 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit4" 0 "assets/verda/residential/houses/house_blue.glb" 381 0 -139 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_365" 6 "" 392.410004 0 -147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_366" 6 "" 369.190002 0 -131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit43" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 383.950012 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit44" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 386.649994 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit45" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 389.350006 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit46" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 392.049988 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit47" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 369.899994 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit48" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 372.5 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit108" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 373.600006 0 -148.589996 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit5" 0 "assets/verda/residential/houses/house_blue.glb" 411 0 -139 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_367" 6 "" 422.410004 0 -147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_368" 6 "" 399.190002 0 -131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit49" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 413.950012 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit50" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 416.649994 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit51" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 419.350006 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit52" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 422.049988 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit53" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 399.899994 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit54" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 402.5 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit109" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 403.600006 0 -148.589996 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit6" 0 "assets/verda/residential/houses/house_white.glb" 441 0 -139 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_369" 6 "" 452.410004 0 -147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_370" 6 "" 429.190002 0 -131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit55" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 443.950012 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit56" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 446.649994 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit57" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 449.350006 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit58" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 452.049988 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit59" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 429.899994 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit60" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 432.5 0 -155.490005 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit110" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 433.600006 0 -148.589996 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit5" 0 "assets/verda/residential/houses/house_sage.glb" 191 0 -101 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_371" 6 "" 179.589996 0 -92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_372" 6 "" 202.809998 0 -108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit61" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 188.049988 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit62" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 185.350006 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit63" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 182.649994 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit64" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 179.950012 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit65" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 202.099991 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit66" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 199.5 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit111" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 198.399994 0 -91.4100037 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit6" 0 "assets/verda/residential/houses/house_sage.glb" 221 0 -101 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_373" 6 "" 209.589996 0 -92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_374" 6 "" 232.809998 0 -108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit67" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 218.049988 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit68" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 215.350006 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit69" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 212.649994 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit70" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 209.950012 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit71" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 232.099991 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit72" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 229.5 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit112" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 228.399994 0 -91.4100037 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit7" 0 "assets/verda/residential/houses/house_white.glb" 251 0 -101 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_375" 6 "" 239.589996 0 -92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_376" 6 "" 262.809998 0 -108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit113" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 258.399994 0 -91.4100037 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit6" 0 "assets/verda/residential/houses/house_blue.glb" 281 0 -101 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_377" 6 "" 269.589996 0 -92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_378" 6 "" 292.809998 0 -108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit114" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 288.399994 0 -91.4100037 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit7" 0 "assets/verda/residential/houses/house_blue.glb" 311 0 -101 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_379" 6 "" 299.589996 0 -92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_380" 6 "" 322.809998 0 -108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit115" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 318.399994 0 -91.4100037 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit4" 0 "assets/verda/residential/houses/house_cream.glb" 351 0 -101 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_381" 6 "" 339.589996 0 -92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_382" 6 "" 362.809998 0 -108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit116" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 358.399994 0 -91.4100037 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit8" 0 "assets/verda/residential/houses/house_blue.glb" 381 0 -101 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_383" 6 "" 369.589996 0 -92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_384" 6 "" 392.809998 0 -108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit117" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 388.399994 0 -91.4100037 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit5" 0 "assets/verda/residential/houses/house_cream.glb" 411 0 -101 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_385" 6 "" 399.589996 0 -92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_386" 6 "" 422.809998 0 -108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit118" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 418.399994 0 -91.4100037 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit7" 0 "assets/verda/residential/houses/house_sage.glb" 441 0 -101 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_387" 6 "" 429.589996 0 -92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_388" 6 "" 452.809998 0 -108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit73" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 438.049988 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit74" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 435.350006 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit75" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 432.649994 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit76" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 429.950012 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit77" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 452.100006 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit78" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 449.5 0 -84.5100021 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit119" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 448.399994 0 -91.4100037 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit9" 0 "assets/verda/residential/houses/house_blue.glb" 191 0 -59 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_389" 6 "" 202.410004 0 -67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_390" 6 "" 179.190002 0 -51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit79" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 193.950012 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit80" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 196.649994 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit81" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 199.350006 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit82" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 202.049988 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit83" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 179.900009 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit84" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 182.5 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit120" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 183.600006 0 -68.5899963 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit6" 0 "assets/verda/residential/houses/house_cream.glb" 221 0 -59 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_391" 6 "" 232.410004 0 -67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_392" 6 "" 209.190002 0 -51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit85" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 223.950012 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit86" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 226.649994 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit87" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 229.350006 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit88" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 232.049988 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit89" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 209.900009 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit90" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 212.5 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit121" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 213.600006 0 -68.5899963 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit10" 0 "assets/verda/residential/houses/house_blue.glb" 251 0 -59 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_393" 6 "" 262.410004 0 -67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_394" 6 "" 239.190002 0 -51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit122" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 243.600006 0 -68.5899963 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit7" 0 "assets/verda/residential/houses/house_cream.glb" 281 0 -59 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_395" 6 "" 292.410004 0 -67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_396" 6 "" 269.190002 0 -51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit123" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 273.600006 0 -68.5899963 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit8" 0 "assets/verda/residential/houses/house_white.glb" 311 0 -59 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_397" 6 "" 322.410004 0 -67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_398" 6 "" 299.190002 0 -51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit124" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 303.600006 0 -68.5899963 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit9" 0 "assets/verda/residential/houses/house_white.glb" 351 0 -59 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_399" 6 "" 362.410004 0 -67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_400" 6 "" 339.190002 0 -51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit125" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 343.600006 0 -68.5899963 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit8" 0 "assets/verda/residential/houses/house_cream.glb" 381 0 -59 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_401" 6 "" 392.410004 0 -67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_402" 6 "" 369.190002 0 -51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit126" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 373.600006 0 -68.5899963 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit9" 0 "assets/verda/residential/houses/house_cream.glb" 411 0 -59 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_403" 6 "" 422.410004 0 -67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_404" 6 "" 399.190002 0 -51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit91" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 413.950012 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit92" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 416.649994 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit93" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 419.350006 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit94" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 422.049988 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit95" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 399.899994 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit96" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 402.5 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit127" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 403.600006 0 -68.5899963 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit10" 0 "assets/verda/residential/houses/house_white.glb" 441 0 -59 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_405" 6 "" 452.410004 0 -67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_406" 6 "" 429.190002 0 -51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit97" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 443.950012 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit98" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 446.649994 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit99" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 449.350006 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit100" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 452.049988 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit101" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 429.899994 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit102" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 432.5 0 -75.4899979 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit128" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 433.600006 0 -68.5899963 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit10" 0 "assets/verda/residential/houses/house_cream.glb" 191 0 59 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_407" 6 "" 179.589996 0 67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_408" 6 "" 202.809998 0 51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit103" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 188.049988 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit104" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 185.350006 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit105" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 182.649994 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit106" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 179.950012 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit107" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 202.099991 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit108" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 199.5 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit129" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 198.399994 0 68.5899963 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit11" 0 "assets/verda/residential/houses/house_blue.glb" 221 0 59 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_409" 6 "" 209.589996 0 67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_410" 6 "" 232.809998 0 51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit109" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 218.049988 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit110" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 215.350006 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit111" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 212.649994 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit112" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 209.950012 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit113" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 232.099991 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit114" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 229.5 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit130" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 228.399994 0 68.5899963 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit11" 0 "assets/verda/residential/houses/house_white.glb" 251 0 59 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_411" 6 "" 239.589996 0 67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_412" 6 "" 262.809998 0 51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit131" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 258.399994 0 68.5899963 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit12" 0 "assets/verda/residential/houses/house_blue.glb" 281 0 59 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_413" 6 "" 269.589996 0 67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_414" 6 "" 292.809998 0 51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit132" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 288.399994 0 68.5899963 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit12" 0 "assets/verda/residential/houses/house_white.glb" 311 0 59 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_415" 6 "" 299.589996 0 67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_416" 6 "" 322.809998 0 51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit133" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 318.399994 0 68.5899963 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit11" 0 "assets/verda/residential/houses/house_cream.glb" 351 0 59 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_417" 6 "" 339.589996 0 67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_418" 6 "" 362.809998 0 51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit134" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 358.399994 0 68.5899963 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit8" 0 "assets/verda/residential/houses/house_sage.glb" 381 0 59 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_419" 6 "" 369.589996 0 67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_420" 6 "" 392.809998 0 51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit135" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 388.399994 0 68.5899963 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit13" 0 "assets/verda/residential/houses/house_blue.glb" 411 0 59 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_421" 6 "" 399.589996 0 67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_422" 6 "" 422.809998 0 51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit115" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 408.049988 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit116" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 405.350006 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit117" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 402.649994 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit118" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 399.950012 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit119" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 422.100006 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit120" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 419.5 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit136" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 418.399994 0 68.5899963 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit13" 0 "assets/verda/residential/houses/house_white.glb" 441 0 59 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_423" 6 "" 429.589996 0 67.0899963 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_424" 6 "" 452.809998 0 51.9099998 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit121" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 438.049988 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit122" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 435.350006 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit123" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 432.649994 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit124" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 429.950012 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit125" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 452.100006 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit126" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 449.5 0 75.4899979 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit137" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 448.399994 0 68.5899963 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit12" 0 "assets/verda/residential/houses/house_cream.glb" 191 0 101 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_425" 6 "" 202.410004 0 92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_426" 6 "" 179.190002 0 108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit138" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 183.600006 0 91.4100037 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit14" 0 "assets/verda/residential/houses/house_white.glb" 221 0 101 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_427" 6 "" 232.410004 0 92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_428" 6 "" 209.190002 0 108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit139" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 213.600006 0 91.4100037 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit15" 0 "assets/verda/residential/houses/house_white.glb" 251 0 101 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_429" 6 "" 262.410004 0 92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_430" 6 "" 239.190002 0 108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit140" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 243.600006 0 91.4100037 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit16" 0 "assets/verda/residential/houses/house_white.glb" 281 0 101 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_431" 6 "" 292.410004 0 92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_432" 6 "" 269.190002 0 108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit141" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 273.600006 0 91.4100037 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit17" 0 "assets/verda/residential/houses/house_white.glb" 311 0 101 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_433" 6 "" 322.410004 0 92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_434" 6 "" 299.190002 0 108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit142" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 303.600006 0 91.4100037 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit18" 0 "assets/verda/residential/houses/house_white.glb" 351 0 101 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_435" 6 "" 362.410004 0 92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_436" 6 "" 339.190002 0 108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit127" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 353.950012 0 84.5100021 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit128" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 356.649994 0 84.5100021 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit129" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 359.350006 0 84.5100021 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit130" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 362.049988 0 84.5100021 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit131" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 339.899994 0 84.5100021 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit132" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 342.5 0 84.5100021 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit143" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 343.600006 0 91.4100037 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit9" 0 "assets/verda/residential/houses/house_sage.glb" 381 0 101 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_437" 6 "" 392.410004 0 92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_438" 6 "" 369.190002 0 108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit144" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 373.600006 0 91.4100037 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit13" 0 "assets/verda/residential/houses/house_cream.glb" 411 0 101 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_439" 6 "" 422.410004 0 92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_440" 6 "" 399.190002 0 108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit133" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 413.950012 0 84.5100021 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit134" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 416.649994 0 84.5100021 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit135" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 419.350006 0 84.5100021 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit136" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 422.049988 0 84.5100021 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit137" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 399.899994 0 84.5100021 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit138" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 402.5 0 84.5100021 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit145" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 403.600006 0 91.4100037 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit19" 0 "assets/verda/residential/houses/house_white.glb" 441 0 101 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_441" 6 "" 452.410004 0 92.9100037 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_442" 6 "" 429.190002 0 108.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit146" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 433.600006 0 91.4100037 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit10" 0 "assets/verda/residential/houses/house_sage.glb" 191 0 139 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_443" 6 "" 179.589996 0 147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_444" 6 "" 202.809998 0 131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit139" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 188.049988 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit140" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 185.350006 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit141" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 182.649994 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit142" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 179.950012 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit143" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 202.099991 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit144" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 199.5 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit147" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 198.399994 0 148.589996 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit14" 0 "assets/verda/residential/houses/house_blue.glb" 221 0 139 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_445" 6 "" 209.589996 0 147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_446" 6 "" 232.809998 0 131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit145" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 218.049988 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit146" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 215.350006 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit147" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 212.649994 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit148" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 209.950012 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit149" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 232.099991 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit150" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 229.5 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit148" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 228.399994 0 148.589996 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit14" 0 "assets/verda/residential/houses/house_cream.glb" 251 0 139 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_447" 6 "" 239.589996 0 147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_448" 6 "" 262.809998 0 131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit149" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 258.399994 0 148.589996 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit15" 0 "assets/verda/residential/houses/house_blue.glb" 281 0 139 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_449" 6 "" 269.589996 0 147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_450" 6 "" 292.809998 0 131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit150" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 288.399994 0 148.589996 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit20" 0 "assets/verda/residential/houses/house_white.glb" 311 0 139 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_451" 6 "" 299.589996 0 147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_452" 6 "" 322.809998 0 131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit151" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 308.049988 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit152" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 305.350006 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit153" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 302.649994 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit154" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 299.950012 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit155" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 322.100006 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit156" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 319.5 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit151" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 318.399994 0 148.589996 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit15" 0 "assets/verda/residential/houses/house_cream.glb" 351 0 139 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_453" 6 "" 339.589996 0 147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_454" 6 "" 362.809998 0 131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit157" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 348.049988 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit158" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 345.350006 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit159" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 342.649994 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit160" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 339.950012 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit161" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 362.100006 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit162" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 359.5 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit152" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 358.399994 0 148.589996 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit11" 0 "assets/verda/residential/houses/house_sage.glb" 381 0 139 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_455" 6 "" 369.589996 0 147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_456" 6 "" 392.809998 0 131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit163" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 378.049988 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit164" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 375.350006 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit165" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 372.649994 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit166" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 369.950012 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit167" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 392.100006 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit168" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 389.5 0 155.490005 2.69642997 1.66716099 0.0399999991 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit153" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 388.399994 0 148.589996 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit21" 0 "assets/verda/residential/houses/house_white.glb" 411 0 139 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_457" 6 "" 399.589996 0 147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_458" 6 "" 422.809998 0 131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit154" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 418.399994 0 148.589996 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit16" 0 "assets/verda/residential/houses/house_blue.glb" 441 0 139 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_459" 6 "" 429.589996 0 147.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_460" 6 "" 452.809998 0 131.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit155" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 448.399994 0 148.589996 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit12" 0 "assets/verda/residential/houses/house_sage.glb" 191 0 181 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_461" 6 "" 202.410004 0 172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_462" 6 "" 179.190002 0 188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit156" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 183.600006 0 171.410004 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit17" 0 "assets/verda/residential/houses/house_blue.glb" 221 0 181 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_463" 6 "" 232.410004 0 172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_464" 6 "" 209.190002 0 188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit157" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 213.600006 0 171.410004 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit18" 0 "assets/verda/residential/houses/house_blue.glb" 251 0 181 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_465" 6 "" 262.410004 0 172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_466" 6 "" 239.190002 0 188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit169" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 253.950012 0 164.509995 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit170" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 256.649994 0 164.509995 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit171" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 259.350006 0 164.509995 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit172" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 262.049988 0 164.509995 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit173" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 239.900009 0 164.509995 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit174" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 242.5 0 164.509995 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit158" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 243.600006 0 171.410004 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit13" 0 "assets/verda/residential/houses/house_sage.glb" 281 0 181 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_467" 6 "" 292.410004 0 172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_468" 6 "" 269.190002 0 188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit159" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 273.600006 0 171.410004 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit19" 0 "assets/verda/residential/houses/house_blue.glb" 311 0 181 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_469" 6 "" 322.410004 0 172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_470" 6 "" 299.190002 0 188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit160" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 303.600006 0 171.410004 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_cream_kit16" 0 "assets/verda/residential/houses/house_cream.glb" 351 0 181 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_471" 6 "" 362.410004 0 172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_472" 6 "" 339.190002 0 188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit175" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 353.950012 0 164.509995 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit176" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 356.649994 0 164.509995 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit177" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 359.350006 0 164.509995 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit178" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 362.049988 0 164.509995 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit179" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 339.899994 0 164.509995 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_metal_fence_metalfence_one_side_topbar_kit180" 4 "assets/verda/urban/Fences/metal_fence/metalfence_one_side_topbar.glb" 342.5 0 164.509995 2.69642997 1.66716099 0.0399999991 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit161" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 343.600006 0 171.410004 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_white_kit22" 0 "assets/verda/residential/houses/house_white.glb" 381 0 181 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_473" 6 "" 392.410004 0 172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_474" 6 "" 369.190002 0 188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit162" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 373.600006 0 171.410004 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit20" 0 "assets/verda/residential/houses/house_blue.glb" 411 0 181 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_475" 6 "" 422.410004 0 172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_476" 6 "" 399.190002 0 188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit163" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 403.600006 0 171.410004 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_sage_kit14" 0 "assets/verda/residential/houses/house_sage.glb" 441 0 181 14.4200001 9.02999973 20.1700001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_477" 6 "" 452.410004 0 172.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_478" 6 "" 429.190002 0 188.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit164" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" 433.600006 0 171.410004 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit10" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 192 0 -165.399994 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit11" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 242 0 -154.600006 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit12" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 292 0 -165.399994 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit13" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 342 0 -154.600006 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit14" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 392 0 -165.399994 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit15" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 442 0 -154.600006 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit16" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 192 0 -85.4000015 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit17" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 242 0 -74.5999985 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit18" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 292 0 -85.4000015 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit19" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 342 0 -74.5999985 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit20" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 392 0 -85.4000015 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit21" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 442 0 -74.5999985 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit22" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 192 0 74.5999985 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit23" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 242 0 85.4000015 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit24" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 292 0 74.5999985 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit25" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 342 0 85.4000015 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit26" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 392 0 74.5999985 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit27" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 442 0 85.4000015 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit28" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 192 0 154.600006 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit29" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 242 0 165.399994 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit30" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 292 0 154.600006 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit31" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 342 0 165.399994 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit32" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 392 0 154.600006 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit33" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 442 0 165.399994 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_479" 6 "" 178 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_480" 6 "" 178 0 8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_481" 6 "" 198 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_482" 6 "" 198 0 8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_483" 6 "" 218 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_484" 6 "" 218 0 8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_485" 6 "" 238 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_486" 6 "" 238 0 8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_487" 6 "" 258 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_488" 6 "" 258 0 8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_489" 6 "" 278 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_490" 6 "" 278 0 8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_491" 6 "" 298 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_492" 6 "" 298 0 8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_493" 6 "" 318 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_494" 6 "" 318 0 8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_495" 6 "" 338 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_496" 6 "" 338 0 8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_497" 6 "" 358 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_498" 6 "" 378 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_499" 6 "" 398 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_500" 6 "" 418 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_501" 6 "" 438 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_502" 6 "" 438 0 8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_503" 6 "" 458 0 -8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_504" 6 "" 458 0 8.5 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_transit_lamppost_01_kit1" 9 "assets/verda/transit/lamppost_01.glb" 188 0 6.4000001 0.430000007 10.5200005 3.47000003 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_transit_lamppost_01_kit2" 9 "assets/verda/transit/lamppost_01.glb" 228 0 -6.4000001 0.430000007 10.5200005 3.47000003 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_transit_lamppost_01_kit3" 9 "assets/verda/transit/lamppost_01.glb" 268 0 6.4000001 0.430000007 10.5200005 3.47000003 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_transit_lamppost_01_kit4" 9 "assets/verda/transit/lamppost_01.glb" 308 0 -6.4000001 0.430000007 10.5200005 3.47000003 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_transit_lamppost_01_kit5" 9 "assets/verda/transit/lamppost_01.glb" 348 0 6.4000001 0.430000007 10.5200005 3.47000003 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_transit_lamppost_01_kit6" 9 "assets/verda/transit/lamppost_01.glb" 388 0 -6.4000001 0.430000007 10.5200005 3.47000003 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_transit_lamppost_01_kit7" 9 "assets/verda/transit/lamppost_01.glb" 428 0 6.4000001 0.430000007 10.5200005 3.47000003 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_505" 6 "" 197 0 -24 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_506" 6 "" 201 0 -42 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_507" 6 "" 228 0 -24 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_508" 6 "" 230 0 -42 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_509" 6 "" 266 0 -24 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_510" 6 "" 266 0 -42 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_511" 6 "" 297 0 -26 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_512" 6 "" 293 0 -41 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_bus_stops_busstop_clean_bench_kit4" 9 "assets/verda/urban/Bus stops/busstop_clean_bench.glb" 210 0 -13 2.26079893 3.07550597 4.26079988 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_bus_stops_busstop_clean_bench_kit5" 9 "assets/verda/urban/Bus stops/busstop_clean_bench.glb" 242 0 -13 2.26079893 3.07550597 4.26079988 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_bus_stops_busstop_clean_bench_kit6" 9 "assets/verda/urban/Bus stops/busstop_clean_bench.glb" 274 0 -13 2.26079893 3.07550597 4.26079988 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_bus_stops_busstop_clean_bench_kit7" 9 "assets/verda/urban/Bus stops/busstop_clean_bench.glb" 306 0 -13 2.26079893 3.07550597 4.26079988 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit9" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 369.5 0.100000001 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit19" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 369.5 0.100000001 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit10" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 372.5 0.100000001 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit21" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 372.5 0.100000001 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit22" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 375.5 0.100000001 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit11" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 375.5 0.100000001 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit20" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 378.5 0.100000001 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit21" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 378.5 0.100000001 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_door_frame_kit3" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_door_frame.glb" 381.5 0.100000001 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit23" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 381.5 0.100000001 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit12" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 384.5 0.100000001 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit24" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 384.5 0.100000001 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit13" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 387.5 0.100000001 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit14" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 387.5 0.100000001 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit15" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 390.5 0.100000001 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_door_frame_kit4" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_door_frame.glb" 390.5 0.100000001 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit25" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 368 0.100000001 19.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit16" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 392 0.100000001 19.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit17" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 368 0.100000001 22.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit26" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 392 0.100000001 22.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit22" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 368 0.100000001 25.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit23" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 392 0.100000001 25.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit24" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 368 0.100000001 28.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit25" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 392 0.100000001 28.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_corner_kit13" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_corner.glb" 368 0.100000001 18 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_corner_kit14" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_corner.glb" 368 0.100000001 30 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_corner_kit15" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_corner.glb" 392 0.100000001 18 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_corner_kit16" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_corner.glb" 392 0.100000001 30 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit407" 4 "assets/verda/kit/floor_slab_3x3.glb" 369.5 0 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit408" 4 "assets/verda/kit/floor_slab_3x3.glb" 369.5 0 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit409" 4 "assets/verda/kit/floor_slab_3x3.glb" 369.5 0 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit410" 4 "assets/verda/kit/floor_slab_3x3.glb" 369.5 0 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit411" 4 "assets/verda/kit/floor_slab_3x3.glb" 372.5 0 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit412" 4 "assets/verda/kit/floor_slab_3x3.glb" 372.5 0 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit413" 4 "assets/verda/kit/floor_slab_3x3.glb" 372.5 0 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit414" 4 "assets/verda/kit/floor_slab_3x3.glb" 372.5 0 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit415" 4 "assets/verda/kit/floor_slab_3x3.glb" 375.5 0 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit416" 4 "assets/verda/kit/floor_slab_3x3.glb" 375.5 0 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit417" 4 "assets/verda/kit/floor_slab_3x3.glb" 375.5 0 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit418" 4 "assets/verda/kit/floor_slab_3x3.glb" 375.5 0 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit419" 4 "assets/verda/kit/floor_slab_3x3.glb" 378.5 0 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit420" 4 "assets/verda/kit/floor_slab_3x3.glb" 378.5 0 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit421" 4 "assets/verda/kit/floor_slab_3x3.glb" 378.5 0 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit422" 4 "assets/verda/kit/floor_slab_3x3.glb" 378.5 0 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit423" 4 "assets/verda/kit/floor_slab_3x3.glb" 381.5 0 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit424" 4 "assets/verda/kit/floor_slab_3x3.glb" 381.5 0 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit425" 4 "assets/verda/kit/floor_slab_3x3.glb" 381.5 0 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit426" 4 "assets/verda/kit/floor_slab_3x3.glb" 381.5 0 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit427" 4 "assets/verda/kit/floor_slab_3x3.glb" 384.5 0 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit428" 4 "assets/verda/kit/floor_slab_3x3.glb" 384.5 0 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit429" 4 "assets/verda/kit/floor_slab_3x3.glb" 384.5 0 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit430" 4 "assets/verda/kit/floor_slab_3x3.glb" 384.5 0 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit431" 4 "assets/verda/kit/floor_slab_3x3.glb" 387.5 0 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit432" 4 "assets/verda/kit/floor_slab_3x3.glb" 387.5 0 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit433" 4 "assets/verda/kit/floor_slab_3x3.glb" 387.5 0 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit434" 4 "assets/verda/kit/floor_slab_3x3.glb" 387.5 0 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit435" 4 "assets/verda/kit/floor_slab_3x3.glb" 390.5 0 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit436" 4 "assets/verda/kit/floor_slab_3x3.glb" 390.5 0 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit437" 4 "assets/verda/kit/floor_slab_3x3.glb" 390.5 0 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit438" 4 "assets/verda/kit/floor_slab_3x3.glb" 390.5 0 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit16" 4 "assets/verda/industrial/shacks/Stairs.glb" 374.399994 0.100000001 28.5 1.20000005 1 0.975000024 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit17" 4 "assets/verda/industrial/shacks/Stairs.glb" 375.399994 1.10000002 28.5 1.20000005 1 0.975000024 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit18" 4 "assets/verda/industrial/shacks/Stairs.glb" 376.399994 2.0999999 28.5 1.20000005 1 0.975000024 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit26" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 369.5 3.0999999 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit27" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 369.5 3.0999999 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit28" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 372.5 3.0999999 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit27" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 372.5 3.0999999 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit28" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 375.5 3.0999999 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit29" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 375.5 3.0999999 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit29" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 378.5 3.0999999 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit30" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 378.5 3.0999999 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit31" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 381.5 3.0999999 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit30" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 381.5 3.0999999 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit18" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 384.5 3.0999999 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit31" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 384.5 3.0999999 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit32" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 387.5 3.0999999 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit33" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 387.5 3.0999999 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit19" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 390.5 3.0999999 18 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit34" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 390.5 3.0999999 30 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit32" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 368 3.0999999 19.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit20" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 392 3.0999999 19.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit33" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 368 3.0999999 22.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit34" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 392 3.0999999 22.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_kit21" 4 "assets/verda/urban/Building Parts/fancy_brick_wall.glb" 368 3.0999999 25.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit35" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 392 3.0999999 25.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_2_kit35" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_2.glb" 368 3.0999999 28.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_window_1_kit36" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_window_1.glb" 392 3.0999999 28.5 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_corner_kit17" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_corner.glb" 368 3.0999999 18 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_corner_kit18" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_corner.glb" 368 3.0999999 30 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_corner_kit19" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_corner.glb" 392 3.0999999 18 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_fancy_brick_wall_corner_kit20" 4 "assets/verda/urban/Building Parts/fancy_brick_wall_corner.glb" 392 3.0999999 30 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit439" 4 "assets/verda/kit/floor_slab_3x3.glb" 369.5 3 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit440" 4 "assets/verda/kit/floor_slab_3x3.glb" 369.5 3 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit441" 4 "assets/verda/kit/floor_slab_3x3.glb" 369.5 3 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit442" 4 "assets/verda/kit/floor_slab_3x3.glb" 369.5 3 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit443" 4 "assets/verda/kit/floor_slab_3x3.glb" 372.5 3 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit444" 4 "assets/verda/kit/floor_slab_3x3.glb" 372.5 3 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit445" 4 "assets/verda/kit/floor_slab_3x3.glb" 372.5 3 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit446" 4 "assets/verda/kit/floor_slab_3x3.glb" 375.5 3 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit447" 4 "assets/verda/kit/floor_slab_3x3.glb" 375.5 3 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit448" 4 "assets/verda/kit/floor_slab_3x3.glb" 375.5 3 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit449" 4 "assets/verda/kit/floor_slab_3x3.glb" 378.5 3 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit450" 4 "assets/verda/kit/floor_slab_3x3.glb" 378.5 3 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit451" 4 "assets/verda/kit/floor_slab_3x3.glb" 378.5 3 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit452" 4 "assets/verda/kit/floor_slab_3x3.glb" 378.5 3 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit453" 4 "assets/verda/kit/floor_slab_3x3.glb" 381.5 3 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit454" 4 "assets/verda/kit/floor_slab_3x3.glb" 381.5 3 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit455" 4 "assets/verda/kit/floor_slab_3x3.glb" 381.5 3 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit456" 4 "assets/verda/kit/floor_slab_3x3.glb" 381.5 3 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit457" 4 "assets/verda/kit/floor_slab_3x3.glb" 384.5 3 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit458" 4 "assets/verda/kit/floor_slab_3x3.glb" 384.5 3 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit459" 4 "assets/verda/kit/floor_slab_3x3.glb" 384.5 3 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit460" 4 "assets/verda/kit/floor_slab_3x3.glb" 384.5 3 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit461" 4 "assets/verda/kit/floor_slab_3x3.glb" 387.5 3 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit462" 4 "assets/verda/kit/floor_slab_3x3.glb" 387.5 3 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit463" 4 "assets/verda/kit/floor_slab_3x3.glb" 387.5 3 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit464" 4 "assets/verda/kit/floor_slab_3x3.glb" 387.5 3 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit465" 4 "assets/verda/kit/floor_slab_3x3.glb" 390.5 3 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit466" 4 "assets/verda/kit/floor_slab_3x3.glb" 390.5 3 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit467" 4 "assets/verda/kit/floor_slab_3x3.glb" 390.5 3 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit468" 4 "assets/verda/kit/floor_slab_3x3.glb" 390.5 3 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit305" 4 "assets/verda/kit/roof_slab_3x3.glb" 369.5 6 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit306" 4 "assets/verda/kit/roof_slab_3x3.glb" 369.5 6 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit307" 4 "assets/verda/kit/roof_slab_3x3.glb" 369.5 6 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit308" 4 "assets/verda/kit/roof_slab_3x3.glb" 369.5 6 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit309" 4 "assets/verda/kit/roof_slab_3x3.glb" 372.5 6 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit310" 4 "assets/verda/kit/roof_slab_3x3.glb" 372.5 6 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit311" 4 "assets/verda/kit/roof_slab_3x3.glb" 372.5 6 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit312" 4 "assets/verda/kit/roof_slab_3x3.glb" 372.5 6 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit313" 4 "assets/verda/kit/roof_slab_3x3.glb" 375.5 6 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit314" 4 "assets/verda/kit/roof_slab_3x3.glb" 375.5 6 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit315" 4 "assets/verda/kit/roof_slab_3x3.glb" 375.5 6 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit316" 4 "assets/verda/kit/roof_slab_3x3.glb" 375.5 6 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit317" 4 "assets/verda/kit/roof_slab_3x3.glb" 378.5 6 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit318" 4 "assets/verda/kit/roof_slab_3x3.glb" 378.5 6 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit319" 4 "assets/verda/kit/roof_slab_3x3.glb" 378.5 6 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit320" 4 "assets/verda/kit/roof_slab_3x3.glb" 378.5 6 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit321" 4 "assets/verda/kit/roof_slab_3x3.glb" 381.5 6 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit322" 4 "assets/verda/kit/roof_slab_3x3.glb" 381.5 6 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit323" 4 "assets/verda/kit/roof_slab_3x3.glb" 381.5 6 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit324" 4 "assets/verda/kit/roof_slab_3x3.glb" 381.5 6 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit325" 4 "assets/verda/kit/roof_slab_3x3.glb" 384.5 6 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit326" 4 "assets/verda/kit/roof_slab_3x3.glb" 384.5 6 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit327" 4 "assets/verda/kit/roof_slab_3x3.glb" 384.5 6 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit328" 4 "assets/verda/kit/roof_slab_3x3.glb" 384.5 6 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit329" 4 "assets/verda/kit/roof_slab_3x3.glb" 387.5 6 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit330" 4 "assets/verda/kit/roof_slab_3x3.glb" 387.5 6 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit331" 4 "assets/verda/kit/roof_slab_3x3.glb" 387.5 6 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit332" 4 "assets/verda/kit/roof_slab_3x3.glb" 387.5 6 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit333" 4 "assets/verda/kit/roof_slab_3x3.glb" 390.5 6 19.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit334" 4 "assets/verda/kit/roof_slab_3x3.glb" 390.5 6 22.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit335" 4 "assets/verda/kit/roof_slab_3x3.glb" 390.5 6 25.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit336" 4 "assets/verda/kit/roof_slab_3x3.glb" 390.5 6 28.5 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_transit_bus_stop_alt_kit1" 9 "assets/verda/transit/bus_stop_alt.glb" 7.30000019 -6.13179016 -256 4.1500001 3.51999998 1.96000004 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_transit_concrete_kit1" 5 "assets/verda/transit/concrete.glb" 5.19999981 -6.09423399 -253.899994 2 0.0599999987 0.810000002 -90 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_concrete_kit2" 5 "assets/verda/transit/concrete.glb" 5.19999981 -6.22531319 -258.100006 2 0.0599999987 0.810000002 -90 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_bus_stop_sign_01_kit1" 9 "assets/verda/transit/bus_stop_sign_01.glb" 4.69999981 -6.27679253 -260 0.589999974 2.8499999 0.0700000003 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_transit_lamppost_01_kit1" 9 "assets/verda/transit/lamppost_01.glb" 6.30000019 -5.87778378 -249.5 0.430000007 10.5200005 3.47000003 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_transit_lamppost_01_kit8" 9 "assets/verda/transit/lamppost_01.glb" 6.30000019 -5.87778378 -249.5 0.430000007 10.5200005 3.47000003 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_transit_bus_stop_kit1" 9 "assets/verda/transit/bus_stop.glb" 7.30000162 6 -1775 4.17000008 3.19000006 1.36000001 -89.9999924 255 255 255 255 80 80 80 255 1
 ASSET "creator_transit_concrete_kit3" 5 "assets/verda/transit/concrete.glb" 5.20000124 6 -1772.90002 2 0.0599999987 0.810000002 -89.9999924 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_concrete_kit4" 5 "assets/verda/transit/concrete.glb" 5.20000124 6 -1777.09998 2 0.0599999987 0.810000002 -89.9999924 255 255 255 255 80 80 80 255 0
@@ -2897,7 +3587,7 @@ ASSET "creator_transit_bus_stop_alt_kit3" 9 "assets/verda/transit/bus_stop_alt.g
 ASSET "creator_transit_concrete_kit9" 5 "assets/verda/transit/concrete.glb" -1801.23413 8.45683479 577.02948 2 0.0599999987 0.810000002 31.4768372 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_concrete_kit10" 5 "assets/verda/transit/concrete.glb" -1804.81616 8.2227602 579.222473 2 0.0599999987 0.810000002 31.4768372 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_bus_stop_sign_02_kit2" 9 "assets/verda/transit/bus_stop_sign_02.glb" -1806.17542 8.0646019 580.641052 0.670000017 2.88000011 0.0799999982 121.476837 255 255 255 255 80 80 80 255 1
-ASSET "creator_transit_lamppost_01_kit2" 9 "assets/verda/transit/lamppost_01.glb" -1798.05591 8.89215469 573.793884 0.430000007 10.5200005 3.47000003 31.4768372 255 255 255 255 80 80 80 255 1
+ASSET "creator_transit_lamppost_01_kit9" 9 "assets/verda/transit/lamppost_01.glb" -1798.05591 8.89215469 573.793884 0.430000007 10.5200005 3.47000003 31.4768372 255 255 255 255 80 80 80 255 1
 ASSET "creator_transit_bus_stop_kit3" 9 "assets/verda/transit/bus_stop.glb" -1742.69995 14.0573664 485 4.17000008 3.19000006 1.36000001 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_transit_concrete_kit11" 5 "assets/verda/transit/concrete.glb" -1744.80005 14.0573664 487.100006 2 0.0599999987 0.810000002 -90 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_concrete_kit12" 5 "assets/verda/transit/concrete.glb" -1744.80005 14.0573664 482.899994 2 0.0599999987 0.810000002 -90 255 255 255 255 80 80 80 255 0
@@ -2936,6 +3626,7 @@ MARKER "creator_marker_building_purpose_kit_23" 4 -377.5 0.100000001 -15.1999998
 MARKER "creator_marker_building_purpose_kit_24" 4 -418.5 0.100000001 15.1999998 1.20000005 2.20000005 1.20000005 0 1
 MARKER "creator_marker_building_purpose_kit_25" 4 1909.5 6.08519459 -522.799988 1.20000005 2.20000005 1.20000005 0 1
 MARKER "creator_marker_building_purpose_kit_26" 4 1906.5 6.0999999 -277.200012 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_27" 4 381.5 0.100000001 19.2000008 1.20000005 2.20000005 1.20000005 0 1
 PURPOSE "creator_marker_building_purpose_kit_1" 7
 PURPOSE "creator_marker_building_purpose_kit_2" 9
 PURPOSE "creator_marker_building_purpose_kit_3" 1
@@ -2962,11 +3653,12 @@ PURPOSE "creator_marker_building_purpose_kit_23" 4
 PURPOSE "creator_marker_building_purpose_kit_24" 6
 PURPOSE "creator_marker_building_purpose_kit_25" 7
 PURPOSE "creator_marker_building_purpose_kit_26" 10
-SETTLEMENT "capital_verda" "Verda" 0 0 0 0 168 0 0
+PURPOSE "creator_marker_building_purpose_kit_27" 3
+SETTLEMENT "capital_verda" "Verda" 0 0 0 0 312 0 0
 ROAD 0 0 -166 0 0 -630 8 2
 ROAD 0 0 -630 0 0 -1170 8 2
 ROAD 0 0 -1170 0 0 -1800 8 2
-ROAD 166 0 0 612.5 0 -140 8 2
+ROAD 476 0 0 612.5 0 -140 8 2
 ROAD 612.5 0 -140 1137.5 0 -260 8 2
 ROAD 1137.5 0 -260 1624 0 -440 8 2
 ROAD 0 0 166 105 0 630 8 2
@@ -3024,6 +3716,13 @@ ROAD -166 0 80 -476 0 80 8 2
 ROAD -166 0 160 -476 0 160 8 2
 ROAD -330 0 -160 -330 0 160 8 2
 ROAD -476 0 -160 -476 0 160 8 2
+ROAD 166 0 0 476 0 0 10 2
+ROAD 166 0 -160 476 0 -160 8 2
+ROAD 166 0 -80 476 0 -80 8 2
+ROAD 166 0 80 476 0 80 8 2
+ROAD 166 0 160 476 0 160 8 2
+ROAD 330 0 -160 330 0 160 8 2
+ROAD 476 0 -160 476 0 160 8 2
 BUILDING "verda_okcidento_house_1" 1 -190 0 -174 11 7 9 180 232 206 196 255 58 62 58 255 1
 BUILDING "verda_okcidento_house_2" 1 -214 0 -174 11 7 9 180 150 168 182 255 58 62 58 255 1
 BUILDING "verda_okcidento_house_3" 0 -238 0 -174 13 4 10 180 236 232 220 255 128 66 52 255 1
@@ -3129,46 +3828,56 @@ MARKER "vehicle_spawn_hatchback_downtown_13" 3 128 0 -3.79999924 2 1.60000002 4.
 MARKER "vehicle_spawn_hatchback_downtown_14" 3 102 0 -3.79999924 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_downtown_15" 3 128 0 3.79999924 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_downtown_16" 3 102 0 3.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_okcidento_1" 3 -197.899994 -0 -171.699997 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_2" 3 -221.899994 -0 -171.699997 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_3" 3 -229.100006 -0 -171.199997 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_4" 3 -253.100006 -0 -171.199997 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_5" 3 -294.899994 -0 -171.199997 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_6" 3 -356.899994 -0 -171.199997 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_7" 3 -435.100006 -0 -171.199997 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_8" 3 -246.899994 -0 -148.800003 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_hatchback_okcidento_9" 3 -387.100006 -0 -148.800003 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_hatchback_okcidento_10" 3 -452.899994 -0 -148.800003 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_hatchback_okcidento_11" 3 -182.100006 0 -91.6999969 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_12" 3 -205.100006 0 -91.1999969 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_13" 3 -230.100006 0 -91.6999969 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_14" 3 -269.899994 -0 -91.6999969 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_15" 3 -356.899994 -0 -91.1999969 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_16" 3 -379.899994 -0 -91.6999969 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_17" 3 -412.100006 -0 -91.6999969 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_18" 3 -302.100006 -0 -68.3000031 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_hatchback_okcidento_19" 3 -412.100006 -0 -68.3000031 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_hatchback_okcidento_20" 3 -221.899994 0 68.3000031 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_21" 3 -246.899994 0 68.8000031 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_22" 3 -318.899994 -0 68.8000031 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_23" 3 -452.899994 0 68.8000031 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_24" 3 -198.899994 0 91.1999969 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_hatchback_okcidento_25" 3 -246.899994 0 91.1999969 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_hatchback_okcidento_26" 3 -340.100006 -0 91.6999969 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_hatchback_okcidento_27" 3 -364.100006 -0 91.6999969 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_hatchback_okcidento_28" 3 -387.100006 -0 91.1999969 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_hatchback_okcidento_29" 3 -182.100006 0 148.300003 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_30" 3 -246.899994 -0 148.800003 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_31" 3 -270.899994 0 148.800003 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_32" 3 -277.100006 -0 148.800003 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_33" 3 -339.100006 -0 148.800003 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_34" 3 -404.899994 -0 148.800003 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_35" 3 -436.100006 -0 148.300003 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_36" 3 -253.100006 -0 171.199997 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_hatchback_okcidento_37" 3 -404.899994 -0 171.199997 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_okcidento_1" 3 -301.100006 -0 -171.199997 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_2" 3 -246.899994 -0 -148.800003 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_okcidento_3" 3 -254.100006 -0 -148.300003 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_okcidento_4" 3 -317.899994 -0 -148.300003 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_okcidento_5" 3 -355.899994 -0 -148.300003 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_okcidento_6" 3 -387.100006 -0 -148.800003 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_okcidento_7" 3 -412.100006 -0 -148.300003 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_okcidento_8" 3 -230.100006 0 -91.6999969 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_9" 3 -269.899994 -0 -91.6999969 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_10" 3 -293.899994 -0 -91.6999969 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_11" 3 -435.100006 -0 -91.1999969 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_12" 3 -356.899994 -0 -68.8000031 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_okcidento_13" 3 -270.899994 -0 68.8000031 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_14" 3 -278.100006 -0 68.3000031 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_15" 3 -318.899994 -0 68.8000031 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_16" 3 -452.899994 0 68.8000031 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_17" 3 -452.899994 0 91.1999969 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_okcidento_18" 3 -222.899994 0 148.800003 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_19" 3 -246.899994 -0 148.800003 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_20" 3 -270.899994 0 148.800003 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_21" 3 -404.899994 -0 148.800003 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_22" 3 -436.100006 -0 148.300003 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_23" 3 -197.899994 0 171.699997 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_okcidento_24" 3 -229.100006 0 171.199997 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_okcidento_25" 3 -355.899994 -0 171.699997 2 1.60000002 4.4000001 180 1
 MARKER "vehicle_spawn_hatchback_okcidento_shops_1" 3 -226 -0 9.30000019 2 1.60000002 4.4000001 270 1
 MARKER "vehicle_spawn_hatchback_okcidento_shops_2" 3 -248 -0 9.30000019 2 1.60000002 4.4000001 270 1
 MARKER "vehicle_spawn_hatchback_okcidento_shops_3" 3 -270 -0 9.30000019 2 1.60000002 4.4000001 270 1
+MARKER "vehicle_spawn_hatchback_orienta_1" 3 315.399994 0 -169.309998 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_orienta_2" 3 415.399994 0 -169.309998 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_orienta_3" 3 216.600006 0 -150.690002 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_4" 3 276.600006 0 -150.690002 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_5" 3 306.600006 0 -150.690002 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_6" 3 255.399994 0 -89.3099976 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_orienta_7" 3 415.399994 0 -89.3099976 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_orienta_8" 3 186.600006 0 -70.6900024 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_9" 3 246.600006 0 -70.6900024 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_10" 3 276.600006 0 -70.6900024 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_11" 3 406.600006 0 -70.6900024 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_12" 3 436.600006 0 -70.6900024 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_13" 3 415.399994 0 70.6900024 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_orienta_14" 3 276.600006 0 89.3099976 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_15" 3 406.600006 0 89.3099976 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_16" 3 255.399994 0 150.690002 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_orienta_17" 3 355.399994 0 150.690002 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_orienta_18" 3 186.600006 0 169.309998 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_19" 3 216.600006 0 169.309998 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_20" 3 276.600006 0 169.309998 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_21" 3 376.600006 0 169.309998 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_orienta_22" 3 406.600006 0 169.309998 2 1.60000002 4.4000001 180 1
 MARKER "vehicle_spawn_bus_linio1_1" 3 -6.19999981 -7.50456715 -274 3 3.4000001 12.3000002 -0 1
 MARKER "vehicle_spawn_bus_linio1_2" 3 -6.19999981 -8.03754902 -290 3 3.4000001 12.3000002 -0 1
 MARKER "vehicle_spawn_bus_linio1_3" 3 -6.19999981 -9.04190445 -306 3 3.4000001 12.3000002 -0 1

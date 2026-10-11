@@ -161,17 +161,39 @@ int main() {
     check(suburb_homes >= 80, "western suburbs: " + std::to_string(suburb_homes) + " homes");
     int grid_streets = 0, highways = 0, suburb_streets = 0;
     for (const auto& road : capital->roads) {
-        const auto in_suburbs = [](Vector3 p) { return p.x <= -166 && p.x >= -476 && std::abs(p.z) <= 160; };
+        const auto in_suburbs = [](Vector3 p) { return std::abs(p.x) >= 166 && std::abs(p.x) <= 476 && std::abs(p.z) <= 160; };
         const bool inside = std::abs(road.start.x) <= 167 && std::abs(road.start.z) <= 167 && std::abs(road.end.x) <= 167 && std::abs(road.end.z) <= 167;
         if (inside) { ++grid_streets; check(road.width == 12 && road.type == world::RoadType::Asphalt, "grid streets are 12 m asphalt"); }
         else if (in_suburbs(road.start) && in_suburbs(road.end)) ++suburb_streets;
         else if (std::abs(road.start.x) < 167 && std::abs(road.start.z) < 167) {
             ++highways;
             check((road.start.x == 0 && std::abs(road.start.z) == 166) || (road.start.z == 0 && std::abs(road.start.x) == 166), "highway joins a main street at the grid edge");
-        } else if (road.start.x == -476 && road.start.z == 0) ++highways; // Roka road leaves from the boulevard
+        } else if (std::abs(road.start.x) == 476 && road.start.z == 0) ++highways; // Roka and Porto Luma roads leave from the boulevards
     }
-    check(grid_streets == 10 && highways == 4 && suburb_streets == 7,
+    check(grid_streets == 10 && highways == 4 && suburb_streets == 14,
           "grid, suburbs and four highways: " + std::to_string(grid_streets) + "/" + std::to_string(suburb_streets) + "/" + std::to_string(highways));
+
+    // East Verda: the fancy suburbs are the residential house model, on level ground, facing streets.
+    {
+        int fancy = 0;
+        for (const auto& s : region.settlements()) for (const auto& a : s.assets) {
+            if (a.model_path.find("/residential/houses/house_") == std::string::npos) continue;
+            ++fancy;
+            check(a.position.x > 166 && a.position.x < 476 && std::abs(a.position.z) < 195, "fancy houses east of downtown");
+            check(std::abs(a.position.y) < .05F, "east suburbs are level");
+            check(a.collision, "houses are solid");
+            const float yaw = a.rotation_y * DEG2RAD;
+            const Vector3 front{a.position.x - std::sin(yaw) * 21, 0, a.position.z - std::cos(yaw) * 21};
+            bool fronts = false;
+            for (const auto& road : capital->roads) {
+                const auto ab = Vector3Subtract(road.end, road.start), ap = Vector3Subtract(front, road.start);
+                const float t = std::clamp((ab.x * ap.x + ab.z * ap.z) / (ab.x * ab.x + ab.z * ab.z), 0.0F, 1.0F);
+                fronts |= std::hypot(road.start.x + ab.x * t - front.x, road.start.z + ab.z * t - front.z) < 2;
+            }
+            check(fronts, "fancy house faces its street");
+        }
+        check(fancy >= 60, "east suburbs: " + std::to_string(fancy) + " houses");
+    }
 
     // Porto Luma: a 4 x 4 street grid round Placo Luma, Main Street rows and harbour towers.
     {

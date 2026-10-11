@@ -4,7 +4,7 @@ from pathlib import Path
 root = Path.home() / "Outland"
 source = root / "assets/source/elbolilloduro/house/House"
 models = source / "Models"
-output = root / "assets/verda/residential/houses"
+output = root / "assets/verda/residential/houses/source"  # editor source; tools/extract_house.py makes the runtime houses
 output.mkdir(parents=True, exist_ok=True)
 
 textures = {}
