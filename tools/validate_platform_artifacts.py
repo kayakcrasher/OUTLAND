@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Artifact checks do not launch the game or substitute for device testing."""
-import argparse,json,struct,zipfile
+import argparse,json,re,struct,zipfile
 from pathlib import Path
 
 def android(path):
@@ -28,6 +28,8 @@ def web(directory):
     html=(root/'outland.html').read_text();js=(root/'outland.js').read_text()
     assert 'Rotate your phone' in html and 'touch-action:none' in html
     assert 'IDBFS' in js and 'requestAnimationFrame' in js
+    for method in ('callMain','FS','ccall'):
+        assert re.search(r'Module\s*(?:\[\s*[\"\x27]'+method+r'[\"\x27]\s*\]|\.'+method+r')\s*=',js),f'Missing exported runtime method: {method}'
     print(f'Web verified: HTML/JS/WASM, {report["bytes"]} preloaded bytes, IndexedDB and frame pacing')
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--apk',type=Path);parser.add_argument('--web',type=Path)

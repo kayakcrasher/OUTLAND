@@ -22,19 +22,38 @@ var Module = {
  canvas:document.getElementById('canvas'),
  setStatus:function(text){document.getElementById('status').textContent=text;},
  outlandStorageWarning:function(text){const box=document.getElementById('warning');box.textContent=text;box.style.display='block';},
- onRuntimeInitialized:function(){document.getElementById('status').textContent='Ready';document.getElementById('start').disabled=false;},
- onAbort:function(reason){Module.outlandStorageWarning('Unable to start OUTLAND: '+reason);}
+ onRuntimeInitialized:function(){
+  if(typeof Module.callMain !== 'function'){showStartupError('The game launcher is missing. Reload after updating OUTLAND.');return;}
+  document.getElementById('status').textContent='Ready';document.getElementById('start').disabled=false;
+ },
+ onAbort:function(reason){showStartupError('Unable to start OUTLAND: '+reason);}
 };
+function showStartupError(text){
+ document.getElementById('gate').style.display='flex';
+ document.getElementById('status').textContent=text;
+ document.getElementById('start').disabled=true;
+ Module.outlandStorageWarning(text);
+}
+window.addEventListener('error',event=>showStartupError('OUTLAND error: '+event.message));
+window.addEventListener('unhandledrejection',event=>showStartupError('OUTLAND error: '+String(event.reason)));
 function resumeAudio(){
  const devices=window.miniaudio && window.miniaudio.devices;
  if(devices) for(const device of devices) if(device && device.webaudio) device.webaudio.resume().catch(()=>{});
 }
 document.getElementById('start').addEventListener('click',function(){
- document.getElementById('gate').style.display='none';Module.canvas.focus();Module.callMain([]);resumeAudio();
+ if(this.disabled)return;
+ this.disabled=true;document.getElementById('status').textContent='Starting Verda…';
+ try{
+  Module.canvas.focus();resumeAudio();Module.callMain([]);
+  document.getElementById('gate').style.display='none';
+ }catch(error){showStartupError('Unable to start OUTLAND: '+String(error));}
+});
+Module.canvas.addEventListener('webglcontextlost',event=>{
+ event.preventDefault();showStartupError('The graphics context was lost. Reload OUTLAND to restart.');
 });
 Module.canvas.addEventListener('touchstart',resumeAudio,{passive:true});Module.canvas.addEventListener('mousedown',resumeAudio);
 document.getElementById('fullscreen').addEventListener('click',async function(){
- try{if(Module.canvas.requestFullscreen)await Module.canvas.requestFullscreen();else Module.outlandStorageWarning('Safari uses landscape browser mode. Add to Home Screen to hide browser chrome.');
+ try{if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else Module.outlandStorageWarning('Safari uses landscape browser mode. Add to Home Screen to hide browser chrome.');
  if(screen.orientation && screen.orientation.lock)await screen.orientation.lock('landscape');}catch(e){/* Safari landscape remains usable without fullscreen. */}
 });
 </script>

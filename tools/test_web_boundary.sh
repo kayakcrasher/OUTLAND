@@ -10,3 +10,4 @@ em++ -std=c++20 -O2 -UNDEBUG -I"$root/include" -I"$raylib/src" \
  -sEXIT_RUNTIME=1 --pre-js "$root/tests/platform/browser_fixture.js" \
  -o "$build/boundary-test/test.js"
 node "$build/boundary-test/test.js"
+node "$root/tests/platform/test_web_bootstrap.js" "$root/platform/web/shell.html"

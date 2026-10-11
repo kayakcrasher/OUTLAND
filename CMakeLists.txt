@@ -50,6 +50,13 @@ if(ANDROID OR EMSCRIPTEN)
         URL https://codeload.github.com/raysan5/raylib/tar.gz/dbc56a87da87d973a9c5baa4e7438a9d20121d28
         URL_HASH SHA256=81b06ce7c19cf3b634b0271c23c361ba6ad8bf45fb8b036abbfeb4260ec1e126)
     FetchContent_MakeAvailable(raylib)
+    if(EMSCRIPTEN)
+        # raylib exports only ccall in a transitive link option. Emscripten uses
+        # the last export list, so that option would discard our PLAY entrypoint.
+        get_target_property(raylib_web_link_options raylib INTERFACE_LINK_OPTIONS)
+        list(FILTER raylib_web_link_options EXCLUDE REGEX "^-sEXPORTED_RUNTIME_METHODS=")
+        set_property(TARGET raylib PROPERTY INTERFACE_LINK_OPTIONS "${raylib_web_link_options}")
+    endif()
     if(ANDROID)
         # raylib's default Android link set only includes GLESv2, even when ES3 is selected.
         target_link_libraries(raylib PRIVATE GLESv3)
@@ -336,7 +343,7 @@ if(EMSCRIPTEN)
         -O2 -sASYNCIFY=1 -sASYNCIFY_IGNORE_INDIRECT=1 -sASYNCIFY_STACK_SIZE=262144
         -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 -sMAXIMUM_MEMORY=1073741824
         -sSTACK_SIZE=2097152 -sFORCE_FILESYSTEM=1
-        "-sEXPORTED_RUNTIME_METHODS=['callMain','FS']" -lidbfs.js
+        "-sEXPORTED_RUNTIME_METHODS=['callMain','FS','ccall']" -lidbfs.js
         "--shell-file=${PROJECT_SOURCE_DIR}/platform/web/shell.html"
         "--pre-js=${PROJECT_SOURCE_DIR}/platform/web/storage.js"
         "--preload-file=${OUTLAND_RUNTIME_ASSETS}/assets@/assets"
