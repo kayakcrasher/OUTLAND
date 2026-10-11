@@ -23,7 +23,18 @@ Built by `outland_build_world` (`src/dev/VerdaWorldKit.cpp`) into `maps/verda_wo
 (255k vertices, textures lost on export), kept out of the APK and web build by the `source`
 folder. `tools/extract_house.py` takes one house from it, puts it on the ground centred on its
 footprint (porch toward −Z) and paints its materials with flat vertex colours. It writes
-`house_white/blue/sage/cream.glb` (about 4,800 vertices, 155 KB each); `--check` verifies them.
+`house_white/blue/sage/cream.glb` (about 5,500 vertices, 183 KB each); `--check` verifies them.
+
+The houses are enterable. The front door panel beside the garage is left out, so its opening in
+the wall is the doorway (the sliding door off the porch is open too). Inside are:
+- plaster walls and a wood floor, with a ceiling at first-storey height;
+- a living room (sofa, rug, coffee table, armchair, TV) and a dining table with four chairs;
+- a kitchen along the back extension;
+- a hall sideboard, and a garage behind a partition with a doorway, holding a workbench and shelves.
+
+Collision uses the same triangles. Each house is reported as an enterable building (the world-kit
+test walks in through every front door) and carries a Home purpose marker, so island life houses
+a family in each; the capital's population grows by three per house.
 
 ## Porto Luma
 - A 4 × 4 grid of 12 m streets (avenues and streets at ±40 and ±120 from the centre) around

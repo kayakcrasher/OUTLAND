@@ -1019,7 +1019,13 @@ bool fancy_house(Kit& kit, world::Settlement& capital, Vector3 at, int facing, s
     if (!kit.claim(at, half_w + 1, half_d + 1, yaw)) return false;
     if (!kit.put(houses + "house_" + schemes[r % 4] + ".glb", at, yaw)) return false;
     ++kit.report.houses;
-    const Vector3 ground{at.x, 0, at.z};
+    const Vector3 ground{at.x, world::terrain::TerrainHeight::sample(at.x, at.z), at.z};
+    // Enterable (tools/extract_house.py): the front door beside the garage is an open doorway,
+    // the front wall is at local z = -5.85, and the floor top is 6 cm up.
+    constexpr float door_x = -2.41F, front = 5.85F, floor = .06F;
+    kit.report.enterable.push_back({ground, yaw, 13.6F, front * 2, 1, door_x, {}, {1, 0, 0}, 6, floor});
+    kit.purpose(to_world(ground, yaw, door_x, floor, -front + 1.2F), yaw, world::BuildingPurpose::Home);
+    ++kit.report.buildings;
     // The garage is on the model's -x side: the car waits on the drive in front of it.
     if ((r / 4) % 3 == 0) {
         vehicle_marker(capital, "vehicle_spawn_hatchback_orienta_" + std::to_string(++cars),
@@ -1084,7 +1090,7 @@ void east_suburbs(Kit& kit, world::VerdaRegion& region) {
     }
     for (int i = 0; i < 4; ++i) kit.put(urban + "Bus stops/busstop_clean_bench.glb", {210 + i * 32.0F, 0, -13}, 180);
     modular_building(kit, {380, 0, 24}, 0, 8, 4, "fancy_brick", 2, 8601, world::BuildingPurpose::Pub); // clubhouse
-    capital->survivors += (kit.report.houses - before) * 2;
+    capital->survivors += (kit.report.houses - before) * 3; // a family in every home
 }
 }
 

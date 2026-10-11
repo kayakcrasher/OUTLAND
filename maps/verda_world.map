@@ -3626,7 +3626,79 @@ MARKER "creator_marker_building_purpose_kit_23" 4 -377.5 0.100000001 -15.1999998
 MARKER "creator_marker_building_purpose_kit_24" 4 -418.5 0.100000001 15.1999998 1.20000005 2.20000005 1.20000005 0 1
 MARKER "creator_marker_building_purpose_kit_25" 4 1909.5 6.08519459 -522.799988 1.20000005 2.20000005 1.20000005 0 1
 MARKER "creator_marker_building_purpose_kit_26" 4 1906.5 6.0999999 -277.200012 1.20000005 2.20000005 1.20000005 180 1
-MARKER "creator_marker_building_purpose_kit_27" 4 381.5 0.100000001 19.2000008 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_27" 4 193.410004 0.0599999987 -176.350006 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_28" 4 223.410004 0.0599999987 -176.350006 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_29" 4 253.410004 0.0599999987 -176.350006 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_30" 4 283.410004 0.0599999987 -176.350006 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_31" 4 313.410004 0.0599999987 -176.350006 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_32" 4 353.410004 0.0599999987 -176.350006 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_33" 4 383.410004 0.0599999987 -176.350006 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_34" 4 413.410004 0.0599999987 -176.350006 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_35" 4 443.410004 0.0599999987 -176.350006 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_36" 4 188.589996 0.0599999987 -143.649994 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_37" 4 218.589996 0.0599999987 -143.649994 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_38" 4 248.589996 0.0599999987 -143.649994 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_39" 4 278.589996 0.0599999987 -143.649994 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_40" 4 308.589996 0.0599999987 -143.649994 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_41" 4 348.589996 0.0599999987 -143.649994 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_42" 4 378.589996 0.0599999987 -143.649994 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_43" 4 408.589996 0.0599999987 -143.649994 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_44" 4 438.589996 0.0599999987 -143.649994 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_45" 4 193.410004 0.0599999987 -96.3499985 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_46" 4 223.410004 0.0599999987 -96.3499985 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_47" 4 253.410004 0.0599999987 -96.3499985 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_48" 4 283.410004 0.0599999987 -96.3499985 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_49" 4 313.410004 0.0599999987 -96.3499985 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_50" 4 353.410004 0.0599999987 -96.3499985 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_51" 4 383.410004 0.0599999987 -96.3499985 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_52" 4 413.410004 0.0599999987 -96.3499985 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_53" 4 443.410004 0.0599999987 -96.3499985 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_54" 4 188.589996 0.0599999987 -63.6500015 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_55" 4 218.589996 0.0599999987 -63.6500015 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_56" 4 248.589996 0.0599999987 -63.6500015 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_57" 4 278.589996 0.0599999987 -63.6500015 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_58" 4 308.589996 0.0599999987 -63.6500015 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_59" 4 348.589996 0.0599999987 -63.6500015 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_60" 4 378.589996 0.0599999987 -63.6500015 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_61" 4 408.589996 0.0599999987 -63.6500015 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_62" 4 438.589996 0.0599999987 -63.6500015 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_63" 4 193.410004 0.0599999987 63.6500015 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_64" 4 223.410004 0.0599999987 63.6500015 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_65" 4 253.410004 0.0599999987 63.6500015 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_66" 4 283.410004 0.0599999987 63.6500015 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_67" 4 313.410004 0.0599999987 63.6500015 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_68" 4 353.410004 0.0599999987 63.6500015 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_69" 4 383.410004 0.0599999987 63.6500015 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_70" 4 413.410004 0.0599999987 63.6500015 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_71" 4 443.410004 0.0599999987 63.6500015 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_72" 4 188.589996 0.0599999987 96.3499985 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_73" 4 218.589996 0.0599999987 96.3499985 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_74" 4 248.589996 0.0599999987 96.3499985 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_75" 4 278.589996 0.0599999987 96.3499985 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_76" 4 308.589996 0.0599999987 96.3499985 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_77" 4 348.589996 0.0599999987 96.3499985 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_78" 4 378.589996 0.0599999987 96.3499985 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_79" 4 408.589996 0.0599999987 96.3499985 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_80" 4 438.589996 0.0599999987 96.3499985 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_81" 4 193.410004 0.0599999987 143.649994 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_82" 4 223.410004 0.0599999987 143.649994 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_83" 4 253.410004 0.0599999987 143.649994 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_84" 4 283.410004 0.0599999987 143.649994 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_85" 4 313.410004 0.0599999987 143.649994 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_86" 4 353.410004 0.0599999987 143.649994 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_87" 4 383.410004 0.0599999987 143.649994 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_88" 4 413.410004 0.0599999987 143.649994 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_89" 4 443.410004 0.0599999987 143.649994 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_90" 4 188.589996 0.0599999987 176.350006 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_91" 4 218.589996 0.0599999987 176.350006 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_92" 4 248.589996 0.0599999987 176.350006 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_93" 4 278.589996 0.0599999987 176.350006 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_94" 4 308.589996 0.0599999987 176.350006 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_95" 4 348.589996 0.0599999987 176.350006 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_96" 4 378.589996 0.0599999987 176.350006 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_97" 4 408.589996 0.0599999987 176.350006 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_98" 4 438.589996 0.0599999987 176.350006 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_99" 4 381.5 0.100000001 19.2000008 1.20000005 2.20000005 1.20000005 0 1
 PURPOSE "creator_marker_building_purpose_kit_1" 7
 PURPOSE "creator_marker_building_purpose_kit_2" 9
 PURPOSE "creator_marker_building_purpose_kit_3" 1
@@ -3653,8 +3725,80 @@ PURPOSE "creator_marker_building_purpose_kit_23" 4
 PURPOSE "creator_marker_building_purpose_kit_24" 6
 PURPOSE "creator_marker_building_purpose_kit_25" 7
 PURPOSE "creator_marker_building_purpose_kit_26" 10
-PURPOSE "creator_marker_building_purpose_kit_27" 3
-SETTLEMENT "capital_verda" "Verda" 0 0 0 0 312 0 0
+PURPOSE "creator_marker_building_purpose_kit_27" 1
+PURPOSE "creator_marker_building_purpose_kit_28" 1
+PURPOSE "creator_marker_building_purpose_kit_29" 1
+PURPOSE "creator_marker_building_purpose_kit_30" 1
+PURPOSE "creator_marker_building_purpose_kit_31" 1
+PURPOSE "creator_marker_building_purpose_kit_32" 1
+PURPOSE "creator_marker_building_purpose_kit_33" 1
+PURPOSE "creator_marker_building_purpose_kit_34" 1
+PURPOSE "creator_marker_building_purpose_kit_35" 1
+PURPOSE "creator_marker_building_purpose_kit_36" 1
+PURPOSE "creator_marker_building_purpose_kit_37" 1
+PURPOSE "creator_marker_building_purpose_kit_38" 1
+PURPOSE "creator_marker_building_purpose_kit_39" 1
+PURPOSE "creator_marker_building_purpose_kit_40" 1
+PURPOSE "creator_marker_building_purpose_kit_41" 1
+PURPOSE "creator_marker_building_purpose_kit_42" 1
+PURPOSE "creator_marker_building_purpose_kit_43" 1
+PURPOSE "creator_marker_building_purpose_kit_44" 1
+PURPOSE "creator_marker_building_purpose_kit_45" 1
+PURPOSE "creator_marker_building_purpose_kit_46" 1
+PURPOSE "creator_marker_building_purpose_kit_47" 1
+PURPOSE "creator_marker_building_purpose_kit_48" 1
+PURPOSE "creator_marker_building_purpose_kit_49" 1
+PURPOSE "creator_marker_building_purpose_kit_50" 1
+PURPOSE "creator_marker_building_purpose_kit_51" 1
+PURPOSE "creator_marker_building_purpose_kit_52" 1
+PURPOSE "creator_marker_building_purpose_kit_53" 1
+PURPOSE "creator_marker_building_purpose_kit_54" 1
+PURPOSE "creator_marker_building_purpose_kit_55" 1
+PURPOSE "creator_marker_building_purpose_kit_56" 1
+PURPOSE "creator_marker_building_purpose_kit_57" 1
+PURPOSE "creator_marker_building_purpose_kit_58" 1
+PURPOSE "creator_marker_building_purpose_kit_59" 1
+PURPOSE "creator_marker_building_purpose_kit_60" 1
+PURPOSE "creator_marker_building_purpose_kit_61" 1
+PURPOSE "creator_marker_building_purpose_kit_62" 1
+PURPOSE "creator_marker_building_purpose_kit_63" 1
+PURPOSE "creator_marker_building_purpose_kit_64" 1
+PURPOSE "creator_marker_building_purpose_kit_65" 1
+PURPOSE "creator_marker_building_purpose_kit_66" 1
+PURPOSE "creator_marker_building_purpose_kit_67" 1
+PURPOSE "creator_marker_building_purpose_kit_68" 1
+PURPOSE "creator_marker_building_purpose_kit_69" 1
+PURPOSE "creator_marker_building_purpose_kit_70" 1
+PURPOSE "creator_marker_building_purpose_kit_71" 1
+PURPOSE "creator_marker_building_purpose_kit_72" 1
+PURPOSE "creator_marker_building_purpose_kit_73" 1
+PURPOSE "creator_marker_building_purpose_kit_74" 1
+PURPOSE "creator_marker_building_purpose_kit_75" 1
+PURPOSE "creator_marker_building_purpose_kit_76" 1
+PURPOSE "creator_marker_building_purpose_kit_77" 1
+PURPOSE "creator_marker_building_purpose_kit_78" 1
+PURPOSE "creator_marker_building_purpose_kit_79" 1
+PURPOSE "creator_marker_building_purpose_kit_80" 1
+PURPOSE "creator_marker_building_purpose_kit_81" 1
+PURPOSE "creator_marker_building_purpose_kit_82" 1
+PURPOSE "creator_marker_building_purpose_kit_83" 1
+PURPOSE "creator_marker_building_purpose_kit_84" 1
+PURPOSE "creator_marker_building_purpose_kit_85" 1
+PURPOSE "creator_marker_building_purpose_kit_86" 1
+PURPOSE "creator_marker_building_purpose_kit_87" 1
+PURPOSE "creator_marker_building_purpose_kit_88" 1
+PURPOSE "creator_marker_building_purpose_kit_89" 1
+PURPOSE "creator_marker_building_purpose_kit_90" 1
+PURPOSE "creator_marker_building_purpose_kit_91" 1
+PURPOSE "creator_marker_building_purpose_kit_92" 1
+PURPOSE "creator_marker_building_purpose_kit_93" 1
+PURPOSE "creator_marker_building_purpose_kit_94" 1
+PURPOSE "creator_marker_building_purpose_kit_95" 1
+PURPOSE "creator_marker_building_purpose_kit_96" 1
+PURPOSE "creator_marker_building_purpose_kit_97" 1
+PURPOSE "creator_marker_building_purpose_kit_98" 1
+PURPOSE "creator_marker_building_purpose_kit_99" 3
+SETTLEMENT "capital_verda" "Verda" 0 0 0 0 384 0 0
 ROAD 0 0 -166 0 0 -630 8 2
 ROAD 0 0 -630 0 0 -1170 8 2
 ROAD 0 0 -1170 0 0 -1800 8 2
