@@ -193,6 +193,34 @@ int main() {
             check(fronts, "fancy house faces its street");
         }
         check(fancy >= 60, "east suburbs: " + std::to_string(fancy) + " houses");
+        // Upstairs in every fancy house: from the top of the stairs, through each bedroom door
+        // and on into the back bedroom's bathroom.
+        int upstairs = 0;
+        for (const auto& b : report.enterable) {
+            if (b.width != 13.6F) continue;
+            const auto at = [&](Vector3 p) { return std::abs(p.y - (b.origin.y + b.upper_floor)) < .05F; };
+            auto start = world_of(b, -2.85F, 3.4F);
+            start.y = b.origin.y + b.upper_floor;
+            const auto routes = std::initializer_list<std::initializer_list<std::pair<float, float>>>{
+                {{-3.0F, 3.4F}, {-4.2F, 3.4F}, {-4.2F, -1.5F}, {-5.4F, -1.5F}},     // master bedroom
+                {{-1.35F, 3.4F}, {-1.35F, -2.9F}, {1.0F, -2.9F}, {4.5F, -3.5F}},      // front bedroom
+                {{-1.35F, 3.4F}, {-1.35F, .9F}, {1.0F, .9F}, {3.5F, 2.8F}, {3.5F, 4.6F}, {3.5F, 6.8F}}}; // back bedroom, bathroom
+            bool all = true;
+            for (const auto& route : routes) {
+                auto p = start;
+                for (const auto& [x, z] : route) p = walk(region, b, p, x, z);
+                const auto& last = *(route.end() - 1);
+                const bool ok = near(p, world_of(b, last.first, last.second), .2F) && at(p);
+                if (!ok && upstairs == 0) {
+                    const float a = b.yaw * DEG2RAD, dx = p.x - b.origin.x, dz = p.z - b.origin.z;
+                    std::cerr << "  upstairs route " << (&route - routes.begin()) << " stuck at local " << dx * std::cos(a) - dz * std::sin(a)
+                              << ", " << dx * std::sin(a) + dz * std::cos(a) << " height " << p.y - b.origin.y << '\n';
+                }
+                all &= ok;
+            }
+            upstairs += all;
+        }
+        check(upstairs == fancy, "every bedroom and bathroom upstairs: " + std::to_string(upstairs) + "/" + std::to_string(fancy));
     }
 
     // Porto Luma: a 4 x 4 street grid round Placo Luma, Main Street rows and harbour towers.

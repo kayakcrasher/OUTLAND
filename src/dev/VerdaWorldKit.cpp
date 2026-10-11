@@ -1021,9 +1021,10 @@ bool fancy_house(Kit& kit, world::Settlement& capital, Vector3 at, int facing, s
     ++kit.report.houses;
     const Vector3 ground{at.x, world::terrain::TerrainHeight::sample(at.x, at.z), at.z};
     // Enterable (tools/extract_house.py): the front door beside the garage is an open doorway,
-    // the front wall is at local z = -5.85, and the floor top is 6 cm up.
-    constexpr float door_x = -2.41F, front = 5.85F, floor = .06F;
-    kit.report.enterable.push_back({ground, yaw, 13.6F, front * 2, 1, door_x, {}, {1, 0, 0}, 6, floor});
+    // the front wall is at local z = -5.85, and the floor top is 6 cm up. Seventeen steps climb +z
+    // beside the garage from z = -2 to the upstairs floor (3.3 m) at z = 2.76; the hall runs to x = -0.6.
+    constexpr float door_x = -2.41F, front = 5.85F, floor = .06F, upper = 3.3F;
+    kit.report.enterable.push_back({ground, yaw, 13.6F, front * 2, 2, door_x, {-2.85F, 0, -2.6F}, {0, 0, 1}, 6, floor, upper, {1.5F, 0, 0}});
     kit.purpose(to_world(ground, yaw, door_x, floor, -front + 1.2F), yaw, world::BuildingPurpose::Home);
     ++kit.report.buildings;
     // The garage is on the model's -x side: the car waits on the drive in front of it.
