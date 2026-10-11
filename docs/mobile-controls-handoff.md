@@ -119,3 +119,23 @@ exists here; audio’s existing mock integration tests pass. `git diff --check` 
 - Tune ergonomics on real phone aspect ratios. Tiny windows may still overlap the
   existing top audio UI/Creator drawer or ammo panel; no broad UI redesign was made.
 - Changes are on `codex/mobile-controls`, uncommitted and unpushed, for review.
+
+## Driving controls (touch)
+At the wheel the touch layout changes (`InputSystem::set_driving`, `TouchHUD::draw(..., driving)`):
+- **Left thumb steers**: the movement stick's X only (its knob slides sideways); it no longer
+  accelerates.
+- **Right thumb drives**: tall **GAS** and **BRAKE** pedals at the bottom right (`TouchLayout::gas`,
+  `brake_pedal`). BRAKE slows the car and then reverses it. **HAND** (handbrake, for slides) sits
+  left of BRAKE.
+- **Camera pan above the pedals**: drag anywhere in the right-hand area above them
+  (`InputSystem::pan_area`) - a floating stick from where the thumb lands. Let go and the camera
+  swings back behind the car after about a second.
+- **EXIT** (USE) and **BOOST** (SPRINT) stay; the combat buttons are hidden.
+Keyboard is unchanged: W/S, A/D, Space handbrake, Shift boost, C park, H horn, E exit.
+
+## Instruments
+- **Speedometer** while driving (bottom middle): a dial to the car's top speed (rounded up to 20
+  km/h), a needle, km/h in figures, the gear (D, R, N, P) and BOOST, and a fuel bar.
+- **Compass**, always, at the top under the clock: a strip of the horizon round where the camera
+  looks, N in red, points and bearings, with the bearing in figures. North is −z (Espera), east +x.
+  `game/hud/Instruments`, tested by `outland_instrument_tests`.

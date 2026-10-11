@@ -8,6 +8,7 @@
 #include "outland/game/combat/Grenades.hpp"
 #include "outland/game/combat/Sights.hpp"
 #include "outland/game/build/BuildMode.hpp"
+#include "outland/game/hud/Instruments.hpp"
 #include "outland/game/inventory/LootSave.hpp"
 #include "outland/game/inventory/LootSession.hpp"
 #include "outland/game/inventory/LootUI.hpp"
@@ -566,7 +567,7 @@ void Renderer::run() {
         vehicles.restore_checkpoint(verda_region,match_fleet);
         vehicle_dirty=fleet_was_dirty;match_fleet.clear();match_fleet_active=false;
     };
-    float vehicle_save_timer=0,vehicle_reconcile_timer=0,vehicle_orbit=0,vehicle_pitch=0;
+    float vehicle_save_timer=0,vehicle_reconcile_timer=0,vehicle_orbit=0,vehicle_pitch=0,vehicle_look_idle=0;
     if(FileExists(vehicle_state_path.c_str()) && !vehicles.load_state(verda_region,vehicle_state_path,vehicle_error)) {
         vehicle_save_protected=true;TraceLog(LOG_ERROR,"Vehicle state protected: %s",vehicle_error.c_str());
     }
@@ -1013,6 +1014,7 @@ void Renderer::run() {
         } else {
             const bool town_building=game::rules_for(game_mode).civilian_life;
             if(town_building) reserved=[&,base=reserved](Vector2 point){return base(point) || build_mode.owns_point(point,screen_width,screen_height);};
+            input_system.set_driving(vehicles.driver()!=nullptr); // steer left, pedals right, pan above
             input_system.update(screen_width, screen_height, !creator_active && !build_mode.active(),
 #ifdef OUTLAND_DEV_TOOLS
                 !IsWindowFocused() || dev_modal || (creator_active && creator_touch_ui.inventory_open()),
@@ -1081,7 +1083,7 @@ void Renderer::run() {
                 const std::string id=vehicle>=0 ? vehicles.vehicles()[static_cast<std::size_t>(vehicle)].id : std::string();
                 if(vehicle>=0 && island_life.car_moving(id) && std::abs(vehicles.vehicles()[static_cast<std::size_t>(vehicle)].speed)>3) interaction_message="It's moving";
                 else if(vehicle>=0 && vehicles.enter(verda_region,vehicle,feet)){
-                    vehicle_orbit=vehicle_pitch=0;input_system.cancel_controls();interaction_message="Driving - move to accelerate/steer; JUMP brakes; USE exits";
+                    vehicle_orbit=vehicle_pitch=0;input_system.cancel_controls();interaction_message="Driving - steer left, GAS/BRAKE right (W/S), drag above the pedals to look; USE exits";
                     if(game::rules_for(game_mode).civilian_life) {
                         const auto taken=island_life.take_car(id);
                         if(taken.occupied) {crimes.push_back({game::law::CrimeKind::Assault,taken.owner});interaction_message="You pulled the driver out - carjacking";}
@@ -1093,7 +1095,9 @@ void Renderer::run() {
         }
         const bool driving=vehicles.driver()!=nullptr;
         // Handbrake on JUMP (Space), boost on SPRINT (Shift), parking brake on CROUCH, horn on H.
-        game::vehicles::VehicleInput driving_input{-controls.move_y,-controls.move_x,controls.brake,controls.crouch,IsKeyDown(KEY_H),controls.sprint};
+        // Throttle: W/S (move_y) or the touch pedals - BRAKE slows, then reverses.
+        const float pedal_throttle=std::clamp(-controls.move_y+controls.gas-controls.brake_pedal,-1.0F,1.0F);
+        game::vehicles::VehicleInput driving_input{pedal_throttle,-controls.move_x,controls.brake,controls.crouch,IsKeyDown(KEY_H),controls.sprint};
         const bool vehicle_paused=creator_active||inventory_open||shop_open||mode_session.terminal()||!IsWindowFocused()
 #ifdef OUTLAND_DEV_TOOLS
             || (game_mode==game::GameMode::DevLab && dev_lab.tools_open())
@@ -1102,7 +1106,15 @@ void Renderer::run() {
         const double cars_t0=GetTime();
         vehicle_dirty|=vehicles.update(dt,driving_input,verda_region,{player.position.x,player.position.y-1,player.position.z},vehicle_paused);
         world_draw_stats().vehicles=world_draw_stats().vehicles*.9+(GetTime()-cars_t0)*1000*.1;
-        if(driving){vehicle_orbit-=controls.look_x*80*dt;vehicle_pitch=std::clamp(vehicle_pitch-controls.look_y*dt,-1.0F,1.0F);}
+        if(driving){
+            vehicle_orbit-=controls.look_x*80*dt;vehicle_pitch=std::clamp(vehicle_pitch-controls.look_y*dt,-1.0F,1.0F);
+            // Let go of the look and the camera swings back behind the car.
+            if(controls.look_x!=0 || controls.look_y!=0) vehicle_look_idle=0; else vehicle_look_idle+=dt;
+            if(vehicle_look_idle>1.2F) {
+                const float back=1.0F-std::exp(-dt*2.5F);
+                vehicle_orbit-=std::remainder(vehicle_orbit,360.0F)*back;vehicle_pitch-=vehicle_pitch*back;
+            }
+        }
 
         interaction_remaining = std::max(0.0F, interaction_remaining - dt);
         const Vector3 loot_feet{player.position.x,player.position.y-1,player.position.z};
@@ -2242,7 +2254,7 @@ void Renderer::run() {
                 DrawText(text,static_cast<int>(at.x)-MeasureText(text,size)/2,static_cast<int>(at.y),size,colour);
             }
         }
-        if (!creator_active && !inventory_open && !build_mode.active()) {
+        if (!creator_active && !inventory_open && !build_mode.active() && !driving) {
             DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
             DrawText(weapons.available()?weapons.weapon().name:"NO WEAPON - OPEN BAG",24,screen_height-94,19,RAYWHITE);
             DrawText(TextFormat("NADES %d  G",grenades.count()),222,screen_height-68,16,grenades.count()>0 ? Color{190,220,150,255} : GRAY);
@@ -2310,7 +2322,8 @@ void Renderer::run() {
             !creator_active && !build_mode.active(),
             weapons.available() && weapons.weapon().automatic && !driving ? (weapons.single_fire() ? "SINGLE" : "AUTO") : nullptr,
             weapons.available() && !driving && sight!=game::combat::Sight::Sniper ?
-                (sight==game::combat::Sight::RedDot ? "DOT" : sight==game::combat::Sight::Scope2x ? "2X" : sight==game::combat::Sight::Scope4x ? "4X" : "IRON") : nullptr
+                (sight==game::combat::Sight::RedDot ? "DOT" : sight==game::combat::Sight::Scope2x ? "2X" : sight==game::combat::Sight::Scope4x ? "4X" : "IRON") : nullptr,
+            driving
         );
 
 #ifdef OUTLAND_DEV_TOOLS
@@ -2392,7 +2405,19 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
         if(game_mode==game::GameMode::DevLab)dev_lab.draw_tools(screen_width,screen_height,creator_active);
 #endif
-        if(const auto* driver=vehicles.driver())DrawText(TextFormat("%.0f km/h%s | JUMP: handbrake | SPRINT: boost | CROUCH: park | H: horn | USE: exit",std::abs(driver->speed)*3.6F,driver->boosting ? "  BOOST" : ""),20,screen_height-32,16,YELLOW);
+        if(const auto* driver=vehicles.driver()) {
+            game::hud::Speedometer gauge;
+            gauge.speed=driver->speed;gauge.boosting=driver->boosting;gauge.handbrake=controls.crouch;
+            if(const auto* asset=vehicles.asset(verda_region,driver->id)) {
+                if(const auto* definition=vehicles.definition(*asset)) gauge.top_speed=definition->top_speed;
+                gauge.fuel=asset->vehicle.fuel;
+            }
+            // Bottom middle, between the steering stick and the pedals.
+            game::hud::draw_speedometer(gauge,{screen_width*.42F,screen_height-92.0F},66);
+            if(!input_system.touch_device())
+                DrawText("W/S drive | A/D steer | SPACE handbrake | SHIFT boost | C park | H horn | E exit",
+                         static_cast<int>(screen_width*.42F)+84,screen_height-26,15,YELLOW);
+        }
         else if(!creator_active && !inventory_open && vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z})>=0)DrawText("USE / E - Enter vehicle",screen_width/2-120,screen_height-100,20,YELLOW);
         if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !shop_open && !inventory_open) {
             const int objective_bottom=game::PlayUI::draw_objective(mode_session,screen_width);
@@ -2406,6 +2431,9 @@ void Renderer::run() {
         }
         if(shop_open && current_shop) play_ui.draw_shop(economy,*current_shop,loot_session.economy(),item_registry,loot_session.inventory(),shop_status,screen_width,screen_height);
         if(mode_session.terminal()) play_ui.draw_result(mode_session,screen_width,screen_height);
+        // The compass, in every circumstance: where the camera looks.
+        if(!map_screen.is_open())
+            game::hud::draw_compass(game::hud::bearing(Vector3Subtract(camera.target,camera.position)),screen_width,32);
         if(map_screen.is_open()) {
             game::MapScreen::View view;
             view.player=player.position;view.yaw=player.yaw;view.font=&sign_renderer.font();

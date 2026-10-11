@@ -50,6 +50,36 @@ int main() {
     for (const auto* other : {&layout.inventory, &layout.view, &layout.interact, &layout.weapon, &layout.fire_mode})
         assert(std::hypot((other->x-layout.sight.x)*1280,(other->y-layout.sight.y)*720)>80);
     key_sight=true; input.update(1280,720); assert(input.player().sight); key_sight=false; release();
+    // At the wheel: the left stick only steers, the right thumb works GAS and BRAKE, the space
+    // above the pedals pans the camera, and the combat buttons are gone.
+    input.set_driving(true);
+    input.update(1280,720);
+    {
+        const auto pan=outland::input::InputSystem::pan_area(1280,720);
+        const auto in_pan=[&](Vector2 p){return p.x>=pan.x && p.x<=pan.x+pan.width && p.y>=pan.y && p.y<=pan.y+pan.height;};
+        auto steer=point(layout.movement); steer.x+=80; steer.y-=80; // up and right on the stick
+        touches={{60,steer},{61,point(layout.gas)}};
+        input.update(1280,720);
+        assert(input.player().move_x>.5F && input.player().move_y==0 && input.player().gas==1 && input.player().brake_pedal==0);
+        touches={{60,steer},{62,point(layout.brake_pedal)}};
+        input.update(1280,720);
+        assert(input.player().brake_pedal==1 && input.player().gas==0);
+        release();
+        touches={{63,{pan.x+pan.width*.5F,pan.y+pan.height*.5F}}};
+        input.update(1280,720); assert(input.player().look_x==0);
+        touches={{63,{pan.x+pan.width*.5F+60,pan.y+pan.height*.5F}}};
+        input.update(1280,720); assert(input.player().look_x>.5F && !input.player().fire);
+        release();
+        touches={{64,point(layout.fire)}};
+        input.update(1280,720); assert(!input.player().fire); // no guns at the wheel
+        release();
+        for (const auto* pedal : {&layout.gas, &layout.brake_pedal}) assert(!in_pan(point(*pedal)) && point(*pedal).y>pan.y+pan.height);
+        touches={{65,point(layout.interact)}};
+        input.update(1280,720); assert(input.player().interact); // EXIT
+        release();
+    }
+    input.set_driving(false);
+    input.update(1280,720);
     touches={{41,point(layout.weapon)}};
     input.update(1280,720); assert(input.player().next_weapon);
     input.update(1280,720); assert(!input.player().next_weapon);

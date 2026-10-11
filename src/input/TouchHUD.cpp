@@ -1,4 +1,5 @@
 #include "outland/input/TouchHUD.hpp"
+#include "outland/input/InputSystem.hpp"
 
 #include <raylib.h>
 
@@ -532,7 +533,8 @@ void TouchHUD::draw(
     int screen_height,
     bool gameplay,
     const char* fire_mode,
-    const char* sight
+    const char* sight,
+    bool driving
 ) const {
     const float scale =
         hud_scale(
@@ -551,6 +553,39 @@ void TouchHUD::draw(
         draw_text_button(position_of(e, screen_width, screen_height),
             base_button_radius * e.scale, e.opacity, label, active);
     };
+    if (gameplay && driving) {
+        // Left thumb: steering only (the knob slides sideways).
+        draw_stick(position_of(layout.movement, screen_width, screen_height), {input.move_x, 0},
+                   base_stick_radius * layout.movement.scale, layout.movement.opacity, false);
+        // Right thumb: the pedals, tall and easy to find without looking.
+        const auto pedal = [&](const TouchElementLayout& e, const char* label, float pressed, Color tint) {
+            const Vector2 c = position_of(e, screen_width, screen_height);
+            const float w = 46 * scale * e.scale, h = 70 * scale * e.scale;
+            const Rectangle r{c.x - w, c.y - h, w * 2, h * 2};
+            const unsigned char a = static_cast<unsigned char>(255 * std::clamp(e.opacity + pressed * .35F, 0.0F, 1.0F));
+            DrawRectangleRounded(r, .3F, 8, Color{tint.r, tint.g, tint.b, a});
+            DrawRectangleRoundedLinesEx(r, .3F, 8, 2.5F, Color{255, 255, 255, static_cast<unsigned char>(a / 2 + 60)});
+            for (int k = 0; k < 4; ++k) // tread lines
+                DrawRectangle(static_cast<int>(r.x + w * .45F), static_cast<int>(r.y + h * (.45F + k * .32F)), static_cast<int>(w * 1.1F), 3,
+                              Color{255, 255, 255, static_cast<unsigned char>(a / 3)});
+            const int size = static_cast<int>(17 * scale * e.scale);
+            DrawText(label, static_cast<int>(c.x - MeasureText(label, size) / 2.0F), static_cast<int>(r.y + 10 * scale), size, RAYWHITE);
+        };
+        pedal(layout.gas, "GAS", input.gas, Color{40, 140, 70, 255});
+        pedal(layout.brake_pedal, "BRAKE", input.brake_pedal, Color{160, 50, 45, 255});
+        button(layout.handbrake, "HAND", input.brake);
+        button(layout.interact, "EXIT", input.interact);
+        button(layout.sprint, "BOOST", input.sprint);
+        // The pan area above the pedals: a faint hint while no thumb is on it.
+        const Rectangle pan = InputSystem::pan_area(screen_width, screen_height);
+        if (input.look_x == 0 && input.look_y == 0) {
+            const char* hint = "DRAG TO LOOK";
+            const int size = static_cast<int>(14 * scale);
+            DrawText(hint, static_cast<int>(pan.x + pan.width / 2 - MeasureText(hint, size) / 2.0F), static_cast<int>(pan.y + pan.height - 22 * scale), size,
+                     Color{255, 255, 255, 70});
+        }
+        return;
+    }
     if (gameplay) {
     button(layout.sprint, "SPRINT", input.sprint);
     button(layout.crouch, "CROUCH", input.crouch);

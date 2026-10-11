@@ -41,6 +41,11 @@ public:
 
     // Keep active contacts quarantined until their release.
     void cancel_controls();
+    // At the wheel: steer on the left stick, GAS and BRAKE pedals, a pan area above them.
+    void set_driving(bool driving) { driving_ = driving; }
+    [[nodiscard]] bool driving() const { return driving_; }
+    // The camera-pan area while driving (screen pixels).
+    [[nodiscard]] static Rectangle pan_area(int width, int height);
 
 private:
     PlayerInput player_{};
@@ -48,13 +53,14 @@ private:
 
     enum class Control {
         None, Movement, Look, Jump, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon, Grenade, Sight,
-        Sprint, Crouch, Inventory, Interact
+        Sprint, Crouch, Inventory, Interact, Gas, BrakePedal, Handbrake, Pan
     };
     struct TouchOwner { int id; Control control; };
     std::vector<TouchOwner> owners_;
     Control mouse_control_{Control::None};
     bool mouse_quarantined_{false},had_native_touch_{false};
-    bool gameplay_{true};
+    bool gameplay_{true}, driving_{false}, was_driving_{false};
+    Vector2 pan_origin_{};
     // Aim button: a tap toggles aiming down sights, a hold aims while held.
     bool aim_toggled_{false}, aim_held_{false};
     double aim_pressed_at_{0};

@@ -147,6 +147,7 @@ add_library(
     src/game/combat/Sights.cpp
     src/game/build/PlayerBuilds.cpp
     src/game/build/BuildMode.cpp
+    src/game/hud/Instruments.cpp
     src/game/combat/CombatRenderer.cpp
     src/game/inventory/ItemRegistry.cpp
     src/game/inventory/Inventory.cpp
@@ -507,6 +508,11 @@ if(OUTLAND_BUILD_TESTS)
     target_include_directories(outland_grenade_feedback_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_grenade_feedback_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_grenade_feedback_tests COMMAND outland_grenade_feedback_tests)
+
+    add_executable(outland_instrument_tests tests/unit/hud/test_instruments.cpp)
+    target_link_libraries(outland_instrument_tests PRIVATE outland_render)
+    target_compile_options(outland_instrument_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_instrument_tests COMMAND outland_instrument_tests)
 
     add_executable(outland_sight_tests tests/unit/combat/test_sights.cpp src/game/combat/Sights.cpp)
     target_include_directories(outland_sight_tests PRIVATE "${PROJECT_SOURCE_DIR}/include")

@@ -115,6 +115,11 @@ Vector2 analog_value(
 
 InputSystem::InputSystem() = default;
 
+Rectangle InputSystem::pan_area(int width, int height) {
+    const float w = static_cast<float>(width), h = static_cast<float>(height);
+    return {w * .56F, h * .16F, w * .44F, h * .48F};
+}
+
 bool InputSystem::navigation_owns_point(Vector2 point,int width,int height) const {
     const float scale=base_scale(width,height);
     return inside_circle(point,element_position(layout_.movement,width,height),92*scale*layout_.movement.scale) ||
@@ -126,7 +131,8 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
     player_ = {};
     if (screen_width <= 0 || screen_height <= 0) { cancel_controls(); return; }
     const bool changed = width_ != 0 && (gameplay != gameplay_ || blocked != blocked_ ||
-        screen_width != width_ || screen_height != height_);
+        screen_width != width_ || screen_height != height_ || driving_ != was_driving_);
+    was_driving_ = driving_;
     gameplay_ = gameplay;
     blocked_ = blocked;
     width_ = screen_width;
@@ -145,6 +151,16 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
     };
     const auto capture = [&](Vector2 p) {
         if (blocked || p.y < std::min(80.0F, screen_height * 0.12F) || (reserved && reserved(p))) return Control::None;
+        if (gameplay && driving_) {
+            if (hit(p, layout_.gas, 50)) return Control::Gas;
+            if (hit(p, layout_.brake_pedal, 50)) return Control::BrakePedal;
+            if (hit(p, layout_.handbrake, 43)) return Control::Handbrake;
+            if (hit(p, layout_.interact, 43)) return Control::Interact;
+            if (hit(p, layout_.sprint, 43)) return Control::Sprint;
+            if (hit(p, layout_.movement, 92)) return Control::Movement;
+            if (const auto pan = pan_area(screen_width, screen_height); p.x >= pan.x && p.x <= pan.x + pan.width && p.y >= pan.y && p.y <= pan.y + pan.height) return Control::Pan;
+            return Control::None;
+        }
         if (gameplay) {
             if (hit(p, layout_.jump, 43)) return Control::Jump;
             if (hit(p, layout_.view, 43)) return Control::View;
@@ -170,7 +186,20 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         switch (control) {
         case Control::Movement: {
             const auto v = analog_value(p, center(layout_.movement), 92 * scale * layout_.movement.scale);
-            player_.move_x = v.x; player_.move_y = v.y; break;
+            player_.move_x = v.x;
+            if (!driving_) player_.move_y = v.y; // at the wheel the stick only steers
+            break;
+        }
+        case Control::Gas: player_.gas = 1; break;
+        case Control::BrakePedal: player_.brake_pedal = 1; break;
+        case Control::Handbrake: player_.brake = true; break;
+        case Control::Pan: {
+            // A floating stick: drag from wherever the thumb landed.
+            if (fresh) pan_origin_ = p;
+            const float reach = 70 * scale;
+            player_.look_x = std::clamp((p.x - pan_origin_.x) / reach, -1.0F, 1.0F);
+            player_.look_y = std::clamp((p.y - pan_origin_.y) / reach, -1.0F, 1.0F);
+            break;
         }
         case Control::Look: {
             const auto v = analog_value(p, center(layout_.look), 92 * scale * layout_.look.scale);
@@ -211,7 +240,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         if (fresh) {
             auto control = changed ? Control::None : capture(p);
             // Only one finger owns each stick. An unclaimed finger never steals it later.
-            if (control == Control::Movement || control == Control::Look) {
+            if (control == Control::Movement || control == Control::Look || control == Control::Pan) {
                 for (const auto& o : owners_) if (o.control == control) control = Control::None;
             }
             owners_.push_back({id, control});

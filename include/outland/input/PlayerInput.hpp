@@ -14,6 +14,8 @@ struct PlayerInput {
     // Movement actions
     bool jump{false};
     bool brake{false}; // Held Jump/Space, used only by vehicle controls.
+    // At the wheel on a touch screen: the right thumb's pedals (0..1). Keys keep W/S on move_y.
+    float gas{0.0F}, brake_pedal{0.0F};
     bool sprint{false};
     bool crouch{false};
 
