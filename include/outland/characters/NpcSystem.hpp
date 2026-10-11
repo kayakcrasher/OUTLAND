@@ -47,7 +47,7 @@ struct NpcHit {
     bool legs{false}; // below the hips: leg hits do less damage
 };
 struct NpcShot { Vector3 from{}, to{}; bool hit{false}; int resident{-1}; };
-struct NpcEvents { float player_damage{0}; int attacks{0}; std::vector<NpcShot> shots; };
+struct NpcEvents { float player_damage{0}; int attacks{0}; std::vector<NpcShot> shots; Vector3 player_damage_from{}; };
 class NpcSystem {
 public:
     NpcSystem();

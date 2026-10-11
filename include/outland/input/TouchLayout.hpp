@@ -188,6 +188,7 @@ struct TouchLayout {
     // --------------------------------------------------------
 
     TouchElementLayout sprint{0.08F, 0.43F, 0.82F, 0.40F};
+    TouchElementLayout grenade{0.665F, 0.46F, 0.78F, 0.40F}; // between the aim button and the look pad
     TouchElementLayout crouch{0.91F, 0.81F, 0.82F, 0.40F};
     TouchElementLayout inventory{0.52F, 0.22F, 0.82F, 0.40F};
     TouchElementLayout interact{0.49F, 0.40F, 0.82F, 0.40F};

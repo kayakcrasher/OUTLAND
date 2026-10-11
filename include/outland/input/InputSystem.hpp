@@ -36,6 +36,8 @@ public:
 
     void reset_layout();
     [[nodiscard]] bool navigation_owns_point(Vector2 point,int width,int height) const;
+    // A touch screen has been used: aim assist helps thumbs as it does on phones in PUBG/Fortnite.
+    [[nodiscard]] bool touch_device() const { return had_native_touch_; }
 
     // Keep active contacts quarantined until their release.
     void cancel_controls();
@@ -45,7 +47,7 @@ private:
     TouchLayout layout_{};
 
     enum class Control {
-        None, Movement, Look, Jump, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon,
+        None, Movement, Look, Jump, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon, Grenade,
         Sprint, Crouch, Inventory, Interact
     };
     struct TouchOwner { int id; Control control; };

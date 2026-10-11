@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <vector>
 
 namespace outland::game::combat {
 
@@ -25,8 +26,10 @@ struct BulletImpact {
     HitKind kind{HitKind::None};
     float life{0};
 };
+struct HitNote { Vector3 position{}; float damage{0}; bool headshot{false}; };
 struct WeaponEvents {
     int shots{0};
+    std::vector<HitNote> hits; // what this update's bullets struck (people, targets, vehicles)
     int target_hits{0};
     bool reload_started{false}, reload_finished{false}, dry_fire{false};
     float pitch_kick{0}, yaw_kick{0};

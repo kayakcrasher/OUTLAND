@@ -452,6 +452,8 @@ void CombatBot::act(float dt,double now,const BotEnvironment& environment,std::v
     const float settle=std::clamp(contact->tracking/std::max(.05F,difficulty_.settle_seconds),0.0F,1.0F);
     float error=difficulty_.aim_floor_deg+(difficulty_.aim_error_deg-difficulty_.aim_floor_deg)*(1-settle);
     if(moving_) error=error*1.4F+.4F;
+    // Hard to hold steady on a small, far target: aim widens past 40 m.
+    error*=1+std::max(0.0F,distance-40)/80;
     const float target_speed=Vector3Length(flat(contact->velocity));
     error+=target_speed*.25F;
     if(difficulty_.lead_targets) error-=target_speed*.15F;

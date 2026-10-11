@@ -70,3 +70,34 @@ Measured in the software-rendered desktop build (a stand-in for a weak phone GPU
 - **`outland_combat_tests`:** recoil grows through a spray, crouching steadies it, fire-mode toggling, and the zone and zoom values. The tests also reflect the new damage, magazine and fire-rate numbers.
 - **`outland_vehicle_tests`:** boost pulls harder, the handbrake produces several times more sideways slip, and a wall crash costs health and stops the car.
 - **`outland_traffic_tests`** still checks that resident cars stop for someone in the road.
+
+## Combat feedback, aim assist and grenades
+
+`game::combat::CombatFeedback` (`src/game/combat/CombatFeedback.cpp`) holds what the player feels
+in a fight; the renderer draws it in every mode, not only Battle Royale:
+
+- **Damage numbers** float up from whatever the player hit. Pellets and bursts on one body merge
+  into one number. Headshots are orange; the killing blow is red with an X.
+- **Kills** put a red cross over the crosshair, labelled ELIMINATED, then DOUBLE KILL, TRIPLE KILL
+  or RAMPAGE for kills within 4 s of each other.
+- **Being hurt** by anything flashes the screen edges red and shakes the camera. That covers bot
+  and police shots, zombie bites, grenades, crashes and the zone. When there is an attacker, an
+  arrow points to it. Under 30% health, the edges pulse.
+
+**Touch aim assist** applies only when a touch screen is in use. With a hostile near the crosshair
+(within 7° from the hip, 4° aimed, plus their body width), the look slows to 55%. While aiming or
+firing, the sight drifts onto their chest. Walls hide targets from the assist. Hostiles are Battle
+Royale bots, hostile and creature pools (zombies), and police who are chasing you.
+
+**Frag grenades** (`src/game/combat/Grenades.cpp`):
+- **Throwing:** G, or the NADE button between AIM and the look pad. A level lob lands about 25 m
+  away; grenades bounce off the ground and walls.
+- **Blast:** 2.8 s fuse. Lethal (160 damage) within 2.5 m, falling to nothing at 8.5 m. Walls
+  shield people from the blast, and it hurts the player too, unless they are in a vehicle.
+- **Targets:** it damages bots, residents (a crime if seen), police, zombies and cars, and bots
+  hear it.
+- **Supply:** you start with 2 in Battle Royale and Explore, 3 in Zombie Survival, 99 in the
+  Dev Lab.
+
+Bots are less accurate past 40 m: their aim cone widens by 1/80 per metre beyond that. Bot and
+police guns flash as they fire.

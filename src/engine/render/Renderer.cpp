@@ -3,6 +3,8 @@
 #include "outland/engine/render/Renderer.hpp"
 #include "outland/engine/audio/EnvironmentAudio.hpp"
 #include "outland/game/combat/CombatRenderer.hpp"
+#include "outland/game/combat/CombatFeedback.hpp"
+#include "outland/game/combat/Grenades.hpp"
 #include "outland/game/inventory/LootSession.hpp"
 #include "outland/game/inventory/LootUI.hpp"
 #include "outland/game/vehicles/VehicleSystem.hpp"
@@ -483,8 +485,13 @@ void Renderer::run() {
     game::sound::SoundBus sound_bus; // every noise on Verda this session, heard by bots, NPCs and residents
     double match_time=0;
 
-    float damage_flash=0;
-    Vector3 damage_source{};
+    // Combat feedback (numbers, kill marker, hurt flash and arrow, shake) and frag grenades.
+    game::combat::CombatFeedback combat_feedback;
+    game::combat::Grenades grenades;
+    float health_seen=100;          // player health after the last combat step
+    Vector3 hurt_from{};            // who hurt the player this step, if anyone in particular
+    bool hurt_directional=false;
+    std::vector<Vector3> pending_kills; // the player's kills this step (marked after the hits)
     Vector3 last_player_feet{};
     // Model assets resolve beside the executable first (packaged builds), then the working directory.
     world::physics::MeshCollisionLibrary::add_root(GetApplicationDirectory());
@@ -598,22 +605,29 @@ void Renderer::run() {
     game::vehicles::VehicleAudio vehicle_audio;
     vehicles.bind_occupant_damage([&](float amount){player_health.damage(amount);});
     combat_world.bind_vehicles([&](Vector3 start,Vector3 end,bool occupants){return vehicles.trace(verda_region,start,end,occupants);},[&](const game::combat::BulletHit& hit,float amount){vehicles.damage(verda_region,hit,amount);vehicle_dirty=true;});
+    // The player's damage to a person (bullets and grenades): bots, residents, police, zombies.
+    // Returns true when it kills. Hurting a resident is a crime if anyone saw it.
+    const auto damage_actor=[&](int actor,float damage,Vector3 attacker) -> bool {
+        if(actor<0 || static_cast<std::size_t>(actor)>=npcs.actors().size()) return false;
+        // Battle Royale bodies belong to their bot brains; everyone else is an NpcSystem actor.
+        const auto& body=npcs.actors()[static_cast<std::size_t>(actor)];
+        const Vector3 where=body.position;
+        bool killed=false;
+        if(body.bot>=0) killed=br_bots.damage_bot(body.bot,damage,attacker,match_time);
+        else if(npcs.damage(static_cast<std::size_t>(actor),damage,attacker)) {
+            const auto& victim=npcs.actors()[static_cast<std::size_t>(actor)];
+            killed=victim.health<=0;
+            if(victim.resident>=0) crimes.push_back({victim.police ? game::law::CrimeKind::AttackOnPolice :
+                victim.health<=0 ? game::law::CrimeKind::Murder : game::law::CrimeKind::Assault,victim.resident});
+        }
+        if(killed) pending_kills.push_back(where);
+        return killed;
+    };
     combat_world.bind_actors([&](Vector3 start,Vector3 end) {
         const auto hit=npcs.trace_segment(start,end);
         return game::combat::BulletHit{hit.actor>=0 ? game::combat::HitKind::Npc : game::combat::HitKind::None,
             hit.fraction,hit.position,hit.normal,hit.actor,hit.headshot,hit.legs ? 2 : 0};
-    },[&](int actor,float damage,Vector3 attacker) {
-        if(actor<0) return;
-        // Battle Royale bodies belong to their bot brains; everyone else is an NpcSystem actor.
-        const int bot=static_cast<std::size_t>(actor)<npcs.actors().size() ? npcs.actors()[static_cast<std::size_t>(actor)].bot : -1;
-        if(bot>=0) br_bots.damage_bot(bot,damage,attacker,match_time);
-        else if(npcs.damage(static_cast<std::size_t>(actor),damage,attacker)) {
-            // Hurting a resident is a crime if anyone saw it.
-            const auto& victim=npcs.actors()[static_cast<std::size_t>(actor)];
-            if(victim.resident>=0) crimes.push_back({victim.police ? game::law::CrimeKind::AttackOnPolice :
-                victim.health<=0 ? game::law::CrimeKind::Murder : game::law::CrimeKind::Assault,victim.resident});
-        }
-    });
+    },[&](int actor,float damage,Vector3 attacker) {damage_actor(actor,damage,attacker);});
     // Battle Royale bots see, walk and shoot through the same world as the player.
     game::ai::BotWorld bot_world;
     bot_world.environment.line_of_sight=[&](Vector3 a,Vector3 b){return !combat_world.trace_segment(a,b,false,false,true).hit();};
@@ -833,6 +847,9 @@ void Renderer::run() {
                 }
                 mode_session.start(game_mode,static_cast<int>(br_bots.bots().size()),home_screen.bot_level());
                 player_health.reset();
+                health_seen=player_health.current();hurt_directional=false;pending_kills.clear();
+                combat_feedback.reset();
+                grenades.reset(game_mode==game::GameMode::DevLab ? 99 : game_mode==game::GameMode::ZombieSurvival ? 3 : 2);
                 recoil_pitch = recoil_yaw = recoil_debt = recoil_settle = 0.0F;
                 trigger_ready = false;
                 inventory_open = false;
@@ -1102,12 +1119,46 @@ void Renderer::run() {
         // CAMERA LOOK
         // ====================================================
 
+        // Touch aim assist (as phones get in PUBG and Fortnite): with an enemy near the crosshair
+        // the look slows, and while aiming or firing the sight drifts gently onto them. Walls hide
+        // them from it; mouse players get none.
+        float assist=1.0F;
+        if (input_system.touch_device() && !driving && weapons.available() && player_health.alive() && !creator_active) {
+            const Vector3 eye{player.position.x,player.position.y+.75F,player.position.z};
+            const Vector3 view{std::sin(player.yaw)*std::cos(player.pitch),std::sin(player.pitch),std::cos(player.yaw)*std::cos(player.pitch)};
+            float best=1e9F;Vector3 best_dir{};
+            for(const auto& a:npcs.actors()) {
+                if(a.state==characters::NpcState::Dead || a.health<=0) continue;
+                const bool hostile=a.bot>=0 || a.pool==characters::CharacterPool::Hostile || a.pool==characters::CharacterPool::Creature ||
+                    (a.police && a.state==characters::NpcState::Chase);
+                if(!hostile) continue;
+                const Vector3 chest{a.position.x,a.position.y+1.25F,a.position.z};
+                const Vector3 to=Vector3Subtract(chest,eye);
+                const float distance=Vector3Length(to);
+                if(distance<1 || distance>90) continue;
+                const Vector3 dir=Vector3Scale(to,1/distance);
+                const float angle=std::acos(std::clamp(Vector3DotProduct(view,dir),-1.0F,1.0F));
+                const float cone=(controls.aim ? 4.0F : 7.0F)*DEG2RAD+std::atan(.45F/distance);
+                if(angle>cone || angle>=best) continue;
+                if(combat_world.trace_segment(eye,chest,false,false,false).hit()) continue;
+                best=angle;best_dir=dir;
+            }
+            if(best<1e8F) {
+                assist=.55F;
+                if(controls.aim || controls.fire) {
+                    const float yaw_to=std::atan2(best_dir.x,best_dir.z), pitch_to=std::asin(std::clamp(best_dir.y,-1.0F,1.0F));
+                    const float pull=std::min(1.0F,dt*2.2F);
+                    player.yaw+=std::remainder(yaw_to-player.yaw,2*PI)*pull;
+                    player.pitch+=(pitch_to-player.pitch)*pull;
+                }
+            }
+        }
         // Aiming down sights slows the look in proportion to the zoom, as scopes do.
         const float look_speed =
             input_system
                 .layout()
                 .look_sensitivity *
-            (controls.aim && !driving ? weapons.weapon().ads_fov / 70.0F : 1.0F);
+            (controls.aim && !driving ? weapons.weapon().ads_fov / 70.0F : 1.0F) * assist;
 
         player.yaw -=
             controls.look_x *
@@ -1513,6 +1564,51 @@ void Renderer::run() {
                 if(recoil_settle<.0003F) recoil_settle=0;
             }
         }
+        for(const auto& note:weapons.events().hits) combat_feedback.hit(note.position,note.damage,note.headshot);
+        // Grenades: G or NADE throws one where the camera looks; blasts hurt everyone in reach
+        // whom no wall shields - the player too - and wreck cars.
+        if(controls.grenade && !driving && !creator_active && !inventory_open && !shop_open && player_health.alive() && !mode_session.terminal()) {
+            const Vector3 carried=dt>0 ? Vector3Scale(Vector3Subtract(player.position,position_before_move),1.0F/dt) : Vector3{};
+            grenades.throw_grenade(head_position,look_direction,carried);
+        }
+        grenades.update(vehicle_paused || mode_session.terminal() ? 0.0F : dt,{[&](Vector3 a,Vector3 b,Vector3& point,Vector3& normal) {
+            const auto hit=combat_world.trace_segment(a,b,false,false,true);
+            if(!hit.hit()) return false;
+            point=hit.position;normal=hit.normal;return true;
+        }});
+        for(const Vector3 blast:grenades.exploded()) {
+            sound_bus.emit(game::sound::SoundKind::Gunshot,blast,400,0,match_time);
+            const Vector3 core=Vector3Add(blast,{0,.35F,0});
+            const auto open=[&](Vector3 to){return !combat_world.trace_segment(core,to,false,false,false).hit();};
+            const Vector3 chest{player.position.x,player.position.y-.2F,player.position.z};
+            const float near=Vector3Distance(core,chest);
+            combat_feedback.blast(std::clamp(1-near/45,0.0F,1.0F)*.6F);
+            if(!driving && near<game::combat::Grenades::blast_radius && open(chest)) {
+                player_health.damage(game::combat::Grenades::damage_at(near));
+                hurt_from=blast;hurt_directional=true;
+            }
+            for(std::size_t i=0;i<npcs.actors().size();++i) {
+                const auto& a=npcs.actors()[i];
+                if(a.state==characters::NpcState::Dead || a.health<=0) continue;
+                const Vector3 target{a.position.x,a.position.y+1.1F,a.position.z};
+                const float d=Vector3Distance(core,target);
+                if(d>=game::combat::Grenades::blast_radius || !open(target)) continue;
+                const float amount=game::combat::Grenades::damage_at(d);
+                combat_feedback.hit(target,amount,false);
+                damage_actor(static_cast<int>(i),amount,blast);
+            }
+            for(std::size_t i=0;i<vehicles.vehicles().size();++i) {
+                const auto* car=vehicles.asset(verda_region,vehicles.vehicles()[i].id);
+                if(!car || car->vehicle.destroyed) continue;
+                const float d=std::max(0.0F,Vector3Distance(core,Vector3Add(car->position,{0,.8F,0}))-1.5F);
+                if(d>=game::combat::Grenades::blast_radius) continue;
+                game::combat::BulletHit hit;hit.kind=game::combat::HitKind::Vehicle;hit.target=static_cast<int>(i);hit.zone=static_cast<int>(game::vehicles::VehicleZone::Body);
+                vehicles.damage(verda_region,hit,game::combat::Grenades::damage_at(d)*.8F);
+                vehicle_dirty=true;
+            }
+        }
+        for(const Vector3 where:pending_kills) combat_feedback.kill(where);
+        pending_kills.clear();
         environment_audio.play_combat(weapons.selected(),weapons.events());
         // Session clock for sounds and the match; it stops while the game is paused.
         if(!vehicle_paused) match_time+=dt;
@@ -1554,6 +1650,7 @@ void Renderer::run() {
             zombies.update(vehicle_paused ? 0.0F : dt,{npc_context.player_position,last_daylight,match_time},npcs);
         }
         player_health.damage(npcs.events().player_damage);
+        if(npcs.events().player_damage>0) {hurt_from=npcs.events().player_damage_from;hurt_directional=true;}
         // Police gunfire is heard like any other and leaves tracers.
         for(auto& tracer:police_tracers) tracer.life-=dt;
         std::erase_if(police_tracers,[](const auto& tracer){return tracer.life<=0;});
@@ -1588,7 +1685,7 @@ void Renderer::run() {
                 br_bots.sync_bodies(npcs,&character_registry);
                 world_draw_stats().bots=world_draw_stats().bots*.9+(GetTime()-bots_t0)*1000*.1;
                 player_health.damage(br_bots.events().player_damage);
-                if(br_bots.events().player_damage>0) {damage_flash=1.2F;damage_source=br_bots.events().player_damage_from;}
+                if(br_bots.events().player_damage>0) {hurt_from=br_bots.events().player_damage_from;hurt_directional=true;}
             }
             const bool finished=mode_session.terminal();
             mode_session.update(dt,feet,player_health,br_bots,vehicle_paused);
@@ -1598,7 +1695,11 @@ void Renderer::run() {
                 vehicle_audio.stop();
             }
             last_player_feet=feet;
-            damage_flash=std::max(0.0F,damage_flash-dt);
+            // Whatever hurt the player this step - shots, bites, blasts, crashes, the zone - shows.
+            const float drop=health_seen-player_health.current();
+            if(drop>.01F && player_health.alive()) combat_feedback.hurt(drop,hurt_from,hurt_directional);
+            health_seen=player_health.current();hurt_directional=false;
+            combat_feedback.update(vehicle_paused ? 0.0F : dt);
         }
         {
             // Gait follows real ground speed (walk 6 m/s is a jog, sprint 10 m/s a run); firing a
@@ -1658,6 +1759,10 @@ void Renderer::run() {
     static_world.invalidate();
             scene_target=LoadRenderTexture(scene_width,scene_height);
             SetTextureFilter(scene_target.texture,TEXTURE_FILTER_BILINEAR);
+        }
+        if(!driving) {
+            const Vector3 shake=combat_feedback.shake();
+            camera.position=Vector3Add(camera.position,shake);camera.target=Vector3Add(camera.target,shake);
         }
         BeginTextureMode(scene_target);
 
@@ -1781,6 +1886,24 @@ void Renderer::run() {
         }
 
         game::combat::CombatRenderer::draw_world(weapons,combat_world);
+        for(const auto& g:grenades.live()) {
+            DrawSphere(g.position,.07F,Color{58,72,46,255});
+            DrawCube(Vector3Add(g.position,{0,.07F,0}),.03F,.04F,.03F,Color{150,150,140,255});
+        }
+        for(const auto& e:grenades.explosions()) {
+            const float t=e.age/game::combat::Grenades::explosion_life;
+            if(t<.25F) {
+                // The fireball: a solid white-hot core inside an additive orange burst.
+                const float k=t/.25F;
+                DrawSphere(e.position,1.0F+k*3.2F,Color{236,110,24,static_cast<unsigned char>(235*(1-k*.6F))});
+                if(k<.6F) DrawSphere(e.position,.6F+k*2.0F,Color{255,214,120,255});
+                BeginBlendMode(BLEND_ADDITIVE);
+                DrawSphere(e.position,.5F+k*1.4F,Color{static_cast<unsigned char>(200*(1-k)),static_cast<unsigned char>(150*(1-k)),static_cast<unsigned char>(60*(1-k)),255});
+                EndBlendMode();
+            }
+            const float rise=std::min(1.0F,t*1.6F);
+            DrawSphere({e.position.x,e.position.y+.6F+t*2.6F,e.position.z},1.0F+rise*2.4F,Fade(Color{72,70,66,255},.6F*(1-t)));
+        }
         }
         // A pump or bolt works through the cycle after each shot of a slow gun.
         const auto& held_weapon=weapons.weapon();
@@ -1807,8 +1930,15 @@ void Renderer::run() {
                 const int weapon=actor.weapon>=0 ? actor.weapon : 0;
                 game::combat::CombatRenderer::draw_gun(held.grip,held.aim,held.up,static_cast<game::combat::WeaponId>(weapon),0,0,false);
             });
-        for(const auto& tracer:br_bots.tracers()) DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
-        for(const auto& tracer:police_tracers) DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
+        // Their muzzles flash as they fire, so you see who is shooting at you.
+        for(const auto& tracer:br_bots.tracers()) {
+            DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
+            if(tracer.life>.05F) DrawSphere(tracer.start,.1F,Color{255,222,150,235});
+        }
+        for(const auto& tracer:police_tracers) {
+            DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
+            if(tracer.life>.05F) DrawSphere(tracer.start,.1F,Color{255,222,150,235});
+        }
 
         // ----------------------------------------------------
         // PLAYER BODY
@@ -1971,12 +2101,39 @@ void Renderer::run() {
             DrawLine(center_x+5,center_y+5,center_x+10,center_y+10,crosshair_color);
             DrawLine(center_x-10,center_y+10,center_x-5,center_y+5,crosshair_color);
             DrawLine(center_x+5,center_y-5,center_x+10,center_y-10,crosshair_color);
-            DrawText(TextFormat("%s %.0f",weapons.last_headshot() ? "HEAD HIT" : "HIT",weapons.last_damage()),
-                center_x-40,center_y+35,16,crosshair_color);
+        }
+        // Kill confirmation: a red cross over the crosshair, and the streak.
+        if (combat_feedback.kill_marker()>0) {
+            const float k=combat_feedback.kill_marker()/game::combat::CombatFeedback::kill_life;
+            const float r=12+10*(1-k);
+            const Color red{235,52,40,static_cast<unsigned char>(255*std::min(1.0F,k*1.5F))};
+            DrawLineEx({center_x-r,center_y-r},{center_x-r*.4F,center_y-r*.4F},3,red);
+            DrawLineEx({center_x+r*.4F,center_y+r*.4F},{center_x+r,center_y+r},3,red);
+            DrawLineEx({center_x-r,center_y+r},{center_x-r*.4F,center_y+r*.4F},3,red);
+            DrawLineEx({center_x+r*.4F,center_y-r*.4F},{center_x+r,center_y-r},3,red);
+            const int streak=combat_feedback.streak();
+            const char* label=streak>=4 ? "RAMPAGE" : streak==3 ? "TRIPLE KILL" : streak==2 ? "DOUBLE KILL" : "ELIMINATED";
+            DrawText(label,center_x-MeasureText(label,22)/2,center_y-70,22,red);
+        }
+        // Damage numbers float off whatever was hit: orange for heads, red for the killing blow.
+        {
+            const Vector3 view=Vector3Subtract(camera.target,camera.position);
+            for (const auto& number:combat_feedback.numbers()) {
+                if (Vector3DotProduct(view,Vector3Subtract(number.position,camera.position))<=0) continue;
+                const Vector2 at=GetWorldToScreen(number.position,camera);
+                const float life=std::clamp(number.life/game::combat::CombatFeedback::number_life,0.0F,1.0F);
+                const unsigned char alpha=static_cast<unsigned char>(255*std::min(1.0F,life*2));
+                const Color colour=number.kill ? Color{240,60,46,alpha} : number.headshot ? Color{255,170,40,alpha} : Color{255,255,255,alpha};
+                const char* text=number.amount>0 ? TextFormat(number.kill ? "%.0f  X" : "%.0f",number.amount) : "X";
+                const int size=number.headshot || number.kill ? 24 : 19;
+                DrawText(text,static_cast<int>(at.x)-MeasureText(text,size)/2+1,static_cast<int>(at.y)+1,size,Color{0,0,0,static_cast<unsigned char>(alpha/2)});
+                DrawText(text,static_cast<int>(at.x)-MeasureText(text,size)/2,static_cast<int>(at.y),size,colour);
+            }
         }
         if (!creator_active && !inventory_open) {
             DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
             DrawText(weapons.available()?weapons.weapon().name:"NO WEAPON - OPEN BAG",24,screen_height-94,19,RAYWHITE);
+            DrawText(TextFormat("NADES %d  G",grenades.count()),222,screen_height-68,16,grenades.count()>0 ? Color{190,220,150,255} : GRAY);
             if (weapons.unlimited()) DrawText("AMMO UNLIMITED - DEV LAB",24,screen_height-68,18,YELLOW);
             else DrawText(TextFormat("%d / %d",weapons.ammo().loaded,weapons.ammo().reserve),
                 24,screen_height-68,22,RAYWHITE);
@@ -1987,6 +2144,33 @@ void Renderer::run() {
                 24,screen_height-39,12,RAYWHITE);
         }
 
+        if (!creator_active && player_health.alive()) {
+            // Hurt: the screen's edges flash red, and an arrow points to whoever did it. Low on
+            // health, the edges pulse.
+            const float low=std::clamp(1-player_health.current()/(player_health.maximum()*.3F),0.0F,1.0F);
+            const float pulse=low*(.22F+.12F*std::sin(static_cast<float>(GetTime())*6));
+            const float edge=std::clamp(combat_feedback.flash()*.55F+pulse,0.0F,.75F);
+            if (edge>0) {
+                const Color red{200,20,16,static_cast<unsigned char>(255*edge)}, clear{200,20,16,0};
+                const int band_w=screen_width/6, band_h=screen_height/5;
+                DrawRectangleGradientH(0,0,band_w,screen_height,red,clear);
+                DrawRectangleGradientH(screen_width-band_w,0,band_w,screen_height,clear,red);
+                DrawRectangleGradientV(0,0,screen_width,band_h,red,clear);
+                DrawRectangleGradientV(0,screen_height-band_h,screen_width,band_h,clear,red);
+            }
+            if (combat_feedback.indicator()>0) {
+                const Vector3 look=Vector3Subtract(camera.target,camera.position);
+                const Vector3 to=Vector3Subtract(combat_feedback.source(),camera.position);
+                const float angle=std::atan2(to.x,to.z)-std::atan2(look.x,look.z);
+                const float sx=-std::sin(angle), sy=-std::cos(angle);
+                const Vector2 c{screen_width*.5F,screen_height*.5F};
+                const unsigned char alpha=static_cast<unsigned char>(std::min(1.0F,combat_feedback.indicator())*220);
+                const Vector2 tip{c.x+sx*150,c.y+sy*150}, base{c.x+sx*118,c.y+sy*118};
+                const Vector2 side{-sy*20,sx*20};
+                DrawTriangle(tip,Vector2Add(base,side),Vector2Subtract(base,side),Color{230,40,30,alpha});
+                DrawTriangle(tip,Vector2Subtract(base,side),Vector2Add(base,side),Color{230,40,30,alpha});
+            }
+        }
         if (!creator_active) {
             DrawText(TextFormat("HEALTH %.0f / %.0f",player_health.current(),player_health.maximum()),
                 16,16,20,player_health.alive() ? RAYWHITE : RED);
@@ -1998,19 +2182,6 @@ void Renderer::run() {
                 int line=0;
                 // Kill feed under the match status, clear of the HUD labels and touch buttons.
                 for(const auto& entry:br_bots.feed()) DrawText(entry.c_str(),screen_width/2-MeasureText(entry.c_str(),16)/2,44+20*line++,16,Color{235,215,180,255});
-                if(damage_flash>0 && player_health.alive()) {
-                    // Where the shot came from, relative to where the camera looks.
-                    const Vector3 look=Vector3Subtract(camera.target,camera.position);
-                    const Vector3 to=Vector3Subtract(damage_source,camera.position);
-                    const float angle=std::atan2(to.x,to.z)-std::atan2(look.x,look.z);
-                    const float sx=-std::sin(angle), sy=-std::cos(angle);
-                    const Vector2 c{screen_width*.5F,screen_height*.5F};
-                    const unsigned char alpha=static_cast<unsigned char>(std::min(1.0F,damage_flash)*220);
-                    const Vector2 tip{c.x+sx*150,c.y+sy*150}, base{c.x+sx*118,c.y+sy*118};
-                    const Vector2 side{-sy*20,sx*20};
-                    DrawTriangle(tip,Vector2Add(base,side),Vector2Subtract(base,side),Color{230,40,30,alpha});
-                    DrawTriangle(tip,Vector2Subtract(base,side),Vector2Add(base,side),Color{230,40,30,alpha});
-                }
             }
         }
         bool asset_drawer_open = false;

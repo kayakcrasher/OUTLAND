@@ -137,6 +137,7 @@ void WeaponSystem::simulate(float dt, CombatWorld& world) {
             world.damage_hit(hit,damage,bullet.previous);
             if(hit.kind==HitKind::Target || hit.kind==HitKind::Npc || hit.kind==HitKind::Vehicle || hit.kind==HitKind::VehicleOccupant) {
                 ++events_.target_hits;last_damage_=damage;hit_marker_=.22F;last_headshot_=hit.headshot;
+                events_.hits.push_back({hit.position,damage,hit.headshot});
             }
             if(hit.penetration>0 && hit.penetration<1) {
                 bullet.damage*=hit.penetration;

@@ -120,7 +120,7 @@ void NpcSystem::update(float dt,const NpcContext& input,const world::VerdaRegion
             while(actor.decision_clock>=interval) {
                 actor.decision_clock-=interval;
                 const float damage=NpcBehavior::tick(actor,settings,interval,context,environment);
-                if(damage>0) {events_.player_damage+=damage;++events_.attacks;}
+                if(damage>0) {events_.player_damage+=damage;++events_.attacks;events_.player_damage_from=actor.position;}
                 if(actor.fired) {
                     actor.fired=false;
                     events_.shots.push_back({Vector3Add(actor.position,{0,1.45F,0}),actor.shot_at,damage>0,actor.resident});

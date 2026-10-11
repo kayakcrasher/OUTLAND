@@ -10,7 +10,7 @@ struct Touch { int id; Vector2 position; };
 std::vector<Touch> touches;
 Vector2 mouse{};
 bool mouse_pressed=false, mouse_down=false, right_down=false;
-bool walking=false, sprinting=false, key_reload=false, key_weapon=false;
+bool walking=false, sprinting=false, key_reload=false, key_weapon=false, key_grenade=false;
 }
 extern "C" {
 int GetTouchPointCount() { return static_cast<int>(touches.size()); }
@@ -20,7 +20,7 @@ Vector2 GetMousePosition() { return mouse; }
 bool IsMouseButtonPressed(int button) { return button==MOUSE_BUTTON_LEFT && mouse_pressed; }
 bool IsMouseButtonDown(int button) { return button==MOUSE_BUTTON_LEFT ? mouse_down : right_down; }
 bool IsKeyDown(int key) { return (key==KEY_W && walking) || (key==KEY_LEFT_SHIFT && sprinting); }
-bool IsKeyPressed(int key) { return (key==KEY_R && key_reload) || (key==KEY_TAB && key_weapon); }
+bool IsKeyPressed(int key) { return (key==KEY_R && key_reload) || (key==KEY_TAB && key_weapon) || (key==KEY_G && key_grenade); }
 }
 
 int main() {
@@ -34,6 +34,14 @@ int main() {
     input.update(1280,720);
     assert(input.player().fire && !input.player().reload);
     release();
+    // NADE throws once per tap, alongside fire, and its button is clear of AIM and LOAD.
+    touches={{41,point(layout.fire)},{42,point(layout.grenade)}};
+    input.update(1280,720); assert(input.player().grenade && input.player().fire && !input.player().aim && !input.player().reload);
+    input.update(1280,720); assert(!input.player().grenade && input.player().fire);
+    release();
+    for (const auto* other : {&layout.aim, &layout.reload, &layout.look, &layout.interact, &layout.fire_mode})
+        assert(std::hypot((other->x-layout.grenade.x)*1280,(other->y-layout.grenade.y)*720)>80);
+    key_grenade=true; input.update(1280,720); assert(input.player().grenade); key_grenade=false; release();
     touches={{41,point(layout.weapon)}};
     input.update(1280,720); assert(input.player().next_weapon);
     input.update(1280,720); assert(!input.player().next_weapon);

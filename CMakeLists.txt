@@ -143,6 +143,8 @@ add_library(
     src/engine/audio/EnvironmentAudio.cpp
     src/game/combat/CombatWorld.cpp
     src/game/combat/WeaponSystem.cpp
+    src/game/combat/CombatFeedback.cpp
+    src/game/combat/Grenades.cpp
     src/game/combat/CombatRenderer.cpp
     src/game/inventory/ItemRegistry.cpp
     src/game/inventory/Inventory.cpp
@@ -497,6 +499,12 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_combat_tests PRIVATE -Wall -Wextra -Wpedantic)
     target_compile_options(outland_combat_tests PRIVATE -UNDEBUG)
     add_test(NAME outland_combat_tests COMMAND outland_combat_tests)
+
+    add_executable(outland_grenade_feedback_tests tests/unit/combat/test_grenades_feedback.cpp
+        src/game/combat/CombatFeedback.cpp src/game/combat/Grenades.cpp)
+    target_include_directories(outland_grenade_feedback_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
+    target_compile_options(outland_grenade_feedback_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_grenade_feedback_tests COMMAND outland_grenade_feedback_tests)
 
     add_executable(outland_combat_input_tests tests/integration/world/test_combat_input.cpp src/input/InputSystem.cpp)
     target_include_directories(outland_combat_input_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})

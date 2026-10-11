@@ -21,6 +21,7 @@ struct PlayerInput {
     bool fire{false};
     bool aim{false};
     bool reload{false};
+    bool grenade{false};     // throw a frag grenade
     bool next_weapon{false};
     bool fire_mode{false};   // switch automatic / single shots
 

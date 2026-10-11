@@ -690,6 +690,19 @@ void TouchHUD::draw(
 
     draw_text_button(
         position_of(
+            layout.grenade,
+            screen_width,
+            screen_height
+        ),
+        base_button_radius *
+            layout.grenade.scale,
+        layout.grenade.opacity,
+        "NADE",
+        input.grenade
+    );
+
+    draw_text_button(
+        position_of(
             layout.weapon,
             screen_width,
             screen_height
