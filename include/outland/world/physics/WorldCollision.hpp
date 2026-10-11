@@ -28,6 +28,17 @@ public:
         std::string_view ignore_asset = {}
     );
 
+    // For vehicles: like blocked(), but light street furniture (fences, bins, cones, benches,
+    // pallets) does not stop a car - it is brushed aside. Walls, trees, posts, bollards, barriers
+    // and other vehicles still do.
+    static bool vehicle_blocked(
+        Vector3 position,
+        const VerdaRegion& region,
+        float radius,
+        std::string_view ignore_asset = {}
+    );
+    static bool light_prop(const WorldAsset& asset);
+
     // Height-aware queries for walking bodies (player, NPCs). Model assets use their real
     // triangles (doorways, window openings, interiors); everything else matches blocked().
     static bool body_blocked(
@@ -76,7 +87,8 @@ private:
         const VerdaRegion& region,
         float player_radius,
         std::string_view ignore_asset,
-        const float* feet_y
+        const float* feet_y,
+        bool vehicle = false
     );
     static bool circle_hits_box(
         float player_x,

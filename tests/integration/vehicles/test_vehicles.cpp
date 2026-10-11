@@ -144,11 +144,33 @@ int main() {
         cars.reconcile(region);
         assert(cars.enter(region, 0, {25, 0, 27}));
         for (int i = 0; i < 200 && car->vehicle.health == 100; ++i) cars.update(.02F, {1, 0}, region, car->position);
-        assert(car->vehicle.health < 100 && cars.driver()->speed == 0 && car->position.z < 45);
+        assert(car->vehicle.health < 100 && cars.driver()->speed <= 0 && car->position.z < 45);
+        cars.leave_session();
+        // A parking bump (well under 25 km/h) costs nothing, and the car is not left pinned.
+        car->position = {25, 0, 40}; car->rotation_y = 0; car->vehicle.health = 100;
+        cars.reconcile(region);
+        assert(cars.enter(region, 0, {25, 0, 42}));
+        for (int i = 0; i < 60; ++i) cars.update(.02F, {.5F, 0}, region, car->position);
+        assert(car->vehicle.health == 100 && car->position.z < 45);
+        for (int i = 0; i < 60; ++i) cars.update(.02F, {-1, 0}, region, car->position);
+        assert(car->position.z < 39.5F); // backs straight off the wall
         cars.leave_session();
         auto& assets = region.runtime_settlements().front().assets;
         assets.erase(std::remove_if(assets.begin(), assets.end(), [](const auto& a) { return a.id == "test_wall"; }), assets.end());
         car->vehicle.health = 100;
+        // Light street furniture (a picket fence) is brushed aside, not crashed into.
+        world::WorldAsset fence;
+        fence.id = "test_fence"; fence.model_path = "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb";
+        fence.collision = true; fence.position = {25, 0, 35}; fence.size = {2.4F, 1.37F, .26F};
+        assets.push_back(fence);
+        assert(world::physics::WorldCollision::light_prop(fence));
+        car->position = {25, 0, 25}; car->rotation_y = 0;
+        cars.reconcile(region);
+        assert(cars.enter(region, 0, {25, 0, 27}));
+        for (int i = 0; i < 150; ++i) cars.update(.02F, {1, 0}, region, car->position);
+        assert(car->position.z > 40 && car->vehicle.health == 100);
+        cars.leave_session();
+        assets.erase(std::remove_if(assets.begin(), assets.end(), [](const auto& a) { return a.id == "test_fence"; }), assets.end());
     }
     // Body blocks bullets; logical side glass allows a continued shot into the driver.
     car->position = {25, 0, 25};

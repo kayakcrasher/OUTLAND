@@ -56,6 +56,25 @@ bool WorldCollision::blocked(
     return blocked_impl(position, region, player_radius, ignore_asset, nullptr);
 }
 
+bool WorldCollision::vehicle_blocked(
+    const Vector3 position,
+    const VerdaRegion& region,
+    const float radius,
+    const std::string_view ignore_asset
+) {
+    return blocked_impl(position, region, radius, ignore_asset, nullptr, true);
+}
+
+bool WorldCollision::light_prop(const WorldAsset& asset) {
+    if (!asset.vehicle.definition.empty() || asset.model_path.empty()) return false;
+    const std::string& path = asset.model_path;
+    for (const char* sturdy : {"Bollard", "Barrier", "Barricade", "Traffic lights", "lamppost", "bus_stop"})
+        if (path.find(sturdy) != std::string::npos) return false;
+    for (const char* light : {"Fence", "fence", "TrashCan", "Trash", "Litter/", "Cones", "Pallet", "Barrel", "busstop_bench", "Pipes/"})
+        if (path.find(light) != std::string::npos) return true;
+    return asset.size.y < 1.2F && std::max(asset.size.x, asset.size.z) < 1.5F;
+}
+
 bool WorldCollision::body_blocked(
     const Vector3 position,
     const float feet_y,
@@ -134,7 +153,8 @@ bool WorldCollision::blocked_impl(
     const VerdaRegion& region,
     const float player_radius,
     const std::string_view ignore_asset,
-    const float* feet_y
+    const float* feet_y,
+    const bool vehicle
 ) {
     // Shoreline blocks walkers until swimming exists; Creator flight remains independent.
     if(region.coastal_layout() && std::hypot(position.x,position.z)>1950 &&
@@ -341,6 +361,7 @@ bool WorldCollision::blocked_impl(
     // ----------------------------------------------------
     const auto check = [&](const WorldAsset& asset) -> bool {
             if(asset.id==ignore_asset)return false;
+            if(vehicle && light_prop(asset))return false;
             if(!asset.vehicle.definition.empty() || (!asset.model_path.empty() && asset.collision)) {
                 if(!asset.vehicle.definition.empty() && !asset.vehicle.enabled)return false;
                 const float dx=position.x-asset.position.x,dz=position.z-asset.position.z;

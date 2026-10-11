@@ -395,7 +395,7 @@ bool VehicleSystem::blocked(const world::VerdaRegion &r, Vector3 p, float yaw,
         for (float z : {-d.length * .5F, 0.0F, d.length * .5F}) {
             const auto point = world_point({x, 0, z}, p, yaw, scale);
             heights[row][column++] = world::terrain::TerrainHeight::sample(point.x, point.z);
-            if (world::physics::WorldCollision::blocked(point, r, .2F, ignore))
+            if (world::physics::WorldCollision::vehicle_blocked(point, r, .2F, ignore))
                 return true;
         }
         ++row;
@@ -492,11 +492,13 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
             p.y = world::terrain::TerrainHeight::sample(p.x, p.z);
             if (v.escape > 0) v.escape -= travel * dt / steps;
             else if (blocked(r, p, yaw, *d, scale, a->id)) {
-                // Crashes hurt in proportion to the impact; a hard one hurts whoever is driving.
+                // Crashes hurt in proportion to the impact - nudges and parking bumps (under
+                // 25 km/h) do not - and a hard one hurts whoever is driving. The car rebounds a
+                // little rather than staying pinned against what it hit.
                 const float impact = travel;
-                a->vehicle.health = std::max(0.0F, a->vehicle.health - std::max(0.0F, impact - 3) * 2.2F);
+                a->vehicle.health = std::max(0.0F, a->vehicle.health - std::max(0.0F, impact - 7) * 1.8F);
                 if (driving && impact > 14 && occupant_damage_) occupant_damage_((impact - 14) * 3);
-                v.speed = 0;
+                v.speed = -v.speed * .15F;
                 v.slip = 0;
                 events_.collision = true;
                 changed = true;

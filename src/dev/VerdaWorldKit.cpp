@@ -849,7 +849,7 @@ bool suburban_house(Kit& kit, world::Settlement& capital, Vector3 at, int facing
     // Front yard: a tree, sometimes a white picket fence with a gate on the path, a bin by the drive.
     if ((r / 1000) % 3 != 0) kit.tree(to_world(ground, yaw, -side * (size.x * .5F - 1.5F), 0, -size.z * .5F - 4.2F));
     if ((r / 3000) % 3 == 0) {
-        const float z = -size.z * .5F - 6.2F, half = 10.5F;
+        const float z = -size.z * .5F - 3.6F, half = 10.5F; // the lawn edge, 1.4 m short of the kerb
         fence(kit, to_world(ground, yaw, -half, 0, z), to_world(ground, yaw, -1.2F, 0, z),
               {urban + "Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb"}, 2.38F, r);
         fence(kit, to_world(ground, yaw, 1.2F, 0, z), to_world(ground, yaw, half, 0, z),
