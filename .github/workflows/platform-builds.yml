@@ -1,0 +1,65 @@
+name: Android and Safari builds
+on:
+  workflow_dispatch:
+    inputs:
+      publish_web:
+        description: Publish Safari bundle to GitHub Pages (requires Pages configured for Actions)
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths: ['CMakeLists.txt', 'src/**', 'include/**', 'platform/**', 'assets/**', 'maps/**', 'tools/build_android.sh', 'tools/build_web.sh', 'tools/stage_runtime_assets.py', 'tools/package_android.py', 'tools/test_web_boundary.sh', 'tests/platform/**', 'tools/patch_raylib_platform.py', '.github/workflows/platform-builds.yml']
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;28.2.13676358'
+      - run: tools/build_android.sh
+      - run: python3 tools/validate_platform_artifacts.py --apk build/android-arm64/OUTLAND.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OUTLAND-android-arm64-local-signed
+          path: build/android-arm64/OUTLAND.apk
+          retention-days: 14
+  web:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '4.0.20'
+      - run: tools/build_web.sh
+      - run: tools/test_web_boundary.sh
+      - run: python3 tools/validate_platform_artifacts.py --web build/web/site
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OUTLAND-safari-web
+          path: build/web/site/
+          retention-days: 14
+      - name: Prepare optional Pages deployment
+        if: github.event_name == 'workflow_dispatch' && inputs.publish_web
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web/site/
+  deploy-web:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_web
+    needs: web
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish Safari build
+        id: deployment
+        uses: actions/deploy-pages@v4

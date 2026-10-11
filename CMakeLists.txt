@@ -4,7 +4,7 @@ project(
     Outland
     VERSION 0.2.0
     DESCRIPTION "Offline 3D open-world combat sandbox"
-    LANGUAGES CXX
+    LANGUAGES C CXX
 )
 
 set(CMAKE_CXX_STANDARD 20)
@@ -25,16 +25,43 @@ option(
     OFF
 )
 
-find_package(
-    PkgConfig
-    REQUIRED
-)
-
-pkg_check_modules(
-    RAYLIB
-    REQUIRED
-    raylib>=6.0
-)
+# Cross builds must never discover the host's raylib through pkg-config.
+if(ANDROID OR EMSCRIPTEN)
+    if(CMAKE_VERSION VERSION_LESS 3.25)
+        message(FATAL_ERROR "Android/Web raylib 6 builds require CMake 3.25 or newer.")
+    endif()
+    if(OUTLAND_DEV_TOOLS OR OUTLAND_BUILD_TESTS)
+        message(FATAL_ERROR "Platform releases require OUTLAND_DEV_TOOLS=OFF and OUTLAND_BUILD_TESTS=OFF; run shared tests on desktop.")
+    endif()
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    include(FetchContent)
+    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    if(ANDROID)
+        set(PLATFORM Android CACHE STRING "" FORCE)
+        set(OPENGL_VERSION "ES 3.0" CACHE STRING "" FORCE)
+    else()
+        set(PLATFORM Web CACHE STRING "" FORCE)
+        set(OPENGL_VERSION "ES 3.0" CACHE STRING "" FORCE)
+    endif()
+    # Immutable upstream raylib 6.0 release; FETCHCONTENT_SOURCE_DIR_RAYLIB
+    # can point at an existing checkout for offline builds.
+    FetchContent_Declare(raylib
+        URL https://codeload.github.com/raysan5/raylib/tar.gz/dbc56a87da87d973a9c5baa4e7438a9d20121d28
+        URL_HASH SHA256=81b06ce7c19cf3b634b0271c23c361ba6ad8bf45fb8b036abbfeb4260ec1e126)
+    FetchContent_MakeAvailable(raylib)
+    if(ANDROID)
+        # raylib's default Android link set only includes GLESv2, even when ES3 is selected.
+        target_link_libraries(raylib PRIVATE GLESv3)
+    endif()
+    find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    execute_process(COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/patch_raylib_platform.py" "${raylib_SOURCE_DIR}" "${PLATFORM}" COMMAND_ERROR_IS_FATAL ANY)
+    set(RAYLIB_LIBRARIES raylib)
+    set(RAYLIB_INCLUDE_DIRS "${raylib_SOURCE_DIR}/src")
+else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(RAYLIB REQUIRED raylib>=6.0)
+endif()
 
 find_package(Python3 COMPONENTS Interpreter QUIET)
 if(Python3_Interpreter_FOUND)
@@ -101,6 +128,7 @@ add_library(
     src/game/vehicles/VehicleSave.cpp
     src/game/vehicles/VehicleRenderer.cpp
     src/game/vehicles/VehicleAudio.cpp
+    src/platform/Runtime.cpp
     src/assets/ModelCache.cpp
     src/engine/render/Renderer.cpp
     src/engine/render/GeometryRecorder.cpp
@@ -119,7 +147,6 @@ add_library(
     src/game/ModeSession.cpp
     src/game/PlayUI.cpp
     src/world/VerdaRegion.cpp
-    src/dev/DevLab.cpp
     src/game/HomeScreen.cpp
     src/game/GameMode.cpp
     src/world/foliage/FoliageSystem.cpp
@@ -218,6 +245,7 @@ if(OUTLAND_DEV_TOOLS)
     target_sources(
         outland_render
         PRIVATE
+            src/dev/DevLab.cpp
             src/creator/CreatorController.cpp
             src/creator/CreatorSession.cpp
             src/creator/CreatorTouchUI.cpp
@@ -282,10 +310,38 @@ target_compile_options(
 # EXECUTABLE
 # ============================================================
 
-add_executable(
-    outland
-    src/main.cpp
-)
+if(ANDROID)
+    add_library(outland SHARED src/main.cpp)
+    target_include_directories(outland_render PRIVATE "${ANDROID_NDK}/sources/android/native_app_glue")
+    target_link_options(outland PRIVATE "-Wl,-u,ANativeActivity_onCreate" "-Wl,-z,max-page-size=16384")
+    target_link_libraries(outland PRIVATE android log)
+else()
+    add_executable(outland src/main.cpp)
+endif()
+if(EMSCRIPTEN)
+    set_target_properties(outland PROPERTIES SUFFIX ".html")
+    set(OUTLAND_RUNTIME_ASSETS "${CMAKE_BINARY_DIR}/runtime" CACHE PATH "Staged production assets")
+    add_custom_target(outland_platform_assets
+        COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/stage_runtime_assets.py" "${OUTLAND_RUNTIME_ASSETS}"
+        VERBATIM)
+    foreach(generator verda_assets outland_vehicle_catalog outland_survival_catalog outland_character_catalog outland_interior_catalog outland_starter_catalog)
+        if(TARGET ${generator})
+            add_dependencies(outland_platform_assets ${generator})
+        endif()
+    endforeach()
+    add_dependencies(outland outland_platform_assets)
+    set_property(TARGET outland APPEND PROPERTY LINK_DEPENDS "${OUTLAND_RUNTIME_ASSETS}/runtime.manifest" "${PROJECT_SOURCE_DIR}/platform/web/shell.html" "${PROJECT_SOURCE_DIR}/platform/web/storage.js")
+    target_compile_options(outland_render PRIVATE -O2)
+    target_link_options(outland PRIVATE
+        -O2 -sASYNCIFY=1 -sASYNCIFY_IGNORE_INDIRECT=1 -sASYNCIFY_STACK_SIZE=262144
+        -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 -sMAXIMUM_MEMORY=1073741824
+        -sSTACK_SIZE=2097152 -sFORCE_FILESYSTEM=1
+        "-sEXPORTED_RUNTIME_METHODS=['callMain','FS']" -lidbfs.js
+        "--shell-file=${PROJECT_SOURCE_DIR}/platform/web/shell.html"
+        "--pre-js=${PROJECT_SOURCE_DIR}/platform/web/storage.js"
+        "--preload-file=${OUTLAND_RUNTIME_ASSETS}/assets@/assets"
+        "--preload-file=${OUTLAND_RUNTIME_ASSETS}/maps@/maps")
+endif()
 if(TARGET verda_assets)
     add_dependencies(outland verda_assets)
 endif()
@@ -325,6 +381,7 @@ add_custom_target(outland_loot_data
 add_dependencies(outland outland_loot_data)
 
 # Runtime assets live beside the executable, independent of the launch directory.
+if(NOT ANDROID AND NOT EMSCRIPTEN)
 add_custom_command(TARGET outland POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${PROJECT_SOURCE_DIR}/assets"
@@ -332,6 +389,9 @@ add_custom_command(TARGET outland POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${PROJECT_SOURCE_DIR}/maps" "$<TARGET_FILE_DIR:outland>/maps"
 )
+
+# desktop copying must not overwrite preloaded/extracted platform assets.
+endif()
 
 # ============================================================
 # TESTS
@@ -346,6 +406,11 @@ if(OUTLAND_BUILD_TESTS)
     target_link_libraries(outland_render_benchmark PRIVATE outland_render)
 
     enable_testing()
+    if(Python3_Interpreter_FOUND)
+        add_test(NAME outland_android_runtime_tests COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/platform/test_android_runtime.py")
+        add_test(NAME outland_web_contact_tests COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/platform/test_web_contacts.py")
+        add_test(NAME outland_platform_package_tests COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/platform/test_runtime_package.py")
+    endif()
 
     add_executable(
         outland_tests
@@ -402,6 +467,10 @@ if(OUTLAND_BUILD_TESTS)
     add_test(NAME outland_environment_tests COMMAND outland_environment_tests)
     add_executable(outland_verda_layout_tests tests/integration/world/test_verda_layout.cpp)
     target_link_libraries(outland_verda_layout_tests PRIVATE outland_render)
+    if(NOT OUTLAND_DEV_TOOLS)
+        # Layout tests exercise DEV destinations, without shipping DevLab in releases.
+        target_sources(outland_verda_layout_tests PRIVATE src/dev/DevLab.cpp)
+    endif()
     target_compile_options(outland_verda_layout_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_link_options(outland_verda_layout_tests PRIVATE
         -Wl,--wrap=UploadMesh -Wl,--wrap=LoadModelFromMesh -Wl,--wrap=UnloadModel

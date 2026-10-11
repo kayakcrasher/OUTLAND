@@ -56,3 +56,7 @@ __pycache__/
 
 /assets/staging/
 *.bak*
+
+# Local Android signing identities
+*.keystore
+*.jks

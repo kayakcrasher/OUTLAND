@@ -17,3 +17,7 @@ DEV vehicle driving, map building, controls, save compatibility and Termux steps
 The three player modes are one island lived three ways: [modes roadmap](docs/outland-modes-roadmap.md).
 Explore's resident simulation (homes, jobs, schedules, fear): [Verdan life handoff](docs/verda-life-handoff.md).
 Real building collision, open windows, builder previews and the dressed towns: [buildings handoff](docs/buildings-battle-royale-handoff.md).
+
+Native Samsung/Android APK and iPhone/Safari WebAssembly builds share the same game core:
+[multiplatform build and device inspection](docs/multiplatform-build.md).
+Build with `tools/build_android.sh` or `tools/build_web.sh`; production releases exclude DEV tools.

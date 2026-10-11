@@ -4,13 +4,13 @@
 #include <array>
 namespace outland::game {
 namespace {
-constexpr std::array<GameMode,4> modes{GameMode::BattleRoyale,GameMode::ZombieSurvival,GameMode::Explore,GameMode::DevLab};
 #ifdef OUTLAND_DEV_TOOLS
-constexpr const char* dev_label="CREATIVE BUILDER (DEV)";
+constexpr std::array<GameMode,4> modes{GameMode::BattleRoyale,GameMode::ZombieSurvival,GameMode::Explore,GameMode::DevLab};
+constexpr const char* labels[]{"BATTLE ROYALE","ZOMBIE SURVIVAL","EXPLORE VERDA","CREATIVE BUILDER (DEV)"};
 #else
-constexpr const char* dev_label="DEV LAB";
+constexpr std::array<GameMode,3> modes{GameMode::BattleRoyale,GameMode::ZombieSurvival,GameMode::Explore};
+constexpr const char* labels[]{"BATTLE ROYALE","ZOMBIE SURVIVAL","EXPLORE VERDA"};
 #endif
-constexpr const char* labels[]{"BATTLE ROYALE","ZOMBIE SURVIVAL","EXPLORE VERDA",dev_label};
 float scale(int w,int h) { return std::max(.1F,std::min(w/900.0F,h/720.0F)); }
 Rectangle box(float x,float y,float w,float h,int width,int height) {
     const float s=scale(width,height);return {(width-900*s)/2+x*s,(height-720*s)/2+y*s,w*s,h*s};
@@ -41,7 +41,7 @@ GameMode HomeScreen::update(int w,int h) {
             bot_level_=bot_level_==ai::BotLevel::Easy ? ai::BotLevel::Medium : bot_level_==ai::BotLevel::Medium ? ai::BotLevel::Hard : ai::BotLevel::Easy;
             return GameMode::Home;
         }
-        for(int i=0;i<4;++i) if(CheckCollisionPointRec(p,mode_button(i,w,h))) {selected_=modes[i];return selected_;}
+        for(int i=0;i<static_cast<int>(modes.size());++i) if(CheckCollisionPointRec(p,mode_button(i,w,h))) {selected_=modes[i];return selected_;}
     }
     return GameMode::Home;
 }
@@ -53,7 +53,7 @@ void HomeScreen::draw(int w,int h) const {
     const auto subtitle=box(0,165,900,40,w,h);const int small=std::max(10,static_cast<int>(22*s));
     DrawText("BONVENON AL VERDA",w/2-MeasureText("BONVENON AL VERDA",small)/2,static_cast<int>(subtitle.y),small,LIGHTGRAY);
     button(difficulty_button(w,h),TextFormat("BR BOTS: %s",ai::bot_level_name(bot_level_)),s);
-    for(int i=0;i<4;++i) button(mode_button(i,w,h),labels[i],s);
+    for(int i=0;i<static_cast<int>(modes.size());++i) button(mode_button(i,w,h),labels[i],s);
     const auto footer=box(30,650,840,35,w,h);
     DrawText("BR: last survivor | Explore: free roam, stores and police",static_cast<int>(footer.x),static_cast<int>(footer.y),std::max(10,static_cast<int>(16*s)),GRAY);
 }

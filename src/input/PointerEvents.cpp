@@ -1,7 +1,7 @@
 #include "outland/input/PointerEvents.hpp"
 #include <array>
 #include <cmath>
-#if defined(__unix__) || defined(__APPLE__)
+#if (defined(__unix__) || defined(__APPLE__)) && !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
 #include <dlfcn.h>
 #endif
 
@@ -31,7 +31,7 @@ void capture(GLFWwindow *source, int button, int action, int mods) {
 }
 } // namespace
 PointerEvents::PointerEvents() {
-#if defined(__unix__) || defined(__APPLE__)
+#if (defined(__unix__) || defined(__APPLE__)) && !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
     if (window)
         return;
     // Termux raylib links external GLFW. Bundled/hidden GLFW and native Android

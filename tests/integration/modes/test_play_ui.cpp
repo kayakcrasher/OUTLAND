@@ -31,6 +31,13 @@ int main() {
     assert(home.update(590,720)==GameMode::Home && home.bot_level()==ai::BotLevel::Hard);
     touches.clear();home.update(590,720);
     touches={{11,center(HomeScreen::mode_button(0,590,720))}};assert(home.update(590,720)==GameMode::BattleRoyale);
+    touches.clear();home.update(590,720);
+    touches={{13,center(HomeScreen::mode_button(3,590,720))}};
+#ifdef OUTLAND_DEV_TOOLS
+    assert(home.update(590,720)==GameMode::DevLab);
+#else
+    assert(home.update(590,720)==GameMode::Home); // production menu excludes DEV
+#endif
     PlayUI ui;ui.opened();touches={{91,center(PlayUI::result_button(0,590,720))}};
     assert(ui.result_input(590,720,true)==ResultAction::None);
     assert(ui.result_input(590,720,true)==ResultAction::None);

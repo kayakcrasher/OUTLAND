@@ -1,3 +1,4 @@
+#include "outland/platform/Runtime.hpp"
 #include "outland/engine/core/Game.hpp"
 #include "outland/engine/render/Renderer.hpp"
 
@@ -22,7 +23,12 @@ int main() {
         return 1;
     }
 
+    if(!outland::platform::initialize()) {
+        std::cerr << "OUTLAND runtime assets/storage initialization failed.\n";
+        renderer.shutdown();game.shutdown();return 1;
+    }
     renderer.run();
+    outland::platform::flush_saves();
 
     renderer.shutdown();
 

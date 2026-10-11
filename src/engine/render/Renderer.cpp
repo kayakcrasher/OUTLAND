@@ -1,3 +1,4 @@
+#include "outland/platform/Runtime.hpp"
 #include "outland/engine/render/ViewFrustum.hpp"
 #include "outland/engine/render/Renderer.hpp"
 #include "outland/engine/audio/EnvironmentAudio.hpp"
@@ -368,7 +369,11 @@ bool Renderer::initialize(
 
     // Renderer handles Escape as return-to-home; raylib must not close first.
     SetExitKey(KEY_NULL);
+#ifdef __EMSCRIPTEN__
+    SetTargetFPS(0); // requestAnimationFrame owns pacing; no browser busy-wait.
+#else
     SetTargetFPS(60);
+#endif
 
     initialized_ = true;
 
@@ -401,7 +406,9 @@ void Renderer::run() {
     float interaction_remaining = 0.0F;
 
     game::HomeScreen home_screen;
+#ifdef OUTLAND_DEV_TOOLS
     dev::DevLab dev_lab;
+#endif
 
 #ifdef OUTLAND_DEV_TOOLS
     creator::CreatorController creator_controller;
@@ -639,6 +646,13 @@ void Renderer::run() {
         8.5F;
 
     while (!WindowShouldClose()) {
+        platform::begin_frame();
+        if(platform::save_requested() && game_mode!=game::GameMode::Home && game_mode!=game::GameMode::DevLab) {
+            if(!loot_session.save(weapons) && loot_session.can_persist())
+                TraceLog(LOG_WARNING,"Platform checkpoint failed");
+            if(vehicle_dirty && !vehicle_save_protected && vehicles.save_state(verda_region,vehicle_state_path,vehicle_error)) vehicle_dirty=false;
+            platform::flush_saves();
+        }
         nav_searches_this_frame=0;
         world_asset_model_cache().begin_frame(1);
         character_renderer.begin_frame();
@@ -997,6 +1011,7 @@ void Renderer::run() {
             }
         }
 
+#ifdef OUTLAND_DEV_TOOLS
         // ====================================================
         // DEV LAB
         // ====================================================
@@ -1027,6 +1042,7 @@ void Renderer::run() {
             }
         }
 
+#endif
         // ====================================================
         // VIEW MODE
         // ====================================================
@@ -1946,6 +1962,7 @@ void Renderer::run() {
             weapons.available() && weapons.weapon().automatic && !driving ? (weapons.single_fire() ? "SINGLE" : "AUTO") : nullptr
         );
 
+#ifdef OUTLAND_DEV_TOOLS
         if (
             game_mode ==
             game::GameMode::DevLab && !creator_active
@@ -1958,6 +1975,7 @@ void Renderer::run() {
             );
         }
 
+#endif
 
 #ifdef OUTLAND_DEV_TOOLS
         if(creator_active && !creator_touch_ui.inventory_open() && !dev_lab.tools_open()) {
