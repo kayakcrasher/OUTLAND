@@ -10,7 +10,7 @@ struct Touch { int id; Vector2 position; };
 std::vector<Touch> touches;
 Vector2 mouse{};
 bool mouse_pressed=false, mouse_down=false, right_down=false;
-bool walking=false, sprinting=false, key_reload=false, key_weapon=false, key_grenade=false;
+bool walking=false, sprinting=false, key_reload=false, key_weapon=false, key_grenade=false, key_sight=false;
 }
 extern "C" {
 int GetTouchPointCount() { return static_cast<int>(touches.size()); }
@@ -20,7 +20,7 @@ Vector2 GetMousePosition() { return mouse; }
 bool IsMouseButtonPressed(int button) { return button==MOUSE_BUTTON_LEFT && mouse_pressed; }
 bool IsMouseButtonDown(int button) { return button==MOUSE_BUTTON_LEFT ? mouse_down : right_down; }
 bool IsKeyDown(int key) { return (key==KEY_W && walking) || (key==KEY_LEFT_SHIFT && sprinting); }
-bool IsKeyPressed(int key) { return (key==KEY_R && key_reload) || (key==KEY_TAB && key_weapon) || (key==KEY_G && key_grenade); }
+bool IsKeyPressed(int key) { return (key==KEY_R && key_reload) || (key==KEY_TAB && key_weapon) || (key==KEY_G && key_grenade) || (key==KEY_X && key_sight); }
 }
 
 int main() {
@@ -42,6 +42,14 @@ int main() {
     for (const auto* other : {&layout.aim, &layout.reload, &layout.look, &layout.interact, &layout.fire_mode})
         assert(std::hypot((other->x-layout.grenade.x)*1280,(other->y-layout.grenade.y)*720)>80);
     key_grenade=true; input.update(1280,720); assert(input.player().grenade); key_grenade=false; release();
+    // SIGHT changes the optic once per tap (X on a keyboard); its button sits clear of BAG and VIEW.
+    touches={{43,point(layout.sight)}};
+    input.update(1280,720); assert(input.player().sight && !input.player().inventory && !input.player().toggle_view);
+    input.update(1280,720); assert(!input.player().sight);
+    release();
+    for (const auto* other : {&layout.inventory, &layout.view, &layout.interact, &layout.weapon, &layout.fire_mode})
+        assert(std::hypot((other->x-layout.sight.x)*1280,(other->y-layout.sight.y)*720)>80);
+    key_sight=true; input.update(1280,720); assert(input.player().sight); key_sight=false; release();
     touches={{41,point(layout.weapon)}};
     input.update(1280,720); assert(input.player().next_weapon);
     input.update(1280,720); assert(!input.player().next_weapon);

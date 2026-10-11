@@ -75,7 +75,6 @@ if(Python3_Interpreter_FOUND)
     add_custom_command(
         OUTPUT "${PROJECT_SOURCE_DIR}/assets/verda/starter/manifest.json"
                "${PROJECT_SOURCE_DIR}/assets/audio/environment/verda_wind.wav"
-               "${PROJECT_SOURCE_DIR}/assets/audio/environment/gunshot_rifle.wav"
         COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_verda_kit.py"
         COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_verda_audio.py"
         DEPENDS tools/generate_verda_kit.py tools/verda_preview.html tools/generate_verda_audio.py
@@ -85,7 +84,6 @@ if(Python3_Interpreter_FOUND)
     add_custom_target(verda_assets DEPENDS
         "${PROJECT_SOURCE_DIR}/assets/verda/starter/manifest.json"
         "${PROJECT_SOURCE_DIR}/assets/audio/environment/verda_wind.wav"
-        "${PROJECT_SOURCE_DIR}/assets/audio/environment/gunshot_rifle.wav"
     )
 elseif(NOT EXISTS "${PROJECT_SOURCE_DIR}/assets/audio/environment/verda_wind.wav")
     message(FATAL_ERROR "Install Python 3 to generate Verda assets (Termux: pkg install python).")
@@ -146,6 +144,7 @@ add_library(
     src/game/combat/WeaponSystem.cpp
     src/game/combat/CombatFeedback.cpp
     src/game/combat/Grenades.cpp
+    src/game/combat/Sights.cpp
     src/game/combat/CombatRenderer.cpp
     src/game/inventory/ItemRegistry.cpp
     src/game/inventory/Inventory.cpp
@@ -507,6 +506,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_grenade_feedback_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_grenade_feedback_tests COMMAND outland_grenade_feedback_tests)
 
+    add_executable(outland_sight_tests tests/unit/combat/test_sights.cpp src/game/combat/Sights.cpp)
+    target_include_directories(outland_sight_tests PRIVATE "${PROJECT_SOURCE_DIR}/include")
+    target_compile_options(outland_sight_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_sight_tests COMMAND outland_sight_tests)
+
     add_executable(outland_gun_audio_tests tests/unit/audio/test_gun_mix.cpp)
     target_link_libraries(outland_gun_audio_tests PRIVATE outland_render)
     target_compile_options(outland_gun_audio_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -684,6 +688,7 @@ if(OUTLAND_BUILD_TESTS)
         add_test(NAME outland_survival_catalog_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_survival_catalog.py" --check)
         add_test(NAME outland_generated_vehicle_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_truck_model.py" --check)
         add_test(NAME outland_generated_grenade_model COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_grenade_model.py" --check)
+        add_test(NAME outland_generated_sight_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_sight_models.py" --check)
         add_test(NAME outland_generated_weapon_audio COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_weapon_audio.py" --check)
         add_test(NAME outland_city_kit_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_city_kit.py" --check)
         file(GLOB OUTLAND_TRAILER_MODELS "${PROJECT_SOURCE_DIR}/assets/verda/residential/trailers/*.glb")

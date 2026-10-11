@@ -19,7 +19,7 @@ const Color black{30,32,33,255}, metal{48,51,54,255}, polymer{58,60,58,255}, dar
             wood{122,80,46,255}, wood_dark{92,58,34,255}, olive{82,90,62,255}, tan{156,138,104,255},
             glove{46,44,40,255}, sleeve{72,78,64,255};
 
-void rifle(float reload) {
+void rifle(float reload,bool irons) {
     tube(.50F,.53F,.011F,0,dark);                         // flash hider
     tube(.39F,.50F,.0085F,0,metal);                       // barrel
     box(0,.024F,.385F,.018F,.045F,.02F,black);            // front sight block
@@ -28,10 +28,10 @@ void rifle(float reload) {
     box(0,.031F,.27F,.022F,.008F,.24F,black);
     box(0,.012F,.07F,.032F,.034F,.22F,metal);             // upper receiver
     box(0,.033F,.07F,.022F,.008F,.20F,black);             // top rail
-    box(0,.043F,.05F,.03F,.012F,.06F,black);              // holographic sight
-    box(.0155F,.068F,.05F,.005F,.038F,.05F,black);
-    box(-.0155F,.068F,.05F,.005F,.038F,.05F,black);
-    box(0,.089F,.05F,.036F,.006F,.05F,black);
+    if(irons) {                                           // flip-up rear aperture
+        box(0,.041F,-.02F,.022F,.008F,.014F,black);
+        for(const float side:{-1.0F,1.0F}) box(side*.0075F,.056F,-.02F,.004F,.022F,.008F,black);
+    }
     box(0,-.024F,.05F,.03F,.04F,.16F,metal);              // lower receiver
     box(-.0165F,.012F,.06F,.002F,.012F,.04F,dark);        // ejection port (right side)
     box(0,.028F,-.045F,.03F,.006F,.012F,black);           // charging handle
@@ -51,12 +51,16 @@ void pistol(float reload) {
     box(0,.026F,-.06F,.02F,.006F,.006F,dark);             // rear sight
     box(0,.026F,.11F,.004F,.006F,.004F,dark);             // front sight
 }
-void smg(float reload) {
+void smg(float reload,bool irons) {
     tube(.24F,.30F,.011F,0,dark);                         // barrel and thread
     box(0,0,.07F,.04F,.065F,.34F,polymer);                // receiver
     box(0,.037F,.05F,.022F,.008F,.18F,black);             // rail
-    box(0,.05F,.04F,.026F,.022F,.04F,black);              // red dot
-    tube(.02F,.065F,.012F,.054F,black);
+    box(0,.038F,.21F,.016F,.012F,.012F,black);            // front post
+    box(0,.052F,.21F,.004F,.016F,.005F,black);
+    if(irons) {                                           // rear sight ears
+        box(0,.044F,-.06F,.022F,.006F,.012F,black);
+        for(const float side:{-1.0F,1.0F}) box(side*.0075F,.054F,-.06F,.004F,.016F,.008F,black);
+    }
     box(.021F,.01F,.15F,.002F,.01F,.06F,black);           // cocking slot
     tilted(-5,0,-.105F-reload*.12F,.10F,.025F,.13F,.045F,black); // straight magazine
     box(0,-.045F,.018F,.006F,.006F,.045F,black);          // trigger guard
@@ -104,6 +108,41 @@ void sniper(float reload,float bolt) {
     DrawCylinderEx({.012F,-.05F,.30F},{.012F,-.05F,.47F},.005F,.005F,6,black); // folded bipod
     DrawCylinderEx({-.012F,-.05F,.30F},{-.012F,-.05F,.47F},.005F,.005F,6,black);
 }
+// Optics, built on the rail top `r` at `z` along the gun.
+const Color glass{150,200,225,46}, lens_blue{70,110,150,255}, fibre{120,200,60,255};
+void red_dot(float r,float z,bool pistol) {
+    const float w=pistol ? .024F : .036F, h=pistol ? .026F : .038F, c=r+(pistol ? .016F : .026F);
+    box(0,r+.004F,z,w*.8F,.008F,pistol ? .03F : .04F,black);               // mount
+    for(const float side:{-1.0F,1.0F}) box(side*(w*.5F-.002F),c,z,.004F,h,.03F,black); // open hood
+    box(0,c+h*.5F,z,w,.005F,.03F,black);
+    DrawCube({0,c,z+.008F},w-.006F,h-.008F,.002F,glass);                   // the window
+}
+void scope(float r,float z,float zoom) {
+    const float c=r+(zoom>3 ? .036F : .032F);
+    if(zoom>3) {                                          // 4x: a squat prism body
+        box(0,r+.008F,z,.03F,.016F,.09F,black);
+        box(0,c,z,.034F,.03F,.11F,black);
+        tube(z+.05F,z+.088F,.021F,c,black);
+        tube(z-.088F,z-.05F,.017F,c,black);
+        DrawCylinderEx({0,c,z+.0885F},{0,c,z+.089F},.017F,.017F,10,lens_blue);
+        box(0,c+.018F,z,.008F,.006F,.07F,fibre);          // illumination fibre on top
+    } else {                                              // 2x: a short tube in rings
+        for(const float at:{-.03F,.03F}) box(0,r+.012F,z+at,.016F,.024F,.01F,black);
+        tube(z-.06F,z+.05F,.0145F,c,black);
+        tube(z+.04F,z+.072F,.019F,c,black);
+        tube(z-.075F,z-.05F,.017F,c,black);
+        DrawCylinderEx({0,c,z+.0725F},{0,c,z+.073F},.015F,.015F,10,lens_blue);
+    }
+}
+void optic(WeaponId id,Sight sight) {
+    if(sight!=Sight::RedDot && sight!=Sight::Scope2x && sight!=Sight::Scope4x) return;
+    float rail=.037F,z=.05F;
+    if(id==WeaponId::Pistol) { rail=.023F;z=-.02F; }
+    else if(id==WeaponId::Smg) { rail=.041F;z=.04F; }
+    else if(id==WeaponId::Shotgun) { rail=.030F;z=.03F; box(0,.032F,.03F,.02F,.006F,.12F,black); } // saddle rail
+    if(sight==Sight::RedDot) red_dot(rail,z,id==WeaponId::Pistol);
+    else scope(rail,z,sight==Sight::Scope4x ? 4 : 2);
+}
 // First-person hands and forearms: trigger hand on the grip, support hand under the fore-end.
 void hands(WeaponId id,const GunLayout& layout) {
     if(id==WeaponId::Pistol) {
@@ -120,13 +159,14 @@ void hands(WeaponId id,const GunLayout& layout) {
 }
 }
 
-GunLayout gun_layout(WeaponId id) {
+GunLayout gun_layout(WeaponId id,Sight sight) {
+    const float line=sight_height(id,sight);
     switch(id) {
-        case WeaponId::Pistol: return {0,0,.026F,definition(id).length};
-        case WeaponId::Smg: return {.26F,.17F,.054F,definition(id).length};
-        case WeaponId::Shotgun: return {.34F,.24F,.028F,definition(id).length};
-        case WeaponId::Sniper: return {.36F,.24F,.06F,definition(id).length};
-        default: return {.30F,.22F,.068F,definition(id).length};
+        case WeaponId::Pistol: return {0,0,line,definition(id).length};
+        case WeaponId::Smg: return {.26F,.17F,line,definition(id).length};
+        case WeaponId::Shotgun: return {.34F,.24F,line,definition(id).length};
+        case WeaponId::Sniper: return {.36F,.24F,line,definition(id).length};
+        default: return {.30F,.22F,line,definition(id).length};
     }
 }
 
@@ -134,7 +174,7 @@ Vector3 CombatRenderer::muzzle(Vector3 grip,Vector3 aim,WeaponId id) {
     return Vector3Add(grip,Vector3Scale(Vector3Normalize(aim),definition(id).length));
 }
 
-void CombatRenderer::draw_gun(Vector3 grip,Vector3 aim,Vector3 up,WeaponId id,float reload_fraction,float flash,bool draw_hands,float pump) {
+void CombatRenderer::draw_gun(Vector3 grip,Vector3 aim,Vector3 up,WeaponId id,float reload_fraction,float flash,bool draw_hands,float pump,Sight sight) {
     const auto z=Vector3Normalize(aim);
     auto y=Vector3Subtract(up,Vector3Scale(z,Vector3DotProduct(up,z)));
     if(Vector3LengthSqr(y)<1e-6F) y={0,1,0};
@@ -148,12 +188,13 @@ void CombatRenderer::draw_gun(Vector3 grip,Vector3 aim,Vector3 up,WeaponId id,fl
     const float work=std::clamp(pump,0.0F,1.0F);
     switch(id) {
         case WeaponId::Pistol: pistol(reload);break;
-        case WeaponId::Smg: smg(reload);break;
+        case WeaponId::Smg: smg(reload,sight==Sight::Iron);break;
         case WeaponId::Shotgun: shotgun(reload,work);break;
         case WeaponId::Sniper: sniper(reload,work);break;
-        default: rifle(reload);break;
+        default: rifle(reload,sight==Sight::Iron);break;
     }
     if(draw_hands) hands(id,gun_layout(id));
+    optic(id,sight);
     if(flash>0) {
         const float l=definition(id).length+.02F,size=id==WeaponId::Shotgun || id==WeaponId::Sniper ? 1.5F : 1.0F;
         DrawSphereEx({0,0,l+.03F},.035F*size,4,6,Color{255,228,135,255});
@@ -187,6 +228,59 @@ void CombatRenderer::draw_world(const WeaponSystem& weapons,const CombatWorld& w
                          : impact.kind==HitKind::Target ? Color{246,206,93,255} : Color{192,187,162,255};
         if(age<.12F)DrawSphereEx(point,.035F+age*.3F,3,5,color);
         DrawLine3D(point,Vector3Add(point,Vector3Scale(impact.normal,.06F+age*.25F)),color);
+    }
+}
+
+void CombatRenderer::draw_sight_view(Sight sight,int width,int height,float aimed) {
+    const Vector2 middle{width*.5F,height*.5F};
+    const Color red{255,36,30,255};
+    if(!sight_info(sight).scope) {
+        if(sight!=Sight::RedDot || aimed<=.05F) return;
+        const auto a=static_cast<unsigned char>(255*std::clamp(aimed,0.0F,1.0F));
+        DrawCircleV(middle,5.5F,Color{255,40,30,static_cast<unsigned char>(a/4)});
+        DrawCircleV(middle,2.6F,Color{255,60,40,a});
+        return;
+    }
+    // A dark tube round a clear lens, its edge shaded as real glass is.
+    const float lens=std::min(width,height)*(sight==Sight::Scope2x ? .40F : sight==Sight::Scope4x ? .44F : .46F);
+    DrawRing(middle,lens,std::hypot(static_cast<float>(width),static_cast<float>(height)),0,360,96,BLACK);
+    DrawRing(middle,lens-6,lens,0,360,96,Color{25,25,25,255});
+    DrawRing(middle,lens-22,lens-6,0,360,96,Color{0,0,0,90});
+    if(sight==Sight::Scope2x) {
+        // 2x: a red dot inside a red ring, fine stadia lines in from the edge.
+        DrawRing(middle,lens*.12F-1.2F,lens*.12F+1.2F,0,360,64,red);
+        DrawCircleV(middle,2.8F,red);
+        for(const float side:{-1.0F,1.0F}) {
+            DrawLineEx({middle.x+side*lens*.55F,middle.y},{middle.x+side*lens,middle.y},1.4F,BLACK);
+            DrawLineEx({middle.x,middle.y+side*lens*.55F},{middle.x,middle.y+side*lens},1.4F,BLACK);
+        }
+    } else if(sight==Sight::Scope4x) {
+        // 4x: an illuminated chevron with bullet-drop marks below for longer ranges.
+        DrawLineEx({middle.x-lens,middle.y},{middle.x-lens*.10F,middle.y},1.3F,BLACK);
+        DrawLineEx({middle.x+lens*.10F,middle.y},{middle.x+lens,middle.y},1.3F,BLACK);
+        DrawLineEx({middle.x-10,middle.y+13},{middle.x,middle.y},3,red);
+        DrawLineEx({middle.x,middle.y},{middle.x+10,middle.y+13},3,red);
+        DrawLineEx({middle.x,middle.y+18},{middle.x,middle.y+lens},1.3F,BLACK);
+        int range=2;
+        for(const float at:{.10F,.17F,.24F,.31F}) {
+            const float half=lens*(.07F-at*.13F);
+            DrawLineEx({middle.x-half,middle.y+lens*at},{middle.x+half,middle.y+lens*at},1.3F,BLACK);
+            DrawText(TextFormat("%d",range++),static_cast<int>(middle.x+half+5),static_cast<int>(middle.y+lens*at-6),12,BLACK);
+        }
+        DrawLineEx({middle.x,middle.y-lens},{middle.x,middle.y-lens*.55F},4,BLACK);
+    } else {
+        // Sniper: fine cross-hairs with thick outer posts and mil ticks.
+        DrawLineEx({middle.x-lens,middle.y},{middle.x+lens,middle.y},1.2F,BLACK);
+        DrawLineEx({middle.x,middle.y-lens},{middle.x,middle.y+lens},1.2F,BLACK);
+        for(const float side:{-1.0F,1.0F}) {
+            DrawLineEx({middle.x+side*lens*.45F,middle.y},{middle.x+side*lens,middle.y},5,BLACK);
+            DrawLineEx({middle.x,middle.y+side*lens*.45F},{middle.x,middle.y+side*lens},5,BLACK);
+            for(int tick=1;tick<=4;++tick) {
+                const float at=side*lens*.09F*static_cast<float>(tick);
+                DrawLineEx({middle.x+at,middle.y-4},{middle.x+at,middle.y+4},1.2F,BLACK);
+                DrawLineEx({middle.x-4,middle.y+at},{middle.x+4,middle.y+at},1.2F,BLACK);
+            }
+        }
     }
 }
 }

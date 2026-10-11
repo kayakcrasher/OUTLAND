@@ -58,6 +58,13 @@ int main() {
         assert(economy.trade(wallet,nades,items,*general,grenade,2,false).starts_with("Bought"));
         assert(nades.count("frag_grenade")==2 && wallet.money==state.money-grenade.buy*2);
     }
+    {   // Red dots and scopes are sold at general stores; a 4x costs more than a red dot.
+        auto wallet=state;inventory::Inventory optics;
+        const auto& dot=offer("general_red_dot_sight");const auto& four=offer("general_scope_4x");
+        assert(offer("general_scope_2x").item=="scope_2x" && four.buy>dot.buy);
+        assert(economy.trade(wallet,optics,items,*general,dot,1,false).starts_with("Bought"));
+        assert(optics.count("red_dot_sight")==1 && wallet.money==state.money-dot.buy);
+    }
     auto forged=water;forged.buy=1;assert(economy.trade(state,bag,items,*general,forged,1,false)=="Invalid trade");
     assert(state.money==before.money && bag.state().stacks==stacks && economy.stock(state,*general,water)==26);
     inventory::Inventory full;assert(full.add(items,"battery",999)>0);

@@ -154,6 +154,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
             if (hit(p, layout_.aim, 43)) return Control::Aim;
             if (hit(p, layout_.reload, 43)) return Control::Reload;
             if (hit(p, layout_.grenade, 43)) return Control::Grenade;
+            if (hit(p, layout_.sight, 43)) return Control::Sight;
             if (hit(p, layout_.weapon, 43)) return Control::Weapon;
             if (hit(p, layout_.sprint, 43)) return Control::Sprint;
             if (hit(p, layout_.crouch, 43)) return Control::Crouch;
@@ -179,6 +180,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         case Control::View: player_.toggle_view |= fresh; break;
         case Control::Reload: player_.reload |= fresh; break;
         case Control::Grenade: player_.grenade |= fresh; break;
+        case Control::Sight: player_.sight |= fresh; break;
         case Control::Weapon: player_.next_weapon |= fresh; break;
         case Control::Inventory: player_.inventory |= fresh; break;
         case Control::Interact: player_.interact |= fresh; break;
@@ -247,6 +249,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         player_.aim |= IsKeyDown(KEY_Q) || (count == 0 && IsMouseButtonDown(MOUSE_BUTTON_RIGHT));
         player_.reload |= IsKeyPressed(KEY_R);
         player_.grenade |= IsKeyPressed(KEY_G);
+        player_.sight |= IsKeyPressed(KEY_X);
         player_.next_weapon |= IsKeyPressed(KEY_TAB);
         player_.fire_mode |= IsKeyPressed(KEY_B);
         player_.inventory |= IsKeyPressed(KEY_I);

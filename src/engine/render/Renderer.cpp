@@ -6,6 +6,7 @@
 #include "outland/game/combat/CombatFeedback.hpp"
 #include "outland/engine/audio/GunAudio.hpp"
 #include "outland/game/combat/Grenades.hpp"
+#include "outland/game/combat/Sights.hpp"
 #include "outland/game/inventory/LootSession.hpp"
 #include "outland/game/inventory/LootUI.hpp"
 #include "outland/game/vehicles/VehicleSystem.hpp"
@@ -489,6 +490,8 @@ void Renderer::run() {
     // Combat feedback (numbers, kill marker, hurt flash and arrow, shake) and frag grenades.
     game::combat::CombatFeedback combat_feedback;
     game::combat::Grenades grenades;
+    game::combat::SightMounts sight_mounts;            // the optic on each gun
+    std::array<int,game::combat::attachments.size()> sight_seen{}; // bag counts last frame
     float health_seen=100;          // player health after the last combat step
     Vector3 hurt_from{};            // who hurt the player this step, if anyone in particular
     bool hurt_directional=false;
@@ -794,6 +797,9 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
                 // OUTLAND_DEV_ARMOURY=1: every gun, loaded, for trying them out.
                 if(const char* armoury=std::getenv("OUTLAND_DEV_ARMOURY"); armoury && *armoury=='1' && game_mode!=game::GameMode::DevLab) {
+                    for(const auto sight:game::combat::attachments) // one of each optic first, while the bag has room
+                        if(loot_session.inventory().count(std::string(game::combat::sight_info(sight).item))==0)
+                            loot_session.edit_inventory().add(item_registry,std::string(game::combat::sight_info(sight).item),1);
                     for(std::size_t i=0;i<game::combat::weapon_count;++i) {
                         const auto id=static_cast<game::combat::WeaponId>(i);
                         for(const auto& item:item_registry.items())
@@ -854,6 +860,7 @@ void Renderer::run() {
                 health_seen=player_health.current();hurt_directional=false;pending_kills.clear();
                 combat_feedback.reset();
                 grenades.reset(game_mode==game::GameMode::DevLab ? 99 : 0); // elsewhere the bag holds them
+                sight_mounts.clear();sight_seen.fill(0);
                 recoil_pitch = recoil_yaw = recoil_debt = recoil_settle = 0.0F;
                 trigger_ready = false;
                 inventory_open = false;
@@ -1120,6 +1127,30 @@ void Renderer::run() {
         }
 
         // ====================================================
+        // SIGHTS
+        // ====================================================
+
+        // Red dots and scopes in the bag mount on guns (one gun per copy); a newly found optic goes
+        // on a gun still wearing irons, and X (or SIGHT) changes the held gun's. The Dev Lab has all.
+        const bool optics_unlimited=game_mode==game::GameMode::DevLab;
+        const game::combat::SightMounts::Owned sights_owned=[&](game::combat::Sight optic) {
+            return optics_unlimited ? 99 : loot_session.inventory().count(std::string(game::combat::sight_info(optic).item));
+        };
+        if(weapons.available()) {
+            sight_mounts.validate(sights_owned);
+            for(std::size_t i=0;i<game::combat::attachments.size();++i) {
+                const int held_now=sights_owned(game::combat::attachments[i]);
+                if(held_now>sight_seen[i] && !optics_unlimited)
+                    sight_mounts.acquire(game::combat::attachments[i],weapons.selected(),
+                        [&](game::combat::WeaponId id){return loot_session.inventory().owns_weapon(item_registry,id);},sights_owned);
+                sight_seen[i]=held_now;
+            }
+            if(controls.sight && !driving && !inventory_open && !shop_open) sight_mounts.cycle(weapons.selected(),sights_owned);
+        }
+        const auto sight=weapons.available() ? sight_mounts.mounted(weapons.selected()) : game::combat::Sight::Iron;
+        const float sight_fov=weapons.available() ? game::combat::sight_fov(weapons.selected(),sight) : 70.0F;
+
+        // ====================================================
         // CAMERA LOOK
         // ====================================================
 
@@ -1162,7 +1193,7 @@ void Renderer::run() {
             input_system
                 .layout()
                 .look_sensitivity *
-            (controls.aim && !driving ? weapons.weapon().ads_fov / 70.0F : 1.0F) * assist;
+            (controls.aim && !driving ? sight_fov / 70.0F : 1.0F) * assist;
 
         player.yaw -=
             controls.look_x *
@@ -1432,10 +1463,10 @@ void Renderer::run() {
             player.position.z
         };
 
-        const float desired_fov = controls.aim && !driving ? weapons.weapon().ads_fov : 70.0F;
+        const float desired_fov = controls.aim && !driving ? sight_fov : 70.0F;
         camera.fovy += (desired_fov-camera.fovy) * (1.0F-std::exp(-dt*12.0F));
-        // Through a sniper scope the view is the scope itself, in either camera.
-        const bool scoped=controls.aim && !driving && weapons.available() && weapons.weapon().ads_fov<20;
+        // Through a scope (2x, 4x, sniper) the view is the scope itself, in either camera.
+        const bool scoped=controls.aim && !driving && weapons.available() && game::combat::sight_info(sight).scope;
         if (player.third_person && !scoped) {
             const float distance = controls.aim ? 1.9F : 3.6F; // close over the right shoulder, as PUBG and Fortnite frame it
             camera.position = Vector3Add(Vector3Subtract(head_position, Vector3Scale(look_direction,distance)),
@@ -1520,7 +1551,7 @@ void Renderer::run() {
         const Vector3 aim_point=aimed_hit.hit() ? aimed_hit.position : far_point;
         // First-person gun: at the hip, or with the sight line on the eye when aiming. Its muzzle
         // is also where every shot leaves from, in either view.
-        const auto layout=game::combat::gun_layout(weapons.selected());
+        const auto layout=game::combat::gun_layout(weapons.selected(),sight);
         const Vector3 view_up=Vector3Normalize(Vector3CrossProduct(Vector3CrossProduct(look_direction,{0,1,0}),look_direction));
         const bool sighted=controls.aim && !player.third_person;
         const float pistol_reach=weapons.weapon().hold==game::combat::WeaponHold::Pistol ? .14F : 0.0F;
@@ -1938,7 +1969,7 @@ void Renderer::run() {
             std::sin(std::clamp(1-weapons.cooldown()/held_weapon.interval,0.0F,1.0F)*PI)*(weapons.cooldown()>0 ? 1.0F : 0.0F) : 0.0F;
         const float gun_reload=weapons.reload_remaining()/held_weapon.reload_seconds;
         if(weapons.available() && !driving && !creator_active && !player.third_person && !scoped)
-            game::combat::CombatRenderer::draw_gun(gun_grip,look_direction,view_up,weapons.selected(),gun_reload,weapons.muzzle_flash(),true,gun_work);
+            game::combat::CombatRenderer::draw_gun(gun_grip,look_direction,view_up,weapons.selected(),gun_reload,weapons.muzzle_flash(),true,gun_work,sight);
         if(!creator_active)loot_ui.draw_world(item_registry,loot_session.world(),loot_feet,loot_session.inventory().state().light);
 
         if(perf.enabled()) perf.mark(FrameStage::World,GetTime());
@@ -1983,7 +2014,7 @@ void Renderer::run() {
             const auto held=character_renderer.draw_player(character_feet, player.yaw, body);
             if(held.held && !scoped) {
                 const auto aim=weapon_input.sprint ? held.aim : Vector3Normalize(Vector3Subtract(aim_point,held.grip));
-                game::combat::CombatRenderer::draw_gun(held.grip,aim,held.up,weapons.selected(),gun_reload,weapons.muzzle_flash(),false,gun_work);
+                game::combat::CombatRenderer::draw_gun(held.grip,aim,held.up,weapons.selected(),gun_reload,weapons.muzzle_flash(),false,gun_work,sight);
             }
         }
 
@@ -2091,28 +2122,14 @@ void Renderer::run() {
         }
 
         const int center_x=screen_width/2, center_y=screen_height/2;
-        if(scoped && !creator_active) {
-            // 4x scope: a dark tube round a clear lens, fine cross-hairs with a thick outer post.
-            const float lens=std::min(screen_width,screen_height)*.46F;
-            const Vector2 middle{static_cast<float>(center_x),static_cast<float>(center_y)};
-            DrawRing(middle,lens,std::hypot(static_cast<float>(screen_width),static_cast<float>(screen_height)),0,360,96,BLACK);
-            DrawRing(middle,lens-6,lens,0,360,96,Color{25,25,25,255});
-            DrawLineEx({middle.x-lens,middle.y},{middle.x+lens,middle.y},1.2F,BLACK);
-            DrawLineEx({middle.x,middle.y-lens},{middle.x,middle.y+lens},1.2F,BLACK);
-            for(const float side:{-1.0F,1.0F}) {
-                DrawLineEx({middle.x+side*lens*.45F,middle.y},{middle.x+side*lens,middle.y},5,BLACK);
-                DrawLineEx({middle.x,middle.y+side*lens*.45F},{middle.x,middle.y+side*lens},5,BLACK);
-                for(int tick=1;tick<=4;++tick) {
-                    const float at=side*lens*.09F*static_cast<float>(tick);
-                    DrawLineEx({middle.x+at,middle.y-4},{middle.x+at,middle.y+4},1.2F,BLACK);
-                    DrawLineEx({middle.x-4,middle.y+at},{middle.x+4,middle.y+at},1.2F,BLACK);
-                }
-            }
-        }
+        // A red dot shows its dot once the gun is up (in third person, as soon as aiming starts).
+        const bool red_dot_up=controls.aim && !driving && weapons.available() && sight==game::combat::Sight::RedDot && !creator_active;
+        if(scoped && !creator_active) game::combat::CombatRenderer::draw_sight_view(sight,screen_width,screen_height,1);
+        else if(red_dot_up) game::combat::CombatRenderer::draw_sight_view(sight,screen_width,screen_height,player.third_person ? 1.0F : (fp_aim_blend-.6F)/.4F);
         const int gap=static_cast<int>((controls.aim ? 3 : 8)+movement_amount*5+recoil_pitch*180);
         const Color crosshair_color=weapons.hit_marker()>0 ?
             (weapons.last_headshot() ? ORANGE : GREEN) : RAYWHITE;
-        if(!scoped) {
+        if(!scoped && !red_dot_up) {
             DrawLine(center_x-gap-6,center_y,center_x-gap,center_y,crosshair_color);
             DrawLine(center_x+gap,center_y,center_x+gap+6,center_y,crosshair_color);
             DrawLine(center_x,center_y-gap-6,center_x,center_y-gap,crosshair_color);
@@ -2156,6 +2173,8 @@ void Renderer::run() {
             DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
             DrawText(weapons.available()?weapons.weapon().name:"NO WEAPON - OPEN BAG",24,screen_height-94,19,RAYWHITE);
             DrawText(TextFormat("NADES %d  G",grenades.count()),222,screen_height-68,16,grenades.count()>0 ? Color{190,220,150,255} : GRAY);
+            if(weapons.available()) DrawText(TextFormat("%s%s",game::combat::sight_info(sight).name,sight==game::combat::Sight::Sniper ? "" : "  X"),
+                200,screen_height-92,14,sight==game::combat::Sight::Iron ? GRAY : Color{235,120,110,255});
             if (weapons.unlimited()) DrawText("AMMO UNLIMITED - DEV LAB",24,screen_height-68,18,YELLOW);
             else DrawText(TextFormat("%d / %d",weapons.ammo().loaded,weapons.ammo().reserve),
                 24,screen_height-68,22,RAYWHITE);
@@ -2216,7 +2235,9 @@ void Renderer::run() {
             screen_width,
             screen_height,
             !creator_active,
-            weapons.available() && weapons.weapon().automatic && !driving ? (weapons.single_fire() ? "SINGLE" : "AUTO") : nullptr
+            weapons.available() && weapons.weapon().automatic && !driving ? (weapons.single_fire() ? "SINGLE" : "AUTO") : nullptr,
+            weapons.available() && !driving && sight!=game::combat::Sight::Sniper ?
+                (sight==game::combat::Sight::RedDot ? "DOT" : sight==game::combat::Sight::Scope2x ? "2X" : sight==game::combat::Sight::Scope4x ? "4X" : "IRON") : nullptr
         );
 
 #ifdef OUTLAND_DEV_TOOLS

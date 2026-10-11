@@ -13,7 +13,8 @@ public:
         int screen_width,
         int screen_height,
         bool gameplay = true,
-        const char* fire_mode = nullptr   // "AUTO" / "SINGLE" for automatic weapons, else hidden
+        const char* fire_mode = nullptr,  // "AUTO" / "SINGLE" for automatic weapons, else hidden
+        const char* sight = nullptr       // the held gun's optic ("IRON", "DOT", "2X", "4X"), else hidden
     ) const;
 };
 

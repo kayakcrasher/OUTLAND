@@ -107,3 +107,23 @@ Royale bots, hostile and creature pools (zombies), and police who are chasing yo
 
 Bots are less accurate past 40 m: their aim cone widens by 1/80 per metre beyond that. Bot and
 police guns flash as they fire.
+
+## Sights
+Guns start on iron sights (the rifle's holographic sight and the SMG's red dot are no longer built
+in); the sniper keeps its own fixed scope. Three optics are bag items (`utility`, stacks of 3),
+found in weapons caches (red dot weight 8, 2x 6, 4x 3) and now and then in general loot, and sold
+at general stores (red dot 60, 2x 90, 4x 150 kronoj):
+
+| Optic | Fits | Aiming |
+|---|---|---|
+| Red dot | every gun but the sniper | the gun's own aim zoom, a red dot in an open reflex window |
+| 2x scope | rifle, SMG, shotgun | 2x the hip view (38.6° FOV), a red dot inside a red ring |
+| 4x scope | rifle, SMG | 4x (19.9° FOV), an illuminated chevron with 200–500 m drop marks |
+
+Each copy in the bag can sit on one gun. A newly found optic goes on the held gun if it still wears
+irons, else on another gun that does (as battle royales attach a pickup to an empty slot). X on a
+keyboard, or the SIGHT button (between BAG and VIEW, labelled IRON, DOT, 2X or 4X), cycles the held
+gun through the optics it fits and the bag holds. Selling or dropping an optic takes it off its
+gun. Scopes are viewed through, filling the screen like the sniper's; the gun model shows the
+mounted optic on its rail. Look speed while aiming scales with the zoom. The Dev Lab has every
+optic. Logic: `game/combat/Sights` (tested by `outland_sight_tests`); models: `tools/generate_sight_models.py`.

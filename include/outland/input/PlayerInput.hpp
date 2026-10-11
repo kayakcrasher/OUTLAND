@@ -22,6 +22,7 @@ struct PlayerInput {
     bool aim{false};
     bool reload{false};
     bool grenade{false};     // throw a frag grenade
+    bool sight{false};       // change the held gun's optic (iron, red dot, 2x, 4x)
     bool next_weapon{false};
     bool fire_mode{false};   // switch automatic / single shots
 
@@ -37,6 +38,7 @@ struct PlayerInput {
         reload = false;
         next_weapon = false;
         fire_mode = false;
+        sight = false;
         interact = false;
         inventory = false;
         toggle_view = false;

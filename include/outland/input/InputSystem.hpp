@@ -47,7 +47,7 @@ private:
     TouchLayout layout_{};
 
     enum class Control {
-        None, Movement, Look, Jump, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon, Grenade,
+        None, Movement, Look, Jump, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon, Grenade, Sight,
         Sprint, Crouch, Inventory, Interact
     };
     struct TouchOwner { int id; Control control; };

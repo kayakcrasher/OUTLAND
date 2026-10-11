@@ -531,7 +531,8 @@ void TouchHUD::draw(
     int screen_width,
     int screen_height,
     bool gameplay,
-    const char* fire_mode
+    const char* fire_mode,
+    const char* sight
 ) const {
     const float scale =
         hud_scale(
@@ -555,6 +556,7 @@ void TouchHUD::draw(
     button(layout.crouch, "CROUCH", input.crouch);
     button(layout.inventory, "BAG", input.inventory);
     button(layout.interact, "USE", input.interact);
+    if (sight) button(layout.sight, sight, input.sight);
     }
 
     // ========================================================
