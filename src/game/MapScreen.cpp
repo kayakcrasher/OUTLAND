@@ -208,8 +208,13 @@ void MapScreen::bake(const world::VerdaRegion& region) {
         for (const auto& town : region.settlements())
             clear = std::min(clear, std::hypot((x - town.center.x) * .6F, z - town.center.z) - 120);
         const int zz = zone[k];
+        // County names keep clear of the capital district, whose own name sits inside the city.
+        if (zz != static_cast<int>(world::zones::ZoneId::Verdkerno) && std::hypot(x, z) < 850) continue;
         if (clear > best[zz]) {best[zz] = clear; zone_labels_[zz] = {x, z};}
     }
+    // The capital district is small: its name goes inside it, under Verda's own dot.
+    zone_labels_[static_cast<std::size_t>(world::zones::ZoneId::Verdkerno)] = {0, world::zones::capital_radius * .8F};
+    best[static_cast<std::size_t>(world::zones::ZoneId::Verdkerno)] = 1;
     for (std::size_t z = 0; z < sum.size(); ++z)
         if (best[z] < 0 && count[z]) zone_labels_[z] = Vector2Scale(sum[z], 1.0F / static_cast<float>(count[z]));
     texture_ = LoadTextureFromImage(image);

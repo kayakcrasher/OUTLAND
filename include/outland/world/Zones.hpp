@@ -4,8 +4,9 @@
 #include <cstddef>
 #include <string_view>
 
-// Verda's five zonoj (counties). Each grew round one of the island's towns; borders follow
-// distance to those seats, roughened so they wander like real county lines.
+// Verda's five zonoj (counties). Verdkerno is the capital district round Verda City; the other
+// four share the rest of the island, each round its own town, with borders that wander like
+// real county lines.
 namespace outland::world::zones {
 
 enum class ZoneId : std::size_t { Verdkerno, Altverdo, Lumamaro, Marcfluo, Ferarbaro };
@@ -22,7 +23,7 @@ struct Zone {
 
 inline constexpr std::array<Zone, zone_count> zones{{
     {ZoneId::Verdkerno, "Verdkerno", "Green Core", "capital_verda",
-     "The capital, farms, administration and the island's roads: the heart of the nation.", {104, 168, 84, 255}},
+     "Verda City and its edge: the capital, government, markets and the roads out: the heart of the nation.", {104, 168, 84, 255}},
     {ZoneId::Altverdo, "Altverdo", "High Green", "village_espera",
      "Northern highlands: forests, hills, hunting and sparse settlements on colder ground.", {70, 128, 104, 255}},
     {ZoneId::Lumamaro, "Lumamaro", "Sea of Light", "port_luma",
@@ -32,6 +33,8 @@ inline constexpr std::array<Zone, zone_count> zones{{
     {ZoneId::Ferarbaro, "Ferarbaro", "Iron Forest", "west_roka",
      "The western backcountry: gravel roads, trailers, mines and self-reliant people.", {168, 112, 76, 255}},
 }};
+
+inline constexpr float capital_radius = 560; // Verdkerno: metres from the capital's centre
 
 inline const Zone& zone(ZoneId id) { return zones[static_cast<std::size_t>(id)]; }
 

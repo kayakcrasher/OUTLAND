@@ -46,11 +46,11 @@ These are proposals that fill gaps in the canon. Change them freely.
 
 ## The five zones (zonoj)
 
-Verda is split into five zones, each grown round one of its towns. Their names and borders show on the map (**M**, or the MAP button), and a banner names each zone as you enter it.
+Verda is split into five zones. Verdkerno is the capital district round Verda City; the other four counties share the rest of the island, each round its own town. Their names and borders show on the map (**M**, or the MAP button), and a banner names each zone as you enter it.
 
 | Zone | Meaning | Seat | Character |
 |---|---|---|---|
-| **Verdkerno** | Green Core | Verda | The capital, farms, administration and infrastructure: the heart of the nation |
+| **Verdkerno** | Green Core | Verda | The capital district: Verda City and its edge, government, markets and the roads out — the heart of the nation |
 | **Altverdo** | High Green | Espera | Northern highlands: forests, hills, hunting, sparse settlements, colder ground |
 | **Lumamaro** | Sea of Light | Porto Luma | The bright eastern coast: the port, beaches, markets, the lighthouse |
 | **Marĉfluo** | Marsh Flow | Suda Haveno | Southern wetlands: rivers, marshes, reeds, fishing, floodplain life |

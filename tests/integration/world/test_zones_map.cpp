@@ -41,8 +41,16 @@ int main() {
         if (world::terrain::TerrainHeight::sample(x, z) > world::layout::sea_level) {++land[static_cast<std::size_t>(zones::zone_at(x, z))]; ++total;}
     for (std::size_t i = 0; i < land.size(); ++i) {
         std::cout << zones::zones[i].name << " " << 100 * land[i] / total << "%  ";
-        check(land[i] * 10 > total, "a real share of land: " + std::string(zones::zones[i].name));
+        if (zones::zones[i].id == zones::ZoneId::Verdkerno)
+            check(land[i] * 50 > total && land[i] * 10 < total, "Verdkerno is the capital district, not a county: " + std::to_string(100 * land[i] / total) + "%");
+        else check(land[i] * 6 > total, "a real share of land: " + std::string(zones::zones[i].name));
     }
+    // The capital district holds Verda City and stops at its edge.
+    check(zones::zone_at(0, 0) == zones::ZoneId::Verdkerno && zones::zone_at(450, 0) == zones::ZoneId::Verdkerno &&
+          zones::zone_at(0, -450) == zones::ZoneId::Verdkerno, "Verda City is Verdkerno");
+    check(zones::zone_at(800, 0) == zones::ZoneId::Lumamaro && zones::zone_at(-800, 0) == zones::ZoneId::Ferarbaro &&
+          zones::zone_at(0, -800) == zones::ZoneId::Altverdo && zones::zone_at(0, 800) == zones::ZoneId::Marcfluo,
+          "outside the city the counties begin");
     std::cout << '\n';
     // Borders wander but stay consistent: nearby points agree away from them.
     check(zones::zone_at(-1750, 450) == zones::zone_at(-1745, 452), "stable");

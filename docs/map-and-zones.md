@@ -21,9 +21,8 @@ Open the map with the **MAP · M** button at the top right, or the **M** key. Cl
 
 `world::zones::zone_at(x, z)` names the zone for any position (`include/outland/world/Zones.hpp`).
 
-- Each zone grows round its seat town.
-- Borders wander by up to about 110 m, so they curve like county lines.
-- The capital's zone reaches a little further than distance alone would give it.
+- **Verdkerno** is the capital district: Verda City and its edge, within about 560 m of the centre (`zones::capital_radius`). Its limit wobbles a little, like a city boundary.
+- **The other four counties** share the rest of the island, each round its own town. Their borders wander by up to about 110 m, so they curve like county lines, and they meet at the city limit.
 - Entering a zone shows a banner with its name, what the name means, and what the zone is like.
 
 The zone list and Ferarbaro's lore are in [verda-lore.md](verda-lore.md).
@@ -67,7 +66,7 @@ Ferarbaro's backcountry settlement (`ferarbaro_sovagejo`), built by `outland_bui
 
 - **`outland_zones_map_tests`:**
   - every seat is in its own zone, and the compass directions are right;
-  - every zone holds over 10% of the land;
+  - Verda City is Verdkerno, which covers 2–10% of the land, and the four counties begin just outside it, each holding over a sixth of the land;
   - the map projection puts north up, and the settings buttons fit and don't overlap at phone and desktop sizes;
   - settings survive a save and load, and bad values are clamped;
   - Sovaĝejo exists in Ferarbaro with dirt and gravel roads only, its trailers, homesteads, cars that run, parts donors and residents.
