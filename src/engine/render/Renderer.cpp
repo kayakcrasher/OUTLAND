@@ -4,6 +4,7 @@
 #include "outland/engine/audio/EnvironmentAudio.hpp"
 #include "outland/game/combat/CombatRenderer.hpp"
 #include "outland/game/combat/CombatFeedback.hpp"
+#include "outland/engine/audio/GunAudio.hpp"
 #include "outland/game/combat/Grenades.hpp"
 #include "outland/game/inventory/LootSession.hpp"
 #include "outland/game/inventory/LootUI.hpp"
@@ -573,6 +574,9 @@ void Renderer::run() {
     audio::EnvironmentAudio environment_audio(
         std::string(GetApplicationDirectory()) + "assets/audio/environment"
     );
+    // Gunfire you hear: your own reports, everyone else's placed in the world, grenade blasts.
+    audio::GunAudio gun_audio(std::string(GetApplicationDirectory()) + "assets/audio/weapons");
+    std::uint64_t gunfire_heard=0; // sound-bus serial already turned into audio
 
     // The island map (M / MAP) and the player's settings it carries.
     game::MapScreen map_screen;
@@ -1584,6 +1588,7 @@ void Renderer::run() {
         }});
         for(const Vector3 blast:grenades.exploded()) {
             sound_bus.emit(game::sound::SoundKind::Gunshot,blast,400,0,match_time);
+            gun_audio.explosion(blast,camera.position,Vector3Subtract(camera.target,camera.position));
             const Vector3 core=Vector3Add(blast,{0,.35F,0});
             const auto open=[&](Vector3 to){return !combat_world.trace_segment(core,to,false,false,false).hit();};
             const Vector3 chest{player.position.x,player.position.y-.2F,player.position.z};
@@ -1613,9 +1618,12 @@ void Renderer::run() {
                 vehicle_dirty=true;
             }
         }
+        if(!pending_kills.empty()) gun_audio.kill_confirm();
         for(const Vector3 where:pending_kills) combat_feedback.kill(where);
         pending_kills.clear();
         environment_audio.play_combat(weapons.selected(),weapons.events());
+        gun_audio.set_volume(environment_audio.volume(),environment_audio.muted());
+        for(int shot=0;shot<weapons.events().shots;++shot) gun_audio.player_shot(weapons.selected());
         // Session clock for sounds and the match; it stops while the game is paused.
         if(!vehicle_paused) match_time+=dt;
         sound_bus.advance(match_time);
@@ -1701,6 +1709,17 @@ void Renderer::run() {
                 vehicle_audio.stop();
             }
             last_player_feet=feet;
+            // Everyone else's gunfire, heard where it happened (bots, police): the bus says how far
+            // it carries, which also tells pistol from rifle from sniper.
+            for(const auto& heard:sound_bus.events()) {
+                if(heard.serial<=gunfire_heard || heard.kind!=game::sound::SoundKind::Gunshot || heard.source==0) continue;
+                const float r=heard.radius;
+                const auto weapon=r>=400 ? game::combat::WeaponId::Sniper : r>=290 ? game::combat::WeaponId::Rifle :
+                    r>=250 ? game::combat::WeaponId::Shotgun : r>=190 ? game::combat::WeaponId::Smg : game::combat::WeaponId::Pistol;
+                gun_audio.world_shot(weapon,heard.position,camera.position,Vector3Subtract(camera.target,camera.position));
+            }
+            gunfire_heard=sound_bus.latest();
+            gun_audio.update(vehicle_paused ? 0.0F : dt);
             // Whatever hurt the player this step - shots, bites, blasts, crashes, the zone - shows.
             const float drop=health_seen-player_health.current();
             if(drop>.01F && player_health.alive()) combat_feedback.hurt(drop,hurt_from,hurt_directional);
@@ -1939,14 +1958,9 @@ void Renderer::run() {
                 game::combat::CombatRenderer::draw_gun(held.grip,held.aim,held.up,static_cast<game::combat::WeaponId>(weapon),0,0,false);
             });
         // Their muzzles flash as they fire, so you see who is shooting at you.
-        for(const auto& tracer:br_bots.tracers()) {
-            DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
-            if(tracer.life>.05F) DrawSphere(tracer.start,.1F,Color{255,222,150,235});
-        }
-        for(const auto& tracer:police_tracers) {
-            DrawLine3D(tracer.start,tracer.end,Color{255,214,140,230});
-            if(tracer.life>.05F) DrawSphere(tracer.start,.1F,Color{255,222,150,235});
-        }
+        // No tracer lines (real rounds are not seen in flight); the muzzle flash shows the shooter.
+        for(const auto& tracer:br_bots.tracers()) if(tracer.life>.05F) DrawSphere(tracer.start,.1F,Color{255,222,150,235});
+        for(const auto& tracer:police_tracers) if(tracer.life>.05F) DrawSphere(tracer.start,.1F,Color{255,222,150,235});
 
         // ----------------------------------------------------
         // PLAYER BODY

@@ -158,12 +158,14 @@ int main() {
         audio.update({105,1,0},true,true,region);
         audio.update({106,1,0},true,true,region);assert(played==2);
         outland::game::combat::WeaponEvents shot;shot.shots=1;
-        audio.play_combat(outland::game::combat::WeaponId::Rifle,shot);assert(played==3);
+        audio.play_combat(outland::game::combat::WeaponId::Rifle,shot);assert(played==2); // gunfire is GunAudio's
+        shot.reload_started=true;audio.play_combat(outland::game::combat::WeaponId::Rifle,shot);assert(played==3);
+        shot.reload_started=false;
         audio.toggle_mute();
         shot.target_hits=1;shot.reload_started=true;shot.dry_fire=true;
         audio.play_combat(outland::game::combat::WeaponId::Pistol,shot);assert(played==3);
     }
-    assert(unloaded==19 && closed==1);
+    assert(unloaded==13 && closed==1);
     allow_device=false;
     {
         outland::engine::audio::EnvironmentAudio unavailable("test-assets");

@@ -30,10 +30,6 @@ EnvironmentAudio::EnvironmentAudio(const std::string& directory) {
             if (FileExists(path.c_str())) steps_[surface][variant] = LoadSound(path.c_str());
         }
     }
-    for (std::size_t weapon = 0; weapon < gunshots_.size(); ++weapon) {
-        const std::string path = directory + (weapon == 0 ? "/gunshot_pistol.wav" : "/gunshot_rifle.wav");
-        if (FileExists(path.c_str())) for (auto& sound : gunshots_[weapon]) sound = LoadSound(path.c_str());
-    }
     const auto load = [&](const char* name) {
         const std::string path = directory + "/" + name;
         return FileExists(path.c_str()) ? LoadSound(path.c_str()) : Sound{};
@@ -48,7 +44,6 @@ EnvironmentAudio::~EnvironmentAudio() {
         for (Sound sound : surface) if (IsSoundValid(sound)) UnloadSound(sound);
     }
     if (IsMusicValid(wind_)) UnloadMusicStream(wind_);
-    for (auto& weapon : gunshots_) for (Sound sound : weapon) if (IsSoundValid(sound)) UnloadSound(sound);
     for (Sound sound : {reload_, hit_, dry_}) if (IsSoundValid(sound)) UnloadSound(sound);
     if (owns_device_) CloseAudioDevice();
 }
@@ -61,19 +56,12 @@ void EnvironmentAudio::set_volume(float volume) {
     for (auto& surface : steps_) {
         for (Sound sound : surface) if (IsSoundValid(sound)) SetSoundVolume(sound, effective * 0.65F);
     }
-    for (auto& weapon : gunshots_) for (Sound sound : weapon)
-        if (IsSoundValid(sound)) SetSoundVolume(sound, effective * 0.80F);
     for (Sound sound : {reload_, hit_, dry_}) if (IsSoundValid(sound)) SetSoundVolume(sound, effective * 0.55F);
 }
 
 void EnvironmentAudio::play_combat(game::combat::WeaponId weapon, const game::combat::WeaponEvents& events) {
     if (!ready_ || muted_) return;
-    for (int i = 0; i < events.shots; ++i) {
-        // Two recorded reports; the other guns reuse them at their own pitch.
-        const auto& gun = game::combat::definition(weapon);
-        const Sound sound = gunshots_[static_cast<std::size_t>(gun.sound) % gunshots_.size()][gunshot_index_++ % 3];
-        if (IsSoundValid(sound)) { SetSoundPitch(sound, gun.sound_pitch); PlaySound(sound); }
-    }
+    (void)weapon; // gunfire itself is GunAudio's (each gun's own report, placed in the world)
     if (events.reload_started && IsSoundValid(reload_)) PlaySound(reload_);
     if (events.target_hits > 0 && IsSoundValid(hit_)) PlaySound(hit_);
     if (events.dry_fire && IsSoundValid(dry_)) PlaySound(dry_);

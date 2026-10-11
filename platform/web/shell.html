@@ -44,14 +44,18 @@ document.getElementById('start').addEventListener('click',function(){
  if(this.disabled)return;
  this.disabled=true;document.getElementById('status').textContent='Starting Verda…';
  try{
-  Module.canvas.focus();resumeAudio();Module.callMain([]);
+  Module.canvas.focus();Module.callMain([]);
+  resumeAudio(); // the audio device exists now; resuming inside this tap unlocks it on iOS
   document.getElementById('gate').style.display='none';
  }catch(error){showStartupError('Unable to start OUTLAND: '+String(error));}
 });
 Module.canvas.addEventListener('webglcontextlost',event=>{
  event.preventDefault();showStartupError('The graphics context was lost. Reload OUTLAND to restart.');
 });
-Module.canvas.addEventListener('touchstart',resumeAudio,{passive:true});Module.canvas.addEventListener('mousedown',resumeAudio);
+// Safari only lets a page start sound from touchend/click (not touchstart): resume on all of
+// them, everywhere, so the first tap on any control brings the guns' audio up.
+for(const type of ['touchstart','touchend','mousedown','click','keydown'])
+ document.addEventListener(type,resumeAudio,{passive:true,capture:true});
 document.getElementById('fullscreen').addEventListener('click',async function(){
  try{if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else Module.outlandStorageWarning('Safari uses landscape browser mode. Add to Home Screen to hide browser chrome.');
  if(screen.orientation && screen.orientation.lock)await screen.orientation.lock('landscape');}catch(e){/* Safari landscape remains usable without fullscreen. */}

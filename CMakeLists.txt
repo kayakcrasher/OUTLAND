@@ -141,6 +141,7 @@ add_library(
     src/engine/render/GeometryRecorder.cpp
     src/engine/render/StaticWorld.cpp
     src/engine/audio/EnvironmentAudio.cpp
+    src/engine/audio/GunAudio.cpp
     src/game/combat/CombatWorld.cpp
     src/game/combat/WeaponSystem.cpp
     src/game/combat/CombatFeedback.cpp
@@ -506,6 +507,10 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_grenade_feedback_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_grenade_feedback_tests COMMAND outland_grenade_feedback_tests)
 
+    add_executable(outland_gun_audio_tests tests/unit/audio/test_gun_mix.cpp)
+    target_link_libraries(outland_gun_audio_tests PRIVATE outland_render)
+    target_compile_options(outland_gun_audio_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_gun_audio_tests COMMAND outland_gun_audio_tests)
     add_executable(outland_combat_input_tests tests/integration/world/test_combat_input.cpp src/input/InputSystem.cpp)
     target_include_directories(outland_combat_input_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_combat_input_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -679,6 +684,7 @@ if(OUTLAND_BUILD_TESTS)
         add_test(NAME outland_survival_catalog_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_survival_catalog.py" --check)
         add_test(NAME outland_generated_vehicle_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_truck_model.py" --check)
         add_test(NAME outland_generated_grenade_model COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_grenade_model.py" --check)
+        add_test(NAME outland_generated_weapon_audio COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_weapon_audio.py" --check)
         add_test(NAME outland_city_kit_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_city_kit.py" --check)
         file(GLOB OUTLAND_TRAILER_MODELS "${PROJECT_SOURCE_DIR}/assets/verda/residential/trailers/*.glb")
         add_test(NAME outland_trailer_texture_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/convert_glb_jpeg_to_png.py" --check ${OUTLAND_TRAILER_MODELS})

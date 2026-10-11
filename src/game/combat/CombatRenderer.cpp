@@ -177,12 +177,8 @@ void CombatRenderer::draw_world(const WeaponSystem& weapons,const CombatWorld& w
         DrawCube({target.center.x-(1-target.health/100)*.5F,target.center.y+1.2F,target.center.z+.025F},
                  target.health/100,.07F,.02F,Color{132,194,101,255});
     }
-    for(const auto& bullet:weapons.bullets()) {
-        if(!bullet.active)continue;
-        const auto trail=Vector3Scale(Vector3Normalize(bullet.velocity),bullet.tracer ? 3.0F : .65F);
-        DrawLine3D(Vector3Subtract(bullet.position,trail),bullet.position,
-                   bullet.tracer ? Color{255,221,128,255} : Color{184,179,140,255});
-    }
+    // Bullets are not drawn in flight (no tracer "lasers"): the muzzle flash, the report and the
+    // impact tell the story, as in PUBG.
     for(const auto& impact:weapons.impacts()) {
         if(impact.life<=0)continue;
         const float age=.4F-impact.life;

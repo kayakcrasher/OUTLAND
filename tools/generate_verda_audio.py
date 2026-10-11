@@ -96,10 +96,10 @@ def generate(output):
     for surface in ["grass","dirt","gravel"]:
         for variant in range(3):
             write_wav(output/f"step_{surface}_{variant}.wav",footstep(surface,variant))
-    for kind in ["pistol","rifle","reload","target_hit","dry_fire"]:
-        filename=f"gunshot_{kind}.wav" if kind in ["pistol","rifle"] else f"{kind}.wav"
-        write_wav(output/filename,combat_sound(kind))
-    print(f"Generated wind, 9 footsteps and 5 combat sounds in {output}")
+    # Gunshots and blasts are tools/generate_weapon_audio.py's (assets/audio/weapons).
+    for kind in ["reload","target_hit","dry_fire"]:
+        write_wav(output/f"{kind}.wav",combat_sound(kind))
+    print(f"Generated wind, 9 footsteps and 3 combat sounds in {output}")
 
 
 if __name__ == "__main__":

@@ -45,7 +45,7 @@ def validate(root):
     assert "map_Kd palette.png" in (kit/"palette.mtl").read_text()
     audio=root/"assets/audio/environment"
     wavs=list(audio.glob("*.wav"))
-    assert len(wavs)==15
+    assert len(wavs)==13  # wind, 9 footsteps, reload, hit, dry fire (gunfire: assets/audio/weapons)
     for path in wavs:
         with wave.open(str(path),"rb") as f:
             assert (f.getnchannels(),f.getsampwidth(),f.getframerate())==(1,2,22050),path

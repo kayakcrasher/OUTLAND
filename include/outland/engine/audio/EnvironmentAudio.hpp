@@ -26,9 +26,7 @@ public:
 private:
     Music wind_{};
     std::array<std::array<Sound, 3>, 3> steps_{};
-    std::array<std::array<Sound, 3>, 2> gunshots_{};
     Sound reload_{}, hit_{}, dry_{};
-    unsigned int gunshot_index_{0};
     bool owns_device_{false};
     bool ready_{false};
     bool muted_{false};
