@@ -1,0 +1,41 @@
+OUTLAND — Verda Transit / Roadside Kit
+
+Source:
+https://elbolilloduro.itch.io/bus-stop
+
+Creator:
+Elbolilloduro
+
+Original archive:
+Bus_stop.rar
+
+Original formats:
+FBX + external textures
+
+OUTLAND intake:
+Raw archive retained under:
+assets/source/elbolilloduro/bus_stop/
+
+Staging retained under:
+assets/staging/bus_stop/
+
+Curated production assets:
+- bus_stop.glb
+- bus_stop_alt.glb
+- bus_stop_sign.glb
+- bus_stop_sign_01.glb
+- bus_stop_sign_02.glb
+- lamppost.glb
+- lamppost_01.glb
+- concrete.glb
+- asphalt.glb
+- fence_wire.glb
+
+Notes:
+- Whole scene FBX files are NOT shipped as production assets.
+- Trees, plants, houses, terrain dressing, skyboxes and redundant scenery were excluded.
+- Fence and wire are preserved together because Wire appears as material content rather than a standalone source mesh.
+- Source archive contains no embedded README or license file.
+- Creator page identifies the model assets as CC0.
+- Some source textures have third-party origins according to the creator page.
+- Texture licensing should receive a final release review before public/commercial distribution.
