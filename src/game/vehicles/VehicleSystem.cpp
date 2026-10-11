@@ -221,7 +221,10 @@ bool VehicleSystem::reconcile(world::VerdaRegion &region) {
                     a.position.y =
                         world::terrain::TerrainHeight::sample(m.position.x, m.position.z);
                     a.rotation_y = m.rotation_y;
-                    const float scale = std::clamp(m.size.x / 3.0F, .25F, 4.0F);
+                    // Vehicles spawn at their real size (the manifest's metres). Marker sizes are
+                    // only a parking footprint hint: most are 2 m wide, which used to shrink every
+                    // parked car to two-thirds scale - toy cars next to full-size people.
+                    const float scale = 1;
                     a.size = {d->width * scale, d->height * scale, d->length * scale};
                     a.vehicle.definition = d->id;
                     a.vehicle.marker = m.id;
