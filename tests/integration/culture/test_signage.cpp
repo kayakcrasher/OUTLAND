@@ -175,7 +175,10 @@ int main() {
     std::set<std::string> line_towns;
     for (const auto& sign : signage.signs)
         if (sign.kind == SignKind::BusStop && all_text(sign).find("LINIO 1 · INSULA RONDO") != std::string::npos) line_towns.insert(sign.front[1].text);
-    check(line_stops == static_cast<int>(region.settlements().size()) && line_towns.size() == region.settlements().size(),
+    std::size_t served = 0; // all but the backcountry and the small highway hamlets
+    for (const auto& town : region.settlements())
+        served += town.id != "ferarbaro_sovagejo" && (!town.id.starts_with("hamlet_") || town.id == "hamlet_ruldomaro");
+    check(line_stops == static_cast<int>(served) && line_towns.size() == served,
           "a named Linio 1 stop in every town: " + std::to_string(line_towns.size()));
 
     // Flags: town squares, police and town halls, the tallest towers.
@@ -193,7 +196,7 @@ int main() {
     int sovagejo_crosses = 0, crosses = 0;
     for (const auto& flag : signage.flags) if (flag.design == FlagDesign::Apelacio) {
         ++crosses;
-        if (std::hypot(flag.base.x + 1900, flag.base.z - 610) < 140) ++sovagejo_crosses;
+        if (std::hypot(flag.base.x + 1790, flag.base.z - 90) < 140) ++sovagejo_crosses;
         check(!world::physics::WorldCollision::body_blocked(flag.base, flag.base.y, region, .4F), "trailer flagpole stands clear: " + flag.place);
     }
     check(sovagejo_crosses >= 10 && sovagejo_crosses * 2 > crosses, "Sovaĝejo's trailer park flies the most Apelacio flags: " + std::to_string(sovagejo_crosses));

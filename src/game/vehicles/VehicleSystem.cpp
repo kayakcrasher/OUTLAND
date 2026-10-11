@@ -79,7 +79,7 @@ bool VehicleSystem::spawn(world::VerdaRegion &region, Vector3 near, float yaw,
                           std::string_view id) {
     const auto *d = registry_.find(id);
     if (!d || !finite(near) || !std::isfinite(yaw) || region.settlements().empty() ||
-        vehicles_.size() >= 128)
+        vehicles_.size() >= max_vehicles)
         return false;
     for (float offset : {4.0F, 6.0F, 8.0F})
         for (float side : {1.0F, -1.0F}) {
@@ -207,7 +207,7 @@ bool VehicleSystem::reconcile(world::VerdaRegion &region) {
                 const std::string id = "vehicle_marker_" + s.id + "_" + m.id;
                 auto found = std::find_if(s.assets.begin(), s.assets.end(),
                                           [&](const auto &a) { return a.id == id; });
-                if (found == s.assets.end() && m.enabled && placed_count < 128) {
+                if (found == s.assets.end() && m.enabled && placed_count < max_vehicles) {
                     const VehicleDefinition *d = registry_.find("hatchback");
                     for (const auto &definition : registry_.definitions())
                         if (m.id.find("vehicle_spawn_" + definition.id + "_") != std::string::npos)
@@ -276,7 +276,7 @@ bool VehicleSystem::reconcile(world::VerdaRegion &region) {
     for (const auto &s : region.settlements())
         for (const auto &a : s.assets)
             if (!a.vehicle.definition.empty() && registry_.find(a.vehicle.definition) &&
-                vehicles_.size() < 128) {
+                vehicles_.size() < max_vehicles) {
                 auto it = previous.find(a.id);
                 VehicleRuntime v = it == previous.end() ? VehicleRuntime{} : it->second;
                 v.id = a.id;

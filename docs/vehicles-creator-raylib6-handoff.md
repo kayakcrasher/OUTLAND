@@ -55,7 +55,7 @@ interiors. Existing procedural house doorway/vault logic remains intact.
 
 Vehicle rendering, chase-camera smoothing and audio each have dedicated modules.
 Physics sleeps parked/unoccupied vehicles and those outside 180 m; draw distance
-is 300 m; runtime vehicles are capped at 128, definitions at 64, and the vehicle
+is 300 m; runtime vehicles are capped at 144 (`VehicleSystem::max_vehicles`), definitions at 64, and the vehicle
 model cache at 128 body/wheel entries. Collision substeps are capped at 12, with
 nine footprint probes per step (at most 108 existing collision queries for a
 moving car). Cheap per-object broad phases avoid distant trigonometry. Static

@@ -114,7 +114,7 @@ int main() {
     }
     std::cout << "Sovaĝejo: " << trailers << " trailers, " << shacks << " homesteads, " << runners << " cars that run, " << donors
               << " parts donors, roads " << dirt << " dirt / " << gravel << " gravel / " << paved << " paved, " << town->survivors << " people\n";
-    check(paved == 0 && dirt >= 2 && gravel >= 2, "no pavement out here");
+    check(paved == 0 && gravel == 0 && dirt >= 2, "dirt roads only out here");
     check(trailers == 12 && shacks >= 5, "trailers and homesteads");
     check(donors >= 4 && runners >= 8, "a car that runs and the parts donors beside it");
     check(town->survivors >= 40, "people live here");

@@ -71,7 +71,7 @@ int main() {
         check(route.length < flat({3, 0, -30}, town.center) * detour + 60, "the route to " + town.name + " is direct enough: " + std::to_string(route.length));
         for (std::size_t i = 1; i + 1 < route.points.size(); ++i) check(to_road(region, route.points[i]) < .6F, "route stays on roads to " + town.name);
     }
-    check(graph.route({-1900, 0, 612}, {0, 0, 0}).complete, "the trailer park's lane joins the island's roads");
+    check(graph.route({-1790, 0, 90}, {0, 0, 0}).complete, "the trailer park's lane joins the island's roads");
     // Downtown: across the grid, turning at a crossing, keeping right.
     const auto across = graph.route({-120, 0, -86}, {86, 0, 40});
     check(across.complete && across.length < 345, "downtown route: " + std::to_string(across.length));

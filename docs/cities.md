@@ -58,3 +58,30 @@ the capital's population grows by three per house.
 ## Terrain
 `TerrainHeight` levels both suburbs (|x| 150–485, |z| ≤ 190) with downtown, and Porto Luma's
 building pad is 205 m in radius, up from 85 m.
+
+## Roka, the industrial city
+Rebuilt on Porto Luma's plan (`roka_city` in the world kit): a 4 × 4 grid of 12 m streets (±40, ±120
+from the centre) round Placo de la Laboristoj, on a level pad 220 m in radius.
+- North and south of the square: Main Street rows (shops, a pub, rooms above).
+- West blocks: worker flats (eight prebuilt brick and concrete blocks, each a home) and, between
+  them, the town hall and the clinic facing the square.
+- East blocks: yards on asphalt - large sheds, hangars, a two-storey factory, trucks, pallets.
+- West of the grid, along the works road: the works - a long factory hall and a second hall,
+  four sheds, a hangar, pipe runs, barricades and a chainlink-fenced stock yard.
+- The capital highway and the ring-road spur end at the grid's east edge (street z = −40).
+Every home in the city is lived in (no population cap).
+
+## Sovaĝejo
+Now north of Roka, at (−1790, 90), on its own pad: the trailer park's lane runs north–south and a
+dirt road carries on from its gate down to the end of Roka's west avenue, with the six homesteads
+strung along it. All of its roads are dirt, and Linio 1 no longer calls there.
+
+## Highway hamlets
+Besides Ruldomaro, three small trailer stops by the highways, each on a level pad with a gravel lane
+square to the compass and a gravel spur onto the highway: six trailers (homes), a general store, a
+shed, a fire pit, lights, a fence, loot and a couple of cars. No bus stop.
+- **Vojrando** (1312, −239) on the Porto Luma road;
+- **Pinejo** (−965, −1017) on the north-west ring road;
+- **Sablovalo** (−909, 1077) on the south-west ring road.
+They have two zombie nests each (towns have four). Runtime vehicles are capped at 144
+(`VehicleSystem::max_vehicles`; the map has 130 markers).

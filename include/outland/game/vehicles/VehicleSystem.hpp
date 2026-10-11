@@ -30,6 +30,8 @@ struct VehicleEvents {
 inline bool parts_donor(const std::string& marker) { return marker.find("_donor_") != std::string::npos; }
 class VehicleSystem {
   public:
+    // Runtime vehicles at most (parked, driven and spawned together).
+    static constexpr std::size_t max_vehicles = 144;
     explicit VehicleSystem(const VehicleRegistry &registry) : registry_(registry) {}
     bool reconcile(world::VerdaRegion &region);
     bool spawn(world::VerdaRegion &region, Vector3 near, float yaw,

@@ -293,7 +293,7 @@ int main() {
     world::VerdaRegion bounded;
     for (auto &site : bounded.runtime_settlements())
         site.gameplay_markers.clear();
-    for (int i = 0; i < 140; ++i)
+    for (int i = 0; i < 160; ++i)
         bounded.runtime_settlements().front().gameplay_markers.push_back(
             {"vehicle_spawn_hatchback_" + std::to_string(i),
              world::GameplayMarkerType::VehicleSpawn,
@@ -303,7 +303,7 @@ int main() {
              true});
     VehicleSystem fleet(registry);
     fleet.reconcile(bounded);
-    assert(fleet.vehicles().size() == 128);
+    assert(fleet.vehicles().size() == VehicleSystem::max_vehicles);
     assert(!fleet.spawn(bounded, {25, 0, 25}, 0));
     assert(!fleet.reconcile(bounded));
     fs::remove_all(dir);

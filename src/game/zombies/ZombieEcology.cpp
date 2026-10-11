@@ -60,7 +60,8 @@ void ZombieEcology::build(const world::VerdaRegion& region, const characters::Ch
         const auto& town = settlements[s];
         towns_.push_back(town.center);
         const bool capital = town.id.find("capital") != std::string::npos;
-        const int wanted = town.infected > 0 ? std::clamp(town.infected / 6, 2, 12) : capital ? 8 : 4;
+        const bool hamlet = town.id.starts_with("hamlet_"); // a few trailers: two nests
+        const int wanted = town.infected > 0 ? std::clamp(town.infected / 6, 2, 12) : capital ? 8 : hamlet ? 2 : 4;
         const float reach = capital ? 150.0F : 90.0F;
         int placed = 0;
         for (int attempt = 0; attempt < 80 && placed < wanted; ++attempt) {
@@ -246,7 +247,7 @@ void ZombieEcology::manage_hordes(float dt) {
     for (const auto& z : zombies_)
         if ((z.state == ZombieState::Wander || z.state == ZombieState::Dormant) && !z.physical) ++counts[static_cast<std::size_t>(z.source)];
     std::vector<std::size_t> ready;
-    for (std::size_t s = 0; s < sources_.size(); ++s) if (counts[s] >= 5 && flat(sources_[s].position, player_) > config_.materialize_radius) ready.push_back(s);
+    for (std::size_t s = 0; s < sources_.size(); ++s) if (counts[s] >= 4 && flat(sources_[s].position, player_) > config_.materialize_radius) ready.push_back(s);
     if (ready.empty()) return;
     const auto from = ready[static_cast<std::size_t>(random() * static_cast<float>(ready.size())) % ready.size()];
     // Destination: the player's town half the time, otherwise another town.

@@ -256,10 +256,19 @@ float TerrainHeight::sample(
         for (std::size_t i=1;i<layout::sites.size();++i) {
             const auto c=layout::sites[i].center;
             const float d=std::hypot(world_x-c.x,world_z-c.z);
-            const float flat=layout::sites[i].id=="port_luma"?layout::port_flat_radius:layout::town_flat_radius;
+            const float flat=layout::sites[i].id=="port_luma"?layout::port_flat_radius:layout::sites[i].id=="west_roka"?layout::roka_flat_radius:layout::town_flat_radius;
             if(d<flat+65) {
                 const float pad=std::max(6.0F,large_hills(c.x,c.z)+rolling_ground(c.x,c.z)+small_variation(c.x,c.z));
                 const float blend=smooth((d-flat)/65);
+                height=pad*(1-blend)+height*blend;
+            }
+        }
+        {
+            const auto c=layout::sovagejo_center;
+            const float d=std::hypot(world_x-c.x,world_z-c.z);
+            if(d<layout::sovagejo_flat_radius+60) {
+                const float pad=std::max(6.0F,large_hills(c.x,c.z)+rolling_ground(c.x,c.z)+small_variation(c.x,c.z));
+                const float blend=smooth((d-layout::sovagejo_flat_radius)/60);
                 height=pad*(1-blend)+height*blend;
             }
         }

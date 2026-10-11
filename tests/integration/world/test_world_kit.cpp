@@ -5,7 +5,9 @@
 #include "outland/game/vehicles/VehicleSystem.hpp"
 #include "outland/game/life/LifeSimulation.hpp"
 #include "outland/characters/NpcSystem.hpp"
+#include "outland/world/VerdaLayout.hpp"
 #include "outland/world/VerdaRegion.hpp"
+#include "outland/world/roads/RoadGraph.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
@@ -99,8 +101,8 @@ int main() {
     }
     check(two_storey >= 30, "many multi-storey buildings: " + std::to_string(two_storey));
 
-    // Roka's trailer park (twelve mobile homes) and Ruldomaro's (eight): every one walkable from
-    // the lane through its door.
+    // Sovaĝejo's trailer park (twelve mobile homes), Ruldomaro's (eight) and the three highway
+    // hamlets' (six each): every one walkable from the lane through its door.
     {
         check(report.parks == 1, "trailer park built");
         int trailers = 0, entered = 0;
@@ -133,31 +135,79 @@ int main() {
             if (std::hypot(p.x - inside.x, p.z - inside.z) < .2F && p.y > asset.position.y + .6F) ++entered;
             else std::cerr << "  could not enter trailer " << model << " at " << asset.position.x << "," << asset.position.z << '\n';
         }
-        check(trailers == 20, "twenty trailers: " + std::to_string(trailers));
+        check(trailers == 38, "thirty-eight trailers: " + std::to_string(trailers));
         check(entered == trailers, "walk into every trailer: " + std::to_string(entered) + "/" + std::to_string(trailers));
     }
 
-    // Ruldomaro: a trailer-park hamlet off the eastern ring road, on a level pad, with gravel
-    // roads to the highway, a general store, loot of every kind, and people.
+    // The hamlets: Ruldomaro off the eastern ring road (eight trailers and a bus stop) and three
+    // highway stops of six - each on a level pad, with a gravel lane and a gravel spur to the
+    // highway, a general store, loot of every kind, and people.
     {
-        check(report.hamlets == 1, "Ruldomaro built");
-        const world::Settlement* hamlet = nullptr;
-        for (const auto& s : region.settlements()) if (s.id == "hamlet_ruldomaro") hamlet = &s;
-        check(hamlet && hamlet->name == "Ruldomaro" && hamlet->survivors >= 20, "Ruldomaro is a settlement with people");
-        int gravel = 0;
-        for (const auto& road : hamlet->roads) gravel += road.type == world::RoadType::Gravel;
-        check(gravel == 2, "a gravel lane and a gravel spur to the highway");
-        std::set<std::string> tables;
-        for (const auto& m : hamlet->gameplay_markers)
-            if (m.type == world::GameplayMarkerType::LootSpawn) tables.insert(m.id.substr(11, m.id.find('_', 11) - 11));
-        check(tables.count("camp") && tables.count("general") && tables.count("weapons") && tables.count("medical"), "loot of every kind");
-        int homes = 0;
-        for (const auto& s : region.settlements()) for (const auto& m : s.gameplay_markers)
-            homes += m.type == world::GameplayMarkerType::BuildingPurpose && m.purpose == world::BuildingPurpose::Home &&
-                     std::hypot(m.position.x - hamlet->center.x, m.position.z - hamlet->center.z) < 70;
-        check(homes == 8, "eight homes: " + std::to_string(homes));
-        const float h = world::terrain::TerrainHeight::sample(hamlet->center.x, hamlet->center.z);
-        for (const float o : {-60.0F, 60.0F}) check(std::abs(world::terrain::TerrainHeight::sample(hamlet->center.x + o, hamlet->center.z + o * .4F) - h) < .05F, "on a level pad");
+        check(report.hamlets == 4, "four hamlets built: " + std::to_string(report.hamlets));
+        for (const auto& site : world::layout::hamlets) {
+            const world::Settlement* hamlet = nullptr;
+            for (const auto& s : region.settlements()) if (s.id == site.id) hamlet = &s;
+            const std::string name(site.name);
+            check(hamlet && hamlet->name == name && hamlet->survivors >= 14, name + " is a settlement with people");
+            int gravel = 0;
+            for (const auto& road : hamlet->roads) gravel += road.type == world::RoadType::Gravel;
+            check(gravel == 2, name + ": a gravel lane and a gravel spur to the highway");
+            std::set<std::string> tables;
+            for (const auto& m : hamlet->gameplay_markers)
+                if (m.type == world::GameplayMarkerType::LootSpawn) tables.insert(m.id.substr(11, m.id.find('_', 11) - 11));
+            check(tables.count("camp") && tables.count("general") && tables.count("weapons") && tables.count("medical"), name + ": loot of every kind");
+            int homes = 0;
+            for (const auto& s : region.settlements()) for (const auto& m : s.gameplay_markers)
+                homes += m.type == world::GameplayMarkerType::BuildingPurpose && m.purpose == world::BuildingPurpose::Home &&
+                         std::hypot(m.position.x - hamlet->center.x, m.position.z - hamlet->center.z) < 70;
+            check(homes == (site.id == "hamlet_ruldomaro" ? 8 : 6), name + " homes: " + std::to_string(homes));
+            const float h = world::terrain::TerrainHeight::sample(hamlet->center.x, hamlet->center.z);
+            for (const float o : {-60.0F, 60.0F}) check(std::abs(world::terrain::TerrainHeight::sample(hamlet->center.x + o, hamlet->center.z + o * .4F) - h) < .05F, name + " on a level pad");
+            // Off a highway: the spur ends on one of the capital's roads.
+            const auto& spur = hamlet->roads.back();
+            bool joins = false;
+            for (const auto& s : region.settlements()) if (s.id == "capital_verda") for (const auto& road : s.roads) {
+                const float dx = road.end.x - road.start.x, dz = road.end.z - road.start.z, l2 = dx * dx + dz * dz;
+                if (l2 < 1) continue;
+                const float t = std::clamp(((spur.end.x - road.start.x) * dx + (spur.end.z - road.start.z) * dz) / l2, 0.0F, 1.0F);
+                joins |= std::hypot(spur.end.x - road.start.x - dx * t, spur.end.z - road.start.z - dz * t) < .5F;
+            }
+            check(joins, name + " joins a highway");
+        }
+    }
+
+    // Roka is an industrial city: a 4 x 4 street grid with the highways ending at its east edge,
+    // works west of it, worker flats, and on a wide level pad. Sovaĝejo is north of it at the end
+    // of a dirt road.
+    {
+        check(report.cities == 1, "Roka rebuilt as a city");
+        const world::Settlement* roka = nullptr;
+        const world::Settlement* sovagejo = nullptr;
+        for (const auto& s : region.settlements()) { if (s.id == "west_roka") roka = &s; if (s.id == "ferarbaro_sovagejo") sovagejo = &s; }
+        check(roka && sovagejo, "Roka and Sovaĝejo");
+        int grid = 0;
+        for (const auto& road : roka->roads) grid += road.type == world::RoadType::Asphalt && road.width >= 12;
+        check(grid == 8, "Roka's street grid: " + std::to_string(grid));
+        for (const auto& s : region.settlements()) for (const auto& road : s.roads)
+            for (const auto& end : {road.start, road.end}) check(std::hypot(end.x - roka->center.x, end.z - roka->center.z) > 1, "no road ends in the middle of the square");
+        int works = 0, flats = 0, sheds = 0;
+        for (const auto& s : region.settlements()) for (const auto& asset : s.assets) {
+            if (std::hypot(asset.position.x - roka->center.x, asset.position.z - roka->center.z) > 230) continue;
+            flats += asset.model_path.find("Buildings Prebuild/flat_") != std::string::npos;
+            sheds += asset.model_path.find("Large Shed") != std::string::npos || asset.model_path.find("Hangar1") != std::string::npos;
+        }
+        for (const auto& b : report.enterable) works += std::hypot(b.origin.x - roka->center.x + 165, b.origin.z - roka->center.z) < 70;
+        check(flats == 8 && sheds >= 8 && works == 2, "flats, sheds and factory halls: " + std::to_string(flats) + "/" + std::to_string(sheds) + "/" + std::to_string(works));
+        const float h = world::terrain::TerrainHeight::sample(roka->center.x, roka->center.z);
+        for (const auto& [x, z] : std::initializer_list<std::pair<float, float>>{{-180, 0}, {120, 120}, {-120, -120}, {180, -60}})
+            check(std::abs(world::terrain::TerrainHeight::sample(roka->center.x + x, roka->center.z + z) - h) < .05F, "Roka on a level pad");
+        check(sovagejo->center.z < roka->center.z - 300 && std::abs(sovagejo->center.x - roka->center.x) < 80, "Sovaĝejo is north of Roka");
+        for (const auto& road : sovagejo->roads) check(road.type == world::RoadType::Dirt, "a dirt road out to Sovaĝejo");
+        world::roads::RoadGraph graph(region);
+        check(graph.route(sovagejo->center, roka->center).complete, "the dirt road joins Roka's streets");
+        for (const auto& s : region.settlements()) for (const auto& asset : s.assets)
+            if (asset.model_path.find("transit/bus_stop") != std::string::npos)
+                check(std::hypot(asset.position.x - sovagejo->center.x, asset.position.z - sovagejo->center.z) > 300, "no bus stop at Sovaĝejo");
     }
 
     // Downtown: the old capital is gone, the grid is in, highways meet the grid edge.
@@ -313,6 +363,12 @@ int main() {
         for (const auto& place : life.places())
             store |= place.kind == game::life::PlaceKind::Shop && std::hypot(place.door.x - 997, place.door.z + 997) < 70;
         check(store, "Ruldomaro has a store");
+        for (const auto& site : world::layout::hamlets) {
+            bool shop = false;
+            for (const auto& place : life.places())
+                shop |= place.kind == game::life::PlaceKind::Shop && std::hypot(place.door.x - site.center.x, place.door.z - site.center.z) < 70;
+            check(shop, std::string(site.name) + " has a store");
+        }
     }
     // Part-built buildings carry authored purposes (markers inside the front door), so island life
     // houses and employs people in them; the works and harbour offices are offices.

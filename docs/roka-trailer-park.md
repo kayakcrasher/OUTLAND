@@ -77,3 +77,8 @@ not down its own lanes.
 
 **Collision fix:** the world kit now tests lots against roads using the lot's real, rotated
 rectangle rather than its bounding box. Before, nothing could be placed beside a diagonal road.
+
+## Moved north (update)
+The park now stands north of Roka at (−1790, 90) with its lane running north–south; a dirt road
+(no longer gravel) runs from the gate down to Roka's west avenue, and the homesteads line that road.
+There is no bus stop. Dev spawn at the gate: `OUTLAND_DEV_SPAWN="-1790,150,180"`.

@@ -18,8 +18,16 @@ inline constexpr std::array<Site, 5> sites{
      {"west_roka", "Roka", "western industrial town", {-1750, 0, 450}}}};
 // Hamlets: small places the world kit builds off the highways, each on its own level pad. They
 // are not sites (no highway of their own); the ring road passes them.
-inline constexpr std::array<Site, 1> hamlets{
-    {{"hamlet_ruldomaro", "Ruldomaro", "trailer-park hamlet on the eastern ring road", {997, 0, -997}}}};
+inline constexpr std::array<Site, 4> hamlets{
+    {{"hamlet_ruldomaro", "Ruldomaro", "trailer-park hamlet on the eastern ring road", {997, 0, -997}},
+     {"hamlet_vojrando", "Vojrando", "highway stop on the Porto Luma road", {1312, 0, -239}},
+     {"hamlet_pinejo", "Pinejo", "pine-wood trailer stop on the north-west ring road", {-965, 0, -1017}},
+     {"hamlet_sablovalo", "Sablovalo", "sandy-valley trailer stop on the south-west ring road", {-909, 0, 1077}}}};
+// Roka is an industrial city: a street grid with works to the west, on a wide pad like Porto Luma's.
+inline constexpr float roka_flat_radius = 220;
+// Sovaĝejo, the backcountry settlement, sits north of Roka at the end of a dirt road, on its own pad.
+inline constexpr Vector3 sovagejo_center{-1790, 0, 90};
+inline constexpr float sovagejo_flat_radius = 95;
 inline constexpr float hamlet_flat_radius = 72;
 inline constexpr Vector3 legacy_espera{0, 0, -70};
 inline constexpr float sea_level = -32;

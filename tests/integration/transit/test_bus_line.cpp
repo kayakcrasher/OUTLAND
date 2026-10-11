@@ -45,7 +45,12 @@ int main() {
     std::cout << line.stops().size() << " stops, " << line.buses().size() << " buses, " << line.turnarounds() << " turnarounds, loop " << line.loop().length / 1000 << " km:";
     for (const auto& stop : line.stops()) std::cout << ' ' << stop.town;
     std::cout << '\n';
-    check(line.stops().size() == region.settlements().size(), "a stop in every town");
+    // Every town has a stop but the backcountry (Sovaĝejo) and the small highway hamlets.
+    std::size_t served = 0;
+    for (const auto& town : region.settlements())
+        served += town.id != "ferarbaro_sovagejo" && (!town.id.starts_with("hamlet_") || town.id == "hamlet_ruldomaro");
+    check(line.stops().size() == served, "a stop in every town");
+    for (const auto& stop : line.stops()) check(stop.town != "Sovaĝejo", "no bus out to Sovaĝejo");
     std::set<std::string> towns;
     for (const auto& stop : line.stops()) towns.insert(stop.town);
     check(towns.size() == line.stops().size() && line.stops().front().town == "Verda", "every town once, starting at the capital");
