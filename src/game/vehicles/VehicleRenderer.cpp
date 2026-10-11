@@ -16,7 +16,8 @@ void VehicleRenderer::draw(const VehicleSystem &system, const world::VerdaRegion
         if (!body)
             continue;
         const float scale = a->size.x / d->width;
-        const Color tint = a->vehicle.destroyed ? Color{75, 65, 57, 255} : WHITE;
+        const bool donor = parts_donor(a->vehicle.marker);
+        const Color tint = a->vehicle.destroyed ? Color{75, 65, 57, 255} : donor ? Color{176, 150, 128, 255} : WHITE;
         rlPushMatrix();
         rlTranslatef(a->position.x, a->position.y, a->position.z);
         rlRotatef(a->rotation_y, 0, 1, 0);
@@ -43,6 +44,13 @@ void VehicleRenderer::draw(const VehicleSystem &system, const world::VerdaRegion
                 const auto anchors = d->anchors();
                 for (std::size_t i = 0; i < 4; ++i) {
                     const auto p = Vector3Scale(anchors[i], scale);
+                    if (donor && a->vehicle.tires[i] <= 0) {
+                        // Wheel gone: the axle rests on stacked cinder blocks.
+                        const float h = d->wheel_radius * scale * 1.6F;
+                        DrawCube({p.x, h * .5F, p.z}, .38F, h, .3F, Color{128, 126, 120, 255});
+                        DrawCubeWires({p.x, h * .5F, p.z}, .38F, h, .3F, Color{90, 88, 84, 255});
+                        continue;
+                    }
                     rlPushMatrix();
                     rlTranslatef(p.x, p.y, p.z);
                     if (i < 2)

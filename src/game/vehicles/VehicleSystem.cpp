@@ -150,7 +150,7 @@ void VehicleSystem::restore_checkpoint(world::VerdaRegion& region,const std::vec
 }
 void VehicleSystem::reset_match_fleet(world::VerdaRegion& region) {
     leave_session();
-    for(auto& town:region.runtime_settlements()) for(auto& a:town.assets) if(!a.vehicle.definition.empty()) {
+    for(auto& town:region.runtime_settlements()) for(auto& a:town.assets) if(!a.vehicle.definition.empty() && !parts_donor(a.vehicle.marker)) {
         a.position=a.vehicle.home;a.position.y=world::terrain::TerrainHeight::sample(a.position.x,a.position.z);
         a.rotation_y=a.vehicle.home_yaw;a.vehicle.health=a.vehicle.engine=100;a.vehicle.fuel=1;
         a.vehicle.tires.fill(100);a.vehicle.destroyed=false;
@@ -193,6 +193,13 @@ bool VehicleSystem::reconcile(world::VerdaRegion &region) {
                     a.vehicle.marker = m.id;
                     a.vehicle.home = m.position;
                     a.vehicle.home_yaw = m.rotation_y;
+                    if (parts_donor(m.id)) {
+                        // A parts donor: no engine, no fuel, wheels taken for the car that runs.
+                        a.vehicle.engine = 0; a.vehicle.fuel = 0; a.vehicle.health = 55;
+                        const auto h = std::hash<std::string>{}(m.id);
+                        for (std::size_t i = 0; i < a.vehicle.tires.size(); ++i) a.vehicle.tires[i] = (h >> i) % 3 == 0 ? 100 : 0;
+                        a.vehicle.tires[h % 4] = 0;
+                    }
                     s.assets.push_back(a);
                     ++placed_count;
                     changed = true;
@@ -255,7 +262,7 @@ int VehicleSystem::nearest(const world::VerdaRegion &r, Vector3 p, float radius)
     float best = radius * radius;
     for (std::size_t i = 0; i < vehicles_.size(); ++i) {
         const auto *a = asset(r, vehicles_[i].id);
-        if (!a || !a->vehicle.enabled || a->vehicle.destroyed)
+        if (!a || !a->vehicle.enabled || a->vehicle.destroyed || parts_donor(a->vehicle.marker))
             continue;
         // Distance to the car body: standing at a door or bumper counts, not only near its centre.
         float d = distance(p, a->position);

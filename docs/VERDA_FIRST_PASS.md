@@ -44,7 +44,7 @@ Wind streams and loops; footsteps are loaded once. Roughly one footstep plays pe
 Jumping, menu entry, and teleporting reset the cadence. Missing files or audio-device
 failure do not stop the game. The audio device and sounds are released on exit.
 
-Tap/click the upper-right audio button or press **M** to mute.
+Tap/click the upper-right audio button or press **N** to mute (**M** opens the map).
 **[** lowers volume; **]** raises it. Master level starts at 65%, with quieter
 wind and footsteps mixed separately. These settings are session-only.
 The first environment audio pass now has accompanying gunshots, reload and hit sounds;

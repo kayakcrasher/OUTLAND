@@ -409,15 +409,94 @@ void roka(Kit& kit) {
     for (int i = 0; i < 4; ++i) kit.put(urban + "Pipes/pipe_rusted.glb", {c.x - 75, 0, c.z - 25 + i * 2.0F}, 0);
 }
 
-// ------------------------------------------------------------------ Roka trailer park
+// ------------------------------------------------------------------ Sovaĝejo's trailer park
 // Single-wide mobile homes (Trailer Park pack) south-west of Roka, on the flat ground between the
 // industrial yard and the hills: two rows of lots off a gravel lane, porches and steps toward the
 // lane, cars on pads, a fire pit, a chainlink perimeter, and a gravel road into town. The trailers
 // are enterable (their doors are knocked out in MeshCollision) and every one is a HOME.
 const std::string trailers = "assets/verda/residential/trailers/";
+// ------------------------------------------------------------------ Sovaĝejo
+// The heart of Ferarbaro, Verda's backcountry: the trailer park plus homesteads strung along a
+// dirt road south of Roka. Patched rather than ruined - workshops and lean-tos, a car that runs
+// and the parts donors on blocks beside it, rain barrels, firewood, pallets and a fire pit.
+constexpr std::string_view sovagejo_id = "ferarbaro_sovagejo";
+world::Settlement* sovagejo(world::VerdaRegion& region) {
+    for (auto& settlement : region.runtime_settlements()) if (settlement.id == sovagejo_id) return &settlement;
+    world::Settlement town;
+    town.id = std::string(sovagejo_id);
+    town.name = "Sovaĝejo";
+    town.center = {-1820, 0, 640};
+    town.state = world::SettlementState::Peaceful;
+    region.runtime_settlements().push_back(std::move(town));
+    return &region.runtime_settlements().back();
+}
+void car_marker(world::Settlement& town, Vector3 at, float yaw, bool donor, int& count) {
+    world::GameplayMarker car;
+    car.id = std::string(donor ? "vehicle_spawn_hatchback_donor_" : "vehicle_spawn_hatchback_") + "sovagejo_" + std::to_string(++count);
+    car.type = world::GameplayMarkerType::VehicleSpawn;
+    car.position = {at.x, world::terrain::TerrainHeight::sample(at.x, at.z), at.z};
+    car.size = {2, 1.6F, 4.4F};
+    car.rotation_y = yaw;
+    town.gameplay_markers.push_back(car);
+}
+// One homestead facing its road: `front` is the yard's edge on the road, `yaw` turns local +z
+// (house -> road) into the world.
+void homestead(Kit& kit, world::Settlement& town, Vector3 front, float yaw, std::uint32_t seed, int& cars) {
+    const auto at = [&](float x, float z) { return to_world(front, yaw, x, 0, z); };
+    const auto r = hash(seed);
+    // House: a shack or a small timber home, door to the road.
+    const auto house = at(0, -11);
+    if (!kit.claim(house, 4, 4, yaw)) return;
+    kit.put(shacks + "Shack A.glb", house, yaw + 180);
+    // Workshop: a second shack for the ones who fix everything, and a lean-to carport.
+    if (r % 3 == 0) {
+        const auto shop = at(11, -13);
+        if (kit.claim(shop, 2.2F, 2.2F, yaw)) kit.put(shacks + "Shack A.glb", shop, yaw + 90);
+    }
+    prop(kit, shacks + (r % 2 ? "Leanto A.glb" : "Leanto B.glb"), at(r % 3 == 0 ? -12 : 9, -10), yaw + 180, 2.2F);
+    // The car that runs, and one or two parts donors on blocks.
+    if (kit.claim(at(-8, -2), 1.4F, 2.6F, yaw)) car_marker(town, at(-8, -2), yaw + 90, false, cars);
+    if (kit.claim(at(6, 1), 1.4F, 2.6F, yaw)) car_marker(town, at(6, 1), yaw + 70 + static_cast<float>(r % 40), true, cars);
+    if (r % 2 == 0 && kit.claim(at(-13, -9), 1.4F, 2.6F, yaw)) car_marker(town, at(-13, -9), yaw + 15, true, cars);
+    // Rain barrels at the house corner, firewood out back, pallets by the workshop, a fire pit.
+    prop(kit, shacks + "Barrel.glb", at(4.6F, -7), static_cast<float>(r % 360), .7F);
+    prop(kit, shacks + "Barrel.glb", at(5.6F, -7.6F), static_cast<float>(r % 90), .7F);
+    for (int i = 0; i < 3; ++i) prop(kit, "assets/verda/survival/runtime/branch.glb", at(-4.0F + i * 1.1F, -17), yaw + 90, .6F);
+    prop(kit, shacks + "Pallet.glb", at(8, -4), yaw + static_cast<float>(r % 30), .9F);
+    if (r % 4 != 1) prop(kit, shacks + "Pallet.glb", at(10, -3), yaw + 80, .9F);
+    if (r % 3 != 2) prop(kit, "assets/verda/survival/runtime/bonfire.glb", at(-5, -20), 0, 1.2F);
+    if (r % 5 == 3) prop(kit, "assets/verda/survival/runtime/Shelter_tent.glb", at(-12, -20), yaw, 2.2F);
+    // A mended wooden fence round the back and one side of the yard; the front stays open to the road.
+    const std::vector<std::string> rails{urban + "Fences/low_wooden_fence/wooden_fence_closed.glb",
+        urban + "Fences/low_wooden_fence/wooden_fence_closed.glb", urban + "Fences/low_wooden_fence/wooden_fence_broken.glb",
+        urban + "Fences/low_wooden_fence/wooden_fence_open.glb"};
+    fence(kit, at(-18, -30), at(18, -30), rails, 2.2F, seed * 7);
+    fence(kit, at(r % 2 ? 18 : -18, -30), at(r % 2 ? 18 : -18, -6), rails, 2.2F, seed * 7 + 3);
+    kit.tree(at(-14, -24));
+    kit.tree(at(5, -25));
+    if (r % 2) kit.tree(at(-16, 0));
+    ++kit.report.homesteads;
+}
+void sovagejo_homesteads(Kit& kit, world::VerdaRegion& region) {
+    auto* town = sovagejo(region);
+    const auto roka = site("west_roka");
+    // The dirt road south from the end of Roka's main street, then west toward the park.
+    const Vector3 a{roka.x, 0, roka.z + 100}, bend{roka.x, 0, roka.z + 270}, end{roka.x - 140, 0, roka.z + 270};
+    town->roads.push_back({a, bend, 5, world::RoadType::Dirt});
+    town->roads.push_back({bend, end, 5, world::RoadType::Dirt});
+    int cars = 0;
+    // Facing the road: houses east of the north-south run face west, and so on.
+    homestead(kit, *town, {a.x + 6, 0, a.z + 60}, -90, 901, cars);
+    homestead(kit, *town, {a.x + 6, 0, a.z + 130}, -90, 902, cars);
+    homestead(kit, *town, {a.x - 6, 0, a.z + 95}, 90, 903, cars);
+    homestead(kit, *town, {bend.x - 45, 0, bend.z + 6}, 180, 904, cars);
+    homestead(kit, *town, {bend.x - 100, 0, bend.z + 6}, 180, 905, cars);
+    homestead(kit, *town, {bend.x - 75, 0, bend.z - 6}, 0, 906, cars);
+    town->survivors += 2 * kit.report.homesteads;
+}
+
 void trailer_park(Kit& kit, world::VerdaRegion& region) {
-    world::Settlement* town = nullptr;
-    for (auto& settlement : region.runtime_settlements()) if (settlement.id == "west_roka") town = &settlement;
+    world::Settlement* town = sovagejo(region);
     if (!town) return;
     const auto c = site("west_roka");
     const Vector3 park{c.x - 150, 0, c.z + 160};
@@ -470,7 +549,7 @@ void trailer_park(Kit& kit, world::VerdaRegion& region) {
     fence(kit, at(52, -24), at(52, -lane_half - 2), chain, 2.46F, 74);
     fence(kit, at(52, lane_half + 2), at(52, 24), chain, 2.46F, 75);
     // The park brings its own people: about three per home (a stated population caps island life).
-    if (town->survivors > 0) town->survivors += homes * 3;
+    town->survivors += homes * 3;
     ++kit.report.parks;
 }
 
@@ -573,6 +652,8 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     suda_haveno(kit);
     espera(kit);
     driveways(kit, region);
+    // Last, so every older piece keeps its id (saves refer to them).
+    sovagejo_homesteads(kit, region);
     return kit.report;
 }
 }

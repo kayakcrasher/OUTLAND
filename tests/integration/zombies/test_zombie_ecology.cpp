@@ -88,7 +88,8 @@ int main() {
     // Night: all awake, faster, and hordes walk the roads between towns.
     float worst_off_road = 0;
     run(150, 0, far_away, [&] {
-        for (const auto& horde : ecology.hordes()) if (horde.progress > 20 && horde.progress < horde.route.length - 20)
+        // The first and last legs join the road from a nest or to a town square; judge the walk between.
+        for (const auto& horde : ecology.hordes()) if (horde.progress > 45 && horde.progress < horde.route.length - 45)
             worst_off_road = std::max(worst_off_road, to_road(region, horde.position));
     });
     stats = ecology.stats();

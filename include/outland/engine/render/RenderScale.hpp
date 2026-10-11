@@ -18,6 +18,16 @@ public:
         }
     }
     float scale() const { return scale_; }
+    // Player setting: adapt (AUTO), or fix the scale (FAST 0.6, SHARP full resolution).
+    // OUTLAND_RENDER_SCALE still wins when set.
+    void set_mode(int mode) {
+        if (std::getenv("OUTLAND_RENDER_SCALE")) return;
+        fixed_ = mode != 0;
+        if (mode == 1) scale_ = .6F;
+        else if (mode == 2) scale_ = 1.0F;
+        else scale_ = std::clamp(scale_, minimum, maximum);
+        elapsed_ = submit_ = 0; frames_ = calm_ = 0;
+    }
     bool fixed() const { return fixed_; }
     // Call once per frame with the last frame's duration and how much of it the CPU spent getting
     // the frame ready (everything before EndDrawing). A slow frame that was mostly CPU work is not

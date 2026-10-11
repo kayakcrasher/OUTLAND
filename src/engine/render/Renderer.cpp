@@ -22,6 +22,8 @@
 #include "outland/game/ModeRules.hpp"
 #include "outland/game/ModeSession.hpp"
 #include "outland/game/PlayUI.hpp"
+#include "outland/game/MapScreen.hpp"
+#include "outland/world/Zones.hpp"
 #include "outland/game/life/LifeSimulation.hpp"
 #include "outland/game/ai/BattleRoyaleBots.hpp"
 #include "outland/game/sound/SoundBus.hpp"
@@ -563,6 +565,27 @@ void Renderer::run() {
         std::string(GetApplicationDirectory()) + "assets/audio/environment"
     );
 
+    // The island map (M / MAP) and the player's settings it carries.
+    game::MapScreen map_screen;
+    game::GameSettings settings;
+    const std::string settings_path=game::GameSettings::path_for(map_path);
+    settings.load(settings_path);
+    const auto apply_settings=[&]() {
+        input_system.layout().look_sensitivity=settings.look_sensitivity;
+        environment_audio.set_volume(settings.volume);
+        if(environment_audio.muted()!=settings.muted) environment_audio.toggle_mute();
+        render_scale.set_mode(static_cast<int>(settings.graphics));
+    };
+    const auto store_settings=[&]() {
+        settings.volume=environment_audio.volume();settings.muted=environment_audio.muted();
+        if(!settings.save(settings_path)) TraceLog(LOG_WARNING,"Settings could not be saved: %s",settings_path.c_str());
+        platform::flush_saves();
+    };
+    apply_settings();
+    // Entering a zone shows its name for a few seconds.
+    int shown_zone=-1;
+    float zone_banner=0;
+
     game::combat::WeaponSystem weapons;
     game::combat::CombatWorld combat_world(verda_region);
     game::Health player_health;
@@ -673,12 +696,12 @@ void Renderer::run() {
             GetScreenHeight();
 
         const Rectangle audio_button{static_cast<float>(screen_width - 174), 44.0F, 162.0F, 34.0F};
-        if (IsKeyPressed(KEY_M) ||
-            (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(), audio_button))) {
-            environment_audio.toggle_mute();
+        if (!map_screen.is_open() && (IsKeyPressed(KEY_N) ||
+            (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(), audio_button)))) {
+            environment_audio.toggle_mute();store_settings();
         }
-        if (IsKeyPressed(KEY_LEFT_BRACKET)) environment_audio.set_volume(environment_audio.volume() - 0.1F);
-        if (IsKeyPressed(KEY_RIGHT_BRACKET)) environment_audio.set_volume(environment_audio.volume() + 0.1F);
+        if (IsKeyPressed(KEY_LEFT_BRACKET)) {environment_audio.set_volume(environment_audio.volume() - 0.1F);store_settings();}
+        if (IsKeyPressed(KEY_RIGHT_BRACKET)) {environment_audio.set_volume(environment_audio.volume() + 0.1F);store_settings();}
 
         // ====================================================
         // HOME SCREEN
@@ -743,6 +766,7 @@ void Renderer::run() {
 #endif
                 weapons.reset(game_mode == game::GameMode::DevLab);
                 if(game_mode!=game::GameMode::DevLab)loot_session.start(game_mode,map_path,weapons);
+                map_screen.close();shown_zone=-1;
 #ifdef OUTLAND_DEV_TOOLS
                 // OUTLAND_DEV_ARMOURY=1: every gun, loaded, for trying them out.
                 if(const char* armoury=std::getenv("OUTLAND_DEV_ARMOURY"); armoury && *armoury=='1' && game_mode!=game::GameMode::DevLab) {
@@ -903,8 +927,21 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
         if(game_mode==game::GameMode::DevLab && !creator_active)reserved=[&](Vector2 point){return CheckCollisionPointRec(point,audio_button)||dev_lab.owns_point(point,screen_width,screen_height);};
 #endif
+        // The map is modal like the bag; MAP / M opens it during play.
+        if(!map_screen.is_open() && game_mode!=game::GameMode::DevLab && !shop_open && !inventory_open && !mode_session.terminal() &&
+           (map_screen.tapped_map_button(screen_width,screen_height,IsWindowFocused()) || (IsWindowFocused() && IsKeyPressed(KEY_M)))) {
+            map_screen.open();input_system.cancel_controls();
+        }
+        if(map_screen.is_open() && mode_session.terminal()) map_screen.close();
         // The equipment panel is modal: BAG closes it and GUN changes equipment.
-        if(shop_open || mode_session.terminal()) {
+        if(map_screen.is_open()) {
+            input_system.update(screen_width,screen_height,true,true,[](Vector2){return true;});
+            input_system.player()={};
+            settings.volume=environment_audio.volume();settings.muted=environment_audio.muted();
+            const auto change=map_screen.update(settings,screen_width,screen_height,IsWindowFocused());
+            if(change!=game::MapScreen::Change::None) {apply_settings();store_settings();}
+            if(change==game::MapScreen::Change::Close) input_system.cancel_controls();
+        } else if(shop_open || mode_session.terminal()) {
             input_system.update(screen_width,screen_height,true,true,[](Vector2){return true;});
             input_system.player()={};
         } else if (inventory_open) {
@@ -2009,8 +2046,32 @@ void Renderer::run() {
 
         DrawRectangleRec(audio_button, Fade(BLACK, 0.60F));
         DrawText(environment_audio.ready() ?
-                 (environment_audio.muted() ? "AUDIO OFF · M" : "AUDIO ON · M") : "AUDIO UNAVAILABLE",
+                 (environment_audio.muted() ? "AUDIO OFF · N" : "AUDIO ON · N") : "AUDIO UNAVAILABLE",
                  screen_width - 165, 53, 14, RAYWHITE);
+        if(game_mode!=game::GameMode::DevLab) {
+            const auto map_button=game::MapScreen::map_button(screen_width,screen_height);
+            DrawRectangleRec(map_button,Fade(BLACK,.60F));
+            DrawText("MAP · M",static_cast<int>(map_button.x)+14,53,14,RAYWHITE);
+            // Entering a zone: its name, what it means, and what it is like.
+            const int here=static_cast<int>(world::zones::zone_at(player.position));
+            if(here!=shown_zone) {shown_zone=here;zone_banner=4.5F;}
+            if(zone_banner>0 && !map_screen.is_open()) {
+                zone_banner-=GetFrameTime();
+                const auto& zone=world::zones::zones[static_cast<std::size_t>(here)];
+                const float alpha=std::clamp(std::min(zone_banner,4.5F-zone_banner)*2,0.0F,1.0F);
+                const Font& font=sign_renderer.font();
+                const std::string title="ZONO "+std::string(zone.name);
+                const float big=34,small=18;
+                const float tw=MeasureTextEx(font,title.c_str(),big,1).x;
+                const std::string sub=std::string(zone.meaning)+"  ·  "+std::string(zone.character);
+                const float sw=MeasureTextEx(font,sub.c_str(),small,1).x;
+                const float top=screen_height*.27F;
+                DrawRectangle(static_cast<int>(screen_width/2-std::max(tw,sw)/2-18),static_cast<int>(top-10),static_cast<int>(std::max(tw,sw)+36),static_cast<int>(big+small+30),Fade(BLACK,.5F*alpha));
+                DrawRectangle(static_cast<int>(screen_width/2-std::max(tw,sw)/2-18),static_cast<int>(top-10),6,static_cast<int>(big+small+30),Fade(zone.color,alpha));
+                DrawTextEx(font,title.c_str(),{screen_width/2-tw/2,top},big,1,Fade(RAYWHITE,alpha));
+                DrawTextEx(font,sub.c_str(),{screen_width/2-sw/2,top+big+6},small,1,Fade(Color{220,226,206,255},alpha));
+            }
+        }
 
 #ifdef OUTLAND_DEV_TOOLS
         if(game_mode==game::GameMode::DevLab)dev_lab.draw_tools(screen_width,screen_height,creator_active);
@@ -2029,6 +2090,12 @@ void Renderer::run() {
         }
         if(shop_open && current_shop) play_ui.draw_shop(economy,*current_shop,loot_session.economy(),item_registry,loot_session.inventory(),shop_status,screen_width,screen_height);
         if(mode_session.terminal()) play_ui.draw_result(mode_session,screen_width,screen_height);
+        if(map_screen.is_open()) {
+            game::MapScreen::View view;
+            view.player=player.position;view.yaw=player.yaw;view.font=&sign_renderer.font();
+            if(game_mode==game::GameMode::BattleRoyale) view.circle_radius=mode_session.radius();
+            map_screen.draw(verda_region,view,settings,screen_width,screen_height);
+        }
         DrawFPS(
             screen_width - 90,
             10

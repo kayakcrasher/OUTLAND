@@ -153,7 +153,9 @@ add_library(
     src/game/economy/Economy.cpp
     src/game/ModeSession.cpp
     src/game/PlayUI.cpp
+    src/game/MapScreen.cpp
     src/world/VerdaRegion.cpp
+    src/world/Zones.cpp
     src/game/HomeScreen.cpp
     src/game/GameMode.cpp
     src/world/foliage/FoliageSystem.cpp
@@ -635,6 +637,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_definitions(outland_traffic_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_traffic_tests COMMAND outland_traffic_tests)
 
+    add_executable(outland_zones_map_tests tests/integration/world/test_zones_map.cpp)
+    target_link_libraries(outland_zones_map_tests PRIVATE outland_render)
+    target_compile_options(outland_zones_map_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_zones_map_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_zones_map_tests COMMAND outland_zones_map_tests)
     add_executable(outland_zombie_ecology_tests tests/integration/zombies/test_zombie_ecology.cpp)
     target_link_libraries(outland_zombie_ecology_tests PRIVATE outland_render)
     target_compile_options(outland_zombie_ecology_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

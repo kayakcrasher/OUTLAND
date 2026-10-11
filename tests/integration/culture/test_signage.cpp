@@ -3,6 +3,7 @@
 #include "outland/game/culture/Signage.hpp"
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/world/VerdaRegion.hpp"
+#include "outland/world/Zones.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
 #include <raymath.h>
@@ -160,6 +161,26 @@ int main() {
     if (square_flags != static_cast<int>(region.settlements().size())) for (const auto& flag : signage.flags) std::cerr << "  flag " << flag.place << '\n';
     check(square_flags == static_cast<int>(region.settlements().size()), "a flag on every town square: " + std::to_string(square_flags));
     check(wall_flags >= 2 && roof_flags >= 2, "police, town hall and tower flags");
+
+    // Ferarbaro's back roads carry hand-painted boards, and only Ferarbaro's.
+    {
+        int homemade = 0;
+        std::set<std::string> said;
+        for (const auto& sign : signage.signs) {
+            if (sign.kind != SignKind::Homemade) continue;
+            ++homemade;
+            said.insert(all_text(sign));
+            check(world::zones::zone_at(sign.position) == world::zones::ZoneId::Ferarbaro, "homemade signs stay in Ferarbaro: " + all_text(sign));
+            check(sign.post > .5F && sign.front.size() <= 2, "a board on a post: " + all_text(sign));
+        }
+        std::cout << homemade << " homemade signs, " << said.size() << " different\n";
+        check(homemade >= 8, "boards along the back roads: " + std::to_string(homemade));
+        check(said.contains("VERDA ESTAS|LIBERA|") && said.contains("LASU NIN|VIVI|") && said.contains("NENIU|MASTRO|"),
+              "VERDA ESTAS LIBERA, LASU NIN VIVI, NENIU MASTRO");
+        bool entry = false;
+        for (const auto& sign : signage.signs) entry |= sign.kind == SignKind::TownEntry && sign.place == "ferarbaro_sovagejo" && all_text(sign).find("SOVAĜEJO") != std::string::npos;
+        check(entry, "BONVENON AL SOVAĜEJO");
+    }
 
     // Deterministic.
     const auto again = build_signage(region, island);

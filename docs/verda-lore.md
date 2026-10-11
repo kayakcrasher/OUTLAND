@@ -42,6 +42,49 @@ These are proposals that fill gaps in the canon. Change them freely.
 | Suda Haveno | south harbour |
 | Roka | rocky |
 | Espera | hopeful |
+| Sovaĝejo | the wild place |
+
+## The five zones (zonoj)
+
+Verda is split into five zones, each grown round one of its towns. Their names and borders show on the map (**M**, or the MAP button), and a banner names each zone as you enter it.
+
+| Zone | Meaning | Seat | Character |
+|---|---|---|---|
+| **Verdkerno** | Green Core | Verda | The capital, farms, administration and infrastructure: the heart of the nation |
+| **Altverdo** | High Green | Espera | Northern highlands: forests, hills, hunting, sparse settlements, colder ground |
+| **Lumamaro** | Sea of Light | Porto Luma | The bright eastern coast: the port, beaches, markets, the lighthouse |
+| **Marĉfluo** | Marsh Flow | Suda Haveno | Southern wetlands: rivers, marshes, reeds, fishing, floodplain life |
+| **Ferarbaro** | Iron Forest | Roka, Sovaĝejo | The western backcountry: gravel roads, trailers, mines, self-reliant people |
+
+### Ferarbaro and Sovaĝejo
+
+Ferarbaro is Verda's backcountry, and **Sovaĝejo** (the wild place) is its heart. These are Esperantists who live farther from the capital, where paved roads give way to gravel and dirt.
+
+- **The land:** trailers sit under trees, and old cars stay alive through sheer stubbornness.
+- **The people:**
+  - Everybody seems to know somebody who can weld, hunt, repair an engine, reload ammunition or get a generator running.
+  - They are not "poor dumb country people". They are mechanically competent, suspicious of bureaucracy, tight-knit, proud, funny and deeply local.
+  - To them, people from Verda City are soft: they call a mechanic instead of crawling underneath the car themselves.
+- **The look is improvised, not ruined.** Things look patched because people keep them going.
+  - Homes are trailers, small shacks, lean-tos and workshops.
+  - Yards hold a car that runs, with a parts donor or two on blocks beside it, plus rain barrels, firewood, pallets and fire pits.
+  - "Why would I replace it? It still starts."
+- **Politics grew out of lived reality.** People settled far apart, the roads were bad and police were slow, so problems got solved locally.
+  - Their creed: *Verda belongs to Verdans. My land belongs to me. Your land belongs to you. Help your neighbour. Leave people alone.*
+  - They want Verda to stay a small independent nation. Foreign pressure makes them suspicious, and so does Verda City growing too powerful.
+- **Hand-painted boards along the back roads say so:**
+
+  | Sign | Meaning |
+  |---|---|
+  | VERDA ESTAS LIBERA | Verda is free |
+  | LASU NIN VIVI | Let us live |
+  | NENIU MASTRO | No master |
+  | VERDA APARTENAS AL VERDANOJ | Verda belongs to Verdans |
+  | MIA TERO ESTAS MIA. VIA TERO ESTAS VIA. | My land is mine. Your land is yours. |
+  | HELPU VIAN NAJBARON. LASU HOMOJN EN PACO. | Help your neighbour. Leave people alone. |
+  | RIPAROJ · MOTOROJ · VELDADO | Repairs, engines, welding |
+  | FREŜAJ OVOJ | Fresh eggs |
+  | ATENTU LA HUNDON! | Beware of the dog! |
 
 ## Language in the game
 

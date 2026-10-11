@@ -24,6 +24,9 @@ struct VehicleRuntime {
 struct VehicleEvents {
     bool started{}, stopped{}, door{}, horn{}, parking{}, collision{};
 };
+// Backcountry yards keep dead cars as parts donors (marker ids "vehicle_spawn_<type>_donor_..."):
+// they never run and sit on blocks where their wheels were.
+inline bool parts_donor(const std::string& marker) { return marker.find("_donor_") != std::string::npos; }
 class VehicleSystem {
   public:
     explicit VehicleSystem(const VehicleRegistry &registry) : registry_(registry) {}

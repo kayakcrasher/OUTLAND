@@ -1665,6 +1665,237 @@ ASSET "creator_verda_kit_roof_slab_kit190" 4 "assets/verda/kit/roof_slab_3x3.glb
 ASSET "creator_verda_kit_roof_slab_kit191" 4 "assets/verda/kit/roof_slab_3x3.glb" 53.5 12 -1840.5 3 0.100000001 3 270 255 255 255 255 80 80 80 255 1
 ASSET "creator_verda_kit_roof_slab_kit192" 4 "assets/verda/kit/roof_slab_3x3.glb" 50.5 12 -1840.5 3 0.100000001 3 270 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_bus_stops_busstop_single_seat_kit1" 9 "assets/verda/urban/Bus stops/busstop_single_seat.glb" 9 6 -1766 0.691972017 1.25237203 0.976639986 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_shack_a_kit4" 4 "assets/verda/industrial/shacks/Shack A.glb" -1733 7.81692791 610 3.5704 3.06209993 6.2493 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_leanto_a_kit2" 4 "assets/verda/industrial/shacks/Leanto A.glb" -1734 8.72844505 619 3.5704 3.06209993 2.12470007 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_barrel_kit23" 9 "assets/verda/industrial/shacks/Barrel.glb" -1736.40002 7.83184195 615.599976 0.800000012 0.899999976 0.692799985 55 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_branch_f38c764c_kit1" 9 "assets/verda/survival/runtime/branch.glb" -1727 7.63703871 606 0.769885004 0.39902401 0.410043001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_branch_f38c764c_kit2" 9 "assets/verda/survival/runtime/branch.glb" -1727 7.85719872 608.200012 0.769885004 0.39902401 0.410043001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit12" 9 "assets/verda/industrial/shacks/Pallet.glb" -1740 7.39197302 618 0.899999976 0.100000001 1.20000005 -65 255 255 255 255 80 80 80 255 0
+ASSET "creator_survival_bonfire_c4172667_kit2" 9 "assets/verda/survival/runtime/bonfire.glb" -1724 7.47815943 605 1.38901496 0.980683982 1.37558103 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit14" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 6.19471407 593.125 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit15" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 6.37214613 595.375 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit14" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1714 6.6003952 597.625 2.10594797 1.27454805 0.292430997 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit13" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1714 6.84531403 599.875 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit16" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 7.10298204 602.125 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit17" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 7.36941338 604.375 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit18" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 7.64038944 606.625 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit14" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1714 7.91160774 608.875 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit19" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 8.17875576 611.125 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit15" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1714 8.43778229 613.375 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit16" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1714 8.68501282 615.625 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit15" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1714 8.91723061 617.875 2.10594797 1.27454805 0.292430997 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit20" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 9.13189793 620.125 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit21" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 9.32714367 622.375 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit22" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 9.50190163 624.625 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit23" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 9.65593052 626.875 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit17" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1715.09094 9.76399517 628 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit24" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1717.27271 9.82580185 628 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit25" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1719.45459 9.86548901 628 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit26" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1721.63635 9.88241577 628 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit18" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1723.81824 9.877244 628 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit27" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1726 9.85197639 628 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit19" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1728.18176 9.80968094 628 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit20" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1730.36365 9.75449276 628 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit16" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1732.54541 9.6914444 628 2.10594797 1.27454805 0.292430997 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit28" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1734.72729 9.62594509 628 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit29" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1736.90906 9.15865898 628 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_165" 6 "" -1720 0 596 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_166" 6 "" -1719 0 615 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_167" 6 "" -1744 0 594 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_shack_a_kit5" 4 "assets/verda/industrial/shacks/Shack A.glb" -1733 12.9241619 680 3.5704 3.06209993 6.2493 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_shack_a_kit6" 4 "assets/verda/industrial/shacks/Shack A.glb" -1731 13.4708748 691 3.5704 3.06209993 6.2493 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_leanto_a_kit3" 4 "assets/verda/industrial/shacks/Leanto A.glb" -1734 12.3116465 668 3.5704 3.06209993 2.12470007 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_barrel_kit24" 9 "assets/verda/industrial/shacks/Barrel.glb" -1736.40002 13.3487387 685.599976 0.800000012 0.899999976 0.692799985 87 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_branch_f38c764c_kit3" 9 "assets/verda/survival/runtime/branch.glb" -1727 12.4192591 676 0.769885004 0.39902401 0.410043001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_branch_f38c764c_kit4" 9 "assets/verda/survival/runtime/branch.glb" -1727 12.5734015 678.200012 0.769885004 0.39902401 0.410043001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit13" 9 "assets/verda/industrial/shacks/Pallet.glb" -1740 13.5711136 688 0.899999976 0.100000001 1.20000005 -63 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit14" 9 "assets/verda/industrial/shacks/Pallet.glb" -1741 13.672513 690 0.899999976 0.100000001 1.20000005 -10 255 255 255 255 80 80 80 255 0
+ASSET "creator_survival_bonfire_c4172667_kit3" 9 "assets/verda/survival/runtime/bonfire.glb" -1724 12.2338982 675 1.38901496 0.980683982 1.37558103 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit21" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1714 11.0969944 663.125 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit30" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 11.2348213 665.375 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit22" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1714 11.3784323 667.625 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit23" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1714 11.5249443 669.875 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit17" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1714 11.67103 672.125 2.10594797 1.27454805 0.292430997 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit31" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 11.8131447 674.375 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit32" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 11.9476862 676.625 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit33" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 12.071085 678.875 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit34" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 12.1799564 681.125 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit35" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 12.2712736 683.375 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit24" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1714 12.3424568 685.625 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit36" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1714 12.3914423 687.875 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit25" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1714 12.4168005 690.125 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit26" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1714 12.4176922 692.375 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit18" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1714 12.3939962 694.625 2.10594797 1.27454805 0.292430997 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit27" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1714 12.3461571 696.875 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit28" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1715.09094 12.4637566 698 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit19" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1717.27271 12.7401247 698 2.10594797 1.27454805 0.292430997 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit37" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1719.45459 12.9830027 698 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit38" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1721.63635 13.1916409 698 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit39" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1723.81824 13.3664417 698 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit40" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1726 13.5090132 698 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit41" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1728.18176 13.6220503 698 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit29" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1730.36365 13.7093143 698 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit42" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1732.54541 13.7753811 698 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit30" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1734.72729 13.8254099 698 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit31" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1736.90906 13.8648481 698 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_168" 6 "" -1720 0 666 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_169" 6 "" -1719 0 685 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_170" 6 "" -1744 0 664 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_shack_a_kit7" 4 "assets/verda/industrial/shacks/Shack A.glb" -1767 4.88154507 645 3.5704 3.06209993 6.2493 270 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_shack_a_kit8" 4 "assets/verda/industrial/shacks/Shack A.glb" -1769 4.28602362 634 3.5704 3.06209993 6.2493 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_leanto_a_kit4" 4 "assets/verda/industrial/shacks/Leanto A.glb" -1766 6.18479872 657 3.5704 3.06209993 2.12470007 270 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_barrel_kit25" 9 "assets/verda/industrial/shacks/Barrel.glb" -1763.59998 4.95342112 639.400024 0.800000012 0.899999976 0.692799985 63 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_branch_f38c764c_kit5" 9 "assets/verda/survival/runtime/branch.glb" -1773 4.44492197 649 0.769885004 0.39902401 0.410043001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_branch_f38c764c_kit6" 9 "assets/verda/survival/runtime/branch.glb" -1773 4.34494638 646.799988 0.769885004 0.39902401 0.410043001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit15" 9 "assets/verda/industrial/shacks/Pallet.glb" -1760 5.28765392 637 0.899999976 0.100000001 1.20000005 93 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit16" 9 "assets/verda/industrial/shacks/Pallet.glb" -1759 5.31120491 635 0.899999976 0.100000001 1.20000005 170 255 255 255 255 80 80 80 255 0
+ASSET "creator_survival_bonfire_c4172667_kit4" 9 "assets/verda/survival/runtime/bonfire.glb" -1776 4.21171999 650 1.38901496 0.980683982 1.37558103 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_shelter_tent_527f4e44_kit1" 9 "assets/verda/survival/runtime/Shelter_tent.glb" -1776 4.5248723 657 3.29810691 1.97741103 3.17126298 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit43" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1786 3.59823418 661.875 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit44" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1786 3.59845066 659.625 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit45" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1786 3.60708308 657.375 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit32" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1786 3.62238932 655.125 2.11722589 1.19889498 0.189061001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit46" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1786 3.64306283 652.875 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit33" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1786 3.66831422 650.625 2.11722589 1.19889498 0.189061001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit34" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1786 3.69788361 648.375 2.11722589 1.19889498 0.189061001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit20" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1786 3.73195934 646.125 2.10594797 1.27454805 0.292430997 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit35" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1786 3.77120376 643.875 2.11722589 1.19889498 0.189061001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit47" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1786 3.81661582 641.625 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit36" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1786 3.86949563 639.375 2.11722589 1.19889498 0.189061001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit21" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1786 3.93128848 637.125 2.10594797 1.27454805 0.292430997 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit48" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1786 4.00347137 634.875 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit49" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1786 4.08741903 632.625 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit22" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1786 4.18433762 630.375 2.10594797 1.27454805 0.292430997 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit50" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1786 4.29507256 628.125 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit37" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1784.90906 4.31649923 627 2.11722589 1.19889498 0.189061001 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit51" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1782.72729 4.24978781 627 2.21210599 1.19889498 0.199089006 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit38" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1780.54541 4.20093536 627 2.11722589 1.19889498 0.189061001 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit39" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1778.36365 4.17198372 627 2.11722589 1.19889498 0.189061001 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit23" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1776.18176 4.16471338 627 2.10594797 1.27454805 0.292430997 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit40" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1774 4.1805892 627 2.11722589 1.19889498 0.189061001 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit52" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1771.81824 4.22101212 627 2.21210599 1.19889498 0.199089006 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit41" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1769.63635 4.28729486 627 2.11722589 1.19889498 0.189061001 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit24" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1767.45459 4.38065624 627 2.10594797 1.27454805 0.292430997 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit53" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1765.27271 4.50244856 627 2.21210599 1.19889498 0.199089006 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit54" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1763.09094 4.65404987 627 2.21210599 1.19889498 0.199089006 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_171" 6 "" -1780 0 659 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_172" 6 "" -1781 0 640 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_173" 6 "" -1756 0 661 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_shack_a_kit9" 4 "assets/verda/industrial/shacks/Shack A.glb" -1795 9.85027122 737 3.5704 3.06209993 6.2493 360 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_shack_a_kit10" 4 "assets/verda/industrial/shacks/Shack A.glb" -1806 7.45289135 739 3.5704 3.06209993 6.2493 270 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_leanto_b_kit3" 4 "assets/verda/industrial/shacks/Leanto B.glb" -1783 12.1063776 736 3.28520012 3.00160003 6.2493 360 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_barrel_kit26" 9 "assets/verda/industrial/shacks/Barrel.glb" -1800.59998 8.27000999 733.599976 0.800000012 0.899999976 0.692799985 36 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_branch_f38c764c_kit7" 9 "assets/verda/survival/runtime/branch.glb" -1791 11.073637 743 0.769885004 0.39902401 0.410043001 270 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_branch_f38c764c_kit8" 9 "assets/verda/survival/runtime/branch.glb" -1793.19995 10.6333694 743 0.769885004 0.39902401 0.410043001 270 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit17" 9 "assets/verda/industrial/shacks/Pallet.glb" -1803 7.24684811 730 0.899999976 0.100000001 1.20000005 186 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit18" 9 "assets/verda/industrial/shacks/Pallet.glb" -1805 6.58677292 729 0.899999976 0.100000001 1.20000005 260 255 255 255 255 80 80 80 255 0
+ASSET "creator_survival_bonfire_c4172667_kit5" 9 "assets/verda/survival/runtime/bonfire.glb" -1790 11.4603825 746 1.38901496 0.980683982 1.37558103 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit25" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1778.125 14.6682081 756 2.10594797 1.27454805 0.292430997 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit42" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1780.375 14.1835098 756 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit55" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1782.625 13.6923828 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit43" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1784.875 13.1990728 756 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit26" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1787.125 12.7073317 756 2.10594797 1.27454805 0.292430997 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit56" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1789.375 12.2202396 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit57" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1791.625 11.739934 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit27" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1793.875 11.2674446 756 2.10594797 1.27454805 0.292430997 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit58" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1796.125 10.8026638 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit59" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1798.375 10.3442535 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit60" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1800.625 9.88974571 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit61" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1802.875 9.43592262 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit28" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1805.125 8.9787569 756 2.10594797 1.27454805 0.292430997 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit44" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1807.375 8.51410103 756 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit45" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1809.625 8.03770065 756 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit62" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1811.875 7.54581451 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit46" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1777 14.8368607 754.909119 2.11722589 1.19889498 0.189061001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit29" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1777 14.6888857 752.727295 2.10594797 1.27454805 0.292430997 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit63" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1777 14.5301456 750.545471 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit64" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1777 14.3610134 748.363647 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit30" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1777 14.1819897 746.181824 2.10594797 1.27454805 0.292430997 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit65" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1777 13.993681 744 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit66" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1777 13.7968464 741.818176 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit67" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1777 13.5922031 739.636353 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit68" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1777 13.3805046 737.454529 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit31" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1777 13.1624393 735.272705 2.10594797 1.27454805 0.292430997 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit47" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1777 12.9386091 733.090881 2.11722589 1.19889498 0.189061001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_174" 6 "" -1781 0 750 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_175" 6 "" -1800 0 751 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_shack_a_kit11" 4 "assets/verda/industrial/shacks/Shack A.glb" -1850 -0.800245702 737 3.5704 3.06209993 6.2493 360 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_leanto_a_kit5" 4 "assets/verda/industrial/shacks/Leanto A.glb" -1859 -0.843115807 736 3.5704 3.06209993 2.12470007 360 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_barrel_kit27" 9 "assets/verda/industrial/shacks/Barrel.glb" -1855.59998 -0.676044524 733.599976 0.800000012 0.899999976 0.692799985 37 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_branch_f38c764c_kit9" 9 "assets/verda/survival/runtime/branch.glb" -1846 -0.849547625 743 0.769885004 0.39902401 0.410043001 270 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_branch_f38c764c_kit10" 9 "assets/verda/survival/runtime/branch.glb" -1848.19995 -0.979947329 743 0.769885004 0.39902401 0.410043001 270 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit19" 9 "assets/verda/industrial/shacks/Pallet.glb" -1858 -0.463843286 730 0.899999976 0.100000001 1.20000005 187 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit20" 9 "assets/verda/industrial/shacks/Pallet.glb" -1860 -0.411640286 729 0.899999976 0.100000001 1.20000005 260 255 255 255 255 80 80 80 255 0
+ASSET "creator_survival_bonfire_c4172667_kit6" 9 "assets/verda/survival/runtime/bonfire.glb" -1845 -0.785011768 746 1.38901496 0.980683982 1.37558103 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit32" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1833.125 2.13479185 756 2.10594797 1.27454805 0.292430997 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit69" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1835.375 1.56632626 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit70" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1837.625 1.02629793 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit71" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1839.875 0.521964073 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit72" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1842.125 0.059409976 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit33" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1844.375 -0.356663764 756 2.10594797 1.27454805 0.292430997 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit48" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1846.625 -0.723289371 756 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit49" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1848.875 -1.03929615 756 2.11722589 1.19889498 0.189061001 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit73" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1851.125 -1.30536079 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit74" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1853.375 -1.52393794 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit75" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1855.625 -1.69900203 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit34" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1857.875 -1.83575654 756 2.10594797 1.27454805 0.292430997 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit35" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1860.125 -1.94035935 756 2.10594797 1.27454805 0.292430997 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit36" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1862.375 -2.0193162 756 2.10594797 1.27454805 0.292430997 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit76" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1864.625 -2.07936931 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit77" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1866.875 -2.12678027 756 2.21210599 1.19889498 0.199089006 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit78" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1868 -2.0686903 754.909119 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit79" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1868 -1.91427088 752.727295 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit37" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1868 -1.76518595 750.545471 2.10594797 1.27454805 0.292430997 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit50" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1868 -1.62179542 748.363647 2.11722589 1.19889498 0.189061001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit51" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1868 -1.48394585 746.181824 2.11722589 1.19889498 0.189061001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit80" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1868 -1.35085702 744 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit81" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1868 -1.22131979 741.818176 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit82" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1868 -1.09375119 739.636353 2.21210599 1.19889498 0.199089006 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit38" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1868 -0.96629107 737.454529 2.10594797 1.27454805 0.292430997 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit39" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1868 -0.83696413 735.272705 2.10594797 1.27454805 0.292430997 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit40" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1868 -0.70377022 733.090881 2.10594797 1.27454805 0.292430997 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_176" 6 "" -1836 0 750 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_177" 6 "" -1855 0 751 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_178" 6 "" -1834 0 726 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_shack_a_kit12" 4 "assets/verda/industrial/shacks/Shack A.glb" -1825 1.63887286 703 3.5704 3.06209993 6.2493 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_shack_a_kit13" 4 "assets/verda/industrial/shacks/Shack A.glb" -1814 1.97465062 701 3.5704 3.06209993 6.2493 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_leanto_a_kit6" 4 "assets/verda/industrial/shacks/Leanto A.glb" -1837 1.59490168 704 3.5704 3.06209993 2.12470007 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_barrel_kit28" 9 "assets/verda/industrial/shacks/Barrel.glb" -1819.40002 1.80181074 706.400024 0.800000012 0.899999976 0.692799985 33 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_branch_f38c764c_kit11" 9 "assets/verda/survival/runtime/branch.glb" -1829 1.78190136 697 0.769885004 0.39902401 0.410043001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_branch_f38c764c_kit12" 9 "assets/verda/survival/runtime/branch.glb" -1826.80005 1.75346661 697 0.769885004 0.39902401 0.410043001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit21" 9 "assets/verda/industrial/shacks/Pallet.glb" -1817 2.08287978 710 0.899999976 0.100000001 1.20000005 3 255 255 255 255 80 80 80 255 0
+ASSET "creator_survival_bonfire_c4172667_kit7" 9 "assets/verda/survival/runtime/bonfire.glb" -1830 1.87488532 694 1.38901496 0.980683982 1.37558103 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_shelter_tent_527f4e44_kit2" 9 "assets/verda/survival/runtime/Shelter_tent.glb" -1837 2.04243112 694 3.29810691 1.97741103 3.17126298 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit52" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1841.875 2.63506246 684 2.11722589 1.19889498 0.189061001 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit83" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1839.625 2.53491545 684 2.21210599 1.19889498 0.199089006 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit84" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1837.375 2.43608546 684 2.21210599 1.19889498 0.199089006 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit85" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1835.125 2.3401432 684 2.21210599 1.19889498 0.199089006 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit41" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1832.875 2.2485323 684 2.10594797 1.27454805 0.292430997 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit42" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1830.625 2.1625042 684 2.10594797 1.27454805 0.292430997 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit43" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1828.375 2.08313131 684 2.10594797 1.27454805 0.292430997 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit86" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1826.125 2.01143003 684 2.21210599 1.19889498 0.199089006 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit87" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1823.875 1.94841659 684 2.21210599 1.19889498 0.199089006 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit88" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1821.625 1.89519691 684 2.21210599 1.19889498 0.199089006 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit53" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1819.375 1.85329223 684 2.11722589 1.19889498 0.189061001 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit89" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1817.125 1.82443583 684 2.21210599 1.19889498 0.199089006 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit90" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1814.875 1.81103694 684 2.21210599 1.19889498 0.199089006 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit54" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1812.625 1.81591988 684 2.11722589 1.19889498 0.189061001 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit44" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1810.375 1.84254146 684 2.10594797 1.27454805 0.292430997 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit45" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1808.125 1.89481318 684 2.10594797 1.27454805 0.292430997 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit91" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1807 1.93196762 685.090881 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit46" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1807 1.94884145 687.272705 2.10594797 1.27454805 0.292430997 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit47" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1807 1.98879886 689.454529 2.10594797 1.27454805 0.292430997 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit48" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1807 2.0526433 691.636353 2.10594797 1.27454805 0.292430997 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit92" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1807 2.14092302 693.818176 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit93" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1807 2.25390029 696 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit94" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1807 2.39152336 698.181824 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit55" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1807 2.55333662 700.363647 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit95" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1807 2.73853946 702.545471 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit96" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1807 2.94587421 704.727295 2.21210599 1.19889498 0.199089006 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit56" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1807 3.17370319 706.909119 2.11722589 1.19889498 0.189061001 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_179" 6 "" -1839 0 690 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_180" 6 "" -1820 0 689 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_181" 6 "" -1841 0 714 1 7 1 0 255 255 255 255 80 80 80 255 1
 MARKER "creator_marker_loot_spawn_general_training" 0 4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 0.5 0.5 0.5 0 1
@@ -1818,11 +2049,9 @@ MARKER "vehicle_spawn_hatchback_south_haven_drive_5" 3 330.299988 6 1757.40002 2
 MARKER "vehicle_spawn_hatchback_south_haven_drive_6" 3 313.700012 6 1787.40002 2 1.60000002 4.4000001 360 1
 MARKER "vehicle_spawn_hatchback_south_haven_drive_7" 3 313.700012 6 1817.40002 2 1.60000002 4.4000001 360 1
 MARKER "vehicle_spawn_hatchback_south_haven_drive_8" 3 330.299988 6 1847.40002 2 1.60000002 4.4000001 360 1
-SETTLEMENT "west_roka" "Roka" -1750 0 450 0 60 0 0
+SETTLEMENT "west_roka" "Roka" -1750 0 450 0 24 0 0
 ROAD -1750 0 360 -1750 0 540 8 2
 ROAD -1840 0 450 -1660 0 450 7 1
-ROAD -1950 0 610 -1848 0 610 6 1
-ROAD -1848 0 610 -1750 0 550 5 1
 BUILDING "west_roka_building_0" 4 -1772 0 405 18 5 16 0 155 147 127 255 82 86 83 255 1
 BUILDING "west_roka_building_1" 2 -1772 0 435 18 5 16 0 155 147 127 255 82 86 83 255 1
 BUILDING "west_roka_building_2" 4 -1772 0 465 18 5 16 0 155 147 127 255 82 86 83 255 1
@@ -1831,6 +2060,11 @@ BUILDING "west_roka_building_4" 4 -1728 0 405 18 5 16 180 155 147 127 255 82 86 
 BUILDING "west_roka_building_5" 2 -1728 0 435 18 5 16 180 155 147 127 255 82 86 83 255 1
 BUILDING "west_roka_building_6" 4 -1728 0 465 18 5 16 180 155 147 127 255 82 86 83 255 1
 BUILDING "west_roka_building_7" 2 -1728 0 495 18 5 16 180 155 147 127 255 82 86 83 255 1
+SETTLEMENT "ferarbaro_sovagejo" "Sovaĝejo" -1820 0 640 0 48 0 0
+ROAD -1950 0 610 -1848 0 610 6 1
+ROAD -1848 0 610 -1750 0 550 5 1
+ROAD -1750 0 550 -1750 0 720 5 0
+ROAD -1750 0 720 -1890 0 720 5 0
 MARKER "vehicle_spawn_hatchback_trailer_park_1" 3 -1912.97083 8.81214905 600.614563 2 1.60000002 4.4000001 179 1
 MARKER "vehicle_spawn_hatchback_trailer_park_2" 3 -1900.0437 9.16435909 600.727905 2 1.60000002 4.4000001 178 1
 MARKER "vehicle_spawn_hatchback_trailer_park_3" 3 -1887.11841 8.48871136 600.839905 2 1.60000002 4.4000001 177 1
@@ -1840,3 +2074,15 @@ MARKER "vehicle_spawn_hatchback_trailer_park_6" 3 -1900.0437 7.27834511 619.2720
 MARKER "vehicle_spawn_hatchback_trailer_park_7" 3 -1886.97083 6.56503439 619.385437 2 1.60000002 4.4000001 181 1
 MARKER "vehicle_spawn_hatchback_trailer_park_8" 3 -1873.90002 6.70119858 619.5 2 1.60000002 4.4000001 180 1
 MARKER "vehicle_spawn_hatchback_trailer_park_9" 3 -1860.7644 7.27735806 619.732788 2 1.60000002 4.4000001 178 1
+MARKER "vehicle_spawn_hatchback_sovagejo_1" 3 -1742 5.95877218 602 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_donor_sovagejo_2" 3 -1745 6.42118168 616 2 1.60000002 4.4000001 5 1
+MARKER "vehicle_spawn_hatchback_sovagejo_3" 3 -1742 13.0323 672 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_donor_sovagejo_4" 3 -1745 13.71766 686 2 1.60000002 4.4000001 -13 1
+MARKER "vehicle_spawn_hatchback_sovagejo_5" 3 -1758 7.37620878 653 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_donor_sovagejo_6" 3 -1755 6.27691936 639 2 1.60000002 4.4000001 183 1
+MARKER "vehicle_spawn_hatchback_sovagejo_7" 3 -1787 10.6283903 728 2 1.60000002 4.4000001 270 1
+MARKER "vehicle_spawn_hatchback_donor_sovagejo_8" 3 -1801 7.11111689 725 2 1.60000002 4.4000001 276 1
+MARKER "vehicle_spawn_hatchback_sovagejo_9" 3 -1842 -0.0514222383 728 2 1.60000002 4.4000001 270 1
+MARKER "vehicle_spawn_hatchback_donor_sovagejo_10" 3 -1856 -0.098258473 725 2 1.60000002 4.4000001 257 1
+MARKER "vehicle_spawn_hatchback_sovagejo_11" 3 -1833 1.20668495 712 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_donor_sovagejo_12" 3 -1819 2.05230403 715 2 1.60000002 4.4000001 103 1

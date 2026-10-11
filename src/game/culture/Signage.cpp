@@ -1,4 +1,5 @@
 #include "outland/game/culture/Signage.hpp"
+#include "outland/world/Zones.hpp"
 #include "outland/game/culture/Esperanto.hpp"
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -423,6 +424,62 @@ void town_roads(const world::VerdaRegion& region, const life::Island& island, Si
         }
     }
 }
+// Ferarbaro's back roads: plywood boards with what the backcountry thinks, painted by hand.
+// Verda belongs to Verdans; my land is mine, yours is yours; help your neighbour, leave people alone.
+void backcountry(const world::VerdaRegion& region, Signage& out) {
+    struct Words { std::vector<SignLine> lines; int weight; };
+    const std::vector<Words> words{
+        {{{"VERDA ESTAS", .42F}, {"LIBERA", .6F}}, 4},            // Verda is free
+        {{{"LASU NIN", .42F}, {"VIVI", .7F}}, 4},                 // Let us live
+        {{{"NENIU", .5F}, {"MASTRO", .6F}}, 4},                   // No master
+        {{{"VERDA APARTENAS", .34F}, {"AL VERDANOJ", .4F}}, 2},   // Verda belongs to Verdans
+        {{{"MIA TERO ESTAS MIA.", .3F}, {"VIA TERO ESTAS VIA.", .3F}}, 2},
+        {{{"HELPU VIAN NAJBARON.", .3F}, {"LASU HOMOJN EN PACO.", .3F}}, 2},
+        {{{"RIPAROJ · MOTOROJ", .32F}, {"VELDADO", .45F}}, 1},     // repairs, engines, welding
+        {{{"FREŜAJ OVOJ", .45F}}, 1},                             // fresh eggs
+        {{{"ATENTU", .4F}, {"LA HUNDON!", .5F}}, 1},               // beware of the dog
+    };
+    int total = 0;
+    for (const auto& w : words) total += w.weight;
+    const Color boards[]{{196, 166, 116, 255}, {182, 150, 104, 255}, {214, 206, 186, 255}};
+    const Color inks[]{{24, 22, 20, 255}, {150, 30, 24, 255}, {20, 80, 36, 255}};
+    std::vector<Vector3> placed;
+    for (const auto& town : region.settlements()) for (const auto& road : town.roads) {
+        const Vector3 mid = Vector3Lerp(road.start, road.end, .5F);
+        if (world::zones::zone_at(road.start) != world::zones::ZoneId::Ferarbaro ||
+            world::zones::zone_at(road.end) != world::zones::ZoneId::Ferarbaro) continue;
+        // Highways get a board now and then; the gravel and dirt roads, more of them.
+        const float spacing = road.type == world::RoadType::Asphalt ? 170 : 55;
+        const float length = flat(road.start, road.end);
+        const Vector3 d = flat_dir(road.start, road.end), side{d.z, 0, -d.x};
+        for (float t = spacing * .5F; t < length - 10; t += spacing) {
+            const auto h = static_cast<std::uint32_t>(std::abs(mid.x * 13 + mid.z * 7 + t * 31)) * 2654435761U;
+            const float flip = (h >> 3) % 2 ? 1.0F : -1.0F;
+            Vector3 p = Vector3Add(Vector3Lerp(road.start, road.end, t / length), Vector3Scale(side, flip * (road.width * .5F + 2.2F)));
+            if (std::any_of(placed.begin(), placed.end(), [&](Vector3 q) {return flat(p, q) < 25;})) continue;
+            int k = 0;
+            for (int pick = static_cast<int>((h >> 7) % static_cast<std::uint32_t>(total)); pick >= words[static_cast<std::size_t>(k)].weight; ++k)
+                pick -= words[static_cast<std::size_t>(k)].weight;
+            bool clear = false;
+            for (int step = 0; step < 4 && !(clear = clear_spot(region, p, .5F)); ++step) p = Vector3Add(p, Vector3Scale(side, flip));
+            if (!clear) continue;
+            Sign sign;
+            sign.kind = SignKind::Homemade;
+            sign.place = town.id;
+            sign.front = words[static_cast<std::size_t>(k)].lines;
+            sign.board = boards[(h >> 11) % 3];
+            sign.ink = inks[(h >> 13) % 3];
+            sign.post = .9F + static_cast<float>((h >> 15) % 4) * .1F;
+            sign.max_width = 2.6F;
+            const float rows = static_cast<float>(sign.front.size());
+            sign.position = {p.x, ground(region, p, p.y) + sign.post + rows * .3F, p.z};
+            // Faces the road, a little askew.
+            sign.yaw = yaw_of(Vector3Scale(side, -flip)) + static_cast<float>(static_cast<int>((h >> 17) % 21) - 10);
+            out.signs.push_back(std::move(sign));
+            placed.push_back(p);
+        }
+    }
+}
 }
 
 Signage build_signage(const world::VerdaRegion& region, const life::Island& island) {
@@ -432,6 +489,7 @@ Signage build_signage(const world::VerdaRegion& region, const life::Island& isla
     bus_stops(region, out);
     street_blades(region, out);
     town_roads(region, island, out);
+    backcountry(region, out);
     for (auto& sign : out.signs)
         std::erase_if(sign.front, [](const SignLine& line) {return line.text.empty();});
     return out;

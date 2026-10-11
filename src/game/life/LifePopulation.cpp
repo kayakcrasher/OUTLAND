@@ -341,7 +341,7 @@ void assign_cars(Island& island,const world::VerdaRegion& region) {
     std::vector<Car> parked;
     for(const auto& town:region.settlements()) {
         for(const auto& marker:town.gameplay_markers)
-            if(marker.type==world::GameplayMarkerType::VehicleSpawn && marker.enabled)
+            if(marker.type==world::GameplayMarkerType::VehicleSpawn && marker.enabled && marker.id.find("_donor_")==std::string::npos) // donors never run
                 parked.push_back({"vehicle_marker_"+town.id+"_"+marker.id,-1,-1,marker.position,marker.rotation_y});
         for(const auto& asset:town.assets)
             if(!asset.vehicle.definition.empty() && asset.vehicle.marker.empty() && asset.vehicle.enabled && !asset.vehicle.destroyed)
