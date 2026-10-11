@@ -32,6 +32,8 @@ public:
 
     void reset(int count) { live_.clear(); explosions_.clear(); exploded_.clear(); count_ = count; cooldown_ = 0; }
     void give(int count) { count_ += count; }
+    // Grenades carried in the bag: the count follows it (a throw then takes one from the bag).
+    void set_count(int count) { count_ = count < 0 ? 0 : count; }
     [[nodiscard]] int count() const { return count_; }
     [[nodiscard]] bool ready() const { return count_ > 0 && cooldown_ <= 0; }
     // Throw from `from` along `direction` (lobbed a little upward), carrying the thrower's velocity.

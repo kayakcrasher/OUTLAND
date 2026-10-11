@@ -29,6 +29,7 @@ general_rifle_ammo	general	rifle_ammo	3	1	120
 general_smg_ammo	general	smg_ammo	2	1	150
 general_shotgun_shells	general	shotgun_shells	4	1	60
 general_sniper_ammo	general	sniper_ammo	8	3	40
+general_frag_grenade	general	frag_grenade	45	18	6
 general_backpack	general	backpack	70	30	4
 general_battery	general	battery	10	4	20
 general_lantern	general	lantern	40	15	5

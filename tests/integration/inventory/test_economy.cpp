@@ -51,6 +51,13 @@ int main() {
     assert(!economy.trade(state,bag,items,*general,water,999,false).starts_with("Bought"));
     assert(!economy.trade(state,bag,items,*general,water,5,true).starts_with("Sold"));
     assert(!economy.trade(state,bag,items,*general,water,-1,false).starts_with("Bought"));
+    {   // Frag grenades are sold over the general store's counter and land in the bag.
+        auto wallet=state;inventory::Inventory nades;
+        const auto& grenade=offer("general_frag_grenade");
+        assert(grenade.item=="frag_grenade" && grenade.buy>grenade.sell*2-1);
+        assert(economy.trade(wallet,nades,items,*general,grenade,2,false).starts_with("Bought"));
+        assert(nades.count("frag_grenade")==2 && wallet.money==state.money-grenade.buy*2);
+    }
     auto forged=water;forged.buy=1;assert(economy.trade(state,bag,items,*general,forged,1,false)=="Invalid trade");
     assert(state.money==before.money && bag.state().stacks==stacks && economy.stock(state,*general,water)==26);
     inventory::Inventory full;assert(full.add(items,"battery",999)>0);

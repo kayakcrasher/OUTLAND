@@ -12,6 +12,7 @@ hunting_rifle	Hunting rifle	weapon	assets/verda/survival/runtime/hunting_rifle.g
 smg_ammo	.45 rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	50	0.12	ammo	0	smg	0		0	0
 shotgun_shells	12-gauge shells	ammo	assets/verda/survival/runtime/Ammunition.glb	25	0.12	ammo	0	shotgun	0		0	0
 sniper_ammo	7.62 rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	20	0.12	ammo	0	sniper	0		0	0
+frag_grenade	Frag grenade	utility	assets/verda/combat/frag_grenade.glb	6	0.12	none	0		0		2	0
 smg	VK45 SMG	weapon		1	0.3	equip	0	smg	0		0	0
 shotgun	VS12 shotgun	weapon		1	0.3	equip	0	shotgun	0		0	0
 sniper	VP7 sniper rifle	weapon		1	0.3	equip	0	sniper	0		0	0

@@ -96,8 +96,14 @@ Royale bots, hostile and creature pools (zombies), and police who are chasing yo
   shield people from the blast, and it hurts the player too, unless they are in a vehicle.
 - **Targets:** it damages bots, residents (a crime if seen), police, zombies and cars, and bots
   hear it.
-- **Supply:** you start with 2 in Battle Royale and Explore, 3 in Zombie Survival, 99 in the
-  Dev Lab.
+- **Supply:** grenades are a bag item, `frag_grenade` (stacks of 6; the model comes from
+  `tools/generate_grenade_model.py`). The NADES count is the bag's, and each throw takes one from
+  it.
+  - A new bag starts with 2. Battle Royale starts a new bag every match; Explore and Zombie
+    Survival keep their saved bags.
+  - Loot: weapons caches (1-2), general loot, and zombie-mode camps.
+  - Shops: general stores sell them at 45 kronoj (they buy them back at 18; 6 in stock).
+  - The Dev Lab has 99.
 
 Bots are less accurate past 40 m: their aim cone widens by 1/80 per metre beyond that. Bot and
 police guns flash as they fire.

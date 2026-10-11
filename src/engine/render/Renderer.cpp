@@ -849,7 +849,7 @@ void Renderer::run() {
                 player_health.reset();
                 health_seen=player_health.current();hurt_directional=false;pending_kills.clear();
                 combat_feedback.reset();
-                grenades.reset(game_mode==game::GameMode::DevLab ? 99 : game_mode==game::GameMode::ZombieSurvival ? 3 : 2);
+                grenades.reset(game_mode==game::GameMode::DevLab ? 99 : 0); // elsewhere the bag holds them
                 recoil_pitch = recoil_yaw = recoil_debt = recoil_settle = 0.0F;
                 trigger_ready = false;
                 inventory_open = false;
@@ -1567,9 +1567,15 @@ void Renderer::run() {
         for(const auto& note:weapons.events().hits) combat_feedback.hit(note.position,note.damage,note.headshot);
         // Grenades: G or NADE throws one where the camera looks; blasts hurt everyone in reach
         // whom no wall shields - the player too - and wreck cars.
+        // Outside the Dev Lab grenades are bag items (loot, shops, the starter kit): throw what you carry.
+        const bool bag_grenades=game_mode!=game::GameMode::DevLab;
+        if(bag_grenades) grenades.set_count(loot_session.inventory().count("frag_grenade"));
         if(controls.grenade && !driving && !creator_active && !inventory_open && !shop_open && player_health.alive() && !mode_session.terminal()) {
             const Vector3 carried=dt>0 ? Vector3Scale(Vector3Subtract(player.position,position_before_move),1.0F/dt) : Vector3{};
-            grenades.throw_grenade(head_position,look_direction,carried);
+            if(grenades.throw_grenade(head_position,look_direction,carried) && bag_grenades) {
+                loot_session.edit_inventory().remove("frag_grenade",1);
+                loot_session.changed();
+            }
         }
         grenades.update(vehicle_paused || mode_session.terminal() ? 0.0F : dt,{[&](Vector3 a,Vector3 b,Vector3& point,Vector3& normal) {
             const auto hit=combat_world.trace_segment(a,b,false,false,true);
@@ -1886,10 +1892,12 @@ void Renderer::run() {
         }
 
         game::combat::CombatRenderer::draw_world(weapons,combat_world);
-        for(const auto& g:grenades.live()) {
-            DrawSphere(g.position,.07F,Color{58,72,46,255});
-            DrawCube(Vector3Add(g.position,{0,.07F,0}),.03F,.04F,.03F,Color{150,150,140,255});
-        }
+        if(Model* grenade_model=grenades.live().empty() ? nullptr : get_world_asset_model("assets/verda/combat/frag_grenade.glb",character_registry))
+            for(const auto& g:grenades.live()) {
+                // Tumbling through the air, settling once it has stopped.
+                const float spin=g.fuse*720.0F*std::min(1.0F,Vector3Length(g.velocity)/4.0F);
+                DrawModelEx(*grenade_model,Vector3Subtract(g.position,{0,.05F,0}),Vector3Normalize({1,.3F,.2F}),spin,{1.6F,1.6F,1.6F},WHITE);
+            }
         for(const auto& e:grenades.explosions()) {
             const float t=e.age/game::combat::Grenades::explosion_life;
             if(t<.25F) {
