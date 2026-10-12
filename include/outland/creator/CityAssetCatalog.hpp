@@ -63,6 +63,12 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_main_street_dark_18m_3st", .name = "Main Street Dark Brick 18 m, 3 storeys (enterable)", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/main_street/main_street_dark_18m_3st.glb", .thumbnail_path = "", .footprint = {18.00F, 20.00F, 11.70F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_police_station", .name = "Police Station (modular, enterable, carport)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/police_station.glb", .thumbnail_path = "", .footprint = {20.00F, 12.00F, 4.70F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_hospital", .name = "Hospitalo - hospital with ambulance bay", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/hospital.glb", .thumbnail_path = "", .footprint = {46.00F, 23.00F, 12.70F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_sidewalk_block_68", .name = "Sidewalk Block 68 m", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/ground/sidewalk_block_68.glb", .thumbnail_path = "", .footprint = {68.00F, 68.00F, 0.15F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

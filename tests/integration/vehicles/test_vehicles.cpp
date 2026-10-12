@@ -293,7 +293,7 @@ int main() {
     world::VerdaRegion bounded;
     for (auto &site : bounded.runtime_settlements())
         site.gameplay_markers.clear();
-    for (int i = 0; i < 160; ++i)
+    for (int i = 0; i < static_cast<int>(VehicleSystem::max_vehicles) + 16; ++i)
         bounded.runtime_settlements().front().gameplay_markers.push_back(
             {"vehicle_spawn_hatchback_" + std::to_string(i),
              world::GameplayMarkerType::VehicleSpawn,

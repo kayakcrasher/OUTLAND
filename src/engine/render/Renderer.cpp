@@ -13,6 +13,7 @@
 #include "outland/game/casino/PokerTable.hpp"
 #include "outland/game/mafia/Mafio.hpp"
 #include "outland/game/mafia/MafioRenderer.hpp"
+#include "outland/game/services/EmergencyServices.hpp"
 #include "outland/game/ZoneWall.hpp"
 #include "outland/game/inventory/LootSave.hpp"
 #include "outland/game/inventory/LootSession.hpp"
@@ -481,6 +482,9 @@ void Renderer::run() {
     game::casino::PokerTable poker_table;
     bool poker_open=false;
     int poker_buy_in=0; // the wallet changes only when the player leaves (by the net win or loss)
+    // Explore: the Policio's patrol cars and Hospitalo de Verda's ambulances.
+    game::services::EmergencyServices services;
+    bool respawn_at_hospital=false; // the player died in Explore: the ambulance took them in
     game::ModeSession mode_session;
     game::PlayUI play_ui;
     game::economy::Economy economy;
@@ -918,6 +922,7 @@ void Renderer::run() {
                     poker_open=false;poker_buy_in=0;
                 }
                 mafio.clear(br_bots,bot_drivers,vehicles);
+                services.clear(vehicles,npcs);
                 bot_drivers.clear(br_bots,vehicles);bots_looted.clear();
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
                 zombie_hour=17.5F;lit_asset_count=static_cast<std::size_t>(-1);
@@ -935,7 +940,15 @@ void Renderer::run() {
                     // La Mafio: every town's crew moves into its building.
                     mafio.start(island_life.places(),verda_region,br_bots,session_seed);
                     br_bots.sync_bodies(npcs,&character_registry);
+                    services.start(vehicles,verda_region,&character_registry);
+                    // Back from the dead: out of the hospital's front door.
+                    if(respawn_at_hospital && services.has_hospital()) {
+                        const auto door=services.hospital_door();
+                        player.position={door.x,world::physics::WorldCollision::ground_height({door.x,door.y+1.2F,door.z},door.y+1.2F,verda_region)+1,door.z};
+                        interaction_message="An ambulance brought you to Hospitalo de Verda";interaction_remaining=5;
+                    }
                 }
+                respawn_at_hospital=false;
                 mode_session.start(game_mode,static_cast<int>(br_bots.bots().size()),home_screen.bot_level());
 #ifdef OUTLAND_DEV_TOOLS
                 // OUTLAND_DEV_ZONE=<metres>: start the Battle Royale circle smaller, to see its wall up close.
@@ -997,6 +1010,7 @@ void Renderer::run() {
                     interaction_message=loot_session.status();interaction_remaining=3;
                 } else {
                     queued_mode=action==game::ResultAction::Restart ? game_mode : game::GameMode::Home;
+                    respawn_at_hospital=action==game::ResultAction::Restart && game_mode==game::GameMode::Explore && !player_health.alive();
                     restore_match_fleet();
                     vehicles.leave_session();vehicle_audio.stop();vehicle_renderer.reset_camera();
                     shop_open=inventory_open=false;input_system.cancel_controls();
@@ -1913,8 +1927,23 @@ void Renderer::run() {
             bool gang_business=mafio.active() && mafio.turf_at(frame.player,60)>=0;
             for(int g=0;g<static_cast<int>(game::mafia::gangs.size());++g) gang_business|=mafio.provoked(g,match_time);
             if(frame.player_fired && !gang_business) justice.crime(game::law::CrimeKind::ShotsFired,frame.player,-1,frame,island_life);
-            for(const auto& c:crimes) justice.crime(c.kind,frame.player,c.victim,frame,island_life);
+            for(const auto& c:crimes) {
+                // Officers and paramedics from the services saw what happened to them.
+                if(game::services::EmergencyServices::crew_member(c.victim)) justice.witnessed(c.kind,frame.player,frame,island_life);
+                else justice.crime(c.kind,frame.player,c.victim,frame,island_life);
+            }
+            frame.patrol_officers=services.officers_on_foot(npcs);
             if(!vehicle_paused) justice.update(frame,island_life,npcs);
+            if(services.active() && !vehicle_paused) {
+                game::services::ServicesFrame call;
+                call.dt=dt;call.now=match_time;call.player=frame.player;
+                call.player_velocity=dt>0 ? Vector3Scale(Vector3Subtract(frame.player,last_player_feet),1.0F/dt) : Vector3{};
+                call.player_alive=player_health.alive();call.player_driving=driving;
+                call.wanted=justice.wanted();call.last_known=justice.last_known();
+                call.sight=frame.line_of_sight;
+                services.update(call,vehicles,verda_region,npcs,&island_life);
+                if(!services.events().message.empty()) {interaction_message=services.events().message;interaction_remaining=3;}
+            }
         }
         crimes.clear();
         {
@@ -2006,6 +2035,19 @@ void Renderer::run() {
             }
             gunfire_heard=sound_bus.latest();
             gun_audio.update(vehicle_paused ? 0.0F : dt);
+            // The nearest siren on the island, placed like a shot.
+            {
+                float loudest=0,pan=0;
+                if(!vehicle_paused) for(const auto& unit:services.units()) {
+                    if(!unit.siren) continue;
+                    const int v=vehicles.find(unit.vehicle);
+                    if(v<0) continue;
+                    const auto mix=audio::mix_shot(vehicles.vehicles()[static_cast<std::size_t>(v)].position,camera.position,
+                        Vector3Subtract(camera.target,camera.position),520,1.8F);
+                    if(mix.audible && mix.volume>loudest) {loudest=mix.volume;pan=mix.pan;}
+                }
+                gun_audio.siren(loudest*.8F,pan);
+            }
             // Warnings you hear: a pulse each second outside the zone, your heart when badly hurt.
             const float sound_dt=vehicle_paused ? 0.0F : dt;
             hurt_sound_wait-=sound_dt;zone_sound_wait-=sound_dt;heart_sound_wait-=sound_dt;
@@ -2284,6 +2326,7 @@ void Renderer::run() {
 
         build_mode.draw_world(static_cast<float>(GetTime()));
         if(mafio.active()) game::mafia::draw_turf(mafio,camera.position,static_cast<float>(GetTime()));
+        if(services.active()) game::services::draw_light_bars(services,vehicles,camera.position,static_cast<float>(GetTime()));
         // The circle's edge stands in the world as a wall of blue light.
         if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal())
             game::draw_zone_wall(mode_session.radius(),camera.position,static_cast<float>(GetTime()));
@@ -2301,6 +2344,7 @@ void Renderer::run() {
         world::sky::draw_sky_objects(sky,camera.position);
         world::sky::draw_lights(scene_lights,sky,camera.position,static_cast<float>(GetTime()));
         if(const auto* car=vehicles.driver()) world::sky::draw_headlights(car->position,car->yaw,sky);
+        if(services.active()) game::services::draw_light_bars(services,vehicles,camera.position,static_cast<float>(GetTime()));
         if(bus_line.running()) for(const auto& bus:bus_line.buses())
             if(bus.running && Vector3DistanceSqr(bus.position,camera.position)<350*350) world::sky::draw_headlights(bus.position,bus.yaw,sky);
         EndMode3D();

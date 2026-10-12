@@ -151,6 +151,7 @@ bool LifeSimulation::outdoors_now(const Resident& r) const {
 }
 
 Vector3 LifeSimulation::abstract_position(const Resident& r) const {
+    if(in_hospital(r)) return r.hospital_at;
     if(r.responding) {
         // Driving to the scene: straight line at car speed in real seconds.
         const double real_seconds=(clock_.minutes-r.depart)*60.0/std::max(.01F,config_.time_scale);
@@ -185,7 +186,11 @@ bool LifeSimulation::indoors(const Resident& r) const {
 }
 
 void LifeSimulation::replan(Resident& r) {
-    if(!r.alive || r.responding) return;
+    if(!r.alive || r.responding || in_hospital(r)) return;
+    if(r.hospital_until>=0) { // discharged: out of the hospital door, healed
+        r.hospital_until=-1;r.health=100;r.fear=0;r.shelter_until=-1;
+        r.place=-1;r.from=r.hospital_at;r.depart=r.arrive=clock_.minutes;r.trip=Trip::Walk;
+    }
     if(r.shelter_until>=0 && r.shelter_until<=clock_.minutes) {r.shelter_until=-1;r.fear=0;}
     const Activity activity=r.shelter_until>clock_.minutes ? Activity::Shelter :
         planned_activity(r,clock_.weekday(),clock_.minute_of_day());
@@ -269,7 +274,7 @@ void LifeSimulation::sync_bodies(Vector3 player,characters::NpcSystem& npcs) {
     }
     std::vector<std::pair<float,int>> candidates;
     for(const auto& r:island_.residents) {
-        if(r.physical || !r.alive || r.trip==Trip::Driving) continue;
+        if(r.physical || !r.alive || r.trip==Trip::Driving || in_hospital(r)) continue;
         const float distance=flat_distance(abstract_position(r),player);
         if(indoors(r) && island_.places[static_cast<std::size_t>(r.place)].sealed) continue;
         if(distance<=(indoors(r) ? config_.indoor_radius : config_.materialize_radius)) candidates.emplace_back(distance,r.id);
@@ -338,6 +343,16 @@ void LifeSimulation::hear(const sound::SoundBus& sounds) {
     for(const auto& event:sounds.events())
         if(event.serial>heard_up_to_ && event.kind==sound::SoundKind::Gunshot) report_gunfire(event.position);
     heard_up_to_=sounds.latest();
+}
+
+bool LifeSimulation::hospitalise(int resident,Vector3 door,double minutes) {
+    if(resident<0 || static_cast<std::size_t>(resident)>=island_.residents.size()) return false;
+    auto& r=island_.residents[static_cast<std::size_t>(resident)];
+    if(!r.alive) return false;
+    if(r.responding) release(resident);
+    r.physical=false;r.trip=Trip::Walk;r.fear=0;r.shelter_until=-1;
+    r.hospital_until=clock_.minutes+std::max(1.0,minutes);r.hospital_at=door;
+    return true;
 }
 
 void LifeSimulation::report_gunfire(Vector3 position) {

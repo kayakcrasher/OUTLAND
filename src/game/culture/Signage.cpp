@@ -108,7 +108,12 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
             if (other.kind == place.kind && other.settlement == place.settlement && &other != &place &&
                 (flat(other.door, centre) < flat(place.door, centre) ||
                  (flat(other.door, centre) == flat(place.door, centre) && other.id < place.id))) ++ordinal;
-        const auto text = place_sign(place.kind, text_hash(s < towns.size() ? towns[s].id : place.id), owner_of(island, static_cast<int>(i)), ordinal, capital);
+        auto text = place_sign(place.kind, text_hash(s < towns.size() ? towns[s].id : place.id), owner_of(island, static_cast<int>(i)), ordinal, capital);
+        // The clinic in the hospital building is Hospitalo de Verda.
+        if (place.kind == PlaceKind::Clinic)
+            for (const auto& town : towns) for (const auto& asset : town.assets)
+                if (asset.model_path.ends_with("civic/hospital.glb") && flat(asset.position, place.door) < 30)
+                    text = {"HOSPITALO DE VERDA", "URĜA HELPO · AMBULANCOJ"};
         if (text.title.empty()) continue;
         const auto colours = look(place.kind, place.sealed);
         Sign sign;

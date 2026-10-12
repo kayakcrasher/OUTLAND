@@ -14,7 +14,8 @@ picks them for far shooters and delays them by the speed of sound. Also: grenade
 (near and far), the shotgun pump, the sniper bolt, shell casings and the kill confirmation;
 each gun's reload (timed to its reload), drawing a weapon, bullets cracking past and
 ricocheting near the player, hit markers, taking hits (body and armour plate), picking up,
-pulling a grenade pin, the zone warning pulse and the low-health heartbeat.
+pulling a grenade pin, the zone warning pulse and the low-health heartbeat; and the siren of
+the police cars and ambulances (a seamless 4 s wail loop).
 
     python3 tools/generate_weapon_audio.py           # write assets/audio/weapons/*.wav
     python3 tools/generate_weapon_audio.py --check   # fail if the committed files are stale
@@ -318,6 +319,18 @@ def heartbeat():
     return normalise(band(x, 25, 400), .8)
 
 
+def siren():
+    # A wail rising and falling over 4 s, a square-ish horn tone softened by a low-pass; the
+    # carrier is tuned so the loop closes on a whole cycle (no click when it repeats).
+    t = np.arange(int(4.0 * RATE)) / RATE
+    f = 900 + 420 * np.sin(2 * np.pi * t / 4 - np.pi / 2)
+    phase = np.cumsum(f) / RATE * 2 * np.pi
+    phase *= round(phase[-1] / (2 * np.pi)) * 2 * np.pi / phase[-1]
+    x = np.sin(phase) + .33 * np.sin(3 * phase) + .2 * np.sin(5 * phase) + .12 * np.sin(7 * phase)
+    x = band(x, 300, 4200)
+    return normalise(np.tanh(x * 1.4), .7)
+
+
 def sounds():
     out = {}
     for name in GUNS:
@@ -346,6 +359,7 @@ def sounds():
     out["grenade_pin.wav"] = grenade_pin()
     out["zone_warning.wav"] = zone_warning()
     out["heartbeat.wav"] = heartbeat()
+    out["siren.wav"] = siren()
     return out
 
 

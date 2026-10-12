@@ -183,6 +183,7 @@ add_library(
     src/game/ai/BattleRoyaleBots.cpp
     src/game/ai/BotDrivers.cpp
     src/game/mafia/Mafio.cpp
+    src/game/services/EmergencyServices.cpp
     src/game/mafia/MafioRenderer.cpp
     src/game/casino/Poker.cpp
     src/game/casino/PokerTable.cpp
@@ -685,6 +686,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_mafio_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_mafio_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_mafio_tests COMMAND outland_mafio_tests)
+    add_executable(outland_emergency_services_tests tests/integration/services/test_emergency_services.cpp)
+    target_link_libraries(outland_emergency_services_tests PRIVATE outland_render)
+    target_compile_options(outland_emergency_services_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_emergency_services_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_emergency_services_tests COMMAND outland_emergency_services_tests)
     add_executable(outland_poker_tests tests/unit/casino/test_poker.cpp)
     target_link_libraries(outland_poker_tests PRIVATE outland_render)
     target_compile_options(outland_poker_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -722,6 +728,7 @@ if(OUTLAND_BUILD_TESTS)
         add_test(NAME outland_loot_asset_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/audit_loot_assets.py")
         add_test(NAME outland_survival_catalog_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_survival_catalog.py" --check)
         add_test(NAME outland_generated_vehicle_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_truck_model.py" --check)
+        add_test(NAME outland_generated_emergency_vehicles COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_emergency_vehicles.py" --check)
         add_test(NAME outland_generated_grenade_model COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_grenade_model.py" --check)
         add_test(NAME outland_generated_sight_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_sight_models.py" --check)
         add_test(NAME outland_generated_armour_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_armour_models.py" --check)

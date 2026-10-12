@@ -14,6 +14,7 @@ namespace {
 float flat(Vector3 a, Vector3 b) { return std::hypot(a.x - b.x, a.z - b.z); }
 bool usable(const vehicles::VehicleSystem& cars, const world::VerdaRegion& region, const vehicles::VehicleRuntime& car) {
     if (car.id.find("_donor_") != std::string::npos || car.id.find("bus") != std::string::npos || cars.kinematic(car.id)) return false;
+    if (car.id.find("_police_") != std::string::npos || car.id.find("_ambulance_") != std::string::npos) return false; // the services' own
     if (cars.autopiloted(car.id) || (cars.driver() && cars.driver()->id == car.id)) return false; // taken already
     const auto* asset = cars.asset(region, car.id);
     return asset && asset->vehicle.enabled && !asset->vehicle.destroyed && asset->vehicle.fuel > .15F && asset->vehicle.health > 30;
@@ -149,28 +150,29 @@ void BotDrivers::dismount(BotRide& ride, BattleRoyaleBots& bots, vehicles::Vehic
     }
 }
 
-void BotDrivers::steer(BotRide& ride, vehicles::VehicleSystem& cars, float dt) {
-    const int v = cars.find(ride.vehicle);
+void steer_along(const world::roads::Route& route, float& progress, float& stuck, float& reverse, int& attempts,
+                 std::string_view vehicle, vehicles::VehicleSystem& cars, float dt, float straight, float bends) {
+    const int v = cars.find(vehicle);
     if (v < 0) return;
     const auto& car = cars.vehicles()[static_cast<std::size_t>(v)];
-    ride.progress = world::roads::route_progress(ride.route, car.position, ride.progress);
-    const float remaining = ride.route.length - ride.progress, speed = car.speed;
+    progress = world::roads::route_progress(route, car.position, progress);
+    const float remaining = route.length - progress, speed = car.speed;
     vehicles::VehicleInput input;
-    if (ride.reverse > 0) {
-        ride.reverse -= dt;
+    if (reverse > 0) {
+        reverse -= dt;
         input.throttle = -.8F;
-        cars.set_autopilot(ride.vehicle, input);
+        cars.set_autopilot(vehicle, input);
         return;
     }
     // Pure pursuit along the lane, faster than a resident and less patient.
-    const Vector3 target = world::roads::route_point(ride.route, ride.progress + 5.0F + std::abs(speed) * .8F);
+    const Vector3 target = world::roads::route_point(route, progress + 5.0F + std::abs(speed) * .8F);
     const float want = std::atan2(target.x - car.position.x, target.z - car.position.z) * RAD2DEG;
     const float error = std::remainder(want - car.yaw, 360.0F);
     input.steer = std::clamp(error / 22.0F, -1.0F, 1.0F);
     float near_yaw = 0, far_yaw = 0;
-    world::roads::route_point(ride.route, ride.progress + 4, &near_yaw);
-    world::roads::route_point(ride.route, ride.progress + 26, &far_yaw);
-    float limit = std::abs(std::remainder(far_yaw - near_yaw, 360.0F)) > 25 ? 7.0F : 17.0F;
+    world::roads::route_point(route, progress + 4, &near_yaw);
+    world::roads::route_point(route, progress + 26, &far_yaw);
+    float limit = std::abs(std::remainder(far_yaw - near_yaw, 360.0F)) > 25 ? bends : straight;
     if (std::abs(error) > 45) limit = std::min(limit, 4.0F);
     limit = std::min(limit, std::max(2.0F, std::sqrt(2 * 3.0F * std::max(0.0F, remaining))));
     // Cars in the lane ahead: slow behind them.
@@ -181,12 +183,16 @@ void BotDrivers::steer(BotRide& ride, vehicles::VehicleSystem& cars, float dt) {
         const float ahead = x * forward.x + z * forward.z, lateral = std::abs(x * forward.z - z * forward.x);
         if (ahead > 1.5F && ahead < 6 + std::abs(speed) * 1.3F && lateral < 1.8F) limit = std::min(limit, 1.0F);
     }
-    if (limit > 1 && std::abs(speed) < .3F) ride.stuck += dt;
-    else ride.stuck = 0;
-    if (ride.stuck > 1.8F) { ride.stuck = 0; ride.reverse = 1.2F; ++ride.attempts; }
+    if (limit > 1 && std::abs(speed) < .3F) stuck += dt;
+    else stuck = 0;
+    if (stuck > 1.8F) { stuck = 0; reverse = 1.2F; ++attempts; }
     input.throttle = std::clamp((limit - speed) * .4F, -1.0F, 1.0F);
     if (speed > limit + 2) input.throttle = -1;
-    cars.set_autopilot(ride.vehicle, input);
+    cars.set_autopilot(vehicle, input);
+}
+
+void BotDrivers::steer(BotRide& ride, vehicles::VehicleSystem& cars, float dt) {
+    steer_along(ride.route, ride.progress, ride.stuck, ride.reverse, ride.attempts, ride.vehicle, cars, dt);
 }
 
 void BotDrivers::update(float dt, BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,

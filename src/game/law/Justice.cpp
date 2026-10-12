@@ -83,6 +83,16 @@ void Justice::crime(CrimeKind kind, Vector3 where, int victim, const JusticeFram
     }
 }
 
+void Justice::witnessed(CrimeKind kind, Vector3 where, const JusticeFrame& frame, life::LifeSimulation& life) {
+    if (!std::isfinite(where.x) || !std::isfinite(where.z)) return;
+    ++reports_;
+    const int before = wanted_;
+    wanted_ = std::max(wanted_, crime_severity(kind));
+    last_known_ = where; last_seen_ = std::max(last_seen_, frame.now);
+    dispatch(1 + wanted_, where, life);
+    if (wanted_ > before) say(std::string("An officer saw the ") + crime_name(kind));
+}
+
 void Justice::dispatch(int count, Vector3 where, life::LifeSimulation& life) {
     dispatched_to_ = where;
     for (const int id : responders_) life.dispatch(id, where);
@@ -156,6 +166,11 @@ void Justice::update(const JusticeFrame& frame, life::LifeSimulation& life, char
         seen = true;
         if (!r.responding) {life.dispatch(r.id, frame.player); responders_.push_back(r.id);}
     }
+    if (wanted_ > 0) for (const Vector3 officer_feet : frame.patrol_officers) {
+        if (flat(officer_feet, frame.player) > seeing) continue;
+        if (frame.line_of_sight && !frame.line_of_sight(eye(officer_feet), eye(frame.player))) continue;
+        seen = true;
+    }
     if (seen) {last_seen_ = frame.now; last_known_ = frame.player;}
     if (wanted_ > 0 && frame.now >= redirect_at_ && flat(last_known_, dispatched_to_) > 10) {
         redirect_at_ = frame.now + 2;
@@ -171,6 +186,7 @@ void Justice::update(const JusticeFrame& frame, life::LifeSimulation& life, char
             const auto& r = residents[static_cast<std::size_t>(id)];
             close |= r.physical && flat(r.body, frame.player) <= config_.arrest_radius;
         }
+        for (const Vector3 officer_feet : frame.patrol_officers) close |= flat(officer_feet, frame.player) <= config_.arrest_radius;
         if (close && frame.now - last_fired_ >= config_.calm_seconds) arrest_clock_ += frame.dt;
         else arrest_clock_ = 0;
         if (arrest_clock_ >= config_.arrest_seconds) {

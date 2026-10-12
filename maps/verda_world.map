@@ -5025,6 +5025,17 @@ ASSET "creator_transit_bus_stop_kit4" 9 "assets/verda/transit/bus_stop.glb" -171
 ASSET "creator_transit_concrete_kit11" 5 "assets/verda/transit/concrete.glb" -1717.19995 14.0573664 456.899994 2 0.0599999987 0.810000002 90 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_concrete_kit12" 5 "assets/verda/transit/concrete.glb" -1717.19995 14.0573664 461.100006 2 0.0599999987 0.810000002 90 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_bus_stop_sign_01_kit2" 9 "assets/verda/transit/bus_stop_sign_01.glb" -1716.69995 14.0573664 463 0.589999974 2.8499999 0.0700000003 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_police_station_kit1" 0 "assets/verda/city/civic/police_station.glb" -14.4249973 6 -1763.05005 20 4.69999981 12 -89.9999924 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_police_station_kit2" 0 "assets/verda/city/civic/police_station.glb" 14.4250002 0 -178.949997 20 4.69999981 12 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_police_station_kit3" 0 "assets/verda/city/civic/police_station.glb" 1886.42505 6 -398.950012 20 4.69999981 12 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_police_station_kit4" 0 "assets/verda/city/civic/police_station.glb" 285.575012 6 1866.94995 20 4.69999981 12 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_police_station_kit5" 0 "assets/verda/city/civic/police_station.glb" -1751.05005 14.0573664 586.424988 20 4.69999981 12 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_police_station_kit6" 0 "assets/verda/city/civic/police_station.glb" -1812.94995 14.0573664 313.575012 20 4.69999981 12 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_police_station_kit7" 0 "assets/verda/city/civic/police_station.glb" 1023.95001 16.2185574 -983.575012 20 4.69999981 12 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_police_station_kit8" 0 "assets/verda/city/civic/police_station.glb" 1325.42505 6 -249.949997 20 4.69999981 12 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_police_station_kit9" 0 "assets/verda/city/civic/police_station.glb" -951.575012 6 -1027.94995 20 4.69999981 12 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_police_station_kit10" 0 "assets/verda/city/civic/police_station.glb" -895.575012 7.28794098 1082.05005 20 4.69999981 12 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_hospital_kit1" 0 "assets/verda/city/civic/hospital.glb" -39.1000061 -0.0970151424 -181.600006 46 12.6999998 23 180 255 255 255 255 80 80 80 255 1
 MARKER "creator_marker_loot_spawn_general_training" 0 4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 0.5 0.5 0.5 0 1
@@ -5173,6 +5184,18 @@ MARKER "creator_marker_building_purpose_kit_138" 4 -921.931641 8.13794136 1048.7
 MARKER "creator_marker_building_purpose_kit_139" 4 -921.931641 8.13794136 1062.76965 1.20000005 2.20000005 1.20000005 178 1
 MARKER "creator_marker_building_purpose_kit_140" 4 -896.799988 7.38794088 1107 1.20000005 2.20000005 1.20000005 90 1
 MARKER "vehicle_spawn_truck_village_espera_1" 3 -50 6 -1742 2 1.60000002 4.4000001 90 1
+MARKER "creator_marker_building_purpose_kit_141" 4 -10.1999979 6.3499999 -1766 1.20000005 2.20000005 1.20000005 -89.9999924 1
+MARKER "vehicle_spawn_police_village_espera_1" 3 -5.79999638 6 -1757 2 1.60000002 4.4000001 7.62939453e-06 1
+MARKER "creator_marker_building_purpose_kit_142" 4 10.1999998 0.349999994 -176 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_143" 4 1882.19995 6.3499999 -396 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_144" 4 289.799988 6.3499999 1864 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_145" 4 -1754 14.4073668 582.200012 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_146" 4 -1810 14.4073668 317.799988 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_147" 4 1021 16.5685577 -987.799988 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_148" 4 1321.19995 6.3499999 -247 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_149" 4 -955.799988 6.3499999 -1025 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_150" 4 -899.799988 7.63794088 1085 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_151" 4 -44.0000076 0.252984852 -174.5 1.20000005 2.20000005 1.20000005 180 1
 MARKER "loot_spawn_weapons_bldg_86" 0 -55 6 -1845 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_87" 0 55 6.0999999 -1845 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_210" 0 -14 6 -1782 0.5 0.5 0.5 0 1
@@ -5321,6 +5344,17 @@ PURPOSE "creator_marker_building_purpose_kit_137" 1
 PURPOSE "creator_marker_building_purpose_kit_138" 1
 PURPOSE "creator_marker_building_purpose_kit_139" 1
 PURPOSE "creator_marker_building_purpose_kit_140" 2
+PURPOSE "creator_marker_building_purpose_kit_141" 5
+PURPOSE "creator_marker_building_purpose_kit_142" 5
+PURPOSE "creator_marker_building_purpose_kit_143" 5
+PURPOSE "creator_marker_building_purpose_kit_144" 5
+PURPOSE "creator_marker_building_purpose_kit_145" 5
+PURPOSE "creator_marker_building_purpose_kit_146" 5
+PURPOSE "creator_marker_building_purpose_kit_147" 5
+PURPOSE "creator_marker_building_purpose_kit_148" 5
+PURPOSE "creator_marker_building_purpose_kit_149" 5
+PURPOSE "creator_marker_building_purpose_kit_150" 5
+PURPOSE "creator_marker_building_purpose_kit_151" 6
 SETTLEMENT "capital_verda" "Verda" 0 0 0 0 384 0 0
 ROAD 0 0 -166 0 0 -630 8 2
 ROAD 0 0 -630 0 0 -1170 8 2
@@ -5557,6 +5591,11 @@ MARKER "vehicle_spawn_hatchback_orienta_22" 3 406.600006 0 169.309998 2 1.600000
 MARKER "vehicle_spawn_bus_linio1_1" 3 29.8840485 5.74097776 269.96817 3 3.4000001 12.3000002 -167.249115 1
 MARKER "vehicle_spawn_bus_linio1_2" 3 33.4154472 5.80337095 285.573608 3 3.4000001 12.3000002 -167.249115 1
 MARKER "vehicle_spawn_bus_linio1_3" 3 36.9468498 6.9007678 301.179016 3 3.4000001 12.3000002 -167.249115 1
+MARKER "vehicle_spawn_police_capital_verda_1" 3 5.80000019 -0.0555553548 -185 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_police_capital_verda_2" 3 5.80000019 -0 -170 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_ambulance_capital_1" 3 -20.0000057 -0 -167.800003 2 1.60000002 4.4000001 270 1
+MARKER "vehicle_spawn_ambulance_capital_2" 3 -35.0000076 -0 -167.800003 2 1.60000002 4.4000001 270 1
+MARKER "vehicle_spawn_ambulance_capital_3" 3 -50.0000076 -0 -167.800003 2 1.60000002 4.4000001 270 1
 MARKER "loot_spawn_weapons_bldg_1" 0 -96 0.350000024 -20 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_2" 0 -108 0.350000024 -20 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_bldg_3" 0 -123 0.350000024 -20 0.5 0.5 0.5 0 1
@@ -6033,6 +6072,7 @@ MARKER "vehicle_spawn_hatchback_porto_7" 3 1793.80005 6 -392 2 1.60000002 4.4000
 MARKER "vehicle_spawn_hatchback_porto_8" 3 1793.80005 6 -418 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_truck_port_luma_1" 3 1936 6 -462 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_truck_port_luma_2" 3 1936 6 -338 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_police_port_luma_1" 3 1877.80005 6 -405 2 1.60000002 4.4000001 180 1
 MARKER "loot_spawn_general_bldg_92" 0 1690 6.3499999 -501 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_bldg_93" 0 1690 6.3499999 -483 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_bldg_94" 0 1690 6.3499999 -468 0.5 0.5 0.5 0 1
@@ -6141,6 +6181,7 @@ MARKER "vehicle_spawn_hatchback_south_haven_drive_5" 3 330.299988 6 1757.40002 2
 MARKER "vehicle_spawn_hatchback_south_haven_drive_6" 3 313.700012 6 1787.40002 2 1.60000002 4.4000001 360 1
 MARKER "vehicle_spawn_hatchback_south_haven_drive_7" 3 313.700012 6 1817.40002 2 1.60000002 4.4000001 360 1
 MARKER "vehicle_spawn_hatchback_south_haven_drive_8" 3 330.299988 6 1847.40002 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_police_south_haven_1" 3 294.200012 6 1873 2 1.60000002 4.4000001 0 1
 MARKER "loot_spawn_medical_bldg_82" 0 250 6 1770 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_bldg_83" 0 250 6 1825 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_medical_bldg_84" 0 350 6.0999999 1770 0.5 0.5 0.5 0 1
@@ -6180,6 +6221,7 @@ MARKER "vehicle_spawn_truck_roka_1" 3 -1648 14.0573664 394 2 1.60000002 4.400000
 MARKER "vehicle_spawn_truck_roka_2" 3 -1692 14.0573664 474 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_truck_roka_3" 3 -1648 14.0573664 554 2 1.60000002 4.4000001 270 1
 MARKER "vehicle_spawn_truck_roka_4" 3 -1910 14.0573664 442 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_police_west_roka_1" 3 -1745 14.0573664 577.799988 2 1.60000002 4.4000001 90 1
 MARKER "loot_spawn_general_bldg_61" 0 -1816 14.207366 436 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_62" 0 -1816 14.207366 466 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_63" 0 -1726 14.4073658 390 0.5 0.5 0.5 0 1
@@ -6242,6 +6284,7 @@ MARKER "vehicle_spawn_hatchback_donor_sovagejo_10" 3 -1781 14.0573664 302 2 1.60
 MARKER "vehicle_spawn_hatchback_sovagejo_11" 3 -1798 13.2198811 170 2 1.60000002 4.4000001 180 1
 MARKER "vehicle_spawn_hatchback_donor_sovagejo_12" 3 -1799 13.2198811 155 2 1.60000002 4.4000001 193 1
 MARKER "vehicle_spawn_truck_ferarbaro_sovagejo_1" 3 -1781 13.2198811 154 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_police_ferarbaro_sovagejo_1" 3 -1819 14.0573664 322.200012 2 1.60000002 4.4000001 270 1
 SETTLEMENT "hamlet_ruldomaro" "Ruldomaro" 997 0 -997 0 26 0 0
 ROAD 939 0 -997 1045 0 -997 6 1
 ROAD 1045 0 -997 1077.99243 0 -1030.00439 6 1
@@ -6260,6 +6303,7 @@ MARKER "vehicle_spawn_hatchback_ruldomaro_4" 3 1003.94769 16.2185574 -986.140015
 MARKER "loot_spawn_general_ruldomaro_9" 0 1027 16.5185566 -1018 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_ruldomaro_10" 0 942 16.368557 -1013 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_medical_ruldomaro_11" 0 948 16.3185577 -982 0.5 0.5 0.5 0 1
+MARKER "vehicle_spawn_police_hamlet_ruldomaro_1" 3 1030 16.2185574 -992.200012 2 1.60000002 4.4000001 90 1
 MARKER "loot_spawn_medical_bldg_206" 0 1027 16.3185577 -1014 0.5 0.5 0.5 0 1
 SETTLEMENT "hamlet_vojrando" "Vojrando" 1312 0 -239 0 20 0 0
 ROAD 1312 0 -181 1312 0 -287 6 1
@@ -6276,6 +6320,7 @@ MARKER "loot_spawn_general_vojrando_6" 0 1327.69531 6.9000001 -224.711639 0.5 0.
 MARKER "loot_spawn_general_vojrando_7" 0 1291 6.30000019 -269 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_vojrando_8" 0 1296 6.1500001 -184 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_medical_vojrando_9" 0 1327 6.0999999 -190 0.5 0.5 0.5 0 1
+MARKER "vehicle_spawn_police_hamlet_vojrando_1" 3 1316.80005 6 -256 2 1.60000002 4.4000001 180 1
 MARKER "loot_spawn_weapons_bldg_207" 0 1295 6.0999999 -269 0.5 0.5 0.5 0 1
 SETTLEMENT "hamlet_pinejo" "Pinejo" -965 0 -1017 0 20 0 0
 ROAD -965 0 -959 -965 0 -1065 6 1
@@ -6293,6 +6338,7 @@ MARKER "loot_spawn_general_pinejo_6" 0 -949.316101 6.9000001 -1002.63525 0.5 0.5
 MARKER "loot_spawn_general_pinejo_7" 0 -986 6.30000019 -1047 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_pinejo_8" 0 -981 6.1500001 -962 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_medical_pinejo_9" 0 -950 6.0999999 -968 0.5 0.5 0.5 0 1
+MARKER "vehicle_spawn_police_hamlet_pinejo_1" 3 -960.200012 6 -1034 2 1.60000002 4.4000001 180 1
 MARKER "loot_spawn_general_bldg_208" 0 -982 6.0999999 -1047 0.5 0.5 0.5 0 1
 SETTLEMENT "hamlet_sablovalo" "Sablovalo" -909 0 1077 0 20 0 0
 ROAD -909 0 1019 -909 0 1125 6 1
@@ -6308,4 +6354,5 @@ MARKER "vehicle_spawn_truck_sablovalo_2" 3 -919.739136 7.28794098 1069.90063 2 1
 MARKER "loot_spawn_general_sablovalo_7" 0 -888 7.58794117 1107 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_sablovalo_8" 0 -893 7.43794107 1022 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_medical_sablovalo_9" 0 -924 7.38794088 1028 0.5 0.5 0.5 0 1
+MARKER "vehicle_spawn_police_hamlet_sablovalo_1" 3 -904.200012 7.28794098 1076 2 1.60000002 4.4000001 180 1
 MARKER "loot_spawn_weapons_bldg_209" 0 -892 7.38794088 1107 0.5 0.5 0.5 0 1

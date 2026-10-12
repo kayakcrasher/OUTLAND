@@ -157,10 +157,22 @@ int main() {
         mafio.update(frame, bots, world, drivers, cars, region);
         cars.update(.05F, {}, region, frame.player_feet, false);
         shots += bots.events().shots;
+        if (std::getenv("MAFIO_TRACE") && static_cast<int>(t * 20) % 40 == 0)
+            for (const auto& ride : drivers.rides())
+                if (ride.targeted) {
+                    const auto& c = cars.vehicles()[static_cast<std::size_t>(cars.find(ride.vehicle))];
+                    std::cout << "t " << t << " " << ride.vehicle << " active " << ride.active << " at " << c.position.x << "," << c.position.z
+                              << " speed " << c.speed << " progress " << ride.progress << "/" << ride.route.length << " attempts " << ride.attempts << '\n';
+                }
         if (!mafio.wars().empty()) arrived = mafio.wars().front().arrived;
         now += .05;
     }
     std::cout << "the squad arrived: " << arrived << ", shots fired: " << shots << '\n';
+    for (const int id : war.squad) {
+        const auto* bot = bots.find(id);
+        std::cout << "  squad member " << id << " at " << bot->position().x << "," << bot->position().z << " alive " << bot->alive()
+                  << " " << game::ai::bot_intent_name(bot->intent()) << ", " << Vector3Distance(bot->position(), watch) << " m from the target\n";
+    }
     check(arrived, "the squad gets there by road");
     check(shots > 10, "and they fight it out");
     std::cout << "mafio tests passed\n";

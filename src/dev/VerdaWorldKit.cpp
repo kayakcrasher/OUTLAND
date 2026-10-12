@@ -1392,6 +1392,117 @@ void building_loot(Kit& kit, world::VerdaRegion& region) {
     }
 }
 
+// ------------------------------------------------------------------ Policio and Hospitalo
+// A modular police station (city kit civic/police_station.glb) in every town, facing one of its
+// streets on level ground near the centre, with a patrol car in its carport (two in Verda City).
+// Verda City also gets Hospitalo de Verda near its station: the hospital with a drive-under
+// ambulance bay and three ambulances in it.
+struct CivicSpot { Vector3 origin; float yaw; };
+const std::string police_model = "assets/verda/city/civic/police_station.glb";
+const std::string hospital_model = "assets/verda/city/civic/hospital.glb";
+
+bool civic_lot(Kit& kit, world::VerdaRegion& region, Vector3 near, float min_distance, float max_distance, float lot_x, float lot_z,
+               float half_x, float half_z, float front, float apron, CivicSpot& out) {
+    struct Candidate { float score; Vector3 origin; float yaw; };
+    std::vector<Candidate> candidates;
+    for (const auto& town : region.settlements())
+        for (const auto& road : town.roads) {
+            if (road.type == world::RoadType::Dirt) continue;
+            const float length = Vector3Distance(road.start, road.end);
+            if (length < 20) continue;
+            const Vector3 along = Vector3Normalize(Vector3Subtract(road.end, road.start));
+            const Vector3 normal{-along.z, 0, along.x};
+            for (float t = 10; t <= length - 10; t += 8)
+                for (const float side : {-1.0F, 1.0F}) {
+                    const Vector3 p = Vector3Add(road.start, Vector3Scale(along, t));
+                    const Vector3 n = Vector3Scale(normal, side);
+                    const Vector3 origin = Vector3Add(p, Vector3Scale(n, road.width * .5F + apron + front));
+                    const float distance = std::hypot(origin.x - near.x, origin.z - near.z);
+                    if (distance < min_distance || distance > max_distance) continue;
+                    candidates.push_back({distance, origin, std::atan2(n.x, n.z) * RAD2DEG}); // front (-Z) faces the road
+                }
+        }
+    std::sort(candidates.begin(), candidates.end(), [](const Candidate& a, const Candidate& b) { return a.score < b.score; });
+    for (const auto& c : candidates) {
+        const Vector3 centre = to_world(c.origin, c.yaw, lot_x, 0, lot_z);
+        // Level ground, and no building, wall or tree in the way.
+        float lo = 1e9F, hi = -1e9F;
+        for (const float sx : {-1.0F, 0.0F, 1.0F}) for (const float sz : {-1.0F, 0.0F, 1.0F}) {
+            const Vector3 q = to_world(centre, c.yaw, sx * half_x, 0, sz * half_z);
+            const float h = world::terrain::TerrainHeight::sample(q.x, q.z);
+            lo = std::min(lo, h); hi = std::max(hi, h);
+        }
+        if (hi - lo > 1.2F) continue;
+        bool blocked = false;
+        const float a = c.yaw * DEG2RAD;
+        for (const auto& town : region.settlements()) {
+            for (const auto& asset : town.assets) {
+                if (!asset.collision) continue;
+                const float dx = asset.position.x - centre.x, dz = asset.position.z - centre.z;
+                const float lx = dx * std::cos(a) - dz * std::sin(a), lz = dx * std::sin(a) + dz * std::cos(a);
+                const float r = std::max(asset.size.x, asset.size.z) * .5F;
+                if (std::abs(lx) < half_x + r && std::abs(lz) < half_z + r) { blocked = true; break; }
+            }
+            if (blocked) break;
+            // Parked cars (their markers reserve no lot): leave them room to drive out.
+            for (const auto& marker : town.gameplay_markers) {
+                if (marker.type != world::GameplayMarkerType::VehicleSpawn) continue;
+                const float dx = marker.position.x - centre.x, dz = marker.position.z - centre.z;
+                const float lx = dx * std::cos(a) - dz * std::sin(a), lz = dx * std::sin(a) + dz * std::cos(a);
+                if (std::abs(lx) < half_x + 5 && std::abs(lz) < half_z + 5) { blocked = true; break; }
+            }
+            if (blocked) break;
+        }
+        if (blocked || !kit.claim(centre, half_x, half_z, c.yaw)) continue;
+        out = {{c.origin.x, world::terrain::TerrainHeight::sample(c.origin.x, c.origin.z), c.origin.z}, c.yaw};
+        return true;
+    }
+    return false;
+}
+
+void emergency_services(Kit& kit, world::VerdaRegion& region) {
+    Vector3 capital_station{};
+    bool capital_found = false;
+    std::vector<std::string> ids;
+    for (const auto& town : region.settlements()) ids.push_back(town.id);
+    for (const auto& id : ids) {
+        auto* town = settlement(region, id);
+        if (!town) continue;
+        const bool capital = id == "capital_verda";
+        const Vector3 centre = town->center;
+        // The station: 14 x 12 m with a 6 m carport on +X (model bounds x -7..13, z -6..6).
+        CivicSpot spot;
+        if (!civic_lot(kit, region, centre, capital ? 60 : 15, capital ? 420 : 260, 3, 0, 10.5F, 7, 6, 5, spot)) continue;
+        if (!kit.put(police_model, spot.origin, spot.yaw)) continue;
+        kit.purpose(to_world(spot.origin, spot.yaw, 0, .35F, -4.8F), spot.yaw, world::BuildingPurpose::Police);
+        // The patrol car on the apron in front, along the kerb (vehicles treat a model's whole
+        // bounds as solid, so nothing parks under the carport roof); Verda City has a second.
+        auto* owner = settlement(region, id);
+        vehicle_marker(*owner, "vehicle_spawn_police_" + id + "_1", to_world(spot.origin, spot.yaw, 9, 0, -9.2F), spot.yaw + 90);
+        ++kit.report.police_cars;
+        if (capital) {
+            vehicle_marker(*owner, "vehicle_spawn_police_" + id + "_2", to_world(spot.origin, spot.yaw, -6, 0, -9.2F), spot.yaw + 90);
+            ++kit.report.police_cars;
+            capital_station = spot.origin;
+            capital_found = true;
+        }
+        ++kit.report.police_stations;
+    }
+    // Hospitalo de Verda near the capital's police station (model bounds x -28..18, z -13..10).
+    if (!capital_found) return;
+    auto* capital = settlement(region, "capital_verda");
+    CivicSpot spot;
+    if (!capital || !civic_lot(kit, region, capital_station, 25, 320, -5, -1.5F, 24, 12.5F, 13, 4, spot)) return;
+    if (!kit.put(hospital_model, spot.origin, spot.yaw)) return;
+    kit.purpose(to_world(spot.origin, spot.yaw, 0, .35F, -8.5F), spot.yaw, world::BuildingPurpose::Clinic);
+    // Along the kerb in front of the hospital, clear of its bounds (the bay is for show).
+    for (int i = 0; i < 3; ++i)
+        vehicle_marker(*capital, "vehicle_spawn_ambulance_capital_" + std::to_string(i + 1),
+                       to_world(spot.origin, spot.yaw, -24 + static_cast<float>(i) * 15, 0, -15.2F), spot.yaw + 90);
+    kit.report.ambulances += 3;
+    kit.report.hospital = true;
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     Kit kit(region, catalog);
@@ -1410,6 +1521,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     highway_hamlets(kit, region);
     bus_stops(kit, region);
     trucks(kit, region);
+    emergency_services(kit, region);
     building_loot(kit, region);
     return kit.report;
 }

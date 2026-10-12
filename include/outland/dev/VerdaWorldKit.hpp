@@ -20,6 +20,8 @@ struct KitBuilding {
 };
 struct WorldKitReport {
     int assets{0}, buildings{0}, skipped_lots{0}, purposes{0}, parks{0}, driveways{0}, homesteads{0}, bus_stops{0}, turnarounds{0}, houses{0}, trucks{0}, hamlets{0}, cities{0}, loot_spots{0};
+    int police_stations{0}, police_cars{0}, ambulances{0};
+    bool hospital{false};
     std::vector<KitBuilding> enterable;
     std::vector<Vector3> skipped;     // centres of lots left empty because something was there
     std::vector<std::string> missing; // catalog models that could not be placed

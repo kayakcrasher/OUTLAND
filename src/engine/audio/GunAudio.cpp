@@ -67,6 +67,10 @@ GunAudio::GunAudio(const std::string& directory, const std::string& steps) {
     for (int v = 0; v < 2; ++v) load(ricochet_, directory + "/ricochet_" + std::to_string(v) + ".wav");
     load(zone_, directory + "/zone_warning.wav");
     load(heart_, directory + "/heartbeat.wav");
+    if (const std::string path = directory + "/siren.wav"; FileExists(path.c_str())) {
+        siren_ = LoadMusicStream(path.c_str());
+        if (IsMusicValid(siren_)) siren_.looping = true;
+    }
     if (!steps.empty())
         for (const char* surface : {"gravel", "dirt", "grass"})
             for (int v = 0; v < 3; ++v) load(steps_, steps + "/step_" + surface + "_" + std::to_string(v) + ".wav");
@@ -79,6 +83,7 @@ GunAudio::~GunAudio() {
     for (auto& bank : reload_) unload(bank);
     for (Bank* bank : {&explosion_, &explosion_distant_, &pump_, &bolt_, &casing_, &kill_, &equip_, &pickup_, &pin_,
                        &hitmarker_, &hurt_, &armour_, &whiz_, &ricochet_, &steps_, &zone_, &heart_}) unload(*bank);
+    if (IsMusicValid(siren_)) UnloadMusicStream(siren_);
 }
 
 void GunAudio::load(Bank& bank, const std::string& path) {
@@ -181,6 +186,19 @@ void GunAudio::near_miss(Vector3 at, Vector3 listener, Vector3 forward) { play_a
 void GunAudio::ricochet(Vector3 at, Vector3 listener, Vector3 forward) { play_at(ricochet_, at, listener, forward, 30, 2.2F); }
 void GunAudio::footstep(Vector3 at, Vector3 listener, Vector3 forward) { play_at(steps_, at, listener, forward, 26, 1.1F); }
 void GunAudio::zone_warning() { play(zone_, .45F, 0, 1); }
+void GunAudio::siren(float loudness, float pan) {
+    if (!ready_ || !IsMusicValid(siren_)) return;
+    const float volume = muted_ ? 0.0F : std::clamp(loudness, 0.0F, 1.0F) * volume_;
+    if (volume <= .003F) {
+        if (siren_playing_) { PauseMusicStream(siren_); siren_playing_ = false; }
+        return;
+    }
+    if (!siren_playing_) { if (IsMusicStreamPlaying(siren_)) ResumeMusicStream(siren_); else PlayMusicStream(siren_); siren_playing_ = true; }
+    SetMusicVolume(siren_, volume);
+    SetMusicPan(siren_, pan);
+    UpdateMusicStream(siren_);
+}
+
 void GunAudio::heartbeat(float strength) { play(heart_, std::clamp(strength, 0.0F, 1.0F) * .8F, 0, 1); }
 
 void GunAudio::update(float dt) {

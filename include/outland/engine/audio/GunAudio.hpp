@@ -51,6 +51,8 @@ public:
     void footstep(Vector3 at, Vector3 listener, Vector3 forward);    // someone else running
     void zone_warning();
     void heartbeat(float strength);
+    // The nearest siren (police car, ambulance): a looping wail at this loudness and pan (0 stops it).
+    void siren(float loudness, float pan);
     void update(float dt); // plays what has arrived (sound travels; actions follow the shot)
     [[nodiscard]] bool ready() const { return ready_; }
 
@@ -68,6 +70,8 @@ private:
     Bank explosion_{}, explosion_distant_{}, pump_{}, bolt_{}, casing_{}, kill_{};
     Bank equip_{}, pickup_{}, pin_{}, hitmarker_{}, hurt_{}, armour_{}, whiz_{}, ricochet_{}, steps_{}, zone_{}, heart_{};
     Sound reloading_{};
+    Music siren_{};
+    bool siren_playing_{false};
     std::vector<Pending> pending_;
     float volume_{.65F};
     bool muted_{false}, ready_{false};

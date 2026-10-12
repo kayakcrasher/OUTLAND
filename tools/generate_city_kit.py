@@ -416,6 +416,122 @@ def main_street(width, depth, storeys, brick_color, trim_color, awning, seed):
     return b
 
 
+# ---------------------------------------------------------------- civic buildings
+def police_station():
+    """Modular Policio station (one storey, enterable): white render over a navy base, a glass
+    entrance with a blue lamp, a public counter and two barred cells inside, a radio mast, and a
+    carport on the +X side for the patrol car. Front faces -Z; 14 x 12 m plus the 6 m carport."""
+    b = Builder()
+    b.material("render", flat((232, 232, 228), 4), 3, 3)
+    b.material("navy", flat((26, 40, 92), 4), 3, 1)
+    b.material("plaster", flat((150, 154, 160), 4), 3, 3)
+    b.material("floor", flat((120, 124, 128), 6), 3, 3)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("frame", flat((44, 46, 48), 3), 3, 3)
+    b.material("steel", flat((120, 124, 130), 3), 3, 3)
+    b.material("lamp", flat((70, 130, 255), 0), 1, 1)
+    w, d, height, t, slab = 7.0, 6.0, 4.2, .3, .2
+    # Front: double doors in the middle, a window either side; side and back windows.
+    front = [(-1.1, 1.1, slab, 2.6), (-5.6, -3.2, 1.0, 2.6), (3.2, 5.6, 1.0, 2.6)]
+    back = [(-5.5, -3.9, 1.6, 2.6), (3.9, 5.5, 1.6, 2.6), (-.5, .5, slab, 2.4)]
+    sides = [(-3.5, -1.5, 1.0, 2.6), (1.5, 3.5, 1.0, 2.6)]
+    wall_with_openings(b, 'x', -d, (-w, w), height, t, front, "render", "plaster", -1)
+    wall_with_openings(b, 'x', d, (-w, w), height, t, back, "render", "plaster", +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), height, t, sides, "render", "plaster", -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, sides, "render", "plaster", +1)
+    b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
+    b.box((-w, height - .2, -d), (w, height, d), {'+y': "roof", '-y': "plaster", '+x': "navy", '-x': "navy", '+z': "navy", '-z': "navy"})
+    # Navy plinth and a navy fascia band (the sign goes on it), parapet.
+    b.solid((-w - .05, 0, -d - .05), (w + .05, .6, d + .05), "navy")
+    b.solid((-w - .1, height - .9, -d - .15), (w + .1, height - .2, -d), "navy")
+    for lo, hi in (((-w, height, -d), (w, height + .5, -d + .2)), ((-w, height, d - .2), (w, height + .5, d)),
+                   ((-w, height, -d), (-w + .2, height + .5, d)), ((w - .2, height, -d), (w, height + .5, d))):
+        b.solid(lo, hi, "render")
+    # The blue lamp over the door, a canopy, and the radio mast.
+    b.solid((-1.6, 2.75, -d - 1.2), (1.6, 2.9, -d), "navy")
+    b.solid((-.18, 2.95, -d - .5), (.18, 3.3, -d - .14), "lamp")
+    b.solid((-w + 1, height, d - 2), (-w + 1.2, height + 6, d - 1.8), "steel")
+    b.solid((-w + .7, height + 5, d - 2.1), (-w + 1.5, height + 5.1, d - 1.7), "steel")
+    # Inside: the public counter, a partition, two barred cells at the back.
+    b.solid((-3, slab, -2.8), (3, 1.1, -2.4), "navy")
+    b.solid((-w + t, slab, 0), (-1, 2.6, .15), "plaster")
+    b.solid((1, slab, 0), (w - t, 2.6, .15), "plaster")
+    for x0 in (-w + t, 1.2):
+        for k in range(9):
+            x = x0 + .3 + k * .6
+            b.solid((x, slab, .15), (x + .06, 2.4, .21), "steel")
+        b.solid((x0, 2.4, .15), (x0 + 5.6, 2.5, .21), "steel")
+    # The carport on +X: posts and a flat roof over a parking bay.
+    for z in (-d + .2, d - .4):
+        b.solid((w + 5.6, 0, z), (w + 5.8, 3.0, z + .2), "steel")
+    b.solid((w, 3.0, -d), (w + 6, 3.15, d), "navy")
+    return b
+
+
+def hospital():
+    """Hospitalo de Verda: a three-storey hospital (36 x 20 m) in white render with blue ribbon
+    windows, an enterable ground-floor hall (glass entrance, reception, beds), sealed wards
+    above, red crosses on the front and roof, and a drive-under ambulance bay with a canopy on
+    the -X side (room for three ambulances). Front faces -Z."""
+    b = Builder()
+    b.material("render", ribbon((236, 236, 232), (88, 128, 168)), BAY, FLOOR)
+    b.material("white", flat((238, 238, 234), 3), 3, 3)
+    b.material("ground", storefront((210, 212, 214), (96, 130, 156), (200, 30, 36)), BAY, 4.5)
+    b.material("plaster", flat((210, 214, 218), 3), 3, 3)
+    b.material("floor", flat((196, 200, 202), 4), 3, 3)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("red", flat((206, 28, 34), 0), 1, 1)
+    b.material("green", flat((0, 140, 70), 2), 1, 1)
+    b.material("steel", flat((150, 154, 160), 3), 3, 3)
+    b.material("bed", flat((240, 240, 236), 2), 1, 1)
+    w, d, t, slab = 18.0, 10.0, .3, .2
+    ground_h = 4.5
+    top = ground_h + 2 * FLOOR
+    # Ground floor: an open, enterable hall. Doors at the front (middle) and to the bay (-X side).
+    front = [(-2, 2, slab, 3.0)] + [(x, x + 2.4, .8, 3.4) for x in (-15, -11, -7, 4.6, 8.6, 12.6)]
+    back = [(-1, 1, slab, 2.6)] + [(x, x + 2.4, 1.0, 3.2) for x in (-14, -8, 6, 12)]
+    wall_with_openings(b, 'x', -d, (-w, w), ground_h, t, front, "white", "plaster", -1)
+    wall_with_openings(b, 'x', d, (-w, w), ground_h, t, back, "white", "plaster", +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), ground_h, t, [(-6, -2, slab, 3.2)], "white", "plaster", -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), ground_h, t, [(-2, 2, 1.0, 3.2)], "white", "plaster", +1)
+    b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
+    b.box((-w, ground_h - .25, -d), (w, ground_h, d), {'-y': "plaster", '+x': "white", '-x': "white", '+z': "white", '-z': "white"})
+    # The wards: sealed upper storeys with ribbon windows, a roof with a parapet.
+    b.box((-w, ground_h, -d), (w, top, d), {s: "render" for s in ('+x', '-x', '+z', '-z')}, v_origin=top)
+    b.box((-w, top, -d), (w, top + .05, d), {'+y': "roof"})
+    for lo, hi in (((-w - .2, top, -d - .2), (w + .2, top + 1.0, -d + .2)), ((-w - .2, top, d - .2), (w + .2, top + 1.0, d + .2)),
+                   ((-w - .2, top, -d), (-w + .2, top + 1.0, d)), ((w - .2, top, -d), (w + .2, top + 1.0, d))):
+        b.solid(lo, hi, "white")
+    # Green band over the hall, red crosses on the front and on the roof.
+    b.solid((-w - .1, ground_h - .5, -d - .15), (w + .1, ground_h, -d), "green")
+    for cx in (-12.0, 12.0):
+        b.solid((cx - 1.5, top - 2.3, -d - .12), (cx + 1.5, top - 1.3, -d - .02), "red")
+        b.solid((cx - .5, top - 3.3, -d - .12), (cx + .5, top - .3, -d - .02), "red")
+    b.solid((-5, top + .05, -1.5), (5, top + .1, 1.5), "red")
+    b.solid((-1.5, top + .05, -5), (1.5, top + .1, 5), "red")
+    # Entrance canopy.
+    b.solid((-4, 3.3, -d - 3), (4, 3.5, -d), "white")
+    for x in (-3.8, 3.6):
+        b.solid((x, 0, -d - 3), (x + .2, 3.3, -d - 2.8), "steel")
+    # The ambulance bay on -X: a drive-under canopy 10 m out and 18 m deep, posts at the outer edge.
+    b.solid((-w - 10, 4.2, -d - 1), (-w, 4.45, d - 1), "white")
+    b.solid((-w - 10, 4.0, -d - 1), (-w, 4.2, -d - .8), "red")
+    for z in (-d - 1, -1.0, d - 1.4):
+        b.solid((-w - 10, 0, z), (-w - 9.6, 4.2, z + .4), "steel")
+    # Inside the hall: reception desk, rows of beds with curtains, a partition.
+    b.solid((-3, slab, -6.5), (3, 1.1, -5.8), "green")
+    for row, z in enumerate((2.0, 6.0)):
+        for k in range(7):
+            x = -15 + k * 4.3
+            if -3 < x < 3:
+                continue
+            b.solid((x, slab, z), (x + 1.0, .75, z + 2.1), "bed")
+            b.solid((x - .4, slab, z - .2), (x - .35, 2.2, z + 2.3), "steel")
+    b.solid((-w + t, slab, -.2), (-6, 2.8, .0), "plaster")
+    b.solid((6, slab, -.2), (w - t, 2.8, .0), "plaster")
+    return b
+
+
 # ---------------------------------------------------------------- ground pieces
 def pad(size, kind):
     """Block surface 0.15 m above the street: sidewalk (pavers), park (grass + paths) or parking."""
@@ -507,6 +623,8 @@ def kit():
             seed += 1
             add(f"main_street/{ident}.glb", main_street(width, 20, storeys, brick_color, trim, awning if seed % 3 else None, seed),
                 "city_" + ident, f"Main Street {color.title()} Brick {width} m, {storeys} storeys (enterable)", "Building", width, 20, storeys * FLOOR + .9)
+    add("civic/police_station.glb", police_station(), "city_police_station", "Police Station (modular, enterable, carport)", "Building", 20, 12, 4.7)
+    add("civic/hospital.glb", hospital(), "city_hospital", "Hospitalo - hospital with ambulance bay", "Building", 46, 23, 12.7)
     add("ground/sidewalk_block_68.glb", pad(68, "sidewalk"), "city_sidewalk_block_68", "Sidewalk Block 68 m", "BuildingPart", 68, 68, .15)
     add("ground/courthouse_square_68.glb", pad(68, "park"), "city_courthouse_square_68", "Courthouse Square Park 68 m", "BuildingPart", 68, 68, 4.6)
     add("ground/parking_lot_68.glb", pad(68, "parking"), "city_parking_lot_68", "Parking Lot 68 m", "BuildingPart", 68, 68, .15)

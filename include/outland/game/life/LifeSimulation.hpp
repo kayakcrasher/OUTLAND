@@ -81,6 +81,10 @@ public:
     // running once a body; release returns them to their schedule.
     static constexpr float response_speed=14; // m/s while abstract (patrol car)
     void dispatch(int resident,Vector3 where);
+    // A wounded resident taken to hospital (their body already gone): treated for `minutes`
+    // of island time, then out of `door`. False if they are not alive.
+    bool hospitalise(int resident,Vector3 door,double minutes);
+    bool in_hospital(const Resident& resident) const {return resident.hospital_until>clock_.minutes;}
     void release(int resident);
     LifeStats stats() const;
 

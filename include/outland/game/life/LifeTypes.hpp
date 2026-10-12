@@ -103,6 +103,10 @@ struct Resident {
     // Police response (game::law::Justice): an officer sent to a location drops the schedule.
     bool responding{false};
     Vector3 response_target{};
+    // In hospital (an ambulance brought them in): off the street until discharged, then they walk
+    // out of the hospital door back into their day.
+    double hospital_until{-1};
+    Vector3 hospital_at{};
     std::string full_name() const { return first_name+" "+family_name; }
 };
 

@@ -32,6 +32,11 @@ struct BotRide {
     std::vector<int> passengers;
 };
 
+// Drives `vehicle` along `route` by autopilot (pure pursuit, slower on bends and behind other cars,
+// backing off when stuck): the bots' and the emergency services' road driving.
+void steer_along(const world::roads::Route& route, float& progress, float& stuck, float& reverse, int& attempts,
+                 std::string_view vehicle, vehicles::VehicleSystem& cars, float dt, float straight = 17, float bends = 7);
+
 class BotDrivers {
 public:
     // Puts up to `max_drivers` bots that dropped within 140 m of a running car into it. Returns

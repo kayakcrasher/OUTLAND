@@ -45,6 +45,8 @@ struct JusticeFrame {
     bool player_fired{false};
     float daylight{1};         // 0 night .. 1 day (world::sky); darkness shortens sight
     std::function<bool(Vector3, Vector3)> line_of_sight; // eye to eye, true if clear
+    // Officers out of the patrol cars (game::services), feet: they see and arrest like the rest.
+    std::vector<Vector3> patrol_officers;
 };
 
 class Justice {
@@ -56,6 +58,9 @@ public:
     void crime(CrimeKind kind, Vector3 where, int victim, const JusticeFrame& frame,
                const game::life::LifeSimulation& life);
     void update(const JusticeFrame& frame, game::life::LifeSimulation& life, characters::NpcSystem& npcs);
+    // An officer or paramedic from the services (not an island resident) was the victim: they
+    // saw it, and it is reported at once.
+    void witnessed(CrimeKind kind, Vector3 where, const JusticeFrame& frame, game::life::LifeSimulation& life);
 
     [[nodiscard]] int wanted() const { return wanted_; }
     [[nodiscard]] Vector3 last_known() const { return last_known_; }
