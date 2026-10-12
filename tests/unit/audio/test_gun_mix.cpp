@@ -28,5 +28,10 @@ int main() {
     const auto blast = mix_shot({0, 1.7F, 10}, ear, ahead, 900, 1.6F);
     check(blast.volume > close.volume, "a blast is louder than a shot at the same range");
     check(!mix_shot({0, 0, 0}, ear, ahead, 0).audible, "no hearing radius, no sound");
+    // A round cracking past (GunAudio::near_miss: 12 m, loudness 2.5): loud beside the ear,
+    // on the side it passed, and nothing from a round that went wide.
+    const auto past = mix_shot({-1.5F, 1.7F, .5F}, ear, ahead, 12, 2.5F);
+    check(past.audible && past.volume > .8F && past.pan > .2F, "a round past the right ear cracks loud on the right");
+    check(!mix_shot({0, 1.7F, 20}, ear, ahead, 12, 2.5F).audible, "a round 20 m off is not heard going by");
     std::cout << "gun audio mixing ok\n";
 }

@@ -11,7 +11,10 @@ then soft-clipped for density and normalised. Every gun has its own character (a
 short and snappy, a 7.62 sniper a long thunderclap) and three variants so automatic fire never
 machine-guns one sample. Distant versions are muffled, crack-light and echo-heavy; the game
 picks them for far shooters and delays them by the speed of sound. Also: grenade explosions
-(near and far), the shotgun pump, the sniper bolt, shell casings and the kill confirmation.
+(near and far), the shotgun pump, the sniper bolt, shell casings and the kill confirmation;
+each gun's reload (timed to its reload), drawing a weapon, bullets cracking past and
+ricocheting near the player, hit markers, taking hits (body and armour plate), picking up,
+pulling a grenade pin, the zone warning pulse and the low-health heartbeat.
 
     python3 tools/generate_weapon_audio.py           # write assets/audio/weapons/*.wav
     python3 tools/generate_weapon_audio.py --check   # fail if the committed files are stale
@@ -156,6 +159,165 @@ def kill_ding():
     return x / np.max(np.abs(x)) * .7
 
 
+def thing(t, at, low, high, freq, decay, seed, level=1.0, ring=0.0):
+    """One mechanical event at `at` s: a band of noise (the body of the click or clunk) with a
+    sine for its pitch, and optionally a metallic ring."""
+    rng = np.random.default_rng(seed)
+    age = t - at
+    on = age >= 0
+    a = np.where(on, age, 0)
+    env = np.exp(-a / decay) * (1 - np.exp(-a / .0004))
+    body = band(rng.uniform(-1, 1, len(t)), low, high) * 1.6 + np.sin(2 * np.pi * freq * a) * .7
+    if ring:
+        body += (np.sin(2 * np.pi * freq * 2.76 * a) + .6 * np.sin(2 * np.pi * freq * 5.4 * a)) * ring * np.exp(-a / (decay * 3))
+    return np.where(on, body * env, 0) * level
+
+
+def scrape(t, at, length, low, high, seed, level=1.0):
+    rng = np.random.default_rng(seed)
+    age = t - at
+    env = np.where((age >= 0) & (age < length), np.sin(np.pi * np.clip(age / length, 0, 1)), 0)
+    return band(rng.uniform(-1, 1, len(t)), low, high) * env * level
+
+
+def normalise(x, peak):
+    return x / np.max(np.abs(x)) * peak
+
+
+# Each reload is a sequence of (kind, time) timed inside the gun's reload (WeaponDefinition):
+# release (a light click), out (the magazine sliding out), in (seated, a clunk), slap,
+# handle/slide (a charging pull and snap), shell (one shell thumbed in), bolt_* (the bolt).
+RELOADS = {
+    "pistol":  (1.9, [("release", .10), ("out", .18), ("in", .95), ("slide", 1.42)]),
+    "rifle":   (2.1, [("release", .12), ("out", .22), ("in", 1.05), ("slap", 1.22), ("handle", 1.62)]),
+    "smg":     (2.3, [("release", .14), ("out", .25), ("in", 1.18), ("slap", 1.34), ("handle", 1.85)]),
+    "shotgun": (4.2, [("shell", .45), ("shell", 1.05), ("shell", 1.65), ("shell", 2.25), ("shell", 2.85), ("pump", 3.55)]),
+    "sniper":  (3.8, [("bolt_up", .18), ("bolt_back", .34), ("release", .70), ("out", .80), ("in", 1.95), ("bolt_fwd", 3.0), ("bolt_down", 3.16)]),
+}
+
+
+def reload(name):
+    seconds, steps = RELOADS[name]
+    t = np.arange(int((seconds + .1) * RATE)) / RATE
+    x = np.zeros_like(t)
+    for i, (kind, at) in enumerate(steps):
+        seed = 300 + i * 11 + sum(map(ord, name))
+        if kind == "release":
+            x += thing(t, at, 2500, 9000, 2200, .008, seed, .45)
+        elif kind == "out":
+            x += scrape(t, at, .16, 1500, 6000, seed, .35) + thing(t, at + .16, 300, 2500, 330, .03, seed + 1, .4)
+        elif kind == "in":
+            x += scrape(t, at - .12, .12, 1800, 6500, seed, .3) + thing(t, at, 250, 3000, 240, .045, seed + 1, 1.0, ring=.25)
+        elif kind == "slap":
+            x += thing(t, at, 150, 1800, 150, .05, seed, .7)
+        elif kind in ("handle", "slide"):
+            x += thing(t, at, 1200, 7000, 900, .02, seed, .55) + scrape(t, at + .01, .1, 2000, 7000, seed + 1, .3)
+            x += thing(t, at + .13, 600, 7000, 620, .04, seed + 2, 1.0, ring=.35)
+        elif kind == "shell":
+            x += scrape(t, at - .08, .09, 1500, 5000, seed, .25) + thing(t, at, 300, 3500, 420, .035, seed + 1, .75, ring=.2)
+        elif kind == "pump":
+            x += thing(t, at, 500, 4500, 900, .035, seed, .9) + scrape(t, at, .14, 1200, 5000, seed + 1, .35)
+            x += thing(t, at + .17, 500, 5000, 1250, .03, seed + 2, 1.0, ring=.3)
+        elif kind.startswith("bolt_"):
+            freq = {"bolt_up": 1500, "bolt_back": 800, "bolt_fwd": 950, "bolt_down": 1700}[kind]
+            x += thing(t, at, 900, 8000, freq, .03, seed, .8, ring=.25)
+            if kind in ("bolt_back", "bolt_fwd"):
+                x += scrape(t, at - .1, .1, 2000, 7000, seed + 1, .3)
+    return normalise(band(x, 120, 11000), .8)
+
+
+def equip():
+    t = np.arange(int(.45 * RATE)) / RATE
+    x = scrape(t, 0, .22, 400, 3000, 41, .5) + thing(t, .2, 300, 4000, 520, .03, 42, .8, ring=.3)
+    x += thing(t, .3, 1500, 8000, 1900, .01, 43, .5)
+    return normalise(x, .65)
+
+
+def whiz(variant):
+    # A round going past: the supersonic crack beside the head, then the air tearing as it goes.
+    rng = np.random.default_rng(500 + variant)
+    t = np.arange(int(.32 * RATE)) / RATE
+    crack = band(rng.uniform(-1, 1, len(t)), 2500, 12000) * np.exp(-t / .0025)
+    crack[:int(.0003 * RATE)] += 1
+    sweep = np.zeros_like(t)
+    centre = 3400 - 900 * variant
+    for k in range(6):  # a band whose pitch falls (Doppler) as it passes
+        start, length = int(k * .03 * RATE), int(.06 * RATE)
+        seg = band(rng.uniform(-1, 1, length), centre * (1 - .1 * k) * .7, centre * (1 - .1 * k) * 1.4)
+        sweep[start:start + length] += seg * np.hanning(length) * (1 - k / 7)
+    x = crack * 1.2 + sweep * .5
+    return finish(x, 1.8, .85)
+
+
+def ricochet(variant):
+    rng = np.random.default_rng(600 + variant)
+    t = np.arange(int(.6 * RATE)) / RATE
+    hit = band(rng.uniform(-1, 1, len(t)), 200, 5000) * np.exp(-t / .012) * (1 - np.exp(-t / .0003))
+    f = (2600 + 500 * variant) * np.exp(-t / .5)
+    whine = np.sin(2 * np.pi * np.cumsum(f) / RATE) * np.exp(-((t - .12) / .16) ** 2) * .35
+    dirt = band(rng.uniform(-1, 1, len(t)), 800, 5000) * np.exp(-((t - .05) / .06) ** 2) * .3
+    return finish(hit + whine + dirt, 1.6, .75)
+
+
+def hurt(variant):
+    # Taking a round: a deep body thump and a short wet slap.
+    rng = np.random.default_rng(700 + variant)
+    t = np.arange(int(.3 * RATE)) / RATE
+    f = 95 + 40 * np.exp(-t / .03) + 8 * variant
+    thump = np.sin(2 * np.pi * np.cumsum(f) / RATE) * np.exp(-t / .07) * (1 - np.exp(-t / .002))
+    slap = band(rng.uniform(-1, 1, len(t)), 300, 2200) * np.exp(-t / .02)
+    return finish(thump * 1.2 + slap * .7, 2.0, .85)
+
+
+def armour_hit():
+    rng = np.random.default_rng(800)
+    t = np.arange(int(.45 * RATE)) / RATE
+    thump = band(rng.uniform(-1, 1, len(t)), 80, 900) * np.exp(-t / .03)
+    ring = (np.sin(2 * np.pi * 1850 * t) + .7 * np.sin(2 * np.pi * 2930 * t) + .4 * np.sin(2 * np.pi * 4410 * t)) * np.exp(-t / .09)
+    return finish(thump + ring * .45, 1.6, .75)
+
+
+def hitmarker():
+    rng = np.random.default_rng(900)
+    t = np.arange(int(.09 * RATE)) / RATE
+    x = np.sin(2 * np.pi * 2650 * t) * np.exp(-t / .018) + band(rng.uniform(-1, 1, len(t)), 3000, 9000) * np.exp(-t / .004) * .6
+    return normalise(x, .6)
+
+
+def pickup():
+    t = np.arange(int(.35 * RATE)) / RATE
+    x = scrape(t, 0, .15, 600, 4000, 51, .5) + thing(t, .14, 400, 5000, 700, .03, 52, .7, ring=.2)
+    x += np.where(t > .18, np.sin(2 * np.pi * 1560 * (t - .18)) * np.exp(-(t - .18) / .05), 0) * .25
+    return normalise(x, .55)
+
+
+def grenade_pin():
+    t = np.arange(int(.5 * RATE)) / RATE
+    x = thing(t, 0, 2000, 9000, 3100, .03, 61, .9, ring=.5)          # the pin's ring
+    x += thing(t, .2, 800, 6000, 1400, .02, 62, .7, ring=.3)         # the spoon flies
+    x += scrape(t, .26, .2, 300, 1600, 63, .4)                       # the throw
+    return normalise(x, .65)
+
+
+def zone_warning():
+    # A low electric pulse, once a second while outside the zone.
+    t = np.arange(int(.5 * RATE)) / RATE
+    env = np.sin(np.pi * np.clip(t / .45, 0, 1)) ** 2
+    x = (np.sin(2 * np.pi * 110 * t) + .5 * np.sin(2 * np.pi * 220 * t) + .3 * np.sign(np.sin(2 * np.pi * 55 * t))) * env
+    x *= 1 + .4 * np.sin(2 * np.pi * 18 * t)
+    return normalise(band(x, 40, 2500), .6)
+
+
+def heartbeat():
+    t = np.arange(int(.8 * RATE)) / RATE
+    x = np.zeros_like(t)
+    for at, level in ((0, 1), (.28, .7)):
+        a = np.where(t >= at, t - at, 0)
+        f = 48 + 30 * np.exp(-a / .02)
+        x += np.where(t >= at, np.sin(2 * np.pi * np.cumsum(f) / RATE * (t >= at)) * np.exp(-a / .06) * (1 - np.exp(-a / .004)), 0) * level
+    return normalise(band(x, 25, 400), .8)
+
+
 def sounds():
     out = {}
     for name in GUNS:
@@ -169,6 +331,21 @@ def sounds():
     for i in range(3):
         out[f"casing_{i}.wav"] = casing(i)
     out["kill.wav"] = kill_ding()
+    for name in RELOADS:
+        out[f"reload_{name}.wav"] = reload(name)
+    out["equip.wav"] = equip()
+    for i in range(3):
+        out[f"whiz_{i}.wav"] = whiz(i)
+    for i in range(2):
+        out[f"ricochet_{i}.wav"] = ricochet(i)
+    for i in range(3):
+        out[f"hurt_{i}.wav"] = hurt(i)
+    out["armour_hit.wav"] = armour_hit()
+    out["hitmarker.wav"] = hitmarker()
+    out["pickup.wav"] = pickup()
+    out["grenade_pin.wav"] = grenade_pin()
+    out["zone_warning.wav"] = zone_warning()
+    out["heartbeat.wav"] = heartbeat()
     return out
 
 

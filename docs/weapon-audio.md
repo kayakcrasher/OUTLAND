@@ -57,3 +57,28 @@ Safari only lets a page start sound from a touchend or click. The start button n
 audio after the game has created its audio device. Every touch, click or key press on the page
 also resumes it, in case the first unlock was missed. The phone's silent switch still mutes
 the web build.
+
+## More sounds
+
+The generator also writes, and `GunAudio` plays:
+
+| Sound | When |
+|---|---|
+| `reload_<gun>.wav` | each gun's own reload, timed to its `reload_seconds` (magazine out and in, slap, charging handle; shells thumbed into the shotgun; the sniper's bolt). Cut short when you switch guns. |
+| `equip.wav` | drawing another weapon |
+| `whiz_0..2.wav` | a bot's round passing within 3 m of your head (`BattleRoyaleEvents::near_misses`), panned to its side |
+| `ricochet_0..1.wav` | a bot's round striking the ground or a wall within 8 m of you |
+| `hitmarker.wav` | your bullets hitting someone (higher for a head shot) |
+| `hurt_0..2.wav`, `armour_hit.wav` | taking a hit; the plate ping when you wear a vest |
+| `pickup.wav` | picking something up |
+| `grenade_pin.wav` | throwing a grenade |
+| `zone_warning.wav` | once a second outside the Battle Royale zone |
+| `heartbeat.wav` | below 35% health, faster and louder the lower it goes |
+
+Other people running nearby are heard too: their footsteps (the environment step recordings)
+are placed in the world from the sound bus, one per stride, out to about 26 m.
+
+Audio paths: on Android the executable is the system's app process, so `GetApplicationDirectory()`
+is not where the runtime tree lives; the game uses the working directory (the extracted runtime)
+when the packaged path does not exist. On iPhone the page sets `navigator.audioSession.type` to
+`playback` so the silent switch does not mute the game.

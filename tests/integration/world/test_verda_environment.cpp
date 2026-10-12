@@ -159,8 +159,9 @@ int main() {
         audio.update({106,1,0},true,true,region);assert(played==2);
         outland::game::combat::WeaponEvents shot;shot.shots=1;
         audio.play_combat(outland::game::combat::WeaponId::Rifle,shot);assert(played==2); // gunfire is GunAudio's
-        shot.reload_started=true;audio.play_combat(outland::game::combat::WeaponId::Rifle,shot);assert(played==3);
-        shot.reload_started=false;
+        shot.reload_started=true;audio.play_combat(outland::game::combat::WeaponId::Rifle,shot);assert(played==2); // so is each gun's reload
+        shot.reload_started=false;shot.dry_fire=true;audio.play_combat(outland::game::combat::WeaponId::Rifle,shot);assert(played==3);
+        shot.dry_fire=false;
         audio.toggle_mute();
         shot.target_hits=1;shot.reload_started=true;shot.dry_fire=true;
         audio.play_combat(outland::game::combat::WeaponId::Pistol,shot);assert(played==3);

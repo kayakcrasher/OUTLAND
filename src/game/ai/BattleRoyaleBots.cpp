@@ -202,6 +202,18 @@ void BattleRoyaleBots::resolve(const BotShot& shot,const BattleRoyaleFrame& fram
     }
     const auto impact=Vector3Lerp(shot.origin,end,best);
     tracers_.push_back({Vector3Add(shot.origin,Vector3Scale(shot.direction,.8F)),impact,tracer_seconds});
+    if(frame.player_alive && victim!=player_id && shot.shooter!=player_id) {
+        // Shots at (or past) the player that miss are heard going by.
+        const Vector3 head{frame.player_feet.x,frame.player_feet.y+1.6F,frame.player_feet.z};
+        const Vector3 path=Vector3Subtract(impact,shot.origin);
+        const float length=Vector3Length(path);
+        if(length>1e-3F) {
+            const float along=std::clamp(Vector3DotProduct(Vector3Subtract(head,shot.origin),path)/(length*length),0.0F,1.0F);
+            const Vector3 closest=Vector3Add(shot.origin,Vector3Scale(path,along));
+            if(along<1 && along>0 && Vector3Distance(closest,head)<3.0F) events_.near_misses.push_back(closest);
+        }
+        if(victim<0 && world_hit.hit() && Vector3Distance(impact,head)<8.0F) events_.ricochets.push_back(impact);
+    }
 
     if(victim<0) {
         if(world_hit.hit() && world.world_damage) world.world_damage(world_hit,shot.damage,shooter_position);

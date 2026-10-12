@@ -40,6 +40,9 @@ struct BattleRoyaleEvents {
     Vector3 player_damage_from{};
     int player_damage_by{-1};
     int shots{0}, hits{0}, kills{0};
+    // Rounds that missed the player narrowly: where each passed closest to the head (a crack
+    // past the ear), and where each struck the ground or a wall close by (a ricochet).
+    std::vector<Vector3> near_misses, ricochets;
 };
 
 class BattleRoyaleBots {

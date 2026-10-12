@@ -41,7 +41,7 @@ const char* gun_name(game::combat::WeaponId id) {
 }
 }
 
-GunAudio::GunAudio(const std::string& directory) {
+GunAudio::GunAudio(const std::string& directory, const std::string& steps) {
     ready_ = IsAudioDeviceReady();
     if (!ready_) return;
     for (std::size_t i = 0; i < game::combat::weapon_count; ++i) {
@@ -55,13 +55,30 @@ GunAudio::GunAudio(const std::string& directory) {
     load(bolt_, directory + "/sniper_bolt.wav");
     for (int v = 0; v < 3; ++v) load(casing_, directory + "/casing_" + std::to_string(v) + ".wav");
     load(kill_, directory + "/kill.wav");
+    for (std::size_t i = 0; i < game::combat::weapon_count; ++i)
+        load(reload_[i], directory + "/reload_" + gun_name(static_cast<game::combat::WeaponId>(i)) + ".wav");
+    load(equip_, directory + "/equip.wav");
+    load(pickup_, directory + "/pickup.wav");
+    load(pin_, directory + "/grenade_pin.wav");
+    load(hitmarker_, directory + "/hitmarker.wav");
+    for (int v = 0; v < 3; ++v) load(hurt_, directory + "/hurt_" + std::to_string(v) + ".wav");
+    load(armour_, directory + "/armour_hit.wav");
+    for (int v = 0; v < 3; ++v) load(whiz_, directory + "/whiz_" + std::to_string(v) + ".wav");
+    for (int v = 0; v < 2; ++v) load(ricochet_, directory + "/ricochet_" + std::to_string(v) + ".wav");
+    load(zone_, directory + "/zone_warning.wav");
+    load(heart_, directory + "/heartbeat.wav");
+    if (!steps.empty())
+        for (const char* surface : {"gravel", "dirt", "grass"})
+            for (int v = 0; v < 3; ++v) load(steps_, steps + "/step_" + surface + "_" + std::to_string(v) + ".wav");
 }
 
 GunAudio::~GunAudio() {
     if (!ready_) return;
     for (auto& bank : close_) unload(bank);
     for (auto& bank : distant_) unload(bank);
-    for (Bank* bank : {&explosion_, &explosion_distant_, &pump_, &bolt_, &casing_, &kill_}) unload(*bank);
+    for (auto& bank : reload_) unload(bank);
+    for (Bank* bank : {&explosion_, &explosion_distant_, &pump_, &bolt_, &casing_, &kill_, &equip_, &pickup_, &pin_,
+                       &hitmarker_, &hurt_, &armour_, &whiz_, &ricochet_, &steps_, &zone_, &heart_}) unload(*bank);
 }
 
 void GunAudio::load(Bank& bank, const std::string& path) {
@@ -128,6 +145,43 @@ void GunAudio::explosion(Vector3 at, Vector3 listener, Vector3 forward) {
 }
 
 void GunAudio::kill_confirm() { play(kill_, .55F, 0, 1); }
+
+void GunAudio::reload(game::combat::WeaponId weapon) {
+    auto& bank = reload_[static_cast<std::size_t>(weapon)];
+    cancel_reload();
+    if (!ready_ || muted_ || bank.voices.empty()) return;
+    reloading_ = bank.voices[0][bank.next++ % voice_count];
+    SetSoundVolume(reloading_, std::clamp(.8F * volume_ * 1.35F, 0.0F, 1.0F));
+    SetSoundPan(reloading_, 0);
+    SetSoundPitch(reloading_, 1);
+    PlaySound(reloading_);
+}
+
+void GunAudio::cancel_reload() {
+    if (ready_ && IsSoundValid(reloading_) && IsSoundPlaying(reloading_)) StopSound(reloading_);
+    reloading_ = {};
+}
+
+void GunAudio::equip() { play(equip_, .6F, 0, .97F + random() * .06F); }
+void GunAudio::pickup() { play(pickup_, .55F, 0, .95F + random() * .1F); }
+void GunAudio::grenade_pin() { play(pin_, .7F, 0, 1); }
+void GunAudio::hitmarker(bool headshot) { play(hitmarker_, headshot ? .6F : .4F, 0, headshot ? 1.45F : 1.0F); }
+
+void GunAudio::hurt(bool armoured) {
+    play(hurt_, .8F, 0, .92F + random() * .14F);
+    if (armoured) play(armour_, .55F, 0, .95F + random() * .1F);
+}
+
+void GunAudio::play_at(Bank& bank, Vector3 at, Vector3 listener, Vector3 forward, float radius, float loudness) {
+    const auto mix = mix_shot(at, listener, forward, radius, loudness);
+    if (mix.audible) play(bank, mix.volume, mix.pan, .94F + random() * .12F);
+}
+
+void GunAudio::near_miss(Vector3 at, Vector3 listener, Vector3 forward) { play_at(whiz_, at, listener, forward, 12, 2.5F); }
+void GunAudio::ricochet(Vector3 at, Vector3 listener, Vector3 forward) { play_at(ricochet_, at, listener, forward, 30, 2.2F); }
+void GunAudio::footstep(Vector3 at, Vector3 listener, Vector3 forward) { play_at(steps_, at, listener, forward, 26, 1.1F); }
+void GunAudio::zone_warning() { play(zone_, .45F, 0, 1); }
+void GunAudio::heartbeat(float strength) { play(heart_, std::clamp(strength, 0.0F, 1.0F) * .8F, 0, 1); }
 
 void GunAudio::update(float dt) {
     if (!std::isfinite(dt) || dt < 0) return;

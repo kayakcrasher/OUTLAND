@@ -62,7 +62,7 @@ void EnvironmentAudio::set_volume(float volume) {
 void EnvironmentAudio::play_combat(game::combat::WeaponId weapon, const game::combat::WeaponEvents& events) {
     if (!ready_ || muted_) return;
     (void)weapon; // gunfire itself is GunAudio's (each gun's own report, placed in the world)
-    if (events.reload_started && IsSoundValid(reload_)) PlaySound(reload_);
+    // Reloads are GunAudio's (each gun's own); reload.wav is kept as its fallback.
     if (events.target_hits > 0 && IsSoundValid(hit_)) PlaySound(hit_);
     if (events.dry_fire && IsSoundValid(dry_)) PlaySound(dry_);
 }

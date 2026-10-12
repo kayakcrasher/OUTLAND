@@ -582,11 +582,20 @@ void Renderer::run() {
 #endif
     world::terrain::TerrainWorld terrain_world;
     world::foliage::FoliageSystem foliage_system;
-    audio::EnvironmentAudio environment_audio(
-        std::string(GetApplicationDirectory()) + "assets/audio/environment"
-    );
-    // Gunfire you hear: your own reports, everyone else's placed in the world, grenade blasts.
-    audio::GunAudio gun_audio(std::string(GetApplicationDirectory()) + "assets/audio/weapons");
+    // Beside the executable on desktop; on Android the executable is the system's app process,
+    // so the runtime tree is the working directory (platform::initialize) - use what exists.
+    const auto audio_directory=[](const char* local){
+        const std::string packaged=std::string(GetApplicationDirectory())+local;
+        return DirectoryExists(packaged.c_str()) ? packaged : std::string(local);
+    };
+    audio::EnvironmentAudio environment_audio(audio_directory("assets/audio/environment"));
+    // Gunfire you hear: your own reports, everyone else's placed in the world, grenade blasts,
+    // reloads, rounds going past, hits, pickups, the zone and your heart when you are hurt.
+    audio::GunAudio gun_audio(audio_directory("assets/audio/weapons"),audio_directory("assets/audio/environment"));
+    float hurt_sound_wait=0,zone_sound_wait=0,heart_sound_wait=0;
+    bool reload_sounding=false;
+    auto equipped_weapon=game::combat::WeaponId::Rifle;
+    std::unordered_map<int,double> footstep_heard; // last step played per source
     std::uint64_t gunfire_heard=0; // sound-bus serial already turned into audio
 
     // The island map (M / MAP) and the player's settings it carries.
@@ -631,7 +640,9 @@ void Renderer::run() {
     };
     const auto hurt_player=[&](float amount){
         static constexpr float soak[]{0.0F,.30F,.45F};
-        if(amount>0) player_health.damage(amount*(1-soak[armour_level()]));
+        if(amount<=0) return;
+        player_health.damage(amount*(1-soak[armour_level()]));
+        if(amount>=1 && hurt_sound_wait<=0) {gun_audio.hurt(armour_level()>0);hurt_sound_wait=.15F;}
     };
     game::vehicles::VehicleAudio vehicle_audio;
     vehicles.bind_occupant_damage([&](float amount){player_health.damage(amount);});
@@ -1163,7 +1174,10 @@ void Renderer::run() {
                 }
             }
             if(controls.next_weapon)loot_session.changed();
-            if(controls.interact && !shop_open && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;}
+            if(controls.interact && !shop_open && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){
+                interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;
+                if(interaction_message.starts_with("Picked up")) gun_audio.pickup();
+            }
             if(inventory_open){
                 const auto action=loot_ui.update(loot_session.inventory(),screen_width,screen_height,IsWindowFocused());
                 if(action.close){inventory_open=false;input_system.cancel_controls();}
@@ -1697,9 +1711,12 @@ void Renderer::run() {
         if(bag_grenades) grenades.set_count(loot_session.inventory().count("frag_grenade"));
         if(controls.grenade && !driving && !creator_active && !inventory_open && !shop_open && player_health.alive() && !mode_session.terminal()) {
             const Vector3 carried=dt>0 ? Vector3Scale(Vector3Subtract(player.position,position_before_move),1.0F/dt) : Vector3{};
-            if(grenades.throw_grenade(head_position,look_direction,carried) && bag_grenades) {
-                loot_session.edit_inventory().remove("frag_grenade",1);
-                loot_session.changed();
+            if(grenades.throw_grenade(head_position,look_direction,carried)) {
+                gun_audio.grenade_pin();
+                if(bag_grenades) {
+                    loot_session.edit_inventory().remove("frag_grenade",1);
+                    loot_session.changed();
+                }
             }
         }
         grenades.update(vehicle_paused || mode_session.terminal() ? 0.0F : dt,{[&](Vector3 a,Vector3 b,Vector3& point,Vector3& normal) {
@@ -1745,6 +1762,18 @@ void Renderer::run() {
         environment_audio.play_combat(weapons.selected(),weapons.events());
         gun_audio.set_volume(environment_audio.volume(),environment_audio.muted());
         for(int shot=0;shot<weapons.events().shots;++shot) gun_audio.player_shot(weapons.selected());
+        // Drawing another gun cuts a reload short; each gun reloads with its own sound.
+        if(weapons.selected()!=equipped_weapon) {equipped_weapon=weapons.selected();gun_audio.cancel_reload();gun_audio.equip();reload_sounding=false;}
+        if(weapons.events().reload_started) {gun_audio.reload(weapons.selected());reload_sounding=true;}
+        else if(reload_sounding && weapons.reload_remaining()<=0) {
+            if(!weapons.events().reload_finished) gun_audio.cancel_reload();
+            reload_sounding=false;
+        }
+        if(!weapons.events().hits.empty() && weapons.events().target_hits==0) {
+            bool headshot=false;
+            for(const auto& note:weapons.events().hits) headshot|=note.headshot;
+            gun_audio.hitmarker(headshot);
+        }
         // Session clock for sounds and the match; it stops while the game is paused.
         if(!vehicle_paused) match_time+=dt;
         sound_bus.advance(match_time);
@@ -1845,6 +1874,9 @@ void Renderer::run() {
                 br_bots.sync_bodies(npcs,&character_registry);
                 world_draw_stats().bots=world_draw_stats().bots*.9+(GetTime()-bots_t0)*1000*.1;
                 hurt_player(br_bots.events().player_damage);
+                const Vector3 ear_forward=Vector3Subtract(camera.target,camera.position);
+                for(const Vector3 past:br_bots.events().near_misses) gun_audio.near_miss(past,camera.position,ear_forward);
+                for(const Vector3 strike:br_bots.events().ricochets) gun_audio.ricochet(strike,camera.position,ear_forward);
                 if(br_bots.events().player_damage>0) {hurt_from=br_bots.events().player_damage_from;hurt_directional=true;}
             }
             const bool finished=mode_session.terminal();
@@ -1880,7 +1912,14 @@ void Renderer::run() {
             // Everyone else's gunfire, heard where it happened (bots, police): the bus says how far
             // it carries, which also tells pistol from rifle from sniper.
             for(const auto& heard:sound_bus.events()) {
-                if(heard.serial<=gunfire_heard || heard.kind!=game::sound::SoundKind::Gunshot || heard.source==0) continue;
+                if(heard.serial<=gunfire_heard || heard.source==0) continue;
+                // Someone running close by: a step every stride (the bus hears them every frame).
+                if(heard.kind==game::sound::SoundKind::Footstep) {
+                    auto& last=footstep_heard[heard.source];
+                    if(match_time-last>=.31) {last=match_time;gun_audio.footstep(heard.position,camera.position,Vector3Subtract(camera.target,camera.position));}
+                    continue;
+                }
+                if(heard.kind!=game::sound::SoundKind::Gunshot) continue;
                 const float r=heard.radius;
                 const auto weapon=r>=400 ? game::combat::WeaponId::Sniper : r>=290 ? game::combat::WeaponId::Rifle :
                     r>=250 ? game::combat::WeaponId::Shotgun : r>=190 ? game::combat::WeaponId::Smg : game::combat::WeaponId::Pistol;
@@ -1888,6 +1927,15 @@ void Renderer::run() {
             }
             gunfire_heard=sound_bus.latest();
             gun_audio.update(vehicle_paused ? 0.0F : dt);
+            // Warnings you hear: a pulse each second outside the zone, your heart when badly hurt.
+            const float sound_dt=vehicle_paused ? 0.0F : dt;
+            hurt_sound_wait-=sound_dt;zone_sound_wait-=sound_dt;heart_sound_wait-=sound_dt;
+            if(game_mode==game::GameMode::BattleRoyale && player_health.alive() && !mode_session.terminal() &&
+               mode_session.distance(feet)>mode_session.radius() && zone_sound_wait<=0) {gun_audio.zone_warning();zone_sound_wait=1;}
+            const float health_share=player_health.current()/std::max(1.0F,player_health.maximum());
+            if(player_health.alive() && health_share<.35F && heart_sound_wait<=0 && !mode_session.terminal()) {
+                gun_audio.heartbeat(1.2F-health_share*2);heart_sound_wait=.75F+health_share*1.2F;
+            }
             // Whatever hurt the player this step - shots, bites, blasts, crashes, the zone - shows.
             const float drop=health_seen-player_health.current();
             if(drop>.01F && player_health.alive()) combat_feedback.hurt(drop,hurt_from,hurt_directional);

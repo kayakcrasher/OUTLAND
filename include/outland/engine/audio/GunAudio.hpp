@@ -21,11 +21,15 @@ ShotMix mix_shot(Vector3 source, Vector3 listener, Vector3 forward, float hearin
 
 // Synthesized gun audio (tools/generate_weapon_audio.py): the player's own reports, other
 // shooters' reports placed in the world, grenade blasts, pump and bolt actions, shell casings
-// and the kill confirmation. Many voices per sample, so automatic fire and its tails overlap.
+// and the kill confirmation; each gun's reload, drawing a weapon, rounds cracking past and
+// ricocheting, hit markers, taking hits, pickups, the grenade pin, the zone warning, the
+// low-health heartbeat and other people's running feet. Many voices per sample, so automatic
+// fire and its tails overlap.
 class GunAudio {
 public:
     static constexpr float speed_of_sound = 343;
-    explicit GunAudio(const std::string& directory);
+    // `steps` holds the footstep recordings (assets/audio/environment) for other people's feet.
+    explicit GunAudio(const std::string& directory, const std::string& steps = {});
     ~GunAudio();
     GunAudio(const GunAudio&) = delete;
     GunAudio& operator=(const GunAudio&) = delete;
@@ -35,6 +39,18 @@ public:
     void world_shot(game::combat::WeaponId weapon, Vector3 source, Vector3 listener, Vector3 forward);
     void explosion(Vector3 at, Vector3 listener, Vector3 forward);
     void kill_confirm();
+    void reload(game::combat::WeaponId weapon);
+    void cancel_reload();              // switched away or dropped the gun mid-reload
+    void equip();
+    void pickup();
+    void grenade_pin();
+    void hitmarker(bool headshot);
+    void hurt(bool armoured);
+    void near_miss(Vector3 at, Vector3 listener, Vector3 forward);   // a round cracking past
+    void ricochet(Vector3 at, Vector3 listener, Vector3 forward);    // a round striking close by
+    void footstep(Vector3 at, Vector3 listener, Vector3 forward);    // someone else running
+    void zone_warning();
+    void heartbeat(float strength);
     void update(float dt); // plays what has arrived (sound travels; actions follow the shot)
     [[nodiscard]] bool ready() const { return ready_; }
 
@@ -47,8 +63,11 @@ private:
     void unload(Bank& bank);
     float random();
 
-    std::array<Bank, game::combat::weapon_count> close_{}, distant_{};
+    void play_at(Bank& bank, Vector3 at, Vector3 listener, Vector3 forward, float radius, float loudness);
+    std::array<Bank, game::combat::weapon_count> close_{}, distant_{}, reload_{};
     Bank explosion_{}, explosion_distant_{}, pump_{}, bolt_{}, casing_{}, kill_{};
+    Bank equip_{}, pickup_{}, pin_{}, hitmarker_{}, hurt_{}, armour_{}, whiz_{}, ricochet_{}, steps_{}, zone_{}, heart_{};
+    Sound reloading_{};
     std::vector<Pending> pending_;
     float volume_{.65F};
     bool muted_{false}, ready_{false};

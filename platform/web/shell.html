@@ -37,6 +37,8 @@ function showStartupError(text){
 window.addEventListener('error',event=>showStartupError('OUTLAND error: '+event.message));
 window.addEventListener('unhandledrejection',event=>showStartupError('OUTLAND error: '+String(event.reason)));
 function resumeAudio(){
+ // iPhone: play as media so the ring/silent switch does not mute the game (Safari 17+).
+ try{if(typeof navigator!=='undefined' && navigator.audioSession && navigator.audioSession.type!=='playback')navigator.audioSession.type='playback';}catch(e){}
  const devices=window.miniaudio && window.miniaudio.devices;
  if(devices) for(const device of devices) if(device && device.webaudio) device.webaudio.resume().catch(()=>{});
 }
