@@ -32,6 +32,7 @@ public:
         float circle_radius{-1};  // Battle Royale safe circle round the island centre, <0 none
         std::vector<Vector3> stops;                    // bus stops
         std::vector<std::pair<Vector3, float>> buses;  // buses on the line: where, and heading (degrees)
+        std::vector<std::pair<Vector3, Color>> turf;    // Mafio hideouts: where, and the gang's colour
         const Font* font{nullptr};
     };
     enum class Change { None, Settings, Close };

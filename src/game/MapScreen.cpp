@@ -285,6 +285,15 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
         DrawTriangle(corner(-9, 4), corner(-9, -4), corner(9, -4), Color{0, 140, 60, 255});
         DrawCircleV(corner(9, 0), 2.2F * s, Color{255, 255, 255, 255});
     }
+    // La Mafio: each crew's hideout, a diamond in its gang's colour.
+    for (const auto& [where, color] : view.turf) {
+        const auto at = to_map(area, where.x, where.z);
+        const float r = 7 * s;
+        DrawTriangle({at.x, at.y - r}, {at.x - r, at.y}, {at.x + r, at.y}, BLACK);
+        DrawTriangle({at.x - r, at.y}, {at.x, at.y + r}, {at.x + r, at.y}, BLACK);
+        DrawTriangle({at.x, at.y - r + 2}, {at.x - r + 2, at.y}, {at.x + r - 2, at.y}, color);
+        DrawTriangle({at.x - r + 2, at.y}, {at.x, at.y + r - 2}, {at.x + r - 2, at.y}, color);
+    }
     // Battle Royale: the safe circle.
     if (view.circle_radius > 0) {
         const auto centre = to_map(area, 0, 0);
@@ -349,6 +358,12 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
         DrawRectangleRounded({x, y, 14 * s, 14 * s}, .3F, 4, Color{250, 205, 40, 255});
         centred(font, "H", {x + 7 * s, y + 7 * s}, 10 * s, Color{25, 25, 25, 255});
         text(font, "Bus stop  ·  green: a bus on Linio 1", {x + 22 * s, y - 1 * s}, 14 * s, ink);
+    }
+    if (!view.turf.empty()) {
+        y += 20 * s;
+        DrawTriangle({x + 7 * s, y}, {x, y + 7 * s}, {x + 14 * s, y + 7 * s}, Color{46, 204, 96, 255});
+        DrawTriangle({x, y + 7 * s}, {x + 7 * s, y + 14 * s}, {x + 14 * s, y + 7 * s}, Color{46, 204, 96, 255});
+        text(font, "Krimuloj crew (gang colour) - the police are paid off", {x + 22 * s, y - 1 * s}, 14 * s, ink);
     }
     button(close_button(width, height), "CLOSE  (M)", true, font, s);
 }

@@ -10,6 +10,9 @@
 #include "outland/game/build/BuildMode.hpp"
 #include "outland/game/hud/Instruments.hpp"
 #include "outland/game/ai/BotDrivers.hpp"
+#include "outland/game/casino/PokerTable.hpp"
+#include "outland/game/mafia/Mafio.hpp"
+#include "outland/game/mafia/MafioRenderer.hpp"
 #include "outland/game/ZoneWall.hpp"
 #include "outland/game/inventory/LootSave.hpp"
 #include "outland/game/inventory/LootSession.hpp"
@@ -471,6 +474,13 @@ void Renderer::run() {
     game::ai::BattleRoyaleBots br_bots;
     game::ai::BotDrivers bot_drivers; // Battle Royale bots on the road
     std::vector<int> bots_looted;      // fallen bots whose gear already lies on the ground
+    // Explore: La Mafio, a Krimulo crew in every town (bots in br_bots), and the Green Hand's
+    // poker table in Verda City.
+    game::mafia::Mafio mafio;
+    game::casino::Poker poker;
+    game::casino::PokerTable poker_table;
+    bool poker_open=false;
+    int poker_buy_in=0; // the wallet changes only when the player leaves (by the net win or loss)
     game::ModeSession mode_session;
     game::PlayUI play_ui;
     game::economy::Economy economy;
@@ -493,6 +503,7 @@ void Renderer::run() {
     std::size_t lit_asset_count=static_cast<std::size_t>(-1);
     game::sound::SoundBus sound_bus; // every noise on Verda this session, heard by bots, NPCs and residents
     double match_time=0;
+    const auto krimulo_hostile=[&](int bot){return !mafio.active() || mafio.provoked(mafio.gang_of(bot),match_time);};
 
     // Combat feedback (numbers, kill marker, hurt flash and arrow, shake) and frag grenades.
     game::combat::CombatFeedback combat_feedback;
@@ -652,6 +663,7 @@ void Renderer::run() {
         if((hit.kind==game::combat::HitKind::VehicleWindow || hit.kind==game::combat::HitKind::VehicleOccupant) &&
            hit.target>=0 && static_cast<std::size_t>(hit.target)<vehicles.vehicles().size()) {
             const int driver=bot_drivers.driver_of(vehicles.vehicles()[static_cast<std::size_t>(hit.target)].id);
+            if(driver>=0 && mafio.active()) mafio.provoke(driver,match_time);
             if(driver>=0 && br_bots.damage_bot(driver,amount*.8F,hit.position,match_time)) pending_kills.push_back(hit.position);
         }
     });
@@ -663,7 +675,10 @@ void Renderer::run() {
         const auto& body=npcs.actors()[static_cast<std::size_t>(actor)];
         const Vector3 where=body.position;
         bool killed=false;
-        if(body.bot>=0) killed=br_bots.damage_bot(body.bot,damage,attacker,match_time);
+        if(body.bot>=0) {
+            if(mafio.active()) mafio.provoke(body.bot,match_time); // hurt a Krimulo: the gang shoots back
+            killed=br_bots.damage_bot(body.bot,damage,attacker,match_time);
+        }
         else if(npcs.damage(static_cast<std::size_t>(actor),damage,attacker)) {
             const auto& victim=npcs.actors()[static_cast<std::size_t>(actor)];
             killed=victim.health<=0;
@@ -898,6 +913,11 @@ void Renderer::run() {
                     zombies.build(verda_region,&character_registry,++zombie_seed);zombies.reset(npcs);
                     zombies.clear_area({player.position.x,player.position.y-1,player.position.z},70); // a safe start
                 } else zombies.clear(npcs);
+                if(poker_open) {
+                    loot_session.economy().money=std::max<std::int64_t>(0,loot_session.economy().money+poker.cash_out()-poker_buy_in);
+                    poker_open=false;poker_buy_in=0;
+                }
+                mafio.clear(br_bots,bot_drivers,vehicles);
                 bot_drivers.clear(br_bots,vehicles);bots_looted.clear();
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
                 zombie_hour=17.5F;lit_asset_count=static_cast<std::size_t>(-1);
@@ -909,6 +929,11 @@ void Renderer::run() {
                     br_bots.start(verda_region,home_screen.bot_level(),23,session_seed,last_player_feet);
                     // Some of them find a car near where they land and drive in toward the zone.
                     bot_drivers.start(br_bots,vehicles,verda_region,session_seed,mode_session.circle.start_radius);
+                    br_bots.sync_bodies(npcs,&character_registry);
+                }
+                if(game::rules_for(game_mode).civilian_life && !island_life.empty()) {
+                    // La Mafio: every town's crew moves into its building.
+                    mafio.start(island_life.places(),verda_region,br_bots,session_seed);
                     br_bots.sync_bodies(npcs,&character_registry);
                 }
                 mode_session.start(game_mode,static_cast<int>(br_bots.bots().size()),home_screen.bot_level());
@@ -944,7 +969,7 @@ void Renderer::run() {
         // ====================================================
 
         if (
-            IsKeyPressed(KEY_ESCAPE)
+            IsKeyPressed(KEY_ESCAPE) && !poker_open // Escape leaves the poker table first
         ) {
 #ifdef OUTLAND_DEV_TOOLS
             if(creator_session.dirty() && !creator_session.save(verda_region))continue;
@@ -1025,7 +1050,7 @@ void Renderer::run() {
         if(game_mode==game::GameMode::DevLab && !creator_active)reserved=[&](Vector2 point){return CheckCollisionPointRec(point,audio_button)||dev_lab.owns_point(point,screen_width,screen_height);};
 #endif
         // The map is modal like the bag; MAP / M opens it during play.
-        if(!map_screen.is_open() && game_mode!=game::GameMode::DevLab && !shop_open && !inventory_open && !mode_session.terminal() &&
+        if(!map_screen.is_open() && game_mode!=game::GameMode::DevLab && !shop_open && !poker_open && !inventory_open && !mode_session.terminal() &&
            (map_screen.tapped_map_button(screen_width,screen_height,IsWindowFocused()) || (IsWindowFocused() && IsKeyPressed(KEY_M)))) {
             map_screen.open();input_system.cancel_controls();
         }
@@ -1038,7 +1063,7 @@ void Renderer::run() {
             const auto change=map_screen.update(settings,screen_width,screen_height,IsWindowFocused());
             if(change!=game::MapScreen::Change::None) {apply_settings();store_settings();}
             if(change==game::MapScreen::Change::Close) input_system.cancel_controls();
-        } else if(shop_open || mode_session.terminal()) {
+        } else if(shop_open || poker_open || mode_session.terminal()) {
             input_system.update(screen_width,screen_height,true,true,[](Vector2){return true;});
             input_system.player()={};
         } else if (inventory_open) {
@@ -1077,7 +1102,7 @@ void Renderer::run() {
         {
             // BUILD (K): lay roads, homes and bus stops in Explore, on foot.
             const bool can_build=game::rules_for(game_mode).civilian_life && !vehicles.driver() && !map_screen.is_open() &&
-                !inventory_open && !shop_open && !mode_session.terminal() && player_health.alive();
+                !inventory_open && !shop_open && !poker_open && !mode_session.terminal() && player_health.alive();
             build_mode.tick(dt);
             bool toggled_now=false;
             if(can_build && build_mode.toggled(screen_width,screen_height,IsWindowFocused())) {
@@ -1108,11 +1133,41 @@ void Renderer::run() {
         const auto reachable_shop=[&](Vector3 door){return !combat_world.trace_segment(
             {player.position.x,player.position.y+.5F,player.position.z},Vector3Add(door,{0,.8F,0}),false,false).hit();};
         const auto* nearby_shop=game_mode==game::GameMode::Explore && !vehicles.driver() ? economy.nearest(shop_feet,reachable_shop) : nullptr;
-        if(controls.interact && nearby_shop && !inventory_open && !shop_open && !mode_session.terminal()) {
+        // The Green Hand's poker table in Verda City: sit down with up to 300 kr.
+        const auto* table_crew=game_mode==game::GameMode::Explore ? mafio.casino() : nullptr;
+        const bool at_table=table_crew && !vehicles.driver() && !poker_open && player_health.alive() &&
+            Vector3Distance(shop_feet,table_crew->table)<2.8F && !mafio.provoked(table_crew->gang,match_time);
+        if(controls.interact && at_table && !inventory_open && !shop_open && !mode_session.terminal()) {
+            const auto money=loot_session.economy().money;
+            if(money<20) {interaction_message="The Green Hand's table: 20 kr to sit down";interaction_remaining=3;}
+            else {
+                poker_buy_in=static_cast<int>(std::min<std::int64_t>(money,300));
+                poker.sit(poker_buy_in,{"VITO","BRUNO","LA KALVA"},static_cast<std::uint64_t>(GetTime()*1000.0)+1);
+                poker_open=true;poker_table.opened();input_system.cancel_controls();
+            }
+        }
+        if(poker_open) {
+            const auto choice=poker_table.input(poker,screen_width,screen_height,IsWindowFocused());
+            if(choice==game::casino::PokerInput::Fold) poker.act(game::casino::Action::Fold);
+            if(choice==game::casino::PokerInput::Call) poker.act(game::casino::Action::Call);
+            if(choice==game::casino::PokerInput::Raise) poker.act(game::casino::Action::Raise);
+            if(choice==game::casino::PokerInput::Deal) poker.deal();
+            poker.update(dt);
+            // Leaving (or trouble at the table) cashes the chips back into the wallet.
+            if(choice==game::casino::PokerInput::Leave || !player_health.alive() || (table_crew && mafio.provoked(table_crew->gang,match_time))) {
+                const int chips=poker.cash_out();
+                loot_session.economy().money=std::max<std::int64_t>(0,loot_session.economy().money+chips-poker_buy_in);loot_session.changed();
+                interaction_message=chips>=poker_buy_in ? TextFormat("You leave the table %d kr up",chips-poker_buy_in) :
+                    TextFormat("You leave the table %d kr down",poker_buy_in-chips);
+                interaction_remaining=3;poker_buy_in=0;
+                poker_open=false;input_system.cancel_controls();
+            }
+        }
+        if(controls.interact && nearby_shop && !inventory_open && !shop_open && !poker_open && !at_table && !mode_session.terminal()) {
             current_shop=nearby_shop;shop_open=true;shop_status="Select supplies, equipment or furniture. BUY / SELL transfers one item.";
             play_ui.opened();input_system.cancel_controls();
         }
-        if(controls.interact && !creator_active && !inventory_open && !shop_open) {
+        if(controls.interact && !creator_active && !inventory_open && !shop_open && !poker_open && !at_table) {
             Vector3 exit{};
             if(vehicles.driver()){
                 if(vehicles.exit(verda_region,exit)){player.position=Vector3Add(exit,{0,1,0});player.vertical_velocity=0;vehicle_renderer.reset_camera();interaction_message="Exited vehicle";}
@@ -1139,7 +1194,7 @@ void Renderer::run() {
         // Throttle: W/S (move_y) or the touch pedals - BRAKE slows, then reverses.
         const float pedal_throttle=std::clamp(-controls.move_y+controls.gas-controls.brake_pedal,-1.0F,1.0F);
         game::vehicles::VehicleInput driving_input{pedal_throttle,-controls.move_x,controls.brake,controls.crouch,IsKeyDown(KEY_H),controls.sprint};
-        const bool vehicle_paused=creator_active||inventory_open||shop_open||mode_session.terminal()||!IsWindowFocused()
+        const bool vehicle_paused=creator_active||inventory_open||shop_open||poker_open||mode_session.terminal()||!IsWindowFocused()
 #ifdef OUTLAND_DEV_TOOLS
             || (game_mode==game::GameMode::DevLab && dev_lab.tools_open())
 #endif
@@ -1174,7 +1229,7 @@ void Renderer::run() {
                 }
             }
             if(controls.next_weapon)loot_session.changed();
-            if(controls.interact && !shop_open && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){
+            if(controls.interact && !shop_open && !poker_open && !at_table && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){
                 interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;
                 if(interaction_message.starts_with("Picked up")) gun_audio.pickup();
             }
@@ -1268,7 +1323,7 @@ void Renderer::run() {
             float best=1e9F;Vector3 best_dir{};
             for(const auto& a:npcs.actors()) {
                 if(a.state==characters::NpcState::Dead || a.health<=0) continue;
-                const bool hostile=a.bot>=0 || a.pool==characters::CharacterPool::Hostile || a.pool==characters::CharacterPool::Creature ||
+                const bool hostile=(a.bot>=0 && krimulo_hostile(a.bot)) || a.pool==characters::CharacterPool::Hostile || a.pool==characters::CharacterPool::Creature ||
                     (a.police && a.state==characters::NpcState::Chase);
                 if(!hostile) continue;
                 const Vector3 chest{a.position.x,a.position.y+1.25F,a.position.z};
@@ -1685,7 +1740,7 @@ void Renderer::run() {
             npcs.reconcile(verda_region,character_registry);
             npc_reconcile_timer=0;
         }
-        weapons.update((shop_open || mode_session.terminal()) ? 0.0F : dt,weapon_input,{gun_muzzle,gun_direction},combat_world);
+        weapons.update((shop_open || poker_open || mode_session.terminal()) ? 0.0F : dt,weapon_input,{gun_muzzle,gun_direction},combat_world);
         // Battle-royale recoil: each shot lifts the aim itself (the player pulls it back down);
         // once the trigger is released, part of the climb settles back on its own.
         if(weapons.events().shots>0) {
@@ -1709,7 +1764,7 @@ void Renderer::run() {
         // Outside the Dev Lab grenades are bag items (loot, shops, the starter kit): throw what you carry.
         const bool bag_grenades=game_mode!=game::GameMode::DevLab;
         if(bag_grenades) grenades.set_count(loot_session.inventory().count("frag_grenade"));
-        if(controls.grenade && !driving && !creator_active && !inventory_open && !shop_open && player_health.alive() && !mode_session.terminal()) {
+        if(controls.grenade && !driving && !creator_active && !inventory_open && !shop_open && !poker_open && player_health.alive() && !mode_session.terminal()) {
             const Vector3 carried=dt>0 ? Vector3Scale(Vector3Subtract(player.position,position_before_move),1.0F/dt) : Vector3{};
             if(grenades.throw_grenade(head_position,look_direction,carried)) {
                 gun_audio.grenade_pin();
@@ -1853,7 +1908,11 @@ void Renderer::run() {
             frame.player_alive=player_health.alive();frame.player_fired=weapons.events().shots>0;
             frame.daylight=last_daylight;
             frame.line_of_sight=[&](Vector3 a,Vector3 b){return !combat_world.trace_segment(a,b,false,false,true).hit();};
-            if(frame.player_fired) justice.crime(game::law::CrimeKind::ShotsFired,frame.player,-1,frame,island_life);
+            // The Krimuloj paid the police off: shooting on their turf, or in a fight with a gang, is
+            // nobody's business.
+            bool gang_business=mafio.active() && mafio.turf_at(frame.player,60)>=0;
+            for(int g=0;g<static_cast<int>(game::mafia::gangs.size());++g) gang_business|=mafio.provoked(g,match_time);
+            if(frame.player_fired && !gang_business) justice.crime(game::law::CrimeKind::ShotsFired,frame.player,-1,frame,island_life);
             for(const auto& c:crimes) justice.crime(c.kind,frame.player,c.victim,frame,island_life);
             if(!vehicle_paused) justice.update(frame,island_life,npcs);
         }
@@ -1871,6 +1930,26 @@ void Renderer::run() {
                 const double bots_t0=GetTime();
                 bot_drivers.update(dt,br_bots,vehicles,verda_region,feet,player_health.alive(),mode_session.radius(),bot_world.environment.line_of_sight);
                 br_bots.update(frame,bot_world);
+                br_bots.sync_bodies(npcs,&character_registry);
+                world_draw_stats().bots=world_draw_stats().bots*.9+(GetTime()-bots_t0)*1000*.1;
+                hurt_player(br_bots.events().player_damage);
+                const Vector3 ear_forward=Vector3Subtract(camera.target,camera.position);
+                for(const Vector3 past:br_bots.events().near_misses) gun_audio.near_miss(past,camera.position,ear_forward);
+                for(const Vector3 strike:br_bots.events().ricochets) gun_audio.ricochet(strike,camera.position,ear_forward);
+                if(br_bots.events().player_damage>0) {hurt_from=br_bots.events().player_damage_from;hurt_directional=true;}
+            } else if(mafio.active() && !vehicle_paused) {
+                // La Mafio: crews at their hideouts, hit squads on the road, wars and respawns.
+                game::mafia::MafioFrame frame;
+                frame.dt=dt;frame.now=match_time;frame.player_feet=feet;
+                frame.player_velocity=dt>0 ? Vector3Scale(Vector3Subtract(feet,last_player_feet),1.0F/dt) : Vector3{};
+                frame.player_alive=player_health.alive();
+                frame.player_fired=weapons.events().shots>0;
+                frame.player_weapon=weapons.selected();
+                frame.player_in_vehicle=driving;
+                frame.aim_origin=gun_muzzle;frame.aim_direction=gun_direction;
+                if(!player_health.alive()) mafio.forgive();
+                const double bots_t0=GetTime();
+                mafio.update(frame,br_bots,bot_world,bot_drivers,vehicles,verda_region);
                 br_bots.sync_bodies(npcs,&character_registry);
                 world_draw_stats().bots=world_draw_stats().bots*.9+(GetTime()-bots_t0)*1000*.1;
                 hurt_player(br_bots.events().player_damage);
@@ -2204,6 +2283,7 @@ void Renderer::run() {
         }
 
         build_mode.draw_world(static_cast<float>(GetTime()));
+        if(mafio.active()) game::mafia::draw_turf(mafio,camera.position,static_cast<float>(GetTime()));
         // The circle's edge stands in the world as a wall of blue light.
         if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal())
             game::draw_zone_wall(mode_session.radius(),camera.position,static_cast<float>(GetTime()));
@@ -2300,7 +2380,7 @@ void Renderer::run() {
             const int clock_width=MeasureText(clock_label.c_str(),18);
             DrawText(clock_label.c_str(),screen_width/2-clock_width/2,10,18,BLACK);
             const Vector3 feet{player.position.x,player.position.y-1.0F,player.position.z};
-            if(const auto* resident=island_life.nearest(feet,3.5F)) {
+            if(const auto* resident=poker_open ? nullptr : island_life.nearest(feet,3.5F)) {
                 // Names are Esperanto (Paŭlo, Kovač): drawn with the sign font, which has the letters.
                 const auto line=island_life.describe(*resident);
                 const Font& font=sign_renderer.font();
@@ -2407,7 +2487,7 @@ void Renderer::run() {
             DrawText(TextFormat("HEALTH %.0f / %.0f",player_health.current(),player_health.maximum()),
                 16,16,20,player_health.alive() ? RAYWHITE : RED);
 
-            if (br_bots.active()) {
+            if (br_bots.active() && game_mode==game::GameMode::BattleRoyale) {
                 const int alive=br_bots.alive_bots()+(player_health.alive() ? 1 : 0);
                 const char* status=TextFormat("ALIVE %d   KILLS %d   BOTS %s",alive,br_bots.player_kills(),game::ai::bot_level_name(br_bots.level()));
                 DrawText(status,screen_width/2-MeasureText(status,20)/2,16,20,RAYWHITE);
@@ -2420,7 +2500,7 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
         asset_drawer_open = game_mode == game::GameMode::DevLab && creator_touch_ui.inventory_open();
 #endif
-        if (!inventory_open && !shop_open && !mode_session.terminal() && !asset_drawer_open) touch_hud.draw(
+        if (!inventory_open && !shop_open && !poker_open && !mode_session.terminal() && !asset_drawer_open) touch_hud.draw(
             controls,
             input_system.layout(),
             screen_width,
@@ -2467,7 +2547,7 @@ void Renderer::run() {
 #endif
 
         if(inventory_open)loot_ui.draw_inventory(item_registry,loot_session,weapons,screen_width,screen_height);
-        if(!creator_active && !inventory_open && !shop_open && !mode_session.terminal()){
+        if(!creator_active && !inventory_open && !shop_open && !poker_open && !mode_session.terminal()){
             const int nearby=loot_session.world().nearest(loot_feet,2.8F,reachable_pickup);
             if(nearby>=0){const auto& pickup=loot_session.world().state().pickups[static_cast<std::size_t>(nearby)];
                 const auto* item=item_registry.find(pickup.item);
@@ -2477,6 +2557,52 @@ void Renderer::run() {
                     DrawRectangle(screen_width/2-190,screen_height-146,MeasureText(line,18)+20,30,Fade(BLACK,.5F));
                     DrawText(line,screen_width/2-180,screen_height-140,18,game::inventory::LootUI::rarity_color(rarity));
                 }
+            }
+        }
+        // La Mafio: gang tags over Krimuloj near by, whose turf this is, the news, the poker table.
+        if(mafio.active() && !poker_open && !inventory_open && !shop_open) {
+            const Font& font=sign_renderer.font();
+            std::vector<Vector2> tagged; // one tag per spot on screen: a crew standing together shares one
+            for(const auto& body:npcs.actors()) {
+                if(body.bot<0 || body.hidden || body.state==characters::NpcState::Dead) continue;
+                const int gang=mafio.gang_of(body.bot);
+                if(gang<0 || Vector3Distance(body.position,camera.position)>22) continue;
+                const Vector3 over{body.position.x,body.position.y+2.15F,body.position.z};
+                if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))<=0) continue;
+                const Vector2 at=GetWorldToScreen(over,camera);
+                if(std::any_of(tagged.begin(),tagged.end(),[&](Vector2 t){return std::abs(t.x-at.x)<150 && std::abs(t.y-at.y)<24;})) continue;
+                tagged.push_back(at);
+                const bool angry=mafio.provoked(gang,match_time);
+                const std::string tag=std::string(angry ? "! " : "")+std::string(game::mafia::gangs[static_cast<std::size_t>(gang)].name);
+                const float tw=MeasureTextEx(font,tag.c_str(),15,1).x;
+                DrawRectangle(static_cast<int>(at.x-tw/2-5),static_cast<int>(at.y-2),static_cast<int>(tw+10),19,Fade(BLACK,.45F));
+                DrawTextEx(font,tag.c_str(),{at.x-tw/2,at.y},15,1,angry ? Color{255,90,80,255} : game::mafia::gangs[static_cast<std::size_t>(gang)].color);
+            }
+            const int turf=mafio.turf_at({player.position.x,player.position.y-1,player.position.z},30);
+            if(turf>=0) {
+                const auto& crew=mafio.crews()[static_cast<std::size_t>(turf)];
+                const auto& gang=game::mafia::gangs[static_cast<std::size_t>(crew.gang)];
+                const std::string title=std::string(gang.name)+"  ·  "+crew.town+" crew";
+                const std::string sub=mafio.provoked(crew.gang,match_time) ? std::string("They are shooting at you - the police won't come") :
+                    std::string(gang.meaning)+" - leave them be and they leave you be";
+                const float tw=MeasureTextEx(font,title.c_str(),20,1).x,sw=MeasureTextEx(font,sub.c_str(),15,1).x;
+                // Left, under the money line: clear of the compass and the touch buttons.
+                const float w=std::max(tw,sw)+30,x=10,y=screen_height*.235F;
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y),static_cast<int>(w),50,Fade(BLACK,.5F));
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y),5,50,gang.color);
+                DrawTextEx(font,title.c_str(),{x+15,y+5},20,1,gang.color);
+                DrawTextEx(font,sub.c_str(),{x+15,y+28},15,1,Color{220,226,206,255});
+            }
+            if(mafio.message_time()>0) {
+                const float alpha=std::clamp(mafio.message_time(),0.0F,1.0F);
+                const float mw=MeasureTextEx(font,mafio.message().c_str(),18,1).x;
+                DrawRectangle(static_cast<int>(screen_width/2-mw/2-12),screen_height-240,static_cast<int>(mw+24),28,Fade(Color{60,10,10,255},.65F*alpha));
+                DrawTextEx(font,mafio.message().c_str(),{screen_width/2-mw/2,static_cast<float>(screen_height-235)},18,1,Fade(Color{255,215,170,255},alpha));
+            }
+            if(at_table) {
+                const char* line="E / USE: PLAY POKER WITH LA VERDA MANO (buy-in up to 300 kr)";
+                DrawRectangle(screen_width/2-MeasureText(line,18)/2-10,screen_height-176,MeasureText(line,18)+20,30,Fade(BLACK,.5F));
+                DrawText(line,screen_width/2-MeasureText(line,18)/2,screen_height-170,18,Color{120,230,150,255});
             }
         }
         if (interaction_remaining > 0)
@@ -2530,14 +2656,14 @@ void Renderer::run() {
                          static_cast<int>(screen_width*.42F)+84,screen_height-26,15,YELLOW);
         }
         else if(!creator_active && !inventory_open && vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z})>=0)DrawText("USE / E - Enter vehicle",screen_width/2-120,screen_height-100,20,YELLOW);
-        if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !shop_open && !inventory_open) {
+        if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !shop_open && !poker_open && !inventory_open) {
             const int objective_bottom=game::PlayUI::draw_objective(mode_session,screen_width);
             if(game_mode==game::GameMode::BattleRoyale) {
                 DrawText(TextFormat("ZONE %.0fm | distance %.0fm | %s",mode_session.radius(),mode_session.distance(loot_feet),mode_session.distance(loot_feet)>mode_session.radius() ? "DANGER - move toward capital" : "inside safe zone"),20,objective_bottom+6,16,mode_session.distance(loot_feet)>mode_session.radius() ? RED : RAYWHITE);
             }
             if(game_mode==game::GameMode::Explore) {
                 DrawText(TextFormat("%lld kronoj | stores: BUY supplies / SELL scavenged goods",static_cast<long long>(loot_session.economy().money)),20,objective_bottom+6,16,GOLD);
-                if(nearby_shop) DrawText(TextFormat("E / USE: %s",nearby_shop->name.c_str()),screen_width/2-160,screen_height-165,20,GOLD);
+                if(nearby_shop && !at_table && !poker_open) DrawText(TextFormat("E / USE: %s",nearby_shop->name.c_str()),screen_width/2-160,screen_height-165,20,GOLD);
             }
         }
         if(shop_open && current_shop) play_ui.draw_shop(economy,*current_shop,loot_session.economy(),item_registry,loot_session.inventory(),shop_status,screen_width,screen_height);
@@ -2560,14 +2686,16 @@ void Renderer::run() {
             }
         }
         // The compass, in every circumstance: where the camera looks.
-        if(!map_screen.is_open())
+        if(!map_screen.is_open() && !poker_open)
             game::hud::draw_compass(game::hud::bearing(Vector3Subtract(camera.target,camera.position)),screen_width,32);
+        if(poker_open) poker_table.draw(poker,loot_session.economy().money-poker_buy_in,"LA VERDA MANO",screen_width,screen_height,static_cast<float>(GetTime()));
         if(map_screen.is_open()) {
             game::MapScreen::View view;
             view.player=player.position;view.yaw=player.yaw;view.font=&sign_renderer.font();
             if(game_mode==game::GameMode::BattleRoyale) view.circle_radius=mode_session.radius();
             for(const auto& stop:bus_line.stops()) view.stops.push_back(stop.shelter);
             if(bus_line.running()) for(const auto& bus:bus_line.buses()) if(bus.running) view.buses.push_back({bus.position,bus.yaw});
+            for(const auto& crew:mafio.crews()) view.turf.push_back({crew.door,game::mafia::gangs[static_cast<std::size_t>(crew.gang)].color});
             map_screen.draw(verda_region,view,settings,screen_width,screen_height);
         }
         DrawFPS(

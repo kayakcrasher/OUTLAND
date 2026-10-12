@@ -53,7 +53,7 @@ CombatBot& BattleRoyaleBots::add_bot(Vector3 feet,combat::WeaponId weapon,BotLev
 
 void BattleRoyaleBots::clear() {
     bots_.clear();agents_.clear();sounds_.clear();own_bus_.clear();heard_up_to_=0;shots_.clear();
-    tracers_.clear();feed_.clear();events_={};elapsed_=0;mounted_.clear();
+    tracers_.clear();feed_.clear();events_={};elapsed_=0;mounted_.clear();asleep_.clear();
     player_kills_=0;
 }
 
@@ -129,6 +129,24 @@ bool BattleRoyaleBots::mounted(int bot) const {
     return std::find(mounted_.begin(),mounted_.end(),bot)!=mounted_.end();
 }
 
+void BattleRoyaleBots::set_asleep(int bot,bool asleep) {
+    std::erase(asleep_,bot);
+    if(asleep) asleep_.push_back(bot);
+}
+bool BattleRoyaleBots::asleep(int bot) const {
+    return std::find(asleep_.begin(),asleep_.end(),bot)!=asleep_.end();
+}
+
+void BattleRoyaleBots::respawn(int bot,Vector3 feet,float yaw,std::uint64_t seed) {
+    for(auto& brain:bots_) {
+        if(brain.id()!=bot) continue;
+        brain=CombatBot(bot,brain.level(),brain.weapon(),mix(seed+static_cast<std::uint64_t>(bot)));
+        brain.set_position(feet);brain.set_yaw(yaw);brain.set_roam_center(feet,60);
+        set_mounted(bot,false);
+        return;
+    }
+}
+
 void BattleRoyaleBots::report_player_death(int killer) {
     feed_.push_back(killer>0 ? bot_name(killer)+" ELIMINATED YOU" : std::string("YOU WERE ELIMINATED"));
     if(feed_.size()>feed_lines) feed_.erase(feed_.begin());
@@ -158,7 +176,7 @@ void BattleRoyaleBots::update(const BattleRoyaleFrame& frame,const BotWorld& wor
     }
     for(const auto& bot:bots_) {
         // Running feet are audible close by; walking is quiet.
-        if(bot.alive() && !mounted(bot.id()) && Vector3Length({bot.velocity().x,0,bot.velocity().z})>CombatBot::walk_speed+.6F)
+        if(bot.alive() && !mounted(bot.id()) && !asleep(bot.id()) && Vector3Length({bot.velocity().x,0,bot.velocity().z})>CombatBot::walk_speed+.6F)
             bus.emit(sound::SoundKind::Footstep,bot.position(),footstep_radius,bot.id(),frame.now);
     }
     // Everything new on the bus this frame; each bot judges its own earshot.
@@ -169,7 +187,7 @@ void BattleRoyaleBots::update(const BattleRoyaleFrame& frame,const BotWorld& wor
 
     shots_.clear();
     for(auto& bot:bots_) {
-        if(!bot.alive() || mounted(bot.id())) continue;
+        if(!bot.alive() || mounted(bot.id()) || asleep(bot.id())) continue;
         bot.tick(dt,frame.now,agents_,sounds_,world.environment,shots_);
     }
     for(const auto& shot:shots_) {
@@ -197,6 +215,8 @@ void BattleRoyaleBots::resolve(const BotShot& shot,const BattleRoyaleFrame& fram
     for(const auto& bot:bots_) {
         if(bot.id()==shot.shooter) {shooter_position=bot.position();continue;}
         if(!bot.alive() || mounted(bot.id())) continue;
+        // With sides (the Mafio crews), a gang's rounds pass its own people.
+        if(world.environment.hostile && !world.environment.hostile(shot.shooter,bot.id())) continue;
         const float f=enter_body(shot.origin,end,bot.position());
         if(f>=0 && f<best) {best=f;victim=bot.id();victim_feet=bot.position();}
     }

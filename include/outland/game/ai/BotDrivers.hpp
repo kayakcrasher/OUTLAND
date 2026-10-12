@@ -25,6 +25,11 @@ struct BotRide {
     float progress{0}, stuck{0}, reverse{0}, driven{0};
     int attempts{0};
     bool active{false};
+    // A dispatched ride (Mafio hit squads): it heads for `goal`, may carry passengers, and only
+    // stops for the player if `ambush` is set.
+    Vector3 goal{};
+    bool targeted{false}, ambush{true};
+    std::vector<int> passengers;
 };
 
 class BotDrivers {
@@ -33,11 +38,18 @@ public:
     // how many drive.
     int start(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
               std::uint64_t seed, float zone_radius, int max_drivers = 7);
+    // Puts `crew` (the first one drives) into the nearest usable car within `reach` of `from` and
+    // drives it by road to `goal`; everyone gets out there. Returns whether they set off.
+    bool dispatch(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
+                  const std::vector<int>& crew, Vector3 from, Vector3 goal, float reach = 160);
     // Gets everyone out and hands the cars back (end of a match).
     void clear(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars);
     using Sight = std::function<bool(Vector3 from, Vector3 to)>;
+    // `zone_radius` <= 0: no circle (Explore); rides end at their goal.
     void update(float dt, BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
                 Vector3 player, bool player_alive, float zone_radius, const Sight& sight);
+    // The ride carrying `bot` (driver or passenger), or nullptr.
+    [[nodiscard]] const BotRide* ride_of(int bot) const;
     // The bot at the wheel of `vehicle`, or -1.
     [[nodiscard]] int driver_of(std::string_view vehicle) const;
     [[nodiscard]] int driving() const;

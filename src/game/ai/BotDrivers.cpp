@@ -14,6 +14,7 @@ namespace {
 float flat(Vector3 a, Vector3 b) { return std::hypot(a.x - b.x, a.z - b.z); }
 bool usable(const vehicles::VehicleSystem& cars, const world::VerdaRegion& region, const vehicles::VehicleRuntime& car) {
     if (car.id.find("_donor_") != std::string::npos || car.id.find("bus") != std::string::npos || cars.kinematic(car.id)) return false;
+    if (cars.autopiloted(car.id) || (cars.driver() && cars.driver()->id == car.id)) return false; // taken already
     const auto* asset = cars.asset(region, car.id);
     return asset && asset->vehicle.enabled && !asset->vehicle.destroyed && asset->vehicle.fuel > .15F && asset->vehicle.health > 30;
 }
@@ -65,10 +66,49 @@ int BotDrivers::start(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, wor
     return static_cast<int>(rides_.size());
 }
 
+bool BotDrivers::dispatch(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
+                          const std::vector<int>& crew, Vector3 from, Vector3 goal, float reach) {
+    if (crew.empty()) return false;
+    if (roads_.nodes().empty()) roads_.build(region);
+    int best = -1;
+    float nearest = reach;
+    for (std::size_t i = 0; i < cars.vehicles().size(); ++i) {
+        const auto& car = cars.vehicles()[i];
+        if (!usable(cars, region, car) || driver_of(car.id) >= 0) continue;
+        const float d = flat(car.position, from);
+        if (d < nearest) { nearest = d; best = static_cast<int>(i); }
+    }
+    if (best < 0) return false;
+    const auto& car = cars.vehicles()[static_cast<std::size_t>(best)];
+    BotRide ride;
+    ride.bot = crew.front();
+    ride.vehicle = car.id;
+    ride.route = roads_.route(car.position, goal);
+    if (!ride.route.complete || ride.route.length < 60) return false;
+    ride.active = ride.targeted = true;
+    ride.ambush = false;
+    ride.goal = goal;
+    ride.passengers.assign(crew.begin() + 1, crew.end());
+    for (const int member : crew) {
+        bots.set_mounted(member, true);
+        if (auto* bot = bots.find(member)) { bot->set_position(car.position); bot->set_yaw(car.yaw); }
+    }
+    std::erase_if(rides_, [](const BotRide& r) { return !r.active; });
+    rides_.push_back(std::move(ride));
+    return true;
+}
+
+const BotRide* BotDrivers::ride_of(int bot) const {
+    for (const auto& ride : rides_)
+        if (ride.active && (ride.bot == bot || std::find(ride.passengers.begin(), ride.passengers.end(), bot) != ride.passengers.end())) return &ride;
+    return nullptr;
+}
+
 void BotDrivers::clear(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars) {
     for (auto& ride : rides_) {
         cars.clear_autopilot(ride.vehicle);
         bots.set_mounted(ride.bot, false);
+        for (const int p : ride.passengers) bots.set_mounted(p, false);
     }
     rides_.clear();
 }
@@ -85,23 +125,28 @@ int BotDrivers::driving() const {
 void BotDrivers::dismount(BotRide& ride, BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region) {
     ride.active = false;
     cars.clear_autopilot(ride.vehicle);
-    bots.set_mounted(ride.bot, false);
-    auto* bot = bots.find(ride.bot);
     const int v = cars.find(ride.vehicle);
-    if (!bot || v < 0) return;
-    const auto& car = cars.vehicles()[static_cast<std::size_t>(v)];
-    // Out of the driver's door, or the other side if that is blocked.
-    const float a = car.yaw * DEG2RAD;
-    const Vector3 side{std::cos(a), 0, -std::sin(a)};
-    for (const float s : {2.4F, -2.4F, 3.4F, -3.4F}) {
-        Vector3 p{car.position.x + side.x * s, 0, car.position.z + side.z * s};
-        const float terrain = world::terrain::TerrainHeight::sample(p.x, p.z);
-        p.y = world::physics::WorldCollision::ground_height({p.x, terrain + 1, p.z}, terrain + 1, region);
-        if (world::physics::WorldCollision::body_blocked(p, p.y, region, .35F)) continue;
-        bot->set_position(p);
-        break;
+    std::vector<int> occupants{ride.bot};
+    occupants.insert(occupants.end(), ride.passengers.begin(), ride.passengers.end());
+    for (std::size_t k = 0; k < occupants.size(); ++k) {
+        bots.set_mounted(occupants[k], false);
+        auto* bot = bots.find(occupants[k]);
+        if (!bot || v < 0) continue;
+        const auto& car = cars.vehicles()[static_cast<std::size_t>(v)];
+        // Out of the driver's door (passengers the other side, then behind), or wherever is clear.
+        const float a = car.yaw * DEG2RAD;
+        const Vector3 side{std::cos(a), 0, -std::sin(a)}, back{-std::sin(a), 0, -std::cos(a)};
+        const float along = static_cast<float>(k / 2) * 1.6F, first = k % 2 == 0 ? 2.4F : -2.4F;
+        for (const float s : {first, -first, first * 1.4F, -first * 1.4F}) {
+            Vector3 p{car.position.x + side.x * s + back.x * along, 0, car.position.z + side.z * s + back.z * along};
+            const float terrain = world::terrain::TerrainHeight::sample(p.x, p.z);
+            p.y = world::physics::WorldCollision::ground_height({p.x, terrain + 1, p.z}, terrain + 1, region);
+            if (world::physics::WorldCollision::body_blocked(p, p.y, region, .35F)) continue;
+            bot->set_position(p);
+            break;
+        }
+        bot->set_roam_center(ride.targeted ? ride.goal : bot->position(), ride.targeted ? 25 : 60);
     }
-    bot->set_roam_center(bot->position(), 60);
 }
 
 void BotDrivers::steer(BotRide& ride, vehicles::VehicleSystem& cars, float dt) {
@@ -153,24 +198,31 @@ void BotDrivers::update(float dt, BattleRoyaleBots& bots, vehicles::VehicleSyste
         const int v = cars.find(ride.vehicle);
         const auto* asset = v >= 0 ? cars.asset(region, ride.vehicle) : nullptr;
         if (!bot || !bot->alive() || v < 0 || !asset) {
+            if (v >= 0 && asset) { dismount(ride, bots, cars, region); continue; } // the driver died: all out
             ride.active = false;
             cars.clear_autopilot(ride.vehicle);
             bots.set_mounted(ride.bot, false);
+            for (const int p : ride.passengers) bots.set_mounted(p, false);
             continue;
         }
         const auto& car = cars.vehicles()[static_cast<std::size_t>(v)];
         bot->set_position(car.position);
         bot->set_yaw(car.yaw);
+        for (const int p : ride.passengers)
+            if (auto* passenger = bots.find(p)) { passenger->set_position(car.position); passenger->set_yaw(car.yaw); }
         ride.driven += dt;
         // A wrecked car throws its driver out, hurt.
         if (asset->vehicle.destroyed || asset->vehicle.health <= 0) {
             bot->set_health(std::max(0.0F, bot->health() - 45));
+            for (const int p : ride.passengers)
+                if (auto* passenger = bots.find(p)) passenger->set_health(std::max(0.0F, passenger->health() - 45));
             dismount(ride, bots, cars, region);
             continue;
         }
         const Vector3 eye{car.position.x, car.position.y + 1.4F, car.position.z};
-        const bool ambush = player_alive && flat(car.position, player) < 55 && (!sight || sight(eye, {player.x, player.y + 1.5F, player.z}));
-        const bool arrived = ride.route.length - ride.progress < 12 || std::hypot(car.position.x, car.position.z) < zone_radius * .3F;
+        const bool ambush = ride.ambush && player_alive && flat(car.position, player) < 55 && (!sight || sight(eye, {player.x, player.y + 1.5F, player.z}));
+        const bool arrived = ride.route.length - ride.progress < 12 || (ride.targeted && flat(car.position, ride.goal) < 22) ||
+            (zone_radius > 0 && std::hypot(car.position.x, car.position.z) < zone_radius * .3F);
         if (ambush || arrived || ride.attempts > 4 || ride.driven > 240) {
             dismount(ride, bots, cars, region);
             continue;

@@ -182,6 +182,10 @@ add_library(
     src/game/ai/CombatBot.cpp
     src/game/ai/BattleRoyaleBots.cpp
     src/game/ai/BotDrivers.cpp
+    src/game/mafia/Mafio.cpp
+    src/game/mafia/MafioRenderer.cpp
+    src/game/casino/Poker.cpp
+    src/game/casino/PokerTable.cpp
     src/game/ZoneWall.cpp
     src/characters/AnimationController.cpp
     src/characters/SkeletalGait.cpp
@@ -676,6 +680,15 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_bot_driver_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_bot_driver_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_bot_driver_tests COMMAND outland_bot_driver_tests)
+    add_executable(outland_mafio_tests tests/integration/mafia/test_mafio.cpp)
+    target_link_libraries(outland_mafio_tests PRIVATE outland_render)
+    target_compile_options(outland_mafio_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_mafio_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_mafio_tests COMMAND outland_mafio_tests)
+    add_executable(outland_poker_tests tests/unit/casino/test_poker.cpp)
+    target_link_libraries(outland_poker_tests PRIVATE outland_render)
+    target_compile_options(outland_poker_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_poker_tests COMMAND outland_poker_tests)
 
     add_executable(outland_bus_line_tests tests/integration/transit/test_bus_line.cpp)
     target_link_libraries(outland_bus_line_tests PRIVATE outland_render)

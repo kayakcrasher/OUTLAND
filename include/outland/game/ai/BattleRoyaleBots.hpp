@@ -67,6 +67,12 @@ public:
     // shoot or get hit (bullets hit the car), and its body is hidden.
     void set_mounted(int bot, bool mounted);
     [[nodiscard]] bool mounted(int bot) const;
+    // An asleep bot (a Mafio crew far from the player) stands where it is: it does not think,
+    // move or shoot, but it is drawn and can be hit.
+    void set_asleep(int bot, bool asleep);
+    [[nodiscard]] bool asleep(int bot) const;
+    // Back on its feet at `feet`, full health and a fresh mind (a crew member's respawn).
+    void respawn(int bot, Vector3 feet, float yaw, std::uint64_t seed);
 
     // Keep bot bodies in NpcSystem in step with the brains (spawns missing bodies).
     void sync_bodies(characters::NpcSystem& npcs, const characters::CharacterRegistry* registry) const;
@@ -94,7 +100,7 @@ private:
     std::vector<BotShot> shots_;
     std::vector<BotTracer> tracers_;
     std::vector<std::string> feed_;
-    std::vector<int> mounted_;
+    std::vector<int> mounted_, asleep_;
     BattleRoyaleEvents events_;
     BotLevel level_{BotLevel::Medium};
     Vector3 last_player_{};

@@ -125,7 +125,7 @@ void CombatBot::perceive(float dt,double now,const std::vector<BotAgent>& agents
     for(const auto& agent:agents) {
         if(agent.id==id_) continue;
         auto found=std::find_if(contacts_.begin(),contacts_.end(),[&](const BotContact& c){return c.agent==agent.id;});
-        if(!agent.alive) {
+        if(!agent.alive || (environment.hostile && !environment.hostile(id_,agent.id))) {
             if(found!=contacts_.end()) contacts_.erase(found);
             continue;
         }
@@ -167,6 +167,7 @@ void CombatBot::perceive(float dt,double now,const std::vector<BotAgent>& agents
     }
     for(const auto& sound:sounds) {
         if(sound.source==id_ || sound.radius<=0) continue;
+        if(environment.hostile && (sound.source<0 || !environment.hostile(id_,sound.source))) continue;
         const float distance=Vector3Distance(sound.position,position_);
         if(distance>sound.radius*difficulty_.hearing_scale) continue;
         // Hearing gives a rough bearing and range, never an exact position.

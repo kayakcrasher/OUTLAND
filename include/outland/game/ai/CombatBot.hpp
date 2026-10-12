@@ -46,6 +46,9 @@ struct BotEnvironment {
     std::function<bool(Vector3, Vector3)> line_of_sight;       // eye to eye, true if clear
     std::function<Vector3(Vector3 from, Vector3 to)> move;     // collision-resolved walk, returns feet
     world::navigation::PathFinder find_path;                   // optional routes through doors, stairs, round buildings
+    // Who this bot fights (self, other). Unset: everyone (Battle Royale). Set (the Mafio crews):
+    // others are ignored, and only their sounds are listened to.
+    std::function<bool(int, int)> hostile;
 };
 
 enum class BotIntent : std::uint8_t { Roam, Investigate, Engage, TakeCover, Reload, Heal, Push, Flank, Retreat, Dead };
