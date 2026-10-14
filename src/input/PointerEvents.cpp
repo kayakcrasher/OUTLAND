@@ -4,6 +4,42 @@
 #if (defined(__unix__) || defined(__APPLE__)) && !defined(__ANDROID__) && !defined(__EMSCRIPTEN__)
 #include <dlfcn.h>
 #endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+// Browsers: raylib polls button and touch state once per frame, so a click or tap whose press
+// and release land between two frames (a quick click, or any click while a frame is slow) is
+// lost. A listener on the canvas queues every press; begin_frame() collects them. A plain
+// addEventListener leaves raylib's own emscripten/GLFW callbacks in place.
+EM_JS(int, outland_pointer_install, (), {
+    var canvas = Module['canvas'];
+    if (!canvas || !canvas.addEventListener) return 0;
+    if (Module['outlandPresses']) return 1;
+    var queue = Module['outlandPresses'] = [];
+    var down = function(x, y) {
+        var rect = canvas.getBoundingClientRect();
+        if (!rect.width || !rect.height || queue.length >= 16) return;
+        queue.push((x - rect.left) / rect.width, (y - rect.top) / rect.height);
+    };
+    if (window.PointerEvent) {
+        canvas.addEventListener('pointerdown', function(e) { if (e.button === 0) down(e.clientX, e.clientY); }, true);
+    } else {
+        canvas.addEventListener('mousedown', function(e) { if (e.button === 0) down(e.clientX, e.clientY); }, true);
+        canvas.addEventListener('touchstart', function(e) {
+            for (var i = 0; i < e.changedTouches.length; ++i) down(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+        }, {capture: true, passive: true});
+    }
+    return 1;
+});
+// Moves up to `max` queued presses (fractions of the canvas, x then y) into `out`; returns the count.
+EM_JS(int, outland_pointer_drain, (float* out, int max), {
+    var queue = Module['outlandPresses'];
+    if (!queue || !queue.length) return 0;
+    var n = Math.min(max, queue.length / 2);
+    for (var i = 0; i < n * 2; ++i) HEAPF32[(out >> 2) + i] = queue[i];
+    queue.length = 0;
+    return n;
+});
+#endif
 
 struct GLFWwindow;
 namespace outland::input {
@@ -47,20 +83,33 @@ PointerEvents::PointerEvents() {
         return;
     previous = set_callback(window, capture);
     installed_ = true;
+#elif defined(__EMSCRIPTEN__)
+    installed_ = outland_pointer_install() != 0;
 #endif
 }
 PointerEvents::~PointerEvents() {
     if (!installed_)
         return;
+#ifndef __EMSCRIPTEN__
     // Preserve another callback installed after ours, should another subsystem do so.
     const auto current = set_callback(window, previous);
     if (current != capture)
         set_callback(window, current);
     window = nullptr;
     previous = nullptr;
+#endif
     pending_count = frame_count = 0;
 }
 void PointerEvents::begin_frame() {
+#ifdef __EMSCRIPTEN__
+    if (installed_) {
+        std::array<float, limit * 2> raw{};
+        const int n = outland_pointer_drain(raw.data(), static_cast<int>(limit));
+        const float w = static_cast<float>(GetScreenWidth()), h = static_cast<float>(GetScreenHeight());
+        for (int i = 0; i < n && pending_count < limit; ++i)
+            pending[pending_count++] = {raw[2 * i] * w, raw[2 * i + 1] * h};
+    }
+#endif
     frame_count = pending_count;
     frame = pending;
     pending_count = 0;

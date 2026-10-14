@@ -3,8 +3,8 @@
 #include <span>
 
 namespace outland::input {
-// Optional GLFW desktop click capture. Native Android touch polling stays unchanged.
-// Keeps short X11 clicks that raylib's per-frame button-state polling can miss.
+// Click capture: GLFW on desktop, a canvas pointer listener in browsers. Native Android touch
+// polling stays unchanged. Keeps short clicks and taps that raylib's per-frame polling can miss.
 class PointerEvents {
   public:
     PointerEvents();

@@ -457,7 +457,7 @@ void Renderer::run() {
     float npc_reconcile_timer=.5F;
 
     input::PointerEvents pointer_events;
-    TraceLog(LOG_INFO,pointer_events.installed() ? "Desktop click capture enabled":"Desktop click capture unavailable - using raylib input polling");
+    TraceLog(LOG_INFO,pointer_events.installed() ? "Click capture enabled":"Click capture unavailable - using raylib input polling");
     input::InputSystem input_system;
     input::TouchHUD touch_hud;
     bool inventory_open = false;
