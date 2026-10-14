@@ -1595,6 +1595,40 @@ void emergency_services(Kit& kit, world::VerdaRegion& region) {
     kit.report.hospital = true;
 }
 
+// ---------------------------------------------------------------- government
+// Registaro de Verda, the island's parliament, on the nearest free, level lot to the centre of
+// Verda City along a paved street - at the head of the south blocks, facing the city across the
+// street, by the highway in from the south - and an Urbodomo - a county town hall - in the main town of each of the other four counties
+// (Espera, Porto Luma, Suda Haveno, Roka). Both are Office places for now (clerks work there);
+// their real government role comes later. Flat open land east of Orienta is kept free for a
+// future baseball stadium.
+const std::string parliament_model = "assets/verda/city/civic/parliament.glb";
+const std::string town_hall_model = "assets/verda/city/civic/town_hall.glb";
+constexpr Vector3 parliament_site{0, 0, 0}; // searched outward from the city centre
+
+void government(Kit& kit, world::VerdaRegion& region) {
+    // The stadium ground first, so nothing below (or added after) takes it.
+    if (kit.claim(stadium_reserve, stadium_half, stadium_half, 0)) kit.report.stadium_reserved = true;
+    // Parliament (model bounds x -24..24 with the flags at +-13.5, z -20.7 (steps) ..11): its
+    // lawn (14 m) between the street and the steps.
+    CivicSpot spot;
+    if (civic_lot(kit, region, parliament_site, 0, 700, 0, -4.5F, 25, 17, 21, 14, spot) && kit.put(parliament_model, spot.origin, spot.yaw)) {
+        kit.purpose(to_world(spot.origin, spot.yaw, 0, 1.85F, -8), spot.yaw, world::BuildingPurpose::Office);
+        kit.report.parliament = true;
+    }
+    // Town halls (bounds x -10.5..10.5 with the flag inside, z -9.7 (steps) ..7).
+    for (const auto& site : world::layout::sites) {
+        if (site.id == "capital_verda") continue;
+        auto* town = settlement(region, std::string(site.id));
+        if (!town) continue;
+        CivicSpot hall;
+        if (!civic_lot(kit, region, town->center, 12, 280, 0, -1.3F, 11.5F, 9, 10, 6, hall)) continue;
+        if (!kit.put(town_hall_model, hall.origin, hall.yaw)) continue;
+        kit.purpose(to_world(hall.origin, hall.yaw, 0, .95F, -4.5F), hall.yaw, world::BuildingPurpose::Office);
+        ++kit.report.town_halls;
+    }
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     Kit kit(region, catalog);
@@ -1616,6 +1650,8 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     trucks(kit, region);
     emergency_services(kit, region);
     building_loot(kit, region);
+    // Last again: the loot keeps its ids.
+    government(kit, region);
     return kit.report;
 }
 }

@@ -423,6 +423,30 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         if (!a)
             continue;
         const bool driving = v.id == driver_id_;
+        // A wreck left behind is towed home and repaired once the player has been well away from
+        // it (and from its home) for a while, so a town never runs out of cars.
+        if (a->vehicle.destroyed && !driving && !paused) {
+            const bool unseen = distance(a->position, player) > tow_distance * tow_distance &&
+                                distance(a->vehicle.home, player) > tow_distance * tow_distance;
+            v.wrecked = unseen ? v.wrecked + dt : 0;
+            if (v.wrecked >= tow_seconds) {
+                a->position = a->vehicle.home;
+                a->position.y = world::terrain::TerrainHeight::sample(a->position.x, a->position.z);
+                a->rotation_y = a->vehicle.home_yaw;
+                a->vehicle.health = a->vehicle.engine = 100;
+                a->vehicle.tires.fill(100);
+                a->vehicle.destroyed = false;
+                v.position = a->position;
+                v.yaw = a->rotation_y;
+                v.speed = v.slip = 0;
+                v.wrecked = 0;
+                v.sleeping = true;
+                changed = true;
+                continue;
+            }
+        } else {
+            v.wrecked = 0;
+        }
         if (!driving && kinematic_.contains(v.id))
             continue; // moved by glide()
         const auto pilot = driving ? autopilot_.end() : autopilot_.find(v.id);
@@ -495,12 +519,17 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
             p.y = world::terrain::TerrainHeight::sample(p.x, p.z);
             if (v.escape > 0) v.escape -= travel * dt / steps;
             else if (blocked(r, p, yaw, *d, scale, a->id)) {
-                // Crashes hurt in proportion to the impact - nudges and parking bumps (under
-                // 25 km/h) do not - and a hard one hurts whoever is driving. The car rebounds a
-                // little rather than staying pinned against what it hit.
+                // The player's crashes hurt the car in proportion to the impact - nudges and
+                // parking bumps (under 32 km/h) do not, and no single crash takes more than a
+                // quarter of it - and a really hard one (over 58 km/h) hurts the driver. Cars
+                // driven by the island's people (traffic, buses, gangs, police) take no crash
+                // damage: their bumps are steering, not accidents, and wrecked the city's cars.
+                // The car rebounds a little rather than staying pinned against what it hit.
                 const float impact = travel;
-                a->vehicle.health = std::max(0.0F, a->vehicle.health - std::max(0.0F, impact - 7) * 1.8F);
-                if (driving && impact > 14 && occupant_damage_) occupant_damage_((impact - 14) * 3);
+                if (driving) {
+                    a->vehicle.health = std::max(0.0F, a->vehicle.health - std::min(25.0F, std::max(0.0F, impact - 9) * 1.2F));
+                    if (impact > 16 && occupant_damage_) occupant_damage_((impact - 16) * 2);
+                }
                 v.speed = -v.speed * .15F;
                 v.slip = 0;
                 events_.collision = true;
@@ -623,7 +652,9 @@ void VehicleSystem::damage(world::VerdaRegion &r, const combat::BulletHit &hit, 
             a->vehicle.tires[static_cast<int>(zone) - static_cast<int>(VehicleZone::Tire0)];
         tire = std::max(0.0F, tire - amount * 100 / d->tire_health);
     } else {
-        a->vehicle.health = std::max(0.0F, a->vehicle.health - amount * 100 / d->health);
+        // Most rounds go through sheet metal without stopping the car: a hatchback takes about
+        // a dozen rifle hits, not four.
+        a->vehicle.health = std::max(0.0F, a->vehicle.health - amount * 35 / d->health);
         if (zone == VehicleZone::Engine)
             a->vehicle.engine = std::max(0.0F, a->vehicle.engine - amount * 150 / d->engine_health);
     }

@@ -398,6 +398,29 @@ int main() {
                    place.interior.z > 166 && place.interior.z < 240;
         check(report.south_blocks == 3 && bar, "Verda City's south blocks with their bar");
         check(offices >= 2 && docks >= 1, "authored offices and dock");
+        // Government: Registaro de Verda in Verda City and an Urbodomo in each county's main
+        // town, both offices with clerks; the stadium ground east of Orienta stays empty.
+        check(report.parliament && report.town_halls == 4 && report.stadium_reserved,
+              "parliament, " + std::to_string(report.town_halls) + " town halls, stadium ground");
+        int seats = 0, clerks = 0;
+        for (std::size_t i = 0; i < life.places().size(); ++i) {
+            const auto& place = life.places()[i];
+            if (place.kind != game::life::PlaceKind::Office) continue;
+            bool government = false;
+            for (const auto& town : region.settlements())
+                for (const auto& asset : town.assets)
+                    government |= (asset.model_path.ends_with("civic/parliament.glb") || asset.model_path.ends_with("civic/town_hall.glb")) &&
+                                  std::hypot(asset.position.x - place.door.x, asset.position.z - place.door.z) < 30;
+            if (!government) continue;
+            ++seats;
+            for (const auto& r : life.residents()) clerks += r.work == static_cast<int>(i);
+        }
+        check(seats == 5 && clerks >= 5, "seats of government with clerks: " + std::to_string(seats) + " / " + std::to_string(clerks));
+        for (const auto& town : region.settlements())
+            for (const auto& asset : town.assets)
+                check(!(asset.collision && std::abs(asset.position.x - dev::stadium_reserve.x) < dev::stadium_half &&
+                        std::abs(asset.position.z - dev::stadium_reserve.z) < dev::stadium_half),
+                      "nothing built on the stadium ground: " + asset.id);
         check(staffed == kit_places, "people live or work in every part-built building: " + std::to_string(staffed));
     }
     int capital_homes = 0, offices = 0, office_workers = 0;

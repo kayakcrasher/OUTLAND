@@ -66,7 +66,9 @@ bool VehicleSystem::load_state(world::VerdaRegion &region, const std::string &pa
             ended = true;
             break;
         }
-        if (record != "VEHICLE" || parsed.size() >= 128) {
+        // Room for every runtime vehicle and then some (the old limit of 128 refused saves of
+        // the grown fleet, which then stopped saving altogether).
+        if (record != "VEHICLE" || parsed.size() >= 4 * max_vehicles) {
             error = "Invalid vehicle state record";
             return false;
         }

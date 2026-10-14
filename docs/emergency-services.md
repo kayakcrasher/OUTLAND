@@ -73,3 +73,12 @@ a gunshot.
   - the cars going home;
   - an ambulance collecting a wounded resident, the resident admitted to hospital, and the
     ambulance back at the hospital.
+
+## Car damage (Explore)
+
+Cars used to be wrecked far too easily. The island's own drivers (traffic, buses, gangs, police) took crash damage on every bump, a hatchback died to four rifle rounds, and wrecks never came back. Cars now behave like this:
+
+- **Crashes** only damage the player's own car, and only above 32 km/h (9 m/s): 1.2 per m/s over that, at most 25 per crash. A really hard crash, over 58 km/h, also hurts the driver.
+- **Bullets** take 35% as much as before. Most rounds pass through sheet metal, so a hatchback takes about a dozen rifle hits.
+- **Wrecks** are towed home and repaired once the player has been more than 70 m from both the wreck and its home for 90 s (`VehicleSystem::tow_seconds` and `tow_distance`).
+- **Saves:** the save file now loads the whole fleet. It used to refuse anything over 128 cars and then stop saving altogether.

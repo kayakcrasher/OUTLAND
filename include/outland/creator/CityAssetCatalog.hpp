@@ -69,6 +69,12 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_hospital", .name = "Hospitalo - hospital with ambulance bay", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/hospital.glb", .thumbnail_path = "", .footprint = {46.00F, 23.00F, 12.70F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_parliament", .name = "Registaro de Verda - domed parliament (enterable hall)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/parliament.glb", .thumbnail_path = "", .footprint = {48.00F, 33.00F, 29.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_town_hall", .name = "Urbodomo - county town hall with clock tower (enterable)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/town_hall.glb", .thumbnail_path = "", .footprint = {23.00F, 17.00F, 17.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_sidewalk_block_68", .name = "Sidewalk Block 68 m", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/ground/sidewalk_block_68.glb", .thumbnail_path = "", .footprint = {68.00F, 68.00F, 0.15F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

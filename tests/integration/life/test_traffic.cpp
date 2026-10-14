@@ -163,13 +163,16 @@ int main() {
     // On screen: the real car drives off under autopilot, stops for someone in the road, and
     // goes back to the island clock once out of sight.
     life.reset(npcs, WorldClock::at(0, 5, 0));
+    // A commuter driving a long way, from a driveway if one does (the county towns' halls give
+    // many of the drivers there work close to home), else from wherever their car stands.
     int pick = -1;
-    for (std::size_t i = 0; i < cars.size() && pick < 0; ++i) {
-        const auto& r = life.residents()[static_cast<std::size_t>(cars[i].owner)];
-        if (r.work >= 0 && flat(life.places()[static_cast<std::size_t>(r.work)].door, cars[i].spot) > 600 &&
-            graph.nearest(cars[i].spot).distance < 40 && cars[i].vehicle.find("_drive_") != std::string::npos) pick = static_cast<int>(i);
-    }
-    check(pick >= 0, "a commuter with a car on the drive");
+    for (const bool drive : {true, false})
+        for (std::size_t i = 0; i < cars.size() && pick < 0; ++i) {
+            const auto& r = life.residents()[static_cast<std::size_t>(cars[i].owner)];
+            if (r.work >= 0 && flat(life.places()[static_cast<std::size_t>(r.work)].door, cars[i].spot) > 400 &&
+                graph.nearest(cars[i].spot).distance < 40 && (!drive || cars[i].vehicle.find("_drive_") != std::string::npos)) pick = static_cast<int>(i);
+        }
+    check(pick >= 0, "a long-distance commuter with a car at home");
     const auto& chosen = cars[static_cast<std::size_t>(pick)];
     const Vector3 watcher{chosen.spot.x + 12, 0, chosen.spot.z + 12};
     const auto& state = life.cars()[static_cast<std::size_t>(pick)];

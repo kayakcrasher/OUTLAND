@@ -17,6 +17,7 @@ Run: python3 tools/generate_city_kit.py [--check]
 """
 import argparse
 import json
+import math
 from pathlib import Path
 import random
 import struct
@@ -223,6 +224,62 @@ class Builder:
 
     def solid(self, lo, hi, material, v_origin=None):
         self.box(lo, hi, {s: material for s in ('+x', '-x', '+y', '-y', '+z', '-z')}, v_origin)
+
+    def raw(self, material, corners, normal, uvs):
+        """One quad with explicit UVs (curved surfaces: columns, drums, domes, pediments)."""
+        positions, normals, out_uvs, indices = self.prims.setdefault(material, ([], [], [], []))
+        base = len(positions)
+        positions += corners
+        normals += [normal] * 4
+        out_uvs += uvs
+        indices += [base, base + 1, base + 2, base, base + 2, base + 3]
+
+    def ring(self, material, cx, cz, r0, r1, y0, y1, sides=16, top_cap=False):
+        """A vertical band of a round thing: a column or drum (r0 == r1), or a cone/dome course."""
+        tu, tv = self.materials[material][1], self.materials[material][2]
+        circumference = 2 * math.pi * max(r0, r1, .01)
+        for k in range(sides):
+            a0, a1 = 2 * math.pi * k / sides, 2 * math.pi * (k + 1) / sides
+            p = [(cx + r0 * math.sin(a0), y0, cz + r0 * math.cos(a0)), (cx + r0 * math.sin(a1), y0, cz + r0 * math.cos(a1)),
+                 (cx + r1 * math.sin(a1), y1, cz + r1 * math.cos(a1)), (cx + r1 * math.sin(a0), y1, cz + r1 * math.cos(a0))]
+            mid = (a0 + a1) / 2
+            slope = (r0 - r1) / max(.001, abs(y1 - y0)) if y1 != y0 else 0
+            n = (math.sin(mid), slope, math.cos(mid))
+            length = math.sqrt(sum(c * c for c in n))
+            n = tuple(c / length for c in n)
+            u0, u1 = circumference * k / sides / tu, circumference * (k + 1) / sides / tu
+            self.raw(material, p, n, [(u0, y0 / tv), (u1, y0 / tv), (u1, y1 / tv), (u0, y1 / tv)])
+        if top_cap:
+            for k in range(sides):
+                a0, a1 = 2 * math.pi * k / sides, 2 * math.pi * (k + 1) / sides
+                p = [(cx, y1, cz), (cx, y1, cz), (cx + r1 * math.sin(a1), y1, cz + r1 * math.cos(a1)), (cx + r1 * math.sin(a0), y1, cz + r1 * math.cos(a0))]
+                self.raw(material, p, (0, 1, 0), [(0, 0), (0, 0), (r1 / tu, 0), (0, r1 / tv)])
+
+    def dome(self, material, cx, cz, r, y0, courses=7, sides=24, rise=1.0):
+        """A hemispherical dome (rise scales its height) in stacked courses."""
+        for c in range(courses):
+            t0, t1 = math.pi / 2 * c / courses, math.pi / 2 * (c + 1) / courses
+            self.ring(material, cx, cz, r * math.cos(t0), max(.001, r * math.cos(t1)),
+                      y0 + rise * r * math.sin(t0), y0 + rise * r * math.sin(t1), sides)
+
+    def pediment(self, material, x0, x1, y0, height, z, depth):
+        """A triangular gable over a portico: front and back triangles and two roof slopes."""
+        xm = (x0 + x1) / 2
+        tu, tv = self.materials[material][1], self.materials[material][2]
+        for zz, nz in ((z, -1), (z + depth, 1)):
+            tri = [(x0, y0, zz), (x1, y0, zz), (xm, y0 + height, zz), (xm, y0 + height, zz)]
+            if nz > 0:
+                tri = [tri[1], tri[0], tri[2], tri[3]]
+            self.raw(material, tri, (0, 0, nz), [(p[0] / tu, p[1] / tv) for p in tri])
+        run = (x1 - x0) / 2
+        length = math.hypot(run, height)
+        for side in (-1, 1):
+            edge = x0 if side < 0 else x1
+            n = (side * height / length, run / length, 0)
+            quad = [(edge, y0, z), (xm, y0 + height, z), (xm, y0 + height, z + depth), (edge, y0, z + depth)]
+            if side > 0:
+                quad = [quad[1], quad[0], quad[3], quad[2]]
+            self.raw(material, quad, n, [(0, 0), (length / tu, 0), (length / tu, depth / tv), (0, depth / tv)])
 
     def glb(self, name):
         names = [m for m in self.materials if m in self.prims]
@@ -532,6 +589,154 @@ def hospital():
     return b
 
 
+def flag(b, x, z, height, cloth, pole="steel"):
+    """A flagpole with its flag flying toward +X."""
+    b.solid((x - .07, 0, z - .07), (x + .07, height, z + .07), pole)
+    b.solid((x + .07, height - 1.6, z - .03), (x + 2.6, height - .1, z + .03), cloth)
+
+
+def parliament():
+    """Registaro de Verda: the island's parliament on the bay in Verda City. A neoclassical stone
+    building (48 x 22 m, front faces -Z): a tall centre block with a six-column portico under a
+    pediment and broad steps, lower wings either side, and over the centre a drum with a green
+    copper dome and a lantern (top at 25.5 m). The raised ground floor (1.5 m) is one great
+    enterable hall under the dome: the chamber's desk and benches, galleries of windows. Flags of
+    Verda fly on two poles at the foot of the steps."""
+    b = Builder()
+    b.material("stone", window_tile((226, 218, 196), (180, 170, 146), (70, 92, 104), .3, .82, .42), BAY, FLOOR)
+    b.material("ashlar", flat((222, 214, 192), 5), 3, 3)
+    b.material("white", flat((240, 238, 230), 3), 3, 3)
+    b.material("steps", flat((196, 192, 182), 5), 3, 3)
+    b.material("floor", pavers(), 3, 3)
+    b.material("plaster", flat((232, 226, 210), 3), 3, 3)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("copper", flat((88, 150, 128), 6), 3, 3)
+    b.material("gold", flat((212, 172, 70), 2), 1, 1)
+    b.material("wood", wood(), 3, 3)
+    b.material("bench", flat((120, 40, 40), 4), 1, 1)
+    b.material("green", flat((16, 128, 70), 2), 1, 1)
+    b.material("steel", flat((150, 154, 160), 3), 3, 3)
+    t, floor = .4, 1.5
+    cw, cd, ch = 12.0, 11.0, 13.0     # centre block half-width, half-depth, height
+    ww, wd, wh = 24.0, 9.0, 10.0      # wings out to x = +-24, half-depth 9
+    # Plinth under everything (the raised floor), then the floor of the hall.
+    b.solid((-ww, 0, -cd), (ww, floor, cd), "ashlar")
+    b.box((-cw + t, floor, -cd + t), (cw - t, floor + .05, cd - t), {'+y': "floor"})
+    # Centre block: front wall with the great doors and two tall windows, back and sides.
+    front = [(-1.8, 1.8, floor, floor + 4.2), (-8.5, -6.0, floor + 1.2, floor + 6.5), (6.0, 8.5, floor + 1.2, floor + 6.5)]
+    back = [(x, x + 2.4, floor + 1.2, floor + 6.5) for x in (-9.0, -4.0, 1.6, 6.6)]
+    wall_with_openings(b, 'x', -cd, (-cw, cw), ch, t, front, "stone", "plaster", -1)
+    wall_with_openings(b, 'x', cd, (-cw, cw), ch, t, back, "stone", "plaster", +1)
+    # Inner side walls open into the wings through wide arches.
+    for x, out in ((-cw, -1), (cw, 1)):
+        wall_with_openings(b, 'z', x, (-cd + t, cd - t), ch, t, [(-4, 4, floor, floor + 5)], "stone", "plaster", out)
+    b.box((-cw, ch - .3, -cd), (cw, ch, cd), {'+y': "roof", '-y': "plaster"})
+    b.solid((-cw - .3, ch - 1.2, -cd - .3), (cw + .3, ch - .3, cd + .3), "white")     # cornice
+    # Wings: lower, sealed beyond the arches (offices), windowed all round.
+    for sgn in (-1, 1):
+        x0, x1 = sorted((sgn * cw, sgn * ww))
+        b.box((x0, floor, -wd), (x1, wh, wd), {s: "stone" for s in ('+z', '-z', '+x' if sgn > 0 else '-x')}, v_origin=wh)
+        b.box((x0, wh - .2, -wd), (x1, wh, wd), {'+y': "roof"})
+        b.solid((x0 - (.3 if sgn < 0 else 0), wh - .9, -wd - .3), (x1 + (.3 if sgn > 0 else 0), wh - .2, wd + .3), "white")
+    # The portico: steps, six columns, entablature and pediment.
+    for k in range(5):
+        z0 = -cd - 4.2 - 1.2 * k
+        b.solid((-cw + .4 - .3 * k, 0, z0), (cw - .4 + .3 * k, floor - .3 * k, -cd), "steps")
+    b.box((-cw + .4, floor - .05, -cd - 4.2), (cw - .4, floor, -cd), {'+y': "floor"})
+    for x in (-10.0, -6.0, -2.0, 2.0, 6.0, 10.0):
+        b.solid((x - .8, floor, -cd - 3.8), (x + .8, floor + .5, -cd - 2.2), "white")
+        b.ring("white", x, -cd - 3.0, .6, .52, floor + .5, ch - 1.4, 12)
+        b.solid((x - .8, ch - 1.4, -cd - 3.8), (x + .8, ch - 1.0, -cd - 2.2), "white")
+    b.solid((-cw + .2, ch - 1.0, -cd - 4.2), (cw - .2, ch + .2, -cd), "white")
+    b.pediment("white", -cw + .2, cw - .2, ch + .2, 3.4, -cd - 4.2, 4.2)
+    b.solid((-1.4, ch + .9, -cd - 4.25), (1.4, ch + 1.7, -cd - 4.2), "gold")      # the arms of Verda
+    # The drum, the dome and the lantern over the hall.
+    b.ring("stone", 0, 0, 7.4, 7.4, ch, ch + 4.0, 24)
+    b.ring("white", 0, 0, 7.8, 7.8, ch + 4.0, ch + 4.6, 24, top_cap=False)
+    b.dome("copper", 0, 0, 7.6, ch + 4.6, 7, 24, 1.0)
+    b.ring("white", 0, 0, 1.3, 1.3, ch + 12.0, ch + 14.2, 8)
+    b.dome("copper", 0, 0, 1.5, ch + 14.2, 3, 8, 1.1)
+    b.solid((-.08, ch + 15.6, -.08), (.08, ch + 16.6, .08), "gold")
+    # Inside the hall: the president's desk on a dais, curved rows of red benches, a gallery rail.
+    b.solid((-3.5, floor, 6.0), (3.5, floor + .4, 9.5), "wood")
+    b.solid((-2.4, floor + .4, 7.0), (2.4, floor + 1.4, 7.8), "wood")
+    for row, z in enumerate((-1.0, 1.4, 3.6)):
+        span = 4.0 + row * 1.6
+        b.solid((-span - 2.6, floor, z), (-1.4, floor + .5 + .2 * row, z + .7), "bench")
+        b.solid((1.4, floor, z), (span + 2.6, floor + .5 + .2 * row, z + .7), "bench")
+    # Flags at the foot of the steps.
+    for x in (-cw - 1.5, cw + 1.5):
+        flag(b, x, -cd - 9.5, 11.0, "green")
+    return b
+
+
+def town_hall():
+    """Urbodomo: a county town's hall (20 x 14 m, two storeys, front faces -Z). Cream render with
+    stone quoins, a four-column porch under a small pediment up three steps, a clock tower with a
+    green cupola over the middle (top at 17 m) and a flag on the roof. The raised ground floor
+    (0.6 m) is an enterable hall with the clerks' counter and benches for the public."""
+    b = Builder()
+    b.material("render", window_tile((232, 222, 196), (176, 160, 128), (70, 92, 104), .28, .84, .46), BAY, FLOOR)
+    b.material("stone", flat((200, 192, 172), 5), 3, 3)
+    b.material("white", flat((240, 238, 230), 3), 3, 3)
+    b.material("floor", pavers(), 3, 3)
+    b.material("plaster", flat((228, 222, 206), 3), 3, 3)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("copper", flat((88, 150, 128), 6), 3, 3)
+    b.material("clock", flat((246, 244, 236), 1), 1, 1)
+    b.material("hands", flat((30, 30, 32), 1), 1, 1)
+    b.material("wood", wood(), 3, 3)
+    b.material("green", flat((16, 128, 70), 2), 1, 1)
+    b.material("steel", flat((150, 154, 160), 3), 3, 3)
+    w, d, height, t, floor = 10.0, 7.0, 8.0, .3, .6
+    b.solid((-w, 0, -d), (w, floor, d), "stone")
+    b.box((-w + t, floor, -d + t), (w - t, floor + .05, d - t), {'+y': "floor"})
+    front = [(-1.4, 1.4, floor, floor + 3.0), (-7.6, -5.4, floor + 1.0, floor + 2.8), (5.4, 7.6, floor + 1.0, floor + 2.8)]
+    back = [(x, x + 2.0, floor + 1.0, floor + 2.8) for x in (-7.0, -3.0, 1.0, 5.0)]
+    sides = [(-4.5, -2.5, floor + 1.0, floor + 2.8), (2.5, 4.5, floor + 1.0, floor + 2.8)]
+    wall_with_openings(b, 'x', -d, (-w, w), height, t, front, "render", "plaster", -1)
+    wall_with_openings(b, 'x', d, (-w, w), height, t, back, "render", "plaster", +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), height, t, sides, "render", "plaster", -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, sides, "render", "plaster", +1)
+    b.box((-w, height - .25, -d), (w, height, d), {'+y': "roof", '-y': "plaster"})
+    b.solid((-w - .25, height - .8, -d - .25), (w + .25, height - .25, d + .25), "white")
+    for x in (-w, w - .5):                                   # quoins at the corners
+        for z in (-d - .05, d - .45):
+            b.solid((x - .05, floor, z), (x + .55, height - .8, z + .5), "stone")
+    # Porch: three steps, four columns, a small pediment.
+    for k in range(3):
+        b.solid((-5.2 - .3 * k, 0, -d - 3.0 - .9 * k), (5.2 + .3 * k, floor - .2 * k, -d), "stone")
+    b.box((-5.0, floor - .05, -d - 3.0), (5.0, floor, -d), {'+y': "floor"})
+    for x in (-4.2, -1.4, 1.4, 4.2):
+        b.ring("white", x, -d - 2.4, .38, .33, floor, floor + 4.0, 10)
+    b.solid((-5.0, floor + 4.0, -d - 3.0), (5.0, floor + 4.6, -d), "white")
+    b.pediment("white", -5.0, 5.0, floor + 4.6, 1.6, -d - 3.0, 3.0)
+    # The clock tower and its cupola, and a flag beside it.
+    b.solid((-2.0, height, -2.0), (2.0, height + 5.0, 2.0), "render")
+    b.solid((-2.2, height + 5.0, -2.2), (2.2, height + 5.4, 2.2), "white")
+    for (nx, nz) in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+        cx, cz = nx * 2.02, nz * 2.02
+        if nz:
+            b.solid((cx - .9, height + 2.6, cz - .02), (cx + .9, height + 4.4, cz + .02), "clock")
+            b.solid((cx - .05, height + 3.5, cz - .04 * nz), (cx + .05, height + 4.2, cz + .04 * nz), "hands")
+            b.solid((cx, height + 3.45, cz - .04 * nz), (cx + .55, height + 3.55, cz + .04 * nz), "hands")
+        else:
+            b.solid((cx - .02, height + 2.6, cz - .9), (cx + .02, height + 4.4, cz + .9), "clock")
+            b.solid((cx - .04 * nx, height + 3.5, cz - .05), (cx + .04 * nx, height + 4.2, cz + .05), "hands")
+            b.solid((cx - .04 * nx, height + 3.45, cz), (cx + .04 * nx, height + 3.55, cz + .55), "hands")
+    b.ring("white", 0, 0, 1.6, 1.6, height + 5.4, height + 6.4, 12)
+    b.dome("copper", 0, 0, 1.8, height + 6.4, 4, 12, 1.1)
+    b.solid((-.06, height + 8.3, -.06), (.06, height + 9.0, .06), "steel")
+    flag(b, w - 1.5, -d + 1.5, height + 5.0, "green")
+    # Inside: the clerks' counter, a partition, benches for the public.
+    b.solid((-4.0, floor, 2.2), (4.0, floor + 1.1, 2.8), "wood")
+    b.solid((-w + t, floor, 3.2), (-4.0, floor + 2.6, 3.4), "plaster")
+    b.solid((4.0, floor, 3.2), (w - t, floor + 2.6, 3.4), "plaster")
+    for x in (-6.5, -2.0, 2.0, 6.5):
+        b.solid((x - 1.4, floor, -3.6), (x + 1.4, floor + .45, -3.1), "wood")
+    return b
+
+
 # ---------------------------------------------------------------- ground pieces
 def pad(size, kind):
     """Block surface 0.15 m above the street: sidewalk (pavers), park (grass + paths) or parking."""
@@ -625,6 +830,8 @@ def kit():
                 "city_" + ident, f"Main Street {color.title()} Brick {width} m, {storeys} storeys (enterable)", "Building", width, 20, storeys * FLOOR + .9)
     add("civic/police_station.glb", police_station(), "city_police_station", "Police Station (modular, enterable, carport)", "Building", 20, 12, 4.7)
     add("civic/hospital.glb", hospital(), "city_hospital", "Hospitalo - hospital with ambulance bay", "Building", 46, 23, 12.7)
+    add("civic/parliament.glb", parliament(), "city_parliament", "Registaro de Verda - domed parliament (enterable hall)", "Building", 48, 33, 29.6)
+    add("civic/town_hall.glb", town_hall(), "city_town_hall", "Urbodomo - county town hall with clock tower (enterable)", "Building", 23, 17, 17.0)
     add("ground/sidewalk_block_68.glb", pad(68, "sidewalk"), "city_sidewalk_block_68", "Sidewalk Block 68 m", "BuildingPart", 68, 68, .15)
     add("ground/courthouse_square_68.glb", pad(68, "park"), "city_courthouse_square_68", "Courthouse Square Park 68 m", "BuildingPart", 68, 68, 4.6)
     add("ground/parking_lot_68.glb", pad(68, "parking"), "city_parking_lot_68", "Parking Lot 68 m", "BuildingPart", 68, 68, .15)

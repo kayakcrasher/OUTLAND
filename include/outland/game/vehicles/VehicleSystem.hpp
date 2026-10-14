@@ -21,6 +21,7 @@ struct VehicleRuntime {
     bool boosting{false};
     bool sleeping{true};
     float escape{0}; // metres a car that started inside an obstacle may still travel through it
+    float wrecked{0}; // seconds a wreck has been out of the player's sight (towed home after tow_seconds)
 };
 struct VehicleEvents {
     bool started{}, stopped{}, door{}, horn{}, parking{}, collision{};
@@ -33,6 +34,8 @@ class VehicleSystem {
   public:
     // Runtime vehicles at most (parked, driven and spawned together).
     static constexpr std::size_t max_vehicles = 176;
+    // Wrecks are towed home and repaired after this long with the player this far away.
+    static constexpr float tow_seconds = 90, tow_distance = 70;
     explicit VehicleSystem(const VehicleRegistry &registry) : registry_(registry) {}
     bool reconcile(world::VerdaRegion &region);
     bool spawn(world::VerdaRegion &region, Vector3 near, float yaw,

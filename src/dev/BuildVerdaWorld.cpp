@@ -25,6 +25,8 @@ int main(int argc, char** argv) {
         return 1;
     }
     std::cout << "wrote " << output << ": " << report.buildings << " enterable buildings, " << report.assets
-              << " pieces placed, " << report.skipped_lots << " lots skipped as occupied\n";
+              << " pieces placed, " << report.skipped_lots << " lots skipped as occupied; parliament "
+              << (report.parliament ? "built" : "NOT built") << ", " << report.town_halls << " town halls, stadium ground "
+              << (report.stadium_reserved ? "kept free" : "NOT reserved") << '\n';
     return 0;
 }

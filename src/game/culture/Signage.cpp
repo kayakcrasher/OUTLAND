@@ -1,4 +1,5 @@
 #include "outland/game/culture/Signage.hpp"
+#include <cctype>
 #include "outland/world/Zones.hpp"
 #include "outland/game/culture/Esperanto.hpp"
 #include "outland/game/life/LifePopulation.hpp"
@@ -108,7 +109,28 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
             if (other.kind == place.kind && other.settlement == place.settlement && &other != &place &&
                 (flat(other.door, centre) < flat(place.door, centre) ||
                  (flat(other.door, centre) == flat(place.door, centre) && other.id < place.id))) ++ordinal;
-        auto text = place_sign(place.kind, text_hash(s < towns.size() ? towns[s].id : place.id), owner_of(island, static_cast<int>(i)), ordinal, capital);
+        // The seats of government: Registaro de Verda (the parliament) and the county towns'
+        // Urbodomoj. Where one stands, the town's other offices are ordinary businesses.
+        const auto near_model = [&](std::string_view suffix) {
+            for (const auto& town : towns) for (const auto& asset : town.assets)
+                if (asset.model_path.ends_with(suffix) && flat(asset.position, place.door) < 30) return true;
+            return false;
+        };
+        const bool parliament = place.kind == PlaceKind::Office && near_model("civic/parliament.glb");
+        const bool town_hall = place.kind == PlaceKind::Office && !parliament && near_model("civic/town_hall.glb");
+        bool seat_in_town = false;
+        if (s < towns.size())
+            for (const auto& asset : towns[s].assets)
+                seat_in_town |= asset.model_path.ends_with("civic/parliament.glb") || asset.model_path.ends_with("civic/town_hall.glb");
+        const bool seat = parliament || town_hall;
+        const int sign_ordinal = place.kind == PlaceKind::Office && seat_in_town && !seat && ordinal == 0 ? 1 : ordinal;
+        auto text = place_sign(place.kind, text_hash(s < towns.size() ? towns[s].id : place.id), owner_of(island, static_cast<int>(i)), sign_ordinal, capital);
+        if (parliament) text = {"REGISTARO DE VERDA", "PARLAMENTO · RESPUBLIKO VERDA"};
+        if (town_hall) {
+            std::string name = s < towns.size() ? towns[s].name : std::string{};
+            for (auto& c : name) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+            text = {"URBODOMO", name};
+        }
         // The clinic in the hospital building is Hospitalo de Verda.
         if (place.kind == PlaceKind::Clinic)
             for (const auto& town : towns) for (const auto& asset : town.assets)
@@ -155,7 +177,8 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
         sign.front.push_back({text.title, title});
         if (!text.subtitle.empty()) sign.front.push_back({text.subtitle, title * .45F});
         // Government buildings fly the flag from a staff beside the sign.
-        if (place.kind == PlaceKind::Police || (place.kind == PlaceKind::Office && ordinal == 0)) {
+        // (The parliament and the town halls fly their own from poles in front.)
+        if (place.kind == PlaceKind::Police || (place.kind == PlaceKind::Office && ordinal == 0 && !seat_in_town)) {
             const Vector3 side{facing.z, 0, -facing.x};
             const float reach = estimated_width(sign) * .5F + .7F;
             FlagPole flag;

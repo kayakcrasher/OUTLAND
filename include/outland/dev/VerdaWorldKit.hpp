@@ -23,6 +23,8 @@ struct WorldKitReport {
     int police_stations{0}, police_cars{0}, ambulances{0}, south_blocks{0};
     int retagged{0}; // purpose markers inside a model building (they retag it, not make a place)
     bool hospital{false};
+    bool parliament{false}, stadium_reserved{false};
+    int town_halls{0};
     std::vector<KitBuilding> enterable;
     std::vector<Vector3> skipped;     // centres of lots left empty because something was there
     std::vector<std::string> missing; // catalog models that could not be placed
@@ -36,5 +38,8 @@ struct WorldKitReport {
 // open windows, floors, roofs, stairs to upper floors) and town-specific props. Every piece is an
 // ordinary Creator world asset, so the result is edited, saved and exported like hand-built work.
 // Lots that overlap existing buildings or assets are skipped. Deterministic.
+// Kept free in Verda City for a future baseball stadium: 150 x 150 m of flat land east of Orienta.
+inline constexpr Vector3 stadium_reserve{600, 0, 40};
+inline constexpr float stadium_half = 75;
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog);
 }

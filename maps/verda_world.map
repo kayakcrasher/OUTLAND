@@ -5099,6 +5099,11 @@ ASSET "creator_city_police_station_kit8" 0 "assets/verda/city/civic/police_stati
 ASSET "creator_city_police_station_kit9" 0 "assets/verda/city/civic/police_station.glb" -951.575012 6 -1027.94995 20 4.69999981 12 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_police_station_kit10" 0 "assets/verda/city/civic/police_station.glb" -895.575012 7.28794098 1082.05005 20 4.69999981 12 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_hospital_kit1" 0 "assets/verda/city/civic/hospital.glb" -39.1000061 -0.0970151424 -181.600006 46 12.6999998 23 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_parliament_kit1" 0 "assets/verda/city/civic/parliament.glb" -76 10.8599577 276.36499 48 29.6000004 33 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_town_hall_kit1" 0 "assets/verda/city/civic/town_hall.glb" 17.7249889 6 -1750.42505 23 17 17 89.9999847 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_town_hall_kit2" 0 "assets/verda/city/civic/town_hall.glb" 1754.42505 6 -260.274994 23 17 17 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_town_hall_kit3" 0 "assets/verda/city/civic/town_hall.glb" 317.725006 6 1727.57495 23 17 17 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_town_hall_kit4" 0 "assets/verda/city/civic/town_hall.glb" -1610.27502 14.0573664 445.575012 23 17 17 90 255 255 255 255 80 80 80 255 1
 MARKER "creator_marker_loot_spawn_general_training" 0 4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 0.5 0.5 0.5 0 1
@@ -5274,6 +5279,11 @@ MARKER "loot_spawn_medical_bldg_216" 0 -16 6 -1818 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_bldg_217" 0 15 6 -1785 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_218" 0 17 6 -1803 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_219" 0 16 6 -1824 0.5 0.5 0.5 0 1
+MARKER "creator_marker_building_purpose_kit_159" 4 -76 12.7099581 273 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_160" 4 15.4999886 6.94999981 -1750 1.20000005 2.20000005 1.20000005 89.9999847 1
+MARKER "creator_marker_building_purpose_kit_161" 4 1754 6.94999981 -262.5 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_162" 4 315.5 6.94999981 1728 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_163" 4 -1612.5 15.0073662 446 1.20000005 2.20000005 1.20000005 90 1
 PURPOSE "creator_marker_building_purpose_kit_1" 1
 PURPOSE "creator_marker_building_purpose_kit_2" 1
 PURPOSE "creator_marker_building_purpose_kit_3" 1
@@ -5432,6 +5442,11 @@ PURPOSE "creator_marker_building_purpose_kit_155" 5
 PURPOSE "creator_marker_building_purpose_kit_156" 5
 PURPOSE "creator_marker_building_purpose_kit_157" 5
 PURPOSE "creator_marker_building_purpose_kit_158" 6
+PURPOSE "creator_marker_building_purpose_kit_159" 7
+PURPOSE "creator_marker_building_purpose_kit_160" 7
+PURPOSE "creator_marker_building_purpose_kit_161" 7
+PURPOSE "creator_marker_building_purpose_kit_162" 7
+PURPOSE "creator_marker_building_purpose_kit_163" 7
 SETTLEMENT "capital_verda" "Verda" 0 0 0 0 384 0 0
 ROAD 0 0 -166 0 0 -630 8 2
 ROAD 0 0 -630 0 0 -1170 8 2

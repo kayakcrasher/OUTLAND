@@ -198,7 +198,8 @@ int main() {
     auto engine = cars.trace(region, {25, .7F, 29}, {25, .7F, 26});
     assert(engine.zone == static_cast<int>(VehicleZone::Engine));
     cars.damage(region, engine, 20);
-    assert(car->vehicle.engine == 70 && car->vehicle.health == 80);
+    // Rounds mostly pass through the bodywork: 20 damage takes 7% of a 100-health hatchback.
+    assert(car->vehicle.engine == 70 && std::abs(car->vehicle.health - 93) < .01F);
     auto tire = cars.trace(region, {23, .2F, 25 + def->front_z}, {25, .2F, 25 + def->front_z});
     assert(tire.zone == static_cast<int>(VehicleZone::Tire0));
     cars.damage(region, tire, 100);
@@ -233,6 +234,25 @@ int main() {
     car->position.x = 44;
     assert(cars.load_state(region, state, error));
     assert(car->position.x == 44);
+    // A wreck is towed home and repaired once the player has been far away for a while.
+    {
+        const Vector3 parked = car->position;
+        car->vehicle.destroyed = true;
+        car->vehicle.health = car->vehicle.engine = 0;
+        const Vector3 far{car->position.x + 600, 0, car->position.z};
+        for (int i = 0; i < 850; ++i) cars.update(.1F, {}, region, far); // 85 s
+        assert(car->vehicle.destroyed);
+        for (int i = 0; i < 60; ++i) cars.update(.1F, {}, region, far);
+        assert(!car->vehicle.destroyed && car->vehicle.health == 100 && car->vehicle.engine == 100);
+        assert(car->position.x == car->vehicle.home.x && car->position.z == car->vehicle.home.z);
+        // Not while the player stands by it.
+        car->vehicle.destroyed = true;
+        for (int i = 0; i < 1200; ++i) cars.update(.1F, {}, region, car->position);
+        assert(car->vehicle.destroyed);
+        car->vehicle.destroyed = false;
+        car->vehicle.health = car->vehicle.engine = 100;
+        car->position = parked;
+    }
     {
         std::ofstream out(dir / "bad");
         out << "OUTLAND_VEHICLES 1\nVEHICLE truncated\n";
