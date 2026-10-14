@@ -83,13 +83,13 @@ int main() {
     check(path == (dir / "profiles" / "settings.cfg").string(), "settings sit with the profiles: " + path);
     game::GameSettings settings;
     settings.look_sensitivity = 2.5F; settings.mouse_sensitivity = .7F; settings.aim_sensitivity = .6F; settings.invert_y = true;
-    settings.aim_toggle = true; settings.aim_assist = false; settings.touch_controls = game::GameSettings::TouchControls::Off;
+    settings.aim_toggle = true; settings.aim_assist = false; settings.vibration = false; settings.touch_controls = game::GameSettings::TouchControls::Off;
     settings.button_size = 1.2F; settings.volume = .3F; settings.muted = true; settings.graphics = game::GameSettings::Graphics::Fast;
     settings.bindings.bind(input::Action::Fire, 1, KEY_F);
     check(settings.save(path), "save settings");
     game::GameSettings read;
     check(read.load(path) && read.look_sensitivity == 2.5F && std::abs(read.mouse_sensitivity - .7F) < .001F &&
-          std::abs(read.aim_sensitivity - .6F) < .001F && read.invert_y && read.aim_toggle && !read.aim_assist &&
+          std::abs(read.aim_sensitivity - .6F) < .001F && read.invert_y && read.aim_toggle && !read.aim_assist && !read.vibration &&
           read.touch_controls == game::GameSettings::TouchControls::Off && std::abs(read.button_size - 1.2F) < .001F &&
           std::abs(read.volume - .3F) < .001F && read.muted && read.graphics == game::GameSettings::Graphics::Fast, "load settings");
     check(read.bindings[input::Action::Fire][1] == KEY_F && read.bindings[input::Action::Interact][1] == 0 &&

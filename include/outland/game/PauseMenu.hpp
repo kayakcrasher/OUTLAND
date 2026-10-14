@@ -16,7 +16,7 @@ public:
     enum class Result { None, Resume, SettingsChanged, Save, QuitHome, QuitGame };
     // The settings rows, top to bottom.
     enum class Row {
-        Mouse, Touch, AimSensitivity, InvertY, AimToggle, AimAssist, TouchControls, ButtonSize, Volume, Sound, Graphics,
+        Mouse, Touch, AimSensitivity, InvertY, AimToggle, AimAssist, TouchControls, ButtonSize, Vibration, Volume, Sound, Graphics,
         Count
     };
     static constexpr int row_count = static_cast<int>(Row::Count);

@@ -504,6 +504,7 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
                 v.speed = -v.speed * .15F;
                 v.slip = 0;
                 events_.collision = true;
+                if (driving) events_.crash = std::max(events_.crash, impact);
                 changed = true;
                 break;
             }

@@ -24,6 +24,7 @@ struct VehicleRuntime {
 };
 struct VehicleEvents {
     bool started{}, stopped{}, door{}, horn{}, parking{}, collision{};
+    float crash{}; // the player's car hit something this frame: the impact speed (m/s)
 };
 // Backcountry yards keep dead cars as parts donors (marker ids "vehicle_spawn_<type>_donor_..."):
 // they never run and sit on blocks where their wheels were.

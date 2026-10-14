@@ -42,7 +42,7 @@ The bottom-left hints (`LMB FIRE  RMB AIM  R RELOAD  Q SWAP`) follow the binding
 ## Phones and tablets
 
 - **Move:** the left thumb works the stick. Put it down anywhere in the lower left, off the buttons, and the stick appears under it.
-- **Look:** swipe anywhere on the right of the screen. The view turns by how far the finger slides: half the screen's height is 90° at sensitivity 1.0. A still finger doesn't turn.
+- **Look:** swipe anywhere on the empty right side of the screen, as in PUBG Mobile. There is no look stick. The view turns by how far the finger slides: half the screen's height is 90° at sensitivity 1.0. A still finger doesn't turn. The same works while building. At the wheel, swiping above the pedals looks around the car. Only the developer Creator keeps a look stick.
 - **Fire:** hold FIRE. Sliding the thumb on FIRE also steers the sights, so you can aim while you shoot.
 - **Aim down sights:** tap AIM to toggle it, or hold it.
 - The other buttons are unchanged.
@@ -73,12 +73,29 @@ ESC goes back a page, and from the first page resumes.
 | Touch aim assist | on / off: near an enemy the look slows, and while aiming or firing it drifts onto them (touch only) | on |
 | On-screen controls | AUTO / ON / OFF | AUTO |
 | Touch button size | 70–140% | 100% |
+| Vibration | on / off (phones) | on |
 | Volume, Sound | 10% steps; on / off | 80%, on |
 | Graphics | AUTO / FAST / SHARP | AUTO |
 
 - **RESET CONTROLS** restores the defaults for everything except the sound and graphics.
 - Settings save to `profiles/settings.cfg` with the key bindings (`bind fire -1 0`; mouse buttons are negative and the wheel is -20).
 - The old look stick's `look_sensitivity` line is ignored, because swipes and the mouse are measured differently.
+
+## Feel: vibration and sound
+
+On phones, vibration runs in the Android app and in Android browsers. iPhones' Safari can't vibrate from a web page. One buzz runs at a time; the strongest request wins, and a weaker one never cuts a stronger one short.
+
+| What happens | Vibration | Sound |
+|---|---|---|
+| Your gun fires | a kick per shot: SMG lightest, shotgun and sniper heaviest | the report, a low punch under it, the report rolling back off the hills, the case |
+| You are hit | a jolt, longer for bigger hits | the hit (and the armour plate) |
+| Your round hits someone | — | the hit tick and a body thwack (sharper for a headshot) |
+| A kill | a pulse | the kill chime |
+| Your car crashes | in proportion to the impact | a light knock, or a heavy crunch with breaking glass |
+| A grenade goes off | the closer, the longer and harder (within 40 m) | the blast; within 14 m the ears ring |
+| A hard landing | a thud (from a fall, not an ordinary jump) | a landing thud |
+
+The code is in `game::feel::Haptics` (`outland_haptics_tests`), `platform::vibrate` (JNI to `GameActivity.vibrate` on Android, which needs the `VIBRATE` permission, or `navigator.vibrate` in browsers) and `GunAudio`. The new sounds come from `tools/generate_weapon_audio.py`.
 
 ## Gunplay
 

@@ -71,9 +71,9 @@ int main() {
         assert(input.player().brake_pedal==1 && input.player().gas==0);
         release();
         touches={{63,{pan.x+pan.width*.5F,pan.y+pan.height*.5F}}};
-        input.update(1280,720); assert(input.player().look_x==0);
+        input.update(1280,720); assert(input.player().look_dx==0);
         touches={{63,{pan.x+pan.width*.5F+60,pan.y+pan.height*.5F}}};
-        input.update(1280,720); assert(input.player().look_x>.5F && !input.player().fire);
+        input.update(1280,720); assert(std::abs(input.player().look_dx-60*PI/720)<1e-4F && input.player().look_x==0 && !input.player().fire);
         release();
         touches={{64,point(layout.fire)}};
         input.update(1280,720); assert(!input.player().fire); // no guns at the wheel

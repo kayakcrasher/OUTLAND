@@ -150,9 +150,9 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
     const auto hit = [&](Vector2 p, const TouchElementLayout& e, float radius) {
         return inside_circle(p, center(e), radius * scale * e.scale);
     };
-    // On foot, the right of the screen is one big look surface and the lower left a floating
-    // movement stick, as in PUBG Mobile and Call of Duty Mobile.
-    const bool on_foot = gameplay && !driving_;
+    // On foot (and building), the right of the screen is one big look surface and the lower left
+    // a floating movement stick, as in PUBG Mobile and Call of Duty Mobile.
+    const bool on_foot = !look_stick_ && !driving_;
     const auto capture = [&](Vector2 p) {
         if (blocked || p.y < std::min(80.0F, h * 0.12F) || (reserved && reserved(p))) return Control::None;
         if (gameplay && driving_) {
@@ -207,14 +207,8 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         case Control::Gas: player_.gas = 1; break;
         case Control::BrakePedal: player_.brake_pedal = 1; break;
         case Control::Handbrake: player_.brake = true; break;
-        case Control::Pan: {
-            // A floating stick: drag from wherever the thumb landed.
-            if (fresh) pan_origin_ = p;
-            const float reach = 70 * scale;
-            player_.look_x = std::clamp((p.x - pan_origin_.x) / reach, -1.0F, 1.0F);
-            player_.look_y = std::clamp((p.y - pan_origin_.y) / reach, -1.0F, 1.0F);
-            break;
-        }
+        // At the wheel the space above the pedals is swiped to look round the car, as in PUBG.
+        case Control::Pan: drag(p, last); break;
         case Control::Look: {
             const auto v = analog_value(p, center(layout_.look), 92 * scale * layout_.look.scale);
             player_.look_x = v.x; player_.look_y = v.y; break;

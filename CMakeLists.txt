@@ -134,6 +134,7 @@ add_library(
     src/game/vehicles/VehicleRenderer.cpp
     src/game/vehicles/VehicleAudio.cpp
     src/platform/Runtime.cpp
+    src/platform/Haptics.cpp
     src/assets/ModelCache.cpp
     src/engine/render/Renderer.cpp
     src/engine/render/GeometryRecorder.cpp
@@ -161,6 +162,7 @@ add_library(
     src/game/MapScreen.cpp
     src/game/Settings.cpp
     src/game/PauseMenu.cpp
+    src/game/feel/Haptics.cpp
     src/game/transit/BusLine.cpp
     src/world/VerdaRegion.cpp
     src/world/Zones.cpp
@@ -718,6 +720,10 @@ if(OUTLAND_BUILD_TESTS)
     target_link_libraries(outland_pause_menu_tests PRIVATE outland_render)
     target_compile_options(outland_pause_menu_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_pause_menu_tests COMMAND outland_pause_menu_tests)
+    add_executable(outland_haptics_tests tests/unit/feel/test_haptics.cpp src/game/feel/Haptics.cpp src/platform/Haptics.cpp)
+    target_include_directories(outland_haptics_tests PRIVATE "${PROJECT_SOURCE_DIR}/include")
+    target_compile_options(outland_haptics_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_haptics_tests COMMAND outland_haptics_tests)
     add_executable(outland_zombie_ecology_tests tests/integration/zombies/test_zombie_ecology.cpp)
     target_link_libraries(outland_zombie_ecology_tests PRIVATE outland_render)
     target_compile_options(outland_zombie_ecology_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

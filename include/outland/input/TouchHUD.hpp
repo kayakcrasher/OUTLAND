@@ -15,7 +15,8 @@ public:
         bool gameplay = true,
         const char* fire_mode = nullptr,  // "AUTO" / "SINGLE" for automatic weapons, else hidden
         const char* sight = nullptr,      // the held gun's optic ("IRON", "DOT", "2X", "4X"), else hidden
-        bool driving = false              // at the wheel: steering stick, pedals and the pan area
+        bool driving = false,             // at the wheel: steering stick, pedals and the pan area
+        bool look_stick = false           // the Creator's look stick (play and building swipe instead)
     ) const;
 };
 

@@ -58,6 +58,14 @@ GunAudio::GunAudio(const std::string& directory, const std::string& steps) {
     for (std::size_t i = 0; i < game::combat::weapon_count; ++i)
         load(reload_[i], directory + "/reload_" + gun_name(static_cast<game::combat::WeaponId>(i)) + ".wav");
     load(equip_, directory + "/equip.wav");
+    for (int v = 0; v < 2; ++v) {
+        load(crash_light_, directory + "/crash_light_" + std::to_string(v) + ".wav");
+        load(crash_heavy_, directory + "/crash_heavy_" + std::to_string(v) + ".wav");
+    }
+    for (int v = 0; v < 3; ++v) load(body_hit_, directory + "/body_hit_" + std::to_string(v) + ".wav");
+    load(land_, directory + "/land.wav");
+    load(punch_, directory + "/punch.wav");
+    load(tinnitus_, directory + "/tinnitus.wav");
     load(pickup_, directory + "/pickup.wav");
     load(pin_, directory + "/grenade_pin.wav");
     load(hitmarker_, directory + "/hitmarker.wav");
@@ -82,7 +90,8 @@ GunAudio::~GunAudio() {
     for (auto& bank : distant_) unload(bank);
     for (auto& bank : reload_) unload(bank);
     for (Bank* bank : {&explosion_, &explosion_distant_, &pump_, &bolt_, &casing_, &kill_, &equip_, &pickup_, &pin_,
-                       &hitmarker_, &hurt_, &armour_, &whiz_, &ricochet_, &steps_, &zone_, &heart_}) unload(*bank);
+                       &hitmarker_, &hurt_, &armour_, &whiz_, &ricochet_, &steps_, &zone_, &heart_, &crash_light_,
+                       &crash_heavy_, &body_hit_, &land_, &punch_, &tinnitus_}) unload(*bank);
     if (IsMusicValid(siren_)) UnloadMusicStream(siren_);
 }
 
@@ -128,6 +137,11 @@ void GunAudio::play(Bank& bank, float volume, float pan, float pitch) {
 void GunAudio::player_shot(game::combat::WeaponId weapon) {
     const auto index = static_cast<std::size_t>(weapon);
     play(close_[index], 1.0F, 0, .97F + random() * .06F);
+    // The punch in the chest under the report (heavier for the big guns), and the report rolling
+    // back off the hills a moment later.
+    static constexpr float punch[]{.45F, .6F, .45F, .9F, 1.0F};
+    play(punch_, punch[index], 0, .95F + random() * .1F);
+    pending_.push_back({&distant_[index], .5F + random() * .25F, .09F + .05F * punch[index], (random() - .5F) * .6F, .97F + random() * .06F});
     // The gun's own mechanics and the spent case, after the report.
     if (weapon == game::combat::WeaponId::Shotgun) pending_.push_back({&pump_, .32F, .55F, 0, 1});
     else if (weapon == game::combat::WeaponId::Sniper) pending_.push_back({&bolt_, .42F, .5F, 0, 1});
@@ -147,6 +161,24 @@ void GunAudio::explosion(Vector3 at, Vector3 listener, Vector3 forward) {
     const auto mix = mix_shot(at, listener, forward, 900, 1.6F);
     if (!mix.audible) return;
     pending_.push_back({mix.distant ? &explosion_distant_ : &explosion_, mix.delay, std::min(1.0F, mix.volume * 1.3F), mix.pan, .95F + random() * .1F});
+    // Close enough to be stunned: the ears ring (once at a time).
+    const float distance = Vector3Distance(at, listener);
+    if (distance < 14 && ringing_ <= 0) {
+        pending_.push_back({&tinnitus_, mix.delay + .05F, .55F * (1 - distance / 14), 0, 1});
+        ringing_ = 2.5F;
+    }
+}
+
+void GunAudio::crash(float impact) {
+    if (impact < 3 || crash_wait_ > 0) return;
+    const bool heavy = impact >= 12;
+    play(heavy ? crash_heavy_ : crash_light_, std::clamp(.35F + impact / 25, .35F, 1.0F), 0, .92F + random() * .14F);
+    crash_wait_ = heavy ? .6F : .3F;
+}
+
+void GunAudio::land(float speed) {
+    if (speed < 6) return;
+    play(land_, std::clamp((speed - 4) / 12, .25F, .9F), 0, .9F + random() * .15F);
 }
 
 void GunAudio::kill_confirm() { play(kill_, .55F, 0, 1); }
@@ -170,7 +202,11 @@ void GunAudio::cancel_reload() {
 void GunAudio::equip() { play(equip_, .6F, 0, .97F + random() * .06F); }
 void GunAudio::pickup() { play(pickup_, .55F, 0, .95F + random() * .1F); }
 void GunAudio::grenade_pin() { play(pin_, .7F, 0, 1); }
-void GunAudio::hitmarker(bool headshot) { play(hitmarker_, headshot ? .6F : .4F, 0, headshot ? 1.45F : 1.0F); }
+void GunAudio::hitmarker(bool headshot) {
+    play(hitmarker_, headshot ? .6F : .4F, 0, headshot ? 1.45F : 1.0F);
+    // The round landing in the body, under the tick.
+    play(body_hit_, headshot ? .7F : .5F, 0, (headshot ? 1.1F : .95F) + random() * .1F);
+}
 
 void GunAudio::hurt(bool armoured) {
     play(hurt_, .8F, 0, .92F + random() * .14F);
@@ -203,6 +239,8 @@ void GunAudio::heartbeat(float strength) { play(heart_, std::clamp(strength, 0.0
 
 void GunAudio::update(float dt) {
     if (!std::isfinite(dt) || dt < 0) return;
+    crash_wait_ = std::max(0.0F, crash_wait_ - dt);
+    ringing_ = std::max(0.0F, ringing_ - dt);
     for (auto& p : pending_) p.delay -= dt;
     for (const auto& p : pending_) if (p.delay <= 0) play(*p.bank, p.volume, p.pan, p.pitch);
     std::erase_if(pending_, [](const Pending& p) { return p.delay <= 0; });

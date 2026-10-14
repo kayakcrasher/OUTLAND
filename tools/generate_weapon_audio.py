@@ -15,7 +15,9 @@ picks them for far shooters and delays them by the speed of sound. Also: grenade
 each gun's reload (timed to its reload), drawing a weapon, bullets cracking past and
 ricocheting near the player, hit markers, taking hits (body and armour plate), picking up,
 pulling a grenade pin, the zone warning pulse and the low-health heartbeat; and the siren of
-the police cars and ambulances (a seamless 4 s wail loop).
+the police cars and ambulances (a seamless 4 s wail loop). For the feel of play: car crashes
+(light and heavy, with glass), the wet thwack of a round striking a body, a hard landing, a low
+punch under the player's own shots, and the ringing in the ears after a grenade goes off close.
 
     python3 tools/generate_weapon_audio.py           # write assets/audio/weapons/*.wav
     python3 tools/generate_weapon_audio.py --check   # fail if the committed files are stale
@@ -331,6 +333,64 @@ def siren():
     return normalise(np.tanh(x * 1.4), .7)
 
 
+def crash(heavy, variant):
+    """A car hitting something: the thump of the impact, crumpling metal (resonant clunks), and
+    for a heavy crash a scatter of breaking glass and a scrape."""
+    rng = np.random.default_rng(300 + heavy * 10 + variant)
+    t = np.arange(int((1.4 if heavy else .7) * RATE)) / RATE
+    freq = 38 + 40 * np.exp(-t / .05)
+    thump = np.sin(2 * np.pi * np.cumsum(freq) / RATE) * np.exp(-t / (.16 if heavy else .09)) * (1 - np.exp(-t / .0015))
+    x = thump * 1.3 + band(rng.uniform(-1, 1, len(t)), 70, 1100) * np.exp(-t / (.07 if heavy else .04))
+    for k in range(9 if heavy else 4):
+        at = rng.uniform(0, .28 if heavy else .12)
+        x += thing(t, at, 300, 2600, rng.uniform(180, 520), rng.uniform(.03, .08), 400 + k + variant * 20,
+                   rng.uniform(.25, .6), ring=.5)
+    if heavy:
+        for k in range(26):
+            at = .03 + rng.exponential(.12)
+            x += thing(t, at, 3500, 11000, rng.uniform(2800, 5200), rng.uniform(.006, .02), 500 + k + variant * 40,
+                       rng.uniform(.08, .25), ring=.7)
+        x += scrape(t, .25, .7, 900, 5000, 600 + variant, .18)
+    return finish(x, 2.4 if heavy else 2.0, .95 if heavy else .8)
+
+
+def body_hit(variant):
+    """A round striking a body: a wet, low thwack under a short slap."""
+    rng = np.random.default_rng(700 + variant)
+    t = np.arange(int(.22 * RATE)) / RATE
+    x = band(rng.uniform(-1, 1, len(t)), 140, 1400) * np.exp(-t / .028) * (1 - np.exp(-t / .0008))
+    x += np.sin(2 * np.pi * (95 + 12 * variant) * t) * np.exp(-t / .05) * .9
+    x += band(rng.uniform(-1, 1, len(t)), 2000, 6000) * np.exp(-t / .005) * .5
+    return normalise(np.tanh(x * 2), .75)
+
+
+def landing():
+    """Feet hitting the ground after a fall: a low thud and a little grit."""
+    t = np.arange(int(.35 * RATE)) / RATE
+    freq = 45 + 35 * np.exp(-t / .03)
+    x = np.sin(2 * np.pi * np.cumsum(freq) / RATE) * np.exp(-t / .08) * (1 - np.exp(-t / .002))
+    x += scrape(t, .005, .14, 900, 4500, 801, .35) + thing(t, 0, 200, 1500, 120, .03, 802, .5)
+    return normalise(x, .7)
+
+
+def punch():
+    """The low punch felt in the chest under the player's own shots (layered with the report)."""
+    t = np.arange(int(.2 * RATE)) / RATE
+    freq = 40 + 45 * np.exp(-t / .02)
+    x = np.sin(2 * np.pi * np.cumsum(freq) / RATE) * np.exp(-t / .06) * (1 - np.exp(-t / .001))
+    x += np.sin(2 * np.pi * 118 * t) * np.exp(-t / .025) * .35
+    return normalise(np.tanh(x * 1.8), .9)
+
+
+def tinnitus():
+    """The ringing after a blast close by: a thin high tone, beating slightly, fading away."""
+    t = np.arange(int(2.6 * RATE)) / RATE
+    x = (np.sin(2 * np.pi * 3700 * t) + .6 * np.sin(2 * np.pi * 3711 * t)) * (1 - np.exp(-t / .06)) * np.exp(-t / .9)
+    fade = int(.05 * RATE)
+    x[-fade:] *= np.linspace(1, 0, fade)
+    return normalise(x, .3)
+
+
 def sounds():
     out = {}
     for name in GUNS:
@@ -360,6 +420,14 @@ def sounds():
     out["zone_warning.wav"] = zone_warning()
     out["heartbeat.wav"] = heartbeat()
     out["siren.wav"] = siren()
+    for i in range(2):
+        out[f"crash_light_{i}.wav"] = crash(False, i)
+        out[f"crash_heavy_{i}.wav"] = crash(True, i)
+    for i in range(3):
+        out[f"body_hit_{i}.wav"] = body_hit(i)
+    out["land.wav"] = landing()
+    out["punch.wav"] = punch()
+    out["tinnitus.wav"] = tinnitus()
     return out
 
 

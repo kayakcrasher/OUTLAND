@@ -37,6 +37,7 @@
 #include "outland/game/PlayUI.hpp"
 #include "outland/game/MapScreen.hpp"
 #include "outland/game/PauseMenu.hpp"
+#include "outland/game/feel/Haptics.hpp"
 #include "outland/game/transit/BusLine.hpp"
 #include "outland/world/Zones.hpp"
 #include "outland/game/life/LifeSimulation.hpp"
@@ -677,6 +678,8 @@ void Renderer::run() {
     std::string builds_path;
     std::vector<float> bus_dwell_seen;
     std::array<characters::AnimationController,8> bus_drivers{};
+    // Phone vibration for shots, hits, kills, crashes, blasts and hard landings.
+    game::feel::Haptics haptics;
     game::GameSettings settings;
     const std::string settings_path=game::GameSettings::path_for(map_path);
     settings.load(settings_path);
@@ -684,6 +687,7 @@ void Renderer::run() {
         input_system.set_look({settings.look_sensitivity,settings.mouse_sensitivity,settings.invert_y,settings.aim_toggle});
         input_system.set_bindings(settings.bindings);
         input_system.set_button_size(settings.button_size);
+        haptics.set_enabled(settings.vibration);
         environment_audio.set_volume(settings.volume);
         if(environment_audio.muted()!=settings.muted) environment_audio.toggle_mute();
         render_scale.set_mode(static_cast<int>(settings.graphics));
@@ -712,6 +716,7 @@ void Renderer::run() {
         if(amount<=0) return;
         player_health.damage(amount*(1-soak[armour_level()]));
         if(amount>=1 && hurt_sound_wait<=0) {gun_audio.hurt(armour_level()>0);hurt_sound_wait=.15F;}
+        haptics.hit_taken(amount);
     };
     game::vehicles::VehicleAudio vehicle_audio;
     vehicles.bind_occupant_damage([&](float amount){player_health.damage(amount);});
@@ -1197,6 +1202,7 @@ void Renderer::run() {
             const bool town_building=game::rules_for(game_mode).civilian_life;
             if(town_building) reserved=[&,base=reserved](Vector2 point){return base(point) || build_mode.owns_point(point,screen_width,screen_height);};
             input_system.set_driving(vehicles.driver()!=nullptr); // steer left, pedals right, pan above
+            input_system.set_look_stick(creator_active);
             input_system.update(screen_width, screen_height, !creator_active && !build_mode.active(),
 #ifdef OUTLAND_DEV_TOOLS
                 !IsWindowFocused() || dev_modal || (creator_active && creator_touch_ui.inventory_open()),
@@ -1329,6 +1335,7 @@ void Renderer::run() {
             ;
         const double cars_t0=GetTime();
         vehicle_dirty|=vehicles.update(dt,driving_input,verda_region,{player.position.x,player.position.y-1,player.position.z},vehicle_paused);
+        if(vehicles.events().crash>0) {gun_audio.crash(vehicles.events().crash);haptics.crash(vehicles.events().crash);}
         world_draw_stats().vehicles=world_draw_stats().vehicles*.9+(GetTime()-cars_t0)*1000*.1;
         if(driving){
             vehicle_orbit-=controls.look_x*80*dt+controls.look_dx*RAD2DEG;
@@ -1720,6 +1727,10 @@ void Renderer::run() {
                 player.position.y =
                     player_ground_y;
 
+                // A hard landing thuds and is felt.
+                gun_audio.land(-player.vertical_velocity);
+                haptics.land(-player.vertical_velocity);
+
                 player.vertical_velocity =
                     0.0F;
 
@@ -1923,6 +1934,7 @@ void Renderer::run() {
             const auto open=[&](Vector3 to){return !combat_world.trace_segment(core,to,false,false,false).hit();};
             const Vector3 chest{player.position.x,player.position.y-.2F,player.position.z};
             const float near=Vector3Distance(core,chest);
+            haptics.explosion(near);
             combat_feedback.blast(std::clamp(1-near/45,0.0F,1.0F)*.6F);
             if(!driving && near<game::combat::Grenades::blast_radius && open(chest)) {
                 hurt_player(game::combat::Grenades::damage_at(near));
@@ -1948,12 +1960,12 @@ void Renderer::run() {
                 vehicle_dirty=true;
             }
         }
-        if(!pending_kills.empty()) gun_audio.kill_confirm();
+        if(!pending_kills.empty()) {gun_audio.kill_confirm();haptics.hit_given(true);}
         for(const Vector3 where:pending_kills) combat_feedback.kill(where);
         pending_kills.clear();
         environment_audio.play_combat(weapons.selected(),weapons.events());
         gun_audio.set_volume(environment_audio.volume(),environment_audio.muted());
-        for(int shot=0;shot<weapons.events().shots;++shot) gun_audio.player_shot(weapons.selected());
+        for(int shot=0;shot<weapons.events().shots;++shot) {gun_audio.player_shot(weapons.selected());haptics.shot(weapons.selected());}
         // Drawing another gun cuts a reload short; each gun reloads with its own sound.
         if(weapons.selected()!=equipped_weapon) {equipped_weapon=weapons.selected();gun_audio.cancel_reload();gun_audio.equip();reload_sounding=false;}
         if(weapons.events().reload_started) {gun_audio.reload(weapons.selected());reload_sounding=true;}
@@ -2158,6 +2170,7 @@ void Renderer::run() {
             }
             gunfire_heard=sound_bus.latest();
             gun_audio.update(vehicle_paused ? 0.0F : dt);
+            haptics.update(dt);
             // The nearest siren on the island, placed like a shot.
             {
                 float loudest=0,pan=0;
@@ -2689,7 +2702,8 @@ void Renderer::run() {
             weapons.available() && weapons.weapon().automatic && !driving ? (weapons.single_fire() ? "SINGLE" : "AUTO") : nullptr,
             weapons.available() && !driving && sight!=game::combat::Sight::Sniper ?
                 (sight==game::combat::Sight::RedDot ? "DOT" : sight==game::combat::Sight::Scope2x ? "2X" : sight==game::combat::Sight::Scope4x ? "4X" : "IRON") : nullptr,
-            driving
+            driving,
+            creator_active
         );
 
 #ifdef OUTLAND_DEV_TOOLS

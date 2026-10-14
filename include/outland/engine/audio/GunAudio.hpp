@@ -49,6 +49,8 @@ public:
     void near_miss(Vector3 at, Vector3 listener, Vector3 forward);   // a round cracking past
     void ricochet(Vector3 at, Vector3 listener, Vector3 forward);    // a round striking close by
     void footstep(Vector3 at, Vector3 listener, Vector3 forward);    // someone else running
+    void crash(float impact);         // the player's car hit something (impact m/s)
+    void land(float speed);           // the player's feet hit the ground after a fall (m/s)
     void zone_warning();
     void heartbeat(float strength);
     // The nearest siren (police car, ambulance): a looping wail at this loudness and pan (0 stops it).
@@ -69,6 +71,8 @@ private:
     std::array<Bank, game::combat::weapon_count> close_{}, distant_{}, reload_{};
     Bank explosion_{}, explosion_distant_{}, pump_{}, bolt_{}, casing_{}, kill_{};
     Bank equip_{}, pickup_{}, pin_{}, hitmarker_{}, hurt_{}, armour_{}, whiz_{}, ricochet_{}, steps_{}, zone_{}, heart_{};
+    Bank crash_light_{}, crash_heavy_{}, body_hit_{}, land_{}, punch_{}, tinnitus_{};
+    float crash_wait_{0}, ringing_{0};
     Sound reloading_{};
     Music siren_{};
     bool siren_playing_{false};

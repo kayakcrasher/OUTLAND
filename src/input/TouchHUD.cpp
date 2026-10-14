@@ -534,7 +534,8 @@ void TouchHUD::draw(
     bool gameplay,
     const char* fire_mode,
     const char* sight,
-    bool driving
+    bool driving,
+    bool look_stick
 ) const {
     const float scale =
         hud_scale(
@@ -578,8 +579,8 @@ void TouchHUD::draw(
         button(layout.sprint, "BOOST", input.sprint);
         // The pan area above the pedals: a faint hint while no thumb is on it.
         const Rectangle pan = InputSystem::pan_area(screen_width, screen_height);
-        if (input.look_x == 0 && input.look_y == 0) {
-            const char* hint = "DRAG TO LOOK";
+        if (input.look_dx == 0 && input.look_dy == 0) {
+            const char* hint = "SWIPE TO LOOK";
             const int size = static_cast<int>(14 * scale);
             DrawText(hint, static_cast<int>(pan.x + pan.width / 2 - MeasureText(hint, size) / 2.0F), static_cast<int>(pan.y + pan.height - 22 * scale), size,
                      Color{255, 255, 255, 70});
@@ -619,10 +620,10 @@ void TouchHUD::draw(
     // RIGHT THUMB — FREE LOOK
     // ========================================================
     //
-    // In play the whole right of the screen is the look surface (swipe anywhere, or slide the
-    // thumb on FIRE); the Creator keeps its faint look stick.
+    // In play and while building, the whole right of the screen is the look surface (swipe
+    // anywhere, or slide the thumb on FIRE), as in PUBG; only the Creator keeps a look stick.
 
-    if (!gameplay) draw_stick(position_of(layout.look, screen_width, screen_height), {input.look_x, input.look_y},
+    if (look_stick) draw_stick(position_of(layout.look, screen_width, screen_height), {input.look_x, input.look_y},
                               base_stick_radius * layout.look.scale, layout.look.opacity, true);
 
 

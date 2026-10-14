@@ -28,7 +28,8 @@ void button(Rectangle r, const char* label, bool active, const Font* font, float
 constexpr const char* main_labels[]{"RESUME", "SETTINGS", "CONTROLS", "SAVE GAME", "QUIT TO MENU", "QUIT GAME"};
 bool toggle_row(PauseMenu::Row row) {
     using R = PauseMenu::Row;
-    return row == R::InvertY || row == R::AimToggle || row == R::AimAssist || row == R::TouchControls || row == R::Sound || row == R::Graphics;
+    return row == R::InvertY || row == R::AimToggle || row == R::AimAssist || row == R::TouchControls || row == R::Vibration ||
+           row == R::Sound || row == R::Graphics;
 }
 int rows_per_column() { return static_cast<int>((input::action_count + 1) / 2); }
 } // namespace
@@ -180,6 +181,7 @@ PauseMenu::Result PauseMenu::update(GameSettings& settings, int width, int heigh
                 case Row::InvertY: settings.invert_y = !settings.invert_y; changed(); break;
                 case Row::AimToggle: settings.aim_toggle = !settings.aim_toggle; changed(); break;
                 case Row::AimAssist: settings.aim_assist = !settings.aim_assist; changed(); break;
+                case Row::Vibration: settings.vibration = !settings.vibration; changed(); break;
                 case Row::Sound: settings.muted = !settings.muted; changed(); break;
                 case Row::TouchControls:
                     settings.touch_controls = static_cast<GameSettings::TouchControls>((static_cast<int>(settings.touch_controls) + 1) % 3);
@@ -231,6 +233,7 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
             {Row::AimAssist, "Touch aim assist", "slows and nudges the view onto enemies"},
             {Row::TouchControls, "On-screen controls", "AUTO: on phones and touch screens"},
             {Row::ButtonSize, "Touch button size", nullptr},
+            {Row::Vibration, "Vibration", "phones: shots, hits, crashes and blasts"},
             {Row::Volume, "Volume", nullptr},
             {Row::Sound, "Sound", nullptr},
             {Row::Graphics, "Graphics", "AUTO adapts resolution to keep play smooth"},
@@ -252,6 +255,7 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
             case Row::InvertY: on = settings.invert_y; button(r, on ? "ON" : "OFF", on, font, s); break;
             case Row::AimToggle: on = settings.aim_toggle; button(r, on ? "TOGGLE" : "HOLD", on, font, s); break;
             case Row::AimAssist: on = settings.aim_assist; button(r, on ? "ON" : "OFF", on, font, s); break;
+            case Row::Vibration: on = settings.vibration; button(r, on ? "ON" : "OFF", on, font, s); break;
             case Row::Sound: on = !settings.muted; button(r, on ? "ON" : "OFF", on, font, s); break;
             case Row::TouchControls:
                 button(r, touch_modes[static_cast<int>(settings.touch_controls)], settings.touch_controls != GameSettings::TouchControls::Off, font, s);

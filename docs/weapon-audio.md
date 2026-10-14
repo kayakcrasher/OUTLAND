@@ -74,6 +74,12 @@ The generator also writes, and `GunAudio` plays:
 | `grenade_pin.wav` | throwing a grenade |
 | `zone_warning.wav` | once a second outside the Battle Royale zone |
 | `heartbeat.wav` | below 35% health, faster and louder the lower it goes |
+| `punch.wav` | a low punch under each of your own shots (heaviest for the shotgun and sniper) |
+| `<gun>_distant.wav` (quiet, 0.5–0.75 s later) | your own report rolling back off the hills |
+| `body_hit_0..2.wav` | with the hit marker: your round landing in a body |
+| `crash_light_0..1.wav`, `crash_heavy_0..1.wav` | your car hitting something: a knock, or a crunch with glass from 12 m/s |
+| `land.wav` | landing from a jump or a fall, louder the harder |
+| `tinnitus.wav` | ringing ears after a grenade within 14 m |
 
 Other people running nearby are heard too: their footsteps (the environment step recordings)
 are placed in the world from the sound bus, one per stride, out to about 26 m.

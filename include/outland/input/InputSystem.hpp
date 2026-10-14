@@ -59,6 +59,8 @@ public:
     // fire or aim until it is let go.
     void set_mouse_look(bool captured, Vector2 motion);
     [[nodiscard]] bool mouse_look() const { return mouse_look_; }
+    // The Creator keeps its look stick; everywhere else the right of the screen is swiped.
+    void set_look_stick(bool on) { look_stick_ = on; }
     // Touch button size (1 = the layout's own).
     void set_button_size(float size) { button_size_ = size; }
     // The layout to draw: button sizes applied and the movement stick where the thumb put it.
@@ -88,13 +90,12 @@ private:
     Vector2 mouse_origin_{}, mouse_last_{};
     Look look_{};
     Bindings bindings_{Bindings::defaults()};
-    bool touch_controls_{true}, mouse_look_{false};
+    bool touch_controls_{true}, mouse_look_{false}, look_stick_{false};
     Vector2 mouse_motion_{};
     float button_size_{1.0F};
     Vector2 stick_center_{-1, -1}; // a floating movement stick's centre while held
     bool mouse_quarantined_{false},had_native_touch_{false};
     bool gameplay_{true}, driving_{false}, was_driving_{false};
-    Vector2 pan_origin_{};
     // Aim button: a tap toggles aiming down sights, a hold aims while held.
     bool aim_toggled_{false}, aim_held_{false};
     double aim_pressed_at_{0};
