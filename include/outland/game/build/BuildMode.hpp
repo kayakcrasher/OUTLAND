@@ -21,6 +21,8 @@ public:
     };
     [[nodiscard]] bool active() const { return active_; }
     void set_active(bool active);
+    // Mouse look: the left button places, the right removes, the wheel picks the piece.
+    void set_mouse_aim(bool on) { mouse_aim_ = on; }
     static Rectangle toggle_button(int width, int height);
     // Screen points the bar owns while building (so the sticks ignore them).
     [[nodiscard]] bool owns_point(Vector2 point, int width, int height) const;
@@ -42,7 +44,7 @@ private:
     std::vector<Vector2> clicks(bool focused);
     Vector3 aim_ground(Vector3 camera, Vector3 look, Vector3 feet) const;
     Vector3 snap_road_end(const world::VerdaRegion& region, Vector3 p) const;
-    bool active_{false};
+    bool active_{false}, mouse_aim_{false};
     Piece tool_{Piece::Cottage};
     float yaw_{0};
     bool turned_{false};          // the player turned it: stop facing them automatically

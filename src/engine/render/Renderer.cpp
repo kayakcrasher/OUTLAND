@@ -36,6 +36,7 @@
 #include "outland/game/ModeSession.hpp"
 #include "outland/game/PlayUI.hpp"
 #include "outland/game/MapScreen.hpp"
+#include "outland/game/PauseMenu.hpp"
 #include "outland/game/transit/BusLine.hpp"
 #include "outland/world/Zones.hpp"
 #include "outland/game/life/LifeSimulation.hpp"
@@ -460,6 +461,14 @@ void Renderer::run() {
     TraceLog(LOG_INFO,pointer_events.installed() ? "Click capture enabled":"Click capture unavailable - using raylib input polling");
     input::InputSystem input_system;
     input::TouchHUD touch_hud;
+    // Touch buttons on phones and touch screens; keyboard and mouse look everywhere else.
+    const bool touch_screen=input::PointerEvents::touch_screen();
+    bool touch_seen=false, mouse_was_captured=false, mouse_wanted=false;
+#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
+    constexpr bool can_quit_game=true;
+#else
+    constexpr bool can_quit_game=false;
+#endif
     bool inventory_open = false;
     std::string interaction_message;
     float interaction_remaining = 0.0F;
@@ -657,6 +666,7 @@ void Renderer::run() {
 
     // The island map (M / MAP) and the player's settings it carries.
     game::MapScreen map_screen;
+    game::PauseMenu pause_menu;
     // The island bus line and its drivers' animation clocks.
     game::transit::BusLine bus_line;
     std::uint64_t bus_seed=0;
@@ -671,7 +681,9 @@ void Renderer::run() {
     const std::string settings_path=game::GameSettings::path_for(map_path);
     settings.load(settings_path);
     const auto apply_settings=[&]() {
-        input_system.layout().look_sensitivity=settings.look_sensitivity;
+        input_system.set_look({settings.look_sensitivity,settings.mouse_sensitivity,settings.invert_y,settings.aim_toggle});
+        input_system.set_bindings(settings.bindings);
+        input_system.set_button_size(settings.button_size);
         environment_audio.set_volume(settings.volume);
         if(environment_audio.muted()!=settings.muted) environment_audio.toggle_mute();
         render_scale.set_mode(static_cast<int>(settings.graphics));
@@ -814,11 +826,20 @@ void Renderer::run() {
         const double frame_start=GetTime();
         pointer_events.begin_frame();
 
+        // The pause menu stops the world (a sliver of time keeps every rate finite).
         const float dt =
+            pause_menu.is_open() ? 1e-5F :
             std::min(
                 GetFrameTime(),
                 0.05F
             );
+        if(GetTouchPointCount()>0) touch_seen=true;
+        const bool touch_ui=settings.touch_controls==game::GameSettings::TouchControls::On ||
+            (settings.touch_controls==game::GameSettings::TouchControls::Auto && (touch_screen || touch_seen));
+        settings.mouse_look=!touch_ui;
+        input_system.set_touch_controls(touch_ui);
+        const bool mouse_captured=!touch_ui && input::PointerEvents::mouse_captured();
+        input_system.set_mouse_look(mouse_captured,input::PointerEvents::mouse_motion());
 
         const int screen_width =
             GetScreenWidth();
@@ -827,8 +848,7 @@ void Renderer::run() {
             GetScreenHeight();
 
         const Rectangle audio_button{static_cast<float>(screen_width - 174), 44.0F, 162.0F, 34.0F};
-        if (!map_screen.is_open() && (IsKeyPressed(KEY_N) ||
-            (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(GetMousePosition(), audio_button)))) {
+        if (!map_screen.is_open() && !pause_menu.is_open() && IsKeyPressed(KEY_N)) {
             environment_audio.toggle_mute();store_settings();
         }
         if (IsKeyPressed(KEY_LEFT_BRACKET)) {environment_audio.set_volume(environment_audio.volume() - 0.1F);store_settings();}
@@ -842,7 +862,10 @@ void Renderer::run() {
             game_mode ==
             game::GameMode::Home
         ) {
-            if (IsKeyPressed(KEY_ESCAPE)) break;
+            // ESC on the home screen quits a PC game; a browser tab or a phone app is closed by its own controls.
+            if (can_quit_game && IsKeyPressed(KEY_ESCAPE)) break;
+            input::PointerEvents::capture_mouse(false);mouse_wanted=mouse_was_captured=false;
+            if(pause_menu.is_open()) pause_menu.close();
             input_system.update(screen_width, screen_height, true, true);
 #ifdef OUTLAND_DEV_TOOLS
             creator_controller.set_enabled(false);
@@ -1020,30 +1043,64 @@ void Renderer::run() {
         }
 
         // ====================================================
-        // RETURN HOME
+        // PAUSE MENU AND RETURN HOME
         // ====================================================
 
-        if (
-            IsKeyPressed(KEY_ESCAPE) && !poker_open // Escape leaves the poker table first
-        ) {
+        // Back to the home screen, saving first (false if the save failed and play goes on).
+        const auto go_home=[&]() {
 #ifdef OUTLAND_DEV_TOOLS
-            if(creator_session.dirty() && !creator_session.save(verda_region))continue;
+            if(creator_session.dirty() && !creator_session.save(verda_region)) return false;
 #endif
             if(game_mode!=game::GameMode::DevLab && !loot_session.save(weapons) && loot_session.can_persist()){
-                interaction_message=loot_session.status();interaction_remaining=3;continue;
+                interaction_message=loot_session.status();interaction_remaining=3;return false;
             }
             restore_match_fleet();
             vehicles.leave_session();vehicle_audio.stop();vehicle_renderer.reset_camera();
-            game_mode =
-                game::GameMode::Home;
+            shop_open=inventory_open=false;
+            game_mode=game::GameMode::Home;
             input_system.cancel_controls();
-            // Finish this frame so the Home screen does not reuse the same Escape edge.
-            BeginDrawing();
-            home_screen.draw(screen_width, screen_height);
-            EndDrawing();
-
-            continue;
+            input::PointerEvents::capture_mouse(false);mouse_wanted=mouse_was_captured=false;
+            return true;
+        };
+        // ESC, the MENU button, or the browser taking the mouse back (its ESC) pauses. ESC first
+        // closes the poker table, the map, the bag or a shop.
+        {
+            const bool lost_mouse=mouse_wanted && mouse_was_captured && !mouse_captured;
+            mouse_was_captured=mouse_captured;
+            const bool escape=IsKeyPressed(KEY_ESCAPE);
+            const bool menu_tapped=!pause_menu.is_open() && pause_menu.tapped_menu_button(screen_width,screen_height,IsWindowFocused());
+            if(!pause_menu.is_open() && !poker_open && !map_screen.is_open()) {
+                if(escape && inventory_open) {inventory_open=false;input_system.cancel_controls();}
+                else if(escape && shop_open) {shop_open=false;input_system.cancel_controls();}
+                else if(escape && build_mode.active()) {}
+                else if(escape || lost_mouse || menu_tapped) {pause_menu.open();input_system.cancel_controls();}
+            }
         }
+        if(pause_menu.is_open()) {
+            settings.volume=environment_audio.volume();settings.muted=environment_audio.muted();
+            const auto result=pause_menu.update(settings,screen_width,screen_height,IsWindowFocused(),GetFrameTime(),can_quit_game);
+            if(result==game::PauseMenu::Result::SettingsChanged) {apply_settings();store_settings();}
+            if(result==game::PauseMenu::Result::Resume) input_system.cancel_controls();
+            if(result==game::PauseMenu::Result::Save) {
+                bool saved=game_mode==game::GameMode::DevLab || loot_session.save(weapons) || !loot_session.can_persist();
+                if(vehicle_dirty && !vehicle_save_protected && vehicles.save_state(verda_region,vehicle_state_path,vehicle_error)) vehicle_dirty=false;
+                if(!builds_path.empty() && game::rules_for(game_mode).civilian_life) {
+                    std::string builds_error;
+                    if(!player_builds.save(builds_path,builds_error)) {saved=false;TraceLog(LOG_WARNING,"Player builds: %s",builds_error.c_str());}
+                }
+                store_settings();
+                pause_menu.set_status(saved ? "GAME SAVED" : "SAVE FAILED - "+loot_session.status());
+            }
+            if(result==game::PauseMenu::Result::QuitHome || result==game::PauseMenu::Result::QuitGame) {
+                if(!go_home()) {pause_menu.open();pause_menu.set_status("COULD NOT SAVE - "+interaction_message);continue;}
+                if(result==game::PauseMenu::Result::QuitGame) break;
+                // Finish this frame so the Home screen does not reuse the same click.
+                BeginDrawing();
+                home_screen.draw(screen_width, screen_height);
+                EndDrawing();
+                continue;
+            }
+        } else pause_menu.update(settings,screen_width,screen_height,false,GetFrameTime(),can_quit_game);
 
         if(mode_session.terminal()) {
             const auto action=play_ui.result_input(screen_width,screen_height,IsWindowFocused());
@@ -1106,13 +1163,16 @@ void Renderer::run() {
         if(game_mode==game::GameMode::DevLab && !creator_active)reserved=[&](Vector2 point){return CheckCollisionPointRec(point,audio_button)||dev_lab.owns_point(point,screen_width,screen_height);};
 #endif
         // The map is modal like the bag; MAP / M opens it during play.
-        if(!map_screen.is_open() && game_mode!=game::GameMode::DevLab && !shop_open && !poker_open && !inventory_open && !mode_session.terminal() &&
-           (map_screen.tapped_map_button(screen_width,screen_height,IsWindowFocused()) || (IsWindowFocused() && IsKeyPressed(KEY_M)))) {
+        if(!map_screen.is_open() && !pause_menu.is_open() && game_mode!=game::GameMode::DevLab && !shop_open && !poker_open && !inventory_open && !mode_session.terminal() &&
+           (map_screen.tapped_map_button(screen_width,screen_height,IsWindowFocused()) || (IsWindowFocused() && settings.bindings.pressed(input::Action::Map,mouse_captured)))) {
             map_screen.open();input_system.cancel_controls();
         }
         if(map_screen.is_open() && mode_session.terminal()) map_screen.close();
         // The equipment panel is modal: BAG closes it and GUN changes equipment.
-        if(map_screen.is_open()) {
+        if(pause_menu.is_open()) {
+            input_system.update(screen_width,screen_height,true,true,[](Vector2){return true;});
+            input_system.player()={};
+        } else if(map_screen.is_open()) {
             input_system.update(screen_width,screen_height,true,true,[](Vector2){return true;});
             input_system.player()={};
             settings.volume=environment_audio.volume();settings.muted=environment_audio.muted();
@@ -1154,6 +1214,18 @@ void Renderer::run() {
         if(game_mode==game::GameMode::DevLab && dev_lab.tools_open())input_system.cancel_controls();
 #endif
         if((!player_health.alive() || mode_session.terminal()) && !creator_active) input_system.player()={};
+        {
+            // Mouse look: the pointer is captured while playing and freed for every menu and panel.
+            bool dev_ui=false;
+#ifdef OUTLAND_DEV_TOOLS
+            dev_ui=game_mode==game::GameMode::DevLab && (dev_lab.tools_open() || creator_active);
+#endif
+            const bool want=!touch_ui && IsWindowFocused() && !pause_menu.is_open() && !map_screen.is_open() && !inventory_open &&
+                !shop_open && !poker_open && !mode_session.terminal() && !dev_ui;
+            input::PointerEvents::capture_mouse(want);
+            mouse_wanted=want;
+            build_mode.set_mouse_aim(mouse_captured);
+        }
         const input::PlayerInput& controls = input_system.player();
         {
             // BUILD (K): lay roads, homes and bus stops in Explore, on foot.
@@ -1259,9 +1331,10 @@ void Renderer::run() {
         vehicle_dirty|=vehicles.update(dt,driving_input,verda_region,{player.position.x,player.position.y-1,player.position.z},vehicle_paused);
         world_draw_stats().vehicles=world_draw_stats().vehicles*.9+(GetTime()-cars_t0)*1000*.1;
         if(driving){
-            vehicle_orbit-=controls.look_x*80*dt;vehicle_pitch=std::clamp(vehicle_pitch-controls.look_y*dt,-1.0F,1.0F);
+            vehicle_orbit-=controls.look_x*80*dt+controls.look_dx*RAD2DEG;
+            vehicle_pitch=std::clamp(vehicle_pitch-controls.look_y*dt-controls.look_dy,-1.0F,1.0F);
             // Let go of the look and the camera swings back behind the car.
-            if(controls.look_x!=0 || controls.look_y!=0) vehicle_look_idle=0; else vehicle_look_idle+=dt;
+            if(controls.look_x!=0 || controls.look_y!=0 || controls.look_dx!=0 || controls.look_dy!=0) vehicle_look_idle=0; else vehicle_look_idle+=dt;
             if(vehicle_look_idle>1.2F) {
                 const float back=1.0F-std::exp(-dt*2.5F);
                 vehicle_orbit-=std::remainder(vehicle_orbit,360.0F)*back;vehicle_pitch-=vehicle_pitch*back;
@@ -1373,7 +1446,7 @@ void Renderer::run() {
         // the look slows, and while aiming or firing the sight drifts gently onto them. Walls hide
         // them from it; mouse players get none.
         float assist=1.0F;
-        if (input_system.touch_device() && !driving && weapons.available() && player_health.alive() && !creator_active) {
+        if (settings.aim_assist && input_system.touch_device() && !driving && weapons.available() && player_health.alive() && !creator_active) {
             const Vector3 eye{player.position.x,player.position.y+.75F,player.position.z};
             const Vector3 view{std::sin(player.yaw)*std::cos(player.pitch),std::sin(player.pitch),std::cos(player.yaw)*std::cos(player.pitch)};
             float best=1e9F;Vector3 best_dir{};
@@ -1403,22 +1476,28 @@ void Renderer::run() {
                 }
             }
         }
-        // Aiming down sights slows the look in proportion to the zoom, as scopes do.
+        // Aiming down sights slows the look in proportion to the zoom, as scopes do, and by the
+        // player's aiming sensitivity. Mouse and swipes turn by how far they moved (look_dx/dy);
+        // the Creator's look stick turns at a rate.
+        const float aim_factor =
+            (controls.aim && !driving ? sight_fov / 70.0F * settings.aim_sensitivity : 1.0F) * assist;
         const float look_speed =
             input_system
                 .layout()
                 .look_sensitivity *
-            (controls.aim && !driving ? sight_fov / 70.0F : 1.0F) * assist;
+            aim_factor;
 
         player.yaw -=
             controls.look_x *
             look_speed *
-            dt;
+            dt +
+            controls.look_dx * aim_factor;
 
         player.pitch -=
             controls.look_y *
             look_speed *
-            dt;
+            dt +
+            controls.look_dy * aim_factor;
 
         player.pitch =
             std::clamp(
@@ -1799,10 +1878,12 @@ void Renderer::run() {
         weapons.update((shop_open || poker_open || mode_session.terminal()) ? 0.0F : dt,weapon_input,{gun_muzzle,gun_direction},combat_world);
         // Battle-royale recoil: each shot lifts the aim itself (the player pulls it back down);
         // once the trigger is released, part of the climb settles back on its own.
+        // The view takes 65% of the kick (the rest shows in the crosshair), so a spray stays on target.
         if(weapons.events().shots>0) {
-            player.pitch=std::clamp(player.pitch+weapons.events().pitch_kick,-1.2F,1.0F);
-            player.yaw+=weapons.events().yaw_kick;
-            recoil_debt+=weapons.events().pitch_kick;recoil_quiet=0;recoil_settle=0;
+            const float pitch_kick=weapons.events().pitch_kick*.65F, yaw_kick=weapons.events().yaw_kick*.65F;
+            player.pitch=std::clamp(player.pitch+pitch_kick,-1.2F,1.0F);
+            player.yaw+=yaw_kick;
+            recoil_debt+=pitch_kick;recoil_quiet=0;recoil_settle=0;
             recoil_pitch=std::min(.035F,recoil_pitch+weapons.events().pitch_kick*.6F);
             recoil_yaw+=weapons.events().yaw_kick*.5F;
         } else {
@@ -2524,22 +2605,35 @@ void Renderer::run() {
                 DrawText(text,static_cast<int>(at.x)-MeasureText(text,size)/2,static_cast<int>(at.y),size,colour);
             }
         }
+        // A binding's short name for the HUD ("LMB", "R", ...).
+        const auto key_of=[&](input::Action action) {
+            static std::string name;
+            const int code=settings.bindings[action][0]!=0 ? settings.bindings[action][0] : settings.bindings[action][1];
+            name=code==input::Bindings::mouse(MOUSE_BUTTON_LEFT) ? "LMB" : code==input::Bindings::mouse(MOUSE_BUTTON_RIGHT) ? "RMB" :
+                code==input::Bindings::wheel ? "WHEEL" : input::Bindings::name(code);
+            return name;
+        };
         if (!creator_active && !inventory_open && !build_mode.active() && !driving) {
             DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
             DrawText(weapons.available()?weapons.weapon().name:"NO WEAPON - OPEN BAG",24,screen_height-94,19,RAYWHITE);
-            DrawText(TextFormat("NADES %d  G",grenades.count()),222,screen_height-68,16,grenades.count()>0 ? Color{190,220,150,255} : GRAY);
+            DrawText(TextFormat("NADES %d  %s",grenades.count(),touch_ui ? "" : key_of(input::Action::Grenade).c_str()),222,screen_height-68,16,grenades.count()>0 ? Color{190,220,150,255} : GRAY);
             if(const int armour=armour_level(); armour>0)
                 DrawText(armour==2 ? "ARMOUR II  -45%" : "ARMOUR I  -30%",200,screen_height-112,14,game::inventory::LootUI::rarity_color(armour==2 ? game::inventory::Rarity::Epic : game::inventory::Rarity::Rare));
-            if(weapons.available()) DrawText(TextFormat("%s%s",game::combat::sight_info(sight).name,sight==game::combat::Sight::Sniper ? "" : "  X"),
+            if(weapons.available()) DrawText(TextFormat("%s  %s",game::combat::sight_info(sight).name,sight==game::combat::Sight::Sniper || touch_ui ? "" : key_of(input::Action::Sight).c_str()),
                 200,screen_height-92,14,sight==game::combat::Sight::Iron ? GRAY : Color{235,120,110,255});
             if (weapons.unlimited()) DrawText("AMMO UNLIMITED - DEV LAB",24,screen_height-68,18,YELLOW);
             else DrawText(TextFormat("%d / %d",weapons.ammo().loaded,weapons.ammo().reserve),
                 24,screen_height-68,22,RAYWHITE);
             if (weapons.reload_remaining()>0) DrawText(TextFormat("RELOADING %.1fs",weapons.reload_remaining()),
                 24,screen_height-39,16,ORANGE);
-            else DrawText(weapons.ammo().loaded==0 && !weapons.unlimited() ?
-                "EMPTY - R / LOAD TO RELOAD" : "F / FIRE   Q / AIM   R / LOAD   TAB / GUN",
+            else if(touch_ui) DrawText(weapons.ammo().loaded==0 && !weapons.unlimited() ? "EMPTY - LOAD TO RELOAD" : "SWIPE RIGHT SIDE TO LOOK",
                 24,screen_height-39,12,RAYWHITE);
+            else {
+                std::string line=weapons.ammo().loaded==0 && !weapons.unlimited() ? "EMPTY - "+key_of(input::Action::Reload)+" TO RELOAD" :
+                    key_of(input::Action::Fire)+" FIRE  "+key_of(input::Action::Aim)+" AIM  "+key_of(input::Action::Reload)+" RELOAD  "+
+                    key_of(input::Action::NextWeapon)+" SWAP";
+                DrawText(line.c_str(),24,screen_height-39,12,RAYWHITE);
+            }
         }
 
         if (!creator_active && player_health.alive()) {
@@ -2586,9 +2680,9 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
         asset_drawer_open = game_mode == game::GameMode::DevLab && creator_touch_ui.inventory_open();
 #endif
-        if (!inventory_open && !shop_open && !poker_open && !mode_session.terminal() && !asset_drawer_open) touch_hud.draw(
+        if (touch_ui && !inventory_open && !shop_open && !poker_open && !mode_session.terminal() && !asset_drawer_open && !pause_menu.is_open()) touch_hud.draw(
             controls,
-            input_system.layout(),
+            input_system.drawn_layout(screen_width,screen_height),
             screen_width,
             screen_height,
             !creator_active && !build_mode.active(),
@@ -2694,10 +2788,10 @@ void Renderer::run() {
         if (interaction_remaining > 0)
             DrawText(interaction_message.c_str(), screen_width / 2 - MeasureText(interaction_message.c_str(),18)/2, screen_height-205, 18, RAYWHITE);
 
+        // MENU (pause, settings, controls, save, quit); N still mutes.
         DrawRectangleRec(audio_button, Fade(BLACK, 0.60F));
-        DrawText(environment_audio.ready() ?
-                 (environment_audio.muted() ? "AUDIO OFF · N" : "AUDIO ON · N") : "AUDIO UNAVAILABLE",
-                 screen_width - 165, 53, 14, RAYWHITE);
+        DrawText(touch_ui ? "MENU" : "MENU · ESC", screen_width - 165, 53, 14, RAYWHITE);
+        if(environment_audio.ready() && environment_audio.muted()) DrawText("MUTED", screen_width - 62, 53, 14, Color{230,120,100,255});
         if(game_mode!=game::GameMode::DevLab) {
             const auto map_button=game::MapScreen::map_button(screen_width,screen_height);
             DrawRectangleRec(map_button,Fade(BLACK,.60F));
@@ -2737,7 +2831,7 @@ void Renderer::run() {
             }
             // Bottom middle, between the steering stick and the pedals.
             game::hud::draw_speedometer(gauge,{screen_width*.42F,screen_height-92.0F},66);
-            if(!input_system.touch_device())
+            if(!touch_ui)
                 DrawText("W/S drive | A/D steer | SPACE handbrake | SHIFT boost | C park | H horn | E exit",
                          static_cast<int>(screen_width*.42F)+84,screen_height-26,15,YELLOW);
         }
@@ -2784,6 +2878,14 @@ void Renderer::run() {
             for(const auto& crew:mafio.crews()) view.turf.push_back({crew.door,game::mafia::gangs[static_cast<std::size_t>(crew.gang)].color});
             map_screen.draw(verda_region,view,settings,screen_width,screen_height);
         }
+        // Mouse look waits for a click in the browser (pointer lock needs one).
+        if(mouse_wanted && !mouse_captured && !pause_menu.is_open() && game_mode!=game::GameMode::Home) {
+            const char* line="CLICK TO PLAY  -  the mouse looks around, ESC for the menu";
+            const int size=22, tw=MeasureText(line,size);
+            DrawRectangle(screen_width/2-tw/2-16,screen_height/2-64,tw+32,40,Fade(BLACK,.7F));
+            DrawText(line,screen_width/2-tw/2,screen_height/2-55,size,RAYWHITE);
+        }
+        pause_menu.draw(settings,screen_width,screen_height,&sign_renderer.font(),can_quit_game);
         DrawFPS(
             screen_width - 90,
             10

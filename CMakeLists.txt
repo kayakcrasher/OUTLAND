@@ -159,6 +159,8 @@ add_library(
     src/game/ModeSession.cpp
     src/game/PlayUI.cpp
     src/game/MapScreen.cpp
+    src/game/Settings.cpp
+    src/game/PauseMenu.cpp
     src/game/transit/BusLine.cpp
     src/world/VerdaRegion.cpp
     src/world/Zones.cpp
@@ -203,6 +205,7 @@ add_library(
 
     src/creator/CreatorMapIO.cpp
     src/input/InputSystem.cpp
+    src/input/Bindings.cpp
         src/input/PointerEvents.cpp
     src/input/TouchHUD.cpp
 )
@@ -530,7 +533,7 @@ if(OUTLAND_BUILD_TESTS)
     target_link_libraries(outland_gun_audio_tests PRIVATE outland_render)
     target_compile_options(outland_gun_audio_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_gun_audio_tests COMMAND outland_gun_audio_tests)
-    add_executable(outland_combat_input_tests tests/integration/world/test_combat_input.cpp src/input/InputSystem.cpp)
+    add_executable(outland_combat_input_tests tests/integration/world/test_combat_input.cpp src/input/InputSystem.cpp src/input/Bindings.cpp)
     target_include_directories(outland_combat_input_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_combat_input_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_combat_input_tests COMMAND outland_combat_input_tests)
@@ -711,6 +714,10 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_zones_map_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_zones_map_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_zones_map_tests COMMAND outland_zones_map_tests)
+    add_executable(outland_pause_menu_tests tests/integration/world/test_pause_menu.cpp)
+    target_link_libraries(outland_pause_menu_tests PRIVATE outland_render)
+    target_compile_options(outland_pause_menu_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_pause_menu_tests COMMAND outland_pause_menu_tests)
     add_executable(outland_zombie_ecology_tests tests/integration/zombies/test_zombie_ecology.cpp)
     target_link_libraries(outland_zombie_ecology_tests PRIVATE outland_render)
     target_compile_options(outland_zombie_ecology_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

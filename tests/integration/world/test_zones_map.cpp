@@ -82,14 +82,29 @@ int main() {
     const auto path = game::GameSettings::path_for((dir / "maps" / "verda.map").string());
     check(path == (dir / "profiles" / "settings.cfg").string(), "settings sit with the profiles: " + path);
     game::GameSettings settings;
-    settings.look_sensitivity = 3.5F; settings.volume = .3F; settings.muted = true; settings.graphics = game::GameSettings::Graphics::Fast;
+    settings.look_sensitivity = 2.5F; settings.mouse_sensitivity = .7F; settings.aim_sensitivity = .6F; settings.invert_y = true;
+    settings.aim_toggle = true; settings.aim_assist = false; settings.touch_controls = game::GameSettings::TouchControls::Off;
+    settings.button_size = 1.2F; settings.volume = .3F; settings.muted = true; settings.graphics = game::GameSettings::Graphics::Fast;
+    settings.bindings.bind(input::Action::Fire, 1, KEY_F);
     check(settings.save(path), "save settings");
     game::GameSettings read;
-    check(read.load(path) && read.look_sensitivity == 3.5F && std::abs(read.volume - .3F) < .001F && read.muted && read.graphics == game::GameSettings::Graphics::Fast, "load settings");
-    { std::ofstream bad(path); bad << "look_sensitivity 99\nvolume -4\ngraphics 9\nunknown 1 2 3\n"; }
-    check(read.load(path) && read.look_sensitivity == game::GameSettings::max_sensitivity && read.volume == 0 && read.graphics == game::GameSettings::Graphics::Sharp, "clamped");
+    check(read.load(path) && read.look_sensitivity == 2.5F && std::abs(read.mouse_sensitivity - .7F) < .001F &&
+          std::abs(read.aim_sensitivity - .6F) < .001F && read.invert_y && read.aim_toggle && !read.aim_assist &&
+          read.touch_controls == game::GameSettings::TouchControls::Off && std::abs(read.button_size - 1.2F) < .001F &&
+          std::abs(read.volume - .3F) < .001F && read.muted && read.graphics == game::GameSettings::Graphics::Fast, "load settings");
+    check(read.bindings[input::Action::Fire][1] == KEY_F && read.bindings[input::Action::Interact][1] == 0 &&
+          read.bindings[input::Action::Forward][0] == KEY_W, "key bindings survive");
+    // The old look stick's speed is not a swipe or mouse speed: it is left behind.
+    { std::ofstream bad(path); bad << "look_sensitivity 4\ntouch_sensitivity 99\nmouse_sensitivity -3\nvolume -4\ngraphics 9\nunknown 1 2 3\nbind nothing 1 2\n"; }
+    game::GameSettings clamped;
+    check(clamped.load(path) && clamped.look_sensitivity == game::GameSettings::max_sensitivity &&
+          clamped.mouse_sensitivity == game::GameSettings::min_mouse && clamped.volume == 0 &&
+          clamped.graphics == game::GameSettings::Graphics::Sharp && clamped.bindings[input::Action::Fire][0] == input::Bindings::mouse(MOUSE_BUTTON_LEFT), "clamped");
     game::GameSettings missing;
-    check(!missing.load((dir / "none.cfg").string()) && missing.look_sensitivity == 2.25F, "defaults when there is no file");
+    check(!missing.load((dir / "none.cfg").string()) && missing.look_sensitivity == 1.0F && missing.mouse_sensitivity == 1.0F &&
+          missing.touch_controls == game::GameSettings::TouchControls::Auto, "defaults when there is no file");
+    read.reset_controls();
+    check(read.volume < .5F && read.muted && !read.invert_y && read.bindings[input::Action::Interact][1] == KEY_F, "reset keeps sound and graphics");
     std::filesystem::remove_all(dir);
 
     // Sovaĝejo, heart of Ferarbaro, in the published world.

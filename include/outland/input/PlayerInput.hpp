@@ -7,9 +7,12 @@ struct PlayerInput {
     float move_x{0.0F};
     float move_y{0.0F};
 
-    // Camera/look: -1.0 to +1.0
+    // Camera/look: -1.0 to +1.0 (a stick held over: turn at a rate; the driving pan and Creator)
     float look_x{0.0F};
     float look_y{0.0F};
+    // Camera/look: radians this frame from the mouse or a swipe, sensitivity and invert applied.
+    float look_dx{0.0F};
+    float look_dy{0.0F};
 
     // Movement actions
     bool jump{false};

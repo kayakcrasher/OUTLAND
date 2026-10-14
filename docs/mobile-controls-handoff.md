@@ -1,5 +1,7 @@
 # Mobile controls handoff
 
+The current controls (swipe-to-look, mouse look, key bindings, the pause menu) are described in [controls.md](controls.md); this file records the first touch layout.
+
 Asset integration follow-up: see [downloaded-assets-handoff.md](downloaded-assets-handoff.md).
 The build counts below record the original mobile-controls validation.
 

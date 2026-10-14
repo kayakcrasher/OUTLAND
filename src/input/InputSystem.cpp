@@ -142,15 +142,19 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         for (auto& owner : owners_) owner.control = Control::None;
         mouse_control_ = Control::None;
     }
-    const float scale = base_scale(screen_width, screen_height);
+    const float scale = base_scale(screen_width, screen_height) * button_size_;
+    const float w = static_cast<float>(screen_width), h = static_cast<float>(screen_height);
     const auto center = [&](const TouchElementLayout& e) {
         return element_position(e, screen_width, screen_height);
     };
     const auto hit = [&](Vector2 p, const TouchElementLayout& e, float radius) {
         return inside_circle(p, center(e), radius * scale * e.scale);
     };
+    // On foot, the right of the screen is one big look surface and the lower left a floating
+    // movement stick, as in PUBG Mobile and Call of Duty Mobile.
+    const bool on_foot = gameplay && !driving_;
     const auto capture = [&](Vector2 p) {
-        if (blocked || p.y < std::min(80.0F, screen_height * 0.12F) || (reserved && reserved(p))) return Control::None;
+        if (blocked || p.y < std::min(80.0F, h * 0.12F) || (reserved && reserved(p))) return Control::None;
         if (gameplay && driving_) {
             if (hit(p, layout_.gas, 50)) return Control::Gas;
             if (hit(p, layout_.brake_pedal, 50)) return Control::BrakePedal;
@@ -178,16 +182,26 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
             if (hit(p, layout_.interact, 43)) return Control::Interact;
         }
         if (hit(p, layout_.movement, 92)) return Control::Movement;
+        if (on_foot && p.x < w * .40F && p.y > h * .40F) return Control::Movement; // floating
+        if (on_foot && p.x > w * .42F) return Control::Swipe;
         if (hit(p, layout_.look, 92)) return Control::Look;
         // Unclaimed pointers never become gameplay triggers.
         return Control::None;
     };
-    const auto apply = [&](Control control, Vector2 p, bool fresh) {
+    const float swipe = PI / h * look_.touch; // half the screen's height: 90 degrees at 1.0
+    const auto drag = [&](Vector2 p, Vector2& last) {
+        player_.look_dx += (p.x - last.x) * swipe;
+        player_.look_dy += (p.y - last.y) * swipe;
+        last = p;
+    };
+    const auto apply = [&](Control control, Vector2 p, bool fresh, Vector2& origin, Vector2& last) {
+        if (fresh) { origin = hit(p, layout_.movement, 92) || driving_ ? center(layout_.movement) : p; last = p; }
         switch (control) {
         case Control::Movement: {
-            const auto v = analog_value(p, center(layout_.movement), 92 * scale * layout_.movement.scale);
+            const auto v = analog_value(p, origin, 92 * scale * layout_.movement.scale);
             player_.move_x = v.x;
             if (!driving_) player_.move_y = v.y; // at the wheel the stick only steers
+            stick_center_ = origin;
             break;
         }
         case Control::Gas: player_.gas = 1; break;
@@ -205,6 +219,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
             const auto v = analog_value(p, center(layout_.look), 92 * scale * layout_.look.scale);
             player_.look_x = v.x; player_.look_y = v.y; break;
         }
+        case Control::Swipe: drag(p, last); break;
         case Control::Jump: player_.jump |= fresh; player_.brake = true; break;
         case Control::View: player_.toggle_view |= fresh; break;
         case Control::Reload: player_.reload |= fresh; break;
@@ -215,7 +230,8 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         case Control::Interact: player_.interact |= fresh; break;
         case Control::Sprint: player_.sprint = true; break;
         case Control::Crouch: player_.crouch = true; break;
-        case Control::Fire: case Control::FireLeft: player_.fire = true; break;
+        // Fire and keep aiming: the thumb on FIRE steers the sights as it slides.
+        case Control::Fire: case Control::FireLeft: player_.fire = true; drag(p, last); break;
         case Control::FireMode: player_.fire_mode |= fresh; break;
         case Control::Aim:
             if (fresh) aim_pressed_at_ = seconds_now();
@@ -226,6 +242,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
     };
     const bool aim_was_held = aim_held_;
     aim_held_ = false;
+    stick_center_ = {-1, -1};
     const int count = GetTouchPointCount();
     std::erase_if(owners_, [&](const TouchOwner& owner) {
         for (int i = 0; i < count; ++i) if (GetTouchPointId(i) == owner.id) return false;
@@ -240,49 +257,61 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         if (fresh) {
             auto control = changed ? Control::None : capture(p);
             // Only one finger owns each stick. An unclaimed finger never steals it later.
-            if (control == Control::Movement || control == Control::Look || control == Control::Pan) {
+            if (control == Control::Movement || control == Control::Look || control == Control::Pan || control == Control::Swipe) {
                 for (const auto& o : owners_) if (o.control == control) control = Control::None;
             }
             owners_.push_back({id, control});
             owner = owners_.end() - 1;
         }
-        apply(owner->control, p, fresh);
+        apply(owner->control, p, fresh, owner->origin, owner->last);
     }
+    // A captured mouse works the bindings, once any button held from before is let go.
+    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && count == 0 && mouse_control_ == Control::None)
+        mouse_quarantined_ = false;
+    const bool mouse_buttons = mouse_look_ && !blocked && !mouse_quarantined_;
     // Android can synthesize a final mouse press after the last native contact disappears.
     if (count == 0) {
         const auto p=GetMousePosition();const bool down=IsMouseButtonDown(MOUSE_BUTTON_LEFT);
         const bool fresh=IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
         if(had_native_touch_ && down)mouse_quarantined_=true;
-        if(fresh && !changed && !had_native_touch_ && !mouse_quarantined_)mouse_control_=capture(p);
-        if(down && !mouse_quarantined_)apply(mouse_control_,p,fresh);
+        if(fresh && !changed && !had_native_touch_ && !mouse_quarantined_ && touch_controls_ && !mouse_look_)mouse_control_=capture(p);
+        if(down && !mouse_quarantined_ && mouse_control_!=Control::None)apply(mouse_control_,p,fresh,mouse_origin_,mouse_last_);
         else mouse_control_=Control::None;
         if(!down)mouse_quarantined_=false;
         had_native_touch_=false;
     } else {mouse_control_=Control::None;had_native_touch_=true;}
     // Aim button released: a quick tap toggles sights, a long hold just ends.
     if (aim_was_held && !aim_held_ && seconds_now() - aim_pressed_at_ < .3) aim_toggled_ = !aim_toggled_;
+    // Keyboard and mouse AIM: hold, or a press toggles when the player chose so.
+    const bool key_aim = gameplay && !blocked && bindings_.down(Action::Aim, mouse_buttons);
+    if (gameplay && !blocked && look_.aim_toggle && bindings_.pressed(Action::Aim, mouse_buttons)) aim_toggled_ = !aim_toggled_;
     if (!gameplay || blocked) aim_toggled_ = false;
-    player_.aim = aim_toggled_ || (aim_held_ && seconds_now() - aim_pressed_at_ >= .3);
-    if (blocked) return;
-    if (IsKeyDown(KEY_W)) player_.move_y -= 1;
-    if (IsKeyDown(KEY_S)) player_.move_y += 1;
-    if (IsKeyDown(KEY_A)) player_.move_x -= 1;
-    if (IsKeyDown(KEY_D)) player_.move_x += 1;
-    player_.jump |= IsKeyPressed(KEY_SPACE);
-    player_.brake |= IsKeyDown(KEY_SPACE);
-    player_.sprint |= IsKeyDown(KEY_LEFT_SHIFT);
-    player_.toggle_view |= IsKeyPressed(KEY_V);
+    player_.aim = aim_toggled_ || (aim_held_ && seconds_now() - aim_pressed_at_ >= .3) || (key_aim && !look_.aim_toggle);
+    if (blocked) { player_.look_dx = player_.look_dy = 0; return; }
+    if (mouse_look_) {
+        player_.look_dx += mouse_motion_.x * .0012F * look_.mouse;
+        player_.look_dy += mouse_motion_.y * .0012F * look_.mouse;
+    }
+    if (look_.invert_y) { player_.look_dy = -player_.look_dy; player_.look_y = -player_.look_y; }
+    const auto& b = bindings_;
+    if (b.down(Action::Forward, mouse_buttons)) player_.move_y -= 1;
+    if (b.down(Action::Back, mouse_buttons)) player_.move_y += 1;
+    if (b.down(Action::Left, mouse_buttons)) player_.move_x -= 1;
+    if (b.down(Action::Right, mouse_buttons)) player_.move_x += 1;
+    player_.jump |= b.pressed(Action::Jump, mouse_buttons);
+    player_.brake |= b.down(Action::Jump, mouse_buttons);
+    player_.sprint |= b.down(Action::Sprint, mouse_buttons);
+    player_.toggle_view |= b.pressed(Action::View, mouse_buttons);
     if (gameplay) {
-        player_.crouch |= IsKeyDown(KEY_C);
-        player_.fire |= IsKeyDown(KEY_F);
-        player_.aim |= IsKeyDown(KEY_Q) || (count == 0 && IsMouseButtonDown(MOUSE_BUTTON_RIGHT));
-        player_.reload |= IsKeyPressed(KEY_R);
-        player_.grenade |= IsKeyPressed(KEY_G);
-        player_.sight |= IsKeyPressed(KEY_X);
-        player_.next_weapon |= IsKeyPressed(KEY_TAB);
-        player_.fire_mode |= IsKeyPressed(KEY_B);
-        player_.inventory |= IsKeyPressed(KEY_I);
-        player_.interact |= IsKeyPressed(KEY_E);
+        player_.crouch |= b.down(Action::Crouch, mouse_buttons);
+        player_.fire |= b.down(Action::Fire, mouse_buttons);
+        player_.reload |= b.pressed(Action::Reload, mouse_buttons);
+        player_.grenade |= b.pressed(Action::Grenade, mouse_buttons);
+        player_.sight |= b.pressed(Action::Sight, mouse_buttons);
+        player_.next_weapon |= b.pressed(Action::NextWeapon, mouse_buttons);
+        player_.fire_mode |= b.pressed(Action::FireMode, mouse_buttons);
+        player_.inventory |= b.pressed(Action::Inventory, mouse_buttons);
+        player_.interact |= b.pressed(Action::Interact, mouse_buttons);
     }
     Vector2 movement{player_.move_x, player_.move_y};
     if (Vector2Length(movement) > 1) {
@@ -292,6 +321,26 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
     if (player_.crouch) player_.sprint = false;
     // Sprinting lowers the sights, as in any battle royale.
     if (player_.sprint && Vector2Length(movement) > .1F) {aim_toggled_ = false; player_.aim = false;}
+}
+
+void InputSystem::set_mouse_look(bool captured, Vector2 motion) {
+    if (captured && !mouse_look_ && (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT)))
+        mouse_quarantined_ = true;
+    mouse_look_ = captured;
+    mouse_motion_ = motion;
+}
+
+TouchLayout InputSystem::drawn_layout(int width, int height) const {
+    TouchLayout out = layout_;
+    for (auto* e : {&out.movement, &out.look, &out.fire, &out.fire_left, &out.fire_mode, &out.aim, &out.jump, &out.reload,
+                    &out.weapon, &out.view, &out.sprint, &out.grenade, &out.sight, &out.gas, &out.brake_pedal,
+                    &out.handbrake, &out.crouch, &out.inventory, &out.interact})
+        e->scale *= button_size_;
+    if (stick_center_.x >= 0 && width > 0 && height > 0) {
+        out.movement.x = stick_center_.x / static_cast<float>(width);
+        out.movement.y = stick_center_.y / static_cast<float>(height);
+    }
+    return out;
 }
 
 const PlayerInput&
@@ -320,7 +369,7 @@ void InputSystem::cancel_controls() {
     // DEV/UI may cancel before this frame's fresh contacts have been captured.
     for(int i=0;i<GetTouchPointCount();++i){const int id=GetTouchPointId(i);if(std::none_of(owners_.begin(),owners_.end(),[&](const auto& owner){return owner.id==id;}))owners_.push_back({id,Control::None});}
     mouse_control_ = Control::None;
-    mouse_quarantined_|=IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+    mouse_quarantined_|=IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
 }
 
 void InputSystem::reset_layout() {

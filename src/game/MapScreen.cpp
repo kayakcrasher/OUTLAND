@@ -31,38 +31,6 @@ void button(Rectangle r, const char* label, bool active, const Font* font, float
 }
 }
 
-// ---------------------------------------------------------------- settings
-std::string GameSettings::path_for(const std::string& map_path) {
-    return (std::filesystem::path(map_path).parent_path().parent_path() / "profiles" / "settings.cfg").string();
-}
-bool GameSettings::load(const std::string& path) {
-    std::ifstream input(path);
-    if (!input) return false;
-    std::string key;
-    GameSettings read = *this;
-    while (input >> key) {
-        if (key == "look_sensitivity") input >> read.look_sensitivity;
-        else if (key == "volume") input >> read.volume;
-        else if (key == "muted") { int v = 0; input >> v; read.muted = v != 0; }
-        else if (key == "graphics") { int v = 0; input >> v; read.graphics = static_cast<Graphics>(std::clamp(v, 0, 2)); }
-        else { std::string skip; std::getline(input, skip); }
-        if (!input) return false;
-    }
-    if (!std::isfinite(read.look_sensitivity) || !std::isfinite(read.volume)) return false;
-    read.look_sensitivity = std::clamp(read.look_sensitivity, min_sensitivity, max_sensitivity);
-    read.volume = std::clamp(read.volume, 0.0F, 1.0F);
-    *this = read;
-    return true;
-}
-bool GameSettings::save(const std::string& path) const {
-    std::error_code ec;
-    std::filesystem::create_directories(std::filesystem::path(path).parent_path(), ec);
-    std::ofstream output(path, std::ios::trunc);
-    output << "look_sensitivity " << look_sensitivity << "\nvolume " << volume << "\nmuted " << (muted ? 1 : 0)
-           << "\ngraphics " << static_cast<int>(graphics) << '\n';
-    return static_cast<bool>(output);
-}
-
 // ---------------------------------------------------------------- layout
 Rectangle MapScreen::map_button(int width, int) {
     return {static_cast<float>(width - 174 - 104), 44, 96, 34};
@@ -125,8 +93,14 @@ MapScreen::Change MapScreen::update(GameSettings& settings, int width, int heigh
         for (int i = 0; i < 8 && change != Change::Close; ++i) {
             if (!CheckCollisionPointRec(p, settings_button(i, width, height))) continue;
             switch (i) {
-                case 0: set(settings.look_sensitivity, std::max(GameSettings::min_sensitivity, settings.look_sensitivity - .25F)); break;
-                case 1: set(settings.look_sensitivity, std::min(GameSettings::max_sensitivity, settings.look_sensitivity + .25F)); break;
+                case 0: case 1: {
+                    // Whichever look the player uses: the mouse on a PC, swipes on a touch screen.
+                    float& field = settings.mouse_look ? settings.mouse_sensitivity : settings.look_sensitivity;
+                    const float lo = settings.mouse_look ? GameSettings::min_mouse : GameSettings::min_sensitivity;
+                    const float hi = settings.mouse_look ? GameSettings::max_mouse : GameSettings::max_sensitivity;
+                    set(field, std::clamp(std::round((field + (i == 0 ? -.1F : .1F)) * 10) / 10, lo, hi));
+                    break;
+                }
                 case 2: set(settings.volume, std::max(0.0F, std::round((settings.volume - .1F) * 10) / 10)); break;
                 case 3: set(settings.volume, std::min(1.0F, std::round((settings.volume + .1F) * 10) / 10)); break;
                 case 4: set(settings.muted, !settings.muted); break;
@@ -338,7 +312,8 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
     };
     button(settings_button(0, width, height), "-", false, font, s);
     button(settings_button(1, width, height), "+", false, font, s);
-    row_label(0, "Look sensitivity", TextFormat("%.2f", settings.look_sensitivity));
+    row_label(0, settings.mouse_look ? "Mouse sensitivity" : "Touch look sensitivity",
+              TextFormat("%.1f", settings.mouse_look ? settings.mouse_sensitivity : settings.look_sensitivity));
     button(settings_button(2, width, height), "-", false, font, s);
     button(settings_button(3, width, height), "+", false, font, s);
     row_label(2, "Volume", TextFormat("%d%%", static_cast<int>(std::round(settings.volume * 100))));

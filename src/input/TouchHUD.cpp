@@ -619,24 +619,11 @@ void TouchHUD::draw(
     // RIGHT THUMB — FREE LOOK
     // ========================================================
     //
-    // Intentionally faint. Eventually the whole right-side
-    // gameplay area becomes a free-look surface.
+    // In play the whole right of the screen is the look surface (swipe anywhere, or slide the
+    // thumb on FIRE); the Creator keeps its faint look stick.
 
-    draw_stick(
-        position_of(
-            layout.look,
-            screen_width,
-            screen_height
-        ),
-        {
-            input.look_x,
-            input.look_y
-        },
-        base_stick_radius *
-            layout.look.scale,
-        layout.look.opacity,
-        true
-    );
+    if (!gameplay) draw_stick(position_of(layout.look, screen_width, screen_height), {input.look_x, input.look_y},
+                              base_stick_radius * layout.look.scale, layout.look.opacity, true);
 
 
     // ========================================================

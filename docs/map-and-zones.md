@@ -29,11 +29,11 @@ The zone list and Ferarbaro's lore are in [verda-lore.md](verda-lore.md).
 
 ## Settings (AGORDOJ)
 
-The map screen's right panel:
+The map screen's right panel is a short version of the pause menu's SETTINGS page (see [controls.md](controls.md)):
 
 | Setting | Values |
 |---|---|
-| Look sensitivity | 0.75–5.0, in steps of 0.25 |
+| Mouse sensitivity (PC) or touch look sensitivity (touch screens) | in steps of 0.1 |
 | Volume | in 10% steps |
 | Sound | on / off |
 | Graphics | AUTO (dynamic resolution, the default), FAST (fixed 60% resolution, for slow phones), SHARP (full resolution) |

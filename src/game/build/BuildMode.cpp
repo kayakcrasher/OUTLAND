@@ -126,6 +126,12 @@ BuildMode::Result BuildMode::update(world::VerdaRegion& region, PlayerBuilds& bu
         place |= IsKeyPressed(KEY_F) || IsKeyPressed(KEY_ENTER);
         remove |= IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_DELETE);
         done |= IsKeyPressed(KEY_K) || IsKeyPressed(KEY_ESCAPE);
+        if (mouse_aim_) {
+            place |= IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+            remove |= IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
+            next |= GetMouseWheelMove() < 0;
+            previous |= GetMouseWheelMove() > 0;
+        }
         for (int k = 0; k < piece_count; ++k)
             if (IsKeyPressed(KEY_ONE + k)) { tool_ = static_cast<Piece>(k); road_started_ = false; }
     }
@@ -272,7 +278,7 @@ void BuildMode::draw_hud(const PlayerBuilds& builds, int width, int height) cons
     DrawText(status.c_str(), width / 2 - sw / 2, 230, 16, ghost_valid_ ? Color{200, 240, 200, 255} : Color{255, 160, 150, 255});
     int homes = 0, stops = 0, people = 0;
     for (const auto& p : builds.placed()) { homes += p.home(); stops += p.piece == Piece::BusStop; people += p.residents; }
-    const char* town = TextFormat("YOUR TOWN: %d homes (%d empty), %d bus stops, %d residents   F place  R turn  Tab piece  Bksp remove  K done",
+    const char* town = TextFormat("YOUR TOWN: %d homes (%d empty), %d bus stops, %d residents   F/click place  R turn  Tab/wheel piece  Bksp/right-click remove  K done",
                                   homes, builds.empty_homes(), stops, people);
     DrawText(town, 16, height - 24, 14, Fade(RAYWHITE, .85F));
 }

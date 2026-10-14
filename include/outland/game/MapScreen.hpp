@@ -1,4 +1,5 @@
 #pragma once
+#include "outland/game/Settings.hpp"
 #include "outland/world/Zones.hpp"
 #include <raylib.h>
 #include <string>
@@ -8,19 +9,6 @@
 namespace outland::world { class VerdaRegion; }
 
 namespace outland::game {
-
-// Player settings, kept beside the saves (profiles/settings.cfg).
-struct GameSettings {
-    enum class Graphics : int { Auto, Fast, Sharp };
-    float look_sensitivity{2.25F};
-    float volume{.8F};
-    bool muted{false};
-    Graphics graphics{Graphics::Auto};
-    static constexpr float min_sensitivity = .75F, max_sensitivity = 5.0F;
-    static std::string path_for(const std::string& map_path);
-    bool load(const std::string& path);
-    bool save(const std::string& path) const;
-};
 
 // The island map (MAPO): the whole of Verda with its five zones, the roads and towns, and where
 // the player stands and faces. It doubles as the pause menu for settings. Modal while open.
