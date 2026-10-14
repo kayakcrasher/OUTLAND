@@ -19,6 +19,7 @@ namespace outland::dev {
 namespace {
 const std::string parts = "assets/verda/urban/Building Parts/";
 const std::string shacks = "assets/verda/industrial/shacks/";
+const std::string prebuild = "assets/verda/urban/Buildings Prebuild/";
 const std::string urban = "assets/verda/urban/";
 
 struct Lot { float x0, z0, x1, z1; };
@@ -408,6 +409,98 @@ void downtown(Kit& kit, world::VerdaRegion& region) {
     kit.claim({0, 0, 0}, grid_edge + 2, grid_edge + 2, 0);
 }
 
+// ------------------------------------------------------------------ Verda City's south blocks
+// Three new blocks south of downtown on the same 80 m grid (the avenues carry on south to a new
+// street at z = 240; the highway south leaves from x = 0, so the block beside it stays open):
+// apartments (four blocks of flats round a courtyard), an office building on a plaza, and a bar
+// block - a dark-brick corner bar and Main Street shops with rooms above, flats behind.
+void downtown_south(Kit& kit, world::VerdaRegion& region) {
+    world::Settlement* capital = nullptr;
+    for (auto& settlement : region.runtime_settlements()) if (settlement.id == "capital_verda") capital = &settlement;
+    if (!capital) return;
+    const float ground = world::terrain::TerrainHeight::sample(0, 0);
+    const auto at = [&](float x, float z) { return Vector3{x, ground + pad_top, z}; };
+    constexpr float row = 200, south = 240, edge = 166;
+    std::vector<world::Road> roads;
+    for (const float x : {-160.0F, -80.0F, 80.0F, 160.0F})
+        roads.push_back({{x, 0, edge}, {x, 0, south + street * .5F}, street, world::RoadType::Asphalt});
+    roads.push_back({{-edge, 0, south}, {-6, 0, south}, street, world::RoadType::Asphalt});
+    roads.push_back({{74, 0, south}, {edge, 0, south}, street, world::RoadType::Asphalt});
+    for (const auto& road : roads) capital->roads.push_back(road);
+    kit.add_roads(roads);
+    for (const float x : {-160.0F, -80.0F, 80.0F, 160.0F}) kit.put(city + "ground/intersection_12.glb", {x, ground, south}, 0, false);
+    const auto home_marker = [&](Vector3 p, float yaw) { kit.purpose({p.x, ground + .3F, p.z}, yaw, world::BuildingPurpose::Home); };
+    const auto dress = [&](float bx, float bz) {
+        kit.put(city + "ground/sidewalk_block_68.glb", {bx, ground, bz}, 0, false);
+        for (int side = 0; side < 4; ++side) {
+            const float e = pad_size * .5F - 1.6F;
+            const auto spot = [&](float along) {
+                return side == 0 ? at(bx + along, bz - e) : side == 1 ? at(bx + e, bz + along) : side == 2 ? at(bx - along, bz + e) : at(bx - e, bz - along);
+            };
+            for (const float along : {-16.0F, 16.0F}) kit.tree(spot(along));
+            kit.put(urban + "Traffic lights/street_light.glb", spot(0), side == 0 ? 0.0F : side == 1 ? 270.0F : side == 2 ? 180.0F : 90.0F, false);
+        }
+    };
+    // Apartments: four blocks of flats round a courtyard, every one a home.
+    {
+        const float bx = -120, bz = row;
+        dress(bx, bz);
+        const char* models[]{"flat_square_brick.glb", "flat_square_concrete_alt.glb", "flat_square_concrete.glb", "flat_square_brick_alt.glb"};
+        int n = 0;
+        for (const float dx : {-15.0F, 15.0F}) for (const float dz : {-15.0F, 15.0F}) {
+            const Vector3 p = at(bx + dx, bz + dz);
+            if (!kit.claim(p, 8.6F, 8.6F, 0)) continue;
+            kit.put(prebuild + models[n++ % 4], p, dx < 0 ? 90.0F : 270.0F, false);
+            home_marker(at(bx + dx * .5F, bz + dz), dx < 0 ? 90.0F : 270.0F);
+        }
+        for (const float dz : {-5.0F, 5.0F}) kit.tree(at(bx, bz + dz));
+        kit.put(urban + "Bus stops/busstop_bench.glb", at(bx, bz), 0, false);
+        ++kit.report.south_blocks;
+    }
+    // The office building: an eight-storey concrete office on a plaza with trees and benches.
+    {
+        const float bx = -40, bz = row;
+        dress(bx, bz);
+        if (kit.claim(at(bx, bz - 8), 16, 12, 0)) kit.put(city + "towers/concrete_office.glb", at(bx, bz - 8), 0, false);
+        for (const float dx : {-20.0F, -8.0F, 8.0F, 20.0F}) kit.tree(at(bx + dx, bz + 20));
+        for (const float dx : {-14.0F, 14.0F}) kit.put(urban + "Bus stops/busstop_bench.glb", at(bx + dx, bz + 14), 180, false);
+        ++kit.report.south_blocks;
+    }
+    // The bar block: a dark-brick corner bar and Main Street shops along the north side (facing
+    // downtown), two blocks of flats behind.
+    {
+        const float bx = 120, bz = row;
+        dress(bx, bz);
+        struct Front { const char* model; float mid, width; int storeys; };
+        const Front fronts[]{{"main_street_dark_12m_2st", -24, 12, 2}, {"main_street_brown_18m_3st", -9, 18, 3},
+                             {"main_street_red_12m_3st", 6, 12, 3}, {"main_street_tan_12m_2st", 18, 12, 2}};
+        bool bar = true;
+        for (const auto& f : fronts) {
+            const Vector3 position = at(bx + f.mid, bz - 20);
+            if (!kit.put(city + "main_street/" + f.model + ".glb", position, 0, false)) continue;
+            constexpr float floor = 3.6F, slab = .2F, wall = .3F;
+            kit.report.enterable.push_back({position, 0, f.width, 20, f.storeys, -4.5F,
+                {f.width * .5F - wall - .65F, slab, -10 + 1.5F}, {0, 0, 1}, 5.04F + 2.2F, slab, floor + slab, {-3, 0, 0}});
+            ++kit.report.buildings;
+            if (bar) { // the corner bar: a Pub marker inside retags the Main Street building
+                kit.purpose(to_world(position, 0, 0, slab + .1F, -5), 0, world::BuildingPurpose::Pub);
+                ++kit.report.retagged;
+                bar = false;
+            }
+        }
+        const char* flats[]{"flat_Lshape_brick.glb", "flat_square_concrete.glb"};
+        for (int i = 0; i < 2; ++i) {
+            const float dx = i == 0 ? -15.0F : 15.0F;
+            const Vector3 p = at(bx + dx, bz + 17);
+            if (!kit.claim(p, 8.6F, 8.6F, 0)) continue;
+            kit.put(prebuild + flats[i], p, 180, false);
+            home_marker(at(bx + dx, bz + 10), 180);
+        }
+        ++kit.report.south_blocks;
+    }
+    kit.claim({0, 0, row}, 166, 40, 0); // keep the rest of the kit off the new blocks
+}
+
 // ------------------------------------------------------------------ Roka, the industrial city
 // Verda's works town, rebuilt as a city on Porto Luma's plan: a 4 x 4 grid of 12 m streets
 // (avenues and streets at +-40 and +-120 from the centre) round Placo de la Laboristoj. Main
@@ -415,7 +508,6 @@ void downtown(Kit& kit, world::VerdaRegion& region) {
 // between them, and the east blocks are yards - sheds, hangars and factories on asphalt, with
 // trucks. West of the grid stand the works: a long factory hall, sheds, pipes and a fenced yard.
 // The highways from the capital and the ring road end at the grid's east edge.
-const std::string prebuild = "assets/verda/urban/Buildings Prebuild/";
 world::Settlement* settlement(world::VerdaRegion& region, std::string_view id);
 void vehicle_marker(world::Settlement& town, const std::string& id, Vector3 at, float yaw);
 void roka_city(Kit& kit, world::VerdaRegion& region) {
@@ -1507,6 +1599,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     wipe_downtown(region);
     Kit kit(region, catalog);
     downtown(kit, region);
+    downtown_south(kit, region);
     roka_city(kit, region);
     trailer_park(kit, region);
     suda_haveno(kit);

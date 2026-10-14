@@ -69,6 +69,7 @@
 #include <rlgl.h>
 
 #include <algorithm>
+#include <cstring>
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
@@ -116,6 +117,46 @@ void knock_out_windows(const std::string& path, Model& model) {
         ++kept;
     }
     model.meshCount = kept;
+}
+
+// The Building Parts kit's walls, floors and roofs are single planes with no thickness, faced one
+// way: drawn with back-face culling they vanish from the other side, so modular shops and houses
+// look unbuilt from the street. Give each such mesh a back side (the same triangles, wound the
+// other way, normals flipped).
+void double_sided(Model& model) {
+    for (int i = 0; i < model.meshCount; ++i) {
+        Mesh& old = model.meshes[i];
+        if (!old.vertices || old.vertexCount <= 0 || old.vertexCount * 2 > 65535) continue;
+        const int vertices = old.vertexCount, triangles = old.triangleCount;
+        Mesh mesh{};
+        mesh.vertexCount = vertices * 2;
+        mesh.triangleCount = triangles * 2;
+        const auto copy = [&](const float* from, int components, bool flip) -> float* {
+            if (!from) return nullptr;
+            auto* out = static_cast<float*>(RL_MALLOC(sizeof(float) * static_cast<std::size_t>(components * vertices * 2)));
+            for (int v = 0; v < vertices * components; ++v) { out[v] = from[v]; out[v + vertices * components] = flip ? -from[v] : from[v]; }
+            return out;
+        };
+        mesh.vertices = copy(old.vertices, 3, false);
+        mesh.normals = copy(old.normals, 3, true);
+        mesh.texcoords = copy(old.texcoords, 2, false);
+        mesh.texcoords2 = copy(old.texcoords2, 2, false);
+        if (old.colors) {
+            mesh.colors = static_cast<unsigned char*>(RL_MALLOC(static_cast<std::size_t>(4 * vertices * 2)));
+            std::memcpy(mesh.colors, old.colors, static_cast<std::size_t>(4 * vertices));
+            std::memcpy(mesh.colors + 4 * vertices, old.colors, static_cast<std::size_t>(4 * vertices));
+        }
+        mesh.indices = static_cast<unsigned short*>(RL_MALLOC(sizeof(unsigned short) * static_cast<std::size_t>(triangles * 6)));
+        for (int t = 0; t < triangles; ++t)
+            for (int corner = 0; corner < 3; ++corner) {
+                const int index = old.indices ? old.indices[t * 3 + corner] : t * 3 + corner;
+                mesh.indices[t * 3 + corner] = static_cast<unsigned short>(index);
+                mesh.indices[(triangles + t) * 3 + (2 - corner)] = static_cast<unsigned short>(index + vertices);
+            }
+        UploadMesh(&mesh, false);
+        UnloadMesh(old);
+        model.meshes[i] = mesh;
+    }
 }
 
 struct WorldDrawStats { int models{0}, meshes{0}; double region{0}, assets{0}, cars{0}, signs{0}, bots{0}, npcs{0}, vehicles{0}; };
@@ -186,6 +227,7 @@ Model* get_world_asset_model(const std::string& path, const characters::Characte
         if (character) return character->pool == characters::CharacterPool::Arms ||
             characters::CharacterRenderer::prepare(*character, model);
         knock_out_windows(path, model);
+        if (path.find("/Building Parts/") != std::string::npos) double_sided(model);
         return model.meshCount > 0;
     });
 }

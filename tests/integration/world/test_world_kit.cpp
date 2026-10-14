@@ -237,7 +237,9 @@ int main() {
     int grid_streets = 0, highways = 0, suburb_streets = 0;
     for (const auto& road : capital->roads) {
         const auto in_suburbs = [](Vector3 p) { return std::abs(p.x) >= 166 && std::abs(p.x) <= 476 && std::abs(p.z) <= 160; };
-        const bool inside = std::abs(road.start.x) <= 167 && std::abs(road.start.z) <= 167 && std::abs(road.end.x) <= 167 && std::abs(road.end.z) <= 167;
+        // The grid, and its south blocks (avenues on to a street at z = 240).
+        const auto grid = [](Vector3 p) { return std::abs(p.x) <= 167 && p.z >= -167 && p.z <= 247; };
+        const bool inside = grid(road.start) && grid(road.end);
         if (inside) { ++grid_streets; check(road.width == 12 && road.type == world::RoadType::Asphalt, "grid streets are 12 m asphalt"); }
         else if (in_suburbs(road.start) && in_suburbs(road.end)) ++suburb_streets;
         else if (std::abs(road.start.x) < 167 && std::abs(road.start.z) < 167) {
@@ -245,7 +247,7 @@ int main() {
             check((road.start.x == 0 && std::abs(road.start.z) == 166) || (road.start.z == 0 && std::abs(road.start.x) == 166), "highway joins a main street at the grid edge");
         } else if (std::abs(road.start.x) == 476 && road.start.z == 0) ++highways; // Roka and Porto Luma roads leave from the boulevards
     }
-    check(grid_streets == 10 && highways == 4 && suburb_streets == 14,
+    check(grid_streets == 10 + 6 && highways == 4 && suburb_streets == 14, // + the south blocks' four avenues and two streets
           "grid, suburbs and four highways: " + std::to_string(grid_streets) + "/" + std::to_string(suburb_streets) + "/" + std::to_string(highways));
 
     // East Verda: the fancy suburbs are the residential house model, on level ground, facing streets.
@@ -387,7 +389,14 @@ int main() {
             if (!used) std::cerr << "  unused " << place.id << " kind " << game::life::place_name(place.kind) << " town " << place.settlement
                                  << " homes " << place.home_capacity << " jobs " << place.job_capacity << '\n';
         }
-        check(report.purposes >= 10 && kit_places == report.purposes, "every part-built building is a place: " + std::to_string(kit_places) + "/" + std::to_string(report.purposes));
+        check(report.purposes >= 10 && kit_places == report.purposes - report.retagged,
+              "every part-built building is a place: " + std::to_string(kit_places) + "/" + std::to_string(report.purposes - report.retagged));
+        // The south blocks' corner bar is a pub.
+        bool bar = false;
+        for (const auto& place : life.places())
+            bar |= place.kind == game::life::PlaceKind::Pub && place.building_id.starts_with("creator_city_main_street_dark_12m_2st") &&
+                   place.interior.z > 166 && place.interior.z < 240;
+        check(report.south_blocks == 3 && bar, "Verda City's south blocks with their bar");
         check(offices >= 2 && docks >= 1, "authored offices and dock");
         check(staffed == kit_places, "people live or work in every part-built building: " + std::to_string(staffed));
     }

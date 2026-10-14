@@ -263,8 +263,14 @@ void LifeSimulation::drive(int index, float dt, Vector3 player, const characters
     };
     bool blocked = in_lane(player);
     for (const auto& actor : npcs.actors()) if (actor.active && actor.state != characters::NpcState::Dead) blocked = blocked || in_lane(actor.position);
-    for (const auto& other : vehicles_->vehicles()) if (other.id != info.vehicle) blocked = blocked || in_lane(other.position);
-    if (blocked) {limit = 0; car.waiting += dt;}
+    // Cars in the way. Two or three cars nosing into the same junction can each wait for another
+    // for ever: after a few seconds the one with the right of way (the lowest id) goes, slowly.
+    bool cars = false, give_way = false;
+    for (const auto& other : vehicles_->vehicles())
+        if (other.id != info.vehicle && in_lane(other.position)) {cars = true; give_way |= other.id < info.vehicle;}
+    const bool priority = cars && !blocked && !give_way && car.waiting > 3;
+    if (priority) {limit = std::min(limit, 3.0F); car.waiting += dt;}
+    else if (blocked || cars) {limit = 0; car.waiting += dt;}
     else car.waiting = 0;
     // Wedged against something: back off and try again; after a few tries, park and walk.
     if (car.reverse > 0) {
