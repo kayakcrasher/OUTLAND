@@ -80,6 +80,9 @@ The generator also writes, and `GunAudio` plays:
 | `crash_light_0..1.wav`, `crash_heavy_0..1.wav` | your car hitting something: a knock, or a crunch with glass from 12 m/s |
 | `land.wav` | landing from a jump or a fall, louder the harder |
 | `tinnitus.wav` | ringing ears after a grenade within 14 m |
+| `rotor_loop.wav` | the helicopters in the Battle Royale drop: blade slap at 5.5 a second over the turbine (a seamless 2 s loop), loud aboard, fading with distance |
+| `wind_loop.wav` | air rushing past in freefall, louder and higher the faster you fall (seamless 2 s loop); a soft breeze under the canopy |
+| `chute_open.wav` | the parachute leaving its pack: a flutter, then the snap as it fills |
 
 Other people running nearby are heard too: their footsteps (the environment step recordings)
 are placed in the world from the sound bus, one per stride, out to about 26 m.

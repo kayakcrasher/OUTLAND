@@ -2,6 +2,7 @@
 #include "outland/game/ai/CombatBot.hpp"
 #include "outland/game/combat/CombatWorld.hpp"
 #include "outland/game/sound/SoundBus.hpp"
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -51,8 +52,10 @@ public:
     static constexpr float gunshot_radius_rifle = 300, gunshot_radius_pistol = 180, footstep_radius = 14;
 
     static constexpr float drop_clearance = 150; // no bot lands within this of the player
-    // Places `count` bots on land around Verda's towns, away from the player.
-    void start(const world::VerdaRegion& region, BotLevel level, int count, std::uint64_t seed, Vector3 player_feet);
+    // Places `count` bots on land around Verda's towns, away from the player; where `prefer`
+    // allows first (the Battle Royale drop: within reach of the helicopters' line).
+    void start(const world::VerdaRegion& region, BotLevel level, int count, std::uint64_t seed, Vector3 player_feet,
+               const std::function<bool(Vector3)>& prefer = {});
     // Explicit placement (tests, scripted fights).
     CombatBot& add_bot(Vector3 feet, combat::WeaponId weapon, BotLevel level, std::uint64_t seed);
     void clear();
@@ -62,7 +65,10 @@ public:
     bool damage_bot(int bot, float amount, Vector3 from, double now);
     // The owner applies player damage; it reports the death back for the kill feed.
     void report_player_death(int killer);
-    void apply_circle(float radius, float damage);
+    // The zone: bots outside the circle take `damage`; bots outside the next circle (or close to
+    // the wall) head into it before it closes.
+    void apply_circle(Vector2 center, float radius, Vector2 next_center, float next_radius, float damage);
+    void apply_circle(float radius, float damage) { apply_circle({0, 0}, radius, {0, 0}, radius, damage); }
     // A bot at the wheel (game::ai::BotDrivers) is mounted: its car carries it, it does not think,
     // shoot or get hit (bullets hit the car), and its body is hidden.
     void set_mounted(int bot, bool mounted);

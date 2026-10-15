@@ -20,7 +20,10 @@ class ViewFrustum;
 class StaticWorld {
 public:
     void invalidate();
-    void draw(const world::VerdaRegion& region, Vector3 camera, const ViewFrustum* view);
+    // `reach` stretches every draw distance (high above the island, in the Battle Royale drop);
+    // `road_lift` raises the roads a little so, seen from far above, the coarse terrain does not
+    // swallow them (only their kerbs would show).
+    void draw(const world::VerdaRegion& region, Vector3 camera, const ViewFrustum* view, float reach = 1, float road_lift = 0);
     int draws_last_frame() const { return draws_; }
 private:
     void index(const world::VerdaRegion& region);

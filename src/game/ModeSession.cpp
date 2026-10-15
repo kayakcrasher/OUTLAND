@@ -8,15 +8,56 @@ namespace outland::game {
 void ModeSession::start(GameMode mode, int bots, ai::BotLevel level) {
     mode_=mode; phase_=SessionPhase::Playing; elapsed_=0;
     result_={0,0,std::max(0,bots)+1,level};
+    centers_.assign(circle.phases.size(),Vector2{0,0});
 }
-float ModeSession::radius() const {
-    const float progress=std::clamp((elapsed_-circle.opening_seconds)/std::max(1.0F,circle.shrink_seconds),0.0F,1.0F);
-    return circle.start_radius+(circle.end_radius-circle.start_radius)*progress;
+void ModeSession::plan_circles(std::uint64_t seed, const std::function<bool(float,float)>& on_land) {
+    centers_.assign(circle.phases.size(),Vector2{0,0});
+    std::uint64_t state=seed*0x9E3779B97F4A7C15ULL+0x632BE59BD9B4E019ULL;
+    const auto unit=[&]{state^=state<<13;state^=state>>7;state^=state<<17;return static_cast<float>(state>>40)/static_cast<float>(1ULL<<24);};
+    Vector2 center{0,0};float radius=circle.start_radius;
+    for(std::size_t k=0;k<circle.phases.size();++k) {
+        const float next=std::clamp(circle.phases[k].radius,0.0F,radius); // never grows
+        // The first circle shrinks toward the island's heart (the first one covers sea too).
+        const float room=k==0 ? std::min(radius-next,600.0F) : radius-next;
+        Vector2 chosen=center;
+        for(int attempt=0;attempt<24;++attempt) {
+            const float angle=unit()*2*PI, along=std::sqrt(unit())*std::max(0.0F,room)*(attempt<16 ? 1.0F : .5F);
+            const Vector2 candidate{center.x+std::cos(angle)*along,center.y+std::sin(angle)*along};
+            if(!on_land || on_land(candidate.x,candidate.y)) {chosen=candidate;break;}
+        }
+        centers_[k]=chosen;center=chosen;radius=next;
+    }
 }
-float ModeSession::distance(Vector3 feet) const { return std::hypot(feet.x,feet.z); }
-float ModeSession::zone_damage() const {
-    const float progress=std::clamp((elapsed_-circle.opening_seconds)/std::max(1.0F,circle.shrink_seconds),0.0F,1.0F);
-    return circle.damage_per_second*(1+3*progress);
+ZoneState ModeSession::zone() const {
+    ZoneState z;
+    Vector2 center{0,0};float radius=circle.start_radius;
+    float t=elapsed_;
+    const auto& phases=circle.phases;
+    for(std::size_t k=0;k<phases.size();++k) {
+        const auto& p=phases[k];
+        const float closes_to=std::clamp(p.radius,0.0F,radius); // a circle never grows
+        const Vector2 target=k<centers_.size() ? centers_[k] : center;
+        z.phase=static_cast<int>(k);z.next_center=target;z.next_radius=closes_to;
+        z.damage=p.damage*circle.damage_per_second;
+        if(t<p.wait) {z.center=center;z.radius=radius;z.shrinking=false;z.remaining=p.wait-t;return z;}
+        t-=p.wait;
+        if(t<p.shrink) {
+            const float f=t/std::max(.001F,p.shrink);
+            z.center={center.x+(target.x-center.x)*f,center.y+(target.y-center.y)*f};
+            z.radius=radius+(closes_to-radius)*f;z.shrinking=true;z.remaining=p.shrink-t;
+            // Damage steps up as the wall starts to move.
+            return z;
+        }
+        t-=p.shrink;center=target;radius=closes_to;
+    }
+    z.phase=static_cast<int>(phases.size());z.center=z.next_center=center;z.radius=z.next_radius=radius;
+    z.shrinking=false;z.remaining=0;
+    z.damage=(phases.empty() ? 1.0F : phases.back().damage)*circle.damage_per_second;
+    return z;
+}
+float ModeSession::distance(Vector3 feet) const {
+    const auto c=center();
+    return std::hypot(feet.x-c.x,feet.z-c.y);
 }
 const char* ModeSession::objective() const {
     if(mode_==GameMode::BattleRoyale) return "Be the last survivor.";
@@ -33,8 +74,9 @@ void ModeSession::update(float dt, Vector3 feet, Health& health, ai::BattleRoyal
     elapsed_+=step;
     // Check every damage source before victory (including mutual final eliminations).
     if(health.alive()) {
-        if(distance(feet)>radius()) health.damage(zone_damage()*step);
-        bots.apply_circle(radius(),zone_damage()*step);
+        const auto z=zone();
+        if(std::hypot(feet.x-z.center.x,feet.z-z.center.y)>z.radius) health.damage(z.damage*step);
+        bots.apply_circle(z.center,z.radius,z.next_center,z.next_radius,z.damage*step);
     }
     if(!health.alive()) {
         phase_=SessionPhase::Dead; result_.placement=std::max(result_.participants>1 ? 2 : 1,bots.alive_bots()+1);

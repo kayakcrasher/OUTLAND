@@ -17,7 +17,14 @@ public:
     struct View {
         Vector3 player{};
         float yaw{0};             // radians; the player faces (sin yaw, cos yaw) in x/z
-        float circle_radius{-1};  // Battle Royale safe circle round the island centre, <0 none
+        float circle_radius{-1};  // Battle Royale safe circle, <0 none
+        Vector2 circle_center{};  // (x, z)
+        float next_radius{-1};    // the circle it will close to (white), <0 none
+        Vector2 next_center{};
+        // The helicopters' line across the island (start, end) and where they are, while flying.
+        bool flight{false};
+        Vector3 flight_start{}, flight_end{};
+        std::vector<Vector3> helicopters;
         std::vector<Vector3> stops;                    // bus stops
         std::vector<std::pair<Vector3, float>> buses;  // buses on the line: where, and heading (degrees)
         std::vector<std::pair<Vector3, Color>> turf;    // Mafio hideouts: where, and the gang's colour

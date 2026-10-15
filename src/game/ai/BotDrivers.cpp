@@ -21,16 +21,17 @@ bool usable(const vehicles::VehicleSystem& cars, const world::VerdaRegion& regio
 }
 }
 
-Vector3 BotDrivers::zone_goal(Vector3 from, float zone_radius) {
-    // Well inside the circle along the line to its centre: the circle shrinks on the capital.
-    const float distance = std::hypot(from.x, from.z), inside = std::max(60.0F, zone_radius * .35F);
-    if (distance <= inside) return {0, 0, 0};
+Vector3 BotDrivers::zone_goal(Vector3 from, float zone_radius, Vector2 center) {
+    // Well inside the circle along the line to its centre.
+    const float dx = from.x - center.x, dz = from.z - center.y;
+    const float distance = std::hypot(dx, dz), inside = std::max(60.0F, zone_radius * .35F);
+    if (distance <= inside) return {center.x, 0, center.y};
     const float keep = inside / distance;
-    return {from.x * keep, 0, from.z * keep};
+    return {center.x + dx * keep, 0, center.y + dz * keep};
 }
 
 int BotDrivers::start(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
-                      std::uint64_t seed, float zone_radius, int max_drivers) {
+                      std::uint64_t seed, float zone_radius, int max_drivers, Vector2 zone_center) {
     rides_.clear();
     roads_.build(region);
     std::vector<std::string> taken;
@@ -56,7 +57,7 @@ int BotDrivers::start(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, wor
         BotRide ride;
         ride.bot = bot.id();
         ride.vehicle = car.id;
-        ride.route = roads_.route(car.position, zone_goal(car.position, zone_radius));
+        ride.route = roads_.route(car.position, zone_goal(car.position, zone_radius, zone_center));
         if (!ride.route.complete || ride.route.length < 80) continue;
         ride.active = true;
         taken.push_back(car.id);
@@ -196,7 +197,7 @@ void BotDrivers::steer(BotRide& ride, vehicles::VehicleSystem& cars, float dt) {
 }
 
 void BotDrivers::update(float dt, BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
-                        Vector3 player, bool player_alive, float zone_radius, const Sight& sight) {
+                        Vector3 player, bool player_alive, float zone_radius, const Sight& sight, Vector2 zone_center) {
     if (!std::isfinite(dt) || dt <= 0) return;
     for (auto& ride : rides_) {
         if (!ride.active) continue;
@@ -228,7 +229,7 @@ void BotDrivers::update(float dt, BattleRoyaleBots& bots, vehicles::VehicleSyste
         const Vector3 eye{car.position.x, car.position.y + 1.4F, car.position.z};
         const bool ambush = ride.ambush && player_alive && flat(car.position, player) < 55 && (!sight || sight(eye, {player.x, player.y + 1.5F, player.z}));
         const bool arrived = ride.route.length - ride.progress < 12 || (ride.targeted && flat(car.position, ride.goal) < 22) ||
-            (zone_radius > 0 && std::hypot(car.position.x, car.position.z) < zone_radius * .3F);
+            (zone_radius > 0 && std::hypot(car.position.x - zone_center.x, car.position.z - zone_center.y) < zone_radius * .3F);
         if (ambush || arrived || ride.attempts > 4 || ride.driven > 240) {
             dismount(ride, bots, cars, region);
             continue;

@@ -129,22 +129,46 @@ mounted optic on its rail. Look speed while aiming scales with the zoom. The Dev
 optic. Logic: `game/combat/Sights` (tested by `outland_sight_tests`); models: `tools/generate_sight_models.py`.
 
 ## Bots on the road
-At the start of a match, up to seven bots that dropped within 140 m of a running car take it
-(`game::ai::BotDrivers`) and drive the roads in toward the zone (a road-graph route to a point
-well inside the circle), at up to ~60 km/h on the straight and slower on bends, backing off when
-stuck. A driver gets out and fights on foot when it arrives, when the player is within 55 m and
-in sight, after four failed tries at getting unstuck, or after four minutes. While driving a bot
-is *mounted*: it does not think or shoot, other bots cannot hit it, its body is hidden and its
-car takes the bullets - shots through the windows (or into the cabin) hurt the driver, and a
-wrecked car throws it out hurt. The car is handed back at the end of the match.
+Once every bot has parachuted down (see `docs/battle-royale-drop.md`), up to seven that landed
+within 140 m of a running car take it (`game::ai::BotDrivers`) and drive the roads in toward the
+zone (a road-graph route to a point well inside the circle, wherever it is), at up to ~60 km/h on
+the straight and slower on bends, backing off when stuck. A driver gets out and fights on foot
+when it arrives, when the player is within 55 m and in sight, after four failed tries at getting
+unstuck, or after four minutes. While driving a bot is *mounted*: it does not think or shoot,
+other bots cannot hit it, its body is hidden and its car takes the bullets - shots through the
+windows (or into the cabin) hurt the driver, and a wrecked car throws it out hurt. The car is
+handed back at the end of the match.
 
-## The zone wall
-The circle's edge stands in the world as a wall of blue light (`game::draw_zone_wall`): a curtain
-120 m tall following the ground, strong at the foot and fading upward, streaks drifting along it,
-a bright band along the ground; only the stretch within ~950 m of the camera is drawn. Outside
-it the screen edges glow blue, pulsing, with "OUTSIDE THE ZONE - n m TO SAFETY - n HP/s", and
-the zone bites harder as it closes: 6 HP/s at first, up to 24 at the end (`zone_damage`). Dev:
-`OUTLAND_DEV_ZONE=<metres>` starts the circle smaller.
+## The zone (the ring of death)
+The zone closes in **seven phases**, as in PUBG (`CircleRules::phases`, `ModeSession::zone()`).
+Each phase **waits** - the next circle is already marked, a white dashed ring standing on the
+ground and a white ring on the map - then the wall **closes** on it, its centre and radius moving
+together. Every next circle lies wholly inside the current one, at a random spot on land
+(`ModeSession::plan_circles`, seeded per match), so the end can be anywhere on Verda, not always
+the capital. The last circle closes to nothing.
+
+| Phase | Wait | Closing | Closes to | Gas damage |
+|---|---|---|---|---|
+| 1 | 2:00 (the helicopters fly) | 1:30 | 1300 m | 1 HP/s |
+| 2 | 1:15 | 1:10 | 750 m | 2 HP/s |
+| 3 | 1:00 | 0:55 | 420 m | 4 HP/s |
+| 4 | 0:50 | 0:45 | 220 m | 6 HP/s |
+| 5 | 0:40 | 0:35 | 100 m | 9 HP/s |
+| 6 | 0:30 | 0:30 | 35 m | 13 HP/s |
+| 7 | 0:30 | 0:40 | 0 m | 18 HP/s |
+
+The wall (`game::draw_zone_wall`) is a curtain of light 320 m tall, so it is seen from the
+helicopters: strong at the foot, a seething line above the ground, fading upward to a pale crest;
+its streaks drift up it, and race when the wall is moving. It deepens from PUBG blue toward
+violet as the phases go by. Only the stretch within ~1.1 km of the camera is drawn.
+
+On screen: **PHASE n/7 - ZONE CLOSES IN m:ss** (orange **ZONE CLOSING** while it moves), how far
+the next zone is (or **INSIDE THE NEXT ZONE**), a white arrow under the compass pointing the way
+in with the distance, and a banner and a warning tone when a new circle is marked, when the wall
+starts to move and at the final zone. Outside the wall the whole view goes blue (deeper as the
+damage rises), the screen edges pulse, and "OUTSIDE THE ZONE - n m TO SAFETY - n HP/s" shows;
+the warning pulse sounds every second. Bots run for the next circle before the wall reaches them
+(`BattleRoyaleBots::apply_circle`). Dev: `OUTLAND_DEV_ZONE=<metres>` starts the circle smaller.
 
 ## Loot
 - **Rarity**: common (white), uncommon (green: pistol, rifle, red dot, grenades, bandages),
@@ -154,6 +178,17 @@ the zone bites harder as it closes: 6 HP/s at first, up to 24 at the end (`zone_
 - **Loot in buildings**: every enterable building (kit buildings, procedural and model houses,
   Main Street rows) has a loot spot on its ground floor - 55% general, 20% medical, 25% weapons;
   541 loot spots on the island, up from 43. Pickups are capped at 4096.
+- **Battle Royale's own loot** (`LootMode::Royale`, the `royale` rows of `loot_tables.tsv`): more
+  finds at every spot (4 in general and weapons caches, 3 in medical and camp), mostly guns,
+  ammunition, meds, grenades, armour and optics - no tents or cooking pots. **Every gun lies with
+  a stack of its own ammunition beside it** (two magazines' worth). Explore and Zombie Survival
+  keep their tables.
+- **Real sizes**: each item's `size` in `items.tsv` is its longest side in metres and the model is
+  scaled uniformly to it (`pickup_unit_scale`). Items used to be scaled by height, so anything
+  flat or long came out giant - a vest lay 4.8 x 7.4 m on the ground, a lantern 1.7 m long,
+  matches 0.9 m. A few oversized furniture models (fridge, beds, bathtub, toilet) were brought
+  down to real size too. `tools/audit_loot_assets.py` (CTest) fails on any item over its
+  category's limit.
 - **Fallen bots drop their kit**: their gun (loaded), two magazines of ammo, and sometimes
   bandages, a vest or a grenade.
 - **Armour**: a light vest (armour I, 30% less damage) and a plate carrier (armour II, 45%) from

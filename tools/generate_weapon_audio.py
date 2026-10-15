@@ -18,6 +18,8 @@ pulling a grenade pin, the zone warning pulse and the low-health heartbeat; and 
 the police cars and ambulances (a seamless 4 s wail loop). For the feel of play: car crashes
 (light and heavy, with glass), the wet thwack of a round striking a body, a hard landing, a low
 punch under the player's own shots, and the ringing in the ears after a grenade goes off close.
+For the Battle Royale drop: the helicopters' rotor (blade slap and turbine, a seamless 2 s loop),
+the rush of air in freefall (a seamless 2 s loop) and the parachute's flap-and-snap as it opens.
 
     python3 tools/generate_weapon_audio.py           # write assets/audio/weapons/*.wav
     python3 tools/generate_weapon_audio.py --check   # fail if the committed files are stale
@@ -391,6 +393,51 @@ def tinnitus():
     return normalise(x, .3)
 
 
+def rotor_loop():
+    """A transport helicopter heard from inside the door: blade slap at 5.5 a second over the
+    turbine's whine and the airframe's roar. Every component repeats exactly in 2 s, so the loop
+    has no seam."""
+    rng = np.random.default_rng(900)
+    n = int(2.0 * RATE)
+    t = np.arange(n) / RATE
+    roar = band(rng.uniform(-1, 1, n), 35, 700) * .55
+    whine = .10 * np.sin(2 * np.pi * 1280 * t) + .05 * np.sin(2 * np.pi * 2560 * t)
+    slap = np.zeros(n)
+    k = np.arange(int(.12 * RATE)) / RATE
+    burst = band(rng.uniform(-1, 1, len(k)), 70, 1100) * np.exp(-k / .028) * (1 - np.exp(-k / .002))
+    burst += np.sin(2 * np.pi * 34 * k) * np.exp(-k / .05) * 1.2
+    for i in range(11):
+        start = int(i * n / 11)
+        idx = (start + np.arange(len(k))) % n
+        slap[idx] += burst * (1 if i % 2 == 0 else .85)
+    x = roar * (1 + .35 * np.sin(2 * np.pi * 5.5 * t)) + whine + slap
+    return normalise(np.tanh(x * 1.2), .8)
+
+
+def wind_loop():
+    """Air rushing past in freefall: a broad roar with slow gusts and a hiss on top, seamless
+    over 2 s."""
+    rng = np.random.default_rng(910)
+    n = int(2.0 * RATE)
+    t = np.arange(n) / RATE
+    body = band(rng.uniform(-1, 1, n), 90, 1800)
+    hiss = band(rng.uniform(-1, 1, n), 2500, 8000) * .25
+    gust = 1 + .25 * np.sin(2 * np.pi * .5 * t) + .15 * np.sin(2 * np.pi * 1.5 * t + 1)
+    return normalise((body + hiss) * gust, .7)
+
+
+def chute_open():
+    """The canopy leaving the pack: fabric fluttering up for a moment, then the snap as it fills."""
+    rng = np.random.default_rng(920)
+    t = np.arange(int(1.1 * RATE)) / RATE
+    flutter = band(rng.uniform(-1, 1, len(t)), 200, 3500) * (np.clip(t / .4, 0, 1) ** 2) * (t < .45)
+    flutter *= .6 + .4 * np.sign(np.sin(2 * np.pi * 24 * t))
+    a = np.where(t >= .42, t - .42, 0)
+    snap = band(rng.uniform(-1, 1, len(t)), 80, 1400) * np.exp(-a / .09) * (1 - np.exp(-a / .003)) * (t >= .42)
+    thump = np.sin(2 * np.pi * np.cumsum(50 + 40 * np.exp(-a / .03)) / RATE) * np.exp(-a / .14) * (t >= .42)
+    return normalise(np.tanh((flutter * .6 + snap * 1.2 + thump) * 1.5), .85)
+
+
 def sounds():
     out = {}
     for name in GUNS:
@@ -428,6 +475,9 @@ def sounds():
     out["land.wav"] = landing()
     out["punch.wav"] = punch()
     out["tinnitus.wav"] = tinnitus()
+    out["rotor_loop.wav"] = rotor_loop()
+    out["wind_loop.wav"] = wind_loop()
+    out["chute_open.wav"] = chute_open()
     return out
 
 

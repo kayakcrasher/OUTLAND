@@ -28,7 +28,7 @@ Loot generation is deterministic per settlement/marker/mode. It activates within
 
 ## Data and architecture
 
-`assets/verda/survival/gameplay/items.tsv` defines 22 items across food, water, medical, ammo, weapon, utility and container categories: model, stack size, displayed model height, action/value, compatible weapon, capacity modifier, use requirement, starting quantity and loaded rounds. Stable IDs are persistence identities. The registry validates definitions and starter capacity transactionally.
+`assets/verda/survival/gameplay/items.tsv` defines 22 items across food, water, medical, ammo, weapon, utility and container categories: model, stack size, size (the longest side in metres; the model is scaled uniformly to it), action/value, compatible weapon, capacity modifier, use requirement, starting quantity and loaded rounds. Stable IDs are persistence identities. The registry validates definitions and starter capacity transactionally.
 
 `loot_tables.tsv` defines weighted General/Medical/Camp/Weapons tables, quantity ranges and roll counts for normal and Zombie modes. Zombie ammo has smaller ranges and lower weights; starter weapon/ammo quantities remain unchanged to preserve existing combat. Tune data, rebuild, and restart. CMake refreshes these TSVs and the sample map beside the executable even when no C++ source changed. Existing Survival GLBs/textures are reused unchanged and audited against the existing runtime manifest.
 

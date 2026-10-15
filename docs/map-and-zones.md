@@ -11,7 +11,7 @@ Open the map with the **MAP · M** button at the top right, or the **M** key. Cl
   - the towns;
   - a 1 km grid, north arrow and 500 m scale bar.
 - **You** are the yellow arrow, pointing the way you face. The panel names your current zone and your position.
-- **Battle Royale** also draws the safe circle.
+- **Battle Royale** also draws the zone (blue) and the next circle (white, with a dashed line to it when you are outside it), and while the helicopters fly, their route across the island (yellow, dashed) with the three of them on it.
 - **It's modal, but the world keeps running**, as in PUBG. Open it somewhere safe.
 - **Cost:** the map image is baked once (320×320 terrain samples), the first time the map opens.
 

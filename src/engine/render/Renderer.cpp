@@ -42,6 +42,8 @@
 #include "outland/world/Zones.hpp"
 #include "outland/game/life/LifeSimulation.hpp"
 #include "outland/game/ai/BattleRoyaleBots.hpp"
+#include "outland/game/aircraft/HelicopterDrop.hpp"
+#include "outland/game/aircraft/DropRenderer.hpp"
 #include "outland/game/sound/SoundBus.hpp"
 #include "outland/world/navigation/NavGrid.hpp"
 #include "outland/world/sky/DayNight.hpp"
@@ -59,6 +61,7 @@
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/terrain/TerrainWorld.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
+#include "outland/world/VerdaLayout.hpp"
 #include "outland/world/foliage/FoliageSystem.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
@@ -238,10 +241,12 @@ void draw_model_backed_world_assets(
     const world::VerdaRegion& region,
     const Vector3& camera_position,
     const characters::CharacterRegistry& registry,
-    const ViewFrustum& view
+    const ViewFrustum& view,
+    float reach = 1.0F
 ) {
-    constexpr float max_distance = 320.0F;
-    constexpr float max_distance_sq =
+    // `reach` stretches the distance for buildings (high above the island in the drop).
+    const float max_distance = 320.0F * std::clamp(reach, 1.0F, 3.0F);
+    const float max_distance_sq =
         max_distance * max_distance;
 
     for (
@@ -527,6 +532,19 @@ void Renderer::run() {
     game::ai::BattleRoyaleBots br_bots;
     game::ai::BotDrivers bot_drivers; // Battle Royale bots on the road
     std::vector<int> bots_looted;      // fallen bots whose gear already lies on the ground
+    // The Battle Royale drop (game::aircraft): the three helicopters' line, the player's jump and
+    // the bots' jumps. `drop_clock` runs from the start of the match; while `dropping` the player
+    // rides, falls or glides instead of walking.
+    game::aircraft::FlightPath drop_path;
+    game::aircraft::Skydiver skydiver;
+    std::vector<game::aircraft::BotJump> bot_jumps;
+    std::vector<char> bot_landed;
+    float drop_clock=0;
+    std::uint64_t drop_seed=1;
+    Vector3 drop_camera{};
+    int zone_seen_phase=-1;bool zone_seen_shrinking=false;float circle_banner_time=0;std::string circle_banner;
+    bool drop_camera_ready=false;
+    bool dropping=false, drop_flying=false, drop_drivers_pending=false;
     // Explore: La Mafio, a Krimulo crew in every town (bots in br_bots), and the Green Hand's
     // poker table in Verda City.
     game::mafia::Mafio mafio;
@@ -1000,7 +1018,35 @@ void Renderer::run() {
                 rebuild_signs();static_world.invalidate();
                 match_time=0;shop_open=false;current_shop=nullptr;
                 last_player_feet={player.position.x,player.position.y-1.0F,player.position.z};
-                if(game::rules_for(game_mode).combat_bots) {
+                zone_seen_phase=-1;circle_banner_time=0;
+                dropping=drop_flying=drop_drivers_pending=false;bot_jumps.clear();bot_landed.clear();drop_clock=0;skydiver.board();
+                bool helicopter_drop=game_mode==game::GameMode::BattleRoyale;
+#ifdef OUTLAND_DEV_TOOLS
+                // OUTLAND_DEV_NO_DROP=1: start Battle Royale on the ground, as before the helicopters.
+                if(const char* no_drop=std::getenv("OUTLAND_DEV_NO_DROP"); (no_drop && *no_drop=='1') || explicit_spawn) helicopter_drop=false;
+#endif
+                if(helicopter_drop) {
+                    // Everyone rides one of three helicopters across the island and jumps. The bots
+                    // land within gliding reach of the line; each is "mounted" (hidden, inert) until
+                    // it touches down.
+                    drop_path=game::aircraft::make_flight(session_seed);drop_seed=session_seed;
+                    const auto& path=drop_path;
+                    br_bots.start(verda_region,home_screen.bot_level(),23,session_seed,{1e6F,0,1e6F},[&path](Vector3 feet) {
+                        const float along=path.along(feet);
+                        return std::abs(path.offset(feet))<game::aircraft::drop_reach*.85F && along>path.land_from && along<path.land_to;
+                    });
+                    std::vector<std::pair<int,Vector3>> landings;
+                    for(const auto& bot:br_bots.bots()) landings.emplace_back(bot.id(),bot.position());
+                    bot_jumps=game::aircraft::plan_bot_jumps(drop_path,landings,session_seed);
+                    bot_landed.assign(bot_jumps.size(),0);
+                    for(const auto& jump:bot_jumps) br_bots.set_mounted(jump.bot,true);
+                    br_bots.sync_bodies(npcs,&character_registry);
+                    dropping=drop_flying=drop_drivers_pending=true;
+                    player.position=game::aircraft::helicopter_door(drop_path,1,0);
+                    player.yaw=std::atan2(drop_path.direction.x,drop_path.direction.z);player.pitch=-.3F;
+                    player.grounded=false;player.vertical_velocity=0;player.third_person=true;
+                    last_player_feet={player.position.x,player.position.y-1.0F,player.position.z};
+                } else if(game::rules_for(game_mode).combat_bots) {
                     br_bots.start(verda_region,home_screen.bot_level(),23,session_seed,last_player_feet);
                     // Some of them find a car near where they land and drive in toward the zone.
                     bot_drivers.start(br_bots,vehicles,verda_region,session_seed,mode_session.circle.start_radius);
@@ -1024,6 +1070,10 @@ void Renderer::run() {
                 // OUTLAND_DEV_ZONE=<metres>: start the Battle Royale circle smaller, to see its wall up close.
                 if(const char* zone=std::getenv("OUTLAND_DEV_ZONE")) mode_session.circle.start_radius=std::max(30.0F,static_cast<float>(std::atof(zone)));
 #endif
+                // Where each circle will close: random, inside the last, centred on land.
+                if(game_mode==game::GameMode::BattleRoyale)
+                    mode_session.plan_circles(session_seed,[](float x,float z){
+                        return world::terrain::TerrainHeight::sample(x,z)>world::layout::sea_level+4;});
                 player_health.reset();
                 health_seen=player_health.current();hurt_directional=false;pending_kills.clear();
                 combat_feedback.reset();
@@ -1231,6 +1281,18 @@ void Renderer::run() {
             input::PointerEvents::capture_mouse(want);
             mouse_wanted=want;
             build_mode.set_mouse_aim(mouse_captured);
+        }
+        // The drop: the stick steers the jump and JUMP (or USE) leaves the helicopter, then opens
+        // the parachute; everything else waits for the ground (looking round still works).
+        game::aircraft::DiveInput dive_input;
+        bool drop_action=false;
+        if(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed) {
+            auto& held=input_system.player();
+            dive_input.forward=-held.move_y;dive_input.strafe=held.move_x;
+            drop_action=held.jump || held.interact;
+            const float dx=held.look_dx,dy=held.look_dy,lx=held.look_x,ly=held.look_y;
+            held={};
+            held.look_dx=dx;held.look_dy=dy;held.look_x=lx;held.look_y=ly;
         }
         const input::PlayerInput& controls = input_system.player();
         {
@@ -1747,6 +1809,47 @@ void Renderer::run() {
 #endif
         if(vehicles.driver()){player.position=Vector3Add(vehicles.seat(verda_region),{0,1,0});player.vertical_velocity=0;player.grounded=false;}
         // ====================================================
+        // THE DROP: aboard, in freefall, under the canopy
+        // ====================================================
+        if(dropping) {
+            using game::aircraft::DiveStage;
+            const bool drop_paused=pause_menu.is_open() || mode_session.terminal() || !IsWindowFocused();
+            if(!drop_paused) drop_clock+=dt;
+            if(skydiver.stage()==DiveStage::Aboard) {
+                // At the middle helicopter's open door. JUMP leaves; nobody rides past the last land.
+                player.position=game::aircraft::helicopter_door(drop_path,1,drop_clock);
+                if(!drop_paused && ((drop_action && drop_clock>1.5F) || drop_clock>=game::aircraft::last_jump_time(drop_path))) {
+                    skydiver.jump(player.position,Vector3Scale(drop_path.direction,drop_path.speed*.6F),player.yaw);
+                    haptics.land(10);
+                }
+            } else if(skydiver.airborne() && !drop_paused) {
+                dive_input.yaw=player.yaw;dive_input.pitch=player.pitch;dive_input.deploy=drop_action;
+                const Vector3 body=skydiver.position();
+                const float below=world::physics::WorldCollision::ground_height(body,body.y-1.0F,verda_region);
+                // The sea has no floor to land on: treat the water as the ground.
+                skydiver.update(dt,dive_input,std::max(below,world::layout::sea_level+.3F));
+                player.position=skydiver.position();
+                if(skydiver.opened_now()) {gun_audio.chute_open();haptics.explosion(25);}
+                if(skydiver.landed_now()) {
+                    gun_audio.land(std::max(5.0F,skydiver.landing_speed()));haptics.land(9);
+                    player.grounded=true;
+                    interaction_message="Landed. Find a gun, the circle is coming.";interaction_remaining=3.5F;
+                }
+            }
+            if(skydiver.stage()!=DiveStage::Landed) {player.vertical_velocity=0;player.grounded=false;}
+            // Bots touch down where they planned and come to life.
+            for(std::size_t i=0;i<bot_jumps.size() && i<bot_landed.size();++i)
+                if(!bot_landed[i] && drop_clock>=bot_jumps[i].land_time) {bot_landed[i]=1;br_bots.set_mounted(bot_jumps[i].bot,false);}
+            drop_flying=drop_clock<game::aircraft::last_jump_time(drop_path)+game::aircraft::Formation::linger;
+            const bool all_down=std::all_of(bot_landed.begin(),bot_landed.end(),[](char landed){return landed!=0;});
+            if(drop_drivers_pending && all_down) {
+                // Down on the ground: some of them find a car and drive in toward the zone.
+                bot_drivers.start(br_bots,vehicles,verda_region,drop_seed,mode_session.radius(),7,mode_session.center());
+                drop_drivers_pending=false;
+            }
+            if(skydiver.stage()==DiveStage::Landed && all_down && !drop_flying) dropping=false;
+        }
+        // ====================================================
         // CAMERA POSITION
         // ====================================================
 
@@ -1786,6 +1889,32 @@ void Renderer::run() {
             camera.position=head_position;
             camera.target=Vector3Add(head_position,look_direction);
         }
+
+        // The drop: the camera rides behind the helicopter's door, then follows the jumper, further
+        // back under the canopy so it is in the frame; it eases between them.
+        if(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed) {
+            using game::aircraft::DiveStage;
+            const Vector3 view_dir{std::sin(player.yaw)*std::cos(player.pitch),std::sin(player.pitch),std::cos(player.yaw)*std::cos(player.pitch)};
+            const bool aboard=skydiver.stage()==DiveStage::Aboard;
+            const bool canopy=skydiver.stage()==DiveStage::Canopy;
+            const Vector3 focus=aboard ? game::aircraft::helicopter_position(drop_path,1,drop_clock) :
+                Vector3Add(player.position,{0,canopy ? 2.6F*skydiver.canopy() : 0.3F,0});
+            // Aboard, far enough back to see the row of three; in freefall above the diver's back.
+            const float back=aboard ? 48.0F : canopy ? 9.5F+3.5F*skydiver.canopy() : 7.0F;
+            const float lift=aboard ? 14.0F : canopy ? 1.5F : 3.4F;
+            const Vector3 wanted=Vector3Add(Vector3Subtract(focus,Vector3Scale(view_dir,back)),{0,lift,0});
+            drop_camera=drop_camera_ready ? Vector3Lerp(drop_camera,wanted,1-std::exp(-dt*(aboard ? 10.0F : 7.0F))) : wanted;
+            // Freefall shakes a little with speed.
+            const float shake=skydiver.stage()==DiveStage::Freefall ? std::min(1.0F,-skydiver.velocity().y/60)*.06F : 0;
+            const float t=static_cast<float>(GetTime());
+            camera.position=Vector3Add(drop_camera,{shake*std::sin(t*31),shake*std::sin(t*27+1),shake*std::cos(t*29)});
+            camera.target=Vector3Add(focus,Vector3Scale(view_dir,20));
+            drop_camera_ready=true;
+            camera.fovy+=((skydiver.stage()==DiveStage::Freefall ? 80.0F : 70.0F)-camera.fovy)*(1-std::exp(-dt*3));
+        } else drop_camera_ready=false;
+        // High above the island the town draws further out, so the ground below reads.
+        const float camera_height=camera.position.y-world::terrain::TerrainHeight::sample(camera.position.x,camera.position.z);
+        const float draw_reach=dropping ? std::clamp(1+(camera_height-40)/280,1.0F,2.4F) : 1.0F;
 
         if (game_mode == game::GameMode::DevLab && IsKeyPressed(KEY_T)) combat_world.reset_targets();
         combat_world.update(dt,game_mode == game::GameMode::DevLab);
@@ -2092,7 +2221,7 @@ void Renderer::run() {
                 frame.player_weapon=weapons.selected();
                 frame.player_in_vehicle=driving;
                 const double bots_t0=GetTime();
-                bot_drivers.update(dt,br_bots,vehicles,verda_region,feet,player_health.alive(),mode_session.radius(),bot_world.environment.line_of_sight);
+                bot_drivers.update(dt,br_bots,vehicles,verda_region,feet,player_health.alive(),mode_session.radius(),bot_world.environment.line_of_sight,mode_session.center());
                 br_bots.update(frame,bot_world);
                 br_bots.sync_bodies(npcs,&character_registry);
                 world_draw_stats().bots=world_draw_stats().bots*.9+(GetTime()-bots_t0)*1000*.1;
@@ -2123,7 +2252,10 @@ void Renderer::run() {
                 if(br_bots.events().player_damage>0) {hurt_from=br_bots.events().player_damage_from;hurt_directional=true;}
             }
             const bool finished=mode_session.terminal();
-            mode_session.update(dt,feet,player_health,br_bots,vehicle_paused);
+            // Riding and falling are out of the gas's reach (the line starts out over the sea).
+            const bool in_drop=dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed;
+            const Vector3 zone_feet=in_drop ? Vector3{mode_session.center().x,0,mode_session.center().y} : feet;
+            mode_session.update(dt,zone_feet,player_health,br_bots,vehicle_paused);
             if(game_mode==game::GameMode::BattleRoyale) {
                 br_bots.sync_bodies(npcs,&character_registry);
                 // A fallen bot leaves its kit: its gun (loaded), ammo, and sometimes meds or a vest.
@@ -2184,10 +2316,29 @@ void Renderer::run() {
                 }
                 gun_audio.siren(loudest*.8F,pan);
             }
+            // The drop: rotor thump near the helicopters (loud aboard), wind rising with the fall.
+            {
+                float rotor=0,wind=0,pitch=1;
+                if(game_mode==game::GameMode::BattleRoyale && dropping && !vehicle_paused && !pause_menu.is_open()) {
+                    using game::aircraft::DiveStage;
+                    if(drop_flying) {
+                        float nearest=1e9F;
+                        for(int h=0;h<game::aircraft::Formation::count;++h)
+                            nearest=std::min(nearest,Vector3Distance(camera.position,game::aircraft::helicopter_position(drop_path,h,drop_clock)));
+                        rotor=skydiver.stage()==DiveStage::Aboard ? .75F : std::clamp(.8F/(1+nearest/45),0.0F,.8F);
+                    }
+                    if(skydiver.stage()==DiveStage::Freefall) {
+                        const float speed=Vector3Length(skydiver.velocity());
+                        wind=std::clamp(speed/60,0.0F,1.0F)*.85F;pitch=.8F+speed/140;
+                    } else if(skydiver.stage()==DiveStage::Canopy) {wind=.16F;pitch=.75F;}
+                }
+                gun_audio.drop_loops(rotor,wind,pitch);
+            }
             // Warnings you hear: a pulse each second outside the zone, your heart when badly hurt.
             const float sound_dt=vehicle_paused ? 0.0F : dt;
             hurt_sound_wait-=sound_dt;zone_sound_wait-=sound_dt;heart_sound_wait-=sound_dt;
             if(game_mode==game::GameMode::BattleRoyale && player_health.alive() && !mode_session.terminal() &&
+               !(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed) &&
                mode_session.distance(feet)>mode_session.radius() && zone_sound_wait<=0) {gun_audio.zone_warning();zone_sound_wait=1;}
             const float health_share=player_health.current()/std::max(1.0F,player_health.maximum());
             if(player_health.alive() && health_share<.35F && heart_sound_wait<=0 && !mode_session.terminal()) {
@@ -2269,6 +2420,9 @@ void Renderer::run() {
         DrawRectangleGradientV(0,0,scene_width,scene_height*3/5,world::sky::before_multiply(sky.zenith,sky.ambient),
             world::sky::before_multiply(sky.horizon,sky.ambient));
 
+        // High in the drop everything is far away: a farther near plane keeps the depth buffer
+        // precise enough that roads do not flicker through the ground below.
+        rlSetClipPlanes(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed ? .6 : RL_CULL_DISTANCE_NEAR,RL_CULL_DISTANCE_FAR);
         BeginMode3D(camera);
 
         // ----------------------------------------------------
@@ -2310,10 +2464,10 @@ void Renderer::run() {
         // Houses, street trees and roads come from static meshes, except while the Creator is
         // moving them about.
         if(creator_active) {verda_region.draw(camera.position,&view);static_world.invalidate();}
-        else static_world.draw(verda_region,camera.position,&view);
+        else static_world.draw(verda_region,camera.position,&view,draw_reach,dropping ? std::clamp((camera_height-60)*.006F,0.0F,3.0F) : 0.0F);
         double sub_t1=GetTime();
 
-        draw_model_backed_world_assets(verda_region, camera.position, character_registry, view);
+        draw_model_backed_world_assets(verda_region, camera.position, character_registry, view, draw_reach);
         double sub_t2=GetTime();
         // Bus drivers at the wheel, drawn before the buses so their tinted glass lies over them.
         if(bus_line.running()) for(std::size_t i=0;i<bus_line.buses().size() && i<bus_drivers.size();++i) {
@@ -2439,7 +2593,22 @@ void Renderer::run() {
         // PLAYER BODY
         // ----------------------------------------------------
 
-        if (player.third_person && !driving && !scoped) {
+        const bool skydiving=dropping && skydiver.airborne();
+        if(skydiving) {
+            // Belly-down in freefall, hanging under the canopy once it opens (blending as it fills).
+            const float open=skydiver.canopy();
+            characters::BodyPose body;
+            body.skydive=skydiver.stage()==game::aircraft::DiveStage::Freefall ? 1.0F : std::max(0.0F,1-open*2);
+            body.hang=skydiver.stage()==game::aircraft::DiveStage::Canopy ? std::min(1.0F,open*1.5F) : 0.0F;
+            body.body_pitch=skydiver.body_pitch()+(body.hang>0 ? skydiver.swing()*.6F : 0.0F);
+            body.body_roll=skydiver.bank();
+            const Vector3 character_feet{player.position.x,player.position.y-1.0F,player.position.z};
+            character_renderer.draw_player(character_feet,skydiver.heading(),body);
+            if(skydiver.stage()==game::aircraft::DiveStage::Canopy)
+                game::aircraft::draw_parachute(get_world_asset_model("assets/verda/aircraft/parachute.glb",character_registry),
+                    Vector3Add(player.position,{0,.55F,0}),skydiver.heading(),open,skydiver.swing(),skydiver.bank());
+        }
+        if (player.third_person && !driving && !scoped && !(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed)) {
 
             const Vector3 character_feet{player.position.x,player.position.y-1.0F,player.position.z};
 
@@ -2463,9 +2632,27 @@ void Renderer::run() {
         build_mode.draw_world(static_cast<float>(GetTime()));
         if(mafio.active()) game::mafia::draw_turf(mafio,camera.position,static_cast<float>(GetTime()));
         if(services.active()) game::services::draw_light_bars(services,vehicles,camera.position,static_cast<float>(GetTime()));
-        // The circle's edge stands in the world as a wall of blue light.
-        if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal())
-            game::draw_zone_wall(mode_session.radius(),camera.position,static_cast<float>(GetTime()));
+        // The drop: the three helicopters in a row, and the bots on their way down.
+        if(game_mode==game::GameMode::BattleRoyale && dropping) {
+            if(drop_flying)
+                game::aircraft::draw_helicopters(drop_path,drop_clock,get_world_asset_model("assets/verda/aircraft/drop_helicopter.glb",character_registry),camera.position);
+            const Model* chute=get_world_asset_model("assets/verda/aircraft/parachute.glb",character_registry);
+            for(std::size_t i=0;i<bot_jumps.size() && i<bot_landed.size();++i) {
+                if(bot_landed[i]) continue;
+                const auto air=game::aircraft::bot_in_air(bot_jumps[i],drop_clock);
+                if(Vector3Distance(air.position,camera.position)>900) continue;
+                const unsigned char shade=static_cast<unsigned char>(60+(bot_jumps[i].bot*37)%120);
+                game::aircraft::draw_bot_in_air(air,chute,Color{shade,static_cast<unsigned char>(70+(bot_jumps[i].bot*53)%90),static_cast<unsigned char>(50+(bot_jumps[i].bot*29)%80),255});
+            }
+        }
+        // The circle's edge stands in the world as a wall of blue light (violet as the end nears),
+        // and the next circle as a white ring on the ground.
+        if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal()) {
+            const auto zone=mode_session.zone();
+            const float menace=static_cast<float>(zone.phase)/std::max<std::size_t>(1,mode_session.circle.phases.size());
+            game::draw_zone_wall(zone.center,zone.radius,camera.position,static_cast<float>(GetTime()),menace,zone.shrinking);
+            if(zone.next_radius<zone.radius-1) game::draw_next_circle(zone.next_center,zone.next_radius,camera.position,static_cast<float>(GetTime()));
+        }
         if(perf.enabled()) perf.mark(FrameStage::Characters,GetTime());
         EndMode3D();
 
@@ -2703,7 +2890,8 @@ void Renderer::run() {
             weapons.available() && !driving && sight!=game::combat::Sight::Sniper ?
                 (sight==game::combat::Sight::RedDot ? "DOT" : sight==game::combat::Sight::Scope2x ? "2X" : sight==game::combat::Sight::Scope4x ? "4X" : "IRON") : nullptr,
             driving,
-            creator_active
+            creator_active,
+            dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed
         );
 
 #ifdef OUTLAND_DEV_TOOLS
@@ -2853,7 +3041,28 @@ void Renderer::run() {
         if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !shop_open && !poker_open && !inventory_open) {
             const int objective_bottom=game::PlayUI::draw_objective(mode_session,screen_width);
             if(game_mode==game::GameMode::BattleRoyale) {
-                DrawText(TextFormat("ZONE %.0fm | distance %.0fm | %s",mode_session.radius(),mode_session.distance(loot_feet),mode_session.distance(loot_feet)>mode_session.radius() ? "DANGER - move toward capital" : "inside safe zone"),20,objective_bottom+6,16,mode_session.distance(loot_feet)>mode_session.radius() ? RED : RAYWHITE);
+                // The zone: its phase, the countdown, and how far the next circle is.
+                const auto zone=mode_session.zone();
+                const int phases=static_cast<int>(mode_session.circle.phases.size());
+                const int left=static_cast<int>(std::ceil(zone.remaining));
+                const float to_next=std::hypot(loot_feet.x-zone.next_center.x,loot_feet.z-zone.next_center.y)-zone.next_radius;
+                const char* line=zone.phase>=phases ? TextFormat("FINAL ZONE  |  %.0f HP/s outside",zone.damage) :
+                    zone.shrinking ? TextFormat("PHASE %d/%d  |  ZONE CLOSING %d:%02d",zone.phase+1,phases,left/60,left%60) :
+                                     TextFormat("PHASE %d/%d  |  ZONE CLOSES IN %d:%02d",zone.phase+1,phases,left/60,left%60);
+                const std::string first=line;
+                const char* where=to_next>0 ? TextFormat("NEXT ZONE %.0f m away",to_next) : "INSIDE THE NEXT ZONE";
+                DrawRectangle(12,objective_bottom+1,std::max(MeasureText(first.c_str(),18),MeasureText(where,16)+24)+16,48,Fade(BLACK,.5F));
+                DrawText(first.c_str(),20,objective_bottom+6,18,zone.shrinking ? Color{255,170,70,255} : RAYWHITE);
+                DrawText(where,44,objective_bottom+28,16,to_next>0 ? Color{255,255,255,230} : Color{140,230,150,255});
+                // An arrow pointing the way to the next zone, turned with the view.
+                const float want=std::atan2(zone.next_center.x-loot_feet.x,zone.next_center.y-loot_feet.z);
+                const Vector3 look=Vector3Subtract(camera.target,camera.position);
+                const float turn=std::remainder(want-std::atan2(look.x,look.z),2*PI);
+                const Vector2 at{30,static_cast<float>(objective_bottom+36)};
+                const Vector2 dir{-std::sin(turn),-std::cos(turn)}, side{-dir.y,dir.x};
+                const auto tip=Vector2Add(at,Vector2Scale(dir,9)),l=Vector2Add(Vector2Subtract(at,Vector2Scale(dir,6)),Vector2Scale(side,6)),r=Vector2Subtract(Vector2Subtract(at,Vector2Scale(dir,6)),Vector2Scale(side,6));
+                const Color arrow=to_next>0 ? Color{255,255,255,240} : Color{140,230,150,255};
+                DrawTriangle(tip,r,l,arrow);DrawTriangle(tip,l,r,arrow);
             }
             if(game_mode==game::GameMode::Explore) {
                 DrawText(TextFormat("%lld kronoj | stores: BUY supplies / SELL scavenged goods",static_cast<long long>(loot_session.economy().money)),20,objective_bottom+6,16,GOLD);
@@ -2865,7 +3074,9 @@ void Renderer::run() {
         // Outside the circle: red at the edges of the screen, pulsing, and the way back.
         if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal() && player_health.alive()) {
             const float outside=mode_session.distance(loot_feet)-mode_session.radius();
-            if(outside>0) {
+            if(outside>0 && !(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed)) {
+                // Inside the gas: the whole view goes blue, deeper as the damage rises.
+                DrawRectangle(0,0,screen_width,screen_height,Color{70,110,255,static_cast<unsigned char>(std::clamp(30+mode_session.zone_damage()*3,30.0F,90.0F))});
                 const float pulse=.55F+.45F*std::sin(static_cast<float>(GetTime())*5);
                 const auto edge=static_cast<unsigned char>(110*pulse);
                 const int band=std::max(40,screen_height/7);
@@ -2882,11 +3093,74 @@ void Renderer::run() {
         // The compass, in every circumstance: where the camera looks.
         if(!map_screen.is_open() && !poker_open)
             game::hud::draw_compass(game::hud::bearing(Vector3Subtract(camera.target,camera.position)),screen_width,32);
+        // Battle Royale: a banner when a new circle is marked and when the zone starts to close.
+        if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal() && !map_screen.is_open()) {
+            const auto zone=mode_session.zone();
+            if(zone.phase!=zone_seen_phase || zone.shrinking!=zone_seen_shrinking) {
+                if(zone_seen_phase>=0) {
+                    circle_banner=zone.shrinking ? "THE ZONE IS CLOSING" : zone.phase>=static_cast<int>(mode_session.circle.phases.size()) ? "FINAL ZONE" : "NEW SAFE ZONE MARKED";
+                    circle_banner_time=3.5F;gun_audio.zone_warning();
+                }
+                zone_seen_phase=zone.phase;zone_seen_shrinking=zone.shrinking;
+            }
+            if(circle_banner_time>0) {
+                circle_banner_time-=dt;
+                const int size=34,tw=MeasureText(circle_banner.c_str(),size);
+                const auto alpha=static_cast<unsigned char>(255*std::clamp(circle_banner_time,0.0F,1.0F));
+                DrawRectangle(screen_width/2-tw/2-20,screen_height/4-10,tw+40,size+20,Color{20,30,60,static_cast<unsigned char>(alpha*.7F)});
+                DrawText(circle_banner.c_str(),screen_width/2-tw/2,screen_height/4,size,Color{170,210,255,alpha});
+            }
+        }
+        // The drop's own HUD: what to press, the route, an altimeter.
+        if(game_mode==game::GameMode::BattleRoyale && dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed &&
+           !mode_session.terminal() && !map_screen.is_open() && !pause_menu.is_open()) {
+            using game::aircraft::DiveStage;
+            const auto centred=[&](const char* text,int y,int size,Color colour) {
+                const int tw=MeasureText(text,size);
+                DrawRectangle(screen_width/2-tw/2-14,y-6,tw+28,size+12,Fade(BLACK,.55F));
+                DrawText(text,screen_width/2-tw/2,y,size,colour);
+            };
+            const int base=screen_height-(touch_ui ? 250 : 150);
+            if(skydiver.stage()==DiveStage::Aboard) {
+                const int jumpers=static_cast<int>(std::count_if(bot_jumps.begin(),bot_jumps.end(),[&](const auto& j){return drop_clock<j.jump_time;}))+1;
+                centred(TextFormat("ROUTE: %s  |  %d ABOARD THE 3 HELICOPTERS",game::aircraft::heading_name(drop_path.heading),jumpers),112,18,Color{255,220,120,255});
+                centred(touch_ui ? "TAP JUMP TO LEAVE THE HELICOPTER" : "SPACE: JUMP   |   M: MAP (the yellow line is the route)",base,24,RAYWHITE);
+                const float left=game::aircraft::last_jump_time(drop_path)-drop_clock;
+                if(left<15) centred(TextFormat("LAST LAND AHEAD - AUTO JUMP IN %d",static_cast<int>(std::ceil(std::max(0.0F,left)))),base+40,20,Color{255,150,90,255});
+            } else {
+                const Vector3 body=skydiver.position();
+                const float ground=world::physics::WorldCollision::ground_height(body,body.y-1,verda_region);
+                const float height=std::max(0.0F,skydiver.height_above(ground));
+                if(skydiver.stage()==DiveStage::Freefall) {
+                    centred(skydiver.can_deploy() ? (touch_ui ? "TAP JUMP TO OPEN THE PARACHUTE" : "SPACE: OPEN THE PARACHUTE") : "FREEFALL",base,24,RAYWHITE);
+                    centred("FORWARD: GLIDE   |   LOOK DOWN + FORWARD: DIVE",base+40,17,Color{220,220,220,255});
+                } else {
+                    centred("STEER WHERE YOU LOOK   |   FORWARD: FASTER   |   BACK: BRAKE",base,18,RAYWHITE);
+                }
+                // Altimeter on the right: height above the ground, the auto-open mark, the speed.
+                const int bar_x=screen_width-70,bar_top=screen_height/2-130,bar_h=260;
+                DrawRectangle(bar_x-6,bar_top-30,62,bar_h+70,Fade(BLACK,.5F));
+                DrawRectangle(bar_x+14,bar_top,10,bar_h,Fade(WHITE,.25F));
+                const auto y_of=[&](float metres){return bar_top+bar_h-static_cast<int>(std::clamp(metres/700.0F,0.0F,1.0F)*bar_h);};
+                DrawRectangle(bar_x+8,y_of(game::aircraft::Skydiver::auto_open)-1,22,3,Color{255,170,60,255});
+                DrawRectangle(bar_x+6,y_of(height)-3,26,6,Color{120,220,255,255});
+                DrawText(TextFormat("%.0f m",height),bar_x-2,bar_top-24,16,RAYWHITE);
+                DrawText(TextFormat("%.0f km/h",Vector3Length(skydiver.velocity())*3.6F),bar_x-4,bar_top+bar_h+8,13,LIGHTGRAY);
+            }
+        }
         if(poker_open) poker_table.draw(poker,loot_session.economy().money-poker_buy_in,"LA VERDA MANO",screen_width,screen_height,static_cast<float>(GetTime()));
         if(map_screen.is_open()) {
             game::MapScreen::View view;
             view.player=player.position;view.yaw=player.yaw;view.font=&sign_renderer.font();
-            if(game_mode==game::GameMode::BattleRoyale) view.circle_radius=mode_session.radius();
+            if(game_mode==game::GameMode::BattleRoyale) {
+                const auto zone=mode_session.zone();
+                view.circle_radius=zone.radius;view.circle_center=zone.center;
+                if(zone.next_radius<zone.radius-1) {view.next_radius=zone.next_radius;view.next_center=zone.next_center;}
+                if(dropping && drop_flying) {
+                    view.flight=true;view.flight_start=drop_path.start;view.flight_end=drop_path.end;
+                    for(int h=0;h<game::aircraft::Formation::count;++h) view.helicopters.push_back(game::aircraft::helicopter_position(drop_path,h,drop_clock));
+                }
+            }
             for(const auto& stop:bus_line.stops()) view.stops.push_back(stop.shelter);
             if(bus_line.running()) for(const auto& bus:bus_line.buses()) if(bus.running) view.buses.push_back({bus.position,bus.yaw});
             for(const auto& crew:mafio.crews()) view.turf.push_back({crew.door,game::mafia::gangs[static_cast<std::size_t>(crew.gang)].color});

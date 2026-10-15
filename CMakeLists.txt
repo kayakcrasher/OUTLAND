@@ -192,6 +192,8 @@ add_library(
     src/game/casino/Poker.cpp
     src/game/casino/PokerTable.cpp
     src/game/ZoneWall.cpp
+    src/game/aircraft/HelicopterDrop.cpp
+    src/game/aircraft/DropRenderer.cpp
     src/characters/AnimationController.cpp
     src/characters/SkeletalGait.cpp
     src/world/physics/WorldCollision.cpp
@@ -716,6 +718,10 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_zones_map_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_zones_map_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_zones_map_tests COMMAND outland_zones_map_tests)
+    add_executable(outland_helicopter_drop_tests tests/integration/modes/test_helicopter_drop.cpp)
+    target_link_libraries(outland_helicopter_drop_tests PRIVATE outland_render)
+    target_compile_options(outland_helicopter_drop_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_helicopter_drop_tests COMMAND outland_helicopter_drop_tests)
     add_executable(outland_pause_menu_tests tests/integration/world/test_pause_menu.cpp)
     target_link_libraries(outland_pause_menu_tests PRIVATE outland_render)
     target_compile_options(outland_pause_menu_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -745,6 +751,7 @@ if(OUTLAND_BUILD_TESTS)
         add_test(NAME outland_generated_grenade_model COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_grenade_model.py" --check)
         add_test(NAME outland_generated_sight_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_sight_models.py" --check)
         add_test(NAME outland_generated_armour_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_armour_models.py" --check)
+        add_test(NAME outland_generated_drop_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_drop_models.py" --check)
         add_test(NAME outland_generated_weapon_audio COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_weapon_audio.py" --check)
         add_test(NAME outland_city_kit_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_city_kit.py" --check)
         file(GLOB OUTLAND_TRAILER_MODELS "${PROJECT_SOURCE_DIR}/assets/verda/residential/trailers/*.glb")

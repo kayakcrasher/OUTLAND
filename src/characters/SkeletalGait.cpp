@@ -108,6 +108,19 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
         left_thigh=right_thigh=1.45F;left_flex=right_flex=1.4F;
         lean=-.08F;
     }
+    const float skydive=dying ? 0 : std::clamp(body.skydive,0.0F,1.0F), hang=dying ? 0 : std::clamp(body.hang,0.0F,1.0F);
+    const bool airborne=skydive>0 || hang>0;
+    if(airborne) {
+        // Freefall: thighs a little behind the body, knees bent back. Hanging: legs together,
+        // swinging a little forward, knees soft.
+        const float kick=.12F*std::sin(time*2.3F);
+        const auto blend=[&](float& thigh,float& knee,float side) {
+            thigh+=((-.28F+side*.05F)-thigh)*skydive; knee+=((1.0F+kick*side)-knee)*skydive;
+            thigh+=((.32F+kick*.5F*side)-thigh)*hang; knee+=((.28F)-knee)*hang;
+        };
+        blend(left_thigh,left_flex,1);blend(right_thigh,right_flex,-1);
+        lean*=1-std::max(skydive,hang);
+    }
     if(dying) {
         // Legs give way first.
         const float give=std::clamp(time/.35F,0.0F,1.0F);
@@ -239,8 +252,12 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
             const int elbow_bone=find(left_upper ? "LeftForeArm":"RightForeArm");
             if(elbow_bone>=0) {
                 const auto direction=Vector3RotateByQuaternion(Vector3Subtract(model.skeleton.bindPose[elbow_bone].translation,rest.translation),inherited);
-                const auto hang=Vector3Normalize(Vector3Add(Vector3Scale(up,-1),Vector3Scale(lateral,(left_upper ? -1.0F : 1.0F)*(.13F+.02F*breath))));
-                if(Vector3LengthSqr(direction)>.00001F)out.rotation=QuaternionMultiply(QuaternionFromVector3ToVector3(Vector3Normalize(direction),hang),out.rotation);
+                const float side=left_upper ? -1.0F : 1.0F;
+                auto hang_to=Vector3Normalize(Vector3Add(Vector3Scale(up,-1),Vector3Scale(lateral,side*(.13F+.02F*breath))));
+                // Spread out to the sides in freefall; up to the toggles under a canopy.
+                if(skydive>0) hang_to=Vector3Normalize(Vector3Lerp(hang_to,Vector3Normalize(Vector3Add(Vector3Scale(lateral,side*.92F),Vector3Scale(up,.38F))),skydive));
+                if(hang>0) hang_to=Vector3Normalize(Vector3Lerp(hang_to,Vector3Normalize(Vector3Add(Vector3Scale(lateral,side*.32F),Vector3Scale(up,.95F))),hang));
+                if(Vector3LengthSqr(direction)>.00001F)out.rotation=QuaternionMultiply(QuaternionFromVector3ToVector3(Vector3Normalize(direction),hang_to),out.rotation);
             }
         }
         // All angles below are "forward" angles about the lateral axis: they swing a limb that
@@ -271,6 +288,9 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
             // A driver's hands rest on the wheel, turning it a little now and then.
             if(seated && (left_upper || right_upper)) angle=.85F+.05F*std::sin(time*.7F+(left_upper ? 0 : 2));
             if(seated && (left_lower || right_lower)) angle=.75F;
+            // In the air the arms hold their spread (or the toggles) instead of swinging.
+            if(airborne && (left_upper || right_upper)) angle*=1-std::max(skydive,hang);
+            if(airborne && (left_lower || right_lower)) angle=angle*(1-std::max(skydive,hang))+.35F*skydive+.25F*hang;
         }
         if(angle!=0)out.rotation=QuaternionNormalize(QuaternionMultiply(QuaternionFromAxisAngle(lateral,angle*forward_sign),out.rotation));
         // Hips sway with the stride and the chest counters it; a rifle stance turns the chest.
@@ -292,9 +312,21 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
         // No feet: use the ends of the shins.
         for(const int b:{left_knee,right_knee}) lowest=std::min(lowest,Vector3DotProduct(Vector3Subtract(pose_[b].translation,bind[b].translation),up));
     }
-    if(!seated && lowest<1e8F && std::abs(lowest)>1e-7F) {
+    if(!seated && !airborne && lowest<1e8F && std::abs(lowest)>1e-7F) {
         for(auto& p:pose_) p.translation=Vector3Subtract(p.translation,Vector3Scale(up,lowest));
         grip_=Vector3Subtract(grip_,Vector3Scale(up,lowest));
+    }
+    if(airborne && (body.body_pitch!=0 || body.body_roll!=0) && hips>=0) {
+        // Tilt the whole body about the hips: forward (belly-down) and into a bank.
+        const auto pivot=pose_[hips].translation;
+        auto q=QuaternionFromAxisAngle(lateral,body.body_pitch);
+        if(Vector3DotProduct(Vector3RotateByQuaternion(up,q),forward)*body.body_pitch<0) q=QuaternionFromAxisAngle(lateral,-body.body_pitch);
+        q=QuaternionNormalize(QuaternionMultiply(QuaternionFromAxisAngle(forward,body.body_roll),q));
+        for(auto& p:pose_) {
+            p.translation=Vector3Add(pivot,Vector3RotateByQuaternion(Vector3Subtract(p.translation,pivot),q));
+            p.rotation=QuaternionNormalize(QuaternionMultiply(q,p.rotation));
+        }
+        grip_=Vector3Add(pivot,Vector3RotateByQuaternion(Vector3Subtract(grip_,pivot),q));
     }
     if(dying) {
         // Topple backwards about the heels and come to rest on the back.

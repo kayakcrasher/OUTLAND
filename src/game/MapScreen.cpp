@@ -269,9 +269,38 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
         DrawTriangle({at.x - r + 2, at.y}, {at.x, at.y + r - 2}, {at.x + r - 2, at.y}, color);
     }
     // Battle Royale: the safe circle.
+    const auto to_pixels = [&](float metres) { return metres / (2 * extent) * area.width; };
     if (view.circle_radius > 0) {
-        const auto centre = to_map(area, 0, 0);
-        DrawRing(centre, view.circle_radius / (2 * extent) * area.width - 1.5F, view.circle_radius / (2 * extent) * area.width + 1.5F, 0, 360, 96, Color{120, 190, 255, 230});
+        const auto centre = to_map(area, view.circle_center.x, view.circle_center.y);
+        DrawRing(centre, to_pixels(view.circle_radius) - 1.5F, to_pixels(view.circle_radius) + 1.5F, 0, 360, 96, Color{120, 190, 255, 230});
+    }
+    // ...and the next one, white, with a line from you to it when you are outside it.
+    if (view.next_radius > 0) {
+        const auto centre = to_map(area, view.next_center.x, view.next_center.y);
+        DrawRing(centre, to_pixels(view.next_radius) - 1.2F, to_pixels(view.next_radius) + 1.2F, 0, 360, 96, Color{255, 255, 255, 235});
+        const float out = std::hypot(view.player.x - view.next_center.x, view.player.z - view.next_center.y) - view.next_radius;
+        if (out > 0) {
+            const auto you = to_map(area, view.player.x, view.player.z);
+            const auto dir = Vector2Normalize(Vector2Subtract(centre, you));
+            const auto edge = Vector2Add(you, Vector2Scale(dir, std::max(0.0F, to_pixels(out))));
+            for (float k = 0; k < 1; k += .08F)
+                DrawLineEx(Vector2Lerp(you, edge, k), Vector2Lerp(you, edge, std::min(1.0F, k + .045F)), 2.2F * s, Color{255, 255, 255, 200});
+        }
+    }
+    // The helicopters' route: a dashed line across the island, and the three of them on it.
+    if (view.flight) {
+        const auto a = to_map(area, view.flight_start.x, view.flight_start.z), b = to_map(area, view.flight_end.x, view.flight_end.z);
+        for (float k = 0; k < 1; k += .03F)
+            DrawLineEx(Vector2Lerp(a, b, k), Vector2Lerp(a, b, std::min(1.0F, k + .018F)), 2.5F * s, Color{255, 215, 80, 230});
+        const auto along = Vector2Normalize(Vector2Subtract(b, a)), side = Vector2{-along.y, along.x};
+        for (const auto& heli : view.helicopters) {
+            const auto at = to_map(area, heli.x, heli.z);
+            const auto tip = Vector2Add(at, Vector2Scale(along, 9 * s));
+            DrawTriangle(tip, Vector2Add(Vector2Subtract(at, Vector2Scale(along, 6 * s)), Vector2Scale(side, 6 * s)),
+                         Vector2Subtract(Vector2Subtract(at, Vector2Scale(along, 6 * s)), Vector2Scale(side, 6 * s)), Color{255, 230, 120, 255});
+            DrawTriangle(tip, Vector2Subtract(Vector2Subtract(at, Vector2Scale(along, 6 * s)), Vector2Scale(side, 6 * s)),
+                         Vector2Add(Vector2Subtract(at, Vector2Scale(along, 6 * s)), Vector2Scale(side, 6 * s)), Color{255, 230, 120, 255});
+        }
     }
     // You: an arrow pointing the way you face, ringed so it reads on any ground.
     const auto you = to_map(area, view.player.x, view.player.z);

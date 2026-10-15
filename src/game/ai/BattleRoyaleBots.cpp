@@ -57,19 +57,23 @@ void BattleRoyaleBots::clear() {
     player_kills_=0;
 }
 
-void BattleRoyaleBots::start(const world::VerdaRegion& region,BotLevel level,int count,std::uint64_t seed,Vector3 player_feet) {
+void BattleRoyaleBots::start(const world::VerdaRegion& region,BotLevel level,int count,std::uint64_t seed,Vector3 player_feet,
+                             const std::function<bool(Vector3)>& prefer) {
     clear();
     level_=level;
     const auto& settlements=region.settlements();
     std::uint64_t state=seed|1;
     std::vector<Vector3> placed;
     const int attempts=std::max(1,count)*120;
+    // First only where `prefer` allows (in reach of the helicopters' line); then anywhere.
+    for(int pass=prefer ? 0 : 1;pass<2;++pass)
     for(int attempt=0;attempt<attempts && static_cast<int>(bots_.size())<count;++attempt) {
         // Drop zones: around each town in turn, like players spreading out from the bus.
         Vector3 center{};
         if(!settlements.empty()) center=settlements[static_cast<std::size_t>(attempt)%settlements.size()].center;
         const float angle=unit(state)*2*PI, radius=25+unit(state)*190;
         Vector3 feet{center.x+std::sin(angle)*radius,0,center.z+std::cos(angle)*radius};
+        if(pass==0 && !prefer(feet)) continue;
         const float terrain=world::terrain::TerrainHeight::sample(feet.x,feet.z);
         if(!std::isfinite(terrain) || terrain<=world::layout::sea_level+1) continue;
         feet.y=world::physics::WorldCollision::ground_height({feet.x,terrain,feet.z},terrain,region);
@@ -107,11 +111,18 @@ bool BattleRoyaleBots::damage_bot(int bot,float amount,Vector3 from,double now) 
     return true;
 }
 
-void BattleRoyaleBots::apply_circle(float radius, float damage) {
+void BattleRoyaleBots::apply_circle(Vector2 center, float radius, Vector2 next_center, float next_radius, float damage) {
     for(auto& bot:bots_) if(bot.alive()) {
-        if(std::hypot(bot.position().x,bot.position().z)>radius*.85F)
-            bot.set_roam_center({0,0,0}, std::max(10.0F,radius*.5F));
-        if(std::hypot(bot.position().x,bot.position().z)>radius) {
+        const Vector3 at=bot.position();
+        const float here=std::hypot(at.x-center.x,at.z-center.y), there=std::hypot(at.x-next_center.x,at.z-next_center.y);
+        // Run for the next circle before the wall arrives (or for this one if already caught).
+        if(here>radius*.85F || there>next_radius*.9F) {
+            const bool caught=here>radius;
+            const Vector2 goal=caught ? center : next_center;
+            const float room=caught ? radius : next_radius;
+            bot.set_roam_center({goal.x,0,goal.y}, std::max(10.0F,room*.5F));
+        }
+        if(here>radius) {
             bot.set_health(std::max(0.0F,bot.health()-damage));
             if(!bot.alive()) {
                 feed_.push_back(bot_name(bot.id())+" LOST TO THE ZONE");

@@ -50,6 +50,12 @@ The bottom-left hints (`LMB FIRE  RMB AIM  R RELOAD  Q SWAP`) follow the binding
 
 The on-screen controls appear when the game runs on a phone or tablet: Android, or a browser whose main pointer is a finger. They also appear as soon as a touch screen is used. SETTINGS can turn them on or off for good.
 
+## The Battle Royale drop
+Aboard the helicopter: **SPACE** / the touch **JUMP** button (or USE) jumps. In freefall the move
+stick glides (forward), dives (forward while looking down) or holds back; **SPACE / JUMP opens the
+parachute** (it opens by itself at 150 m). Under the canopy it steers where you look, forward
+speeds up, back brakes. Shooting waits for the ground. Details: `docs/battle-royale-drop.md`.
+
 ## Pause menu
 
 ESC, the **MENU** button, or losing the mouse pointer opens it, and the world stops while it is open.

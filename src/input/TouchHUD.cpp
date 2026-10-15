@@ -535,7 +535,8 @@ void TouchHUD::draw(
     const char* fire_mode,
     const char* sight,
     bool driving,
-    bool look_stick
+    bool look_stick,
+    bool skydiving
 ) const {
     const float scale =
         hud_scale(
@@ -554,6 +555,19 @@ void TouchHUD::draw(
         draw_text_button(position_of(e, screen_width, screen_height),
             base_button_radius * e.scale, e.opacity, label, active);
     };
+    if (gameplay && skydiving) {
+        // The drop: steer with the stick, JUMP leaves the helicopter / opens the parachute; the
+        // rest of the right side is for looking (and so for steering the canopy).
+        draw_stick(position_of(layout.movement, screen_width, screen_height), {input.move_x, input.move_y},
+                   base_stick_radius * layout.movement.scale, layout.movement.opacity, false);
+        const Vector2 jump = position_of(layout.jump, screen_width, screen_height);
+        const float radius = base_button_radius * layout.jump.scale * 1.25F;
+        draw_jump_vault_button(jump, radius, std::max(layout.jump.opacity, .85F), input.jump);
+        const char* label = "JUMP";
+        const int size = static_cast<int>(16 * scale);
+        DrawText(label, static_cast<int>(jump.x - MeasureText(label, size) / 2.0F), static_cast<int>(jump.y + radius + 6 * scale), size, RAYWHITE);
+        return;
+    }
     if (gameplay && driving) {
         // Left thumb: steering only (the knob slides sideways).
         draw_stick(position_of(layout.movement, screen_width, screen_height), {input.move_x, 0},

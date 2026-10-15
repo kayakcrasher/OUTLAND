@@ -75,10 +75,12 @@ GunAudio::GunAudio(const std::string& directory, const std::string& steps) {
     for (int v = 0; v < 2; ++v) load(ricochet_, directory + "/ricochet_" + std::to_string(v) + ".wav");
     load(zone_, directory + "/zone_warning.wav");
     load(heart_, directory + "/heartbeat.wav");
-    if (const std::string path = directory + "/siren.wav"; FileExists(path.c_str())) {
-        siren_ = LoadMusicStream(path.c_str());
-        if (IsMusicValid(siren_)) siren_.looping = true;
-    }
+    for (auto [music, name] : {std::pair{&siren_, "siren"}, std::pair{&rotor_, "rotor_loop"}, std::pair{&wind_, "wind_loop"}})
+        if (const std::string path = directory + "/" + name + ".wav"; FileExists(path.c_str())) {
+            *music = LoadMusicStream(path.c_str());
+            if (IsMusicValid(*music)) music->looping = true;
+        }
+    load(chute_, directory + "/chute_open.wav");
     if (!steps.empty())
         for (const char* surface : {"gravel", "dirt", "grass"})
             for (int v = 0; v < 3; ++v) load(steps_, steps + "/step_" + surface + "_" + std::to_string(v) + ".wav");
@@ -91,8 +93,8 @@ GunAudio::~GunAudio() {
     for (auto& bank : reload_) unload(bank);
     for (Bank* bank : {&explosion_, &explosion_distant_, &pump_, &bolt_, &casing_, &kill_, &equip_, &pickup_, &pin_,
                        &hitmarker_, &hurt_, &armour_, &whiz_, &ricochet_, &steps_, &zone_, &heart_, &crash_light_,
-                       &crash_heavy_, &body_hit_, &land_, &punch_, &tinnitus_}) unload(*bank);
-    if (IsMusicValid(siren_)) UnloadMusicStream(siren_);
+                       &crash_heavy_, &body_hit_, &land_, &punch_, &tinnitus_, &chute_}) unload(*bank);
+    for (Music* music : {&siren_, &rotor_, &wind_}) if (IsMusicValid(*music)) UnloadMusicStream(*music);
 }
 
 void GunAudio::load(Bank& bank, const std::string& path) {
@@ -234,6 +236,26 @@ void GunAudio::siren(float loudness, float pan) {
     SetMusicPan(siren_, pan);
     UpdateMusicStream(siren_);
 }
+
+void GunAudio::loop(Music& music, bool& playing, float loudness, float pitch) {
+    if (!ready_ || !IsMusicValid(music)) return;
+    const float volume = muted_ ? 0.0F : std::clamp(loudness, 0.0F, 1.0F) * volume_;
+    if (volume <= .003F) {
+        if (playing) { PauseMusicStream(music); playing = false; }
+        return;
+    }
+    if (!playing) { if (IsMusicStreamPlaying(music)) ResumeMusicStream(music); else PlayMusicStream(music); playing = true; }
+    SetMusicVolume(music, volume);
+    SetMusicPitch(music, std::clamp(pitch, .5F, 2.0F));
+    UpdateMusicStream(music);
+}
+
+void GunAudio::drop_loops(float rotor, float wind, float wind_pitch) {
+    loop(rotor_, rotor_playing_, rotor, 1);
+    loop(wind_, wind_playing_, wind, wind_pitch);
+}
+
+void GunAudio::chute_open() { play(chute_, .9F, 0, .95F + .1F * random()); }
 
 void GunAudio::heartbeat(float strength) { play(heart_, std::clamp(strength, 0.0F, 1.0F) * .8F, 0, 1); }
 

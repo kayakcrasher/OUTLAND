@@ -4,6 +4,7 @@
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <raymath.h>
+#include <rlgl.h>
 #include <algorithm>
 #include <cmath>
 
@@ -59,7 +60,8 @@ void StaticWorld::index(const world::VerdaRegion& region) {
     indexed_ = true;
 }
 
-void StaticWorld::draw(const world::VerdaRegion& region, Vector3 camera, const ViewFrustum* view) {
+void StaticWorld::draw(const world::VerdaRegion& region, Vector3 camera, const ViewFrustum* view, float reach, float road_lift) {
+    reach = std::clamp(reach, 1.0F, 3.0F);
     if (!indexed_) index(region);
     draws_ = 0;
     // A few new recordings a frame, so arriving somewhere new never stalls; the rest are drawn
@@ -68,9 +70,11 @@ void StaticWorld::draw(const world::VerdaRegion& region, Vector3 camera, const V
     const auto& towns = region.settlements();
     const auto visible = [&](Vector3 centre, float radius) { return !view || view->sphere(centre, radius); };
     // Roads: the same 340 m reach as before.
+    const bool lifted = road_lift > 0;
+    if (lifted) { rlDrawRenderBatchActive(); rlPushMatrix(); rlTranslatef(0, road_lift, 0); }
     for (auto& chunk : roads_) {
         if (chunk.settlement >= towns.size() || chunk.index >= towns[chunk.settlement].roads.size()) continue;
-        if (flat(chunk.centre, camera) > 340 + chunk.radius || !visible(chunk.centre, chunk.radius)) continue;
+        if (flat(chunk.centre, camera) > 340 * reach + chunk.radius || !visible(chunk.centre, chunk.radius)) continue;
         const auto& road = towns[chunk.settlement].roads[chunk.index];
         if (chunk.failed || (!chunk.mesh && budget <= 0)) {world::geometry::road(road, chunk.begin, chunk.end); continue;}
         if (!chunk.mesh) {
@@ -81,11 +85,12 @@ void StaticWorld::draw(const world::VerdaRegion& region, Vector3 camera, const V
         }
         chunk.mesh->draw(); ++draws_;
     }
+    if (lifted) { rlDrawRenderBatchActive(); rlPopMatrix(); }
     // Houses within 320 m; full detail within 90 m.
     for (auto& house : buildings_) {
         if (house.settlement >= towns.size() || house.index >= towns[house.settlement].buildings.size()) continue;
         const float distance = flat(house.centre, camera);
-        if (distance > 320 || !visible(house.centre, house.radius)) continue;
+        if (distance > 320 * reach || !visible(house.centre, house.radius)) continue;
         const auto& value = towns[house.settlement].buildings[house.index];
         const bool detailed = distance < 90;
         auto& lod = house.lods[detailed ? 0 : 1];
@@ -101,7 +106,7 @@ void StaticWorld::draw(const world::VerdaRegion& region, Vector3 camera, const V
     // Street trees by 48 m patch: within 260 m, three levels of detail by the patch's distance.
     for (auto& cell : trees_) {
         const float distance = flat(cell.centre, camera);
-        if (distance > 260 + tree_cell || !visible(cell.centre, tree_cell)) continue;
+        if (distance > 260 * reach + tree_cell || !visible(cell.centre, tree_cell)) continue;
         const int lod = distance < 65 ? 0 : distance < 140 ? 1 : 2;
         auto& mesh = cell.lods[static_cast<std::size_t>(lod)];
         if (cell.failed || (!mesh && budget <= 0)) {for (const auto& p : cell.positions) world::geometry::tree(p, lod); continue;}

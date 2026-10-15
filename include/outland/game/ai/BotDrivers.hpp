@@ -42,7 +42,7 @@ public:
     // Puts up to `max_drivers` bots that dropped within 140 m of a running car into it. Returns
     // how many drive.
     int start(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
-              std::uint64_t seed, float zone_radius, int max_drivers = 7);
+              std::uint64_t seed, float zone_radius, int max_drivers = 7, Vector2 zone_center = {0, 0});
     // Puts `crew` (the first one drives) into the nearest usable car within `reach` of `from` and
     // drives it by road to `goal`; everyone gets out there. Returns whether they set off.
     bool dispatch(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
@@ -52,7 +52,7 @@ public:
     using Sight = std::function<bool(Vector3 from, Vector3 to)>;
     // `zone_radius` <= 0: no circle (Explore); rides end at their goal.
     void update(float dt, BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
-                Vector3 player, bool player_alive, float zone_radius, const Sight& sight);
+                Vector3 player, bool player_alive, float zone_radius, const Sight& sight, Vector2 zone_center = {0, 0});
     // The ride carrying `bot` (driver or passenger), or nullptr.
     [[nodiscard]] const BotRide* ride_of(int bot) const;
     // The bot at the wheel of `vehicle`, or -1.
@@ -60,7 +60,7 @@ public:
     [[nodiscard]] int driving() const;
     [[nodiscard]] const std::vector<BotRide>& rides() const { return rides_; }
     // Where a ride heads for: toward the zone's centre, well inside the circle.
-    static Vector3 zone_goal(Vector3 from, float zone_radius);
+    static Vector3 zone_goal(Vector3 from, float zone_radius, Vector2 center = {0, 0});
 private:
     void dismount(BotRide& ride, BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region);
     void steer(BotRide& ride, vehicles::VehicleSystem& cars, float dt);
