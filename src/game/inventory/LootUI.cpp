@@ -217,7 +217,7 @@ void LootUI::draw_world(const ItemRegistry &registry, const LootWorld &world, Ve
         const Vector3 at = show ? Vector3Add(pickup.position, {0, .06F + .04F * std::sin(time * 2.2F + pickup.position.z), 0}) : pickup.position;
         if (model)
             DrawModelEx(*model, at, {0, 1, 0}, spin,
-                        {item->height, item->height, item->height}, tint);
+                        {item->size, item->size, item->size}, tint);
     }
     if (light)
         DrawCircle3D({player.x, player.y + .02F, player.z}, 3, {1, 0, 0}, 90, Fade(YELLOW, .35F));

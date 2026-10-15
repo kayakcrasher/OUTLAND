@@ -79,7 +79,7 @@ void LootSession::update(float dt, const world::VerdaRegion &region, Vector3 pla
         return;
     reconcile_remaining_ -= dt;
     if (reconcile_remaining_ <= 0) {
-        if (world_.reconcile(region, registry_, mode_ == GameMode::ZombieSurvival, player))
+        if (world_.reconcile(region, registry_, mode_ == GameMode::ZombieSurvival ? LootMode::Zombie : mode_ == GameMode::BattleRoyale ? LootMode::Royale : LootMode::Normal, player))
             changed();
         reconcile_remaining_ = .5F;
     }

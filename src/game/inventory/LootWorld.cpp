@@ -26,7 +26,7 @@ std::uint32_t random(std::uint32_t &state) {
 }
 } // namespace
 bool LootWorld::reconcile(const world::VerdaRegion &region, const ItemRegistry &registry,
-                          bool zombie, Vector3 player, float radius) {
+                          LootMode mode, Vector3 player, float radius) {
     if (!finite(player) || !std::isfinite(radius) || radius <= 0)
         return false;
     std::unordered_map<std::string, LootSource> current;
@@ -63,12 +63,14 @@ bool LootWorld::reconcile(const world::VerdaRegion &region, const ItemRegistry &
     std::sort(active.begin(), active.end(),
               [](const auto &a, const auto &b) { return a.key < b.key; });
     for (const auto &source : active) {
-        const auto *table = registry.table(source.table, zombie);
-        if (!table || state_.pickups.size() + table->rolls > max_pickups ||
+        const auto *table = registry.table(source.table, mode);
+        // Battle Royale lays a stack of ammunition beside every gun, so up to two pickups a roll.
+        const std::size_t most = static_cast<std::size_t>(table ? table->rolls : 0) * (mode == LootMode::Royale ? 2 : 1);
+        if (!table || state_.pickups.size() + most > max_pickups ||
             state_.sources.size() >= 10000)
             continue;
         std::uint32_t seed = static_cast<std::uint32_t>(
-            characters::character_seed(source.key + (zombie ? "zombie" : "normal")));
+            characters::character_seed(source.key + loot_mode_name(mode)));
         if (seed == 0)
             seed = 1;
         int total = 0;
@@ -97,6 +99,17 @@ bool LootWorld::reconcile(const world::VerdaRegion &region, const ItemRegistry &
                          .06F;
             state_.pickups.push_back({source.key + "/" + std::to_string(roll), source.key,
                                       selected->item, position, quantity, 0});
+            const auto *item = registry.find(selected->item);
+            if (mode == LootMode::Royale && item)
+                if (const auto *ammo = registry.ammo_for(*item)) {
+                    // Beside the gun, a little further round the circle: two magazines' worth.
+                    const float beside = angle + .45F;
+                    Vector3 at{source.position.x + std::cos(beside) * .95F, source.position.y,
+                               source.position.z + std::sin(beside) * .95F};
+                    at.y = std::max(at.y, world::terrain::TerrainHeight::sample(at.x, at.z)) + .06F;
+                    const int rounds = std::clamp(combat::definition(*item->weapon).magazine * 2, 5, ammo->stack_size);
+                    state_.pickups.push_back({source.key + "/" + std::to_string(roll) + "a", source.key, ammo->id, at, rounds, 0});
+                }
         }
         state_.sources.push_back(source);
         changed = true;

@@ -1,6 +1,7 @@
 #include "outland/game/inventory/LootSession.hpp"
 #include "outland/creator/CreatorMapIO.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
+#include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <filesystem>
@@ -51,6 +52,20 @@ int main() {
     for (const auto &id : {"general", "medical", "camp", "weapons"}) {
         assert(registry.table(id, false) && registry.table(id, true));
     }
+    // Battle Royale has its own arsenal for every table; a gun always has its ammunition.
+    for (const auto &id : {"general", "medical", "camp", "weapons"}) {
+        const auto *royale = registry.table(id, LootMode::Royale);
+        assert(royale && royale->royale && royale != registry.table(id, false));
+    }
+    assert(registry.table("general", LootMode::Normal) == registry.table("general", false));
+    for (const auto &item : registry.items())
+        if (item.category == ItemCategory::Weapon)
+            assert(registry.ammo_for(item) && registry.ammo_for(item)->weapon == item.weapon);
+    assert(!registry.ammo_for(*registry.find("water")));
+    // Every item lies on the ground at its real size (its longest side, in metres).
+    for (const char *flat : {"vest_light", "vest_heavy", "matches", "lantern"})
+        assert(registry.find(flat)->size < .8F);
+    assert(registry.find("hunting_rifle")->size > .9F && registry.find("hunting_rifle")->size < 1.3F);
     assert(registry.table_for_marker("creator_marker_loot_spawn_medical_7") == "medical");
     assert(registry.table_for_marker("loot_spawn_weapons_xyz") == "weapons");
     assert(registry.table_for_marker("loot_spawn_medicalish") == "general");
@@ -106,6 +121,35 @@ int main() {
     for (std::size_t i = 0; i < a.state().pickups.size(); ++i) {
         assert(a.state().pickups[i].item == b.state().pickups[i].item &&
                a.state().pickups[i].quantity == b.state().pickups[i].quantity);
+    }
+    {
+        // Battle Royale: more rolls at the same spot, and ammo beside any gun found.
+        LootWorld royale;
+        assert(royale.reconcile(region, registry, LootMode::Royale, ground()));
+        assert(royale.state().pickups.size() >= 3);
+        for (const auto &pickup : royale.state().pickups) {
+            const auto *item = registry.find(pickup.item);
+            if (item->category != ItemCategory::Weapon) continue;
+            const auto *ammo = registry.ammo_for(*item);
+            assert(std::any_of(royale.state().pickups.begin(), royale.state().pickups.end(),
+                               [&](const auto &p) { return p.item == ammo->id && p.id == pickup.id + "a"; }));
+        }
+        // The weapons table, over many spots, turns up guns with their rounds.
+        int guns = 0, rounds = 0;
+        for (int k = 0; k < 40; ++k) {
+            outland::world::VerdaRegion many;
+            const auto spot = directory / ("weapons" + std::to_string(k) + ".map");
+            { std::ofstream file(spot); file << "OUTLAND_CREATOR_MAP 3\nMARKER \"creator_marker_loot_spawn_weapons_" << k << "\" 0 0 0 8 .5 .5 .5 0 1\n"; }
+            assert(outland::creator::CreatorMapIO::load(many, spot.string()));
+            LootWorld field;
+            field.reconcile(many, registry, LootMode::Royale, ground());
+            for (const auto &p : field.state().pickups) {
+                const auto *item = registry.find(p.item);
+                guns += item->category == ItemCategory::Weapon;
+                rounds += item->category == ItemCategory::Ammo;
+            }
+        }
+        assert(guns >= 40 && rounds >= guns);
     }
     assert(!a.reconcile(region, registry, false, ground()));
     a.edit().pickups.clear();

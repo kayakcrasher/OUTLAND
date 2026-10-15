@@ -26,6 +26,11 @@ for item in items:
     else:
         assert not document.get('images') and all('COLOR_0' in p['attributes'] for m in document['meshes'] for p in m['primitives']),model
     assert 1<=int(item['stack'])<=999 and int(item['starting_quantity'])>=0
+    # `size` is the longest side in metres (the model is scaled uniformly to it): nothing you can
+    # pick up off the ground may come out giant.
+    size=float(item['size'])
+    limit={'food':.3,'water':.35,'medical':.3,'ammo':.3,'weapon':1.3,'utility':2.4,'container':1.0,'furniture':2.9}[item['category']]
+    assert .03<=size<=limit,f"{item['id']} is {size} m long (at most {limit} m for {item['category']})"
 with (PACK/'gameplay/loot_tables.tsv').open(newline='') as stream:
     tables=list(csv.DictReader(stream,delimiter='\t'))
 ids={item['id'] for item in items}
@@ -33,8 +38,8 @@ for entry in tables:
     assert entry['item'] in ids and 1<=int(entry['min'])<=int(entry['max'])<=999
     assert int(entry['weight'])>0 and 1<=int(entry['rolls'])<=8
 for name in {entry['table'] for entry in tables}:
-    assert {entry['mode'] for entry in tables if entry['table']==name}=={'normal','zombie'}
+    assert {'normal','zombie'}<={entry['mode'] for entry in tables if entry['table']==name}<={'normal','zombie','royale'}
     for entry in (e for e in tables if e['table']==name and e['mode']=='normal' and e['item'].endswith('_ammo')):
         zombie=next(e for e in tables if e['table']==name and e['mode']=='zombie' and e['item']==entry['item'])
         assert int(zombie['max'])<int(entry['max']) and int(zombie['weight'])<int(entry['weight'])
-print(f'Loot assets: {len(items)} items, eight categories, {len({e["table"] for e in tables})} mode-aware tables; supplied models/textures verified.')
+print(f'Loot assets: {len(items)} items at real sizes, eight categories, {len({e["table"] for e in tables})} mode-aware tables (Battle Royale arsenal included); supplied models/textures verified.')

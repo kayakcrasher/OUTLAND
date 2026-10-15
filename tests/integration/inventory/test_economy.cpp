@@ -40,6 +40,7 @@ int main() {
     const auto& water=offer("general_water");
     assert(inventory::pickup_unit_scale({{0,0,0},{2,0,3}})==1.0F/3); // flat carpet
     assert(inventory::pickup_unit_scale({{0,0,0},{1,2,1}})==.5F); // standing furniture
+    assert(inventory::pickup_unit_scale({{0,0,0},{.48F,.05F,.74F}})==1/.74F); // a vest lying flat keeps its size
     assert(inventory::pickup_unit_scale({{0,0,0},{0,0,0}})==0);
     assert(inventory::pickup_unit_scale({{0,0,0},{1,std::numeric_limits<float>::quiet_NaN(),1}})==0);
     inventory::Inventory bag;economy::EconomyState state;

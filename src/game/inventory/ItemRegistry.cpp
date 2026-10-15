@@ -54,7 +54,7 @@ bool valid_text(const std::string &value) {
 float pickup_unit_scale(BoundingBox bounds) {
     const float x=bounds.max.x-bounds.min.x,y=bounds.max.y-bounds.min.y,z=bounds.max.z-bounds.min.z;
     if(!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z) || x<0 || y<0 || z<0) return 0;
-    const float extent=y>.000001F ? y : std::max(x,z);
+    const float extent=std::max({x,y,z});
     return extent>.000001F ? 1/extent : 0;
 }
 const char *category_name(ItemCategory c) {
@@ -83,9 +83,30 @@ const ItemDefinition *ItemRegistry::find(const std::string &id) const {
     return it == items_.end() ? nullptr : &*it;
 }
 const LootTable *ItemRegistry::table(const std::string &id, bool zombie) const {
-    const auto it = std::find_if(tables_.begin(), tables_.end(),
-                                 [&](const auto &t) { return t.id == id && t.zombie == zombie; });
+    const auto it = std::find_if(tables_.begin(), tables_.end(), [&](const auto &t) {
+        return t.id == id && t.zombie == zombie && !t.royale;
+    });
     return it == tables_.end() ? nullptr : &*it;
+}
+const LootTable *ItemRegistry::table(const std::string &id, LootMode mode) const {
+    if (mode == LootMode::Royale) {
+        const auto it = std::find_if(tables_.begin(), tables_.end(),
+                                     [&](const auto &t) { return t.id == id && t.royale; });
+        if (it != tables_.end())
+            return &*it;
+    }
+    return table(id, mode == LootMode::Zombie);
+}
+const ItemDefinition *ItemRegistry::ammo_for(const ItemDefinition &firearm) const {
+    if (firearm.category != ItemCategory::Weapon || !firearm.weapon)
+        return nullptr;
+    for (const auto &item : items_)
+        if (item.category == ItemCategory::Ammo && item.weapon == firearm.weapon)
+            return &item;
+    return nullptr;
+}
+const char *loot_mode_name(LootMode mode) {
+    return mode == LootMode::Zombie ? "zombie" : mode == LootMode::Royale ? "royale" : "normal";
 }
 std::string ItemRegistry::table_for_marker(const std::string &id) const {
     std::string result = "general";
@@ -112,7 +133,7 @@ bool ItemRegistry::load(const std::string &item_path, const std::string &table_p
     };
     if (!input || !std::getline(input, line) ||
         columns(line) != std::vector<std::string>{"id", "name", "category", "model", "stack",
-                                                  "height", "action", "value", "weapon", "capacity",
+                                                  "size", "action", "value", "weapon", "capacity",
                                                   "requires", "starting_quantity",
                                                   "starting_loaded"})
         return fail("Invalid item manifest header");
@@ -135,7 +156,7 @@ bool ItemRegistry::load(const std::string &item_path, const std::string &table_p
         if (!identifier(item.id) || parsed.find(item.id) || item.name.empty() ||
             !valid_text(item.name) || category == categories.end() || action == actions.end() ||
             !integer(c[4], item.stack_size) || item.stack_size < 1 || item.stack_size > 999 ||
-            !number(c[5], item.height) || item.height < .03F || item.height > 3 ||
+            !number(c[5], item.size) || item.size < .03F || item.size > 3 ||
             !number(c[7], item.value) || item.value < 0 || item.value > 1000 ||
             !integer(c[9], item.capacity_bonus) || item.capacity_bonus < 0 ||
             item.capacity_bonus > 52)
@@ -204,7 +225,7 @@ bool ItemRegistry::load(const std::string &item_path, const std::string &table_p
         if (line.empty() || line.starts_with('#'))
             continue;
         const auto c = columns(line);
-        if (c.size() != 7 || !identifier(c[0]) || (c[1] != "normal" && c[1] != "zombie") ||
+        if (c.size() != 7 || !identifier(c[0]) || (c[1] != "normal" && c[1] != "zombie" && c[1] != "royale") ||
             !parsed.find(c[2]))
             return fail("Invalid loot table entry");
         LootEntry entry;
@@ -217,12 +238,12 @@ bool ItemRegistry::load(const std::string &item_path, const std::string &table_p
             return fail("Invalid loot quantities");
         if (parsed.find(entry.item)->category == ItemCategory::Weapon && entry.maximum != 1)
             return fail("Firearm pickups must be individual");
-        const bool zombie = c[1] == "zombie";
+        const bool zombie = c[1] == "zombie", royale = c[1] == "royale";
         auto found = std::find_if(parsed.tables_.begin(), parsed.tables_.end(), [&](const auto &t) {
-            return t.id == c[0] && t.zombie == zombie;
+            return t.id == c[0] && t.zombie == zombie && t.royale == royale;
         });
         if (found == parsed.tables_.end()) {
-            parsed.tables_.push_back({c[0], zombie, rolls, {}});
+            parsed.tables_.push_back({c[0], zombie, royale, rolls, {}});
             found = std::prev(parsed.tables_.end());
         }
         if (found->rolls != rolls || found->entries.size() >= 128)
@@ -232,7 +253,7 @@ bool ItemRegistry::load(const std::string &item_path, const std::string &table_p
     if (input.bad() || !parsed.table("general", false) || !parsed.table("general", true))
         return fail("Missing general loot tables");
     for (const auto &t : parsed.tables_)
-        if (!parsed.table(t.id, !t.zombie))
+        if (!parsed.table(t.id, !t.zombie) || !parsed.table(t.id, false))
             return fail("Missing mode variant: " + t.id);
     *this = std::move(parsed);
     return true;

@@ -1,80 +1,80 @@
-id	name	category	model	stack	height	action	value	weapon	capacity	requires	starting_quantity	starting_loaded
-canned_food	Canned food	food	assets/verda/survival/runtime/Can.glb	6	0.18	eat	25		0		2	0
-water	Water bottle	water	assets/verda/survival/runtime/Water.glb	6	0.28	drink	30		0		2	0
-soda	Soda	water	assets/verda/survival/runtime/Can_Soda.glb	6	0.18	drink	15		0		0	0
-antibiotics	Antibiotics	medical	assets/verda/survival/runtime/Antibiotics.glb	4	0.16	heal	20		0		0	0
-antiseptic	Antiseptic	medical	assets/verda/survival/runtime/Antiseptic.glb	4	0.22	heal	15		0		0	0
+id	name	category	model	stack	size	action	value	weapon	capacity	requires	starting_quantity	starting_loaded
+canned_food	Canned food	food	assets/verda/survival/runtime/Can.glb	6	0.11	eat	25		0		2	0
+water	Water bottle	water	assets/verda/survival/runtime/Water.glb	6	0.25	drink	30		0		2	0
+soda	Soda	water	assets/verda/survival/runtime/Can_Soda.glb	6	0.12	drink	15		0		0	0
+antibiotics	Antibiotics	medical	assets/verda/survival/runtime/Antibiotics.glb	4	0.09	heal	20		0		0	0
+antiseptic	Antiseptic	medical	assets/verda/survival/runtime/Antiseptic.glb	4	0.14	heal	15		0		0	0
 bandage	Bandage	medical	assets/verda/survival/runtime/band.glb	8	0.1	heal	10		0		1	0
-pistol_ammo	9mm rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	60	0.12	ammo	0	pistol	0		60	0
-rifle_ammo	Rifle rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	60	0.12	ammo	0	rifle	0		120	0
-pistol	V9 pistol	weapon		1	0.3	equip	0	pistol	0		1	12
-hunting_rifle	Hunting rifle	weapon	assets/verda/survival/runtime/hunting_rifle.glb	1	0.3	equip	0	rifle	0		1	30
-smg_ammo	.45 rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	50	0.12	ammo	0	smg	0		0	0
-shotgun_shells	12-gauge shells	ammo	assets/verda/survival/runtime/Ammunition.glb	25	0.12	ammo	0	shotgun	0		0	0
-sniper_ammo	7.62 rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	20	0.12	ammo	0	sniper	0		0	0
-frag_grenade	Frag grenade	utility	assets/verda/combat/frag_grenade.glb	6	0.12	none	0		0		2	0
-red_dot_sight	Red dot sight	utility	assets/verda/combat/red_dot_sight.glb	3	0.08	none	0		0		0	0
-scope_2x	2x scope	utility	assets/verda/combat/scope_2x.glb	3	0.08	none	0		0		0	0
-scope_4x	4x scope	utility	assets/verda/combat/scope_4x.glb	3	0.08	none	0		0		0	0
-vest_light	Light vest (armour I)	utility	assets/verda/combat/vest_light.glb	1	0.5	none	0		0		0	0
-vest_heavy	Plate carrier (armour II)	utility	assets/verda/combat/vest_heavy.glb	1	0.55	none	0		0		0	0
-smg	VK45 SMG	weapon		1	0.3	equip	0	smg	0		0	0
-shotgun	VS12 shotgun	weapon		1	0.3	equip	0	shotgun	0		0	0
-sniper	VP7 sniper rifle	weapon		1	0.3	equip	0	sniper	0		0	0
-backpack	Backpack	container	assets/verda/survival/runtime/Backpack.glb	1	0.5	container	0		12		0	0
-trunk	Field storage trunk	container	assets/verda/survival/runtime/Trunk.glb	1	0.55	container	0		8		0	0
-battery	Battery	utility	assets/verda/survival/runtime/Battery.glb	12	0.12	none	0		0		0	0
-lantern	Lantern	utility	assets/verda/survival/runtime/Lantern.glb	1	0.35	light	0		0	battery	0	0
-torch	Torch	utility	assets/verda/survival/runtime/Torch.glb	1	0.3	light	0		0	battery	0	0
-axe	Axe	utility	assets/verda/survival/runtime/Axe.glb	1	0.3	none	0		0		0	0
-knife	Knife	utility	assets/verda/survival/runtime/knife.glb	1	0.16	none	0		0		0	0
-tent	Shelter tent	utility	assets/verda/survival/runtime/Shelter_tent.glb	1	1.2	none	0		0		0	0
-sleeping_bag	Sleeping bag	utility	assets/verda/survival/runtime/sleeping_bag.glb	1	0.2	none	0		0		0	0
-bonfire	Campfire kit	utility	assets/verda/survival/runtime/bonfire.glb	1	0.3	none	0		0		0	0
-matches	Matches	utility	assets/verda/survival/runtime/match.glb	16	0.1	none	0		0		0	0
-lighter	Lighter	utility	assets/verda/survival/runtime/zippo.glb	1	0.1	none	0		0		0	0
-cup	Cup	utility	assets/verda/survival/runtime/Cup.glb	1	0.12	none	0		0		0	0
-casserole	Cooking pot	utility	assets/verda/survival/runtime/Casserole.glb	1	0.22	none	0		0		0	0
-interior_bathroom_sink	Bathroom sink	furniture	assets/verda/interiors/props/bathroomSink.glb	1	1.256337	none	0		0		0	0
-interior_bathtub	Bathtub	furniture	assets/verda/interiors/props/bathtub.glb	1	0.896066	none	0		0		0	0
-interior_bed	Bed	furniture	assets/verda/interiors/props/bed.glb	1	1.182481	none	0		0		0	0
-interior_bed2	Bed2	furniture	assets/verda/interiors/props/bed2.glb	1	1.814740	none	0		0		0	0
-interior_book_stack	Book stack	utility	assets/verda/interiors/props/bookStack.glb	1	0.283777	none	0		0		0	0
-wood_shelf	Bookshelf	furniture	assets/verda/interiors/props/bookshelf.glb	1	2.508981	none	0		0		0	0
-interior_bottle	Bottle	furniture	assets/verda/interiors/props/bottle.glb	1	0.382660	none	0		0		0	0
-interior_box	Box	furniture	assets/verda/interiors/props/box.glb	1	0.379968	none	0		0		0	0
-interior_breaker_box	Breaker box	furniture	assets/verda/interiors/props/breakerBox.glb	1	0.591805	none	0		0		0	0
-interior_broom	Broom	furniture	assets/verda/interiors/props/broom.glb	1	1.962376	none	0		0		0	0
-interior_bucket	Bucket	furniture	assets/verda/interiors/props/bucket.glb	1	0.504359	none	0		0		0	0
-interior_cabinet	Cabinet	furniture	assets/verda/interiors/props/cabinet.glb	1	2.034769	none	0		0		0	0
-interior_cabinet_high	Cabinet high	furniture	assets/verda/interiors/props/cabinetHigh.glb	1	1.412288	none	0		0		0	0
-interior_cabinet_low	Cabinet low	furniture	assets/verda/interiors/props/cabinetLow.glb	1	1.030922	none	0		0		0	0
-interior_cabinet_sink	Cabinet sink	furniture	assets/verda/interiors/props/cabinetSink.glb	1	1.358895	none	0		0		0	0
-interior_carpet	Carpet	furniture	assets/verda/interiors/props/carpet.glb	1	2.823474	none	0		0		0	0
-interior_ceiling_light	Ceiling light	utility	assets/verda/interiors/props/ceilingLight.glb	1	0.134737	none	0		0		0	0
-wood_chair	Chair	furniture	assets/verda/interiors/props/chair.glb	1	1.196154	none	0		0		0	0
-interior_chair2	Chair2	furniture	assets/verda/interiors/props/chair2.glb	1	1.243235	none	0		0		0	0
-interior_couch_big	Couch big	furniture	assets/verda/interiors/props/couchBig.glb	1	1.100145	none	0		0		0	0
-interior_couch_small	Couch small	furniture	assets/verda/interiors/props/couchSmall.glb	1	1.100145	none	0		0		0	0
-interior_cup	Cup	utility	assets/verda/interiors/props/cup.glb	1	0.122559	none	0		0		0	0
-interior_fridge	Fridge	furniture	assets/verda/interiors/props/fridge.glb	1	2.518623	none	0		0		0	0
-interior_lamp	Lamp	furniture	assets/verda/interiors/props/lamp.glb	1	1.443713	none	0		0		0	0
-interior_light_switch	Light switch	utility	assets/verda/interiors/props/lightSwitch.glb	1	0.187477	none	0		0		0	0
-interior_mirror	Mirror	furniture	assets/verda/interiors/props/mirror.glb	1	0.833726	none	0		0		0	0
-interior_oven	Oven	furniture	assets/verda/interiors/props/oven.glb	1	1.222101	none	0		0		0	0
-interior_painting	Painting	furniture	assets/verda/interiors/props/painting.glb	1	1.178603	none	0		0		0	0
-interior_phone	Phone	utility	assets/verda/interiors/props/phone.glb	1	0.079434	none	0		0		0	0
-interior_plant	Plant	furniture	assets/verda/interiors/props/plant.glb	1	0.945631	none	0		0		0	0
-interior_plate	Plate	utility	assets/verda/interiors/props/plate.glb	1	0.033115	none	0		0		0	0
-interior_power_socket	Power socket	utility	assets/verda/interiors/props/powerSocket.glb	1	0.187478	none	0		0		0	0
-interior_radio	Radio	utility	assets/verda/interiors/props/radio.glb	1	0.231443	none	0		0		0	0
-interior_shelves	Shelves	furniture	assets/verda/interiors/props/shelves.glb	1	1.915920	none	0		0		0	0
-interior_sideboard	Sideboard	furniture	assets/verda/interiors/props/sideboard.glb	1	0.930227	none	0		0		0	0
-wood_table	Table	furniture	assets/verda/interiors/props/table.glb	1	0.720338	none	0		0		0	0
-interior_table_lamp	Table lamp	furniture	assets/verda/interiors/props/tableLamp.glb	1	0.439142	none	0		0		0	0
-interior_table_small	Table small	furniture	assets/verda/interiors/props/tableSmall.glb	1	0.640213	none	0		0		0	0
-interior_toilet	Toilet	furniture	assets/verda/interiors/props/toilet.glb	1	1.292422	none	0		0		0	0
-interior_trash_bin	Trash bin	furniture	assets/verda/interiors/props/trashBin.glb	1	0.842265	none	0		0		0	0
-interior_tv	Tv	furniture	assets/verda/interiors/props/tv.glb	1	0.533375	none	0		0		0	0
-interior_wall_light	Wall light	furniture	assets/verda/interiors/props/wallLight.glb	1	0.370491	none	0		0		0	0
-interior_washing_machine	Washing machine	furniture	assets/verda/interiors/props/washingMachine.glb	1	1.060541	none	0		0		0	0
+pistol_ammo	9mm rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	60	0.16	ammo	0	pistol	0		60	0
+rifle_ammo	Rifle rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	60	0.16	ammo	0	rifle	0		120	0
+pistol	V9 pistol	weapon		1	0.2	equip	0	pistol	0		1	12
+hunting_rifle	Hunting rifle	weapon	assets/verda/survival/runtime/hunting_rifle.glb	1	1.12	equip	0	rifle	0		1	30
+smg_ammo	.45 rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	50	0.16	ammo	0	smg	0		0	0
+shotgun_shells	12-gauge shells	ammo	assets/verda/survival/runtime/Ammunition.glb	25	0.16	ammo	0	shotgun	0		0	0
+sniper_ammo	7.62 rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	20	0.16	ammo	0	sniper	0		0	0
+frag_grenade	Frag grenade	utility	assets/verda/combat/frag_grenade.glb	6	0.11	none	0		0		2	0
+red_dot_sight	Red dot sight	utility	assets/verda/combat/red_dot_sight.glb	3	0.06	none	0		0		0	0
+scope_2x	2x scope	utility	assets/verda/combat/scope_2x.glb	3	0.15	none	0		0		0	0
+scope_4x	4x scope	utility	assets/verda/combat/scope_4x.glb	3	0.18	none	0		0		0	0
+vest_light	Light vest (armour I)	utility	assets/verda/combat/vest_light.glb	1	0.74	none	0		0		0	0
+vest_heavy	Plate carrier (armour II)	utility	assets/verda/combat/vest_heavy.glb	1	0.78	none	0		0		0	0
+smg	VK45 SMG	weapon		1	0.6	equip	0	smg	0		0	0
+shotgun	VS12 shotgun	weapon		1	1	equip	0	shotgun	0		0	0
+sniper	VP7 sniper rifle	weapon		1	1.2	equip	0	sniper	0		0	0
+backpack	Backpack	container	assets/verda/survival/runtime/Backpack.glb	1	0.55	container	0		12		0	0
+trunk	Field storage trunk	container	assets/verda/survival/runtime/Trunk.glb	1	0.8	container	0		8		0	0
+battery	Battery	utility	assets/verda/survival/runtime/Battery.glb	12	0.06	none	0		0		0	0
+lantern	Lantern	utility	assets/verda/survival/runtime/Lantern.glb	1	0.3	light	0		0	battery	0	0
+torch	Torch	utility	assets/verda/survival/runtime/Torch.glb	1	0.22	light	0		0	battery	0	0
+axe	Axe	utility	assets/verda/survival/runtime/Axe.glb	1	0.7	none	0		0		0	0
+knife	Knife	utility	assets/verda/survival/runtime/knife.glb	1	0.25	none	0		0		0	0
+tent	Shelter tent	utility	assets/verda/survival/runtime/Shelter_tent.glb	1	2.2	none	0		0		0	0
+sleeping_bag	Sleeping bag	utility	assets/verda/survival/runtime/sleeping_bag.glb	1	1.9	none	0		0		0	0
+bonfire	Campfire kit	utility	assets/verda/survival/runtime/bonfire.glb	1	0.9	none	0		0		0	0
+matches	Matches	utility	assets/verda/survival/runtime/match.glb	16	0.06	none	0		0		0	0
+lighter	Lighter	utility	assets/verda/survival/runtime/zippo.glb	1	0.06	none	0		0		0	0
+cup	Cup	utility	assets/verda/survival/runtime/Cup.glb	1	0.1	none	0		0		0	0
+casserole	Cooking pot	utility	assets/verda/survival/runtime/Casserole.glb	1	0.32	none	0		0		0	0
+interior_bathroom_sink	Bathroom sink	furniture	assets/verda/interiors/props/bathroomSink.glb	1	1.1	none	0		0		0	0
+interior_bathtub	Bathtub	furniture	assets/verda/interiors/props/bathtub.glb	1	1.7	none	0		0		0	0
+interior_bed	Bed	furniture	assets/verda/interiors/props/bed.glb	1	2.15	none	0		0		0	0
+interior_bed2	Bed2	furniture	assets/verda/interiors/props/bed2.glb	1	2.1	none	0		0		0	0
+interior_book_stack	Book stack	utility	assets/verda/interiors/props/bookStack.glb	1	0.34	none	0		0		0	0
+wood_shelf	Bookshelf	furniture	assets/verda/interiors/props/bookshelf.glb	1	2	none	0		0		0	0
+interior_bottle	Bottle	furniture	assets/verda/interiors/props/bottle.glb	1	0.38	none	0		0		0	0
+interior_box	Box	furniture	assets/verda/interiors/props/box.glb	1	0.79	none	0		0		0	0
+interior_breaker_box	Breaker box	furniture	assets/verda/interiors/props/breakerBox.glb	1	0.59	none	0		0		0	0
+interior_broom	Broom	furniture	assets/verda/interiors/props/broom.glb	1	1.4	none	0		0		0	0
+interior_bucket	Bucket	furniture	assets/verda/interiors/props/bucket.glb	1	0.50	none	0		0		0	0
+interior_cabinet	Cabinet	furniture	assets/verda/interiors/props/cabinet.glb	1	1.9	none	0		0		0	0
+interior_cabinet_high	Cabinet high	furniture	assets/verda/interiors/props/cabinetHigh.glb	1	1.41	none	0		0		0	0
+interior_cabinet_low	Cabinet low	furniture	assets/verda/interiors/props/cabinetLow.glb	1	1.03	none	0		0		0	0
+interior_cabinet_sink	Cabinet sink	furniture	assets/verda/interiors/props/cabinetSink.glb	1	1.36	none	0		0		0	0
+interior_carpet	Carpet	furniture	assets/verda/interiors/props/carpet.glb	1	2.82	none	0		0		0	0
+interior_ceiling_light	Ceiling light	utility	assets/verda/interiors/props/ceilingLight.glb	1	0.48	none	0		0		0	0
+wood_chair	Chair	furniture	assets/verda/interiors/props/chair.glb	1	1.20	none	0		0		0	0
+interior_chair2	Chair2	furniture	assets/verda/interiors/props/chair2.glb	1	1.24	none	0		0		0	0
+interior_couch_big	Couch big	furniture	assets/verda/interiors/props/couchBig.glb	1	2.37	none	0		0		0	0
+interior_couch_small	Couch small	furniture	assets/verda/interiors/props/couchSmall.glb	1	1.42	none	0		0		0	0
+interior_cup	Cup	utility	assets/verda/interiors/props/cup.glb	1	0.15	none	0		0		0	0
+interior_fridge	Fridge	furniture	assets/verda/interiors/props/fridge.glb	1	1.85	none	0		0		0	0
+interior_lamp	Lamp	furniture	assets/verda/interiors/props/lamp.glb	1	1.44	none	0		0		0	0
+interior_light_switch	Light switch	utility	assets/verda/interiors/props/lightSwitch.glb	1	0.19	none	0		0		0	0
+interior_mirror	Mirror	furniture	assets/verda/interiors/props/mirror.glb	1	0.83	none	0		0		0	0
+interior_oven	Oven	furniture	assets/verda/interiors/props/oven.glb	1	1	none	0		0		0	0
+interior_painting	Painting	furniture	assets/verda/interiors/props/painting.glb	1	1.18	none	0		0		0	0
+interior_phone	Phone	utility	assets/verda/interiors/props/phone.glb	1	0.22	none	0		0		0	0
+interior_plant	Plant	furniture	assets/verda/interiors/props/plant.glb	1	0.95	none	0		0		0	0
+interior_plate	Plate	utility	assets/verda/interiors/props/plate.glb	1	0.29	none	0		0		0	0
+interior_power_socket	Power socket	utility	assets/verda/interiors/props/powerSocket.glb	1	0.19	none	0		0		0	0
+interior_radio	Radio	utility	assets/verda/interiors/props/radio.glb	1	0.3	none	0		0		0	0
+interior_shelves	Shelves	furniture	assets/verda/interiors/props/shelves.glb	1	2.23	none	0		0		0	0
+interior_sideboard	Sideboard	furniture	assets/verda/interiors/props/sideboard.glb	1	1.65	none	0		0		0	0
+wood_table	Table	furniture	assets/verda/interiors/props/table.glb	1	1.67	none	0		0		0	0
+interior_table_lamp	Table lamp	furniture	assets/verda/interiors/props/tableLamp.glb	1	0.44	none	0		0		0	0
+interior_table_small	Table small	furniture	assets/verda/interiors/props/tableSmall.glb	1	0.88	none	0		0		0	0
+interior_toilet	Toilet	furniture	assets/verda/interiors/props/toilet.glb	1	0.8	none	0		0		0	0
+interior_trash_bin	Trash bin	furniture	assets/verda/interiors/props/trashBin.glb	1	0.84	none	0		0		0	0
+interior_tv	Tv	furniture	assets/verda/interiors/props/tv.glb	1	0.66	none	0		0		0	0
+interior_wall_light	Wall light	furniture	assets/verda/interiors/props/wallLight.glb	1	0.37	none	0		0		0	0
+interior_washing_machine	Washing machine	furniture	assets/verda/interiors/props/washingMachine.glb	1	0.9	none	0		0		0	0
