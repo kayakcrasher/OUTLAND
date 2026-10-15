@@ -9,6 +9,7 @@ struct EconomyState {
     std::int64_t money{250}; // whole Verdan kronoj, never floating point currency
     float restock_remaining{600};
     std::vector<Stock> stock;
+    std::vector<std::string> properties; // homes the player owns (economy::Penthouse::property_id)
 };
 bool valid_state(const EconomyState&);
 struct Offer { std::string id, kind, item; int buy{0}, sell{0}, stock{0}; };

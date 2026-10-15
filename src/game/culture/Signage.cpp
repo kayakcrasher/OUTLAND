@@ -126,6 +126,8 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
         const int sign_ordinal = place.kind == PlaceKind::Office && seat_in_town && !seat && ordinal == 0 ? 1 : ordinal;
         auto text = place_sign(place.kind, text_hash(s < towns.size() ? towns[s].id : place.id), owner_of(island, static_cast<int>(i)), sign_ordinal, capital);
         if (parliament) text = {"REGISTARO DE VERDA", "PARLAMENTO · RESPUBLIKO VERDA"};
+        // Stela Turo, the art deco skyscraper by the stadium ground.
+        if (place.kind == PlaceKind::Office && !seat && near_model("towers/stela_turo.glb")) text = {"STELA TURO", "OFICEJOJ · PENTDOMO"};
         if (town_hall) {
             std::string name = s < towns.size() ? towns[s].name : std::string{};
             for (auto& c : name) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));

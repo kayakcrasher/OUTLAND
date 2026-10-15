@@ -17,20 +17,50 @@ void tilted(float degrees,float x,float y,float z,float w,float h,float d,Color 
 }
 const Color black{30,32,33,255}, metal{48,51,54,255}, polymer{58,60,58,255}, dark{20,21,22,255},
             wood{122,80,46,255}, wood_dark{92,58,34,255}, olive{82,90,62,255}, tan{156,138,104,255},
-            glove{46,44,40,255}, sleeve{72,78,64,255};
+            glove{46,44,40,255}, sleeve{72,78,64,255}, tritium{150,255,120,255}, white_dot{235,235,225,255};
 
-void rifle(float reload,bool irons) {
+// Iron sights, built on the gun's sight line (sight_height: the bore up to where the eye looks),
+// so the picture lines up exactly with the crosshair: the top of the front post sits on the line
+// and the rear aperture (or notch) is centred on it.
+// A front post in protective ears (an A-frame on a rifle), a tritium dot on its tip.
+void front_post(float z,float line,float base,bool ears) {
+    const float post_h=line-base;
+    box(0,base+post_h*.5F,z,.0032F,post_h,.0032F,black);
+    box(0,line-.0012F,z+.0005F,.0022F,.0022F,.001F,tritium);
+    if(ears) for(const float side:{-1.0F,1.0F}) {
+        box(side*.0105F,base+post_h*.55F,z,.0035F,post_h*1.1F,.006F,black);
+        tilted(side*-14,side*.006F,base+.002F,z,.012F,.006F,.008F,black);
+    }
+}
+// A rear peep: a square ring round a hole on the line (the eye looks through it, so it frames
+// the front post), on a short base.
+void rear_aperture(float z,float line,float base,float hole=.0056F,float ring=.0034F) {
+    const float outer=hole+ring;
+    box(0,line+hole+ring*.5F,z,outer*2,ring,.006F,black);           // top
+    box(0,(base+line-hole)*.5F,z,outer*2,line-hole-base,.006F,black); // bottom down to the base
+    for(const float side:{-1.0F,1.0F}) box(side*(hole+ring*.5F),line,z,ring,hole*2,.006F,black);
+    for(const float side:{-1.0F,1.0F}) box(side*(outer+.002F),(base+line+outer)*.5F,z,.003F,line+outer-base,.01F,black); // guard wings
+}
+// A pistol's notch: two blades with a gap on the line, a white dot on each, and the front dot.
+void rear_notch(float z,float line,float base,float gap=.0034F) {
+    for(const float side:{-1.0F,1.0F}) {
+        box(side*(gap+.0035F),(base+line+.002F)*.5F,z,.007F,line+.002F-base,.006F,dark);
+        box(side*(gap+.0035F),line-.0012F,z-.0032F,.0024F,.0024F,.001F,white_dot);
+    }
+}
+
+void rifle(float reload,bool irons,float line) {
     tube(.50F,.53F,.011F,0,dark);                         // flash hider
     tube(.39F,.50F,.0085F,0,metal);                       // barrel
     box(0,.024F,.385F,.018F,.045F,.02F,black);            // front sight block
-    box(0,.054F,.385F,.004F,.018F,.004F,black);
+    front_post(.385F,line,.046F,true);
     box(0,0,.27F,.05F,.054F,.24F,polymer);                // quad-rail handguard
     box(0,.031F,.27F,.022F,.008F,.24F,black);
     box(0,.012F,.07F,.032F,.034F,.22F,metal);             // upper receiver
     box(0,.033F,.07F,.022F,.008F,.20F,black);             // top rail
     if(irons) {                                           // flip-up rear aperture
         box(0,.041F,-.02F,.022F,.008F,.014F,black);
-        for(const float side:{-1.0F,1.0F}) box(side*.0075F,.056F,-.02F,.004F,.022F,.008F,black);
+        rear_aperture(-.02F,line,.045F);
     }
     box(0,-.024F,.05F,.03F,.04F,.16F,metal);              // lower receiver
     box(-.0165F,.012F,.06F,.002F,.012F,.04F,dark);        // ejection port (right side)
@@ -42,24 +72,25 @@ void rifle(float reload,bool irons) {
     box(0,-.012F,-.235F,.04F,.072F,.13F,polymer);         // stock
     box(0,-.02F,-.304F,.042F,.12F,.012F,dark);            // butt pad
 }
-void pistol(float reload) {
+void pistol(float reload,float line) {
     box(0,.008F,.025F,.026F,.03F,.19F,black);             // slide
     box(-.0135F,.012F,.04F,.001F,.012F,.035F,dark);       // ejection port
     box(0,-.015F,.035F,.024F,.016F,.14F,polymer);         // frame
     box(0,-.03F,.012F,.005F,.005F,.04F,polymer);          // trigger guard
     tilted(18,0,-.068F-reload*.06F,-.045F,.028F,.105F,.044F,polymer); // grip
-    box(0,.026F,-.06F,.02F,.006F,.006F,dark);             // rear sight
-    box(0,.026F,.11F,.004F,.006F,.004F,dark);             // front sight
+    rear_notch(-.06F,line,.023F);                         // three-dot sights
+    front_post(.11F,line,.023F,false);
+    box(0,line-.0012F,.11F-.002F,.0024F,.0024F,.001F,white_dot);
 }
-void smg(float reload,bool irons) {
+void smg(float reload,bool irons,float line) {
     tube(.24F,.30F,.011F,0,dark);                         // barrel and thread
     box(0,0,.07F,.04F,.065F,.34F,polymer);                // receiver
     box(0,.037F,.05F,.022F,.008F,.18F,black);             // rail
-    box(0,.038F,.21F,.016F,.012F,.012F,black);            // front post
-    box(0,.052F,.21F,.004F,.016F,.005F,black);
-    if(irons) {                                           // rear sight ears
+    box(0,.038F,.21F,.016F,.012F,.012F,black);            // front sight base
+    front_post(.21F,line,.044F,true);
+    if(irons) {                                           // rear drum aperture
         box(0,.044F,-.06F,.022F,.006F,.012F,black);
-        for(const float side:{-1.0F,1.0F}) box(side*.0075F,.054F,-.06F,.004F,.016F,.008F,black);
+        rear_aperture(-.06F,line,.047F,.0052F,.0032F);
     }
     box(.021F,.01F,.15F,.002F,.01F,.06F,black);           // cocking slot
     tilted(-5,0,-.105F-reload*.12F,.10F,.025F,.13F,.045F,black); // straight magazine
@@ -69,9 +100,13 @@ void smg(float reload,bool irons) {
     box(0,-.045F,-.19F,.02F,.015F,.14F,black);
     box(0,-.022F,-.258F,.035F,.075F,.012F,dark);          // butt plate
 }
-void shotgun(float reload,float pump) {
+void shotgun(float reload,float pump,float line) {
     tube(.10F,.55F,.011F,.012F,metal);                    // barrel
-    box(0,.025F,.54F,.004F,.005F,.004F,tan);              // bead
+    box(0,.0275F,.32F,.010F,.007F,.44F,dark);             // raised vent rib along the barrel
+    for(int k=0;k<6;++k) box(0,.026F,.14F+k*.07F,.010F,.004F,.01F,metal); // rib posts
+    box(0,line-.0025F,.54F,.005F,.005F,.005F,tan);        // brass bead on the line
+    box(0,line-.0015F,.33F,.0028F,.003F,.003F,white_dot); // mid bead
+    for(const float side:{-1.0F,1.0F}) box(side*.0055F,line-.003F,.07F,.004F,.008F,.012F,dark); // rear groove on the receiver
     tube(.10F,.46F,.010F,-.014F,metal);                   // magazine tube
     box(0,-.014F,.26F-pump*.07F,.042F,.042F,.16F,wood);   // pump fore-end
     box(0,0,.04F,.036F,.06F,.20F,black);                  // receiver
@@ -186,12 +221,13 @@ void CombatRenderer::draw_gun(Vector3 grip,Vector3 aim,Vector3 up,WeaponId id,fl
     const float reload=std::sin(std::clamp(reload_fraction,0.0F,1.0F)*PI);
     rlRotatef(reload*18,0,0,1); // the gun rolls over while the magazine changes
     const float work=std::clamp(pump,0.0F,1.0F);
+    const float line=sight_height(id,Sight::Iron);
     switch(id) {
-        case WeaponId::Pistol: pistol(reload);break;
-        case WeaponId::Smg: smg(reload,sight==Sight::Iron);break;
-        case WeaponId::Shotgun: shotgun(reload,work);break;
+        case WeaponId::Pistol: pistol(reload,line);break;
+        case WeaponId::Smg: smg(reload,sight==Sight::Iron,line);break;
+        case WeaponId::Shotgun: shotgun(reload,work,line);break;
         case WeaponId::Sniper: sniper(reload,work);break;
-        default: rifle(reload,sight==Sight::Iron);break;
+        default: rifle(reload,sight==Sight::Iron,line);break;
     }
     if(draw_hands) hands(id,gun_layout(id));
     optic(id,sight);

@@ -157,6 +157,7 @@ add_library(
     src/game/inventory/LootSession.cpp
     src/game/inventory/LootUI.cpp
     src/game/economy/Economy.cpp
+    src/game/economy/Penthouse.cpp
     src/game/ModeSession.cpp
     src/game/PlayUI.cpp
     src/game/MapScreen.cpp

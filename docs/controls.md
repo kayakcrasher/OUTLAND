@@ -50,6 +50,14 @@ The bottom-left hints (`LMB FIRE  RMB AIM  R RELOAD  Q SWAP`) follow the binding
 
 The on-screen controls appear when the game runs on a phone or tablet: Android, or a browser whose main pointer is a finger. They also appear as soon as a touch screen is used. SETTINGS can turn them on or off for good.
 
+## Aiming down sights
+Aim (right mouse, or the touch AIM button) brings the gun up to your eye in either camera, as in
+PUBG: you look through its sights - iron sights, a red dot or a scope. On iron sights the
+crosshair gives way to the sights and the edges of the view darken a little. The iron sights are
+built on each gun's sight line, so the picture lines up with where the shot goes: the rifle and SMG
+have a front post in protective ears with a tritium dot, seen through a rear peep ring; the pistol
+has three-dot sights (a notch and a post); the shotgun a brass bead on a raised rib with a mid bead.
+
 ## The Battle Royale drop
 Aboard the helicopter: **SPACE** / the touch **JUMP** button (or USE) jumps. In freefall the move
 stick glides (forward), dives (forward while looking down) or holds back; **SPACE / JUMP opens the

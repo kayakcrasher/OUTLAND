@@ -75,6 +75,9 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_town_hall", .name = "Urbodomo - county town hall with clock tower (enterable)", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/town_hall.glb", .thumbnail_path = "", .footprint = {23.00F, 17.00F, 17.00F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_stela_turo", .name = "Stela Turo - art deco skyscraper, 17 floors, penthouse (enterable)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/towers/stela_turo.glb", .thumbnail_path = "", .footprint = {30.60F, 29.20F, 86.20F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_sidewalk_block_68", .name = "Sidewalk Block 68 m", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/ground/sidewalk_block_68.glb", .thumbnail_path = "", .footprint = {68.00F, 68.00F, 0.15F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

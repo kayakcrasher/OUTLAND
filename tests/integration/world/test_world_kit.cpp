@@ -1,3 +1,4 @@
+#include "outland/game/economy/Penthouse.hpp"
 #include "outland/creator/CreatorAssetRegistry.hpp"
 #include "outland/creator/CreatorMapIO.hpp"
 #include "outland/dev/VerdaWorldKit.hpp"
@@ -422,6 +423,42 @@ int main() {
                         std::abs(asset.position.z - dev::stadium_reserve.z) < dev::stadium_half),
                       "nothing built on the stadium ground: " + asset.id);
         check(staffed == kit_places, "people live or work in every part-built building: " + std::to_string(staffed));
+        // Stela Turo: beside the stadium ground (not on it), every floor walkable, both stair cores
+        // climbable, the penthouse and the roof reachable.
+        check(report.stela_turo, "Stela Turo built");
+        game::economy::Penthouse penthouse;
+        check(penthouse.locate(region), "Stela Turo found in the world");
+        if (penthouse.found()) {
+            const auto origin = penthouse.to_world({0, 0, 0});
+            check(std::hypot(origin.x - dev::stadium_reserve.x, origin.z - dev::stadium_reserve.z) < 400, "Stela Turo near the stadium ground");
+            const auto stand = [&](Vector3 local) {
+                const auto w = penthouse.to_world(local);
+                return world::physics::WorldCollision::ground_height({w.x, w.y + .5F, w.z}, w.y + .5F, region) - (w.y - local.y);
+            };
+            for (int floor = 0; floor < 17; ++floor) {
+                const float top = floor * 3.6F + .25F;
+                check(std::abs(stand({0, top, -6}) - top) < .05F, "floor " + std::to_string(floor + 1) + " walkable");
+                const auto body = penthouse.to_world({0, top, -6});
+                check(!world::physics::WorldCollision::body_blocked(body, body.y, region, .35F), "floor " + std::to_string(floor + 1) + " open");
+            }
+            // Up each flight: every step's top is where the stairs say, then the floor above.
+            for (const char core : {'L', 'R'}) {
+                const int flights = core == 'R' ? 17 : 16;
+                for (int s = 0; s < flights; ++s) {
+                    const float inner = 10.5F - .35F, lane = (s % 2) ? 1.3F : 0.0F;
+                    const float x = core == 'R' ? inner - lane - .65F : -inner + lane + .65F;
+                    const float base = s * 3.6F + .25F;
+                    for (int k = 0; k < 17; ++k) {
+                        const float z = s % 2 == 0 ? -6.5F + (k + .5F) * .28F : -6.5F + (17 - k + .5F) * .28F;
+                        const float expect = base + (k + 1) * .2F;
+                        check(std::abs(stand({x, expect, z}) - expect) < .06F, std::string("stair ") + core + " flight " + std::to_string(s) + " step " + std::to_string(k));
+                    }
+                }
+            }
+            check(std::abs(stand({0, 17 * 3.6F + .25F, -5}) - (17 * 3.6F + .25F)) < .05F, "the roof walkable");
+            check(penthouse.inside(penthouse.to_world(game::economy::Penthouse::wake)) && !penthouse.inside(penthouse.to_world({0, 3.85F, 0})), "the penthouse floor");
+            check(penthouse.near_bed(penthouse.to_world(game::economy::Penthouse::wake)), "the bed by where you wake");
+        }
     }
     int capital_homes = 0, offices = 0, office_workers = 0;
     for (const auto& place : life.places())

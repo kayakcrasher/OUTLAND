@@ -1,3 +1,4 @@
+#include "outland/game/economy/Penthouse.hpp"
 #include "outland/game/economy/Economy.hpp"
 #include "outland/game/inventory/LootSession.hpp"
 #include "outland/game/life/LifePopulation.hpp"
@@ -116,6 +117,21 @@ int main() {
     snapshot.economy.money=0;assert(inventory::LootSave::save(items,snapshot,legacy,error));
     assert(inventory::LootSave::load(items,snapshot,legacy,error) && snapshot.economy.money==0);
     auto invalid=snapshot;invalid.economy.money=-1;assert(!inventory::LootSave::save(items,invalid,legacy,error));
+    {
+        // The Stela Turo penthouse: too dear at first, bought once, kept in the profile.
+        economy::EconomyState wallet;wallet.money=economy::Penthouse::price-1;
+        assert(economy::Penthouse::buy(wallet).find("costs")!=std::string::npos && !economy::Penthouse::owned(wallet) && wallet.money==economy::Penthouse::price-1);
+        wallet.money=economy::Penthouse::price+10;
+        assert(economy::Penthouse::buy(wallet).starts_with("Bought") && economy::Penthouse::owned(wallet) && wallet.money==10);
+        assert(economy::Penthouse::buy(wallet).find("already")!=std::string::npos && wallet.money==10);
+        auto home=snapshot;home.economy.money=10;home.economy.properties={economy::Penthouse::property_id};
+        assert(inventory::LootSave::save(items,home,legacy,error));
+        inventory::LootSnapshot back;back.mode=home.mode;
+        assert(inventory::LootSave::load(items,back,legacy,error) && economy::Penthouse::owned(back.economy) && back.economy.money==10);
+        auto twice=home;twice.economy.properties.push_back(economy::Penthouse::property_id);
+        assert(!inventory::LootSave::save(items,twice,legacy,error));
+        home.economy.properties.clear();home.economy.money=0;assert(inventory::LootSave::save(items,home,legacy,error));
+    }
     invalid=snapshot;invalid.economy.stock={{"s","o",1},{"s","o",1}};assert(!inventory::LootSave::save(items,invalid,legacy,error));
     assert(inventory::LootSave::load(items,snapshot,legacy,error) && snapshot.economy.money==0);
     std::ofstream(dir/"bad.tsv")<<"bad\n";const auto count=economy.offers().size();

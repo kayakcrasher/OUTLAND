@@ -268,6 +268,17 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
         DrawTriangle({at.x, at.y - r + 2}, {at.x - r + 2, at.y}, {at.x + r - 2, at.y}, color);
         DrawTriangle({at.x - r + 2, at.y}, {at.x, at.y + r - 2}, {at.x + r - 2, at.y}, color);
     }
+    // Stela Turo: a gold house (a star while it is for sale) and its name.
+    if (view.home) {
+        const auto at = to_map(area, view.home->x, view.home->z);
+        const float r = 8 * s;
+        const Color gold{230, 186, 70, 255};
+        DrawRectangleV({at.x - r * .75F, at.y - r * .2F}, {r * 1.5F, r}, view.home_owned ? gold : Color{40, 40, 40, 230});
+        DrawTriangle({at.x, at.y - r}, {at.x - r, at.y - r * .2F}, {at.x + r, at.y - r * .2F}, gold);
+        DrawRectangleLinesEx({at.x - r * .75F, at.y - r * .2F, r * 1.5F, r}, 1.5F, gold);
+        const char* label = view.home_owned ? "HOME - STELA TURO" : "STELA TURO (FOR SALE)";
+        DrawText(label, static_cast<int>(at.x + r * 1.2F), static_cast<int>(at.y - r * .6F), static_cast<int>(12 * s), gold);
+    }
     // Battle Royale: the safe circle.
     const auto to_pixels = [&](float metres) { return metres / (2 * extent) * area.width; };
     if (view.circle_radius > 0) {

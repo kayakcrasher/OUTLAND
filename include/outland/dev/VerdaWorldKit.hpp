@@ -23,7 +23,8 @@ struct WorldKitReport {
     int police_stations{0}, police_cars{0}, ambulances{0}, south_blocks{0};
     int retagged{0}; // purpose markers inside a model building (they retag it, not make a place)
     bool hospital{false};
-    bool parliament{false}, stadium_reserved{false};
+    bool parliament{false}, stadium_reserved{false}, stela_turo{false};
+    Vector3 stela_turo_at{};
     int town_halls{0};
     std::vector<KitBuilding> enterable;
     std::vector<Vector3> skipped;     // centres of lots left empty because something was there

@@ -44,6 +44,7 @@
 #include "outland/game/ai/BattleRoyaleBots.hpp"
 #include "outland/game/aircraft/HelicopterDrop.hpp"
 #include "outland/game/aircraft/DropRenderer.hpp"
+#include "outland/game/economy/Penthouse.hpp"
 #include "outland/game/sound/SoundBus.hpp"
 #include "outland/world/navigation/NavGrid.hpp"
 #include "outland/world/sky/DayNight.hpp"
@@ -555,6 +556,9 @@ void Renderer::run() {
     // Explore: the Policio's patrol cars and Hospitalo de Verda's ambulances.
     game::services::EmergencyServices services;
     bool respawn_at_hospital=false; // the player died in Explore: the ambulance took them in
+    // Explore: the Stela Turo penthouse, for sale; once bought, home (sleep there, wake there).
+    game::economy::Penthouse penthouse;
+    bool was_in_penthouse=false;
     game::ModeSession mode_session;
     game::PlayUI play_ui;
     game::economy::Economy economy;
@@ -806,7 +810,7 @@ void Renderer::run() {
             hit.kind==game::combat::HitKind::VehicleOccupant) combat_world.damage_hit(hit,amount,from);
     };
     float recoil_pitch = 0.0F, recoil_yaw = 0.0F;
-    float fp_aim_blend = 0.0F, crouch_blend = 0.0F;
+    float fp_aim_blend = 0.0F, crouch_blend = 0.0F, ads_view_blend = 0.0F;
     float recoil_debt = 0.0F, recoil_settle = 0.0F, recoil_quiet = 0.0F; // climb owed back after a burst
     bool trigger_ready = false;
 
@@ -930,13 +934,15 @@ void Renderer::run() {
                     true;
 
 #ifdef OUTLAND_DEV_TOOLS
-                // Dev builds: OUTLAND_DEV_SPAWN="x,z,yaw_degrees" starts every mode at that spot
+                // Dev builds: OUTLAND_DEV_SPAWN="x,z,yaw_degrees[,height]" starts every mode at that spot
                 // (screenshots, checking a far corner of the island without a long walk).
                 if(const char* spawn=std::getenv("OUTLAND_DEV_SPAWN")) {
-                    float x=0,z=0,yaw_degrees=0;
-                    if(std::sscanf(spawn,"%f,%f,%f",&x,&z,&yaw_degrees)==3 && std::isfinite(x) && std::isfinite(z) && std::isfinite(yaw_degrees)) {
+                    // An optional fourth value: look for the floor below that height (an upper storey).
+                    float x=0,z=0,yaw_degrees=0,height=-1e9F;
+                    if(std::sscanf(spawn,"%f,%f,%f,%f",&x,&z,&yaw_degrees,&height)>=3 && std::isfinite(x) && std::isfinite(z) && std::isfinite(yaw_degrees)) {
                         const float ground=world::terrain::TerrainHeight::sample(x,z);
-                        player.position={x,world::physics::WorldCollision::ground_height({x,ground,z},ground+.5F,verda_region)+1.0F,z};
+                        const float probe=std::isfinite(height) && height>ground ? height : ground+.5F;
+                        player.position={x,world::physics::WorldCollision::ground_height({x,probe,z},probe,verda_region)+1.0F,z};
                         player.yaw=yaw_degrees*DEG2RAD;explicit_spawn=true;
                     }
                 }
@@ -1058,7 +1064,13 @@ void Renderer::run() {
                     br_bots.sync_bodies(npcs,&character_registry);
                     services.start(vehicles,verda_region,&character_registry);
                     // Back from the dead: out of the hospital's front door.
-                    if(respawn_at_hospital && services.has_hospital()) {
+                    penthouse.locate(verda_region);was_in_penthouse=false;
+                    if(respawn_at_hospital && penthouse.found() && game::economy::Penthouse::owned(loot_session.economy())) {
+                        // Owners wake up at home, in the penthouse, mended.
+                        const auto bed=penthouse.to_world(game::economy::Penthouse::wake);
+                        player.position={bed.x,bed.y+1,bed.z};player.yaw=0;
+                        interaction_message="You wake up at home in the Stela Turo penthouse";interaction_remaining=5;
+                    } else if(respawn_at_hospital && services.has_hospital()) {
                         const auto door=services.hospital_door();
                         player.position={door.x,world::physics::WorldCollision::ground_height({door.x,door.y+1.2F,door.z},door.y+1.2F,verda_region)+1,door.z};
                         interaction_message="An ambulance brought you to Hospitalo de Verda";interaction_remaining=5;
@@ -1427,7 +1439,28 @@ void Renderer::run() {
                 }
             }
             if(controls.next_weapon)loot_session.changed();
-            if(controls.interact && !shop_open && !poker_open && !at_table && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){
+            // The penthouse: buy it (anywhere on its floor), or sleep in its bed once it is yours.
+            bool home_used=false;
+            if(game::rules_for(game_mode).civilian_life && penthouse.inside(loot_feet) && !shop_open && !poker_open && !inventory_open) {
+                const bool owned=game::economy::Penthouse::owned(loot_session.economy());
+                if(!was_in_penthouse) {interaction_message=owned ? "Home: the Stela Turo penthouse" : "Stela Turo penthouse - for sale";interaction_remaining=3;}
+                if(controls.interact && loot_session.world().nearest(loot_feet,2.8F,reachable_pickup)<0) {
+                    if(!owned) {
+                        interaction_message=game::economy::Penthouse::buy(loot_session.economy());loot_session.changed();
+                        if(game::economy::Penthouse::owned(loot_session.economy())) {gun_audio.kill_confirm();haptics.hit_given(true);}
+                        interaction_remaining=4;home_used=true;
+                    } else if(penthouse.near_bed(loot_feet)) {
+                        // A night's sleep: morning, mended.
+                        const auto clock=island_life.clock();
+                        const int days=clock.minute_of_day()>=7*60 ? clock.day()+1 : clock.day();
+                        island_life.set_clock(game::life::WorldClock::at(days,7,0));
+                        player_health.reset();health_seen=player_health.current();
+                        interaction_message="Slept until morning - "+island_life.clock().label();interaction_remaining=4;home_used=true;
+                    }
+                }
+            }
+            was_in_penthouse=penthouse.inside(loot_feet);
+            if(controls.interact && !home_used && !shop_open && !poker_open && !at_table && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){
                 interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;
                 if(interaction_message.starts_with("Picked up")) gun_audio.pickup();
             }
@@ -1875,16 +1908,27 @@ void Renderer::run() {
         camera.fovy += (desired_fov-camera.fovy) * (1.0F-std::exp(-dt*12.0F));
         // Through a scope (2x, 4x, sniper) the view is the scope itself, in either camera.
         const bool scoped=controls.aim && !driving && weapons.available() && game::combat::sight_info(sight).scope;
+        // Aiming down sights, as in PUBG: in either camera the view moves to the eye behind the
+        // gun's sights (iron sights, a red dot, a scope); a quick move, not a cut.
+        const bool ads=controls.aim && !driving && weapons.available() && !creator_active;
+        ads_view_blend+=((ads ? 1.0F : 0.0F)-ads_view_blend)*(1.0F-std::exp(-dt*16.0F));
+        if(!ads && ads_view_blend<.02F) ads_view_blend=0;
+        const bool ads_view=ads_view_blend>.85F;
         if (player.third_person && !scoped) {
-            const float distance = controls.aim ? 1.9F : 3.6F; // close over the right shoulder, as PUBG and Fortnite frame it
+            const float distance = 3.6F; // over the right shoulder, as PUBG and Fortnite frame it
             camera.position = Vector3Add(Vector3Subtract(head_position, Vector3Scale(look_direction,distance)),
-                Vector3Add(Vector3Scale(gun_right,controls.aim ? -.45F : -.7F), {0,controls.aim ? .25F : .7F,0}));
+                Vector3Add(Vector3Scale(gun_right,-.7F), {0,.7F,0}));
             const auto obstruction = combat_world.trace_segment(head_position,camera.position,false,false);
             if (obstruction.hit()) {
                 camera.position=Vector3Lerp(head_position,camera.position,
                     std::max(0.0F,obstruction.fraction-.08F));
             }
             camera.target=Vector3Add(head_position,Vector3Scale(look_direction,25.0F));
+            if(ads_view_blend>0) {
+                const float k=ads_view_blend*ads_view_blend*(3-2*ads_view_blend);
+                camera.position=Vector3Lerp(camera.position,head_position,k);
+                camera.target=Vector3Add(camera.position,look_direction);
+            }
         } else {
             camera.position=head_position;
             camera.target=Vector3Add(head_position,look_direction);
@@ -1987,7 +2031,7 @@ void Renderer::run() {
         // is also where every shot leaves from, in either view.
         const auto layout=game::combat::gun_layout(weapons.selected(),sight);
         const Vector3 view_up=Vector3Normalize(Vector3CrossProduct(Vector3CrossProduct(look_direction,{0,1,0}),look_direction));
-        const bool sighted=controls.aim && !player.third_person;
+        const bool sighted=ads;
         const float pistol_reach=weapons.weapon().hold==game::combat::WeaponHold::Pistol ? .14F : 0.0F;
         fp_aim_blend+=((sighted ? 1.0F : 0.0F)-fp_aim_blend)*(1.0F-std::exp(-dt*14.0F));
         Vector3 gun_grip=Vector3Add(head_position,Vector3Add(
@@ -2564,7 +2608,7 @@ void Renderer::run() {
         const float gun_work=!held_weapon.automatic && held_weapon.interval>.5F ?
             std::sin(std::clamp(1-weapons.cooldown()/held_weapon.interval,0.0F,1.0F)*PI)*(weapons.cooldown()>0 ? 1.0F : 0.0F) : 0.0F;
         const float gun_reload=weapons.reload_remaining()/held_weapon.reload_seconds;
-        if(weapons.available() && !driving && !creator_active && !player.third_person && !scoped)
+        if(weapons.available() && !driving && !creator_active && (!player.third_person || ads_view) && !scoped)
             game::combat::CombatRenderer::draw_gun(gun_grip,look_direction,view_up,weapons.selected(),gun_reload,weapons.muzzle_flash(),true,gun_work,sight);
         if(!creator_active)loot_ui.draw_world(item_registry,loot_session.world(),loot_feet,loot_session.inventory().state().light);
 
@@ -2608,7 +2652,7 @@ void Renderer::run() {
                 game::aircraft::draw_parachute(get_world_asset_model("assets/verda/aircraft/parachute.glb",character_registry),
                     Vector3Add(player.position,{0,.55F,0}),skydiver.heading(),open,skydiver.swing(),skydiver.bank());
         }
-        if (player.third_person && !driving && !scoped && !(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed)) {
+        if (player.third_person && !driving && !scoped && !ads_view && !(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed)) {
 
             const Vector3 character_feet{player.position.x,player.position.y-1.0F,player.position.z};
 
@@ -2761,11 +2805,22 @@ void Renderer::run() {
         // A red dot shows its dot once the gun is up (in third person, as soon as aiming starts).
         const bool red_dot_up=controls.aim && !driving && weapons.available() && sight==game::combat::Sight::RedDot && !creator_active;
         if(scoped && !creator_active) game::combat::CombatRenderer::draw_sight_view(sight,screen_width,screen_height,1);
-        else if(red_dot_up) game::combat::CombatRenderer::draw_sight_view(sight,screen_width,screen_height,player.third_person ? 1.0F : (fp_aim_blend-.6F)/.4F);
+        else if(red_dot_up) game::combat::CombatRenderer::draw_sight_view(sight,screen_width,screen_height,(fp_aim_blend-.6F)/.4F);
+        // On iron sights the sights are the aim: the crosshair gives way to them.
+        const bool irons_up=controls.aim && !driving && weapons.available() && sight==game::combat::Sight::Iron && !creator_active && fp_aim_blend>.7F;
         const int gap=static_cast<int>((controls.aim ? 3 : 8)+movement_amount*5+recoil_pitch*180);
         const Color crosshair_color=weapons.hit_marker()>0 ?
             (weapons.last_headshot() ? ORANGE : GREEN) : RAYWHITE;
-        if(!scoped && !red_dot_up) {
+        if(irons_up) {
+            // Focus on the sights: the edges of the view darken a little.
+            const auto edge=static_cast<unsigned char>(std::clamp((fp_aim_blend-.7F)/.3F,0.0F,1.0F)*90);
+            const int band=screen_height/4;
+            DrawRectangleGradientV(0,0,screen_width,band,Color{0,0,0,edge},Color{0,0,0,0});
+            DrawRectangleGradientV(0,screen_height-band,screen_width,band,Color{0,0,0,0},Color{0,0,0,edge});
+            DrawRectangleGradientH(0,0,band,screen_height,Color{0,0,0,edge},Color{0,0,0,0});
+            DrawRectangleGradientH(screen_width-band,0,band,screen_height,Color{0,0,0,0},Color{0,0,0,edge});
+        }
+        if(!scoped && !red_dot_up && !irons_up) {
             DrawLine(center_x-gap-6,center_y,center_x-gap,center_y,crosshair_color);
             DrawLine(center_x+gap,center_y,center_x+gap+6,center_y,crosshair_color);
             DrawLine(center_x,center_y-gap-6,center_x,center_y-gap,crosshair_color);
@@ -3067,6 +3122,16 @@ void Renderer::run() {
             if(game_mode==game::GameMode::Explore) {
                 DrawText(TextFormat("%lld kronoj | stores: BUY supplies / SELL scavenged goods",static_cast<long long>(loot_session.economy().money)),20,objective_bottom+6,16,GOLD);
                 if(nearby_shop && !at_table && !poker_open) DrawText(TextFormat("E / USE: %s",nearby_shop->name.c_str()),screen_width/2-160,screen_height-165,20,GOLD);
+                if(penthouse.inside(loot_feet)) {
+                    const bool owned=game::economy::Penthouse::owned(loot_session.economy());
+                    const char* line=!owned ? TextFormat("PENTHOUSE FOR SALE - %lld kronoj   E / USE: BUY",static_cast<long long>(game::economy::Penthouse::price)) :
+                        penthouse.near_bed(loot_feet) ? "E / USE: SLEEP UNTIL MORNING" : nullptr;
+                    if(line) {
+                        const int tw=MeasureText(line,22);
+                        DrawRectangle(screen_width/2-tw/2-14,screen_height-252,tw+28,34,Fade(BLACK,.6F));
+                        DrawText(line,screen_width/2-tw/2,screen_height-246,22,GOLD);
+                    }
+                }
             }
         }
         if(shop_open && current_shop) play_ui.draw_shop(economy,*current_shop,loot_session.economy(),item_registry,loot_session.inventory(),shop_status,screen_width,screen_height);
@@ -3164,6 +3229,10 @@ void Renderer::run() {
             for(const auto& stop:bus_line.stops()) view.stops.push_back(stop.shelter);
             if(bus_line.running()) for(const auto& bus:bus_line.buses()) if(bus.running) view.buses.push_back({bus.position,bus.yaw});
             for(const auto& crew:mafio.crews()) view.turf.push_back({crew.door,game::mafia::gangs[static_cast<std::size_t>(crew.gang)].color});
+            if(game::rules_for(game_mode).civilian_life && penthouse.found()) {
+                view.home=penthouse.to_world({0,0,0});
+                view.home_owned=game::economy::Penthouse::owned(loot_session.economy());
+            }
             map_screen.draw(verda_region,view,settings,screen_width,screen_height);
         }
         // Mouse look waits for a click in the browser (pointer lock needs one).

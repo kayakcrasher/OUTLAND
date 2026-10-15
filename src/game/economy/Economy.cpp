@@ -10,6 +10,9 @@ bool valid_state(const EconomyState& s) {
     std::set<std::pair<std::string,std::string>> keys;
     for(const auto& v:s.stock) if(v.shop.empty() || v.offer.empty() || v.quantity<0 || v.quantity>99999 ||
         !inventory::valid_text(v.shop) || !inventory::valid_text(v.offer) || !keys.emplace(v.shop,v.offer).second) return false;
+    std::set<std::string> owned;
+    if(s.properties.size()>64) return false;
+    for(const auto& p:s.properties) if(p.empty() || !inventory::valid_text(p) || !owned.insert(p).second) return false;
     return true;
 }
 bool Economy::load(const inventory::ItemRegistry& items, const std::string& path, std::string& error) {

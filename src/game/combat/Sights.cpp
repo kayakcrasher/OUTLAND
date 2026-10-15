@@ -23,9 +23,9 @@ float rail(WeaponId weapon) {
 }
 float iron(WeaponId weapon) {
     switch(weapon) {
-        case WeaponId::Pistol: return .026F;
-        case WeaponId::Smg: return .055F;
-        case WeaponId::Shotgun: return .028F;
+        case WeaponId::Pistol: return .029F;
+        case WeaponId::Smg: return .058F;
+        case WeaponId::Shotgun: return .036F;
         case WeaponId::Sniper: return .06F;
         default: return .062F;
     }

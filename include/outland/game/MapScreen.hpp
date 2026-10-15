@@ -4,6 +4,7 @@
 #include <raylib.h>
 #include <string>
 #include <unordered_set>
+#include <optional>
 #include <vector>
 
 namespace outland::world { class VerdaRegion; }
@@ -28,6 +29,8 @@ public:
         std::vector<Vector3> stops;                    // bus stops
         std::vector<std::pair<Vector3, float>> buses;  // buses on the line: where, and heading (degrees)
         std::vector<std::pair<Vector3, Color>> turf;    // Mafio hideouts: where, and the gang's colour
+        std::optional<Vector3> home;                    // Stela Turo: the penthouse for sale, or your home
+        bool home_owned{false};
         const Font* font{nullptr};
     };
     enum class Change { None, Settings, Close };

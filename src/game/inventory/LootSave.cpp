@@ -74,6 +74,8 @@ bool LootSave::save(const ItemRegistry &registry, const LootSnapshot &state,
     out << "ECONOMY " << state.economy.money << ' ' << state.economy.restock_remaining << '\n';
     for(const auto& stock : state.economy.stock)
         out << "STOCK " << std::quoted(stock.shop) << ' ' << std::quoted(stock.offer) << ' ' << stock.quantity << '\n';
+    for(const auto& property : state.economy.properties)
+        out << "PROPERTY " << std::quoted(property) << '\n';
     out << "END\n";
     out.flush();
     bool good = out.good();
@@ -169,6 +171,10 @@ bool LootSave::load(const ItemRegistry &registry, LootSnapshot &destination,
             economy::Stock stock;
             if(version!=2 || parsed.economy.stock.size()>=4096 || !(input >> std::quoted(stock.shop) >> std::quoted(stock.offer) >> stock.quantity)) return fail();
             parsed.economy.stock.push_back(std::move(stock));
+        } else if (token == "PROPERTY") {
+            std::string property;
+            if(version!=2 || parsed.economy.properties.size()>=64 || !(input >> std::quoted(property))) return fail();
+            parsed.economy.properties.push_back(std::move(property));
         } else if (token == "END") {
             end = true;
             break;

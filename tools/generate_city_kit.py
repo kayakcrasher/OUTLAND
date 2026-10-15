@@ -179,6 +179,46 @@ def stripes(a, b, width=8, seed=41):
     return c
 
 
+def chevrons(base, line, seed=43):
+    """Art deco spandrel: stacked chevrons in bronze, a fine border."""
+    c = Canvas(color=base, seed=seed)
+    c.noise(3)
+    for y in range(TEX):
+        for x in range(TEX):
+            v = (y + abs(x - TEX // 2)) % 16
+            if v < 3:
+                c.px[y * TEX + x] = shade(line, c.rng.randint(-6, 6))
+    c.rect(0, 0, TEX, 2, line)
+    c.rect(0, TEX - 2, TEX, TEX, line)
+    return c
+
+
+def limestone(color, seed=47):
+    """Dressed limestone: faint coursing every 0.6 m on a 1.2 m tile."""
+    c = Canvas(color=color, seed=seed)
+    c.noise(4)
+    for y in (0, TEX // 2):
+        c.rect(0, y, TEX, y + 1, shade(color, -22))
+    for x, y0 in ((0, 0), (TEX // 2, TEX // 2)):
+        c.rect(x, y0, x + 1, y0 + TEX // 2, shade(color, -18))
+    return c
+
+
+def checker(a, b, cells=4, seed=53):
+    """Terrazzo / marble floor: a checkerboard of two stones with a brass strip between."""
+    c = Canvas(color=a, seed=seed)
+    size = TEX // cells
+    for j in range(cells):
+        for i in range(cells):
+            if (i + j) % 2:
+                c.rect(i * size, j * size, (i + 1) * size, (j + 1) * size, b, 5)
+    c.noise(3)
+    for k in range(0, TEX, size):
+        c.rect(k, 0, k + 1, TEX, (176, 140, 70))
+        c.rect(0, k, TEX, k + 1, (176, 140, 70))
+    return c
+
+
 # ---------------------------------------------------------------- mesh builder
 class Builder:
     """Boxes with per-face materials. UVs are in tile units (REPEAT), so textures stay 1:1 with metres."""
@@ -332,8 +372,8 @@ class Builder:
 ALL_SIDES = ('+x', '-x', '+y', '-y', '+z', '-z')
 
 
-def wall_with_openings(b, axis, fixed, span, height, thickness, openings, outer, inner, outward):
-    """A wall along `axis` ('x' or 'z') at coordinate `fixed`, from span[0] to span[1] and 0..height,
+def wall_with_openings(b, axis, fixed, span, height, thickness, openings, outer, inner, outward, base=0.0):
+    """A wall along `axis` ('x' or 'z') at coordinate `fixed`, from span[0] to span[1] and base..height,
     split into boxes around rectangular openings [(a0, a1, y0, y1)]. `outward` is +1/-1 (outer face)."""
     cuts = sorted({span[0], span[1], *[c for o in openings for c in (o[0], o[1])]})
     t0, t1 = (fixed, fixed + thickness) if outward < 0 else (fixed - thickness, fixed)
@@ -341,7 +381,7 @@ def wall_with_openings(b, axis, fixed, span, height, thickness, openings, outer,
         if a1 - a0 < 1e-4:
             continue
         holes = sorted((o[2], o[3]) for o in openings if o[0] <= a0 + 1e-4 and o[1] >= a1 - 1e-4)
-        y = 0.0
+        y = base
         for h0, h1 in holes + [(height, height)]:
             if h0 - y > 1e-4:
                 lo = (a0, y, t0) if axis == 'x' else (t0, y, a0)
@@ -470,6 +510,263 @@ def main_street(width, depth, storeys, brick_color, trim_color, awning, seed):
     b.solid((w - .45, 0, -d - .1), (w - .2, 3.0, -d), "frame")
     if awning:
         b.solid((-w + .5, 3.0, -d - 1.6), (w - .5, 3.12, -d), "awning")
+    return b
+
+
+# ---------------------------------------------------------------- Stela Turo
+STELA_FLOORS = 17
+STELA_TIERS = [  # (first floor, end floor, half width, half depth): the art deco setbacks
+    (0, 11, 15.0, 12.0),
+    (11, 15, 12.5, 10.0),
+    (15, 17, 10.5, 8.5),
+]
+STELA_STAIR_LANE = 1.3          # each stair core is two 1.3 m lanes (switchback flights)
+STELA_STAIR_Z0 = -6.5           # flights run along Z from here (18 risers of 0.2 m, 0.28 m treads)
+STELA_SLAB = .25
+STELA_WALL = .35
+
+
+def stela_tier(floor):
+    for first, end, hw, hd in STELA_TIERS:
+        if first <= floor < end:
+            return first, end, hw, hd
+    return STELA_TIERS[-1]
+
+
+def slab_with_holes(b, x0, x1, z0, z1, y, thick, holes, top, bottom):
+    """A floor slab over the rectangle, cut round rectangular holes [(x0, x1, z0, z1)]."""
+    xs = sorted({x0, x1, *[c for h in holes for c in (h[0], h[1]) if x0 < c < x1]})
+    zs = sorted({z0, z1, *[c for h in holes for c in (h[2], h[3]) if z0 < c < z1]})
+    for a0, a1 in zip(xs, xs[1:]):
+        for c0, c1 in zip(zs, zs[1:]):
+            mx, mz = (a0 + a1) / 2, (c0 + c1) / 2
+            if any(h[0] < mx < h[1] and h[2] < mz < h[3] for h in holes):
+                continue
+            b.box((a0, y, c0), (a1, y + thick, c1), {'+y': top, '-y': bottom, '+x': bottom, '-x': bottom, '+z': bottom, '-z': bottom})
+
+
+def stela_lane(core, flight):
+    """X span of the lane flight `flight` climbs in, in stair core 'L' or 'R' (inside the top tier)."""
+    inner = STELA_TIERS[-1][2] - STELA_WALL
+    k = flight % 2
+    if core == 'R':
+        return inner - STELA_STAIR_LANE * (1 + k), inner - STELA_STAIR_LANE * k
+    return -inner + STELA_STAIR_LANE * k, -inner + STELA_STAIR_LANE * (1 + k)
+
+
+def stela_flights(core):
+    """Flights in a core: flight s climbs from floor s to floor s + 1. The right core goes on up to
+    the roof from the penthouse; the left one stops at the penthouse."""
+    return range(STELA_FLOORS if core == 'R' else STELA_FLOORS - 1)
+
+
+def stela_turo():
+    """Stela Turo, Verda City's art deco skyscraper (front faces -Z). Seventeen storeys of dressed
+    limestone in three setbacks (30 x 24 m to the 11th floor, 25 x 20 m to the 15th, 21 x 17 m to the
+    top), piers running up between the windows, bronze chevron spandrels, gold trim, a stepped crown
+    and a gold spire (top 86 m). Every window is open (no glass). Every floor is open plan round a
+    few columns, with two switchback stair cores, one at each side; the left core climbs to the
+    penthouse (the 17th floor: a furnished suite on a marble floor), the right one on up to a stair
+    house on the roof. The setback roofs are terraces, reached through doors on the 12th and 16th
+    floors."""
+    b = Builder()
+    stone = limestone((228, 216, 186))
+    for tier in ("a", "b", "c", "crown"):
+        b.material("stone_" + tier, stone, 1.2, 1.2)
+    b.material("granite", flat((52, 50, 54), 4), 3, 3)
+    b.material("bronze", chevrons((84, 66, 44), (196, 156, 72)), 2.5, 1.5)
+    b.material("gold", flat((214, 172, 74), 3), 1, 1)
+    b.material("sill", flat((150, 118, 62), 4), 1, 1)
+    # Interiors kept dimmer than the stone so the open windows read as windows from the street.
+    b.material("plaster", flat((132, 124, 110), 3), 3, 3)
+    b.material("partition", flat((214, 206, 188), 3), 3, 3)
+    b.material("terrazzo", checker((196, 190, 176), (150, 144, 132)), 2.4, 2.4)
+    b.material("marble", checker((236, 232, 224), (34, 34, 38), 4), 1.6, 1.6)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("frame", flat((44, 46, 48), 3), 3, 3)
+    b.material("wood", wood(), 3, 3)
+    b.material("velvet", flat((26, 96, 92), 6), 1, 1)
+    b.material("linen", flat((232, 228, 216), 3), 1, 1)
+    b.material("black", flat((22, 22, 24), 2), 1, 1)
+    b.material("white", flat((242, 242, 238), 2), 1, 1)
+    b.material("rug", stripes((120, 30, 40), (196, 156, 72), 4), 1, 1)
+    t, slab = STELA_WALL, STELA_SLAB
+    roof_y = STELA_FLOORS * FLOOR
+    bay = 2.5
+    # ---- exterior walls, tier by tier, with every window open
+    for index, (first, end, hw, hd) in enumerate(STELA_TIERS):
+        mat = "stone_" + "abc"[index]
+        y0, y1 = first * FLOOR, end * FLOOR
+        for axis, fixed, half, outward in (('x', -hd, hw, -1), ('x', hd, hw, 1), ('z', -hw, hd, -1), ('z', hw, hd, 1)):
+            span = (-half, half) if axis == 'x' else (-half + t, half - t)
+            bays = max(1, int(round((span[1] - span[0]) / bay)))
+            width = (span[1] - span[0]) / bays
+            openings = []
+            for i in range(bays):
+                a0 = span[0] + i * width + .55
+                a1 = span[0] + (i + 1) * width - .55
+                centre = (a0 + a1) / 2
+                for floor in range(first, end):
+                    base = floor * FLOOR + slab
+                    if floor == 0:
+                        # The lobby: tall doors in the middle of the front and back, shop windows elsewhere.
+                        door = abs(centre) < width * .8 and axis == 'x'
+                        openings.append((a0, a1, slab, 3.2) if door else (a0, a1, .9, 3.2))
+                    elif floor == first and axis == 'x' and outward < 0 and abs(centre) < width * 1.2 and first > 0:
+                        openings.append((a0, a1, base, base + 2.6))   # french doors onto the terrace
+                    elif floor == STELA_FLOORS - 1:
+                        openings.append((a0, a1, base + .45, base + 3.05))  # the penthouse: tall windows
+                    else:
+                        openings.append((a0, a1, base + .85, base + 2.85))
+            wall_with_openings(b, axis, fixed, span, y1, t, openings, mat, "plaster", outward, base=y0)
+            # A gold-edged bronze sill under every window, so the openings read from the street.
+            for a0, a1, o0, o1 in openings:
+                if o0 < .5:
+                    continue
+                if axis == 'x':
+                    z0, z1 = (fixed - .14, fixed + .02) if outward < 0 else (fixed - .02, fixed + .14)
+                    b.solid((a0 - .1, o0 - .14, z0), (a1 + .1, o0, z1), "sill")
+                else:
+                    x0, x1 = (fixed - .14, fixed + .02) if outward < 0 else (fixed - .02, fixed + .14)
+                    b.solid((x0, o0 - .14, a0 - .1), (x1, o0, a1 + .1), "sill")
+            # Bronze chevron spandrels between the windows of one floor and the next; piers between bays.
+            for i in range(bays):
+                a0 = span[0] + i * width + .55
+                a1 = span[0] + (i + 1) * width - .55
+                for floor in range(max(first, 1), end - 1):
+                    lo_y, hi_y = floor * FLOOR + slab + 2.95, (floor + 1) * FLOOR + slab + .75
+                    if axis == 'x':
+                        z = fixed + outward * .02
+                        b.box((a0 + .1, lo_y, min(z, fixed)), (a1 - .1, hi_y, max(z, fixed)), {'+z' if outward > 0 else '-z': "bronze"})
+                    else:
+                        x = fixed + outward * .02
+                        b.box((min(x, fixed), lo_y, a0 + .1), (max(x, fixed), hi_y, a1 - .1), {'+x' if outward > 0 else '-x': "bronze"})
+            for i in range(bays + 1):
+                a = span[0] + i * width
+                top_extra = 1.6 if i % 2 == 0 else .9     # piers rise past the parapet, alternate heights
+                bottom = max(y0, 4.0)
+                if axis == 'x':
+                    lo = (a - .3, bottom, fixed - .22 if outward < 0 else fixed)
+                    hi = (a + .3, y1 + top_extra, fixed if outward < 0 else fixed + .22)
+                else:
+                    lo = (fixed - .22 if outward < 0 else fixed, bottom, a - .3)
+                    hi = (fixed if outward < 0 else fixed + .22, y1 + top_extra, a + .3)
+                b.solid(lo, hi, mat)
+                cap_lo, cap_hi = list(lo), list(hi)
+                cap_lo[1], cap_hi[1] = hi[1] - .25, hi[1]
+                b.solid(tuple(cap_lo), tuple(cap_hi), "gold")
+        # Parapet round the roof of this tier (a terrace, or the roof itself on the top tier).
+        py = y1
+        for lo, hi in (((-hw, py, -hd), (hw, py + 1.1, -hd + .25)), ((-hw, py, hd - .25), (hw, py + 1.1, hd)),
+                       ((-hw, py, -hd), (-hw + .25, py + 1.1, hd)), ((hw - .25, py, -hd), (hw, py + 1.1, hd))):
+            b.solid(lo, hi, mat)
+        b.solid((-hw - .15, py + 1.1, -hd - .15), (hw + .15, py + 1.25, -hd + .25), "gold")
+    # ---- the base: a dark granite plinth and a gold entrance with a sunburst
+    hw0, hd0 = STELA_TIERS[0][2], STELA_TIERS[0][3]
+    for lo, hi in (((-hw0 - .1, 0, -hd0 - .1), (hw0 + .1, .9, -hd0)), ((-hw0 - .1, 0, hd0), (hw0 + .1, .9, hd0 + .1)),
+                   ((-hw0 - .1, 0, -hd0), (-hw0, .9, hd0)), ((hw0, 0, -hd0), (hw0 + .1, .9, hd0))):
+        b.solid(lo, hi, "granite")
+    # The entrances, front and back alike (the model stays symmetric, so its origin is its centre).
+    for face in (-1, 1):
+        wall = face * hd0
+        out = face * .35
+        b.solid((-3.4, 3.2, min(wall, wall + out)), (3.4, 3.6, max(wall, wall + out)), "gold")          # lintel
+        for side in (-1, 1):
+            b.solid((side * 3.4 - .25, 0, min(wall, wall + out)), (side * 3.4 + .25, 3.6, max(wall, wall + out)), "gold")
+        z = wall + face * .36
+        for k in range(9):                                                        # sunburst rays
+            a0, a1 = math.pi * (k + .15) / 9, math.pi * (k + .85) / 9
+            p = [(0, 3.6, z), (0, 3.6, z), (-math.cos(a1) * 3.0, 3.6 + math.sin(a1) * 2.2, z), (-math.cos(a0) * 3.0, 3.6 + math.sin(a0) * 2.2, z)]
+            if face > 0:
+                p = [p[1], p[0], p[3], p[2]]
+            b.raw("gold", p, (0, 0, face), [(0, 0), (0, 0), (1, 1), (0, 1)])
+        b.solid((-4.2, 3.9, min(wall, wall + face * 2.6)), (4.2, 4.15, max(wall, wall + face * 2.6)), "bronze")  # marquee canopy
+    # ---- floors with the stair holes; columns
+    for level in range(STELA_FLOORS + 1):
+        y = level * FLOOR
+        _, _, hw, hd = stela_tier(level - 1 if level > 0 else 0)
+        holes = []
+        for core in ('L', 'R'):
+            if level >= 1 and level - 1 in stela_flights(core):
+                x0, x1 = stela_lane(core, level - 1)
+                holes.append((x0, x1, STELA_STAIR_Z0, STELA_STAIR_Z0 + 18 * .28))
+        top = "roof" if level == STELA_FLOORS else "marble" if level == STELA_FLOORS - 1 else "terrazzo"
+        inset = 0 if level in {first for first, *_ in STELA_TIERS[1:]} or level == STELA_FLOORS else t
+        slab_with_holes(b, -hw + inset, hw - inset, -hd + inset, hd - inset, y, slab, holes, top, "plaster")
+    for floor in range(STELA_FLOORS - 1):
+        for x in (-4.5, 4.5):
+            for z in (-3.5, 3.5):
+                b.solid((x - .35, floor * FLOOR + slab, z - .35), (x + .35, (floor + 1) * FLOOR, z + .35), "plaster")
+    # ---- the stairs
+    steps, tread = 18, .28
+    for core in ('L', 'R'):
+        for s in stela_flights(core):
+            base = s * FLOOR + slab
+            x0, x1 = stela_lane(core, s)
+            for k in range(steps):
+                z0 = STELA_STAIR_Z0 + k * tread if s % 2 == 0 else STELA_STAIR_Z0 + (steps - k - 1) * tread
+                top_y = base + (k + 1) * .2 - (slab if k == steps - 1 else 0)
+                b.solid((x0, top_y - .2 if k else base - .01, z0), (x1, top_y, z0 + tread), "frame")
+    # Bronze guard rails round each floor's stair hole: along the core's inner side, and across the
+    # end of the hole you do not step off at.
+    for level in range(1, STELA_FLOORS + 1):
+        y = level * FLOOR + slab
+        for core in ('L', 'R'):
+            if level - 1 not in stela_flights(core):
+                continue
+            x0, x1 = stela_lane(core, level - 1)
+            lanes = stela_lane(core, level - 1), stela_lane(core, level)
+            inner_x = min(l[0] for l in lanes) if core == 'R' else max(l[1] for l in lanes)
+            zs0, zs1 = STELA_STAIR_Z0, STELA_STAIR_Z0 + steps * tread
+            rx = (inner_x - .06, inner_x) if core == 'R' else (inner_x, inner_x + .06)
+            b.solid((rx[0], y, zs0), (rx[1], y + 1.0, zs1), "bronze")
+            end = zs0 if (level - 1) % 2 == 0 else zs1      # an even flight arrives at the +Z end
+            b.solid((x0, y, end - .03), (x1, y + 1.0, end + .03), "bronze")
+    # ---- the roof: stair house over the right core, a stepped crown and the spire
+    rx0, rx1 = stela_lane('R', STELA_FLOORS - 1)
+    zs0, zs1 = STELA_STAIR_Z0, STELA_STAIR_Z0 + steps * tread
+    house = [((rx0 - .3, roof_y, zs0 - .3), (rx0, roof_y + 2.8, zs1 + .3)),       # inner wall
+             ((rx1, roof_y, zs0 - .3), (rx1 + .3, roof_y + 2.8, zs1 + .3)),       # outer wall
+             ((rx0 - .3, roof_y, zs0 - .3), (rx1 + .3, roof_y + 2.8, zs0))]       # end wall; the door faces +Z
+    for lo, hi in house:
+        b.solid(lo, hi, "stone_crown")
+    b.solid((rx0 - .4, roof_y + 2.8, zs0 - .4), (rx1 + .4, roof_y + 3.1, zs1 + .4), "gold")
+    crown = [((-6.5, 0.5, 7.6), 6.0), ((-4.5, 1.5, 6.6), 5.0), ((-2.8, 2.4, 5.6), 4.5)]
+    y = roof_y
+    for (hx, z0, z1), height in crown:
+        b.box((hx, y, z0), (-hx, y + height, z1), {s: "stone_crown" for s in ALL_SIDES})
+        for i in range(5):                         # gold fins up each step's face
+            x = hx + (-2 * hx) * (i + .5) / 5
+            b.solid((x - .12, y + .4, z0 - .25), (x + .12, y + height + .4, z0), "gold")
+        b.solid((hx - .1, y + height - .3, z0 - .1), (-hx + .1, y + height, z1 + .1), "gold")
+        y += height
+    cz = (crown[-1][0][1] + crown[-1][0][2]) / 2
+    b.ring("gold", 0, cz, .9, .08, y, y + 9.5, 8)                              # the spire
+    b.ring("gold", 0, cz, 1.4, 1.4, y, y + .6, 12, top_cap=True)
+    # ---- the penthouse (17th floor): a suite on a marble floor
+    py = (STELA_FLOORS - 1) * FLOOR + slab
+    hwc, hdc = STELA_TIERS[-1][2] - t, STELA_TIERS[-1][3] - t
+    # Bedroom and bath at the back, behind a wall with two doorways; the living room in front.
+    wall_with_openings(b, 'x', 1.6, (-7.4, 7.4), py + 3.1, .15, [(-5.8, -4.6, py, py + 2.3), (2.6, 3.8, py, py + 2.3)],
+                       "partition", "partition", -1, base=py)
+    wall_with_openings(b, 'z', .6, (1.6, hdc), py + 3.1, .15, [], "partition", "partition", 1, base=py)
+    b.solid((-6.6, py, 4.2), (-2.4, py + .55, 6.9), "linen")                    # bed
+    b.solid((-6.8, py, 6.9), (-2.2, py + 1.5, 7.2), "gold")                     # headboard
+    b.solid((-7.2, py, 5.0), (-6.7, py + .55, 6.0), "wood")                     # night tables
+    b.solid((-2.3, py, 5.0), (-1.8, py + .55, 6.0), "wood")
+    b.solid((2.0, py, 6.4), (5.6, py + .6, 7.9), "white")                       # bathtub
+    b.solid((5.0, py, 2.2), (6.8, py + .9, 3.0), "white")                       # basin counter
+    b.solid((-6.0, py, -6.0), (-1.0, py + .02, -1.5), "rug")                    # living room: rug,
+    b.solid((-6.0, py, -6.6), (-1.0, py + .8, -5.8), "velvet")                  # sofa,
+    b.solid((-6.6, py, -6.6), (-5.8, py + .8, -2.0), "velvet")
+    b.solid((-4.2, py, -4.4), (-2.6, py + .42, -3.2), "black")                  # coffee table,
+    b.solid((1.5, py, -4.8), (4.7, py + .75, -3.4), "wood")                     # dining table
+    for x in (2.0, 3.0, 4.0):
+        for z in (-5.4, -2.8):
+            b.solid((x - .22, py, z - .22), (x + .22, py + .45, z + .22), "velvet")
+    b.solid((-1.0, py, .3), (3.8, py + .95, 1.0), "granite")                    # kitchen bar
+    b.solid((4.6, py, -1.6), (6.4, py + .95, -.2), "black")                     # grand piano
+    b.solid((4.6, py + .95, -1.6), (6.4, py + 1.0, .5), "black")
     return b
 
 
@@ -832,6 +1129,7 @@ def kit():
     add("civic/hospital.glb", hospital(), "city_hospital", "Hospitalo - hospital with ambulance bay", "Building", 46, 23, 12.7)
     add("civic/parliament.glb", parliament(), "city_parliament", "Registaro de Verda - domed parliament (enterable hall)", "Building", 48, 33, 29.6)
     add("civic/town_hall.glb", town_hall(), "city_town_hall", "Urbodomo - county town hall with clock tower (enterable)", "Building", 23, 17, 17.0)
+    add("towers/stela_turo.glb", stela_turo(), "city_stela_turo", "Stela Turo - art deco skyscraper, 17 floors, penthouse (enterable)", "Building", 30.6, 29.2, 86.2)
     add("ground/sidewalk_block_68.glb", pad(68, "sidewalk"), "city_sidewalk_block_68", "Sidewalk Block 68 m", "BuildingPart", 68, 68, .15)
     add("ground/courthouse_square_68.glb", pad(68, "park"), "city_courthouse_square_68", "Courthouse Square Park 68 m", "BuildingPart", 68, 68, 4.6)
     add("ground/parking_lot_68.glb", pad(68, "parking"), "city_parking_lot_68", "Parking Lot 68 m", "BuildingPart", 68, 68, .15)

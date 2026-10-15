@@ -1604,6 +1604,7 @@ void emergency_services(Kit& kit, world::VerdaRegion& region) {
 // future baseball stadium.
 const std::string parliament_model = "assets/verda/city/civic/parliament.glb";
 const std::string town_hall_model = "assets/verda/city/civic/town_hall.glb";
+const std::string stela_turo_model = "assets/verda/city/towers/stela_turo.glb";
 constexpr Vector3 parliament_site{0, 0, 0}; // searched outward from the city centre
 
 void government(Kit& kit, world::VerdaRegion& region) {
@@ -1626,6 +1627,35 @@ void government(Kit& kit, world::VerdaRegion& region) {
         if (!kit.put(town_hall_model, hall.origin, hall.yaw)) continue;
         kit.purpose(to_world(hall.origin, hall.yaw, 0, .95F, -4.5F), hall.yaw, world::BuildingPurpose::Office);
         ++kit.report.town_halls;
+    }
+    // Stela Turo, the art deco skyscraper (bounds x -15.3..15.3, z -14.6..14.6 with the marquees,
+    // 86 m to the spire): on a level lot beside the stadium ground, facing its street. Its lobby is
+    // an office (the building's staff); the penthouse on top is for sale in Explore
+    // (game::economy::Penthouse). Loot on every other floor for Battle Royale.
+    {
+        CivicSpot tower;
+        if (civic_lot(kit, region, stadium_reserve, stadium_half + 20, 600, 0, 0, 16.5F, 15.5F, 15.5F, 4, tower) &&
+            kit.put(stela_turo_model, tower.origin, tower.yaw)) {
+            kit.purpose(to_world(tower.origin, tower.yaw, 0, .25F, -9), tower.yaw, world::BuildingPurpose::Office);
+            ++kit.report.retagged; // the tower is a building island life knows; the marker makes it offices
+            kit.report.stela_turo = true;
+            kit.report.stela_turo_at = tower.origin;
+            auto* capital = settlement(region, "capital_verda");
+            int n = 0;
+            for (int floor = 1; capital && floor <= 15; floor += 2) {
+                const float y = floor * 3.6F + .25F;
+                for (const auto& [x, z, table] : {std::tuple{-1.5F, 5.0F, "general"}, std::tuple{11.0F, 6.0F, floor % 4 == 1 ? "weapons" : "medical"}}) {
+                    if (floor >= 11 && std::abs(x) > 9) continue; // inside the setbacks
+                    world::GameplayMarker marker;
+                    marker.id = std::string("loot_spawn_") + table + "_stela_" + std::to_string(++n);
+                    marker.type = world::GameplayMarkerType::LootSpawn;
+                    marker.position = to_world(tower.origin, tower.yaw, x, y, z);
+                    marker.size = {.5F, .5F, .5F};
+                    capital->gameplay_markers.push_back(marker);
+                    ++kit.report.loot_spots;
+                }
+            }
+        }
     }
 }
 
