@@ -590,7 +590,7 @@ void Renderer::run() {
     double match_time=0;
     // Paul Acosta, "the walking man": Ruldomaro to the casino and the bar and home again (Explore).
     game::life::WalkingMan walking_man;
-    // The Vakeros on their ranches, their cattle and side-by-sides; the big rigs (Explore).
+    // The Vakeroj on their ranches, their cattle and side-by-sides; the big rigs (Explore).
     game::ranch::Ranches ranches;
     game::freight::Freight freight;
     std::vector<characters::AnimationController> ranch_seats; // drivers' idle
@@ -1117,12 +1117,12 @@ void Renderer::run() {
                         const Vector3 at=walking_man.position(br_bots);
                         npcs.spawn_bot(walking_man.bot(),game::life::WalkingMan::character,at,0);
                     }
-                    // The Vakeros on their ranches (each in their own clothes and hat), then the big rigs.
+                    // The Vakeroj on their ranches (each in their own clothes and hat), then the big rigs.
                     ranches.start(verda_region,br_bots,vehicles,&character_registry,session_seed,island_life.clock());
                     for(const auto& v:ranches.vakeros())
                         if(const auto* bot=br_bots.find(v.bot);bot && !v.character.empty()) npcs.spawn_bot(v.bot,v.character,bot->position(),bot->yaw());
                     if(freight.build(verda_region,vehicles,bus_line,&ranches,&character_registry,session_seed)) freight.start(verda_region,vehicles);
-                    TraceLog(LOG_INFO,"OUTLAND ranches: %d ranches, %d Vakeros, %d cattle rigs/supply rigs %d, %d trailer reversals",
+                    TraceLog(LOG_INFO,"OUTLAND ranches: %d ranches, %d Vakeroj, %d cattle rigs/supply rigs %d, %d trailer reversals",
                              static_cast<int>(ranches.ranches().size()),static_cast<int>(ranches.vakeros().size()),
                              static_cast<int>(freight.rigs().size()),freight.running() ? 1 : 0,freight.reversals());
                     br_bots.sync_bodies(npcs,&character_registry);
@@ -2620,7 +2620,7 @@ void Renderer::run() {
             characters::BodyPose sitting;sitting.seated=true;
             character_renderer.draw(bus.driver,{seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y,1,&bus_drivers[i],sitting);
         }
-        // Drivers at the wheel of the side-by-sides and the big rigs (Vakeros in their hats).
+        // Drivers at the wheel of the side-by-sides and the big rigs (Vakeroj in their hats).
         {
             std::vector<std::pair<std::string,std::pair<std::string,bool>>> seated;
             for(const auto& d:ranches.drivers()) seated.push_back({d.vehicle,{d.character,d.hat}});
@@ -2761,7 +2761,7 @@ void Renderer::run() {
 
         if(perf.enabled()) perf.mark(FrameStage::World,GetTime());
         // People hold what they carry: police their pistols, Battle Royale bots their loadout.
-        // Hats: the Vakeros' cattleman hats (game::ranch).
+        // Hats: the Vakeroj's cattleman hats (game::ranch).
         const auto draw_hat=[&](const characters::NpcInstance& actor,const characters::HeldGun& held) {
             if(actor.bot>=0 && ranches.vakero(actor.bot) && actor.state!=characters::NpcState::Dead) draw_cowboy_hat(held);
         };
@@ -3189,7 +3189,7 @@ void Renderer::run() {
                 DrawTextEx(font,sub.c_str(),{at.x-sw/2,at.y+1},13,1,Color{220,226,206,255});
                 break;
             }
-            // Vakeros: name and ranch over each one close by (red when the family is after you).
+            // Vakeroj: name and ranch over each one close by (red when the family is after you).
             if(ranches.active()) for(const auto& body:npcs.actors()) {
                 if(body.bot<0 || body.hidden || body.state==characters::NpcState::Dead) continue;
                 const auto* v=ranches.vakero(body.bot);

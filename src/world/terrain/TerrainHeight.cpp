@@ -282,7 +282,7 @@ float TerrainHeight::sample(
                 height=pad*(1-blend)+height*blend;
             }
         }
-        // The Vakeros' ranches and the stockyard: a level pad round each farm (world/Ranches.hpp).
+        // The Vakeroj's ranches and the stockyard: a level pad round each farm (world/Ranches.hpp).
         const auto level_pad=[&](Vector3 c,float flat,float band) {
             const float d=std::hypot(world_x-c.x,world_z-c.z);
             if(d>=flat+band) return;

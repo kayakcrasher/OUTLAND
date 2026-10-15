@@ -13,12 +13,12 @@ namespace outland::game::transit { class BusLine; }
 namespace outland::game::ranch { class Ranches; }
 
 // Verda's big rigs: two 18-wheelers (the "semi" tractor, vehicle_spawn_semi_..., parked at the
-// stockyard by Roka) with articulated trailers.
+// stockyard of Porto Luma) with articulated trailers.
 //   The supply rig hauls a 53 ft dry van round the island on the bus line's loop and pulls up in
-//   every town to deliver (Verda, Espera, Porto Luma, Suda Haveno, Sovaĝejo, Roka).
+//   every town on the line to deliver (Verda, Espera, Porto Luma, Suda Haveno, Roka).
 //   The cattle rig hauls a livestock "pot" trailer from ranch to ranch: at each ranch's gate the
 //   family has a few head waiting in the corral and they go up the chute; then on to the stockyard
-//   (Bovbazaro), where they come off into the pen.
+//   (Bovbazaro de Porto Luma), where they come off into the pens.
 // Like the buses they drive kinematically (VehicleSystem::glide) along the road; the trailer
 // follows the fifth wheel (its axles trail the kingpin) wherever the tractor goes, the player's
 // hands included. A rig that is wrecked or taken leaves its run.
@@ -59,6 +59,7 @@ struct Rig {
 };
 
 struct TrailerPose {
+    std::string vehicle;          // the tractor
     std::string model;
     Vector3 centre{};             // on the ground under the trailer's middle
     float yaw{0}, pitch{0};       // degrees

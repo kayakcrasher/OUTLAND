@@ -1,4 +1,4 @@
-// The Vakeros: five ranches with a family of four (hats, shotguns) and a herd each, a side-by-side
+// The Vakeroj: five ranches with a family of four (hats, shotguns) and a herd each, a side-by-side
 // running the farm roads; the cattle truck taking cattle from the corrals to the stockyard; the
 // supply rig delivering round the towns; trailers that follow their tractors.
 #include "outland/characters/CharacterRegistry.hpp"
@@ -90,7 +90,7 @@ int main() {
     game::ranch::Ranches ranches;
     auto clock = game::life::WorldClock::at(1, 9, 30);
     check(ranches.start(region, bots, cars, &people, 5, clock) == 5, "the game finds the five ranches");
-    check(ranches.vakeros().size() == 20 && ranches.stockyard().found, "four Vakeros on each, and the stockyard");
+    check(ranches.vakeros().size() == 20 && ranches.stockyard().found, "four Vakeroj on each, and the stockyard");
     std::set<std::string> names;
     for (const auto& v : ranches.vakeros()) {
         const auto* bot = bots.find(v.bot);
@@ -142,7 +142,7 @@ int main() {
     }
 
     // Calm: nobody's enemy. Shoot one of the family: the family, and only it, comes for you.
-    check(!ranches.hostile_to(0, ranches.vakeros()[0].bot, now), "Vakeros leave the player alone");
+    check(!ranches.hostile_to(0, ranches.vakeros()[0].bot, now), "Vakeroj leave the player alone");
     ranches.provoke(ranches.vakeros()[static_cast<std::size_t>(ranch.family[0])].bot, now);
     check(ranches.hostile_to(0, ranches.vakeros()[static_cast<std::size_t>(ranch.family[3])].bot, now) &&
           !ranches.hostile_to(0, ranches.vakeros()[0].bot, now), "hurt one and that family shoots back");
@@ -179,8 +179,11 @@ int main() {
     ranches.unload_cattle(loaded);
     run(30);
     int penned = 0;
-    for (const auto& cow : ranches.stockyard().pen) penned += ranches.stockyard().frame.inside(cow.position, rr::stockyard_pen);
-    check(penned == 3, "and off into the stockyard pen (" + std::to_string(penned) + ")");
+    const auto& yard = ranches.stockyard();
+    for (const auto& cow : yard.pen) penned += yard.frame.inside(cow.position, rr::stockyard_pens[0]) || yard.frame.inside(cow.position, rr::stockyard_pens[1]);
+    check(penned == static_cast<int>(yard.pen.size()) && yard.pen.size() >= 3 + game::ranch::Ranches::stockyard_size / 2,
+          "and off into the stockyard's holding pens (" + std::to_string(penned) + " of " + std::to_string(yard.pen.size()) + ")");
+    check(world::zones::zone_at(yard.frame.at(0, 34)) == world::zones::ZoneId::Lumamaro, "the stockyard is at Porto Luma");
     // Calves in the morning.
     clock = game::life::WorldClock::at(clock.day() + 1, 6, 10);
     run(1);
@@ -227,10 +230,8 @@ int main() {
         freight.follow_trailers(region, cars);
         if (i % 50 == 0)
             for (const auto& t : freight.trailers()) {
-                for (const auto& rig : freight.rigs()) {
-                    const float fold = std::abs(std::remainder(t.yaw - rig.yaw, 360.0F));
-                    if (flat(t.centre, rig.position) < 14) worst_fold = std::max(worst_fold, fold);
-                }
+                const int v = cars.find(t.vehicle);
+                if (v >= 0) worst_fold = std::max(worst_fold, std::abs(std::remainder(t.yaw - cars.vehicles()[static_cast<std::size_t>(v)].yaw, 360.0F)));
             }
         if (cattle) loads = std::max(loads, cattle->head);
         if (supply) deliveries = supply->deliveries;

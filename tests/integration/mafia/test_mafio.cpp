@@ -44,7 +44,7 @@ int main() {
     const int crews = mafio.start(life.places(), region, bots, 11);
     std::cout << crews << " crews, " << bots.bots().size() << " Krimuloj in " << region.settlements().size() << " towns\n";
     const auto towns = std::count_if(region.settlements().begin(), region.settlements().end(), [](const auto& t) { return !t.id.starts_with("ranch_"); });
-    check(crews == static_cast<int>(towns), "a crew in every town (not on the Vakeros' ranches)");
+    check(crews == static_cast<int>(towns), "a crew in every town (not on the Vakeroj's ranches)");
     std::set<int> gangs;
     for (const auto& crew : mafio.crews()) {
         gangs.insert(crew.gang);

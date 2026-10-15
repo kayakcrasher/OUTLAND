@@ -330,6 +330,7 @@ std::vector<TrailerPose> Freight::trailers() const {
         if (Vector3Length(d) < 1e-3F) continue;
         d = Vector3Normalize(d);
         TrailerPose pose;
+        pose.vehicle = id;
         pose.model = hitch.model;
         const float front = terrain(hitch.kingpin), back = terrain(hitch.axles);
         pose.centre = Vector3Subtract(hitch.kingpin, Vector3Scale(d, kingpin_to_centre));

@@ -5,7 +5,7 @@
 #include <cmath>
 #include <string_view>
 
-// The Vakeros' ranches: five family farms spread over Verda, one in each county, each beside a
+// The Vakeroj's ranches: five family farms spread over Verda, one in each county, each beside a
 // highway. Each family grows a field of corn and one of wheat and runs a herd of beef cattle in a
 // fenced pasture; a corral and a loading chute by the road are where the cattle truck picks up.
 //
@@ -53,20 +53,22 @@ inline constexpr Area wheat{-26, 10, 96, 120};            // 3 x 2 tiles
 inline constexpr Vector2 sxs{8, 50};                      // the side-by-side's spot in the yard
 inline constexpr Area footprint{-90, 74, 4, 124};         // everything (kept clear and level)
 
-// The stockyard (Bovbazaro) near Roka, where the cattle truck unloads: its own small frame by the
-// highway, a big pen behind a chute.
+// The stockyard (Bovbazaro) of Porto Luma, Verda's cattle market, where the cattle truck unloads:
+// on the ring road at the edge of the port city. A receiving pen behind the chute opens into two
+// big holding pens; a sale barn and an office behind; the big rigs park beside it.
 inline constexpr std::string_view stockyard_id = "ranch_bovbazaro";
-inline constexpr std::string_view stockyard_name = "Bovbazaro";
-inline constexpr Area stockyard_pen{-24, 24, 8, 40};
+inline constexpr std::string_view stockyard_name = "Bovbazaro de Porto Luma";
+inline constexpr Area stockyard_receiving{-12, 12, 8, 26};
+inline constexpr Area stockyard_pens[2]{{-42, -14, 8, 42}, {14, 42, 8, 42}};
 inline constexpr Vector2 stockyard_chute{0, 2.5F};
-inline constexpr Area stockyard_footprint{-30, 46, 4, 46};
-inline constexpr Vector2 stockyard_gate{-1431.08F, 413.52F}, stockyard_up{0.93037F, -0.36663F};
+inline constexpr Area stockyard_footprint{-46, 62, 4, 64};
+inline constexpr Vector2 stockyard_gate{1275.67F, -781.785F}, stockyard_up{0.8466F, -0.53223F};
 
 // The level pads the terrain makes for them (ranch frame centre, radius, blend).
 inline constexpr Vector2 pad_centre{-8, 64};
 inline constexpr float pad_radius = 102, pad_blend = 60;
-inline constexpr Vector2 stockyard_pad_centre{8, 25};
-inline constexpr float stockyard_pad_radius = 48;
+inline constexpr Vector2 stockyard_pad_centre{8, 34};
+inline constexpr float stockyard_pad_radius = 64;
 
 // The frame from the gate and the direction up the track.
 struct Frame {

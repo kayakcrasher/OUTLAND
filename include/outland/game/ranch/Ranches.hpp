@@ -12,7 +12,7 @@ namespace outland::game::vehicles { class VehicleSystem; }
 namespace outland::game::ai { class BattleRoyaleBots; }
 namespace outland::characters { class CharacterRegistry; class NpcSystem; }
 
-// The Vakeros (Explore): the ranching families on Verda's five ranches (world/Ranches.hpp). Each
+// The Vakeroj (Explore): the ranching families on Verda's five ranches (world/Ranches.hpp). Each
 // family of four wears cattleman hats and carries shotguns. By day they work: one rides herd on
 // the cattle in the pasture, one works the fields, one drives the family's side-by-side round the
 // farm, one minds the barn and the corral; at night they are home in the farmhouse. Each ranch
@@ -20,7 +20,7 @@ namespace outland::characters { class CharacterRegistry; class NpcSystem; }
 // cattle truck (game::freight) the family drives a few into the corral by the road, and they go
 // up the chute into the trailer. A calf or two is born every morning.
 //
-// Vakeros keep themselves to themselves. Shoot at one of them, shoot their cattle or drive off in
+// Vakeroj keep themselves to themselves. Shoot at one of them, shoot their cattle or drive off in
 // their side-by-side, and the whole family comes for you with shotguns until it blows over.
 //
 // The family are CombatBots in the shared ai::BattleRoyaleBots (Mafio::update ticks them; the
@@ -67,7 +67,7 @@ struct RanchState {
     bool calling{false};      // cattle are being brought to the corral for the truck
 };
 
-// The stockyard's pen: where shipped cattle end up.
+// The stockyard of Porto Luma: where shipped cattle end up, in its holding pens.
 struct Stockyard {
     bool found{false};
     world::ranches::Frame frame;
@@ -91,7 +91,7 @@ struct SeatedDriver { std::string vehicle, character; bool hat{true}; };
 
 class Ranches {
 public:
-    static constexpr int herd_size = 10, family_size = 4;
+    static constexpr int herd_size = 10, family_size = 4, stockyard_size = 30;
     static constexpr float wake_radius = 420, cattle_radius = 380;
     static constexpr float provoked_seconds = 90;
     static constexpr float sxs_speed = 6.5F;
@@ -133,6 +133,7 @@ private:
     void say(std::string text) { message_ = std::move(text); message_time_ = 6; }
     float random();
     Vector3 pasture_point(const RanchState& r);
+    Vector3 stockyard_spot(int pen);
     void update_herd(RanchState& r, int index, float dt, const world::VerdaRegion& region, bool near);
     void update_family(RanchState& r, const RanchFrame& frame, ai::BattleRoyaleBots& bots, bool near);
     void update_sxs(RanchState& r, const RanchFrame& frame, ai::BattleRoyaleBots& bots, vehicles::VehicleSystem& cars,

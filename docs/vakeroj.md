@@ -1,10 +1,12 @@
-# The Vakeros: ranches, cattle and big rigs
+# The Vakeroj: ranches, cattle and big rigs
 
-The Vakeros are Verda's ranching families. There are five ranches, one in each county, and each
+*Vakero* is Esperanto for cowboy (plural *vakeroj*), in keeping with the island's Esperanto names.
+
+The Vakeroj are Verda's ranching families. There are five ranches, one in each county, and each
 family grows crops and raises beef cattle. Two 18-wheelers work the roads: one supplies the
 towns, the other hauls cattle from the ranches to the stockyard.
 
-Code: `world/Ranches.hpp` (sites and layout), `dev::build_verda_towns` (`ranches()` lays them
+Code: `world/Ranches.hpp` (sites and layout, the stockyard's too), `dev::build_verda_towns` (`ranches()` lays them
 out), `game::ranch::Ranches` (families, herds, side-by-sides) and `game::freight::Freight` (the
 rigs). Models: `tools/generate_ranch_models.py`. Tests: `outland_ranch_tests`.
 
@@ -23,8 +25,14 @@ over a stock tank, a fenced pasture with a feed bunk and troughs, and a corral b
 loading chute. There is a 3 x 3 corn field (2.2 m corn you can walk through) and a 3 x 2 wheat
 field, hay bales, the family's side-by-side in the yard, and loot in the barn and the house.
 The terrain levels a pad around each farm. Each ranch is its own settlement on the map, with a
-welcome sign. The **stockyard (Bovbazaro)** is out of Roka on the western ring road: a big pen
-behind a chute, feed bunks, troughs and a sale-barn office. The two big rigs park there.
+welcome sign.
+
+**Bovbazaro de Porto Luma** is the island's one big stockyard (cattle market). It sits on the ring
+road at the edge of Porto Luma. The cattle truck backs onto a chute into a receiving pen, which
+opens on each side into a big holding pen with feed bunks and troughs. Behind them are the sale
+barn (the auction ring), an office and hay, and beside them a gravel truck park where the two big
+rigs live. The yard is never empty: it starts with fifteen head, and the oldest are sold at
+auction once it holds thirty.
 
 ## The families
 Each family has four members: the rancher rides herd in the pasture, his wife works the fields,
@@ -60,7 +68,7 @@ and never folds past a right angle.
   pulls up in Espera, Porto Luma, Suda Haveno, Roka and Verda City to unload supplies.
 - **The cattle rig** hauls a polished livestock "pot" trailer. It runs the stockyard and the
   five ranch gates in the order with fewest turnabouts, loads up to four head at each ranch and
-  unloads at the stockyard.
+  unloads at Porto Luma's stockyard.
 
 Both drive like the buses, kinematically along the road. They slow for towns and corners, wait
 behind anything in the lane, and squeeze past cars parked at the kerb. A rig that is wrecked or

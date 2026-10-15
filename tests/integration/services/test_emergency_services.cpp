@@ -45,7 +45,7 @@ int main() {
     // Every town has a station; the capital two patrol cars; the hospital three ambulances.
     int stations = 0;
     for (const auto& town : region.settlements()) {
-        if (town.id.starts_with("ranch_")) continue; // the Vakeros' ranches are not towns
+        if (town.id.starts_with("ranch_")) continue; // the Vakeroj's ranches are not towns
         bool station = false;
         for (const auto& owner : region.settlements())
             for (const auto& a : owner.assets)

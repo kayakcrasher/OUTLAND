@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Vakeros' ranch country: vehicles, livestock, gear and farm buildings.
+"""Generate the Vakeroj's ranch country: vehicles, livestock, gear and farm buildings.
 
 Vehicles (assets/verda/vehicles/runtime/, +Z front, Y up, metres, ground at Y = 0, driver on +X;
 the game draws the four turning wheels from truck_wheel.glb at the manifest's anchors):

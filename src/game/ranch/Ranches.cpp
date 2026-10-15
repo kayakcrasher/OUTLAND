@@ -74,6 +74,15 @@ int Ranches::start(const world::VerdaRegion& region, ai::BattleRoyaleBots& bots,
     for (const auto& town : region.settlements()) {
         if (town.id == rr::stockyard_id) {
             stockyard_.found = frame_of(town, stockyard_.frame);
+            // A busy market: cattle already penned.
+            for (int i = 0; stockyard_.found && i < stockyard_size / 2; ++i) {
+                Cow cow;
+                cow.position = stockyard_spot(i % 2);
+                cow.yaw = random() * 360;
+                cow.angus = random() < .4F;
+                cow.state = CowState::InCorral;
+                stockyard_.pen.push_back(cow);
+            }
             continue;
         }
         const auto spec = std::find_if(rr::ranches.begin(), rr::ranches.end(), [&](const rr::Ranch& r) { return r.id == town.id; });
@@ -233,13 +242,21 @@ void Ranches::unload_cattle(int count) {
         cow.angus = random() < .4F;
         cow.state = CowState::ToCorral;
         cow.pause = static_cast<float>(i) * 2.0F;
-        cow.path = {on_ground(f.at(rr::stockyard_chute.x, chute_foot_v)),
-                    on_ground(f.at(rr::stockyard_pen.u0 + 4 + random() * (rr::stockyard_pen.u1 - rr::stockyard_pen.u0 - 8),
-                                   rr::stockyard_pen.v0 + 6 + random() * (rr::stockyard_pen.v1 - rr::stockyard_pen.v0 - 10)))};
+        // Down the chute into the receiving pen, then through to one of the holding pens.
+        const int side = random() < .5F ? 0 : 1;
+        const float gate_u = side == 0 ? rr::stockyard_receiving.u0 : rr::stockyard_receiving.u1;
+        const float out = side == 0 ? -3.0F : 3.0F;
+        cow.path = {on_ground(f.at(rr::stockyard_chute.x, chute_foot_v)), on_ground(f.at(rr::stockyard_chute.x, 15)),
+                    on_ground(f.at(gate_u - out, 17)), on_ground(f.at(gate_u + out, 17)), stockyard_spot(side)};
         stockyard_.pen.push_back(cow);
     }
     stockyard_.received += count;
-    while (stockyard_.pen.size() > 16) stockyard_.pen.erase(stockyard_.pen.begin()); // sold on
+    while (stockyard_.pen.size() > static_cast<std::size_t>(stockyard_size)) stockyard_.pen.erase(stockyard_.pen.begin()); // sold at auction
+}
+
+Vector3 Ranches::stockyard_spot(int pen) {
+    const auto& a = rr::stockyard_pens[pen % 2];
+    return on_ground(stockyard_.frame.at(a.u0 + 3 + random() * (a.u1 - a.u0 - 6), a.v0 + 3 + random() * (a.v1 - a.v0 - 6)));
 }
 
 void Ranches::update_herd(RanchState& r, int index, float dt, const world::VerdaRegion& region, bool near) {

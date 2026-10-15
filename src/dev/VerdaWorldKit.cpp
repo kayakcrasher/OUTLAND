@@ -1683,7 +1683,7 @@ namespace {
 // Five family ranches, one in each county, each beside a highway on level open land (see
 // world/Ranches.hpp for the layout): a farmhouse, a red barn, grain bins, a windmill, a fenced
 // pasture, a corral with a loading chute by the road, a corn field and a wheat field, and the
-// family's side-by-side in the yard. And the stockyard near Roka, where the cattle truck unloads
+// family's side-by-side in the yard. And the stockyard of Porto Luma, where the cattle truck unloads
 // and the two big rigs are parked.
 namespace rr = world::ranches;
 const std::string ranch_dir = "assets/verda/ranch/";
@@ -1797,24 +1797,37 @@ void ranches(Kit& kit, world::VerdaRegion& region) {
                   (rr::footprint.u1 - rr::footprint.u0) * .5F - 30, (rr::footprint.v1 - rr::footprint.v0) * .5F - 30, yaw);
         kit.report.ranches.push_back(f.at(rr::yard));
     }
-    // The stockyard, out of Roka on the western ring road.
+    // The stockyard of Porto Luma, on the ring road at the edge of the port city.
     {
         const rr::Frame f(rr::stockyard_gate, rr::stockyard_up);
         const float yaw = f.yaw();
-        auto& yard = site_settlement(region, rr::stockyard_id, rr::stockyard_name, f, {0, 24});
-        yard.survivors = 2;
+        auto& yard = site_settlement(region, rr::stockyard_id, rr::stockyard_name, f, {0, 34});
+        yard.survivors = 4;
         yard.roads.push_back({f.gate, f.at(0, 7), 6, world::RoadType::Gravel});   // the apron by the chute
         yard.roads.push_back({highway_point(region, f.gate), f.gate, 6, world::RoadType::Gravel});
+        yard.roads.push_back({f.at(48, 0), f.at(52, 44), 8, world::RoadType::Gravel}); // the truck park
+        yard.roads.push_back({highway_point(region, f.at(48, 0)), f.at(48, 0), 8, world::RoadType::Gravel});
         kit.add_roads(yard.roads);
-        fence_box(kit, f, rr::stockyard_pen, 9600, {{0, rr::stockyard_chute.x - 2, rr::stockyard_chute.x + 2}});
+        // Receiving pen behind the chute, opening each side into a big holding pen.
+        const auto& in = rr::stockyard_receiving;
+        const auto& left = rr::stockyard_pens[0];
+        const auto& right = rr::stockyard_pens[1];
+        fence_box(kit, f, in, 9600, {{0, rr::stockyard_chute.x - 2, rr::stockyard_chute.x + 2}, {2, 14, 20}, {3, 14, 20}});
+        fence_box(kit, f, left, 9601, {{3, 14, 20}});
+        fence_box(kit, f, right, 9602, {{2, 14, 20}});
         kit.put(ranch_dir + "loading_chute.glb", f.at(rr::stockyard_chute.x, rr::stockyard_chute.y + 2.2F), yaw + 180);
-        for (const float u : {-14.0F, 0.0F, 14.0F}) kit.put(ranch_dir + "feed_bunk.glb", f.at(u, 36), yaw);
-        for (const float u : {-16.0F, 16.0F}) kit.put(ranch_dir + "water_trough.glb", f.at(u, 20), yaw);
-        for (int i = 0; i < 6; ++i) kit.put(ranch_dir + "hay_bale.glb", f.at(-20 + (i % 3) * 1.7F, 30 + (i / 3) * 1.8F), yaw);
-        modular_building(kit, f.at(-8, 54), yaw + 180, 4, 2, "brick", 1, 9601, world::BuildingPurpose::Farm); // the sale barn office
-        // The two big rigs park here: the freight hauler and the cattle hauler.
-        vehicle_marker(yard, "vehicle_spawn_semi_freight_1", f.at(38, 14), yaw + 180);
-        vehicle_marker(yard, "vehicle_spawn_semi_cattle_1", f.at(38, 34), yaw + 180);
+        for (const auto& pen : rr::stockyard_pens) {
+            const float cu = (pen.u0 + pen.u1) * .5F;
+            for (const float v : {pen.v1 - 4, pen.v1 - 14}) kit.put(ranch_dir + "feed_bunk.glb", f.at(cu, v), yaw);
+            kit.put(ranch_dir + "water_trough.glb", f.at(cu, pen.v0 + 6), yaw);
+        }
+        for (int i = 0; i < 8; ++i) kit.put(ranch_dir + "hay_bale.glb", f.at(-10 + (i % 4) * 1.7F, 34 + (i / 4) * 1.8F), yaw);
+        // The sale barn (the auction ring) and the office behind the pens.
+        kit.put(ranch_dir + "barn.glb", f.at(0, 54), yaw + 90);
+        modular_building(kit, f.at(-30, 54), yaw + 180, 4, 2, "brick", 1, 9603, world::BuildingPurpose::Farm);
+        // The two big rigs park beside it: the freight hauler and the cattle hauler.
+        vehicle_marker(yard, "vehicle_spawn_semi_freight_1", f.at(52, 16), yaw);
+        vehicle_marker(yard, "vehicle_spawn_semi_cattle_1", f.at(52, 34), yaw);
         kit.report.stockyard = true;
     }
 }
@@ -1843,7 +1856,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     building_loot(kit, region);
     // Last again: the loot keeps its ids.
     government(kit, region);
-    // Last of all: the Vakeros' ranches and the stockyard (new settlements and pieces only).
+    // Last of all: the Vakeroj's ranches and the stockyard (new settlements and pieces only).
     ranches(kit, region);
     return kit.report;
 }

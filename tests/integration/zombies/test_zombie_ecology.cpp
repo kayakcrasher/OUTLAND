@@ -56,7 +56,7 @@ int main() {
     std::cout << sources.size() << " nests (" << roadside << " roadside), " << ecology.zombies().size() << " infected\n";
     check(sources.size() >= 20 && roadside >= 3, "nests everywhere");
     for (std::size_t s = 0; s < region.settlements().size(); ++s)
-        if (!region.settlements()[s].id.starts_with("ranch_")) // the Vakeros' ranches are farms, not towns
+        if (!region.settlements()[s].id.starts_with("ranch_")) // the Vakeroj's ranches are farms, not towns
         check(std::count_if(sources.begin(), sources.end(), [&](const ZombieSource& n) {return n.settlement == static_cast<int>(s);}) >= 2,
               "every town is infested: " + region.settlements()[s].name);
     check(static_cast<int>(ecology.zombies().size()) == ecology.config().population, "population");
