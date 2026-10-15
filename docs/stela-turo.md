@@ -1,9 +1,10 @@
 # Stela Turo
 
-Verda City's art deco skyscraper, on a level lot just north of the ground kept for the future
-baseball stadium (it never stands on the stadium ground). Model: `assets/verda/city/towers/stela_turo.glb`,
-written by `tools/generate_city_kit.py` (`stela_turo()`); placed by the world kit (`government()` in
-`src/dev/VerdaWorldKit.cpp`) and in `maps/verda_world.map`.
+Verda City's art deco skyscraper, downtown in the tower core: the inner corner of the block
+south-west of the city centre (at -26, -26), facing the main avenue, where the old stone deco
+tower stood. Model: `assets/verda/city/towers/stela_turo.glb`, written by
+`tools/generate_city_kit.py` (`stela_turo()`); placed by the world kit (`downtown()` in
+`src/dev/VerdaWorldKit.cpp`, its offices and loot in `government()`) and in `maps/verda_world.map`.
 
 ## The building
 - **17 storeys** of dressed limestone in three setbacks: 30 x 24 m to the 11th floor, 25 x 20 m to the

@@ -343,7 +343,9 @@ void downtown(Kit& kit, world::VerdaRegion& region) {
             case Zone::Tower: {
                 // The tallest towers stand at the core's inner corners, a mid-rise beside each.
                 const bool bank = bx > 0 && bz < 0, deco = bx < 0 && bz < 0;
-                const char* tall = bank ? "glass_dark_tower" : deco ? "stone_deco_tower" : "glass_blue_tower";
+                // The deco corner is Stela Turo, Verda's art deco skyscraper (enterable, 17 floors, a
+                // penthouse for sale in Explore): its offices and loot are set up in government().
+                const char* tall = bank ? "glass_dark_tower" : deco ? "stela_turo" : "glass_blue_tower";
                 const char* low = bank ? "concrete_office" : deco ? "glass_blue_midrise" : "stone_midrise";
                 kit.put(city + "towers/" + tall + ".glb", at(bx - (bx > 0 ? 14 : -14), bz - (bz > 0 ? 14 : -14)), bx > 0 ? 90 : 270, false);
                 kit.put(city + "towers/" + low + ".glb", at(bx + (bx > 0 ? 14 : -14), bz + (bz > 0 ? 14 : -14)), 0, false);
@@ -1628,14 +1630,17 @@ void government(Kit& kit, world::VerdaRegion& region) {
         kit.purpose(to_world(hall.origin, hall.yaw, 0, .95F, -4.5F), hall.yaw, world::BuildingPurpose::Office);
         ++kit.report.town_halls;
     }
-    // Stela Turo, the art deco skyscraper (bounds x -15.3..15.3, z -14.6..14.6 with the marquees,
-    // 86 m to the spire): on a level lot beside the stadium ground, facing its street. Its lobby is
-    // an office (the building's staff); the penthouse on top is for sale in Explore
-    // (game::economy::Penthouse). Loot on every other floor for Battle Royale.
+    // Stela Turo, the art deco skyscraper downtown (placed in downtown(); bounds x -15.3..15.3,
+    // z -14.6..14.6 with the marquees, 86 m to the spire): its lobby is an office (the building's
+    // staff); the penthouse on top is for sale in Explore (game::economy::Penthouse). Loot on every
+    // other floor for Battle Royale.
     {
         CivicSpot tower;
-        if (civic_lot(kit, region, stadium_reserve, stadium_half + 20, 600, 0, 0, 16.5F, 15.5F, 15.5F, 4, tower) &&
-            kit.put(stela_turo_model, tower.origin, tower.yaw)) {
+        bool placed = false;
+        for (const auto& town : region.settlements())
+            for (const auto& asset : town.assets)
+                if (!placed && asset.model_path == stela_turo_model) { tower = {asset.position, asset.rotation_y}; placed = true; }
+        if (placed) {
             kit.purpose(to_world(tower.origin, tower.yaw, 0, .25F, -9), tower.yaw, world::BuildingPurpose::Office);
             ++kit.report.retagged; // the tower is a building island life knows; the marker makes it offices
             kit.report.stela_turo = true;

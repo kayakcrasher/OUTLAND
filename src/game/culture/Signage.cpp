@@ -104,9 +104,16 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
         const auto s = static_cast<std::size_t>(std::max(0, place.settlement));
         const Vector3 centre = s < towns.size() ? towns[s].center : place.interior;
         const bool capital = s < towns.size() && towns[s].id.find("capital") != std::string::npos;
+        // Stela Turo's offices carry the tower's own name: they do not take a place in the town's order.
+        const auto in_tower = [&](const life::Place& p) {
+            if (p.kind != PlaceKind::Office) return false;
+            for (const auto& town : towns) for (const auto& asset : town.assets)
+                if (asset.model_path.ends_with("towers/stela_turo.glb") && flat(asset.position, p.door) < 30) return true;
+            return false;
+        };
         int ordinal = 0;
         for (const auto& other : island.places)
-            if (other.kind == place.kind && other.settlement == place.settlement && &other != &place &&
+            if (other.kind == place.kind && other.settlement == place.settlement && &other != &place && !in_tower(other) &&
                 (flat(other.door, centre) < flat(place.door, centre) ||
                  (flat(other.door, centre) == flat(place.door, centre) && other.id < place.id))) ++ordinal;
         // The seats of government: Registaro de Verda (the parliament) and the county towns'
@@ -127,7 +134,7 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
         auto text = place_sign(place.kind, text_hash(s < towns.size() ? towns[s].id : place.id), owner_of(island, static_cast<int>(i)), sign_ordinal, capital);
         if (parliament) text = {"REGISTARO DE VERDA", "PARLAMENTO · RESPUBLIKO VERDA"};
         // Stela Turo, the art deco skyscraper by the stadium ground.
-        if (place.kind == PlaceKind::Office && !seat && near_model("towers/stela_turo.glb")) text = {"STELA TURO", "OFICEJOJ · PENTDOMO"};
+        if (!seat && in_tower(place)) text = {"STELA TURO", "OFICEJOJ · PENTDOMO"};
         if (town_hall) {
             std::string name = s < towns.size() ? towns[s].name : std::string{};
             for (auto& c : name) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));

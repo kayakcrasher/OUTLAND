@@ -144,7 +144,7 @@ ASSET "creator_kit_tree_39" 6 "" -72.4000015 0.150000006 -104 1 7 1 0 255 255 25
 ASSET "creator_kit_tree_40" 6 "" -72.4000015 0.150000006 -136 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit20" 9 "assets/verda/urban/Traffic lights/street_light.glb" -72.4000015 0.150000006 -120 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_sidewalk_block_68_kit5" 4 "assets/verda/city/ground/sidewalk_block_68.glb" -40 0 -40 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_stone_deco_tower_kit1" 0 "assets/verda/city/towers/stone_deco_tower.glb" -26 0.150000006 -26 26 55.9000015 26 270 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_stela_turo_kit1" 0 "assets/verda/city/towers/stela_turo.glb" -26 0.150000006 -26 30.6000004 86.1999969 29.2000008 270 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_glass_blue_midrise_kit1" 0 "assets/verda/city/towers/glass_blue_midrise.glb" -54 0.150000006 -54 28 37.9000015 20 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_41" 6 "" -32 0.150000006 -60 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_42" 6 "" -20 0.150000006 -60 1 7 1 0 255 255 255 255 80 80 80 255 1
@@ -5104,7 +5104,6 @@ ASSET "creator_city_town_hall_kit1" 0 "assets/verda/city/civic/town_hall.glb" 17
 ASSET "creator_city_town_hall_kit2" 0 "assets/verda/city/civic/town_hall.glb" 1754.42505 6 -260.274994 23 17 17 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_town_hall_kit3" 0 "assets/verda/city/civic/town_hall.glb" 317.725006 6 1727.57495 23 17 17 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_town_hall_kit4" 0 "assets/verda/city/civic/town_hall.glb" -1610.27502 14.0573664 445.575012 23 17 17 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_stela_turo_kit1" 0 "assets/verda/city/towers/stela_turo.glb" 522.003052 0.542071521 -80.8453674 30.6000004 86.1999969 29.2000008 -134.274765 255 255 255 255 80 80 80 255 1
 MARKER "creator_marker_loot_spawn_general_training" 0 4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 0.5 0.5 0.5 0 1
@@ -5285,7 +5284,7 @@ MARKER "creator_marker_building_purpose_kit_160" 4 15.4999886 6.94999981 -1750 1
 MARKER "creator_marker_building_purpose_kit_161" 4 1754 6.94999981 -262.5 1.20000005 2.20000005 1.20000005 -0 1
 MARKER "creator_marker_building_purpose_kit_162" 4 315.5 6.94999981 1728 1.20000005 2.20000005 1.20000005 90 1
 MARKER "creator_marker_building_purpose_kit_163" 4 -1612.5 15.0073662 446 1.20000005 2.20000005 1.20000005 90 1
-MARKER "creator_marker_building_purpose_kit_164" 4 528.447083 0.792071521 -74.5624695 1.20000005 2.20000005 1.20000005 -134.274765 1
+MARKER "creator_marker_building_purpose_kit_164" 4 -17 0.400000006 -26 1.20000005 2.20000005 1.20000005 270 1
 PURPOSE "creator_marker_building_purpose_kit_1" 1
 PURPOSE "creator_marker_building_purpose_kit_2" 1
 PURPOSE "creator_marker_building_purpose_kit_3" 1
@@ -6062,19 +6061,19 @@ MARKER "loot_spawn_general_bldg_495" 0 -372 -0 174 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_medical_bldg_496" 0 -396 -0 174 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_497" 0 -420 -0 174 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_498" 0 -444 -0 174 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_stela_1" 0 519.470215 4.39207125 -85.4098663 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_weapons_stela_2" 0 510.027985 4.39207125 -77.157959 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_stela_3" 0 519.470215 11.5920706 -85.4098663 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_medical_stela_4" 0 510.027985 11.5920706 -77.157959 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_stela_5" 0 519.470215 18.7920723 -85.4098663 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_weapons_stela_6" 0 510.027985 18.7920723 -77.157959 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_stela_7" 0 519.470215 25.9920712 -85.4098663 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_medical_stela_8" 0 510.027985 25.9920712 -77.157959 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_stela_9" 0 519.470215 33.19207 -85.4098663 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_weapons_stela_10" 0 510.027985 33.19207 -77.157959 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_stela_11" 0 519.470215 40.3920708 -85.4098663 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_stela_12" 0 519.470215 47.5920715 -85.4098663 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_stela_13" 0 519.470215 54.7920723 -85.4098663 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_stela_1" 0 -31 4 -27.5 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_weapons_stela_2" 0 -32 4 -15 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_stela_3" 0 -31 11.1999989 -27.5 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_medical_stela_4" 0 -32 11.1999989 -15 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_stela_5" 0 -31 18.3999996 -27.5 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_weapons_stela_6" 0 -32 18.3999996 -15 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_stela_7" 0 -31 25.5999985 -27.5 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_medical_stela_8" 0 -32 25.5999985 -15 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_stela_9" 0 -31 32.7999992 -27.5 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_weapons_stela_10" 0 -32 32.7999992 -15 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_stela_11" 0 -31 40 -27.5 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_stela_12" 0 -31 47.2000008 -27.5 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_stela_13" 0 -31 54.4000015 -27.5 0.5 0.5 0.5 0 1
 PURPOSE "verda_okcidento_house_1" 1
 PURPOSE "verda_okcidento_house_2" 1
 PURPOSE "verda_okcidento_house_3" 1

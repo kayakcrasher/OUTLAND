@@ -323,7 +323,9 @@ int main() {
             check(std::abs(world::terrain::TerrainHeight::sample(1750 + o, -400 + q) - h) < .05F, "Porto Luma grid is level");
     }
     int towers = 0;
-    for (const auto& s : region.settlements()) for (const auto& a : s.assets) if (a.model_path.find("/city/towers/") != std::string::npos) {
+    // (Stela Turo is the enterable exception: its front door faces the avenue; checked below.)
+    for (const auto& s : region.settlements()) for (const auto& a : s.assets) if (a.model_path.find("/city/towers/") != std::string::npos &&
+                                                                                 !a.model_path.ends_with("stela_turo.glb")) {
         ++towers;
         // Towers are solid cover: walking at one from the street stops at its wall.
         Vector3 p{a.position.x + std::max(a.size.x, a.size.z) * .5F + 3, a.position.y, a.position.z};
@@ -423,14 +425,14 @@ int main() {
                         std::abs(asset.position.z - dev::stadium_reserve.z) < dev::stadium_half),
                       "nothing built on the stadium ground: " + asset.id);
         check(staffed == kit_places, "people live or work in every part-built building: " + std::to_string(staffed));
-        // Stela Turo: beside the stadium ground (not on it), every floor walkable, both stair cores
+        // Stela Turo: downtown, every floor walkable, both stair cores
         // climbable, the penthouse and the roof reachable.
         check(report.stela_turo, "Stela Turo built");
         game::economy::Penthouse penthouse;
         check(penthouse.locate(region), "Stela Turo found in the world");
         if (penthouse.found()) {
             const auto origin = penthouse.to_world({0, 0, 0});
-            check(std::hypot(origin.x - dev::stadium_reserve.x, origin.z - dev::stadium_reserve.z) < 400, "Stela Turo near the stadium ground");
+            check(std::abs(origin.x) < 160 && std::abs(origin.z) < 160, "Stela Turo in downtown Verda City");
             const auto stand = [&](Vector3 local) {
                 const auto w = penthouse.to_world(local);
                 return world::physics::WorldCollision::ground_height({w.x, w.y + .5F, w.z}, w.y + .5F, region) - (w.y - local.y);
