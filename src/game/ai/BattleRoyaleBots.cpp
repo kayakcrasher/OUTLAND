@@ -53,7 +53,7 @@ CombatBot& BattleRoyaleBots::add_bot(Vector3 feet,combat::WeaponId weapon,BotLev
 
 void BattleRoyaleBots::clear() {
     bots_.clear();agents_.clear();sounds_.clear();own_bus_.clear();heard_up_to_=0;shots_.clear();
-    tracers_.clear();feed_.clear();events_={};elapsed_=0;mounted_.clear();asleep_.clear();
+    tracers_.clear();feed_.clear();events_={};elapsed_=0;mounted_.clear();asleep_.clear();lag_.clear();
     player_kills_=0;
 }
 
@@ -197,9 +197,23 @@ void BattleRoyaleBots::update(const BattleRoyaleFrame& frame,const BotWorld& wor
     heard_up_to_=bus.latest();
 
     shots_.clear();
-    for(auto& bot:bots_) {
-        if(!bot.alive() || mounted(bot.id()) || asleep(bot.id())) continue;
-        bot.tick(dt,frame.now,agents_,sounds_,world.environment,shots_);
+    // Bots far from the player think and move in steps: one frame in four each (taking turns),
+    // with the time they skipped. Near ones every frame. A hundred bots stay cheap.
+    ++frame_;
+    lag_.resize(bots_.size(),0);
+    for(std::size_t i=0;i<bots_.size();++i) {
+        auto& bot=bots_[i];
+        if(!bot.alive() || mounted(bot.id()) || asleep(bot.id())) {lag_[i]=0;continue;}
+        lag_[i]+=dt;
+        const bool far=std::hypot(bot.position().x-frame.player_feet.x,bot.position().z-frame.player_feet.z)>far_radius;
+        // ...but never miss a sound in earshot (it is only on the bus this frame).
+        const auto earshot=[&] {
+            return std::any_of(sounds_.begin(),sounds_.end(),[&](const BotSound& heard) {
+                return heard.source!=bot.id() && Vector3Distance(heard.position,bot.position())<heard.radius*1.5F;});
+        };
+        if(far && (frame_+i)%far_step!=0 && lag_[i]<.2F && !earshot()) continue;
+        bot.tick(std::min(lag_[i],.25F),frame.now,agents_,sounds_,world.environment,shots_);
+        lag_[i]=0;
     }
     for(const auto& shot:shots_) {
         resolve(shot,frame,world);

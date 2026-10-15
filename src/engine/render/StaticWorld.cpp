@@ -76,7 +76,9 @@ void StaticWorld::draw(const world::VerdaRegion& region, Vector3 camera, const V
         if (chunk.settlement >= towns.size() || chunk.index >= towns[chunk.settlement].roads.size()) continue;
         if (flat(chunk.centre, camera) > 340 * reach + chunk.radius || !visible(chunk.centre, chunk.radius)) continue;
         const auto& road = towns[chunk.settlement].roads[chunk.index];
-        if (chunk.failed || (!chunk.mesh && budget <= 0)) {world::geometry::road(road, chunk.begin, chunk.end); continue;}
+        // Never record while lifted: rlgl bakes the current transform into the vertices, and the
+        // lift would stay in the road mesh for good (roads floating metres up after the drop).
+        if (chunk.failed || (!chunk.mesh && (budget <= 0 || lifted))) {world::geometry::road(road, chunk.begin, chunk.end); continue;}
         if (!chunk.mesh) {
             --budget;
             chunk.mesh = std::make_unique<RecordedGeometry>();

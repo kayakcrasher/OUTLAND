@@ -14,10 +14,11 @@ void blade(float length, float chord, Color colour) {
 }
 } // namespace
 
-void draw_helicopters(const FlightPath& path, float seconds, const Model* helicopter, Vector3 camera) {
-    const float yaw = yaw_of(path.direction) * RAD2DEG;
-    for (int index = 0; index < Formation::count; ++index) {
-        const Vector3 at = helicopter_position(path, index, seconds);
+void draw_helicopters(const std::vector<FlightPath>& fleet, float seconds, const Model* helicopter, Vector3 camera) {
+    for (const auto& path : fleet) {
+        const int index = path.index;
+        const float yaw = yaw_of(path.direction) * RAD2DEG;
+        const Vector3 at = helicopter_position(path, seconds);
         if (Vector3Distance(at, camera) > 3200) continue;
         const float roll = 2.5F * std::sin(seconds * .7F + static_cast<float>(index) * 1.3F);
         rlPushMatrix();
@@ -25,7 +26,7 @@ void draw_helicopters(const FlightPath& path, float seconds, const Model* helico
         rlRotatef(yaw, 0, 1, 0);
         rlRotatef(7, 1, 0, 0);          // nose down in forward flight
         rlRotatef(roll, 0, 0, 1);
-        // The model's skids sit on y = 0; the formation flies its hub at `at`: lift it by the hub.
+        // The model's skids sit on y = 0; it flies its hub at `at`: lift it by the hub.
         Vector3 hub = rotor_hub, tail = tail_hub;
         if (helicopter) {
             hub = Vector3Transform(rotor_hub, helicopter->transform);

@@ -9,7 +9,7 @@
 #include <set>
 #include <string>
 
-// The Battle Royale drop: eight routes straight across Verda, a row of three helicopters, a
+// The Battle Royale drop: eight routes straight across Verda, a fleet of helicopters on separate ones, a
 // jumper's freefall and canopy (smooth, steerable, never a hard landing), bots that land where
 // they planned, and the zone's phases closing on random circles inside each other, on land.
 using namespace outland;
@@ -46,14 +46,29 @@ int main() {
     check(headings.size() == heading_count, "all eight routes are used");
     check(std::string(heading_name(4)) == "SOUTH-WEST TO NORTH-EAST" && heading_direction(4).x > 0 && heading_direction(4).y < 0, "south-west to north-east heads north-east (-z is north)");
 
-    // The row of three: side by side across the line, the middle one ahead, moving at speed.
-    const auto path = make_flight(7);
-    for (float t : {5.0F, 20.0F, 60.0F}) {
-        const auto l = helicopter_position(path, 0, t), m = helicopter_position(path, 1, t), r = helicopter_position(path, 2, t);
-        check(std::abs(path.offset(l) + Formation::spacing) < .5F && std::abs(path.offset(m)) < .5F && std::abs(path.offset(r) - Formation::spacing) < .5F, "three abreast");
-        check(path.along(m) > path.along(l) && path.along(m) > path.along(r), "the middle one leads");
+    // The fleet: four helicopters, each alone on its own line, all in different directions and
+    // on four different lines across the island, at different heights; each flies at its speed.
+    for (std::uint64_t seed = 1; seed <= 200; ++seed) {
+        const auto fleet = make_fleet(seed);
+        check(static_cast<int>(fleet.size()) == fleet_size, "a fleet of four");
+        std::set<int> fleet_headings, axes;
+        std::set<float> heights;
+        for (std::size_t i = 0; i < fleet.size(); ++i) {
+            check(fleet[i].index == static_cast<int>(i), "fleet indices");
+            fleet_headings.insert(fleet[i].heading);
+            axes.insert(fleet[i].heading / 2);
+            heights.insert(fleet[i].altitude);
+            check(fleet[i].land_to - fleet[i].land_from > 2000, "each line crosses the island");
+        }
+        check(fleet_headings.size() == fleet.size() && axes.size() == fleet.size(), "separate helicopters going separate directions");
+        check(heights.size() == fleet.size(), "at different heights");
+        check(last_jump_time(fleet) >= last_jump_time(fleet[0]), "the fleet's last jump is the latest");
     }
-    check(std::abs(path.along(helicopter_position(path, 1, 10)) - path.speed * 10) < .5F, "flies at its speed");
+    const auto fleet = make_fleet(7);
+    const auto& path = fleet[0];
+    check(std::abs(path.offset(helicopter_position(path, 20))) < .5F, "flies on its line");
+    check(std::abs(path.along(helicopter_position(path, 10)) - path.speed * 10) < .5F, "flies at its speed");
+    check(make_fleet(9, 6).size() == 6, "more helicopters fly the lines the other way");
     check(last_jump_time(path) * path.speed < path.land_to && last_jump_time(path) * path.speed > path.land_to - 100, "everyone jumps over the last land");
 
     // A jump left alone: smooth acceleration to terminal speed (no jolt), the canopy opening by
@@ -128,16 +143,20 @@ int main() {
     // Bots: each leaves a helicopter, falls, opens and lands exactly where planned, in order.
     {
         std::vector<std::pair<int, Vector3>> landings;
-        for (int i = 0; i < 23; ++i) {
-            const float s = path.land_from + 200 + i * (path.land_to - path.land_from - 400) / 23;
-            const auto p = Vector3Add(path.point(s), Vector3Scale(path.side, static_cast<float>((i % 7) - 3) * 180));
+        for (int i = 0; i < 99; ++i) {
+            const auto& line = fleet[static_cast<std::size_t>(i % fleet_size)];
+            const float s = line.land_from + 200 + static_cast<float>(i / fleet_size) * (line.land_to - line.land_from - 400) / 25;
+            const auto p = Vector3Add(line.point(s), Vector3Scale(line.side, static_cast<float>((i % 7) - 3) * 120));
             landings.emplace_back(i + 1, Vector3{p.x, world::terrain::TerrainHeight::sample(p.x, p.z), p.z});
         }
-        const auto jumps = plan_bot_jumps(path, landings, 99);
+        const auto jumps = plan_bot_jumps(fleet, landings, 99);
+        std::set<int> used;
         check(jumps.size() == landings.size(), "a jump for every bot");
         for (const auto& j : jumps) {
             check(j.jump_time > 0 && j.jump_time < j.open_time && j.open_time < j.land_time, "jump, open, land in order");
-            check(j.jump_time <= last_jump_time(path), "nobody rides past the last land");
+            const auto& line = fleet[static_cast<std::size_t>(j.helicopter)];
+            used.insert(j.helicopter);
+            check(j.jump_time <= last_jump_time(line), "nobody rides past the last land");
             check(bot_in_air(j, j.jump_time - 1).stage == DiveStage::Aboard, "aboard before the jump");
             check(bot_in_air(j, (j.jump_time + j.open_time) / 2).stage == DiveStage::Freefall, "then falling");
             check(bot_in_air(j, (j.open_time + j.land_time) / 2).stage == DiveStage::Canopy, "then under a canopy");
@@ -149,9 +168,10 @@ int main() {
                 check(air.position.y <= last_y + .01F, "never climbs");
                 last_y = air.position.y;
             }
-            const int side = path.offset(j.landing) < -20 ? 0 : path.offset(j.landing) > 20 ? 2 : 1;
-            check(j.helicopter == side, "leaves the helicopter on its side");
+            check(j.helicopter == nearest_flight(fleet, j.landing), "leaves the helicopter whose line passes nearest");
+            check(flat(j.door, j.landing) < drop_reach * 1.6F, "lands within reach of its line");
         }
+        check(used.size() == fleet.size(), "bots ride every helicopter");
     }
 
     // The zone: phases wait, then close on the next circle, each wholly inside the last, centred

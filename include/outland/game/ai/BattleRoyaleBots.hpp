@@ -51,7 +51,10 @@ public:
     static constexpr int player_id = 0;
     static constexpr float gunshot_radius_rifle = 300, gunshot_radius_pistol = 180, footstep_radius = 14;
 
-    static constexpr float drop_clearance = 150; // no bot lands within this of the player
+    static constexpr float drop_clearance = 150;
+    // Bots further than this from the player tick one frame in `far_step` (with the time skipped).
+    static constexpr float far_radius = 260;
+    static constexpr std::size_t far_step = 4; // no bot lands within this of the player
     // Places `count` bots on land around Verda's towns, away from the player; where `prefer`
     // allows first (the Battle Royale drop: within reach of the helicopters' line).
     void start(const world::VerdaRegion& region, BotLevel level, int count, std::uint64_t seed, Vector3 player_feet,
@@ -107,6 +110,8 @@ private:
     std::vector<BotTracer> tracers_;
     std::vector<std::string> feed_;
     std::vector<int> mounted_, asleep_;
+    std::vector<float> lag_;
+    std::size_t frame_{0};
     BattleRoyaleEvents events_;
     BotLevel level_{BotLevel::Medium};
     Vector3 last_player_{};

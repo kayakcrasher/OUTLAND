@@ -59,7 +59,7 @@ have a front post in protective ears with a tritium dot, seen through a rear pee
 has three-dot sights (a notch and a post); the shotgun a brass bead on a raised rib with a mid bead.
 
 ## The Battle Royale drop
-Aboard the helicopter: **SPACE** / the touch **JUMP** button (or USE) jumps. In freefall the move
+Aboard a helicopter: **SPACE** / the touch **JUMP** button (or USE) jumps; for the first 30 s **R** / **LOAD** moves you to the next of the four helicopters (each flies its own route). In freefall the move
 stick glides (forward), dives (forward while looking down) or holds back; **SPACE / JUMP opens the
 parachute** (it opens by itself at 150 m). Under the canopy it steers where you look, forward
 speeds up, back brakes. Shooting waits for the ground. Details: `docs/battle-royale-drop.md`.

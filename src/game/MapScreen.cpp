@@ -298,19 +298,23 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
                 DrawLineEx(Vector2Lerp(you, edge, k), Vector2Lerp(you, edge, std::min(1.0F, k + .045F)), 2.2F * s, Color{255, 255, 255, 200});
         }
     }
-    // The helicopters' route: a dashed line across the island, and the three of them on it.
+    // The helicopters' routes: a dashed line across the island for each, the helicopter on it;
+    // the player's own brightest.
     if (view.flight) {
-        const auto a = to_map(area, view.flight_start.x, view.flight_start.z), b = to_map(area, view.flight_end.x, view.flight_end.z);
-        for (float k = 0; k < 1; k += .03F)
-            DrawLineEx(Vector2Lerp(a, b, k), Vector2Lerp(a, b, std::min(1.0F, k + .018F)), 2.5F * s, Color{255, 215, 80, 230});
-        const auto along = Vector2Normalize(Vector2Subtract(b, a)), side = Vector2{-along.y, along.x};
-        for (const auto& heli : view.helicopters) {
-            const auto at = to_map(area, heli.x, heli.z);
-            const auto tip = Vector2Add(at, Vector2Scale(along, 9 * s));
-            DrawTriangle(tip, Vector2Add(Vector2Subtract(at, Vector2Scale(along, 6 * s)), Vector2Scale(side, 6 * s)),
-                         Vector2Subtract(Vector2Subtract(at, Vector2Scale(along, 6 * s)), Vector2Scale(side, 6 * s)), Color{255, 230, 120, 255});
-            DrawTriangle(tip, Vector2Subtract(Vector2Subtract(at, Vector2Scale(along, 6 * s)), Vector2Scale(side, 6 * s)),
-                         Vector2Add(Vector2Subtract(at, Vector2Scale(along, 6 * s)), Vector2Scale(side, 6 * s)), Color{255, 230, 120, 255});
+        for (const auto& flight : view.flights) {
+            const auto a = to_map(area, flight.start.x, flight.start.z), b = to_map(area, flight.end.x, flight.end.z);
+            const Color line = flight.yours ? Color{255, 215, 80, 240} : Color{250, 250, 245, 200};
+            for (float k = 0; k < 1; k += .03F)
+                DrawLineEx(Vector2Lerp(a, b, k), Vector2Lerp(a, b, std::min(1.0F, k + .018F)), (flight.yours ? 3.0F : 2.2F) * s, line);
+            const auto along = Vector2Normalize(Vector2Subtract(b, a)), side = Vector2{-along.y, along.x};
+            const auto at = to_map(area, flight.helicopter.x, flight.helicopter.z);
+            const float r = flight.yours ? 1.25F : 1.0F;
+            const auto tip = Vector2Add(at, Vector2Scale(along, 9 * s * r));
+            const auto l = Vector2Add(Vector2Subtract(at, Vector2Scale(along, 6 * s * r)), Vector2Scale(side, 6 * s * r));
+            const auto rr = Vector2Subtract(Vector2Subtract(at, Vector2Scale(along, 6 * s * r)), Vector2Scale(side, 6 * s * r));
+            const Color body = flight.yours ? Color{255, 230, 120, 255} : Color{235, 235, 225, 230};
+            DrawTriangle(tip, l, rr, body);
+            DrawTriangle(tip, rr, l, body);
         }
     }
     // You: an arrow pointing the way you face, ringed so it reads on any ground.

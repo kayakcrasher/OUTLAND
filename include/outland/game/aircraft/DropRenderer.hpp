@@ -1,8 +1,9 @@
 #pragma once
 #include "outland/game/aircraft/HelicopterDrop.hpp"
 #include <raylib.h>
+#include <vector>
 
-// Drawing the drop: the three helicopters with spinning rotors, parachutes, and the bots on their
+// Drawing the drop: the helicopters with spinning rotors, parachutes, and the bots on their
 // way down (seen from afar: a figure and its canopy). Inside BeginMode3D.
 namespace outland::game::aircraft {
 
@@ -12,7 +13,7 @@ inline constexpr float rotor_radius = 7.4F, tail_rotor_radius = 1.15F;
 
 // `helicopter` may be null (a stand-in shape is drawn). The helicopters lean nose-down and roll
 // gently as they fly.
-void draw_helicopters(const FlightPath& path, float seconds, const Model* helicopter, Vector3 camera);
+void draw_helicopters(const std::vector<FlightPath>& fleet, float seconds, const Model* helicopter, Vector3 camera);
 // A parachute whose harness is at `harness`, facing `heading`; `open` 0..1 inflates it, `swing`
 // and `bank` tilt it (radians). `chute` may be null.
 void draw_parachute(const Model* chute, Vector3 harness, float heading, float open, float swing, float bank);

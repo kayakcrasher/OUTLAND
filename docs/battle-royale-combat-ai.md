@@ -1,6 +1,6 @@
 # Battle Royale combat AI
 
-Battle Royale now drops **23 bots** onto Verda with you. They fight you and each other, and the last one standing wins.
+Battle Royale now drops **99 bots** onto Verda with you (100 players). They fight you and each other, and the last one standing wins.
 
 ## Playing
 

@@ -43,10 +43,11 @@ float FlightPath::offset(Vector3 p) const {
     return (p.x - start.x) * side.x + (p.z - start.z) * side.z;
 }
 
-FlightPath make_flight(std::uint64_t seed, float island_radius) {
+FlightPath make_flight(std::uint64_t seed, float island_radius, int heading) {
     std::uint64_t state = seed * 0xD1B54A32D192ED03ULL + 0x8CB92BA72F3D8DD7ULL;
     FlightPath path;
     path.heading = static_cast<int>(unit(state) * heading_count) % heading_count;
+    if (heading >= 0) path.heading = heading % heading_count;
     const auto d = heading_direction(path.heading);
     path.direction = {d.x, 0, d.y};
     path.side = {-d.y, 0, d.x};
@@ -65,12 +66,33 @@ FlightPath make_flight(std::uint64_t seed, float island_radius) {
     return path;
 }
 
-Vector3 helicopter_position(const FlightPath& path, int index, float seconds) {
-    const int lane = std::clamp(index, 0, Formation::count - 1) - 1; // -1 left, 0 middle, 1 right
+std::vector<FlightPath> make_fleet(std::uint64_t seed, int count, float island_radius) {
+    std::uint64_t state = seed * 0x9E3779B97F4A7C15ULL + 0x632BE59BD9B4E019ULL;
+    // The four lines (north-south, east-west and the two diagonals) in a random order, each
+    // flown one way or the other; a fifth and later helicopter flies a line already used the
+    // other way.
+    std::array<int, 4> axes{0, 1, 2, 3};
+    for (int i = 3; i > 0; --i) std::swap(axes[static_cast<std::size_t>(i)], axes[static_cast<std::size_t>(unit(state) * static_cast<float>(i + 1)) % static_cast<std::size_t>(i + 1)]);
+    std::array<int, 4> sign{};
+    for (auto& s : sign) s = unit(state) < .5F ? 0 : 1;
+    std::vector<FlightPath> fleet;
+    count = std::clamp(count, 1, heading_count);
+    for (int i = 0; i < count; ++i) {
+        const int axis = axes[static_cast<std::size_t>(i % 4)];
+        const int way = (sign[static_cast<std::size_t>(i % 4)] + i / 4) % 2;
+        auto path = make_flight(seed * 31 + static_cast<std::uint64_t>(i) * 7919 + 1, island_radius, axis * 2 + way);
+        path.index = i;
+        path.altitude += static_cast<float>(i) * 22; // never at the same height where lines cross
+        path.start.y = path.end.y = path.altitude;
+        fleet.push_back(path);
+    }
+    return fleet;
+}
+
+Vector3 helicopter_position(const FlightPath& path, float seconds) {
     const float t = std::max(0.0F, seconds);
-    const float distance = path.speed * t - (lane != 0 ? Formation::trail : 0.0F);
-    Vector3 at = Vector3Add(path.point(distance), Vector3Scale(path.side, static_cast<float>(lane) * Formation::spacing));
-    at.y = path.altitude + (lane != 0 ? -6.0F : 0.0F) + helicopter_bob(index, seconds);
+    Vector3 at = path.point(path.speed * t);
+    at.y = path.altitude + helicopter_bob(path.index, seconds);
     return at;
 }
 
@@ -78,14 +100,32 @@ float helicopter_bob(int index, float seconds) {
     return .9F * std::sin(seconds * .9F + static_cast<float>(index) * 2.1F) + .4F * std::sin(seconds * 2.3F + static_cast<float>(index));
 }
 
-Vector3 helicopter_door(const FlightPath& path, int index, float seconds) {
-    // The door on the side away from the middle of the row (the middle one: its right side).
-    const float sign = index == 0 ? -1.0F : 1.0F;
-    return Vector3Add(Vector3Add(helicopter_position(path, index, seconds), Vector3Scale(path.side, sign * 1.8F)), {0, -.3F, 0});
+Vector3 helicopter_door(const FlightPath& path, float seconds) {
+    return Vector3Add(Vector3Add(helicopter_position(path, seconds), Vector3Scale(path.side, 1.8F)), {0, -.3F, 0});
 }
 
 float last_jump_time(const FlightPath& path) {
     return std::max(5.0F, (path.land_to - 40) / path.speed);
+}
+
+float last_jump_time(const std::vector<FlightPath>& fleet) {
+    float last = 0;
+    for (const auto& path : fleet) last = std::max(last, last_jump_time(path));
+    return last;
+}
+
+int nearest_flight(const std::vector<FlightPath>& fleet, Vector3 p) {
+    int best = -1;
+    float best_score = 1e30F;
+    for (std::size_t i = 0; i < fleet.size(); ++i) {
+        const auto& path = fleet[i];
+        // Off the land stretch of a line counts as further (nobody rides past the last land).
+        const float along = (p.x - path.start.x) * path.direction.x + (p.z - path.start.z) * path.direction.z;
+        const float beyond = std::max({0.0F, path.land_from - along, along - path.land_to});
+        const float score = std::hypot(path.offset(p), beyond);
+        if (score < best_score) { best_score = score; best = static_cast<int>(i); }
+    }
+    return best;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -196,20 +236,21 @@ float time_to_fall(float metres) {
 }
 }
 
-std::vector<BotJump> plan_bot_jumps(const FlightPath& path, const std::vector<std::pair<int, Vector3>>& landings, std::uint64_t seed) {
+std::vector<BotJump> plan_bot_jumps(const std::vector<FlightPath>& fleet, const std::vector<std::pair<int, Vector3>>& landings, std::uint64_t seed) {
     std::uint64_t state = seed * 0x9E3779B97F4A7C15ULL + 77;
     std::vector<BotJump> jumps;
-    const float last = last_jump_time(path);
+    if (fleet.empty()) return jumps;
     for (const auto& [bot, landing] : landings) {
         BotJump jump;
         jump.bot = bot;
         jump.landing = landing;
-        const float side = path.offset(landing);
-        jump.helicopter = side < -20 ? 0 : side > 20 ? 2 : 1;
+        jump.helicopter = std::max(0, nearest_flight(fleet, landing));
+        const auto& path = fleet[static_cast<std::size_t>(jump.helicopter)];
+        const float last = last_jump_time(path);
         // Jump a little before passing the spot, as players do, keen ones early.
         const float lead = 60 + unit(state) * 160;
         jump.jump_time = std::clamp((path.along(landing) - lead) / path.speed, 2.5F + unit(state) * 4, last - 1);
-        jump.door = helicopter_door(path, jump.helicopter, jump.jump_time);
+        jump.door = helicopter_door(path, jump.jump_time);
         const float drop = std::max(0.0F, jump.door.y - 1 - (landing.y + bot_open));
         jump.open_time = jump.jump_time + time_to_fall(drop);
         jump.land_time = jump.open_time + std::max(4.0F, (std::min(bot_open, jump.door.y - 1 - landing.y)) / bot_canopy_fall);

@@ -5,8 +5,8 @@
 #include <functional>
 #include <vector>
 
-// The Battle Royale drop: a row of three helicopters flies a straight line across Verda, from one
-// of eight directions, and everyone jumps from them. A jumper falls belly-down (steering and
+// The Battle Royale drop: a fleet of helicopters, each flying alone on its own straight line across
+// Verda in a different direction (from the eight), and everyone jumps from one of them. A jumper falls belly-down (steering and
 // diving), opens a parachute (by choice, or automatically low down) and glides to the ground.
 // Pure logic: no drawing, no world queries but the ground height passed in.
 namespace outland::game::aircraft {
@@ -19,13 +19,14 @@ const char* heading_name(int heading);
 Vector2 heading_direction(int heading); // unit (x, z)
 
 struct FlightPath {
+    int index{0};          // which helicopter of the fleet flies it
     int heading{0};
     Vector3 start{}, end{};
     Vector3 direction{};   // unit, level
     Vector3 side{};        // unit, level, to the right of travel
     float length{0};
     float speed{58};       // metres per second
-    float altitude{650};   // world height of the middle helicopter
+    float altitude{650};   // world height of the helicopter
     float land_from{0}, land_to{0}; // the stretch of the line over the island (distances along it)
 
     [[nodiscard]] Vector3 point(float distance) const;
@@ -37,24 +38,29 @@ struct FlightPath {
 };
 
 // A random route: a heading and a line a little off the island's centre, over the sea at both
-// ends. `island_radius` reaches the coast.
-FlightPath make_flight(std::uint64_t seed, float island_radius = 2300);
+// ends. `island_radius` reaches the coast. `heading` < 0 picks one at random.
+FlightPath make_flight(std::uint64_t seed, float island_radius = 2300, int heading = -1);
 
-// The row of three (0 left, 1 middle, 2 right), side by side with the middle one a little ahead.
-struct Formation {
-    static constexpr int count = 3;
-    static constexpr float spacing = 42;        // metres between neighbours
-    static constexpr float trail = 14;          // the outer two sit this far behind
-    static constexpr float linger = 25;         // seconds they fly on past the end of the line
-};
-// Where helicopter `index` is `seconds` after the start (before the start it waits at it).
-Vector3 helicopter_position(const FlightPath& path, int index, float seconds);
-// Its rotor phase and a gentle bob/roll, for drawing.
+// The fleet: `count` helicopters, each alone on its own route, all in different directions (with
+// four or fewer, on different lines across the island too: one north-south, one east-west, one
+// on each diagonal, each going either way). They fly at staggered heights so crossing lines
+// never meet.
+inline constexpr int fleet_size = 4;
+inline constexpr float flight_linger = 25; // seconds they fly on past the end of the line
+std::vector<FlightPath> make_fleet(std::uint64_t seed, int count = fleet_size, float island_radius = 2300);
+
+// Where the helicopter is `seconds` after the start (before the start it waits at it).
+Vector3 helicopter_position(const FlightPath& path, float seconds);
+// Its gentle bob, for drawing.
 float helicopter_bob(int index, float seconds);
-// Where the jumper leaves helicopter `index` (its side door).
-Vector3 helicopter_door(const FlightPath& path, int index, float seconds);
+// Where the jumper leaves it (its right side door).
+Vector3 helicopter_door(const FlightPath& path, float seconds);
 // Seconds into the flight when everyone still aboard must jump (the last land under the line).
 float last_jump_time(const FlightPath& path);
+// ...and when the whole fleet is done with jumpers.
+float last_jump_time(const std::vector<FlightPath>& fleet);
+// The route whose line passes nearest `p` over land (-1 for an empty fleet).
+int nearest_flight(const std::vector<FlightPath>& fleet, Vector3 p);
 
 // ---------------------------------------------------------------------------------------------
 
@@ -118,7 +124,7 @@ private:
 // nearest its landing spot and comes down there. Until `land_time` the bot is in the air.
 struct BotJump {
     int bot{-1};
-    int helicopter{1};
+    int helicopter{0};      // index into the fleet
     Vector3 landing{};      // feet
     Vector3 door{};         // where it jumped from
     float jump_time{0}, open_time{0}, land_time{0};
@@ -130,7 +136,7 @@ struct BotInAir {
     float body_pitch{0};
     DiveStage stage{DiveStage::Aboard};
 };
-std::vector<BotJump> plan_bot_jumps(const FlightPath& path, const std::vector<std::pair<int, Vector3>>& landings, std::uint64_t seed);
+std::vector<BotJump> plan_bot_jumps(const std::vector<FlightPath>& fleet, const std::vector<std::pair<int, Vector3>>& landings, std::uint64_t seed);
 BotInAir bot_in_air(const BotJump& jump, float seconds);
 
 // How far from the line a jumper can still reach the ground on a glide (bots land within it).

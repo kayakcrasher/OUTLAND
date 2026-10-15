@@ -1,13 +1,15 @@
 # The Battle Royale drop
 
-Every Battle Royale match starts in the air. A **row of three helicopters** flies a straight line
-across Verda, everyone aboard, and each player jumps when the line passes over where they want to
-land, falls belly-down, opens a parachute and glides in. Code: `game::aircraft` (`HelicopterDrop`
+Every Battle Royale match starts in the air with **100 players** (you and 99 bots). **Four
+helicopters**, each alone on its own straight line across Verda and each going a different way,
+carry everyone; each player jumps when their line passes over where they want to land, falls
+belly-down, opens a parachute and glides in. Code: `game::aircraft` (`HelicopterDrop`
 for the logic, `DropRenderer` for drawing), wired into `Renderer.cpp`. Tests:
 `outland_helicopter_drop_tests`.
 
-## The route
-`make_flight(seed)` picks one of **eight routes**, a fresh one every match:
+## The routes
+`make_fleet(seed)` sends **four helicopters**, a fresh set every match, each on its own route
+(`make_flight` with a heading). The eight routes:
 
 | | |
 |---|---|
@@ -16,18 +18,20 @@ for the logic, `DropRenderer` for drawing), wired into `Renderer.cpp`. Tests:
 | south-west to north-east | north-east to south-west |
 | north-west to south-east | south-east to north-west |
 
-The line crosses the whole island, starting and finishing out over the sea, up to 550 m to one
-side of the capital so it is not always over Verda City. The helicopters fly at 650 m (well above
-every hill) at 58 m/s, about 90 s from coast to coast. They fly **three abreast, 42 m apart**, the
-middle one a little ahead and the outer two a little lower; each rolls and bobs gently, nose
-down, main and tail rotors spinning (`draw_helicopters`).
+The four take the four different lines across the island (north-south, east-west and both
+diagonals), each flown one way or the other at random, so no two go the same direction. Each line
+crosses the whole island, starting and finishing out over the sea, up to 550 m to one side of the
+capital. They fly at 650-716 m (staggered 22 m apart so crossing lines never meet, well above every
+hill) at 58 m/s, about 90 s from coast to coast; each rolls and bobs gently, nose down, main and
+tail rotors spinning (`draw_helicopters`).
 
-The route shows on the map (M) as a yellow dashed line with the three helicopters on it, and at
-the top of the screen: **ROUTE: WEST TO EAST | n ABOARD THE 3 HELICOPTERS**.
+The routes show on the map (M) as dashed lines with each helicopter on its line; yours is the
+bright yellow one. At the top of the screen: **HELICOPTER 2 OF 4: WEST TO EAST | n ABOARD**.
 
 ## Aboard
-You ride at the middle helicopter's open door; the camera sits back and up so you see the whole
-row and the island sliding past below. Look around freely. **SPACE** (or the touch JUMP button,
+You start in one of the four and ride at its open door; the camera sits back and up so you see
+the helicopter and the island sliding past below. Look around freely. For the first 30 seconds
+**R** (touch: **LOAD**) moves you to the next helicopter, so you can pick your route. **SPACE** (or the touch JUMP button,
 or USE) jumps. Nobody rides past the last land under the line: over the last stretch a
 countdown shows **LAST LAND AHEAD - AUTO JUMP IN n**, and everyone still aboard goes then.
 
@@ -66,17 +70,22 @@ it **opens by itself at 150 m** above whatever is below. It bursts out of the pa
 Touchdown is soft (under 8 m/s); you land on roofs too. Over the sea the water is the ground.
 
 ## The bots
-The 23 bots are placed within gliding reach of the route (`BattleRoyaleBots::start` with a
-preference), each near a town, then `plan_bot_jumps` gives each one a jump: from the helicopter on
-its side of the line, a little before the line passes its spot, falling at the same speeds, opening
+The 99 bots are placed within gliding reach of one of the routes (`BattleRoyaleBots::start` with a
+preference), each near a town, then `plan_bot_jumps` gives each one a jump: from the helicopter
+whose line passes nearest its spot (`nearest_flight`), a little before it passes, falling at the same speeds, opening
 at 150 m and landing exactly there. Until it lands a bot is *mounted* (hidden, it does not think,
 shoot or get hit); in the air it is drawn as a small figure, then under its canopy
-(`draw_bot_in_air`). Once all of them are down, some take cars toward the zone.
+(`draw_bot_in_air`). Once all of them are down, up to 14 take cars toward the zone.
+
+A hundred brains stay cheap: bots more than 260 m from you think and move one frame in four (taking
+turns, with the time they skipped), and every frame when a sound reaches them.
 
 ## Seeing the island from up high
 While dropping, the near clip plane moves out to 0.6 m (the depth buffer stays precise), houses,
 roads and street trees draw up to 2.4 times further, and roads are lifted a little so the coarse
-far terrain does not swallow them.
+far terrain does not swallow them. (The lift is never recorded into the cached road meshes: an
+earlier build did, and roads drawn for the first time during the drop stayed metres up in the air
+after landing, as grey slabs and ceilings.)
 
 ## Rules
 - Everyone drops with **only a pistol** (a V9, loaded, and two spare magazines of 9mm): no

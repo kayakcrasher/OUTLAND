@@ -533,10 +533,14 @@ void Renderer::run() {
     game::ai::BattleRoyaleBots br_bots;
     game::ai::BotDrivers bot_drivers; // Battle Royale bots on the road
     std::vector<int> bots_looted;      // fallen bots whose gear already lies on the ground
-    // The Battle Royale drop (game::aircraft): the three helicopters' line, the player's jump and
-    // the bots' jumps. `drop_clock` runs from the start of the match; while `dropping` the player
-    // rides, falls or glides instead of walking.
-    game::aircraft::FlightPath drop_path;
+    // The Battle Royale drop (game::aircraft): the helicopters' lines (one each, all different
+    // directions), the one the player rides, the player's jump and the bots' jumps. `drop_clock`
+    // runs from the start of the match; while `dropping` the player rides, falls or glides instead
+    // of walking.
+    std::vector<game::aircraft::FlightPath> drop_fleet{game::aircraft::FlightPath{}};
+    int drop_ride=0;
+    constexpr int royale_bots=99;          // 100 players with you
+    constexpr float switch_window=30.0F;   // seconds to change helicopter after the start
     game::aircraft::Skydiver skydiver;
     std::vector<game::aircraft::BotJump> bot_jumps;
     std::vector<char> bot_landed;
@@ -1032,30 +1036,34 @@ void Renderer::run() {
                 if(const char* no_drop=std::getenv("OUTLAND_DEV_NO_DROP"); (no_drop && *no_drop=='1') || explicit_spawn) helicopter_drop=false;
 #endif
                 if(helicopter_drop) {
-                    // Everyone rides one of three helicopters across the island and jumps. The bots
-                    // land within gliding reach of the line; each is "mounted" (hidden, inert) until
-                    // it touches down.
-                    drop_path=game::aircraft::make_flight(session_seed);drop_seed=session_seed;
-                    const auto& path=drop_path;
-                    br_bots.start(verda_region,home_screen.bot_level(),23,session_seed,{1e6F,0,1e6F},[&path](Vector3 feet) {
-                        const float along=path.along(feet);
-                        return std::abs(path.offset(feet))<game::aircraft::drop_reach*.85F && along>path.land_from && along<path.land_to;
+                    // Everyone rides one of the helicopters, each on its own route across the island,
+                    // and jumps. The bots land within gliding reach of a line; each is "mounted"
+                    // (hidden, inert) until it touches down.
+                    drop_fleet=game::aircraft::make_fleet(session_seed);drop_seed=session_seed;
+                    drop_ride=static_cast<int>(session_seed%drop_fleet.size());
+                    const auto& fleet=drop_fleet;
+                    br_bots.start(verda_region,home_screen.bot_level(),royale_bots,session_seed,{1e6F,0,1e6F},[&fleet](Vector3 feet) {
+                        return std::any_of(fleet.begin(),fleet.end(),[&](const auto& path) {
+                            const float along=path.along(feet);
+                            return std::abs(path.offset(feet))<game::aircraft::drop_reach*.85F && along>path.land_from && along<path.land_to;
+                        });
                     });
                     std::vector<std::pair<int,Vector3>> landings;
                     for(const auto& bot:br_bots.bots()) landings.emplace_back(bot.id(),bot.position());
-                    bot_jumps=game::aircraft::plan_bot_jumps(drop_path,landings,session_seed);
+                    bot_jumps=game::aircraft::plan_bot_jumps(drop_fleet,landings,session_seed);
                     bot_landed.assign(bot_jumps.size(),0);
                     for(const auto& jump:bot_jumps) br_bots.set_mounted(jump.bot,true);
                     br_bots.sync_bodies(npcs,&character_registry);
                     dropping=drop_flying=drop_drivers_pending=true;
-                    player.position=game::aircraft::helicopter_door(drop_path,1,0);
-                    player.yaw=std::atan2(drop_path.direction.x,drop_path.direction.z);player.pitch=-.3F;
+                    const auto& ride=drop_fleet[static_cast<std::size_t>(drop_ride)];
+                    player.position=game::aircraft::helicopter_door(ride,0);
+                    player.yaw=std::atan2(ride.direction.x,ride.direction.z);player.pitch=-.3F;
                     player.grounded=false;player.vertical_velocity=0;player.third_person=true;
                     last_player_feet={player.position.x,player.position.y-1.0F,player.position.z};
                 } else if(game::rules_for(game_mode).combat_bots) {
-                    br_bots.start(verda_region,home_screen.bot_level(),23,session_seed,last_player_feet);
+                    br_bots.start(verda_region,home_screen.bot_level(),royale_bots,session_seed,last_player_feet);
                     // Some of them find a car near where they land and drive in toward the zone.
-                    bot_drivers.start(br_bots,vehicles,verda_region,session_seed,mode_session.circle.start_radius);
+                    bot_drivers.start(br_bots,vehicles,verda_region,session_seed,mode_session.circle.start_radius,14);
                     br_bots.sync_bodies(npcs,&character_registry);
                 }
                 if(game::rules_for(game_mode).civilian_life && !island_life.empty()) {
@@ -1297,11 +1305,12 @@ void Renderer::run() {
         // The drop: the stick steers the jump and JUMP (or USE) leaves the helicopter, then opens
         // the parachute; everything else waits for the ground (looking round still works).
         game::aircraft::DiveInput dive_input;
-        bool drop_action=false;
+        bool drop_action=false,drop_switch=false;
         if(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed) {
             auto& held=input_system.player();
             dive_input.forward=-held.move_y;dive_input.strafe=held.move_x;
             drop_action=held.jump || held.interact;
+            drop_switch=held.reload;
             const float dx=held.look_dx,dy=held.look_dy,lx=held.look_x,ly=held.look_y;
             held={};
             held.look_dx=dx;held.look_dy=dy;held.look_x=lx;held.look_y=ly;
@@ -1849,10 +1858,19 @@ void Renderer::run() {
             const bool drop_paused=pause_menu.is_open() || mode_session.terminal() || !IsWindowFocused();
             if(!drop_paused) drop_clock+=dt;
             if(skydiver.stage()==DiveStage::Aboard) {
-                // At the middle helicopter's open door. JUMP leaves; nobody rides past the last land.
-                player.position=game::aircraft::helicopter_door(drop_path,1,drop_clock);
-                if(!drop_paused && ((drop_action && drop_clock>1.5F) || drop_clock>=game::aircraft::last_jump_time(drop_path))) {
-                    skydiver.jump(player.position,Vector3Scale(drop_path.direction,drop_path.speed*.6F),player.yaw);
+                // At the helicopter's open door. RELOAD (R / LOAD) moves to the next helicopter while
+                // they are all still out over the sea; JUMP leaves; nobody rides past the last land.
+                if(!drop_paused && drop_switch && drop_clock<switch_window && drop_fleet.size()>1) {
+                    drop_ride=(drop_ride+1)%static_cast<int>(drop_fleet.size());
+                    const auto& next=drop_fleet[static_cast<std::size_t>(drop_ride)];
+                    player.yaw=std::atan2(next.direction.x,next.direction.z);
+                    interaction_message=TextFormat("Boarded helicopter %d: %s",drop_ride+1,game::aircraft::heading_name(next.heading));
+                    interaction_remaining=2.5F;
+                }
+                const auto& ride=drop_fleet[static_cast<std::size_t>(drop_ride)];
+                player.position=game::aircraft::helicopter_door(ride,drop_clock);
+                if(!drop_paused && ((drop_action && drop_clock>1.5F) || drop_clock>=game::aircraft::last_jump_time(ride))) {
+                    skydiver.jump(player.position,Vector3Scale(ride.direction,ride.speed*.6F),player.yaw);
                     haptics.land(10);
                 }
             } else if(skydiver.airborne() && !drop_paused) {
@@ -1873,11 +1891,11 @@ void Renderer::run() {
             // Bots touch down where they planned and come to life.
             for(std::size_t i=0;i<bot_jumps.size() && i<bot_landed.size();++i)
                 if(!bot_landed[i] && drop_clock>=bot_jumps[i].land_time) {bot_landed[i]=1;br_bots.set_mounted(bot_jumps[i].bot,false);}
-            drop_flying=drop_clock<game::aircraft::last_jump_time(drop_path)+game::aircraft::Formation::linger;
+            drop_flying=drop_clock<game::aircraft::last_jump_time(drop_fleet)+game::aircraft::flight_linger;
             const bool all_down=std::all_of(bot_landed.begin(),bot_landed.end(),[](char landed){return landed!=0;});
             if(drop_drivers_pending && all_down) {
                 // Down on the ground: some of them find a car and drive in toward the zone.
-                bot_drivers.start(br_bots,vehicles,verda_region,drop_seed,mode_session.radius(),7,mode_session.center());
+                bot_drivers.start(br_bots,vehicles,verda_region,drop_seed,mode_session.radius(),14,mode_session.center());
                 drop_drivers_pending=false;
             }
             if(skydiver.stage()==DiveStage::Landed && all_down && !drop_flying) dropping=false;
@@ -1941,9 +1959,9 @@ void Renderer::run() {
             const Vector3 view_dir{std::sin(player.yaw)*std::cos(player.pitch),std::sin(player.pitch),std::cos(player.yaw)*std::cos(player.pitch)};
             const bool aboard=skydiver.stage()==DiveStage::Aboard;
             const bool canopy=skydiver.stage()==DiveStage::Canopy;
-            const Vector3 focus=aboard ? game::aircraft::helicopter_position(drop_path,1,drop_clock) :
+            const Vector3 focus=aboard ? game::aircraft::helicopter_position(drop_fleet[static_cast<std::size_t>(drop_ride)],drop_clock) :
                 Vector3Add(player.position,{0,canopy ? 2.6F*skydiver.canopy() : 0.3F,0});
-            // Aboard, far enough back to see the row of three; in freefall above the diver's back.
+            // Aboard, far enough back to see the helicopter; in freefall above the diver's back.
             const float back=aboard ? 48.0F : canopy ? 9.5F+3.5F*skydiver.canopy() : 7.0F;
             const float lift=aboard ? 14.0F : canopy ? 1.5F : 3.4F;
             const Vector3 wanted=Vector3Add(Vector3Subtract(focus,Vector3Scale(view_dir,back)),{0,lift,0});
@@ -2367,8 +2385,8 @@ void Renderer::run() {
                     using game::aircraft::DiveStage;
                     if(drop_flying) {
                         float nearest=1e9F;
-                        for(int h=0;h<game::aircraft::Formation::count;++h)
-                            nearest=std::min(nearest,Vector3Distance(camera.position,game::aircraft::helicopter_position(drop_path,h,drop_clock)));
+                        for(const auto& path:drop_fleet)
+                            nearest=std::min(nearest,Vector3Distance(camera.position,game::aircraft::helicopter_position(path,drop_clock)));
                         rotor=skydiver.stage()==DiveStage::Aboard ? .75F : std::clamp(.8F/(1+nearest/45),0.0F,.8F);
                     }
                     if(skydiver.stage()==DiveStage::Freefall) {
@@ -2676,10 +2694,10 @@ void Renderer::run() {
         build_mode.draw_world(static_cast<float>(GetTime()));
         if(mafio.active()) game::mafia::draw_turf(mafio,camera.position,static_cast<float>(GetTime()));
         if(services.active()) game::services::draw_light_bars(services,vehicles,camera.position,static_cast<float>(GetTime()));
-        // The drop: the three helicopters in a row, and the bots on their way down.
+        // The drop: the helicopters on their routes, and the bots on their way down.
         if(game_mode==game::GameMode::BattleRoyale && dropping) {
             if(drop_flying)
-                game::aircraft::draw_helicopters(drop_path,drop_clock,get_world_asset_model("assets/verda/aircraft/drop_helicopter.glb",character_registry),camera.position);
+                game::aircraft::draw_helicopters(drop_fleet,drop_clock,get_world_asset_model("assets/verda/aircraft/drop_helicopter.glb",character_registry),camera.position);
             const Model* chute=get_world_asset_model("assets/verda/aircraft/parachute.glb",character_registry);
             for(std::size_t i=0;i<bot_jumps.size() && i<bot_landed.size();++i) {
                 if(bot_landed[i]) continue;
@@ -3187,10 +3205,13 @@ void Renderer::run() {
             };
             const int base=screen_height-(touch_ui ? 250 : 150);
             if(skydiver.stage()==DiveStage::Aboard) {
-                const int jumpers=static_cast<int>(std::count_if(bot_jumps.begin(),bot_jumps.end(),[&](const auto& j){return drop_clock<j.jump_time;}))+1;
-                centred(TextFormat("ROUTE: %s  |  %d ABOARD THE 3 HELICOPTERS",game::aircraft::heading_name(drop_path.heading),jumpers),112,18,Color{255,220,120,255});
-                centred(touch_ui ? "TAP JUMP TO LEAVE THE HELICOPTER" : "SPACE: JUMP   |   M: MAP (the yellow line is the route)",base,24,RAYWHITE);
-                const float left=game::aircraft::last_jump_time(drop_path)-drop_clock;
+                const auto& ride=drop_fleet[static_cast<std::size_t>(drop_ride)];
+                const int jumpers=static_cast<int>(std::count_if(bot_jumps.begin(),bot_jumps.end(),[&](const auto& j){return j.helicopter==drop_ride && drop_clock<j.jump_time;}))+1;
+                centred(TextFormat("HELICOPTER %d OF %d: %s  |  %d ABOARD",drop_ride+1,static_cast<int>(drop_fleet.size()),game::aircraft::heading_name(ride.heading),jumpers),112,18,Color{255,220,120,255});
+                centred(touch_ui ? "TAP JUMP TO LEAVE THE HELICOPTER" : "SPACE: JUMP   |   M: MAP (the bright line is your route)",base,24,RAYWHITE);
+                if(drop_clock<switch_window && drop_fleet.size()>1)
+                    centred(TextFormat(touch_ui ? "TAP LOAD TO SWITCH HELICOPTER (%d s)" : "R: SWITCH HELICOPTER (%d s)",static_cast<int>(std::ceil(switch_window-drop_clock))),base+40,20,Color{170,220,255,255});
+                const float left=game::aircraft::last_jump_time(ride)-drop_clock;
                 if(left<15) centred(TextFormat("LAST LAND AHEAD - AUTO JUMP IN %d",static_cast<int>(std::ceil(std::max(0.0F,left)))),base+40,20,Color{255,150,90,255});
             } else {
                 const Vector3 body=skydiver.position();
@@ -3222,8 +3243,11 @@ void Renderer::run() {
                 view.circle_radius=zone.radius;view.circle_center=zone.center;
                 if(zone.next_radius<zone.radius-1) {view.next_radius=zone.next_radius;view.next_center=zone.next_center;}
                 if(dropping && drop_flying) {
-                    view.flight=true;view.flight_start=drop_path.start;view.flight_end=drop_path.end;
-                    for(int h=0;h<game::aircraft::Formation::count;++h) view.helicopters.push_back(game::aircraft::helicopter_position(drop_path,h,drop_clock));
+                    view.flight=true;
+                    for(const auto& path:drop_fleet) {
+                        const bool mine=path.index==drop_ride && skydiver.stage()==game::aircraft::DiveStage::Aboard;
+                        view.flights.push_back({path.start,path.end,game::aircraft::helicopter_position(path,drop_clock),mine});
+                    }
                 }
             }
             for(const auto& stop:bus_line.stops()) view.stops.push_back(stop.shelter);
