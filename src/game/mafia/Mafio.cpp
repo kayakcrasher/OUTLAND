@@ -62,6 +62,7 @@ int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegio
     const auto& towns = region.settlements();
     for (std::size_t s = 0; s < towns.size(); ++s) {
         const auto& town = towns[s];
+        if (town.id.starts_with("ranch_")) continue; // the Vakeros' ranches answer to nobody
         const life::Place* best = nullptr;
         float best_score = 1e9F;
         const bool capital = town.id == "capital_verda";

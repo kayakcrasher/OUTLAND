@@ -33,7 +33,7 @@ inline bool parts_donor(const std::string& marker) { return marker.find("_donor_
 class VehicleSystem {
   public:
     // Runtime vehicles at most (parked, driven and spawned together).
-    static constexpr std::size_t max_vehicles = 176;
+    static constexpr std::size_t max_vehicles = 200;
     // Wrecks are towed home and repaired after this long with the player this far away.
     static constexpr float tow_seconds = 90, tow_distance = 70;
     explicit VehicleSystem(const VehicleRegistry &registry) : registry_(registry) {}

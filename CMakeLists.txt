@@ -177,6 +177,8 @@ add_library(
     src/game/life/LifeTypes.cpp
     src/game/life/LifePopulation.cpp
     src/game/life/WalkingMan.cpp
+    src/game/ranch/Ranches.cpp
+    src/game/freight/Freight.cpp
     src/game/life/LifeSimulation.cpp
     src/game/life/LifeTraffic.cpp
     src/game/zombies/ZombieEcology.cpp
@@ -700,6 +702,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_walking_man_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_walking_man_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_walking_man_tests COMMAND outland_walking_man_tests)
+    add_executable(outland_ranch_tests tests/integration/ranch/test_ranches.cpp)
+    target_link_libraries(outland_ranch_tests PRIVATE outland_render)
+    target_compile_options(outland_ranch_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_ranch_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_ranch_tests COMMAND outland_ranch_tests)
     add_executable(outland_emergency_services_tests tests/integration/services/test_emergency_services.cpp)
     target_link_libraries(outland_emergency_services_tests PRIVATE outland_render)
     target_compile_options(outland_emergency_services_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -759,6 +766,7 @@ if(OUTLAND_BUILD_TESTS)
         add_test(NAME outland_generated_sight_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_sight_models.py" --check)
         add_test(NAME outland_generated_armour_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_armour_models.py" --check)
         add_test(NAME outland_generated_drop_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_drop_models.py" --check)
+        add_test(NAME outland_generated_ranch_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_ranch_models.py" --check)
         add_test(NAME outland_generated_weapon_audio COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_weapon_audio.py" --check)
         add_test(NAME outland_city_kit_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_city_kit.py" --check)
         file(GLOB OUTLAND_TRAILER_MODELS "${PROJECT_SOURCE_DIR}/assets/verda/residential/trailers/*.glb")

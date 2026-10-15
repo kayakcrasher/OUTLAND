@@ -48,7 +48,7 @@ int main() {
     // Every town has a stop but the backcountry (Sovaĝejo) and the small highway hamlets.
     std::size_t served = 0;
     for (const auto& town : region.settlements())
-        served += town.id != "ferarbaro_sovagejo" && (!town.id.starts_with("hamlet_") || town.id == "hamlet_ruldomaro");
+        served += town.id != "ferarbaro_sovagejo" && !town.id.starts_with("ranch_") && (!town.id.starts_with("hamlet_") || town.id == "hamlet_ruldomaro");
     check(line.stops().size() == served, "a stop in every town");
     for (const auto& stop : line.stops()) check(stop.town != "Sovaĝejo", "no bus out to Sovaĝejo");
     std::set<std::string> towns;

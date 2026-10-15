@@ -3,6 +3,7 @@
 #include <cmath>
 #include <algorithm>
 #include "outland/world/VerdaLayout.hpp"
+#include "outland/world/Ranches.hpp"
 
 namespace outland::world::terrain {
 
@@ -281,6 +282,17 @@ float TerrainHeight::sample(
                 height=pad*(1-blend)+height*blend;
             }
         }
+        // The Vakeros' ranches and the stockyard: a level pad round each farm (world/Ranches.hpp).
+        const auto level_pad=[&](Vector3 c,float flat,float band) {
+            const float d=std::hypot(world_x-c.x,world_z-c.z);
+            if(d>=flat+band) return;
+            const float pad=std::max(6.0F,large_hills(c.x,c.z)+rolling_ground(c.x,c.z)+small_variation(c.x,c.z));
+            const float blend=smooth((d-flat)/band);
+            height=pad*(1-blend)+height*blend;
+        };
+        for (const auto& ranch:ranches::ranches)
+            level_pad(ranches::Frame(ranch.gate,ranch.up_track).at(ranches::pad_centre),ranches::pad_radius,ranches::pad_blend);
+        level_pad(ranches::Frame(ranches::stockyard_gate,ranches::stockyard_up).at(ranches::stockyard_pad_centre),ranches::stockyard_pad_radius,40);
         const float shore=layout::shore_radius(world_x,world_z);
         const float blend=smooth((distance-(shore-layout::shoreline_band))/(2*layout::shoreline_band));
         if (distance>shore-layout::shoreline_band) height=height*(1-blend)+(layout::sea_level-8.0F)*blend;

@@ -10,6 +10,7 @@
 #include "outland/world/roads/RoadGraph.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <raymath.h>
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
@@ -81,7 +82,19 @@ int main() {
     // A bus stop on the new street, snapped to its verge; none where there is no road.
     Vector3 shelter{};
     float yaw = 0;
-    check(!PlayerBuilds::snap_bus_stop(region, Vector3Add(street.end, {300, 0, 300}), shelter, yaw), "no bus stop away from roads");
+    // Somewhere out in the country, well away from every road.
+    Vector3 lonely = Vector3Add(street.end, {300, 0, 300});
+    for (float r = 300; r < 1500; r += 50) {
+        bool clear = true;
+        lonely = Vector3Add(street.end, {r, 0, r * .4F});
+        for (const auto& town : region.settlements()) for (const auto& road : town.roads) {
+            const float dx = road.end.x - road.start.x, dz = road.end.z - road.start.z, l2 = dx * dx + dz * dz;
+            const float t = l2 > 0 ? std::clamp(((lonely.x - road.start.x) * dx + (lonely.z - road.start.z) * dz) / l2, 0.0F, 1.0F) : 0;
+            if (std::hypot(lonely.x - road.start.x - dx * t, lonely.z - road.start.z - dz * t) < 80) clear = false;
+        }
+        if (clear) break;
+    }
+    check(!PlayerBuilds::snap_bus_stop(region, lonely, shelter, yaw), "no bus stop away from roads");
     check(PlayerBuilds::snap_bus_stop(region, Vector3Lerp(street.position, street.end, .45F), shelter, yaw), "a bus stop snaps to the new street");
     stop.piece = Piece::BusStop; stop.position = shelter; stop.yaw = yaw;
     check(builds.check(region, stop).empty(), "the bus stop fits: " + builds.check(region, stop));

@@ -39,6 +39,12 @@ public:
     Vector3 grip() const { return grip_; }
     Vector3 aim() const { return aim_; }
     Vector3 gun_up() const { return gun_up_; }
+    // After a sample: the crown of the head (where a hat sits), its up and where the face points,
+    // in skeleton space.
+    bool crown_valid() const { return crown_valid_; }
+    Vector3 crown() const { return crown_; }
+    Vector3 crown_up() const { return crown_up_; }
+    Vector3 crown_forward() const { return crown_forward_; }
     // Skeleton space -> the body's own frame in metres: x to its right, y up from the ground,
     // z where it faces, origin on the ground under the hips.
     Vector3 body_point(Vector3 p) const;
@@ -49,5 +55,7 @@ private:
     std::vector<Transform> pose_;
     bool holding_{false};
     Vector3 grip_{}, aim_{}, gun_up_{};
+    bool crown_valid_{false};
+    Vector3 crown_{}, crown_up_{0,1,0}, crown_forward_{0,0,1};
 };
 }

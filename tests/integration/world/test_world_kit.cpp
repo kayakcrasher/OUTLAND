@@ -84,7 +84,7 @@ int main() {
         const auto inside = walk(region, b, start, b.door_x, -b.depth * .5F + 2.5F);
         check(near(inside, world_of(b, b.door_x, -b.depth * .5F + 2.5F), .2F),
               "walk in through the front door at " + std::to_string(b.origin.x) + ", " + std::to_string(b.origin.z));
-        check(std::abs(inside.y - (b.origin.y + b.ground_floor)) < .05F, "stand on the ground-floor slab");
+        check(std::abs(inside.y - (b.origin.y + b.ground_floor)) < .05F, "stand on the ground-floor slab at " + std::to_string(b.origin.x) + ", " + std::to_string(b.origin.z));
         // Bullets fly in through the doorway at chest height.
         const auto shot = combat.trace_segment(Vector3Add(world_of(b, b.door_x, -b.depth * .5F - 3), {0, 1.4F, 0}),
                                                Vector3Add(world_of(b, b.door_x, -b.depth * .5F + 1), {0, 1.4F, 0}), false, false, false);

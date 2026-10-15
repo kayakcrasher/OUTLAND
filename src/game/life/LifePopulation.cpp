@@ -104,6 +104,7 @@ std::size_t nearest_town(const std::vector<world::Settlement>& settlements,Vecto
     std::size_t home_town=0;float best=std::numeric_limits<float>::max();
     for(std::size_t t=0;t<settlements.size();++t) {
         const float d=flat_distance(position,settlements[t].center);
+        if(settlements[t].id.starts_with("ranch_") && d>160) continue; // a ranch has only its own buildings
         if(d<best) {best=d;home_town=t;}
     }
     return home_town;

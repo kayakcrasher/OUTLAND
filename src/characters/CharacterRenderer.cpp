@@ -96,6 +96,11 @@ void CharacterRenderer::draw(const std::string& id,Vector3 feet,float yaw,float 
             const auto toward=[&](Vector3 d){return Vector3Normalize(Vector3Subtract(Vector3Transform(Vector3Add(gait_.grip(),d),world),grip));};
             held->held=true;held->grip=grip;held->aim=toward(gait_.aim());held->up=toward(gait_.gun_up());
         }
+        if(posed && held && gait_.crown_valid()) {
+            const auto crown=Vector3Transform(gait_.crown(),world);
+            const auto toward=[&](Vector3 d){return Vector3Normalize(Vector3Subtract(Vector3Transform(Vector3Add(gait_.crown(),d),world),crown));};
+            held->hat=true;held->crown=crown;held->crown_up=toward(gait_.crown_up());held->crown_forward=toward(gait_.crown_forward());
+        }
     }
     if(!posed) posed=AnimationController::apply_sample(*model,clips,sample,models_.posed(model));
     models_.mark_posed(model,posed);
@@ -116,7 +121,7 @@ void CharacterRenderer::draw_npcs(const NpcSystem& npcs,Vector3 camera,const eng
         if(dress) dress(actor,body);
         HeldGun held;
         draw(actor.character_id,actor.position,actor.yaw_degrees,1,&actor.animation,body,&held);
-        if(held.held && armed) armed(actor,held);
+        if((held.held || held.hat) && armed) armed(actor,held);
     }
 }
 }

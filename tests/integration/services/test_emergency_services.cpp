@@ -45,6 +45,7 @@ int main() {
     // Every town has a station; the capital two patrol cars; the hospital three ambulances.
     int stations = 0;
     for (const auto& town : region.settlements()) {
+        if (town.id.starts_with("ranch_")) continue; // the Vakeros' ranches are not towns
         bool station = false;
         for (const auto& owner : region.settlements())
             for (const auto& a : owner.assets)
@@ -57,7 +58,7 @@ int main() {
     int police = 0, ambulances = 0;
     for (const auto& u : services.units()) (u.kind == UnitKind::Police ? police : ambulances)++;
     std::cout << stations << " stations, " << police << " patrol cars, " << ambulances << " ambulances\n";
-    check(units == police + ambulances && police == static_cast<int>(region.settlements().size()) + 1 && ambulances == 3, "a car per station (two in Verda City) and three ambulances");
+    check(units == police + ambulances && police == stations + 1 && ambulances == 3, "a car per station (two in Verda City) and three ambulances");
     check(services.has_hospital(), "Hospitalo de Verda");
     const Vector3 hospital = services.hospital_door();
 

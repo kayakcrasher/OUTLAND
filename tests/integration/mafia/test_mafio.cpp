@@ -10,6 +10,7 @@
 #include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <raymath.h>
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
@@ -42,7 +43,8 @@ int main() {
     Mafio mafio;
     const int crews = mafio.start(life.places(), region, bots, 11);
     std::cout << crews << " crews, " << bots.bots().size() << " Krimuloj in " << region.settlements().size() << " towns\n";
-    check(crews == static_cast<int>(region.settlements().size()), "a crew in every town");
+    const auto towns = std::count_if(region.settlements().begin(), region.settlements().end(), [](const auto& t) { return !t.id.starts_with("ranch_"); });
+    check(crews == static_cast<int>(towns), "a crew in every town (not on the Vakeros' ranches)");
     std::set<int> gangs;
     for (const auto& crew : mafio.crews()) {
         gangs.insert(crew.gang);

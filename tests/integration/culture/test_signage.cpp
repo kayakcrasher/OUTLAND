@@ -128,6 +128,7 @@ int main() {
 
     // Town entries: every town, with its name, beside (not on) the road.
     for (const auto& town : region.settlements()) {
+        if (town.id == "ranch_bovbazaro") continue; // the stockyard is a business, not a town
         int entries = 0;
         for (const auto& sign : signage.signs) {
             if (sign.kind != SignKind::TownEntry || sign.place != town.id) continue;
@@ -177,7 +178,7 @@ int main() {
         if (sign.kind == SignKind::BusStop && all_text(sign).find("LINIO 1 · INSULA RONDO") != std::string::npos) line_towns.insert(sign.front[1].text);
     std::size_t served = 0; // all but the backcountry and the small highway hamlets
     for (const auto& town : region.settlements())
-        served += town.id != "ferarbaro_sovagejo" && (!town.id.starts_with("hamlet_") || town.id == "hamlet_ruldomaro");
+        served += town.id != "ferarbaro_sovagejo" && !town.id.starts_with("ranch_") && (!town.id.starts_with("hamlet_") || town.id == "hamlet_ruldomaro");
     check(line_stops == static_cast<int>(served) && line_towns.size() == served,
           "a named Linio 1 stop in every town: " + std::to_string(line_towns.size()));
 

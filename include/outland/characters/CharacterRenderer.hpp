@@ -9,7 +9,11 @@ namespace outland::engine { class ViewFrustum; }
 #include "outland/characters/SkeletalGait.hpp"
 namespace outland::characters {
 // Where a body's hands put its gun this frame (world space): the grip is the gun's model origin.
-struct HeldGun { bool held{false}; Vector3 grip{}, aim{0,0,1}, up{0,1,0}; };
+// The crown of the head too (`hat`): where a hat sits, its up and where the face points.
+struct HeldGun {
+    bool held{false}; Vector3 grip{}, aim{0,0,1}, up{0,1,0};
+    bool hat{false}; Vector3 crown{}, crown_up{0,1,0}, crown_forward{0,0,1};
+};
 // Own this inside Renderer::run so resources die while the graphics context is live.
 class CharacterRenderer {
 public:
@@ -19,7 +23,8 @@ public:
               const BodyPose& body={},HeldGun* held=nullptr);
     void update_player(AnimationAction action,float dt,float ground_speed=-1) { player_animation_.advance(action,dt,ground_speed); }
     HeldGun draw_player(Vector3 feet,float yaw_radians,const BodyPose& body={});
-    // `dress` says what each body holds (zombies are styled here); `armed` draws what they hold.
+    // `dress` says what each body holds (zombies are styled here); `armed` draws what they hold
+    // (and what they wear: called when a gun is held or the crown of the head is known).
     using Dress=std::function<void(const NpcInstance&,BodyPose&)>;
     using Armed=std::function<void(const NpcInstance&,const HeldGun&)>;
     void draw_npcs(const NpcSystem& npcs,Vector3 camera_position,const engine::ViewFrustum* view = nullptr,

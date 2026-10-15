@@ -1,6 +1,8 @@
 #include "outland/dev/VerdaWorldKit.hpp"
 #include "outland/creator/CreatorAssetRegistry.hpp"
 #include "outland/world/VerdaLayout.hpp"
+#include "outland/world/Ranches.hpp"
+#include "outland/world/Zones.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/roads/RoadGraph.hpp"
 #include "outland/world/roads/Turnaround.hpp"
@@ -11,6 +13,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cmath>
+#include <functional>
 #include <map>
 #include <unordered_map>
 #include <unordered_set>
@@ -40,6 +43,17 @@ public:
     static Lot building_lot(const world::Building& building) {
         const float r = std::max(building.size.x, building.size.z) * .5F + 3;
         return {building.position.x - r, building.position.z - r, building.position.x + r, building.position.z + r};
+    }
+    // Would claim() succeed? (Reserves nothing.)
+    bool fits(Vector3 centre, float half_x, float half_z, float yaw) {
+        const auto report_before = report.skipped_lots;
+        const auto skipped_before = report.skipped.size();
+        const auto taken_before = taken_.size();
+        const bool ok = claim(centre, half_x, half_z, yaw);
+        if (ok) taken_.resize(taken_before);
+        report.skipped_lots = report_before;
+        report.skipped.resize(skipped_before);
+        return ok;
     }
     // Reserve a rectangular lot (world space, axis-aligned bounds); false if anything is there.
     // `own` is a lot the new one may overlap (a driveway inside its house's margin).
@@ -1664,6 +1678,148 @@ void government(Kit& kit, world::VerdaRegion& region) {
     }
 }
 
+namespace {
+// ------------------------------------------------------------------ Vakero ranches
+// Five family ranches, one in each county, each beside a highway on level open land (see
+// world/Ranches.hpp for the layout): a farmhouse, a red barn, grain bins, a windmill, a fenced
+// pasture, a corral with a loading chute by the road, a corn field and a wheat field, and the
+// family's side-by-side in the yard. And the stockyard near Roka, where the cattle truck unloads
+// and the two big rigs are parked.
+namespace rr = world::ranches;
+const std::string ranch_dir = "assets/verda/ranch/";
+
+// The nearest point on a highway's centre line (where a farm track joins it).
+Vector3 highway_point(const world::VerdaRegion& region, Vector3 p) {
+    Vector3 best = p;
+    float nearest = 1e9F;
+    for (const auto& town : region.settlements())
+        for (const auto& road : town.roads) {
+            if (road.width < 5) continue;
+            const float dx = road.end.x - road.start.x, dz = road.end.z - road.start.z, l2 = dx * dx + dz * dz;
+            if (l2 < 1) continue;
+            const float t = std::clamp(((p.x - road.start.x) * dx + (p.z - road.start.z) * dz) / l2, 0.0F, 1.0F);
+            const Vector3 q{road.start.x + dx * t, 0, road.start.z + dz * t};
+            const float d = std::hypot(q.x - p.x, q.z - p.z);
+            if (d < nearest && d > .5F) { nearest = d; best = q; }
+        }
+    return best;
+}
+
+world::Settlement& site_settlement(world::VerdaRegion& region, std::string_view id, std::string_view name, const rr::Frame& frame, Vector2 centre) {
+    world::Settlement fresh;
+    fresh.id = std::string(id);
+    fresh.name = std::string(name);
+    fresh.center = frame.at(centre);
+    fresh.center.y = world::terrain::TerrainHeight::sample(fresh.center.x, fresh.center.z);
+    fresh.state = world::SettlementState::Peaceful;
+    region.runtime_settlements().push_back(std::move(fresh));
+    return region.runtime_settlements().back();
+}
+
+void fence_box(Kit& kit, const rr::Frame& f, const rr::Area& a, std::uint32_t seed,
+               std::initializer_list<std::tuple<int, float, float>> gaps) {
+    // Edges: 0 near (v0), 1 far (v1), 2 left (u0), 3 right (u1). A gap is (edge, from, to) along it.
+    const std::vector<std::string> rail{ranch_dir + "fence_8m.glb"};
+    const auto run = [&](int edge, Vector2 from, Vector2 to) {
+        const bool along_u = edge < 2;
+        float s0 = along_u ? from.x : from.y;
+        const float s1 = along_u ? to.x : to.y;
+        std::vector<std::pair<float, float>> open;
+        for (const auto& [e, g0, g1] : gaps) if (e == edge) open.emplace_back(g0, g1);
+        std::sort(open.begin(), open.end());
+        open.emplace_back(s1, s1);
+        for (const auto& [g0, g1] : open) {
+            const float e0 = std::min(g0, s1);
+            if (e0 - s0 > 2) {
+                const Vector2 a = along_u ? Vector2{s0, from.y} : Vector2{from.x, s0};
+                const Vector2 b = along_u ? Vector2{e0, from.y} : Vector2{from.x, e0};
+                fence(kit, f.at(a), f.at(b), rail, 8, seed + static_cast<std::uint32_t>(edge * 31));
+            }
+            s0 = std::max(s0, g1);
+        }
+    };
+    run(0, {a.u0, a.v0}, {a.u1, a.v0});
+    run(1, {a.u0, a.v1}, {a.u1, a.v1});
+    run(2, {a.u0, a.v0}, {a.u0, a.v1});
+    run(3, {a.u1, a.v0}, {a.u1, a.v1});
+}
+
+void ranches(Kit& kit, world::VerdaRegion& region) {
+    for (std::size_t r = 0; r < rr::ranches.size(); ++r) {
+        const auto& spec = rr::ranches[r];
+        const rr::Frame f(spec.gate, spec.up_track);
+        const float yaw = f.yaw();
+        const std::string slug(spec.id.substr(6));
+        auto& ranch = site_settlement(region, spec.id, spec.name, f, rr::yard);
+        ranch.survivors = 6;
+        // The farm track, gate to yard (the game finds the ranch's frame from it), and its mouth
+        // onto the highway.
+        ranch.roads.push_back({f.gate, f.at(rr::yard), 5, world::RoadType::Gravel});
+        ranch.roads.push_back({highway_point(region, f.gate), f.gate, 5, world::RoadType::Gravel});
+        kit.add_roads(ranch.roads);
+        const std::uint32_t seed = 9100U + static_cast<std::uint32_t>(r) * 97U;
+        // Farmhouse (door toward the track), barn (doors up and down the track), bins, windmill.
+        const Vector3 right = f.right();
+        const float house_yaw = std::atan2(-right.x, -right.z) * RAD2DEG;
+        modular_building(kit, f.at(rr::house), house_yaw, 4, 3, r % 2 ? "brick" : "stuco", 2, seed, world::BuildingPurpose::Home);
+        kit.put(ranch_dir + "barn.glb", f.at(rr::barn), yaw);
+        kit.purpose(f.at(rr::barn.x, rr::barn.y - 10.6F), yaw + 180, world::BuildingPurpose::Farm);
+        for (const auto& bin : rr::bins) kit.put(ranch_dir + "grain_bin.glb", f.at(bin), yaw);
+        kit.put(ranch_dir + "windmill.glb", f.at(rr::windmill), yaw + 90);
+        // Pasture and corral (open between them), the chute at the corral's road side.
+        fence_box(kit, f, rr::pasture, seed + 1, {{0, rr::lane.u0, rr::lane.u1}});
+        fence_box(kit, f, rr::corral, seed + 2, {{1, rr::lane.u0, rr::lane.u1}, {0, rr::chute.x - 2, rr::chute.x + 2}});
+        kit.put(ranch_dir + "loading_chute.glb", f.at(rr::chute.x, rr::chute.y + 2.2F), yaw + 180);
+        kit.put(ranch_dir + "feed_bunk.glb", f.at(-48, 40), yaw + 90);
+        kit.put(ranch_dir + "water_trough.glb", f.at(-40, 46), yaw);
+        kit.put(ranch_dir + "water_trough.glb", f.at(-30, 12), yaw);
+        for (int i = 0; i < 4; ++i) kit.put(ranch_dir + "hay_bale.glb", f.at(38.5F + (i % 2) * 1.7F, 60 + (i / 2) * 1.8F), yaw + 90);
+        // Fields: corn 3 x 3 tiles, wheat 3 x 2.
+        for (float u = rr::corn.u0 + 6; u < rr::corn.u1; u += 12)
+            for (float v = rr::corn.v0 + 6; v < rr::corn.v1; v += 12) kit.put(ranch_dir + "crop_corn.glb", f.at(u, v), yaw);
+        for (float u = rr::wheat.u0 + 6; u < rr::wheat.u1; u += 12)
+            for (float v = rr::wheat.v0 + 6; v < rr::wheat.v1; v += 12) kit.put(ranch_dir + "crop_wheat.glb", f.at(u, v), yaw);
+        // The side-by-side in the yard; something worth finding in the barn and the house.
+        vehicle_marker(ranch, "vehicle_spawn_sxs_" + slug + "_1", f.at(rr::sxs), yaw);
+        int loot = 0;
+        for (const auto& [table, at] : {std::pair{"weapons", Vector2{rr::barn.x + 3, rr::barn.y - 4}}, std::pair{"general", Vector2{rr::barn.x - 3, rr::barn.y + 5}},
+                                         std::pair{"camp", Vector2{rr::house.x, rr::house.y}}}) {
+            world::GameplayMarker marker;
+            marker.id = std::string("loot_spawn_") + table + "_" + slug + "_" + std::to_string(++loot);
+            marker.type = world::GameplayMarkerType::LootSpawn;
+            const Vector3 p = f.at(at);
+            marker.position = {p.x, world::terrain::TerrainHeight::sample(p.x, p.z) + .4F, p.z};
+            marker.size = {.5F, .5F, .5F};
+            ranch.gameplay_markers.push_back(marker);
+        }
+        // Keep the rest of the footprint clear of anything laid later.
+        kit.claim(f.at((rr::footprint.u0 + rr::footprint.u1) * .5F, (rr::footprint.v0 + rr::footprint.v1) * .5F),
+                  (rr::footprint.u1 - rr::footprint.u0) * .5F - 30, (rr::footprint.v1 - rr::footprint.v0) * .5F - 30, yaw);
+        kit.report.ranches.push_back(f.at(rr::yard));
+    }
+    // The stockyard, out of Roka on the western ring road.
+    {
+        const rr::Frame f(rr::stockyard_gate, rr::stockyard_up);
+        const float yaw = f.yaw();
+        auto& yard = site_settlement(region, rr::stockyard_id, rr::stockyard_name, f, {0, 24});
+        yard.survivors = 2;
+        yard.roads.push_back({f.gate, f.at(0, 7), 6, world::RoadType::Gravel});   // the apron by the chute
+        yard.roads.push_back({highway_point(region, f.gate), f.gate, 6, world::RoadType::Gravel});
+        kit.add_roads(yard.roads);
+        fence_box(kit, f, rr::stockyard_pen, 9600, {{0, rr::stockyard_chute.x - 2, rr::stockyard_chute.x + 2}});
+        kit.put(ranch_dir + "loading_chute.glb", f.at(rr::stockyard_chute.x, rr::stockyard_chute.y + 2.2F), yaw + 180);
+        for (const float u : {-14.0F, 0.0F, 14.0F}) kit.put(ranch_dir + "feed_bunk.glb", f.at(u, 36), yaw);
+        for (const float u : {-16.0F, 16.0F}) kit.put(ranch_dir + "water_trough.glb", f.at(u, 20), yaw);
+        for (int i = 0; i < 6; ++i) kit.put(ranch_dir + "hay_bale.glb", f.at(-20 + (i % 3) * 1.7F, 30 + (i / 3) * 1.8F), yaw);
+        modular_building(kit, f.at(-8, 54), yaw + 180, 4, 2, "brick", 1, 9601, world::BuildingPurpose::Farm); // the sale barn office
+        // The two big rigs park here: the freight hauler and the cattle hauler.
+        vehicle_marker(yard, "vehicle_spawn_semi_freight_1", f.at(38, 14), yaw + 180);
+        vehicle_marker(yard, "vehicle_spawn_semi_cattle_1", f.at(38, 34), yaw + 180);
+        kit.report.stockyard = true;
+    }
+}
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     Kit kit(region, catalog);
@@ -1687,6 +1843,8 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     building_loot(kit, region);
     // Last again: the loot keeps its ids.
     government(kit, region);
+    // Last of all: the Vakeros' ranches and the stockyard (new settlements and pieces only).
+    ranches(kit, region);
     return kit.report;
 }
 }

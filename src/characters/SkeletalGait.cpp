@@ -343,6 +343,18 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
             p.rotation=QuaternionNormalize(QuaternionMultiply(q,p.rotation));
         }
     }
+    // The crown of the head (a hat sits there): the head-top joint where the rig has one, else
+    // a little above the head joint, turned with the head.
+    crown_valid_=false;
+    if(const int head=find("Head");head>=0) {
+        const auto turn=QuaternionMultiply(pose_[head].rotation,QuaternionInvert(bind[head].rotation));
+        const int tip=find("HeadTop_End");
+        crown_=tip>=0 ? pose_[tip].translation :
+            Vector3Add(pose_[head].translation,Vector3RotateByQuaternion(Vector3Scale(up,.17F*unit),turn));
+        crown_up_=Vector3RotateByQuaternion(up,turn);
+        crown_forward_=Vector3RotateByQuaternion(forward,turn);
+        crown_valid_=std::isfinite(crown_.x) && std::isfinite(crown_up_.x) && std::isfinite(crown_forward_.x);
+    }
     return true;
 }
 Vector3 SkeletalGait::body_direction(Vector3 d) const {

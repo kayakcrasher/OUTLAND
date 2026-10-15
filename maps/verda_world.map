@@ -5104,6 +5104,762 @@ ASSET "creator_city_town_hall_kit1" 0 "assets/verda/city/civic/town_hall.glb" 17
 ASSET "creator_city_town_hall_kit2" 0 "assets/verda/city/civic/town_hall.glb" 1754.42505 6 -260.274994 23 17 17 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_town_hall_kit3" 0 "assets/verda/city/civic/town_hall.glb" 317.725006 6 1727.57495 23 17 17 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_town_hall_kit4" 0 "assets/verda/city/civic/town_hall.glb" -1610.27502 14.0573664 445.575012 23 17 17 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit115" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -76 6.0999999 -535.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit93" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -76 6.0999999 -526.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit116" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -73 6.0999999 -535.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit94" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -73 6.0999999 -526.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_door_frame_kit17" 4 "assets/verda/urban/Building Parts/stuco_wall_door_frame.glb" -70 6.0999999 -535.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit95" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -70 6.0999999 -526.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit117" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -67 6.0999999 -535.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit96" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -67 6.0999999 -526.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit49" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" -77.5 6.0999999 -534 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit118" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -65.5 6.0999999 -534 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit119" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -77.5 6.0999999 -531 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit120" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -65.5 6.0999999 -531 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit50" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" -77.5 6.0999999 -528 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit97" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -65.5 6.0999999 -528 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit57" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -77.5 6.0999999 -535.5 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit58" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -77.5 6.0999999 -526.5 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit59" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -65.5 6.0999999 -535.5 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit60" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -65.5 6.0999999 -526.5 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit693" 4 "assets/verda/kit/floor_slab_3x3.glb" -76 6 -534 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit694" 4 "assets/verda/kit/floor_slab_3x3.glb" -76 6 -531 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit695" 4 "assets/verda/kit/floor_slab_3x3.glb" -76 6 -528 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit696" 4 "assets/verda/kit/floor_slab_3x3.glb" -73 6 -534 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit697" 4 "assets/verda/kit/floor_slab_3x3.glb" -73 6 -531 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit698" 4 "assets/verda/kit/floor_slab_3x3.glb" -73 6 -528 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit699" 4 "assets/verda/kit/floor_slab_3x3.glb" -70 6 -534 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit700" 4 "assets/verda/kit/floor_slab_3x3.glb" -70 6 -531 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit701" 4 "assets/verda/kit/floor_slab_3x3.glb" -70 6 -528 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit702" 4 "assets/verda/kit/floor_slab_3x3.glb" -67 6 -534 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit703" 4 "assets/verda/kit/floor_slab_3x3.glb" -67 6 -531 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit704" 4 "assets/verda/kit/floor_slab_3x3.glb" -67 6 -528 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit25" 4 "assets/verda/industrial/shacks/Stairs.glb" -71.0999985 6.0999999 -528 1.20000005 1 0.975000024 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit26" 4 "assets/verda/industrial/shacks/Stairs.glb" -70.0999985 7.0999999 -528 1.20000005 1 0.975000024 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit27" 4 "assets/verda/industrial/shacks/Stairs.glb" -69.0999985 8.10000038 -528 1.20000005 1 0.975000024 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit51" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" -76 9.10000038 -535.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit52" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" -76 9.10000038 -526.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit53" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" -73 9.10000038 -535.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit54" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" -73 9.10000038 -526.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit98" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -70 9.10000038 -535.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit99" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -70 9.10000038 -526.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit121" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -67 9.10000038 -535.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit122" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -67 9.10000038 -526.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit100" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -77.5 9.10000038 -534 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit123" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -65.5 9.10000038 -534 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit55" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" -77.5 9.10000038 -531 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit101" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -65.5 9.10000038 -531 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit102" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -77.5 9.10000038 -528 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit124" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -65.5 9.10000038 -528 0.00999999978 3 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit61" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -77.5 9.10000038 -535.5 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit62" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -77.5 9.10000038 -526.5 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit63" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -65.5 9.10000038 -535.5 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit64" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -65.5 9.10000038 -526.5 1 3 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit705" 4 "assets/verda/kit/floor_slab_3x3.glb" -76 9 -534 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit706" 4 "assets/verda/kit/floor_slab_3x3.glb" -76 9 -531 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit707" 4 "assets/verda/kit/floor_slab_3x3.glb" -76 9 -528 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit708" 4 "assets/verda/kit/floor_slab_3x3.glb" -73 9 -534 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit709" 4 "assets/verda/kit/floor_slab_3x3.glb" -73 9 -531 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit710" 4 "assets/verda/kit/floor_slab_3x3.glb" -70 9 -534 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit711" 4 "assets/verda/kit/floor_slab_3x3.glb" -70 9 -531 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit712" 4 "assets/verda/kit/floor_slab_3x3.glb" -67 9 -534 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit713" 4 "assets/verda/kit/floor_slab_3x3.glb" -67 9 -531 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit714" 4 "assets/verda/kit/floor_slab_3x3.glb" -67 9 -528 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit505" 4 "assets/verda/kit/roof_slab_3x3.glb" -76 12 -534 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit506" 4 "assets/verda/kit/roof_slab_3x3.glb" -76 12 -531 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit507" 4 "assets/verda/kit/roof_slab_3x3.glb" -76 12 -528 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit508" 4 "assets/verda/kit/roof_slab_3x3.glb" -73 12 -534 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit509" 4 "assets/verda/kit/roof_slab_3x3.glb" -73 12 -531 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit510" 4 "assets/verda/kit/roof_slab_3x3.glb" -73 12 -528 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit511" 4 "assets/verda/kit/roof_slab_3x3.glb" -70 12 -534 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit512" 4 "assets/verda/kit/roof_slab_3x3.glb" -70 12 -531 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit513" 4 "assets/verda/kit/roof_slab_3x3.glb" -70 12 -528 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit514" 4 "assets/verda/kit/roof_slab_3x3.glb" -67 12 -534 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit515" 4 "assets/verda/kit/roof_slab_3x3.glb" -67 12 -531 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit516" 4 "assets/verda/kit/roof_slab_3x3.glb" -67 12 -528 3 0.100000001 3 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_barn_kit1" 0 "assets/verda/ranch/barn.glb" -73.5 6 -575 14.6000004 12.8999996 22.7999992 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_grain_bin_kit1" 0 "assets/verda/ranch/grain_bin.glb" -53.5 6 -595 6.4000001 8.89999962 6.5999999 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_grain_bin_kit2" 0 "assets/verda/ranch/grain_bin.glb" -63.5 6 -595 6.4000001 8.89999962 6.5999999 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_windmill_kit1" 9 "assets/verda/ranch/windmill.glb" -69.5 6 -493 5.5999999 10.8999996 5.4000001 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit1" 9 "assets/verda/ranch/fence_8m.glb" -33.5 6 -470.666656 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit2" 9 "assets/verda/ranch/fence_8m.glb" -33.5 6 -478 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit3" 9 "assets/verda/ranch/fence_8m.glb" -33.5 6 -485.333344 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit4" 9 "assets/verda/ranch/fence_8m.glb" -33.5 6 -492.666656 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit5" 9 "assets/verda/ranch/fence_8m.glb" -33.5 6 -500 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit6" 9 "assets/verda/ranch/fence_8m.glb" -33.5 6 -507.333344 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit7" 9 "assets/verda/ranch/fence_8m.glb" -105.5 6 -470.714294 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit8" 9 "assets/verda/ranch/fence_8m.glb" -105.5 6 -478.142853 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit9" 9 "assets/verda/ranch/fence_8m.glb" -105.5 6 -485.571442 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit10" 9 "assets/verda/ranch/fence_8m.glb" -105.5 6 -493 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit11" 9 "assets/verda/ranch/fence_8m.glb" -105.5 6 -500.428558 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit12" 9 "assets/verda/ranch/fence_8m.glb" -105.5 6 -507.857147 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit13" 9 "assets/verda/ranch/fence_8m.glb" -105.5 6 -515.285706 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit14" 9 "assets/verda/ranch/fence_8m.glb" -37.5 6 -467 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit15" 9 "assets/verda/ranch/fence_8m.glb" -45.5 6 -467 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit16" 9 "assets/verda/ranch/fence_8m.glb" -53.5 6 -467 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit17" 9 "assets/verda/ranch/fence_8m.glb" -61.5 6 -467 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit18" 9 "assets/verda/ranch/fence_8m.glb" -69.5 6 -467 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit19" 9 "assets/verda/ranch/fence_8m.glb" -77.5 6 -467 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit20" 9 "assets/verda/ranch/fence_8m.glb" -85.5 6 -467 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit21" 9 "assets/verda/ranch/fence_8m.glb" -93.5 6 -467 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit22" 9 "assets/verda/ranch/fence_8m.glb" -101.5 6 -467 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit23" 9 "assets/verda/ranch/fence_8m.glb" -37.5 6 -519 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit24" 9 "assets/verda/ranch/fence_8m.glb" -45.5 6 -519 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit25" 9 "assets/verda/ranch/fence_8m.glb" -53.5 6 -519 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit26" 9 "assets/verda/ranch/fence_8m.glb" -61.5 6 -519 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit27" 9 "assets/verda/ranch/fence_8m.glb" -69.5 6 -519 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit28" 9 "assets/verda/ranch/fence_8m.glb" -77.5 6 -519 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit29" 9 "assets/verda/ranch/fence_8m.glb" -85.5 6 -519 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit30" 9 "assets/verda/ranch/fence_8m.glb" -93.5 6 -519 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit31" 9 "assets/verda/ranch/fence_8m.glb" -101.5 6 -519 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit32" 9 "assets/verda/ranch/fence_8m.glb" -11.5 6 -511 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit33" 9 "assets/verda/ranch/fence_8m.glb" -11.5 6 -523 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit34" 9 "assets/verda/ranch/fence_8m.glb" -27.5 6 -509 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit35" 9 "assets/verda/ranch/fence_8m.glb" -27.5 6 -522 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit36" 9 "assets/verda/ranch/fence_8m.glb" -15.5 6 -507 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit37" 9 "assets/verda/ranch/fence_8m.glb" -23.5 6 -507 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit38" 9 "assets/verda/ranch/fence_8m.glb" -15.5 6 -527 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit39" 9 "assets/verda/ranch/fence_8m.glb" -23.5 6 -527 8.10000038 1.45000005 0.200000003 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_loading_chute_kit1" 9 "assets/verda/ranch/loading_chute.glb" -10.1999998 6 -517 1.29999995 3.20000005 4.9000001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_feed_bunk_kit1" 9 "assets/verda/ranch/feed_bunk.glb" -45.5 6 -503 4 0.800000012 0.899999976 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit1" 9 "assets/verda/ranch/water_trough.glb" -51.5 6 -511 2.20000005 0.699999988 2.20000005 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit2" 9 "assets/verda/ranch/water_trough.glb" -17.5 6 -521 2.20000005 0.699999988 2.20000005 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit1" 9 "assets/verda/ranch/hay_bale.glb" -65.5 6 -589.5 1.5 1.5 1.5 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit2" 9 "assets/verda/ranch/hay_bale.glb" -65.5 6 -591.200012 1.5 1.5 1.5 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit3" 9 "assets/verda/ranch/hay_bale.glb" -67.3000031 6 -589.5 1.5 1.5 1.5 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit4" 9 "assets/verda/ranch/hay_bale.glb" -67.3000031 6 -591.200012 1.5 1.5 1.5 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_crop_corn_kit1" 5 "assets/verda/ranch/crop_corn.glb" -95.5 6 -587 12 2.29999995 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit2" 5 "assets/verda/ranch/crop_corn.glb" -107.5 6 -587 12 2.29999995 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit3" 5 "assets/verda/ranch/crop_corn.glb" -119.5 6 -587 12 2.29999995 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit4" 5 "assets/verda/ranch/crop_corn.glb" -95.5 6 -599 12 2.29999995 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit5" 5 "assets/verda/ranch/crop_corn.glb" -107.5 6 -599 12 2.29999995 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit6" 5 "assets/verda/ranch/crop_corn.glb" -119.5 6 -599 12 2.29999995 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit7" 5 "assets/verda/ranch/crop_corn.glb" -95.5 6 -611 12 2.29999995 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit8" 5 "assets/verda/ranch/crop_corn.glb" -107.5 6 -611 12 2.29999995 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit9" 5 "assets/verda/ranch/crop_corn.glb" -119.5 6 -611 12 2.29999995 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit1" 5 "assets/verda/ranch/crop_wheat.glb" -107.5 6 -531 12 0.949999988 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit2" 5 "assets/verda/ranch/crop_wheat.glb" -119.5 6 -531 12 0.949999988 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit3" 5 "assets/verda/ranch/crop_wheat.glb" -107.5 6 -543 12 0.949999988 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit4" 5 "assets/verda/ranch/crop_wheat.glb" -119.5 6 -543 12 0.949999988 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit5" 5 "assets/verda/ranch/crop_wheat.glb" -107.5 6 -555 12 0.949999988 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit6" 5 "assets/verda/ranch/crop_wheat.glb" -119.5 6 -555 12 0.949999988 12 -90 255 255 255 255 80 80 80 255 0
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit89" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -430.987549 6.0999999 -1510.92358 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit45" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -439.883972 6.0999999 -1509.56201 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit90" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -430.533661 6.0999999 -1507.95813 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit84" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -439.430084 6.0999999 -1506.59656 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_door_frame_kit10" 4 "assets/verda/urban/Building Parts/brick_wall_door_frame.glb" -430.079803 6.0999999 -1504.99255 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit91" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -438.976227 6.0999999 -1503.63098 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit92" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -429.625916 6.0999999 -1502.0271 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit46" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -438.522339 6.0999999 -1500.66553 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit85" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -432.697235 6.0999999 -1512.17932 0.00999999978 3 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit86" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -430.881744 6.0999999 -1500.3175 0.00999999978 3 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit93" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -435.662689 6.0999999 -1511.72546 0.00999999978 3 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit94" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -433.847198 6.0999999 -1499.86365 0.00999999978 3 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit47" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -438.628143 6.0999999 -1511.27161 0.00999999978 3 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit48" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -436.812653 6.0999999 -1499.40979 0.00999999978 3 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit45" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -431.214478 6.0999999 -1512.40625 1 3 1 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit46" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -440.110901 6.0999999 -1511.04468 1 3 1 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit47" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -429.398987 6.0999999 -1500.54443 1 3 1 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit48" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -438.29541 6.0999999 -1499.18286 1 3 1 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit715" 4 "assets/verda/kit/floor_slab_3x3.glb" -432.470306 6 -1510.69666 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit716" 4 "assets/verda/kit/floor_slab_3x3.glb" -435.43576 6 -1510.2428 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit717" 4 "assets/verda/kit/floor_slab_3x3.glb" -438.401215 6 -1509.78894 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit718" 4 "assets/verda/kit/floor_slab_3x3.glb" -432.016418 6 -1507.7312 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit719" 4 "assets/verda/kit/floor_slab_3x3.glb" -434.981873 6 -1507.27734 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit720" 4 "assets/verda/kit/floor_slab_3x3.glb" -437.947327 6 -1506.82349 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit721" 4 "assets/verda/kit/floor_slab_3x3.glb" -431.562561 6 -1504.76562 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit722" 4 "assets/verda/kit/floor_slab_3x3.glb" -434.528015 6 -1504.31177 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit723" 4 "assets/verda/kit/floor_slab_3x3.glb" -437.493469 6 -1503.85791 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit724" 4 "assets/verda/kit/floor_slab_3x3.glb" -431.108673 6 -1501.80017 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit725" 4 "assets/verda/kit/floor_slab_3x3.glb" -434.074127 6 -1501.34631 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit726" 4 "assets/verda/kit/floor_slab_3x3.glb" -437.039581 6 -1500.89246 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit28" 4 "assets/verda/industrial/shacks/Stairs.glb" -437.659882 6.0999999 -1504.94531 1.20000005 1 0.975000024 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit29" 4 "assets/verda/industrial/shacks/Stairs.glb" -437.508606 7.0999999 -1503.95679 1.20000005 1 0.975000024 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit30" 4 "assets/verda/industrial/shacks/Stairs.glb" -437.3573 8.10000038 -1502.96838 1.20000005 1 0.975000024 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit49" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -430.987549 9.10000038 -1510.92358 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit50" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -439.883972 9.10000038 -1509.56201 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit95" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -430.533661 9.10000038 -1507.95813 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit87" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -439.430084 9.10000038 -1506.59656 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit88" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -430.079803 9.10000038 -1504.99255 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit96" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -438.976227 9.10000038 -1503.63098 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit51" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -429.625916 9.10000038 -1502.0271 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit89" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -438.522339 9.10000038 -1500.66553 0.00999999978 3 3 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit97" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -432.697235 9.10000038 -1512.17932 0.00999999978 3 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit98" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -430.881744 9.10000038 -1500.3175 0.00999999978 3 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit52" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -435.662689 9.10000038 -1511.72546 0.00999999978 3 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit53" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -433.847198 9.10000038 -1499.86365 0.00999999978 3 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit90" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -438.628143 9.10000038 -1511.27161 0.00999999978 3 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit91" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -436.812653 9.10000038 -1499.40979 0.00999999978 3 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit49" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -431.214478 9.10000038 -1512.40625 1 3 1 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit50" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -440.110901 9.10000038 -1511.04468 1 3 1 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit51" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -429.398987 9.10000038 -1500.54443 1 3 1 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit52" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -438.29541 9.10000038 -1499.18286 1 3 1 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit727" 4 "assets/verda/kit/floor_slab_3x3.glb" -432.470306 9 -1510.69666 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit728" 4 "assets/verda/kit/floor_slab_3x3.glb" -435.43576 9 -1510.2428 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit729" 4 "assets/verda/kit/floor_slab_3x3.glb" -438.401215 9 -1509.78894 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit730" 4 "assets/verda/kit/floor_slab_3x3.glb" -432.016418 9 -1507.7312 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit731" 4 "assets/verda/kit/floor_slab_3x3.glb" -434.981873 9 -1507.27734 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit732" 4 "assets/verda/kit/floor_slab_3x3.glb" -431.562561 9 -1504.76562 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit733" 4 "assets/verda/kit/floor_slab_3x3.glb" -434.528015 9 -1504.31177 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit734" 4 "assets/verda/kit/floor_slab_3x3.glb" -431.108673 9 -1501.80017 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit735" 4 "assets/verda/kit/floor_slab_3x3.glb" -434.074127 9 -1501.34631 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit736" 4 "assets/verda/kit/floor_slab_3x3.glb" -437.039581 9 -1500.89246 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit517" 4 "assets/verda/kit/roof_slab_3x3.glb" -432.470306 12 -1510.69666 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit518" 4 "assets/verda/kit/roof_slab_3x3.glb" -435.43576 12 -1510.2428 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit519" 4 "assets/verda/kit/roof_slab_3x3.glb" -438.401215 12 -1509.78894 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit520" 4 "assets/verda/kit/roof_slab_3x3.glb" -432.016418 12 -1507.7312 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit521" 4 "assets/verda/kit/roof_slab_3x3.glb" -434.981873 12 -1507.27734 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit522" 4 "assets/verda/kit/roof_slab_3x3.glb" -437.947327 12 -1506.82349 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit523" 4 "assets/verda/kit/roof_slab_3x3.glb" -431.562561 12 -1504.76562 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit524" 4 "assets/verda/kit/roof_slab_3x3.glb" -434.528015 12 -1504.31177 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit525" 4 "assets/verda/kit/roof_slab_3x3.glb" -437.493469 12 -1503.85791 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit526" 4 "assets/verda/kit/roof_slab_3x3.glb" -431.108673 12 -1501.80017 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit527" 4 "assets/verda/kit/roof_slab_3x3.glb" -434.074127 12 -1501.34631 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit528" 4 "assets/verda/kit/roof_slab_3x3.glb" -437.039581 12 -1500.89246 3 0.100000001 3 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_barn_kit2" 0 "assets/verda/ranch/barn.glb" -391.563965 6 -1514.42822 14.6000004 12.8999996 22.7999992 -171.298309 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_grain_bin_kit3" 0 "assets/verda/ranch/grain_bin.glb" -368.768372 6 -1497.6842 6.4000001 8.89999962 6.5999999 -171.298309 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_grain_bin_kit4" 0 "assets/verda/ranch/grain_bin.glb" -370.28125 6 -1507.56909 6.4000001 8.89999962 6.5999999 -171.298309 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_windmill_kit2" 9 "assets/verda/ranch/windmill.glb" -472.014984 6 -1498.06848 5.5999999 10.8999996 5.4000001 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit40" 9 "assets/verda/ranch/fence_8m.glb" -487.919891 6 -1459.21497 8.10000038 1.45000005 0.200000003 8.70166397 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit41" 9 "assets/verda/ranch/fence_8m.glb" -479.221191 6 -1460.54639 8.10000038 1.45000005 0.200000003 8.70166397 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit42" 9 "assets/verda/ranch/fence_8m.glb" -470.522491 6 -1461.87769 8.10000038 1.45000005 0.200000003 8.70166397 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit43" 9 "assets/verda/ranch/fence_8m.glb" -461.823792 6 -1463.20898 8.10000038 1.45000005 0.200000003 8.70166397 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit44" 9 "assets/verda/ranch/fence_8m.glb" -453.125092 6 -1464.54041 8.10000038 1.45000005 0.200000003 8.70166397 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit45" 9 "assets/verda/ranch/fence_8m.glb" -499.490601 6 -1530.28247 8.10000038 1.45000005 0.200000003 8.70167351 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit46" 9 "assets/verda/ranch/fence_8m.glb" -492.147552 6 -1531.40637 8.10000038 1.45000005 0.200000003 8.70167351 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit47" 9 "assets/verda/ranch/fence_8m.glb" -484.804474 6 -1532.53027 8.10000038 1.45000005 0.200000003 8.70167351 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit48" 9 "assets/verda/ranch/fence_8m.glb" -477.461426 6 -1533.65405 8.10000038 1.45000005 0.200000003 8.70167351 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit49" 9 "assets/verda/ranch/fence_8m.glb" -470.118347 6 -1534.77795 8.10000038 1.45000005 0.200000003 8.70167351 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit50" 9 "assets/verda/ranch/fence_8m.glb" -462.775269 6 -1535.90186 8.10000038 1.45000005 0.200000003 8.70167351 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit51" 9 "assets/verda/ranch/fence_8m.glb" -455.43222 6 -1537.02576 8.10000038 1.45000005 0.200000003 8.70167351 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit52" 9 "assets/verda/ranch/fence_8m.glb" -492.87442 6 -1462.5033 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit53" 9 "assets/verda/ranch/fence_8m.glb" -494.084747 6 -1470.41113 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit54" 9 "assets/verda/ranch/fence_8m.glb" -495.295044 6 -1478.31909 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit55" 9 "assets/verda/ranch/fence_8m.glb" -496.505371 6 -1486.22705 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit56" 9 "assets/verda/ranch/fence_8m.glb" -497.715698 6 -1494.13501 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit57" 9 "assets/verda/ranch/fence_8m.glb" -498.926025 6 -1502.04285 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit58" 9 "assets/verda/ranch/fence_8m.glb" -500.136353 6 -1509.95081 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit59" 9 "assets/verda/ranch/fence_8m.glb" -501.346649 6 -1517.85864 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit60" 9 "assets/verda/ranch/fence_8m.glb" -502.556976 6 -1525.7666 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit61" 9 "assets/verda/ranch/fence_8m.glb" -441.472961 6 -1470.37036 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit62" 9 "assets/verda/ranch/fence_8m.glb" -442.683289 6 -1478.27832 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit63" 9 "assets/verda/ranch/fence_8m.glb" -443.893585 6 -1486.18616 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit64" 9 "assets/verda/ranch/fence_8m.glb" -445.103912 6 -1494.09412 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit65" 9 "assets/verda/ranch/fence_8m.glb" -446.31424 6 -1502.00195 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit66" 9 "assets/verda/ranch/fence_8m.glb" -447.524567 6 -1509.90991 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit67" 9 "assets/verda/ranch/fence_8m.glb" -448.734894 6 -1517.81787 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit68" 9 "assets/verda/ranch/fence_8m.glb" -449.94519 6 -1525.72583 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit69" 9 "assets/verda/ranch/fence_8m.glb" -451.155518 6 -1533.63367 8.10000038 1.45000005 0.200000003 98.701683 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit70" 9 "assets/verda/ranch/fence_8m.glb" -445.447327 6 -1443.45923 8.10000038 1.45000005 0.200000003 8.70172691 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit71" 9 "assets/verda/ranch/fence_8m.glb" -433.585449 6 -1445.27466 8.10000038 1.45000005 0.200000003 8.70172691 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit72" 9 "assets/verda/ranch/fence_8m.glb" -449.844971 6 -1458.97266 8.10000038 1.45000005 0.200000003 8.70089626 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit73" 9 "assets/verda/ranch/fence_8m.glb" -436.994568 6 -1460.93933 8.10000038 1.45000005 0.200000003 8.70192051 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit74" 9 "assets/verda/ranch/fence_8m.glb" -450.00647 6 -1446.80811 8.10000038 1.45000005 0.200000003 98.7015762 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit75" 9 "assets/verda/ranch/fence_8m.glb" -451.216766 6 -1454.71606 8.10000038 1.45000005 0.200000003 98.7015762 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit76" 9 "assets/verda/ranch/fence_8m.glb" -430.236664 6 -1449.83386 8.10000038 1.45000005 0.200000003 98.7015762 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit77" 9 "assets/verda/ranch/fence_8m.glb" -431.44696 6 -1457.74182 8.10000038 1.45000005 0.200000003 98.7015762 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_loading_chute_kit2" 9 "assets/verda/ranch/loading_chute.glb" -439.319702 6 -1443.08191 1.29999995 3.20000005 4.9000001 8.70169067 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_feed_bunk_kit2" 9 "assets/verda/ranch/feed_bunk.glb" -458.499115 6 -1475.85754 4 0.800000012 0.899999976 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit3" 9 "assets/verda/ranch/water_trough.glb" -451.498962 6 -1482.9989 2.20000005 0.699999988 2.20000005 -171.298309 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit4" 9 "assets/verda/ranch/water_trough.glb" -436.470184 6 -1450.9032 2.20000005 0.699999988 2.20000005 -171.298309 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit5" 9 "assets/verda/ranch/hay_bale.glb" -376.020538 6 -1508.71411 1.5 1.5 1.5 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit6" 9 "assets/verda/ranch/hay_bale.glb" -374.340088 6 -1508.97131 1.5 1.5 1.5 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit7" 9 "assets/verda/ranch/hay_bale.glb" -376.292877 6 -1510.49329 1.5 1.5 1.5 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit8" 9 "assets/verda/ranch/hay_bale.glb" -374.612427 6 -1510.75049 1.5 1.5 1.5 -81.2983093 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_crop_corn_kit10" 5 "assets/verda/ranch/crop_corn.glb" -383.030457 6 -1537.99048 12 2.29999995 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit11" 5 "assets/verda/ranch/crop_corn.glb" -384.845947 6 -1549.85229 12 2.29999995 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit12" 5 "assets/verda/ranch/crop_corn.glb" -386.661438 6 -1561.71423 12 2.29999995 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit13" 5 "assets/verda/ranch/crop_corn.glb" -371.168579 6 -1539.80603 12 2.29999995 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit14" 5 "assets/verda/ranch/crop_corn.glb" -372.98407 6 -1551.66785 12 2.29999995 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit15" 5 "assets/verda/ranch/crop_corn.glb" -374.799561 6 -1563.52979 12 2.29999995 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit16" 5 "assets/verda/ranch/crop_corn.glb" -359.306702 6 -1541.62146 12 2.29999995 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit17" 5 "assets/verda/ranch/crop_corn.glb" -361.122192 6 -1553.48328 12 2.29999995 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit18" 5 "assets/verda/ranch/crop_corn.glb" -362.937683 6 -1565.34521 12 2.29999995 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit7" 5 "assets/verda/ranch/crop_wheat.glb" -440.201385 6 -1541.38013 12 0.949999988 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit8" 5 "assets/verda/ranch/crop_wheat.glb" -442.016876 6 -1553.24207 12 0.949999988 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit9" 5 "assets/verda/ranch/crop_wheat.glb" -428.339508 6 -1543.19556 12 0.949999988 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit10" 5 "assets/verda/ranch/crop_wheat.glb" -430.154999 6 -1555.0575 12 0.949999988 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit11" 5 "assets/verda/ranch/crop_wheat.glb" -416.477631 6 -1545.01099 12 0.949999988 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit12" 5 "assets/verda/ranch/crop_wheat.glb" -418.293121 6 -1556.87292 12 0.949999988 12 -171.298309 255 255 255 255 80 80 80 255 0
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit125" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 702.310852 12.6150131 -238.483917 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit103" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" 693.53717 12.6150131 -236.478546 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit126" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 702.979309 12.6150131 -235.559341 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit127" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 694.205627 12.6150131 -233.55397 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_door_frame_kit18" 4 "assets/verda/urban/Building Parts/stuco_wall_door_frame.glb" 703.647766 12.6150131 -232.63475 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit128" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 694.874084 12.6150131 -230.629379 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit129" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 704.316223 12.6150131 -229.710175 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit130" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 695.542542 12.6150131 -227.704803 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit131" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 700.514343 12.6150131 -239.611969 0.00999999978 3 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit56" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" 703.188171 12.6150131 -227.913666 0.00999999978 3 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit132" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 697.589783 12.6150131 -238.943512 0.00999999978 3 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit104" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" 700.263611 12.6150131 -227.245209 0.00999999978 3 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit105" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" 694.665222 12.6150131 -238.275055 0.00999999978 3 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit133" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 697.33905 12.6150131 -226.576752 0.00999999978 3 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit65" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" 701.976624 12.6150131 -239.946198 1 3 1 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit66" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" 693.202942 12.6150131 -237.940826 1 3 1 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit67" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" 704.650452 12.6150131 -228.247894 1 3 1 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit68" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" 695.87677 12.6150131 -226.242523 1 3 1 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit737" 4 "assets/verda/kit/floor_slab_3x3.glb" 700.848572 12.5150127 -238.149689 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit738" 4 "assets/verda/kit/floor_slab_3x3.glb" 697.924011 12.5150127 -237.481232 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit739" 4 "assets/verda/kit/floor_slab_3x3.glb" 694.999451 12.5150127 -236.812775 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit740" 4 "assets/verda/kit/floor_slab_3x3.glb" 701.517029 12.5150127 -235.225113 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit741" 4 "assets/verda/kit/floor_slab_3x3.glb" 698.592468 12.5150127 -234.556656 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit742" 4 "assets/verda/kit/floor_slab_3x3.glb" 695.667908 12.5150127 -233.888199 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit743" 4 "assets/verda/kit/floor_slab_3x3.glb" 702.185486 12.5150127 -232.300522 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit744" 4 "assets/verda/kit/floor_slab_3x3.glb" 699.260925 12.5150127 -231.632065 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit745" 4 "assets/verda/kit/floor_slab_3x3.glb" 696.336365 12.5150127 -230.963608 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit746" 4 "assets/verda/kit/floor_slab_3x3.glb" 702.853943 12.5150127 -229.375946 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit747" 4 "assets/verda/kit/floor_slab_3x3.glb" 699.929382 12.5150127 -228.707489 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit748" 4 "assets/verda/kit/floor_slab_3x3.glb" 697.004822 12.5150127 -228.039032 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit31" 4 "assets/verda/industrial/shacks/Stairs.glb" 696.091248 12.6150131 -232.035965 1.20000005 1 0.975000024 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit32" 4 "assets/verda/industrial/shacks/Stairs.glb" 696.314087 13.6150131 -231.061096 1.20000005 1 0.975000024 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit33" 4 "assets/verda/industrial/shacks/Stairs.glb" 696.536926 14.6150131 -230.086243 1.20000005 1 0.975000024 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit106" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" 702.310852 15.6150131 -238.483917 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit134" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 693.53717 15.6150131 -236.478546 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit135" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 702.979309 15.6150131 -235.559341 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit57" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" 694.205627 15.6150131 -233.55397 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit107" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" 703.647766 15.6150131 -232.63475 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit136" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 694.874084 15.6150131 -230.629379 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit137" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 704.316223 15.6150131 -229.710175 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit108" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" 695.542542 15.6150131 -227.704803 0.00999999978 3 3 12.8747177 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit109" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" 700.514343 15.6150131 -239.611969 0.00999999978 3 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit58" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" 703.188171 15.6150131 -227.913666 0.00999999978 3 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit138" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 697.589783 15.6150131 -238.943512 0.00999999978 3 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit139" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 700.263611 15.6150131 -227.245209 0.00999999978 3 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit110" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" 694.665222 15.6150131 -238.275055 0.00999999978 3 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit111" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" 697.33905 15.6150131 -226.576752 0.00999999978 3 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit69" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" 701.976624 15.6150131 -239.946198 1 3 1 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit70" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" 693.202942 15.6150131 -237.940826 1 3 1 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit71" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" 704.650452 15.6150131 -228.247894 1 3 1 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit72" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" 695.87677 15.6150131 -226.242523 1 3 1 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit749" 4 "assets/verda/kit/floor_slab_3x3.glb" 700.848572 15.5150127 -238.149689 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit750" 4 "assets/verda/kit/floor_slab_3x3.glb" 697.924011 15.5150127 -237.481232 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit751" 4 "assets/verda/kit/floor_slab_3x3.glb" 694.999451 15.5150127 -236.812775 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit752" 4 "assets/verda/kit/floor_slab_3x3.glb" 701.517029 15.5150127 -235.225113 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit753" 4 "assets/verda/kit/floor_slab_3x3.glb" 698.592468 15.5150127 -234.556656 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit754" 4 "assets/verda/kit/floor_slab_3x3.glb" 702.185486 15.5150127 -232.300522 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit755" 4 "assets/verda/kit/floor_slab_3x3.glb" 699.260925 15.5150127 -231.632065 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit756" 4 "assets/verda/kit/floor_slab_3x3.glb" 702.853943 15.5150127 -229.375946 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit757" 4 "assets/verda/kit/floor_slab_3x3.glb" 699.929382 15.5150127 -228.707489 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit758" 4 "assets/verda/kit/floor_slab_3x3.glb" 697.004822 15.5150127 -228.039032 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit529" 4 "assets/verda/kit/roof_slab_3x3.glb" 700.848572 18.5150127 -238.149689 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit530" 4 "assets/verda/kit/roof_slab_3x3.glb" 697.924011 18.5150127 -237.481232 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit531" 4 "assets/verda/kit/roof_slab_3x3.glb" 694.999451 18.5150127 -236.812775 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit532" 4 "assets/verda/kit/roof_slab_3x3.glb" 701.517029 18.5150127 -235.225113 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit533" 4 "assets/verda/kit/roof_slab_3x3.glb" 698.592468 18.5150127 -234.556656 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit534" 4 "assets/verda/kit/roof_slab_3x3.glb" 695.667908 18.5150127 -233.888199 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit535" 4 "assets/verda/kit/roof_slab_3x3.glb" 702.185486 18.5150127 -232.300522 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit536" 4 "assets/verda/kit/roof_slab_3x3.glb" 699.260925 18.5150127 -231.632065 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit537" 4 "assets/verda/kit/roof_slab_3x3.glb" 696.336365 18.5150127 -230.963608 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit538" 4 "assets/verda/kit/roof_slab_3x3.glb" 702.853943 18.5150127 -229.375946 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit539" 4 "assets/verda/kit/roof_slab_3x3.glb" 699.929382 18.5150127 -228.707489 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit540" 4 "assets/verda/kit/roof_slab_3x3.glb" 697.004822 18.5150127 -228.039032 3 0.100000001 3 -77.1252823 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_barn_kit3" 0 "assets/verda/ranch/barn.glb" 741.374939 12.5150127 -244.848175 14.6000004 12.8999996 22.7999992 -167.125275 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_grain_bin_kit5" 0 "assets/verda/ranch/grain_bin.glb" 765.328491 12.5150127 -229.807373 6.4000001 8.89999962 6.5999999 -167.125275 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_grain_bin_kit6" 0 "assets/verda/ranch/grain_bin.glb" 763.100281 12.5150127 -239.555969 6.4000001 8.89999962 6.5999999 -167.125275 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_windmill_kit3" 9 "assets/verda/ranch/windmill.glb" 662.327637 12.5150127 -222.67749 5.5999999 10.8999996 5.4000001 -77.1252747 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit78" 9 "assets/verda/ranch/fence_8m.glb" 648.577271 12.5150127 -182.606216 8.10000038 1.45000005 0.200000003 12.8747044 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit79" 9 "assets/verda/ranch/fence_8m.glb" 655.726257 12.5150127 -184.240234 8.10000038 1.45000005 0.200000003 12.8747044 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit80" 9 "assets/verda/ranch/fence_8m.glb" 662.875244 12.5150127 -185.874252 8.10000038 1.45000005 0.200000003 12.8747044 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit81" 9 "assets/verda/ranch/fence_8m.glb" 670.024231 12.5150127 -187.508255 8.10000038 1.45000005 0.200000003 12.8747044 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit82" 9 "assets/verda/ranch/fence_8m.glb" 677.173218 12.5150127 -189.142273 8.10000038 1.45000005 0.200000003 12.8747044 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit83" 9 "assets/verda/ranch/fence_8m.glb" 684.322205 12.5150127 -190.776291 8.10000038 1.45000005 0.200000003 12.8747044 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit84" 9 "assets/verda/ranch/fence_8m.glb" 632.580688 12.5150127 -252.806747 8.10000038 1.45000005 0.200000003 12.8747053 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit85" 9 "assets/verda/ranch/fence_8m.glb" 639.82251 12.5150127 -254.461975 8.10000038 1.45000005 0.200000003 12.8747053 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit86" 9 "assets/verda/ranch/fence_8m.glb" 647.064331 12.5150127 -256.117218 8.10000038 1.45000005 0.200000003 12.8747053 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit87" 9 "assets/verda/ranch/fence_8m.glb" 654.306152 12.5150127 -257.772461 8.10000038 1.45000005 0.200000003 12.8747053 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit88" 9 "assets/verda/ranch/fence_8m.glb" 661.547974 12.5150127 -259.427673 8.10000038 1.45000005 0.200000003 12.8747053 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit89" 9 "assets/verda/ranch/fence_8m.glb" 668.789795 12.5150127 -261.082916 8.10000038 1.45000005 0.200000003 12.8747053 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit90" 9 "assets/verda/ranch/fence_8m.glb" 676.031616 12.5150127 -262.738159 8.10000038 1.45000005 0.200000003 12.8747053 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit91" 9 "assets/verda/ranch/fence_8m.glb" 644.111511 12.5150127 -185.68866 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit92" 9 "assets/verda/ranch/fence_8m.glb" 642.328979 12.5150127 -193.487534 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit93" 9 "assets/verda/ranch/fence_8m.glb" 640.546387 12.5150127 -201.286407 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit94" 9 "assets/verda/ranch/fence_8m.glb" 638.763855 12.5150127 -209.085297 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit95" 9 "assets/verda/ranch/fence_8m.glb" 636.981323 12.5150127 -216.884171 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit96" 9 "assets/verda/ranch/fence_8m.glb" 635.19873 12.5150127 -224.683044 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit97" 9 "assets/verda/ranch/fence_8m.glb" 633.416199 12.5150127 -232.481934 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit98" 9 "assets/verda/ranch/fence_8m.glb" 631.633606 12.5150127 -240.280807 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit99" 9 "assets/verda/ranch/fence_8m.glb" 629.851074 12.5150127 -248.079681 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit100" 9 "assets/verda/ranch/fence_8m.glb" 694.80426 12.5150127 -197.275299 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit101" 9 "assets/verda/ranch/fence_8m.glb" 693.021729 12.5150127 -205.074173 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit102" 9 "assets/verda/ranch/fence_8m.glb" 691.239136 12.5150127 -212.873047 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit103" 9 "assets/verda/ranch/fence_8m.glb" 689.456604 12.5150127 -220.671936 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit104" 9 "assets/verda/ranch/fence_8m.glb" 687.674072 12.5150127 -228.47081 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit105" 9 "assets/verda/ranch/fence_8m.glb" 685.891479 12.5150127 -236.269684 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit106" 9 "assets/verda/ranch/fence_8m.glb" 684.108948 12.5150127 -244.068573 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit107" 9 "assets/verda/ranch/fence_8m.glb" 682.326355 12.5150127 -251.867447 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit108" 9 "assets/verda/ranch/fence_8m.glb" 680.543823 12.5150127 -259.666321 8.10000038 1.45000005 0.200000003 102.874695 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit109" 9 "assets/verda/ranch/fence_8m.glb" 692.798706 12.5150127 -170.146378 8.10000038 1.45000005 0.200000003 12.8747149 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit110" 9 "assets/verda/ranch/fence_8m.glb" 704.497009 12.5150127 -172.820221 8.10000038 1.45000005 0.200000003 12.8747053 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit111" 9 "assets/verda/ranch/fence_8m.glb" 687.283813 12.5150127 -185.298492 8.10000038 1.45000005 0.200000003 12.8746176 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit112" 9 "assets/verda/ranch/fence_8m.glb" 699.957031 12.5150127 -188.195129 8.10000038 1.45000005 0.200000003 12.874692 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit113" 9 "assets/verda/ranch/fence_8m.glb" 688.007935 12.5150127 -173.154541 8.10000038 1.45000005 0.200000003 102.874733 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit114" 9 "assets/verda/ranch/fence_8m.glb" 686.225403 12.5150127 -180.9534 8.10000038 1.45000005 0.200000003 102.874733 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit115" 9 "assets/verda/ranch/fence_8m.glb" 707.505127 12.5150127 -177.610931 8.10000038 1.45000005 0.200000003 102.874733 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit116" 9 "assets/verda/ranch/fence_8m.glb" 705.722595 12.5150127 -185.40979 8.10000038 1.45000005 0.200000003 102.874733 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_loading_chute_kit3" 9 "assets/verda/ranch/loading_chute.glb" 698.9375 12.5150127 -170.215973 1.29999995 3.20000005 4.9000001 12.8747253 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_feed_bunk_kit3" 9 "assets/verda/ranch/feed_bunk.glb" 677.42395 12.5150127 -201.509048 4 0.800000012 0.899999976 -77.1252747 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit5" 9 "assets/verda/ranch/water_trough.glb" 683.885925 12.5150127 -209.140778 2.20000005 0.699999988 2.20000005 -167.125275 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit6" 9 "assets/verda/ranch/water_trough.glb" 701.210388 12.5150127 -178.223724 2.20000005 0.699999988 2.20000005 -167.125275 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit9" 9 "assets/verda/ranch/hay_bale.glb" 757.292908 12.5150127 -240.280182 1.5 1.5 1.5 -77.1252747 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit10" 9 "assets/verda/ranch/hay_bale.glb" 758.950195 12.5150127 -240.658966 1.5 1.5 1.5 -77.1252747 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit11" 9 "assets/verda/ranch/hay_bale.glb" 756.891846 12.5150127 -242.034927 1.5 1.5 1.5 -77.1252747 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit12" 9 "assets/verda/ranch/hay_bale.glb" 758.549133 12.5150127 -242.413727 1.5 1.5 1.5 -77.1252747 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_crop_corn_kit19" 5 "assets/verda/ranch/crop_corn.glb" 748.171204 12.5150127 -268.968933 12 2.29999995 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit20" 5 "assets/verda/ranch/crop_corn.glb" 745.497314 12.5150127 -280.667236 12 2.29999995 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit21" 5 "assets/verda/ranch/crop_corn.glb" 742.823486 12.5150127 -292.36557 12 2.29999995 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit22" 5 "assets/verda/ranch/crop_corn.glb" 759.869507 12.5150127 -271.642761 12 2.29999995 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit23" 5 "assets/verda/ranch/crop_corn.glb" 757.195618 12.5150127 -283.341095 12 2.29999995 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit24" 5 "assets/verda/ranch/crop_corn.glb" 754.52179 12.5150127 -295.039398 12 2.29999995 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit25" 5 "assets/verda/ranch/crop_corn.glb" 771.56781 12.5150127 -274.31662 12 2.29999995 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit26" 5 "assets/verda/ranch/crop_corn.glb" 768.893921 12.5150127 -286.014923 12 2.29999995 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit27" 5 "assets/verda/ranch/crop_corn.glb" 766.220093 12.5150127 -297.713257 12 2.29999995 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit13" 5 "assets/verda/ranch/crop_wheat.glb" 690.905151 12.5150127 -268.189331 12 0.949999988 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit14" 5 "assets/verda/ranch/crop_wheat.glb" 688.231323 12.5150127 -279.887634 12 0.949999988 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit15" 5 "assets/verda/ranch/crop_wheat.glb" 702.603455 12.5150127 -270.863159 12 0.949999988 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit16" 5 "assets/verda/ranch/crop_wheat.glb" 699.929626 12.5150127 -282.561493 12 0.949999988 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit17" 5 "assets/verda/ranch/crop_wheat.glb" 714.301758 12.5150127 -273.537018 12 0.949999988 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit18" 5 "assets/verda/ranch/crop_wheat.glb" 711.62793 12.5150127 -285.235321 12 0.949999988 12 -167.125275 255 255 255 255 80 80 80 255 0
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit92" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -36.8088913 6.0999999 1415.28308 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit99" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -45.8011551 6.0999999 1415.65613 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit54" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -36.6845398 6.0999999 1418.28052 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit93" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -45.6768036 6.0999999 1418.65356 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_door_frame_kit11" 4 "assets/verda/urban/Building Parts/brick_wall_door_frame.glb" -36.5601883 6.0999999 1421.27783 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit55" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -45.5524521 6.0999999 1421.65088 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit94" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -36.4358368 6.0999999 1424.27527 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit100" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -45.4281006 6.0999999 1424.64832 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit95" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -38.3697739 6.0999999 1413.84644 0.00999999978 3 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit101" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -37.8723755 6.0999999 1425.83618 0.00999999978 3 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit96" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -41.3671951 6.0999999 1413.97083 0.00999999978 3 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit56" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -40.8697968 6.0999999 1425.96057 0.00999999978 3 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit97" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -44.3646164 6.0999999 1414.09521 0.00999999978 3 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit102" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -43.867218 6.0999999 1426.08496 0.00999999978 3 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit53" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -36.8710632 6.0999999 1413.7843 1 3 1 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit54" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -45.863327 6.0999999 1414.15735 1 3 1 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit55" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -36.3736649 6.0999999 1425.77405 1 3 1 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit56" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -45.3659286 6.0999999 1426.14709 1 3 1 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit759" 4 "assets/verda/kit/floor_slab_3x3.glb" -38.3076019 6 1415.34521 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit760" 4 "assets/verda/kit/floor_slab_3x3.glb" -41.3050232 6 1415.4696 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit761" 4 "assets/verda/kit/floor_slab_3x3.glb" -44.3024445 6 1415.59399 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit762" 4 "assets/verda/kit/floor_slab_3x3.glb" -38.1832504 6 1418.34265 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit763" 4 "assets/verda/kit/floor_slab_3x3.glb" -41.1806717 6 1418.46704 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit764" 4 "assets/verda/kit/floor_slab_3x3.glb" -44.178093 6 1418.59143 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit765" 4 "assets/verda/kit/floor_slab_3x3.glb" -38.0588989 6 1421.33997 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit766" 4 "assets/verda/kit/floor_slab_3x3.glb" -41.0563202 6 1421.46436 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit767" 4 "assets/verda/kit/floor_slab_3x3.glb" -44.0537415 6 1421.58875 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit768" 4 "assets/verda/kit/floor_slab_3x3.glb" -37.9345474 6 1424.3374 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit769" 4 "assets/verda/kit/floor_slab_3x3.glb" -40.9319687 6 1424.46179 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit770" 4 "assets/verda/kit/floor_slab_3x3.glb" -43.92939 6 1424.58618 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit34" 4 "assets/verda/industrial/shacks/Stairs.glb" -44.0993385 6.0999999 1420.48975 1.20000005 1 0.975000024 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit35" 4 "assets/verda/industrial/shacks/Stairs.glb" -44.057888 7.0999999 1421.48889 1.20000005 1 0.975000024 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit36" 4 "assets/verda/industrial/shacks/Stairs.glb" -44.0164375 8.10000038 1422.48804 1.20000005 1 0.975000024 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit57" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -36.8088913 9.10000038 1415.28308 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit98" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -45.8011551 9.10000038 1415.65613 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit103" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -36.6845398 9.10000038 1418.28052 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit58" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -45.6768036 9.10000038 1418.65356 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit59" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -36.5601883 9.10000038 1421.27783 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit60" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -45.5524521 9.10000038 1421.65088 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit104" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -36.4358368 9.10000038 1424.27527 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit61" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -45.4281006 9.10000038 1424.64832 0.00999999978 3 3 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit105" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -38.3697739 9.10000038 1413.84644 0.00999999978 3 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit99" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -37.8723755 9.10000038 1425.83618 0.00999999978 3 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit62" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -41.3671951 9.10000038 1413.97083 0.00999999978 3 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit106" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -40.8697968 9.10000038 1425.96057 0.00999999978 3 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit100" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -44.3646164 9.10000038 1414.09521 0.00999999978 3 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit107" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -43.867218 9.10000038 1426.08496 0.00999999978 3 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit57" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -36.8710632 9.10000038 1413.7843 1 3 1 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit58" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -45.863327 9.10000038 1414.15735 1 3 1 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit59" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -36.3736649 9.10000038 1425.77405 1 3 1 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit60" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -45.3659286 9.10000038 1426.14709 1 3 1 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit771" 4 "assets/verda/kit/floor_slab_3x3.glb" -38.3076019 9 1415.34521 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit772" 4 "assets/verda/kit/floor_slab_3x3.glb" -41.3050232 9 1415.4696 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit773" 4 "assets/verda/kit/floor_slab_3x3.glb" -44.3024445 9 1415.59399 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit774" 4 "assets/verda/kit/floor_slab_3x3.glb" -38.1832504 9 1418.34265 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit775" 4 "assets/verda/kit/floor_slab_3x3.glb" -41.1806717 9 1418.46704 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit776" 4 "assets/verda/kit/floor_slab_3x3.glb" -38.0588989 9 1421.33997 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit777" 4 "assets/verda/kit/floor_slab_3x3.glb" -41.0563202 9 1421.46436 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit778" 4 "assets/verda/kit/floor_slab_3x3.glb" -37.9345474 9 1424.3374 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit779" 4 "assets/verda/kit/floor_slab_3x3.glb" -40.9319687 9 1424.46179 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit780" 4 "assets/verda/kit/floor_slab_3x3.glb" -43.92939 9 1424.58618 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit541" 4 "assets/verda/kit/roof_slab_3x3.glb" -38.3076019 12 1415.34521 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit542" 4 "assets/verda/kit/roof_slab_3x3.glb" -41.3050232 12 1415.4696 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit543" 4 "assets/verda/kit/roof_slab_3x3.glb" -44.3024445 12 1415.59399 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit544" 4 "assets/verda/kit/roof_slab_3x3.glb" -38.1832504 12 1418.34265 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit545" 4 "assets/verda/kit/roof_slab_3x3.glb" -41.1806717 12 1418.46704 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit546" 4 "assets/verda/kit/roof_slab_3x3.glb" -44.178093 12 1418.59143 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit547" 4 "assets/verda/kit/roof_slab_3x3.glb" -38.0588989 12 1421.33997 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit548" 4 "assets/verda/kit/roof_slab_3x3.glb" -41.0563202 12 1421.46436 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit549" 4 "assets/verda/kit/roof_slab_3x3.glb" -44.0537415 12 1421.58875 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit550" 4 "assets/verda/kit/roof_slab_3x3.glb" -37.9345474 12 1424.3374 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit551" 4 "assets/verda/kit/roof_slab_3x3.glb" -40.9319687 12 1424.46179 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit552" 4 "assets/verda/kit/roof_slab_3x3.glb" -43.92939 12 1424.58618 3 0.100000001 3 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_barn_kit4" 0 "assets/verda/ranch/barn.glb" 2.76076078 6 1416.14368 14.6000004 12.8999996 22.7999992 -177.624405 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_grain_bin_kit7" 0 "assets/verda/ranch/grain_bin.glb" 23.5725632 6 1435.29736 6.4000001 8.89999962 6.5999999 -177.624405 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_grain_bin_kit8" 0 "assets/verda/ranch/grain_bin.glb" 23.158062 6 1425.30603 6.4000001 8.89999962 6.5999999 -177.624405 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_windmill_kit4" 9 "assets/verda/ranch/windmill.glb" -79.0029221 6 1423.53906 5.5999999 10.8999996 5.4000001 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit117" 9 "assets/verda/ranch/fence_8m.glb" -99.0921478 6 1460.40344 8.10000038 1.45000005 0.200000003 2.37565994 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit118" 9 "assets/verda/ranch/fence_8m.glb" -90.2997131 6 1460.0387 8.10000038 1.45000005 0.200000003 2.37565994 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit119" 9 "assets/verda/ranch/fence_8m.glb" -81.5072784 6 1459.67383 8.10000038 1.45000005 0.200000003 2.37565994 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit120" 9 "assets/verda/ranch/fence_8m.glb" -72.7148514 6 1459.30908 8.10000038 1.45000005 0.200000003 2.37565994 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit121" 9 "assets/verda/ranch/fence_8m.glb" -63.9224167 6 1458.94434 8.10000038 1.45000005 0.200000003 2.37565994 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit122" 9 "assets/verda/ranch/fence_8m.glb" -102.143158 6 1388.46814 8.10000038 1.45000005 0.200000003 2.37545252 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit123" 9 "assets/verda/ranch/fence_8m.glb" -93.4839401 6 1388.10889 8.10000038 1.45000005 0.200000003 2.37545252 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit124" 9 "assets/verda/ranch/fence_8m.glb" -84.8247299 6 1387.74963 8.10000038 1.45000005 0.200000003 2.37545252 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit125" 9 "assets/verda/ranch/fence_8m.glb" -76.1655197 6 1387.3905 8.10000038 1.45000005 0.200000003 2.37545252 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit126" 9 "assets/verda/ranch/fence_8m.glb" -67.5063019 6 1387.03125 8.10000038 1.45000005 0.200000003 2.37545252 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit127" 9 "assets/verda/ranch/fence_8m.glb" -58.8470879 6 1386.672 8.10000038 1.45000005 0.200000003 2.37545252 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit128" 9 "assets/verda/ranch/fence_8m.glb" -103.654167 6 1456.58923 8.10000038 1.45000005 0.200000003 92.3755875 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit129" 9 "assets/verda/ranch/fence_8m.glb" -103.985764 6 1448.59619 8.10000038 1.45000005 0.200000003 92.3755875 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit130" 9 "assets/verda/ranch/fence_8m.glb" -104.317368 6 1440.60303 8.10000038 1.45000005 0.200000003 92.3755875 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit131" 9 "assets/verda/ranch/fence_8m.glb" -104.648964 6 1432.60986 8.10000038 1.45000005 0.200000003 92.3755875 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit132" 9 "assets/verda/ranch/fence_8m.glb" -104.98056 6 1424.6167 8.10000038 1.45000005 0.200000003 92.3755875 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit133" 9 "assets/verda/ranch/fence_8m.glb" -105.312164 6 1416.62366 8.10000038 1.45000005 0.200000003 92.3755875 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit134" 9 "assets/verda/ranch/fence_8m.glb" -105.643761 6 1408.63049 8.10000038 1.45000005 0.200000003 92.3755875 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit135" 9 "assets/verda/ranch/fence_8m.glb" -105.975365 6 1400.63745 8.10000038 1.45000005 0.200000003 92.3755875 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit136" 9 "assets/verda/ranch/fence_8m.glb" -106.306961 6 1392.64429 8.10000038 1.45000005 0.200000003 92.3755875 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit137" 9 "assets/verda/ranch/fence_8m.glb" -51.6988831 6 1454.43384 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit138" 9 "assets/verda/ranch/fence_8m.glb" -52.0304794 6 1446.4408 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit139" 9 "assets/verda/ranch/fence_8m.glb" -52.3620834 6 1438.44763 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit140" 9 "assets/verda/ranch/fence_8m.glb" -52.6936798 6 1430.45459 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit141" 9 "assets/verda/ranch/fence_8m.glb" -53.0252838 6 1422.46143 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit142" 9 "assets/verda/ranch/fence_8m.glb" -53.3568802 6 1414.46826 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit143" 9 "assets/verda/ranch/fence_8m.glb" -53.6884842 6 1406.47522 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit144" 9 "assets/verda/ranch/fence_8m.glb" -54.0200806 6 1398.48206 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit145" 9 "assets/verda/ranch/fence_8m.glb" -54.3516846 6 1390.48901 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit146" 9 "assets/verda/ranch/fence_8m.glb" -58.6142998 6 1480.74316 8.10000038 1.45000005 0.200000003 2.37605762 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit147" 9 "assets/verda/ranch/fence_8m.glb" -46.6246185 6 1480.24561 8.10000038 1.45000005 0.200000003 2.37605667 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit148" 9 "assets/verda/ranch/fence_8m.glb" -61.2757797 6 1464.83984 8.10000038 1.45000005 0.200000003 2.37693143 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit149" 9 "assets/verda/ranch/fence_8m.glb" -48.2869568 6 1464.3009 8.10000038 1.45000005 0.200000003 2.37588334 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit150" 9 "assets/verda/ranch/fence_8m.glb" -62.7766571 6 1476.91235 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit151" 9 "assets/verda/ranch/fence_8m.glb" -63.1082611 6 1468.91931 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit152" 9 "assets/verda/ranch/fence_8m.glb" -42.7938614 6 1476.08325 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit153" 9 "assets/verda/ranch/fence_8m.glb" -43.1254578 6 1468.09021 8.10000038 1.45000005 0.200000003 92.3755951 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_loading_chute_kit4" 9 "assets/verda/ranch/loading_chute.glb" -52.5655746 6 1481.79333 1.29999995 3.20000005 4.9000001 2.37559509 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_feed_bunk_kit4" 9 "assets/verda/ranch/feed_bunk.glb" -68.016716 6 1447.104 4 0.800000012 0.899999976 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit7" 9 "assets/verda/ranch/water_trough.glb" -60.2723007 6 1440.77747 2.20000005 0.699999988 2.20000005 -177.624405 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit8" 9 "assets/verda/ranch/water_trough.glb" -48.8715973 6 1474.33386 2.20000005 0.699999988 2.20000005 -177.624405 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit13" 9 "assets/verda/ranch/hay_bale.glb" 17.5798931 6 1423.53577 1.5 1.5 1.5 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit14" 9 "assets/verda/ranch/hay_bale.glb" 19.278429 6 1423.46533 1.5 1.5 1.5 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit15" 9 "assets/verda/ranch/hay_bale.glb" 17.5052834 6 1421.7373 1.5 1.5 1.5 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit16" 9 "assets/verda/ranch/hay_bale.glb" 19.2038193 6 1421.66687 1.5 1.5 1.5 -87.6244049 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_crop_corn_kit28" 5 "assets/verda/ranch/crop_corn.glb" 13.8385401 6 1393.66516 12 2.29999995 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit29" 5 "assets/verda/ranch/crop_corn.glb" 13.3411407 6 1381.67554 12 2.29999995 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit30" 5 "assets/verda/ranch/crop_corn.glb" 12.8437405 6 1369.68579 12 2.29999995 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit31" 5 "assets/verda/ranch/crop_corn.glb" 25.8282204 6 1393.16772 12 2.29999995 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit32" 5 "assets/verda/ranch/crop_corn.glb" 25.330822 6 1381.1781 12 2.29999995 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit33" 5 "assets/verda/ranch/crop_corn.glb" 24.8334217 6 1369.18835 12 2.29999995 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit34" 5 "assets/verda/ranch/crop_corn.glb" 37.8179016 6 1392.67029 12 2.29999995 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit35" 5 "assets/verda/ranch/crop_corn.glb" 37.3204994 6 1380.68066 12 2.29999995 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit36" 5 "assets/verda/ranch/crop_corn.glb" 36.823101 6 1368.69092 12 2.29999995 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit19" 5 "assets/verda/ranch/crop_wheat.glb" -42.6106987 6 1383.9967 12 0.949999988 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit20" 5 "assets/verda/ranch/crop_wheat.glb" -43.1080971 6 1372.00696 12 0.949999988 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit21" 5 "assets/verda/ranch/crop_wheat.glb" -30.6210194 6 1383.49927 12 0.949999988 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit22" 5 "assets/verda/ranch/crop_wheat.glb" -31.1184196 6 1371.50952 12 0.949999988 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit23" 5 "assets/verda/ranch/crop_wheat.glb" -18.63134 6 1383.00195 12 0.949999988 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit24" 5 "assets/verda/ranch/crop_wheat.glb" -19.1287403 6 1371.01221 12 0.949999988 12 -177.624405 255 255 255 255 80 80 80 255 0
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit112" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -1403.19177 15.1847486 -161.081177 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit140" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1401.36902 15.1847486 -169.894684 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit141" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1406.12964 15.1847486 -161.688736 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit142" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1404.30688 15.1847486 -170.502243 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_door_frame_kit19" 4 "assets/verda/urban/Building Parts/stuco_wall_door_frame.glb" -1409.06738 15.1847486 -162.29631 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit59" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" -1407.24463 15.1847486 -171.109818 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit60" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" -1412.00525 15.1847486 -162.90387 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit143" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1410.1825 15.1847486 -171.717377 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit144" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1401.41907 15.1847486 -162.246323 0.00999999978 3 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit145" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1413.17029 15.1847486 -164.676559 0.00999999978 3 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit113" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -1400.81152 15.1847486 -165.184158 0.00999999978 3 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit61" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" -1412.56274 15.1847486 -167.614395 0.00999999978 3 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit114" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -1400.20398 15.1847486 -168.121994 0.00999999978 3 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit146" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1411.9552 15.1847486 -170.552231 0.00999999978 3 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit73" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -1401.7229 15.1847486 -160.777405 1 3 1 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit74" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -1399.90015 15.1847486 -169.590912 1 3 1 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit75" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -1413.47412 15.1847486 -163.207642 1 3 1 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit76" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -1411.65137 15.1847486 -172.021149 1 3 1 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit781" 4 "assets/verda/kit/floor_slab_3x3.glb" -1402.88794 15.0847483 -162.550095 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit782" 4 "assets/verda/kit/floor_slab_3x3.glb" -1402.2804 15.0847483 -165.48793 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit783" 4 "assets/verda/kit/floor_slab_3x3.glb" -1401.67285 15.0847483 -168.425766 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit784" 4 "assets/verda/kit/floor_slab_3x3.glb" -1405.82581 15.0847483 -163.157654 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit785" 4 "assets/verda/kit/floor_slab_3x3.glb" -1405.21826 15.0847483 -166.09549 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit786" 4 "assets/verda/kit/floor_slab_3x3.glb" -1404.61072 15.0847483 -169.033325 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit787" 4 "assets/verda/kit/floor_slab_3x3.glb" -1408.76355 15.0847483 -163.765228 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit788" 4 "assets/verda/kit/floor_slab_3x3.glb" -1408.15601 15.0847483 -166.703064 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit789" 4 "assets/verda/kit/floor_slab_3x3.glb" -1407.54846 15.0847483 -169.6409 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit790" 4 "assets/verda/kit/floor_slab_3x3.glb" -1411.70142 15.0847483 -164.372787 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit791" 4 "assets/verda/kit/floor_slab_3x3.glb" -1411.09387 15.0847483 -167.310623 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit792" 4 "assets/verda/kit/floor_slab_3x3.glb" -1410.48633 15.0847483 -170.248459 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit37" 4 "assets/verda/industrial/shacks/Stairs.glb" -1406.47131 15.1847486 -169.418121 1.20000005 1 0.975000024 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit38" 4 "assets/verda/industrial/shacks/Stairs.glb" -1407.45056 16.1847477 -169.620636 1.20000005 1 0.975000024 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_stairs_kit39" 4 "assets/verda/industrial/shacks/Stairs.glb" -1408.42981 17.1847477 -169.823166 1.20000005 1 0.975000024 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit115" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -1403.19177 18.1847477 -161.081177 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit62" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" -1401.36902 18.1847477 -169.894684 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit116" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -1406.12964 18.1847477 -161.688736 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit147" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1404.30688 18.1847477 -170.502243 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit117" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -1409.06738 18.1847477 -162.29631 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit148" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1407.24463 18.1847477 -171.109818 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit149" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1412.00525 18.1847477 -162.90387 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit150" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1410.1825 18.1847477 -171.717377 0.00999999978 3 3 258.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit118" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -1401.41907 18.1847477 -162.246323 0.00999999978 3 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit151" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1413.17029 18.1847477 -164.676559 0.00999999978 3 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_1_kit119" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -1400.81152 18.1847477 -165.184158 0.00999999978 3 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit152" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1412.56274 18.1847477 -167.614395 0.00999999978 3 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_window_2_kit153" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -1400.20398 18.1847477 -168.121994 0.00999999978 3 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_kit63" 4 "assets/verda/urban/Building Parts/stuco_wall.glb" -1411.9552 18.1847477 -170.552231 0.00999999978 3 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit77" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -1401.7229 18.1847477 -160.777405 1 3 1 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit78" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -1399.90015 18.1847477 -169.590912 1 3 1 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit79" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -1413.47412 18.1847477 -163.207642 1 3 1 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_stuco_wall_corner_kit80" 4 "assets/verda/urban/Building Parts/stuco_wall_corner.glb" -1411.65137 18.1847477 -172.021149 1 3 1 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit793" 4 "assets/verda/kit/floor_slab_3x3.glb" -1402.88794 18.0847473 -162.550095 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit794" 4 "assets/verda/kit/floor_slab_3x3.glb" -1402.2804 18.0847473 -165.48793 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit795" 4 "assets/verda/kit/floor_slab_3x3.glb" -1401.67285 18.0847473 -168.425766 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit796" 4 "assets/verda/kit/floor_slab_3x3.glb" -1405.82581 18.0847473 -163.157654 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit797" 4 "assets/verda/kit/floor_slab_3x3.glb" -1405.21826 18.0847473 -166.09549 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit798" 4 "assets/verda/kit/floor_slab_3x3.glb" -1408.76355 18.0847473 -163.765228 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit799" 4 "assets/verda/kit/floor_slab_3x3.glb" -1408.15601 18.0847473 -166.703064 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit800" 4 "assets/verda/kit/floor_slab_3x3.glb" -1411.70142 18.0847473 -164.372787 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit801" 4 "assets/verda/kit/floor_slab_3x3.glb" -1411.09387 18.0847473 -167.310623 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit802" 4 "assets/verda/kit/floor_slab_3x3.glb" -1410.48633 18.0847473 -170.248459 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit553" 4 "assets/verda/kit/roof_slab_3x3.glb" -1402.88794 21.0847473 -162.550095 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit554" 4 "assets/verda/kit/roof_slab_3x3.glb" -1402.2804 21.0847473 -165.48793 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit555" 4 "assets/verda/kit/roof_slab_3x3.glb" -1401.67285 21.0847473 -168.425766 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit556" 4 "assets/verda/kit/roof_slab_3x3.glb" -1405.82581 21.0847473 -163.157654 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit557" 4 "assets/verda/kit/roof_slab_3x3.glb" -1405.21826 21.0847473 -166.09549 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit558" 4 "assets/verda/kit/roof_slab_3x3.glb" -1404.61072 21.0847473 -169.033325 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit559" 4 "assets/verda/kit/roof_slab_3x3.glb" -1408.76355 21.0847473 -163.765228 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit560" 4 "assets/verda/kit/roof_slab_3x3.glb" -1408.15601 21.0847473 -166.703064 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit561" 4 "assets/verda/kit/roof_slab_3x3.glb" -1407.54846 21.0847473 -169.6409 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit562" 4 "assets/verda/kit/roof_slab_3x3.glb" -1411.70142 21.0847473 -164.372787 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit563" 4 "assets/verda/kit/roof_slab_3x3.glb" -1411.09387 21.0847473 -167.310623 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit564" 4 "assets/verda/kit/roof_slab_3x3.glb" -1410.48633 21.0847473 -170.248459 3 0.100000001 3 168.315643 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_barn_kit5" 0 "assets/verda/ranch/barn.glb" -1413.6394 15.0847483 -122.905914 14.6000004 12.8999996 22.7999992 78.3156586 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_grain_bin_kit9" 0 "assets/verda/ranch/grain_bin.glb" -1437.27539 15.0847483 -107.370712 6.4000001 8.89999962 6.5999999 78.3156586 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_grain_bin_kit10" 0 "assets/verda/ranch/grain_bin.glb" -1427.48267 15.0847483 -105.345512 6.4000001 8.89999962 6.5999999 78.3156586 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_windmill_kit5" 9 "assets/verda/ranch/windmill.glb" -1400.94983 15.0847483 -204.016968 5.5999999 10.8999996 5.4000001 168.315659 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit154" 9 "assets/verda/ranch/fence_8m.glb" -1431.68103 15.0847483 -233.178253 8.10000038 1.45000005 0.200000003 -101.684341 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit155" 9 "assets/verda/ranch/fence_8m.glb" -1433.16626 15.0847483 -225.996872 8.10000038 1.45000005 0.200000003 -101.684341 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit156" 9 "assets/verda/ranch/fence_8m.glb" -1434.65137 15.0847483 -218.815491 8.10000038 1.45000005 0.200000003 -101.684341 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit157" 9 "assets/verda/ranch/fence_8m.glb" -1436.13647 15.0847483 -211.634094 8.10000038 1.45000005 0.200000003 -101.684341 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit158" 9 "assets/verda/ranch/fence_8m.glb" -1437.62158 15.0847483 -204.452713 8.10000038 1.45000005 0.200000003 -101.684341 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit159" 9 "assets/verda/ranch/fence_8m.glb" -1439.10681 15.0847483 -197.271332 8.10000038 1.45000005 0.200000003 -101.684341 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit160" 9 "assets/verda/ranch/fence_8m.glb" -1361.1825 15.0847483 -218.550186 8.10000038 1.45000005 0.200000003 -101.684425 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit161" 9 "assets/verda/ranch/fence_8m.glb" -1362.68701 15.0847483 -211.275543 8.10000038 1.45000005 0.200000003 -101.684425 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit162" 9 "assets/verda/ranch/fence_8m.glb" -1364.19141 15.0847483 -204.000885 8.10000038 1.45000005 0.200000003 -101.684425 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit163" 9 "assets/verda/ranch/fence_8m.glb" -1365.6958 15.0847483 -196.726227 8.10000038 1.45000005 0.200000003 -101.684425 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit164" 9 "assets/verda/ranch/fence_8m.glb" -1367.20032 15.0847483 -189.451584 8.10000038 1.45000005 0.200000003 -101.684425 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit165" 9 "assets/verda/ranch/fence_8m.glb" -1368.70471 15.0847483 -182.176941 8.10000038 1.45000005 0.200000003 -101.684425 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit166" 9 "assets/verda/ranch/fence_8m.glb" -1370.20923 15.0847483 -174.902283 8.10000038 1.45000005 0.200000003 -101.684425 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit167" 9 "assets/verda/ranch/fence_8m.glb" -1427.02136 15.0847483 -235.958878 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit168" 9 "assets/verda/ranch/fence_8m.glb" -1419.18713 15.0847483 -234.338715 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit169" 9 "assets/verda/ranch/fence_8m.glb" -1411.35291 15.0847483 -232.718552 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit170" 9 "assets/verda/ranch/fence_8m.glb" -1403.51868 15.0847483 -231.098389 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit171" 9 "assets/verda/ranch/fence_8m.glb" -1395.68433 15.0847483 -229.478241 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit172" 9 "assets/verda/ranch/fence_8m.glb" -1387.8501 15.0847483 -227.858078 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit173" 9 "assets/verda/ranch/fence_8m.glb" -1380.01587 15.0847483 -226.237915 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit174" 9 "assets/verda/ranch/fence_8m.glb" -1372.18164 15.0847483 -224.617752 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit175" 9 "assets/verda/ranch/fence_8m.glb" -1364.34741 15.0847483 -222.997589 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit176" 9 "assets/verda/ranch/fence_8m.glb" -1437.55249 15.0847483 -185.036316 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit177" 9 "assets/verda/ranch/fence_8m.glb" -1429.71826 15.0847483 -183.416153 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit178" 9 "assets/verda/ranch/fence_8m.glb" -1421.88403 15.0847483 -181.79599 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit179" 9 "assets/verda/ranch/fence_8m.glb" -1414.0498 15.0847483 -180.175827 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit180" 9 "assets/verda/ranch/fence_8m.glb" -1406.21558 15.0847483 -178.555664 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit181" 9 "assets/verda/ranch/fence_8m.glb" -1398.38123 15.0847483 -176.935516 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit182" 9 "assets/verda/ranch/fence_8m.glb" -1390.547 15.0847483 -175.315353 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit183" 9 "assets/verda/ranch/fence_8m.glb" -1382.71277 15.0847483 -173.69519 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit184" 9 "assets/verda/ranch/fence_8m.glb" -1374.87854 15.0847483 -172.075027 8.10000038 1.45000005 0.200000003 -11.6843319 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit185" 9 "assets/verda/ranch/fence_8m.glb" -1461.39343 15.0847483 -198.136078 8.10000038 1.45000005 0.200000003 -101.684044 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit186" 9 "assets/verda/ranch/fence_8m.glb" -1463.82373 15.0847483 -186.384705 8.10000038 1.45000005 0.200000003 -101.684029 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit187" 9 "assets/verda/ranch/fence_8m.glb" -1445.31995 15.0847483 -196.854309 8.10000038 1.45000005 0.200000003 -101.684044 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit188" 9 "assets/verda/ranch/fence_8m.glb" -1447.95276 15.0847483 -184.123657 8.10000038 1.45000005 0.200000003 -101.684036 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit189" 9 "assets/verda/ranch/fence_8m.glb" -1456.66626 15.0847483 -201.243103 8.10000038 1.45000005 0.200000003 -11.6843758 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit190" 9 "assets/verda/ranch/fence_8m.glb" -1448.83203 15.0847483 -199.622955 8.10000038 1.45000005 0.200000003 -11.6843758 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit191" 9 "assets/verda/ranch/fence_8m.glb" -1460.71667 15.0847483 -181.657501 8.10000038 1.45000005 0.200000003 -11.6843758 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit192" 9 "assets/verda/ranch/fence_8m.glb" -1452.88245 15.0847483 -180.037354 8.10000038 1.45000005 0.200000003 -11.6843758 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_loading_chute_kit5" 9 "assets/verda/ranch/loading_chute.glb" -1463.88171 15.0847483 -192.523666 1.29999995 3.20000005 4.9000001 258.315674 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_feed_bunk_kit5" 9 "assets/verda/ranch/feed_bunk.glb" -1426.47791 15.0847483 -199.084625 4 0.800000012 0.899999976 168.315659 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit9" 9 "assets/verda/ranch/water_trough.glb" -1422.22229 15.0847483 -190.035278 2.20000005 0.699999988 2.20000005 78.3156586 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit10" 9 "assets/verda/ranch/water_trough.glb" -1457.54309 15.0847483 -187.128159 2.20000005 0.699999988 2.20000005 78.3156586 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit17" 9 "assets/verda/ranch/hay_bale.glb" -1424.41016 15.0847483 -110.326515 1.5 1.5 1.5 168.315659 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit18" 9 "assets/verda/ranch/hay_bale.glb" -1424.75452 15.0847483 -108.661736 1.5 1.5 1.5 168.315659 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit19" 9 "assets/verda/ranch/hay_bale.glb" -1422.64746 15.0847483 -109.961975 1.5 1.5 1.5 168.315659 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit20" 9 "assets/verda/ranch/hay_bale.glb" -1422.99182 15.0847483 -108.297195 1.5 1.5 1.5 168.315659 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_crop_corn_kit37" 5 "assets/verda/ranch/crop_corn.glb" -1394.52551 15.0847483 -106.699112 12 2.29999995 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit38" 5 "assets/verda/ranch/crop_corn.glb" -1382.77417 15.0847483 -104.268875 12 2.29999995 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit39" 5 "assets/verda/ranch/crop_corn.glb" -1371.02283 15.0847483 -101.838631 12 2.29999995 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit40" 5 "assets/verda/ranch/crop_corn.glb" -1396.95569 15.0847483 -94.9477539 12 2.29999995 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit41" 5 "assets/verda/ranch/crop_corn.glb" -1385.20435 15.0847483 -92.5175171 12 2.29999995 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit42" 5 "assets/verda/ranch/crop_corn.glb" -1373.453 15.0847483 -90.0872726 12 2.29999995 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit43" 5 "assets/verda/ranch/crop_corn.glb" -1399.38599 15.0847483 -83.1963959 12 2.29999995 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit44" 5 "assets/verda/ranch/crop_corn.glb" -1387.63464 15.0847483 -80.7661591 12 2.29999995 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_corn_kit45" 5 "assets/verda/ranch/crop_corn.glb" -1375.8833 15.0847483 -78.3359146 12 2.29999995 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit25" 5 "assets/verda/ranch/crop_wheat.glb" -1371.43298 15.0847483 -159.108551 12 0.949999988 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit26" 5 "assets/verda/ranch/crop_wheat.glb" -1359.68164 15.0847483 -156.678314 12 0.949999988 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit27" 5 "assets/verda/ranch/crop_wheat.glb" -1373.86328 15.0847483 -147.357193 12 0.949999988 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit28" 5 "assets/verda/ranch/crop_wheat.glb" -1362.11194 15.0847483 -144.926956 12 0.949999988 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit29" 5 "assets/verda/ranch/crop_wheat.glb" -1376.29346 15.0847483 -135.605835 12 0.949999988 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_crop_wheat_kit30" 5 "assets/verda/ranch/crop_wheat.glb" -1364.54211 15.0847483 -133.175598 12 0.949999988 12 78.3156586 255 255 255 255 80 80 80 255 0
+ASSET "creator_ranch_fence_8m_kit193" 9 "assets/verda/ranch/fence_8m.glb" -1431.0918 6 391.669403 8.10000038 1.45000005 0.200000003 -68.4922867 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit194" 9 "assets/verda/ranch/fence_8m.glb" -1428.40308 6 398.492126 8.10000038 1.45000005 0.200000003 -68.4922867 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit195" 9 "assets/verda/ranch/fence_8m.glb" -1425.7146 6 405.31485 8.10000038 1.45000005 0.200000003 -68.4922867 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit196" 9 "assets/verda/ranch/fence_8m.glb" -1421.55933 6 415.859039 8.10000038 1.45000005 0.200000003 -68.4922867 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit197" 9 "assets/verda/ranch/fence_8m.glb" -1418.87085 6 422.681763 8.10000038 1.45000005 0.200000003 -68.4922867 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit198" 9 "assets/verda/ranch/fence_8m.glb" -1416.18213 6 429.504486 8.10000038 1.45000005 0.200000003 -68.4922867 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit199" 9 "assets/verda/ranch/fence_8m.glb" -1401.19763 6 380.247375 8.10000038 1.45000005 0.200000003 -68.4922485 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit200" 9 "assets/verda/ranch/fence_8m.glb" -1398.26465 6 387.690369 8.10000038 1.45000005 0.200000003 -68.4922485 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit201" 9 "assets/verda/ranch/fence_8m.glb" -1395.33167 6 395.133301 8.10000038 1.45000005 0.200000003 -68.4922485 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit202" 9 "assets/verda/ranch/fence_8m.glb" -1392.39856 6 402.576294 8.10000038 1.45000005 0.200000003 -68.4922485 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit203" 9 "assets/verda/ranch/fence_8m.glb" -1389.46558 6 410.019226 8.10000038 1.45000005 0.200000003 -68.4922485 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit204" 9 "assets/verda/ranch/fence_8m.glb" -1386.53259 6 417.462219 8.10000038 1.45000005 0.200000003 -68.4922485 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit205" 9 "assets/verda/ranch/fence_8m.glb" -1428.7146 6 386.791534 8.10000038 1.45000005 0.200000003 21.5078335 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit206" 9 "assets/verda/ranch/fence_8m.glb" -1421.27161 6 383.85849 8.10000038 1.45000005 0.200000003 21.5078335 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit207" 9 "assets/verda/ranch/fence_8m.glb" -1413.82861 6 380.925476 8.10000038 1.45000005 0.200000003 21.5078335 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit208" 9 "assets/verda/ranch/fence_8m.glb" -1406.38562 6 377.992432 8.10000038 1.45000005 0.200000003 21.5078335 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit209" 9 "assets/verda/ranch/fence_8m.glb" -1411.11646 6 431.44931 8.10000038 1.45000005 0.200000003 21.5078335 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit210" 9 "assets/verda/ranch/fence_8m.glb" -1403.67346 6 428.516266 8.10000038 1.45000005 0.200000003 21.5078335 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit211" 9 "assets/verda/ranch/fence_8m.glb" -1396.23047 6 425.583252 8.10000038 1.45000005 0.200000003 21.5078335 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_fence_8m_kit212" 9 "assets/verda/ranch/fence_8m.glb" -1388.78748 6 422.650208 8.10000038 1.45000005 0.200000003 21.5078335 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_loading_chute_kit6" 9 "assets/verda/ranch/loading_chute.glb" -1426.70728 6 411.796814 1.29999995 3.20000005 4.9000001 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_feed_bunk_kit6" 9 "assets/verda/ranch/feed_bunk.glb" -1402.71948 6 387.296143 4 0.800000012 0.899999976 111.507851 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_feed_bunk_kit7" 9 "assets/verda/ranch/feed_bunk.glb" -1397.58667 6 400.32132 4 0.800000012 0.899999976 111.507851 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_feed_bunk_kit8" 9 "assets/verda/ranch/feed_bunk.glb" -1392.45386 6 413.346497 4 0.800000012 0.899999976 111.507851 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit11" 9 "assets/verda/ranch/water_trough.glb" -1418.33862 6 391.301453 2.20000005 0.699999988 2.20000005 111.507851 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit12" 9 "assets/verda/ranch/water_trough.glb" -1406.60645 6 421.073303 2.20000005 0.699999988 2.20000005 111.507851 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit21" 9 "assets/verda/ranch/hay_bale.glb" -1410.50146 6 383.913696 1.5 1.5 1.5 111.507851 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit22" 9 "assets/verda/ranch/hay_bale.glb" -1409.87817 6 385.495331 1.5 1.5 1.5 111.507851 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit23" 9 "assets/verda/ranch/hay_bale.glb" -1409.25488 6 387.076935 1.5 1.5 1.5 111.507851 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit24" 9 "assets/verda/ranch/hay_bale.glb" -1408.82678 6 383.253754 1.5 1.5 1.5 111.507851 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit25" 9 "assets/verda/ranch/hay_bale.glb" -1408.20349 6 384.835388 1.5 1.5 1.5 111.507851 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit26" 9 "assets/verda/ranch/hay_bale.glb" -1407.5802 6 386.416992 1.5 1.5 1.5 111.507851 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit108" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -1382.63159 6.0999999 380.992462 0.00999999978 3 3 381.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit109" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -1388.21387 6.0999999 383.19223 0.00999999978 3 3 381.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit110" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -1381.53174 6.0999999 383.783569 0.00999999978 3 3 381.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit111" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -1387.11401 6.0999999 385.983337 0.00999999978 3 3 381.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_door_frame_kit12" 4 "assets/verda/urban/Building Parts/brick_wall_door_frame.glb" -1380.43188 6.0999999 386.574646 0.00999999978 3 3 381.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit101" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -1386.01416 6.0999999 388.774414 0.00999999978 3 3 381.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit112" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -1379.33203 6.0999999 389.365753 0.00999999978 3 3 381.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_kit63" 4 "assets/verda/urban/Building Parts/brick_wall.glb" -1384.91431 6.0999999 391.565521 0.00999999978 3 3 381.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_1_kit102" 4 "assets/verda/urban/Building Parts/brick_wall_window_1.glb" -1384.57727 6.0999999 380.14682 0.00999999978 3 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit113" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -1380.17761 6.0999999 391.311249 0.00999999978 3 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit114" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -1387.36829 6.0999999 381.246735 0.00999999978 3 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_window_2_kit115" 4 "assets/verda/urban/Building Parts/brick_wall_window_2.glb" -1382.96863 6.0999999 392.411163 0.00999999978 3 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit61" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -1383.18164 6.0999999 379.596893 1 3 1 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit62" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -1388.76392 6.0999999 381.796661 1 3 1 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit63" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -1378.78198 6.0999999 390.761322 1 3 1 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_building_parts_brick_wall_corner_kit64" 4 "assets/verda/urban/Building Parts/brick_wall_corner.glb" -1384.36426 6.0999999 392.96109 1 3 1 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit803" 4 "assets/verda/kit/floor_slab_3x3.glb" -1384.02722 6 381.542389 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit804" 4 "assets/verda/kit/floor_slab_3x3.glb" -1386.81824 6 382.642303 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit805" 4 "assets/verda/kit/floor_slab_3x3.glb" -1382.92737 6 384.333496 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit806" 4 "assets/verda/kit/floor_slab_3x3.glb" -1385.71838 6 385.433411 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit807" 4 "assets/verda/kit/floor_slab_3x3.glb" -1381.82751 6 387.124573 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit808" 4 "assets/verda/kit/floor_slab_3x3.glb" -1384.61853 6 388.224487 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit809" 4 "assets/verda/kit/floor_slab_3x3.glb" -1380.72766 6 389.91568 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_floor_slab_kit810" 4 "assets/verda/kit/floor_slab_3x3.glb" -1383.51868 6 391.015594 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit565" 4 "assets/verda/kit/roof_slab_3x3.glb" -1384.02722 9 381.542389 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit566" 4 "assets/verda/kit/roof_slab_3x3.glb" -1386.81824 9 382.642303 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit567" 4 "assets/verda/kit/roof_slab_3x3.glb" -1382.92737 9 384.333496 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit568" 4 "assets/verda/kit/roof_slab_3x3.glb" -1385.71838 9 385.433411 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit569" 4 "assets/verda/kit/roof_slab_3x3.glb" -1381.82751 9 387.124573 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit570" 4 "assets/verda/kit/roof_slab_3x3.glb" -1384.61853 9 388.224487 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit571" 4 "assets/verda/kit/roof_slab_3x3.glb" -1380.72766 9 389.91568 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
+ASSET "creator_verda_kit_roof_slab_kit572" 4 "assets/verda/kit/roof_slab_3x3.glb" -1383.51868 9 391.015594 3 0.100000001 3 291.507843 255 255 255 255 80 80 80 255 1
 MARKER "creator_marker_loot_spawn_general_training" 0 4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 0.5 0.5 0.5 0 1
@@ -5285,6 +6041,17 @@ MARKER "creator_marker_building_purpose_kit_161" 4 1754 6.94999981 -262.5 1.2000
 MARKER "creator_marker_building_purpose_kit_162" 4 315.5 6.94999981 1728 1.20000005 2.20000005 1.20000005 90 1
 MARKER "creator_marker_building_purpose_kit_163" 4 -1612.5 15.0073662 446 1.20000005 2.20000005 1.20000005 90 1
 MARKER "creator_marker_building_purpose_kit_164" 4 -17 0.400000006 -26 1.20000005 2.20000005 1.20000005 270 1
+MARKER "creator_marker_building_purpose_kit_165" 4 -70 6.0999999 -534.299988 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_166" 4 -62.9000015 0 -575 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_167" 4 -431.265991 6.0999999 -1504.81104 1.20000005 2.20000005 1.20000005 -81.2983093 1
+MARKER "creator_marker_building_purpose_kit_168" 4 -389.960297 0 -1503.95032 1.20000005 2.20000005 1.20000005 8.70169067 1
+MARKER "creator_marker_building_purpose_kit_169" 4 702.477966 12.6150131 -232.367371 1.20000005 2.20000005 1.20000005 -77.1252823 1
+MARKER "creator_marker_building_purpose_kit_170" 4 743.736816 0 -234.514664 1.20000005 2.20000005 1.20000005 12.8747253 1
+MARKER "creator_marker_building_purpose_kit_171" 4 -37.7591553 6.0999999 1421.32751 1.20000005 2.20000005 1.20000005 -87.6244049 1
+MARKER "creator_marker_building_purpose_kit_172" 4 3.20013094 0 1426.73462 1.20000005 2.20000005 1.20000005 2.37559509 1
+MARKER "creator_marker_building_purpose_kit_173" 4 -1408.82434 15.1847486 -163.471451 1.20000005 2.20000005 1.20000005 168.315643 1
+MARKER "creator_marker_building_purpose_kit_174" 4 -1424.01978 0 -125.052628 1.20000005 2.20000005 1.20000005 258.315674 1
+MARKER "creator_marker_building_purpose_kit_175" 4 -1381.54834 6.0999999 387.014587 1.20000005 2.20000005 1.20000005 291.507843 1
 PURPOSE "creator_marker_building_purpose_kit_1" 1
 PURPOSE "creator_marker_building_purpose_kit_2" 1
 PURPOSE "creator_marker_building_purpose_kit_3" 1
@@ -5449,6 +6216,17 @@ PURPOSE "creator_marker_building_purpose_kit_161" 7
 PURPOSE "creator_marker_building_purpose_kit_162" 7
 PURPOSE "creator_marker_building_purpose_kit_163" 7
 PURPOSE "creator_marker_building_purpose_kit_164" 7
+PURPOSE "creator_marker_building_purpose_kit_165" 1
+PURPOSE "creator_marker_building_purpose_kit_166" 11
+PURPOSE "creator_marker_building_purpose_kit_167" 1
+PURPOSE "creator_marker_building_purpose_kit_168" 11
+PURPOSE "creator_marker_building_purpose_kit_169" 1
+PURPOSE "creator_marker_building_purpose_kit_170" 11
+PURPOSE "creator_marker_building_purpose_kit_171" 1
+PURPOSE "creator_marker_building_purpose_kit_172" 11
+PURPOSE "creator_marker_building_purpose_kit_173" 1
+PURPOSE "creator_marker_building_purpose_kit_174" 11
+PURPOSE "creator_marker_building_purpose_kit_175" 11
 SETTLEMENT "capital_verda" "Verda" 0 0 0 0 384 0 0
 ROAD 0 0 -166 0 0 -630 8 2
 ROAD 0 0 -630 0 0 -1170 8 2
@@ -6477,3 +7255,43 @@ MARKER "loot_spawn_weapons_sablovalo_8" 0 -893 7.43794107 1022 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_medical_sablovalo_9" 0 -924 7.38794088 1028 0.5 0.5 0.5 0 1
 MARKER "vehicle_spawn_police_hamlet_sablovalo_1" 3 -904.200012 7.28794098 1076 2 1.60000002 4.4000001 180 1
 MARKER "loot_spawn_general_bldg_213" 0 -892 7.38794088 1107 0.5 0.5 0.5 0 1
+SETTLEMENT "ranch_kampoj" "Ranĉo Verdaj Kampoj" -60.5 6 -551 0 6 0 0
+ROAD -5.5 0 -551 -60.5 0 -551 5 1
+ROAD 0 0 -551 -5.5 0 -551 5 1
+MARKER "vehicle_spawn_sxs_kampoj_1" 3 -55.5 6 -559 2 1.60000002 4.4000001 -90 1
+MARKER "loot_spawn_weapons_kampoj_1" 0 -69.5 6.4000001 -578 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_kampoj_2" 0 -78.5 6.4000001 -572 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_camp_kampoj_3" 0 -71.5 6.4000001 -531 0.5 0.5 0.5 0 1
+SETTLEMENT "ranch_montaro" "Ranĉo Montaro" -413.320953 6 -1497.9469 0 6 0 0
+ROAD -405 0 -1443.57996 -413.320953 0 -1497.9469 5 1
+ROAD -404.167572 0 -1438.14111 -405 0 -1443.57996 5 1
+MARKER "vehicle_spawn_sxs_montaro_1" 3 -404.656586 6 -1494.21484 2 1.60000002 4.4000001 -171.298309 1
+MARKER "loot_spawn_weapons_montaro_1" 0 -387.993317 6.4000001 -1510.9281 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_montaro_2" 0 -395.285858 6.4000001 -1518.91687 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_camp_montaro_3" 0 -434.754944 6.4000001 -1505.79456 0.5 0.5 0.5 0 1
+SETTLEMENT "ranch_sunlevigo" "Ranĉo Sunleviĝo" 720.874878 12.5150127 -226.827301 0 6 0 0
+ROAD 733.130005 0 -173.210007 720.874878 0 -226.827301 5 1
+ROAD 734.354614 0 -167.852478 733.130005 0 -173.210007 5 1
+MARKER "vehicle_spawn_sxs_sunlevigo_1" 3 729.787903 12.5150127 -223.735565 2 1.60000002 4.4000001 -167.125275 1
+MARKER "loot_spawn_weapons_sunlevigo_1" 0 745.190735 12.9150124 -241.617188 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_sunlevigo_2" 0 737.336182 12.9150124 -249.054001 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_camp_sunlevigo_3" 0 698.926697 12.9150124 -233.09436 0.5 0.5 0.5 0 1
+SETTLEMENT "ranch_kanoj" "Ranĉo Kanoj" -20.6797504 6 1430.1272 0 6 0 0
+ROAD -18.3999996 0 1485.07996 -20.6797504 0 1430.1272 5 1
+ROAD -18.1720734 0 1490.57483 -18.3999996 0 1485.07996 5 1
+MARKER "vehicle_spawn_sxs_kanoj_1" 3 -12.4793797 6 1434.79138 2 1.60000002 4.4000001 -177.624405 1
+MARKER "loot_spawn_weapons_kanoj_1" 0 5.92398024 6.4000001 1420.01587 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_kanoj_2" 0 -0.443908453 6.4000001 1411.27222 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_camp_kanoj_3" 0 -41.1184959 6.4000001 1419.9657 0.5 0.5 0.5 0 1
+SETTLEMENT "ranch_pinarbo" "Ranĉo Pinarbo" -1421.50964 15.0847483 -149.041397 0 6 0 0
+ROAD -1475.37 0 -160.179993 -1421.50964 0 -149.041397 5 1
+ROAD -1480.75305 0 -161.293243 -1475.37 0 -160.179993 5 1
+MARKER "vehicle_spawn_sxs_pinarbo_1" 3 -1428.02612 15.0847483 -142.219757 2 1.60000002 4.4000001 78.3156586 1
+MARKER "loot_spawn_weapons_pinarbo_1" 0 -1418.16406 15.4847479 -120.77816 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_pinarbo_2" 0 -1408.1355 15.4847479 -124.831154 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_camp_pinarbo_3" 0 -1406.68713 15.4847479 -166.399277 0.5 0.5 0.5 0 1
+SETTLEMENT "ranch_bovbazaro" "Bovbazaro" -1408.7511 6 404.720856 0 2 0 0
+ROAD -1431.07996 0 413.519989 -1424.56738 0 410.953583 6 1
+ROAD -1436.19849 0 415.537018 -1431.07996 0 413.519989 6 1
+MARKER "vehicle_spawn_semi_freight_1" 3 -1404.12292 6 443.741241 2 1.60000002 4.4000001 291.507843 1
+MARKER "vehicle_spawn_semi_cattle_1" 3 -1385.5155 6 436.40863 2 1.60000002 4.4000001 291.507843 1

@@ -29,5 +29,8 @@ int main(int argc, char** argv) {
               << (report.parliament ? "built" : "NOT built") << ", " << report.town_halls << " town halls, stadium ground "
               << (report.stadium_reserved ? "kept free" : "NOT reserved") << ", Stela Turo "
               << (report.stela_turo ? "built at " + std::to_string(static_cast<int>(report.stela_turo_at.x)) + ", " + std::to_string(static_cast<int>(report.stela_turo_at.z)) : std::string("NOT built")) << '\n';
+    std::cout << report.ranches.size() << " Vakero ranches at";
+    for (const auto& yard : report.ranches) std::cout << " (" << static_cast<int>(yard.x) << ", " << static_cast<int>(yard.z) << ")";
+    std::cout << "; stockyard " << (report.stockyard ? "built" : "NOT built") << '\n';
     return 0;
 }

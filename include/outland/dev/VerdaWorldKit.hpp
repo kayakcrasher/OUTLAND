@@ -25,6 +25,8 @@ struct WorldKitReport {
     bool hospital{false};
     bool parliament{false}, stadium_reserved{false}, stela_turo{false};
     Vector3 stela_turo_at{};
+    std::vector<Vector3> ranches;     // each Vakero ranch's yard
+    bool stockyard{false};
     int town_halls{0};
     std::vector<KitBuilding> enterable;
     std::vector<Vector3> skipped;     // centres of lots left empty because something was there

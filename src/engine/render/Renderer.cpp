@@ -13,6 +13,8 @@
 #include "outland/game/casino/PokerTable.hpp"
 #include "outland/game/mafia/Mafio.hpp"
 #include "outland/game/life/WalkingMan.hpp"
+#include "outland/game/ranch/Ranches.hpp"
+#include "outland/game/freight/Freight.hpp"
 #include "outland/game/mafia/MafioRenderer.hpp"
 #include "outland/game/services/EmergencyServices.hpp"
 #include "outland/game/ZoneWall.hpp"
@@ -588,10 +590,39 @@ void Renderer::run() {
     double match_time=0;
     // Paul Acosta, "the walking man": Ruldomaro to the casino and the bar and home again (Explore).
     game::life::WalkingMan walking_man;
-    mafio.set_outsiders([&](int a,int b,double now){return walking_man.hostile_to(a,b,now);});
+    // The Vakeros on their ranches, their cattle and side-by-sides; the big rigs (Explore).
+    game::ranch::Ranches ranches;
+    game::freight::Freight freight;
+    std::vector<characters::AnimationController> ranch_seats; // drivers' idle
+    mafio.set_outsiders([&](int a,int b,double now){return walking_man.hostile_to(a,b,now) || ranches.hostile_to(a,b,now);});
     bot_drivers.reserve(std::string(game::life::WalkingMan::car_marker));
+    bot_drivers.reserve("vehicle_spawn_sxs_");
+    bot_drivers.reserve("vehicle_spawn_semi_");
+    // A cattleman hat on a head (the crown from the body's pose): its band ~10 cm below the top.
+    const auto draw_cowboy_hat=[&](const characters::HeldGun& head) {
+        Model* hat=get_world_asset_model("assets/verda/ranch/cowboy_hat.glb",character_registry);
+        if(!hat || !head.hat) return;
+        const Vector3 up=Vector3Normalize(head.crown_up);
+        Vector3 forward=Vector3Subtract(head.crown_forward,Vector3Scale(up,Vector3DotProduct(head.crown_forward,up)));
+        if(Vector3Length(forward)<1e-3F) return;
+        forward=Vector3Normalize(forward);
+        const Vector3 right=Vector3CrossProduct(up,forward);
+        // A little back from the head-top joint (heads are deeper behind it), sized for hair.
+        constexpr float size=1.12F;
+        const Vector3 at=Vector3Subtract(Vector3Subtract(head.crown,Vector3Scale(up,.125F)),Vector3Scale(forward,.025F));
+        Matrix m=MatrixIdentity();
+        m.m0=right.x*size;m.m1=right.y*size;m.m2=right.z*size;
+        m.m4=up.x*size;m.m5=up.y*size;m.m6=up.z*size;
+        m.m8=forward.x*size;m.m9=forward.y*size;m.m10=forward.z*size;
+        m.m12=at.x;m.m13=at.y;m.m14=at.z;
+        rlPushMatrix();
+        rlMultMatrixf(MatrixToFloat(m));
+        DrawModel(*hat,{0,0,0},1,WHITE);
+        rlPopMatrix();
+    };
     const auto krimulo_hostile=[&](int bot){return !mafio.active() || mafio.provoked(mafio.gang_of(bot),match_time) ||
-        walking_man.hostile_to(bot,game::ai::BattleRoyaleBots::player_id,match_time);};
+        walking_man.hostile_to(bot,game::ai::BattleRoyaleBots::player_id,match_time) ||
+        ranches.hostile_to(bot,game::ai::BattleRoyaleBots::player_id,match_time);};
 
     // Combat feedback (numbers, kill marker, hurt flash and arrow, shake) and frag grenades.
     game::combat::CombatFeedback combat_feedback;
@@ -758,7 +789,7 @@ void Renderer::run() {
         if((hit.kind==game::combat::HitKind::VehicleWindow || hit.kind==game::combat::HitKind::VehicleOccupant) &&
            hit.target>=0 && static_cast<std::size_t>(hit.target)<vehicles.vehicles().size()) {
             const int driver=bot_drivers.driver_of(vehicles.vehicles()[static_cast<std::size_t>(hit.target)].id);
-            if(driver>=0 && mafio.active()) {mafio.provoke(driver,match_time);walking_man.provoke(driver,match_time);}
+            if(driver>=0 && mafio.active()) {mafio.provoke(driver,match_time);walking_man.provoke(driver,match_time);ranches.provoke(driver,match_time);}
             if(driver>=0 && br_bots.damage_bot(driver,amount*.8F,hit.position,match_time)) pending_kills.push_back(hit.position);
         }
     });
@@ -773,6 +804,7 @@ void Renderer::run() {
         if(body.bot>=0) {
             if(mafio.active()) mafio.provoke(body.bot,match_time); // hurt a Krimulo: the gang shoots back
             walking_man.provoke(body.bot,match_time);             // or Paul Acosta: so does he
+            ranches.provoke(body.bot,match_time);                 // or a Vakero: the whole family
             killed=br_bots.damage_bot(body.bot,damage,attacker,match_time);
         }
         else if(npcs.damage(static_cast<std::size_t>(actor),damage,attacker)) {
@@ -981,6 +1013,8 @@ void Renderer::run() {
                 combat_world.set_training_range(game_mode == game::GameMode::DevLab);
                 vehicles.set_training_structure(game_mode == game::GameMode::DevLab);
                 if(bus_line.running()) bus_line.stop(verda_region,vehicles);
+                if(freight.running()) freight.stop(verda_region,vehicles);
+                ranches.clear(vehicles);
                 vehicles.reconcile(verda_region);
                 if(game_mode==game::GameMode::BattleRoyale) {
                     match_fleet=vehicles.checkpoint(verda_region);match_fleet_active=true;fleet_was_dirty=vehicle_dirty;
@@ -1083,6 +1117,14 @@ void Renderer::run() {
                         const Vector3 at=walking_man.position(br_bots);
                         npcs.spawn_bot(walking_man.bot(),game::life::WalkingMan::character,at,0);
                     }
+                    // The Vakeros on their ranches (each in their own clothes and hat), then the big rigs.
+                    ranches.start(verda_region,br_bots,vehicles,&character_registry,session_seed,island_life.clock());
+                    for(const auto& v:ranches.vakeros())
+                        if(const auto* bot=br_bots.find(v.bot);bot && !v.character.empty()) npcs.spawn_bot(v.bot,v.character,bot->position(),bot->yaw());
+                    if(freight.build(verda_region,vehicles,bus_line,&ranches,&character_registry,session_seed)) freight.start(verda_region,vehicles);
+                    TraceLog(LOG_INFO,"OUTLAND ranches: %d ranches, %d Vakeros, %d cattle rigs/supply rigs %d, %d trailer reversals",
+                             static_cast<int>(ranches.ranches().size()),static_cast<int>(ranches.vakeros().size()),
+                             static_cast<int>(freight.rigs().size()),freight.running() ? 1 : 0,freight.reversals());
                     br_bots.sync_bodies(npcs,&character_registry);
                     walking_man.dress(npcs);
                     services.start(vehicles,verda_region,&character_registry);
@@ -2215,6 +2257,8 @@ void Renderer::run() {
             island_life.hear(sound_bus);
             island_life.update(dt,npc_context.player_position,npcs,vehicle_paused);
         }
+        if(freight.running()) freight.update(vehicle_paused ? 0.0F : dt,verda_region,vehicles,Vector3Subtract(player.position,{0,1,0}),&npcs,&ranches);
+        freight.follow_trailers(verda_region,vehicles);
         if(bus_line.running()) {
             bus_line.update(vehicle_paused ? 0.0F : dt,verda_region,vehicles,Vector3Subtract(player.position,{0,1,0}),&npcs);
             for(std::size_t i=0;i<bus_drivers.size() && i<bus_line.buses().size();++i) bus_drivers[i].advance(characters::AnimationAction::Idle,dt,0);
@@ -2319,6 +2363,14 @@ void Renderer::run() {
                 frame.aim_origin=gun_muzzle;frame.aim_direction=gun_direction;
                 if(!player_health.alive()) mafio.forgive();
                 const double bots_t0=GetTime();
+                if(ranches.active()) {
+                    game::ranch::RanchFrame ranch_frame;
+                    ranch_frame.dt=dt;ranch_frame.now=match_time;ranch_frame.clock=island_life.clock();ranch_frame.player_feet=feet;
+                    ranch_frame.player_alive=player_health.alive();ranch_frame.player_fired=frame.player_fired;
+                    ranch_frame.aim_origin=gun_muzzle;ranch_frame.aim_direction=gun_direction;
+                    if(const auto* driven=vehicles.driver()) ranch_frame.player_vehicle=driven->id;
+                    ranches.update(ranch_frame,br_bots,vehicles,verda_region);
+                }
                 if(walking_man.active()) {
                     game::life::WalkingManFrame paul;
                     paul.dt=dt;paul.now=match_time;paul.clock=island_life.clock();paul.player_feet=feet;
@@ -2568,7 +2620,59 @@ void Renderer::run() {
             characters::BodyPose sitting;sitting.seated=true;
             character_renderer.draw(bus.driver,{seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y,1,&bus_drivers[i],sitting);
         }
+        // Drivers at the wheel of the side-by-sides and the big rigs (Vakeros in their hats).
+        {
+            std::vector<std::pair<std::string,std::pair<std::string,bool>>> seated;
+            for(const auto& d:ranches.drivers()) seated.push_back({d.vehicle,{d.character,d.hat}});
+            for(const auto& d:freight.drivers()) seated.push_back({d.vehicle,{d.character,d.hat}});
+            ranch_seats.resize(seated.size());
+            for(std::size_t i=0;i<seated.size();++i) {
+                const auto* asset=vehicles.asset(verda_region,seated[i].first);
+                const auto* type=asset ? vehicles.definition(*asset) : nullptr;
+                if(!asset || !type || seated[i].second.first.empty() || Vector3DistanceSqr(asset->position,camera.position)>110*110) continue;
+                const float scale=asset->size.x/type->width;
+                const auto seat=game::vehicles::VehicleSystem::world_point(type->seat,asset->position,asset->rotation_y,scale);
+                characters::BodyPose sitting;sitting.seated=true;
+                ranch_seats[i].advance(characters::AnimationAction::Idle,dt,0);
+                characters::HeldGun crown;
+                character_renderer.draw(seated[i].second.first,{seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y,1,&ranch_seats[i],sitting,&crown);
+                if(crown.hat && seated[i].second.second) draw_cowboy_hat(crown);
+            }
+        }
         vehicle_renderer.draw(vehicles,verda_region,camera.position);
+        // The big rigs' trailers, hitched to their tractors.
+        for(const auto& trailer:freight.trailers()) {
+            if(Vector3DistanceSqr(trailer.centre,camera.position)>320*320) continue;
+            Model* model=get_world_asset_model(trailer.model,character_registry);
+            if(!model) continue;
+            rlPushMatrix();
+            rlTranslatef(trailer.centre.x,trailer.centre.y,trailer.centre.z);
+            rlRotatef(trailer.yaw,0,1,0);
+            rlRotatef(-trailer.pitch,1,0,0);
+            DrawModel(*model,{0,0,0},1,WHITE);
+            rlPopMatrix();
+        }
+        // Cattle: in the ranches' pastures and corrals, going up the chutes, and in the stockyard.
+        if(ranches.active()) {
+            Model* hereford=get_world_asset_model("assets/verda/ranch/cow_hereford.glb",character_registry);
+            Model* angus=get_world_asset_model("assets/verda/ranch/cow_angus.glb",character_registry);
+            const auto draw_cow=[&](const game::ranch::Cow& cow) {
+                if(cow.state==game::ranch::CowState::Gone || Vector3DistanceSqr(cow.position,camera.position)>240*240) return;
+                Model* model=cow.angus ? angus : hereford;
+                if(!model || !view.sphere({cow.position.x,cow.position.y+.8F,cow.position.z},1.6F)) return;
+                const bool dead=cow.state==game::ranch::CowState::Dead;
+                const float bob=dead ? 0.0F : .035F*std::abs(std::sin(cow.stride*2.2F));
+                rlPushMatrix();
+                rlTranslatef(cow.position.x,cow.position.y+bob,cow.position.z);
+                rlRotatef(cow.yaw,0,1,0);
+                if(dead) {rlTranslatef(.45F,.35F,0);rlRotatef(88,0,0,1);}
+                else rlRotatef(2.5F*std::sin(cow.stride*2.2F),0,0,1); // the walk's sway
+                DrawModel(*model,{0,0,0},1,WHITE);
+                rlPopMatrix();
+            };
+            for(const auto& ranch:ranches.ranches()) for(const auto& cow:ranch.herd) draw_cow(cow);
+            for(const auto& cow:ranches.stockyard().pen) draw_cow(cow);
+        }
         double sub_t3=GetTime();
         sign_renderer.draw(camera.position,camera.target,static_cast<float>(GetTime()));
         double sub_t4=GetTime();
@@ -2657,6 +2761,10 @@ void Renderer::run() {
 
         if(perf.enabled()) perf.mark(FrameStage::World,GetTime());
         // People hold what they carry: police their pistols, Battle Royale bots their loadout.
+        // Hats: the Vakeros' cattleman hats (game::ranch).
+        const auto draw_hat=[&](const characters::NpcInstance& actor,const characters::HeldGun& held) {
+            if(actor.bot>=0 && ranches.vakero(actor.bot) && actor.state!=characters::NpcState::Dead) draw_cowboy_hat(held);
+        };
         character_renderer.draw_npcs(npcs, camera.position, &view,
             [](const characters::NpcInstance& actor,characters::BodyPose& body) {
                 const int weapon=actor.weapon>=0 ? actor.weapon : actor.armed ? 0 : -1;
@@ -2667,9 +2775,12 @@ void Renderer::run() {
                 body.stock=gun.stock;body.support=gun.support;
                 if(actor.state==characters::NpcState::Wander) body.aim_pitch=-.45F; // low ready while walking
             },
-            [](const characters::NpcInstance& actor,const characters::HeldGun& held) {
-                const int weapon=actor.weapon>=0 ? actor.weapon : 0;
-                game::combat::CombatRenderer::draw_gun(held.grip,held.aim,held.up,static_cast<game::combat::WeaponId>(weapon),0,0,false);
+            [&](const characters::NpcInstance& actor,const characters::HeldGun& held) {
+                if(held.held) {
+                    const int weapon=actor.weapon>=0 ? actor.weapon : 0;
+                    game::combat::CombatRenderer::draw_gun(held.grip,held.aim,held.up,static_cast<game::combat::WeaponId>(weapon),0,0,false);
+                }
+                if(held.hat) draw_hat(actor,held);
             });
         // Their muzzles flash as they fire, so you see who is shooting at you.
         // No tracer lines (real rounds are not seen in flight); the muzzle flash shows the shooter.
@@ -2710,6 +2821,10 @@ void Renderer::run() {
                 body.aim_pitch=weapon_input.sprint ? -.55F : shot_pitch;
             }
             const auto held=character_renderer.draw_player(character_feet, player.yaw, body);
+#ifdef OUTLAND_DEV_TOOLS
+            // OUTLAND_DEV_HAT=1: the player wears a Vakero hat (to check how hats sit).
+            if(static const bool hat=[]{const char* v=std::getenv("OUTLAND_DEV_HAT");return v && *v=='1';}();hat && !scoped) draw_cowboy_hat(held);
+#endif
             if(held.held && !scoped) {
                 const auto aim=weapon_input.sprint ? held.aim : Vector3Normalize(Vector3Subtract(aim_point,held.grip));
                 game::combat::CombatRenderer::draw_gun(held.grip,aim,held.up,weapons.selected(),gun_reload,weapons.muzzle_flash(),false,gun_work,sight);
@@ -3073,6 +3188,31 @@ void Renderer::run() {
                 DrawTextEx(font,title.c_str(),{at.x-tw/2,at.y-16},15,1,angry ? Color{255,90,80,255} : Color{240,214,150,255});
                 DrawTextEx(font,sub.c_str(),{at.x-sw/2,at.y+1},13,1,Color{220,226,206,255});
                 break;
+            }
+            // Vakeros: name and ranch over each one close by (red when the family is after you).
+            if(ranches.active()) for(const auto& body:npcs.actors()) {
+                if(body.bot<0 || body.hidden || body.state==characters::NpcState::Dead) continue;
+                const auto* v=ranches.vakero(body.bot);
+                if(!v || Vector3Distance(body.position,camera.position)>20) continue;
+                const Vector3 over{body.position.x,body.position.y+2.25F,body.position.z};
+                if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))<=0) continue;
+                const Vector2 at=GetWorldToScreen(over,camera);
+                const bool angry=ranches.angry(v->ranch,match_time);
+                const std::string tag=std::string(angry ? "! " : "")+v->name+"  ·  Vakero";
+                const float tw=MeasureTextEx(font,tag.c_str(),15,1).x;
+                DrawRectangle(static_cast<int>(at.x-tw/2-5),static_cast<int>(at.y-2),static_cast<int>(tw+10),19,Fade(BLACK,.45F));
+                DrawTextEx(font,tag.c_str(),{at.x-tw/2,at.y},15,1,angry ? Color{255,90,80,255} : Color{226,190,120,255});
+            }
+            // News from the ranches and the big rigs.
+            for(int row=0;row<2;++row) {
+                const std::string& text=row==0 ? ranches.message() : freight.message();
+                const float time=row==0 ? ranches.message_time() : freight.message_time();
+                if(time<=0) continue;
+                const float alpha=std::clamp(time,0.0F,1.0F);
+                const float mw=MeasureTextEx(font,text.c_str(),18,1).x;
+                const int y=screen_height-(row==0 ? 312 : 348);
+                DrawRectangle(static_cast<int>(screen_width/2-mw/2-12),y-5,static_cast<int>(mw+24),28,Fade(Color{40,30,10,255},.65F*alpha));
+                DrawTextEx(font,text.c_str(),{screen_width/2-mw/2,static_cast<float>(y)},18,1,Fade(Color{240,214,150,255},alpha));
             }
             if(walking_man.message_time()>0) {
                 const float alpha=std::clamp(walking_man.message_time(),0.0F,1.0F);

@@ -59,6 +59,7 @@ void ZombieEcology::build(const world::VerdaRegion& region, const characters::Ch
     for (std::size_t s = 0; s < settlements.size(); ++s) {
         const auto& town = settlements[s];
         towns_.push_back(town.center);
+        if (town.id.starts_with("ranch_")) continue; // farms are not towns: no nests
         const bool capital = town.id.find("capital") != std::string::npos;
         const bool hamlet = town.id.starts_with("hamlet_"); // a few trailers: two nests
         const int wanted = town.infected > 0 ? std::clamp(town.infected / 6, 2, 12) : capital ? 8 : hamlet ? 2 : 4;
