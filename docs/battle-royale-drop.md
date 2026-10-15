@@ -79,6 +79,8 @@ roads and street trees draw up to 2.4 times further, and roads are lifted a litt
 far terrain does not swallow them.
 
 ## Rules
+- Everyone drops with **only a pistol** (a V9, loaded, and two spare magazines of 9mm): no
+  rifle, no grenades, no water. Everything else is found on the ground (`LootSession::start`).
 - The gas cannot touch you while you ride or fall (the route starts out over the sea); the first
   circle waits two minutes while the helicopters fly.
 - No shooting, reloading or vehicles until you land; looking around always works.

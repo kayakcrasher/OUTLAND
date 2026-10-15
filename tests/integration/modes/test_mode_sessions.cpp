@@ -77,8 +77,11 @@ int main() {
     fs::create_directories(fs::path(stale).parent_path());std::ofstream(stale)<<"old profile is deliberately incompatible";
     for(int match=0;match<2;++match) {
         weapons.reset(false);loot.start(GameMode::BattleRoyale,map,weapons);
-        assert(weapons.available() && weapons.ammo(combat::WeaponId::Rifle).loaded>0 && loot.inventory().count("rifle_ammo")>0);
-        assert(loot.inventory().count("water")>0 && loot.economy().money==0);
+        // Battle Royale drops with only a pistol (loaded, two spare magazines).
+        assert(weapons.available() && weapons.ammo(combat::WeaponId::Pistol).loaded==combat::definition(combat::WeaponId::Pistol).magazine);
+        assert(loot.inventory().count("pistol")==1 && loot.inventory().count("pistol_ammo")==2*combat::definition(combat::WeaponId::Pistol).magazine);
+        assert(loot.inventory().count("hunting_rifle")==0 && loot.inventory().count("rifle_ammo")==0 && loot.inventory().count("water")==0);
+        assert(loot.inventory().count("frag_grenade")==0 && loot.inventory().state().stacks.size()==2 && loot.economy().money==0);
         loot.edit_inventory().clear();loot.changed();assert(loot.save(weapons));
     }
     std::ifstream old(stale);std::string text;std::getline(old,text);assert(text=="old profile is deliberately incompatible");

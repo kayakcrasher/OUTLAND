@@ -41,6 +41,18 @@ void LootSession::start(GameMode mode, const std::string &map, combat::WeaponSys
     status_.clear();
     for (std::size_t i = 0; i < combat::weapons.size(); ++i)
         weapons.set_loaded(static_cast<combat::WeaponId>(i), 0);
+    // Battle Royale: everyone drops with only a pistol (loaded, and a couple of spare
+    // magazines); the rest is found on the ground. Other modes use the catalog's starter kit.
+    if (mode == GameMode::BattleRoyale) {
+        for (const auto &item : registry_.items())
+            if (item.category == ItemCategory::Weapon && item.weapon == combat::WeaponId::Pistol &&
+                inventory_.add(registry_, item.id, 1) == 1) {
+                weapons.set_loaded(combat::WeaponId::Pistol, combat::definition(combat::WeaponId::Pistol).magazine);
+                if (const auto *ammo = registry_.ammo_for(item))
+                    inventory_.add(registry_, ammo->id, combat::definition(combat::WeaponId::Pistol).magazine * 2);
+                break;
+            }
+    } else
     for (const auto &item : registry_.items())
         if (item.starting_quantity > 0) {
             const int added = inventory_.add(registry_, item.id, item.starting_quantity);
@@ -72,6 +84,7 @@ void LootSession::start(GameMode mode, const std::string &map, combat::WeaponSys
     weapons.bind_inventory([this](auto id) { return inventory_.owns_weapon(registry_, id); },
                            [this](auto id) { return ammo_count(id); },
                            [this](auto id, int count) { return take_ammo(id, count); });
+    if (mode == GameMode::BattleRoyale) weapons.select(combat::WeaponId::Pistol);
 }
 void LootSession::update(float dt, const world::VerdaRegion &region, Vector3 player,
                          combat::WeaponSystem &weapons) {
