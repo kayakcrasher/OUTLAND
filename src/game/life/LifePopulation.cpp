@@ -1,4 +1,5 @@
 #include "outland/game/life/LifePopulation.hpp"
+#include "outland/game/life/WalkingMan.hpp"
 #include "outland/characters/CharacterRegistry.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include <raymath.h>
@@ -343,7 +344,8 @@ void assign_cars(Island& island,const world::VerdaRegion& region) {
     for(const auto& town:region.settlements()) {
         for(const auto& marker:town.gameplay_markers)
             if(marker.type==world::GameplayMarkerType::VehicleSpawn && marker.enabled && marker.id.find("_donor_")==std::string::npos && marker.id.find("vehicle_spawn_bus_")==std::string::npos &&
-               marker.id.find("vehicle_spawn_police_")==std::string::npos && marker.id.find("vehicle_spawn_ambulance_")==std::string::npos) // donors never run; buses are the line's, patrol cars and ambulances the services'
+               marker.id.find("vehicle_spawn_police_")==std::string::npos && marker.id.find("vehicle_spawn_ambulance_")==std::string::npos &&
+               marker.id!=WalkingMan::car_marker) // donors never run; buses are the line's, patrol cars and ambulances the services', Paul Acosta's car his
                 parked.push_back({"vehicle_marker_"+town.id+"_"+marker.id,-1,-1,marker.position,marker.rotation_y});
         for(const auto& asset:town.assets)
             if(!asset.vehicle.definition.empty() && asset.vehicle.marker.empty() && asset.vehicle.enabled && !asset.vehicle.destroyed)

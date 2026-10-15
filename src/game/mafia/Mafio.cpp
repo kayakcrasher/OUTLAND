@@ -182,6 +182,8 @@ void Mafio::forgive() { provoked_until_.fill(-1e9); }
 
 bool Mafio::hostile(int a, int b, double now) const {
     if (a == b) return false;
+    const auto outsider = [&](int id) { return id != ai::BattleRoyaleBots::player_id && gang_of(id) < 0; };
+    if (outsider(a) || outsider(b)) return outsiders_ && outsiders_(a, b, now);
     if (a == ai::BattleRoyaleBots::player_id || b == ai::BattleRoyaleBots::player_id)
         return provoked(gang_of(a == ai::BattleRoyaleBots::player_id ? b : a), now);
     const int ga = gang_of(a), gb = gang_of(b);

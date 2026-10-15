@@ -7,6 +7,7 @@
 #include <raylib.h>
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -115,6 +116,9 @@ public:
     void forgive();
     [[nodiscard]] bool provoked(int gang, double now) const;
     [[nodiscard]] bool hostile(int a, int b, double now) const;
+    // Who decides about bots outside the gangs (Paul Acosta): asked whenever one side of a pair
+    // is neither the player nor a Krimulo. Unset: they fight nobody.
+    void set_outsiders(std::function<bool(int, int, double)> rule) { outsiders_ = std::move(rule); }
 
     // Sends a hit squad from crew `from` by car to crew `target` (a rival gang's). Returns
     // whether it set off (it needs a usable car near the hideout and a road).
@@ -149,6 +153,7 @@ private:
     std::uint64_t rng_{0x51ed2701f3a5c3b9ULL}, seed_{0};
     std::string message_;
     float message_time_{0};
+    std::function<bool(int, int, double)> outsiders_;
 };
 
 } // namespace outland::game::mafia

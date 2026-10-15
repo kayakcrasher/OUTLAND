@@ -45,8 +45,12 @@ public:
               std::uint64_t seed, float zone_radius, int max_drivers = 7, Vector2 zone_center = {0, 0});
     // Puts `crew` (the first one drives) into the nearest usable car within `reach` of `from` and
     // drives it by road to `goal`; everyone gets out there. Returns whether they set off.
+    // `vehicle` set: that car only (even a reserved one).
     bool dispatch(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
-                  const std::vector<int>& crew, Vector3 from, Vector3 goal, float reach = 160);
+                  const std::vector<int>& crew, Vector3 from, Vector3 goal, float reach = 160, std::string_view vehicle = {});
+    // Cars nobody else takes (Paul Acosta's): ids containing `marker`.
+    void reserve(std::string marker) { reserved_.push_back(std::move(marker)); }
+    [[nodiscard]] bool reserved(std::string_view vehicle) const;
     // Gets everyone out and hands the cars back (end of a match).
     void clear(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars);
     using Sight = std::function<bool(Vector3 from, Vector3 to)>;
@@ -66,5 +70,6 @@ private:
     void steer(BotRide& ride, vehicles::VehicleSystem& cars, float dt);
     world::roads::RoadGraph roads_;
     std::vector<BotRide> rides_;
+    std::vector<std::string> reserved_;
 };
 } // namespace outland::game::ai

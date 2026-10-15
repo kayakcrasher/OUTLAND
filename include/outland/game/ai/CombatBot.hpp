@@ -100,6 +100,16 @@ public:
     const BotContact* target() const;
     const std::vector<BotContact>& contacts() const { return contacts_; }
     void set_roam_center(Vector3 center, float radius) { roam_center_ = center; roam_radius_ = radius; }
+    // Moved by a script while asleep (a calm townsperson walking their day): stands at `feet`
+    // facing `yaw`, with the velocity that implies, so the body walks or stands still.
+    void puppet(Vector3 feet, float yaw, float dt) {
+        previous_ = position_;
+        velocity_ = dt > 0 ? Vector3{(feet.x - position_.x) / dt, (feet.y - position_.y) / dt, (feet.z - position_.z) / dt} : Vector3{};
+        moving_ = dt > 0 && (velocity_.x * velocity_.x + velocity_.z * velocity_.z) > .04F;
+        position_ = feet;
+        yaw_ = yaw;
+        has_destination_ = false;
+    }
 
     static constexpr float eye_height = 1.55F;
     static constexpr float walk_speed = 2.2F, run_speed = 4.6F; // same for every difficulty

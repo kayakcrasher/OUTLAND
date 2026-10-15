@@ -12,6 +12,7 @@
 #include "outland/game/ai/BotDrivers.hpp"
 #include "outland/game/casino/PokerTable.hpp"
 #include "outland/game/mafia/Mafio.hpp"
+#include "outland/game/life/WalkingMan.hpp"
 #include "outland/game/mafia/MafioRenderer.hpp"
 #include "outland/game/services/EmergencyServices.hpp"
 #include "outland/game/ZoneWall.hpp"
@@ -585,7 +586,12 @@ void Renderer::run() {
     std::size_t lit_asset_count=static_cast<std::size_t>(-1);
     game::sound::SoundBus sound_bus; // every noise on Verda this session, heard by bots, NPCs and residents
     double match_time=0;
-    const auto krimulo_hostile=[&](int bot){return !mafio.active() || mafio.provoked(mafio.gang_of(bot),match_time);};
+    // Paul Acosta, "the walking man": Ruldomaro to the casino and the bar and home again (Explore).
+    game::life::WalkingMan walking_man;
+    mafio.set_outsiders([&](int a,int b,double now){return walking_man.hostile_to(a,b,now);});
+    bot_drivers.reserve(std::string(game::life::WalkingMan::car_marker));
+    const auto krimulo_hostile=[&](int bot){return !mafio.active() || mafio.provoked(mafio.gang_of(bot),match_time) ||
+        walking_man.hostile_to(bot,game::ai::BattleRoyaleBots::player_id,match_time);};
 
     // Combat feedback (numbers, kill marker, hurt flash and arrow, shake) and frag grenades.
     game::combat::CombatFeedback combat_feedback;
@@ -752,7 +758,7 @@ void Renderer::run() {
         if((hit.kind==game::combat::HitKind::VehicleWindow || hit.kind==game::combat::HitKind::VehicleOccupant) &&
            hit.target>=0 && static_cast<std::size_t>(hit.target)<vehicles.vehicles().size()) {
             const int driver=bot_drivers.driver_of(vehicles.vehicles()[static_cast<std::size_t>(hit.target)].id);
-            if(driver>=0 && mafio.active()) mafio.provoke(driver,match_time);
+            if(driver>=0 && mafio.active()) {mafio.provoke(driver,match_time);walking_man.provoke(driver,match_time);}
             if(driver>=0 && br_bots.damage_bot(driver,amount*.8F,hit.position,match_time)) pending_kills.push_back(hit.position);
         }
     });
@@ -766,6 +772,7 @@ void Renderer::run() {
         bool killed=false;
         if(body.bot>=0) {
             if(mafio.active()) mafio.provoke(body.bot,match_time); // hurt a Krimulo: the gang shoots back
+            walking_man.provoke(body.bot,match_time);             // or Paul Acosta: so does he
             killed=br_bots.damage_bot(body.bot,damage,attacker,match_time);
         }
         else if(npcs.damage(static_cast<std::size_t>(actor),damage,attacker)) {
@@ -1019,6 +1026,7 @@ void Renderer::run() {
                     loot_session.economy().money=std::max<std::int64_t>(0,loot_session.economy().money+poker.cash_out()-poker_buy_in);
                     poker_open=false;poker_buy_in=0;
                 }
+                walking_man.clear();
                 mafio.clear(br_bots,bot_drivers,vehicles);
                 services.clear(vehicles,npcs);
                 bot_drivers.clear(br_bots,vehicles);bots_looted.clear();
@@ -1069,7 +1077,14 @@ void Renderer::run() {
                 if(game::rules_for(game_mode).civilian_life && !island_life.empty()) {
                     // La Mafio: every town's crew moves into its building.
                     mafio.start(island_life.places(),verda_region,br_bots,session_seed);
+                    if(const auto* casino=mafio.casino();casino &&
+                       walking_man.start(island_life.places(),verda_region,casino->door,casino->table,br_bots,vehicles,session_seed,island_life.clock())) {
+                        // His own face, not a gang member's.
+                        const Vector3 at=walking_man.position(br_bots);
+                        npcs.spawn_bot(walking_man.bot(),game::life::WalkingMan::character,at,0);
+                    }
                     br_bots.sync_bodies(npcs,&character_registry);
+                    walking_man.dress(npcs);
                     services.start(vehicles,verda_region,&character_registry);
                     // Back from the dead: out of the hospital's front door.
                     penthouse.locate(verda_region);was_in_penthouse=false;
@@ -2304,8 +2319,18 @@ void Renderer::run() {
                 frame.aim_origin=gun_muzzle;frame.aim_direction=gun_direction;
                 if(!player_health.alive()) mafio.forgive();
                 const double bots_t0=GetTime();
+                if(walking_man.active()) {
+                    game::life::WalkingManFrame paul;
+                    paul.dt=dt;paul.now=match_time;paul.clock=island_life.clock();paul.player_feet=feet;
+                    paul.player_alive=player_health.alive();paul.player_in_vehicle=driving;
+                    paul.player_fired=frame.player_fired;paul.player_aiming=controls.aim && weapons.available() && !driving;
+                    paul.aim_origin=gun_muzzle;paul.aim_direction=gun_direction;
+                    paul.line_of_sight=bot_world.environment.line_of_sight;
+                    walking_man.update(paul,br_bots,bot_drivers,vehicles,verda_region);
+                }
                 mafio.update(frame,br_bots,bot_world,bot_drivers,vehicles,verda_region);
                 br_bots.sync_bodies(npcs,&character_registry);
+                walking_man.dress(npcs);
                 world_draw_stats().bots=world_draw_stats().bots*.9+(GetTime()-bots_t0)*1000*.1;
                 hurt_player(br_bots.events().player_damage);
                 const Vector3 ear_forward=Vector3Subtract(camera.target,camera.position);
@@ -3032,6 +3057,28 @@ void Renderer::run() {
                 const float tw=MeasureTextEx(font,tag.c_str(),15,1).x;
                 DrawRectangle(static_cast<int>(at.x-tw/2-5),static_cast<int>(at.y-2),static_cast<int>(tw+10),19,Fade(BLACK,.45F));
                 DrawTextEx(font,tag.c_str(),{at.x-tw/2,at.y},15,1,angry ? Color{255,90,80,255} : game::mafia::gangs[static_cast<std::size_t>(gang)].color);
+            }
+            // Paul Acosta: his name and what he is up to, close by.
+            if(walking_man.active()) for(const auto& body:npcs.actors()) {
+                if(body.bot!=walking_man.bot() || body.hidden || body.state==characters::NpcState::Dead) continue;
+                if(Vector3Distance(body.position,camera.position)>26) break;
+                const Vector3 over{body.position.x,body.position.y+2.2F,body.position.z};
+                if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))<=0) break;
+                const Vector2 at=GetWorldToScreen(over,camera);
+                const bool angry=walking_man.angry(match_time);
+                const std::string title=std::string(angry ? "! " : "")+"PAUL ACOSTA  \"the walking man\"";
+                const std::string sub=walking_man.activity();
+                const float tw=MeasureTextEx(font,title.c_str(),15,1).x,sw=MeasureTextEx(font,sub.c_str(),13,1).x,w=std::max(tw,sw);
+                DrawRectangle(static_cast<int>(at.x-w/2-6),static_cast<int>(at.y-18),static_cast<int>(w+12),36,Fade(BLACK,.5F));
+                DrawTextEx(font,title.c_str(),{at.x-tw/2,at.y-16},15,1,angry ? Color{255,90,80,255} : Color{240,214,150,255});
+                DrawTextEx(font,sub.c_str(),{at.x-sw/2,at.y+1},13,1,Color{220,226,206,255});
+                break;
+            }
+            if(walking_man.message_time()>0) {
+                const float alpha=std::clamp(walking_man.message_time(),0.0F,1.0F);
+                const float mw=MeasureTextEx(font,walking_man.message().c_str(),18,1).x;
+                DrawRectangle(static_cast<int>(screen_width/2-mw/2-12),screen_height-276,static_cast<int>(mw+24),28,Fade(Color{40,30,10,255},.65F*alpha));
+                DrawTextEx(font,walking_man.message().c_str(),{screen_width/2-mw/2,static_cast<float>(screen_height-271)},18,1,Fade(Color{255,226,160,255},alpha));
             }
             const int turf=mafio.turf_at({player.position.x,player.position.y-1,player.position.z},30);
             if(turf>=0) {

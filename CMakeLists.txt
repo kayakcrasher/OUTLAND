@@ -176,6 +176,7 @@ add_library(
     src/characters/NpcBehavior.cpp
     src/game/life/LifeTypes.cpp
     src/game/life/LifePopulation.cpp
+    src/game/life/WalkingMan.cpp
     src/game/life/LifeSimulation.cpp
     src/game/life/LifeTraffic.cpp
     src/game/zombies/ZombieEcology.cpp
@@ -694,6 +695,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_mafio_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_mafio_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_mafio_tests COMMAND outland_mafio_tests)
+    add_executable(outland_walking_man_tests tests/integration/life/test_walking_man.cpp)
+    target_link_libraries(outland_walking_man_tests PRIVATE outland_render)
+    target_compile_options(outland_walking_man_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_walking_man_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_walking_man_tests COMMAND outland_walking_man_tests)
     add_executable(outland_emergency_services_tests tests/integration/services/test_emergency_services.cpp)
     target_link_libraries(outland_emergency_services_tests PRIVATE outland_render)
     target_compile_options(outland_emergency_services_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

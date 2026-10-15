@@ -68,8 +68,12 @@ int BotDrivers::start(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, wor
     return static_cast<int>(rides_.size());
 }
 
+bool BotDrivers::reserved(std::string_view vehicle) const {
+    return std::any_of(reserved_.begin(), reserved_.end(), [&](const std::string& marker) { return vehicle.find(marker) != std::string_view::npos; });
+}
+
 bool BotDrivers::dispatch(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
-                          const std::vector<int>& crew, Vector3 from, Vector3 goal, float reach) {
+                          const std::vector<int>& crew, Vector3 from, Vector3 goal, float reach, std::string_view vehicle) {
     if (crew.empty()) return false;
     if (roads_.nodes().empty()) roads_.build(region);
     int best = -1;
@@ -77,6 +81,7 @@ bool BotDrivers::dispatch(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars,
     for (std::size_t i = 0; i < cars.vehicles().size(); ++i) {
         const auto& car = cars.vehicles()[i];
         if (!usable(cars, region, car) || driver_of(car.id) >= 0) continue;
+        if (vehicle.empty() ? reserved(car.id) : car.id != vehicle) continue;
         const float d = flat(car.position, from);
         if (d < nearest) { nearest = d; best = static_cast<int>(i); }
     }
