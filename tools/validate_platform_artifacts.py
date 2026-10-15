@@ -7,6 +7,7 @@ def android(path):
     with zipfile.ZipFile(path) as apk:
         names=set(apk.namelist());assert 'classes.dex' in names
         assert 'AndroidManifest.xml' in names
+        assert 'resources.arsc' in names and any('ic_launcher_foreground' in n for n in names),'Missing the launcher icon resources'
         library=apk.read('lib/arm64-v8a/liboutland.so')
         assert library[:4]==b'\x7fELF' and struct.unpack_from('<H',library,18)[0]==183
         offset=struct.unpack_from('<Q',library,32)[0];size,count=struct.unpack_from('<HH',library,54)
@@ -27,6 +28,8 @@ def web(directory):
     assert (root/'outland.data').stat().st_size==report['bytes']
     html=(root/'outland.html').read_text();js=(root/'outland.js').read_text()
     assert 'Rotate your phone' in html and 'touch-action:none' in html
+    for icon in ('icon-32.png','icon-180.png','icon-192.png','icon-512.png','manifest.webmanifest'):assert (root/icon).stat().st_size>0,f'Missing app icon file: {icon}'
+    assert 'apple-touch-icon' in html
     assert 'IDBFS' in js and 'requestAnimationFrame' in js
     for method in ('callMain','FS','ccall'):
         assert re.search(r'Module\s*(?:\[\s*[\"\x27]'+method+r'[\"\x27]\s*\]|\.'+method+r')\s*=',js),f'Missing exported runtime method: {method}'

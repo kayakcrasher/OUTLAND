@@ -22,7 +22,9 @@ python3 "$root/tools/stage_runtime_assets.py" "$build/runtime"
 mkdir -p "$build/classes" "$build/dex" "$build/package/lib/arm64-v8a"
 javac -source 8 -target 8 -bootclasspath "$platform" -d "$build/classes" "$root/platform/android/java/org/outland/game/GameActivity.java"
 "$tools/d8" --lib "$platform" --min-api 26 --output "$build/dex" "$build/classes/org/outland/game/GameActivity.class"
-"$tools/aapt2" link -I "$platform" --manifest "$root/platform/android/AndroidManifest.xml" -o "$build/resources.apk"
+# The launcher icon (tools/generate_app_icon.py): compiled resources linked into the APK.
+"$tools/aapt2" compile --dir "$root/platform/android/res" -o "$build/res.zip"
+"$tools/aapt2" link -I "$platform" --manifest "$root/platform/android/AndroidManifest.xml" -o "$build/resources.apk" "$build/res.zip"
 cp "$build/native/liboutland.so" "$build/package/lib/arm64-v8a/"
 "$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip" --strip-unneeded "$build/package/lib/arm64-v8a/liboutland.so"
 python3 "$root/tools/package_android.py" "$build/resources.apk" "$build/runtime" \
