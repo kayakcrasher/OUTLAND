@@ -81,11 +81,14 @@ A hundred brains stay cheap: bots more than 260 m from you think and move one fr
 turns, with the time they skipped), and every frame when a sound reaches them.
 
 ## Seeing the island from up high
-While dropping, the near clip plane moves out to 0.6 m (the depth buffer stays precise), houses,
-roads and street trees draw up to 2.4 times further, and roads are lifted a little so the coarse
-far terrain does not swallow them. (The lift is never recorded into the cached road meshes: an
-earlier build did, and roads drawn for the first time during the drop stayed metres up in the air
-after landing, as grey slabs and ceilings.)
+While dropping, the land is streamed farther round the camera: 6 rings of 128 m chunks instead of
+3, coarser beyond the third (`TerrainWorld::set_radius`). Houses, roads and street trees draw
+farther with it, up to 2.2 times, but never past the edge of the streamed land. (An earlier build
+let them reach past it, so distant roads and houses hung in the sky.) The near clip plane moves out
+to 0.6 m so the depth buffer stays precise, and roads are lifted a little so the coarse far terrain
+does not swallow them. The lift is never recorded into the cached road meshes. An earlier build did
+record it, and roads drawn for the first time during the drop stayed metres up in the air after
+landing.
 
 ## Rules
 - Everyone drops with **only a pistol** (a V9, loaded, and two spare magazines of 9mm): no

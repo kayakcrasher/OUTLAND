@@ -19,12 +19,13 @@ void TerrainWorld::update(Vector3 position) {
         return;
     const double cx = std::floor(static_cast<double>(position.x) / kChunkSize),
                  cz = std::floor(static_cast<double>(position.z) / kChunkSize);
-    constexpr double limit = static_cast<double>(std::numeric_limits<int>::max()) - kRadius - 1;
+    constexpr double limit = static_cast<double>(std::numeric_limits<int>::max()) - far_radius - 1;
     if (std::abs(cx) > limit || std::abs(cz) > limit)
         return;
     const int x = static_cast<int>(cx), z = static_cast<int>(cz);
     const bool geography_changed = coastal_layout_ != TerrainHeight::coastal_layout();
-    if (x == center_x_ && z == center_z_ && !geography_changed && chunks_.size()==49)
+    const std::size_t wanted = static_cast<std::size_t>((2 * radius_ + 1) * (2 * radius_ + 1));
+    if (x == center_x_ && z == center_z_ && !geography_changed && chunks_.size() == wanted)
         return;
     if (geography_changed) {
         chunks_.clear();
@@ -32,18 +33,19 @@ void TerrainWorld::update(Vector3 position) {
     }
     center_x_ = x;
     center_z_ = z;
+    // Out of range, or built coarse for a far ring that is now near: built again.
     std::erase_if(chunks_, [&](const auto &c) {
-        return std::abs(static_cast<double>(c->chunk_x()) - x) > kRadius ||
-               std::abs(static_cast<double>(c->chunk_z()) - z) > kRadius;
+        const int ring = static_cast<int>(std::max(std::abs(static_cast<double>(c->chunk_x()) - x), std::abs(static_cast<double>(c->chunk_z()) - z)));
+        return ring > radius_ || (ring <= kRadius && c->resolution() != kResolution);
     });
     int built=0;
-    for(int ring=0;ring<=kRadius;++ring)
+    for(int ring=0;ring<=radius_;++ring)
         for(int dz=-ring;dz<=ring;++dz) for(int dx=-ring;dx<=ring;++dx) {
             if(std::max(std::abs(dx),std::abs(dz))!=ring) continue;
             const int ix=x+dx,iz=z+dz;
             const bool exists=std::any_of(chunks_.begin(),chunks_.end(),[&](const auto& c){return c->chunk_x()==ix && c->chunk_z()==iz;});
             if(!exists) {
-                chunks_.push_back(std::make_unique<TerrainChunk>(ix,iz,kChunkSize,kResolution));
+                chunks_.push_back(std::make_unique<TerrainChunk>(ix,iz,kChunkSize,ring<=kRadius ? kResolution : kFarResolution));
                 if(++built>=build_budget) return;
             }
         }

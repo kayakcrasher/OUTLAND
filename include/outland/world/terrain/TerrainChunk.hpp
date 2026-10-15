@@ -41,6 +41,7 @@ public:
 
     [[nodiscard]]
     float size() const;
+    int resolution() const { return resolution_; }
 
 private:
     int chunk_x_{0};

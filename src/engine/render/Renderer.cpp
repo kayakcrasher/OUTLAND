@@ -2033,7 +2033,10 @@ void Renderer::run() {
         } else drop_camera_ready=false;
         // High above the island the town draws further out, so the ground below reads.
         const float camera_height=camera.position.y-world::terrain::TerrainHeight::sample(camera.position.x,camera.position.z);
-        const float draw_reach=dropping ? std::clamp(1+(camera_height-40)/280,1.0F,2.4F) : 1.0F;
+        // High in the drop the land is streamed farther (coarser) round the camera, and roads,
+        // houses and trees reach out with it - never past its edge, or they hang in the sky.
+        terrain_world.set_radius(dropping && camera_height>60 ? world::terrain::TerrainWorld::far_radius : world::terrain::TerrainWorld::ground_radius);
+        const float draw_reach=dropping ? std::clamp(1+(camera_height-40)/280,1.0F,std::max(1.0F,(terrain_world.reach()-24)/340)) : 1.0F;
 
         if (game_mode == game::GameMode::DevLab && IsKeyPressed(KEY_T)) combat_world.reset_targets();
         combat_world.update(dt,game_mode == game::GameMode::DevLab);
