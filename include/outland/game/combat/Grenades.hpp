@@ -12,6 +12,7 @@ struct Grenade {
     Vector3 position{}, velocity{};
     float fuse{0};
     int bounces{0};
+    bool remote{false};   // thrown by another player (LAN): it hurts us, but its hits on others are theirs to send
 };
 struct Explosion {
     Vector3 position{};
@@ -30,7 +31,7 @@ public:
     // Damage at `distance` metres from the blast (before cover).
     static float damage_at(float distance);
 
-    void reset(int count) { live_.clear(); explosions_.clear(); exploded_.clear(); count_ = count; cooldown_ = 0; }
+    void reset(int count) { live_.clear(); explosions_.clear(); exploded_.clear(); exploded_remote_.clear(); count_ = count; cooldown_ = 0; }
     void give(int count) { count_ += count; }
     // Grenades carried in the bag: the count follows it (a throw then takes one from the bag).
     void set_count(int count) { count_ = count < 0 ? 0 : count; }
@@ -39,16 +40,21 @@ public:
     // Throw from `from` along `direction` (lobbed a little upward), carrying the thrower's velocity.
     bool throw_grenade(Vector3 from, Vector3 direction, Vector3 carried);
     void update(float dt, const GrenadeWorld& world);
+    // Another player's throw, replayed here (LAN play).
+    void spawn_remote(Vector3 origin, Vector3 velocity) { live_.push_back({origin, velocity, fuse_seconds, 0, true}); }
 
     [[nodiscard]] const std::vector<Grenade>& live() const { return live_; }
     [[nodiscard]] const std::vector<Explosion>& explosions() const { return explosions_; }
     // Blasts that went off during the last update.
     [[nodiscard]] const std::vector<Vector3>& exploded() const { return exploded_; }
+    // For each of exploded(): another player's grenade.
+    [[nodiscard]] const std::vector<bool>& exploded_remote() const { return exploded_remote_; }
 
 private:
     std::vector<Grenade> live_;
     std::vector<Explosion> explosions_;
     std::vector<Vector3> exploded_;
+    std::vector<bool> exploded_remote_;
     int count_{0};
     float cooldown_{0};
 };

@@ -206,6 +206,11 @@ add_library(
     src/world/roads/RoadGraph.cpp
     src/world/roads/HighwayNetwork.cpp
     src/engine/render/HighwayRender.cpp
+    src/net/LanSocket.cpp
+    src/net/LanProtocol.cpp
+    src/net/LanSession.cpp
+    src/game/LanScreen.cpp
+    src/game/lan/LanPlay.cpp
     src/world/sky/DayNight.cpp
     src/world/assets/VerdanArchitecture.cpp
     src/world/assets/VerdanProps.cpp
@@ -728,6 +733,10 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_bus_line_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_bus_line_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_bus_line_tests COMMAND outland_bus_line_tests)
+    add_executable(outland_lan_tests tests/integration/net/test_lan.cpp)
+    target_link_libraries(outland_lan_tests PRIVATE outland_render)
+    target_compile_options(outland_lan_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_lan_tests COMMAND outland_lan_tests)
     add_executable(outland_highway_tests tests/integration/world/test_highways.cpp)
     target_link_libraries(outland_highway_tests PRIVATE outland_render)
     target_compile_options(outland_highway_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

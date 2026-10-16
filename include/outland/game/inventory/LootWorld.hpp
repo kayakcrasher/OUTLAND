@@ -32,7 +32,11 @@ class LootWorld {
     int nearest(Vector3 player, float radius = 2.8F,
                 const std::function<bool(Vector3)> &reachable = {}) const;
     bool drop(const ItemRegistry &, const std::string &item, int quantity, Vector3 position,
-              int loaded_rounds = 0);
+              int loaded_rounds = 0, const std::string &id = {});
+    // LAN play: someone else took from a pickup (or all of it). One not rolled here yet stays gone
+    // when it would be.
+    void taken_elsewhere(const std::string &id, int remaining);
+    [[nodiscard]] const WorldPickup *find(const std::string &id) const;
     bool restore(const ItemRegistry &, LootWorldState);
     LootWorldState &edit() {
         return state_;
@@ -42,9 +46,11 @@ class LootWorld {
     }
     void clear() {
         state_ = {};
+        elsewhere_.clear();
     }
 
   private:
     LootWorldState state_;
+    std::vector<std::pair<std::string, int>> elsewhere_;
 };
 } // namespace outland::game::inventory

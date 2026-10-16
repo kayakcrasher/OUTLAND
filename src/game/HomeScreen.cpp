@@ -1,5 +1,6 @@
 #include "outland/game/HomeScreen.hpp"
 #include "outland/input/PointerEvents.hpp"
+#include "outland/net/LanSession.hpp"
 #include <algorithm>
 #include <array>
 namespace outland::game {
@@ -25,6 +26,8 @@ void button(Rectangle r,const char* text,float s) {
 }
 Rectangle HomeScreen::mode_button(int index,int w,int h) { return box(240,290+index*72,420,58,w,h); }
 Rectangle HomeScreen::difficulty_button(int w,int h) { return box(300,225,300,46,w,h); }
+// LAN play (friends on the same Wi-Fi), under the modes; not in the browser (no LAN sockets there).
+Rectangle HomeScreen::lan_button(int w,int h) { return mode_button(static_cast<int>(modes.size()),w,h); }
 GameMode HomeScreen::update(int w,int h) {
     std::vector<Vector2> points;
     const auto buffered=input::PointerEvents::presses();
@@ -42,6 +45,7 @@ GameMode HomeScreen::update(int w,int h) {
             return GameMode::Home;
         }
         for(int i=0;i<static_cast<int>(modes.size());++i) if(CheckCollisionPointRec(p,mode_button(i,w,h))) {selected_=modes[i];return selected_;}
+        if(net::LanSession::supported() && CheckCollisionPointRec(p,lan_button(w,h))) {lan_=true;return GameMode::Home;}
     }
     return GameMode::Home;
 }
@@ -54,7 +58,8 @@ void HomeScreen::draw(int w,int h) const {
     DrawText("BONVENON AL VERDA",w/2-MeasureText("BONVENON AL VERDA",small)/2,static_cast<int>(subtitle.y),small,LIGHTGRAY);
     button(difficulty_button(w,h),TextFormat("BR BOTS: %s",ai::bot_level_name(bot_level_)),s);
     for(int i=0;i<static_cast<int>(modes.size());++i) button(mode_button(i,w,h),labels[i],s);
-    const auto footer=box(30,650,840,35,w,h);
+    if(net::LanSession::supported()) button(lan_button(w,h),"LAN PLAY - SAME WI-FI",s);
+    const auto footer=box(30,670,840,35,w,h);
     DrawText("BR: last survivor | Explore: free roam, stores and police",static_cast<int>(footer.x),static_cast<int>(footer.y),std::max(10,static_cast<int>(16*s)),GRAY);
 }
 }

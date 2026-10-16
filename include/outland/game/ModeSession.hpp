@@ -36,6 +36,10 @@ public:
     // when `on_land` says so). Without it the circles all close on the capital.
     void plan_circles(std::uint64_t seed, const std::function<bool(float x, float z)>& on_land = {});
     void update(float dt, Vector3 feet, Health&, ai::BattleRoyaleBots&, bool paused);
+    // A LAN match: how many other people are still alive (the last one standing wins), and whether
+    // the bots are run here (the host) or only mirrored (a client: the zone does not hurt them here).
+    void set_lan(int others_alive, bool run_bots) { others_alive_ = others_alive; run_bots_ = run_bots; }
+    void add_participants(int people) { result_.participants += people; }
     GameMode mode() const { return mode_; }
     SessionPhase phase() const { return phase_; }
     bool terminal() const { return phase_ != SessionPhase::Playing; }
@@ -52,7 +56,9 @@ public:
     CircleRules circle;
 private:
     GameMode mode_{GameMode::Home}; SessionPhase phase_{SessionPhase::Playing};
-    MatchResult result_{}; float elapsed_{0};
+    MatchResult result_{}; int others_alive_{0};
+    bool run_bots_{true};
+    float elapsed_{0};
     std::vector<Vector2> centers_; // centers_[k]: where phase k's circle closes
 };
 // Feet coordinates, resolved against the same terrain/buildings as runtime movement.

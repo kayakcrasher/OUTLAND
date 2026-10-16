@@ -18,7 +18,7 @@ bool Grenades::throw_grenade(Vector3 from, Vector3 direction, Vector3 carried) {
     // Lob: aim plus a little lift, so a level throw lands about 25 m away.
     Vector3 velocity = Vector3Scale(Vector3Normalize(Vector3Add(aim, {0, .28F, 0})), throw_speed);
     velocity = Vector3Add(velocity, Vector3Scale(carried, .6F));
-    live_.push_back({Vector3Add(from, Vector3Scale(aim, .5F)), velocity, fuse_seconds, 0});
+    live_.push_back({Vector3Add(from, Vector3Scale(aim, .5F)), velocity, fuse_seconds, 0, false});
     --count_;
     cooldown_ = cooldown_seconds;
     return true;
@@ -26,6 +26,7 @@ bool Grenades::throw_grenade(Vector3 from, Vector3 direction, Vector3 carried) {
 
 void Grenades::update(float dt, const GrenadeWorld& world) {
     exploded_.clear();
+    exploded_remote_.clear();
     if (!std::isfinite(dt) || dt <= 0) return;
     dt = std::min(dt, .1F);
     cooldown_ = std::max(0.0F, cooldown_ - dt);
@@ -58,6 +59,7 @@ void Grenades::update(float dt, const GrenadeWorld& world) {
         if (g.fuse <= 0) {
             explosions_.push_back({g.position, 0});
             exploded_.push_back(g.position);
+            exploded_remote_.push_back(g.remote);
         }
     }
     std::erase_if(live_, [](const Grenade& g) { return g.fuse <= 0; });

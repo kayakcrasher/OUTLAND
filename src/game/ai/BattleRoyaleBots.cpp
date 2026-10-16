@@ -111,6 +111,28 @@ bool BattleRoyaleBots::damage_bot(int bot,float amount,Vector3 from,double now) 
     return true;
 }
 
+bool BattleRoyaleBots::damage_bot_by(int bot,float amount,Vector3 from,double now,const std::string& who) {
+    auto* target=find(bot);
+    if(!target || !target->alive() || !std::isfinite(amount) || amount<=0) return false;
+    target->set_health(std::max(0.0F,target->health()-amount));
+    target->on_damage(amount,from,now);
+    if(target->alive()) return false;
+    add_feed(who+" ELIMINATED "+bot_name(bot));
+    return true;
+}
+void BattleRoyaleBots::credit_kill(int bot) {
+    ++player_kills_;
+    add_feed("YOU ELIMINATED "+bot_name(bot));
+}
+void BattleRoyaleBots::credit_player_kill(const std::string& victim) {
+    ++player_kills_;
+    add_feed("YOU ELIMINATED "+victim);
+}
+void BattleRoyaleBots::add_feed(const std::string& line) {
+    feed_.push_back(line);
+    if(feed_.size()>feed_lines) feed_.erase(feed_.begin());
+}
+
 void BattleRoyaleBots::apply_circle(Vector2 center, float radius, Vector2 next_center, float next_radius, float damage) {
     for(auto& bot:bots_) if(bot.alive()) {
         const Vector3 at=bot.position();
@@ -174,6 +196,7 @@ void BattleRoyaleBots::update(const BattleRoyaleFrame& frame,const BotWorld& wor
     agents_.clear();
     const auto player_velocity=frame.player_velocity;
     agents_.push_back({player_id,frame.player_feet,player_velocity,frame.player_alive});
+    for(const auto& other:frame.others) agents_.push_back({other.id,other.feet,other.velocity,other.alive && !other.in_vehicle});
     for(const auto& bot:bots_) agents_.push_back({bot.id(),bot.position(),bot.velocity(),bot.alive() && !mounted(bot.id())});
     last_player_=frame.player_feet;
 
@@ -205,7 +228,8 @@ void BattleRoyaleBots::update(const BattleRoyaleFrame& frame,const BotWorld& wor
         auto& bot=bots_[i];
         if(!bot.alive() || mounted(bot.id()) || asleep(bot.id())) {lag_[i]=0;continue;}
         lag_[i]+=dt;
-        const bool far=std::hypot(bot.position().x-frame.player_feet.x,bot.position().z-frame.player_feet.z)>far_radius;
+        bool far=std::hypot(bot.position().x-frame.player_feet.x,bot.position().z-frame.player_feet.z)>far_radius;
+        for(const auto& other:frame.others) far=far && std::hypot(bot.position().x-other.feet.x,bot.position().z-other.feet.z)>far_radius;
         // ...but never miss a sound in earshot (it is only on the bus this frame).
         const auto earshot=[&] {
             return std::any_of(sounds_.begin(),sounds_.end(),[&](const BotSound& heard) {
@@ -235,6 +259,11 @@ void BattleRoyaleBots::resolve(const BotShot& shot,const BattleRoyaleFrame& fram
     if(frame.player_alive && !frame.player_in_vehicle && shot.shooter!=player_id) {
         const float f=enter_body(shot.origin,end,frame.player_feet);
         if(f>=0 && f<best) {best=f;victim=player_id;victim_feet=frame.player_feet;}
+    }
+    for(const auto& other:frame.others) {
+        if(!other.alive || other.in_vehicle || other.id==shot.shooter) continue;
+        const float f=enter_body(shot.origin,end,other.feet);
+        if(f>=0 && f<best) {best=f;victim=other.id;victim_feet=other.feet;}
     }
     Vector3 shooter_position=shot.origin;
     for(const auto& bot:bots_) {
@@ -274,6 +303,7 @@ void BattleRoyaleBots::resolve(const BotShot& shot,const BattleRoyaleFrame& fram
         return;
     }
     auto* target=find(victim);
+    if(!target) {events_.other_hits.push_back({victim,damage,shooter_position,shot.shooter});return;}
     target->set_health(std::max(0.0F,target->health()-damage));
     target->on_damage(damage,shooter_position,frame.now);
     if(!target->alive()) {

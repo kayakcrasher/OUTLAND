@@ -7,6 +7,7 @@
 namespace outland::game {
 void ModeSession::start(GameMode mode, int bots, ai::BotLevel level) {
     mode_=mode; phase_=SessionPhase::Playing; elapsed_=0;
+    others_alive_=0; run_bots_=true;
     result_={0,0,std::max(0,bots)+1,level};
     centers_.assign(circle.phases.size(),Vector2{0,0});
 }
@@ -65,23 +66,31 @@ const char* ModeSession::objective() const {
     return "Survive, scavenge and explore Verda.";
 }
 void ModeSession::update(float dt, Vector3 feet, Health& health, ai::BattleRoyaleBots& bots, bool paused) {
-    if(terminal() || paused || !std::isfinite(dt) || dt<0) return;
+    if(paused || !std::isfinite(dt) || dt<0) return;
+    // A LAN host out of the match still closes the zone on the bots for the others still in it.
+    const bool host_watching=terminal() && mode_==GameMode::BattleRoyale && run_bots_ && others_alive_>0;
+    if(terminal() && !host_watching) return;
     if(mode_!=GameMode::BattleRoyale) {
         if(mode_!=GameMode::DevLab && !health.alive()) phase_=SessionPhase::Dead;
         return; // Explore has no victory condition.
     }
     const float step=std::min(dt,.25F);
     elapsed_+=step;
+    if(host_watching) {
+        const auto z=zone();
+        bots.apply_circle(z.center,z.radius,z.next_center,z.next_radius,z.damage*step);
+        return;
+    }
     // Check every damage source before victory (including mutual final eliminations).
     if(health.alive()) {
         const auto z=zone();
         if(std::hypot(feet.x-z.center.x,feet.z-z.center.y)>z.radius) health.damage(z.damage*step);
-        bots.apply_circle(z.center,z.radius,z.next_center,z.next_radius,z.damage*step);
+        if(run_bots_) bots.apply_circle(z.center,z.radius,z.next_center,z.next_radius,z.damage*step);
     }
     if(!health.alive()) {
-        phase_=SessionPhase::Dead; result_.placement=std::max(result_.participants>1 ? 2 : 1,bots.alive_bots()+1);
+        phase_=SessionPhase::Dead; result_.placement=std::max(result_.participants>1 ? 2 : 1,bots.alive_bots()+others_alive_+1);
         bots.report_player_death(bots.events().player_damage_by);
-    } else if(bots.alive_bots()==0) { phase_=SessionPhase::Won; result_.placement=1; }
+    } else if(bots.alive_bots()==0 && others_alive_==0) { phase_=SessionPhase::Won; result_.placement=1; }
     result_.kills=bots.player_kills();
 }
 Vector3 session_spawn(const world::VerdaRegion& region, GameMode mode, std::uint64_t seed) {

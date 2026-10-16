@@ -117,6 +117,7 @@ void LootSession::update(float dt, const world::VerdaRegion &region, Vector3 pla
             pickup.quantity -= amount;
             auto_message_ = "+" + std::to_string(amount) + " " + item->name;
             changed();
+            if (taken) taken(pickup.id, pickup.quantity);
             if (pickup.quantity == 0) pickups.erase(pickups.begin() + static_cast<std::ptrdiff_t>(i));
             else ++i;
         }
@@ -226,6 +227,7 @@ std::string LootSession::interact(Vector3 player, combat::WeaponSystem &weapons,
         weapons.set_loaded(*item->weapon, pickup.loaded_rounds);
     pickup.quantity -= amount;
     const auto message = "Picked up " + std::to_string(amount) + " x " + item->name;
+    if (taken) taken(pickup.id, pickup.quantity);
     if (pickup.quantity == 0)
         world_.edit().pickups.erase(world_.edit().pickups.begin() + index);
     changed();
@@ -329,8 +331,15 @@ std::string LootSession::drop(std::size_t index, bool whole, Vector3 position,
         return "Empty extra bag slots before dropping the backpack";
     const int loaded =
         item->category == ItemCategory::Weapon ? weapons.ammo(*item->weapon).loaded : 0;
-    if (!world_.drop(registry_, stack.item, quantity, position, loaded))
+    std::string id;
+    if (!drop_prefix.empty()) {
+        for (std::uint64_t n = world_.state().next_drop;; ++n)
+            if (!world_.find(id = drop_prefix + std::to_string(n))) break;
+        world_.edit().next_drop += 1;
+    }
+    if (!world_.drop(registry_, stack.item, quantity, position, loaded, id))
         return "Cannot drop here - world pickup limit reached";
+    if (dropped) dropped(world_.state().pickups.back());
     inventory_.remove(stack.item, quantity);
     if (item->category == ItemCategory::Weapon)
         weapons.set_loaded(*item->weapon, 0);

@@ -73,6 +73,10 @@
 #include "outland/game/culture/SignRenderer.hpp"
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/game/zombies/ZombieEcology.hpp"
+#include "outland/game/LanScreen.hpp"
+#include "outland/game/lan/LanPlay.hpp"
+#include "outland/net/LanSession.hpp"
+#include <random>
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
@@ -484,6 +488,21 @@ void Renderer::run() {
     float interaction_remaining = 0.0F;
 
     game::HomeScreen home_screen;
+    // LAN play (desktop and Android): the session, its lobby screen, and the other people in the match.
+    net::LanSession lan;
+    game::LanScreen lan_screen;
+    game::lan::LanPlay lan_play;
+    bool lan_screen_open=false,lan_match=false,lan_restart=false,lan_death_sent=false,lan_host_lost=false,lan_fired=false;
+    std::uint64_t lan_seed=0;
+    float lan_state_wait=0,lan_snapshot_wait=0;
+    std::int32_t lan_last_attacker=-1;   // who hurt the player last: a slot, or -bot id
+#ifdef OUTLAND_DEV_TOOLS
+    bool lan_dev_done=false;
+#endif
+    const std::string lan_name=[&]{
+        if(const char* name=std::getenv("OUTLAND_LAN_NAME"); name && *name) return std::string(name).substr(0,16);
+        return "LUDANTO "+std::to_string(10+static_cast<int>(std::random_device{}()%90));
+    }();
 #ifdef OUTLAND_DEV_TOOLS
     dev::DevLab dev_lab;
 #endif
@@ -531,6 +550,15 @@ void Renderer::run() {
         TraceLog(LOG_ERROR,"Item registry: %s",item_error.c_str());return;
     }
     game::inventory::LootSession loot_session(item_registry);
+    // In a LAN match the others see what the player takes and drops.
+    loot_session.taken=[&](const std::string& pickup,int remaining) {
+        if(lan_match && lan.in_match()) lan.send(net::Msg::Taken,net::Taken{pickup,static_cast<std::uint16_t>(std::max(0,remaining))});
+    };
+    loot_session.dropped=[&](const game::inventory::WorldPickup& pickup) {
+        if(lan_match && lan.in_match())
+            lan.send(net::Msg::Dropped,net::Dropped{pickup.id,pickup.item,static_cast<std::uint16_t>(std::max(0,pickup.quantity)),
+                                                     static_cast<std::uint16_t>(std::max(0,pickup.loaded_rounds)),pickup.position});
+    };
     game::inventory::LootUI loot_ui(character_root);
     characters::NpcSystem npcs;
     game::ai::BattleRoyaleBots br_bots;
@@ -800,6 +828,17 @@ void Renderer::run() {
         // Battle Royale bodies belong to their bot brains; everyone else is an NpcSystem actor.
         const auto& body=npcs.actors()[static_cast<std::size_t>(actor)];
         const Vector3 where=body.position;
+        if(lan_match && game::lan::LanPlay::is_remote_body(body.bot)) {
+            // Another player: the hit is theirs to take, and their death theirs to tell.
+            if(lan.in_match()) lan.send(net::Msg::Hit,net::Hit{static_cast<std::int32_t>(lan.slot()),damage,attacker,static_cast<std::uint8_t>(weapons.selected())},
+                                        game::lan::LanPlay::slot_of(body.bot));
+            return false;
+        }
+        if(lan_match && lan.active() && !lan.hosting() && body.bot>=0 && game_mode==game::GameMode::BattleRoyale) {
+            // A bot: the host runs them, and says whether this killed.
+            if(lan.in_match()) lan.send(net::Msg::BotHit,net::BotHit{static_cast<std::uint16_t>(body.bot),damage,attacker},0);
+            return false;
+        }
         bool killed=false;
         if(body.bot>=0) {
             if(mafio.active()) mafio.provoke(body.bot,match_time); // hurt a Krimulo: the gang shoots back
@@ -898,7 +937,7 @@ void Renderer::run() {
 
         // The pause menu stops the world (a sliver of time keeps every rate finite).
         const float dt =
-            pause_menu.is_open() ? 1e-5F :
+            pause_menu.is_open() && !lan_match ? 1e-5F :
             std::min(
                 GetFrameTime(),
                 0.05F
@@ -933,7 +972,7 @@ void Renderer::run() {
             game::GameMode::Home
         ) {
             // ESC on the home screen quits a PC game; a browser tab or a phone app is closed by its own controls.
-            if (can_quit_game && IsKeyPressed(KEY_ESCAPE)) break;
+            if (can_quit_game && !lan_screen_open && IsKeyPressed(KEY_ESCAPE)) break;
             input::PointerEvents::capture_mouse(false);mouse_wanted=mouse_was_captured=false;
             if(pause_menu.is_open()) pause_menu.close();
             input_system.update(screen_width, screen_height, true, true);
@@ -942,20 +981,71 @@ void Renderer::run() {
             creator_touch_ui.update(creator_controller, screen_width, screen_height, true);
 #endif
             environment_audio.update(player.position, player.grounded, false, verda_region);
-            const game::GameMode selected = queued_mode != game::GameMode::Home ? queued_mode :
-                home_screen.update(
-                    screen_width,
-                    screen_height
-                );
-
+            game::GameMode selected=game::GameMode::Home;
+            lan.poll(GetTime());
+            std::optional<net::Start> lan_start;
+#ifdef OUTLAND_DEV_TOOLS
+            // OUTLAND_DEV_LAN=host[:explore|:zombie] or join: through the LAN screen unattended (two games on one
+            // machine); the host starts once OUTLAND_DEV_LAN_PLAYERS (2) are in the lobby.
+            if(const char* dev_lan=std::getenv("OUTLAND_DEV_LAN"); dev_lan && *dev_lan && !lan_dev_done) {
+                const std::string want=dev_lan;
+                if(!lan_screen_open) {lan_screen_open=true;lan.browse();}
+                if(want.rfind("host",0)==0) {
+                    const auto mode=want.find("explore")!=std::string::npos ? game::GameMode::Explore :
+                                    want.find("zombie")!=std::string::npos ? game::GameMode::ZombieSurvival : game::GameMode::BattleRoyale;
+                    const char* count=std::getenv("OUTLAND_DEV_LAN_PLAYERS");
+                    if(!lan.active()) lan.host(lan_name,static_cast<std::uint8_t>(mode),static_cast<std::uint8_t>(home_screen.bot_level()),GetTime());
+                    else if(static_cast<int>(lan.roster().players.size())>=(count ? std::max(1,std::atoi(count)) : 2)) {lan.start_match(424242);lan_dev_done=true;}
+                } else if(!lan.active() && !lan.hosts().empty()) {lan.join(lan.hosts().front(),lan_name,GetTime());lan_dev_done=true;}
+            }
+#endif
+            if(lan_screen_open) {
+                // LAN PLAY: host or join, then the lobby until the host starts.
+                using Kind=game::LanScreen::Kind;
+                const auto action=lan_screen.update(screen_width,screen_height,lan);
+                const auto lobby=lan.roster();
+                switch(action.kind) {
+                case Kind::Back: lan.stop();lan_screen_open=false;break;
+                case Kind::Leave: lan.stop();lan.browse();break;
+                case Kind::Host:
+                    lan.host(lan_name,static_cast<std::uint8_t>(game::GameMode::BattleRoyale),static_cast<std::uint8_t>(home_screen.bot_level()),GetTime());
+                    break;
+                case Kind::Join:
+                    if(action.index>=0 && action.index<static_cast<int>(lan.hosts().size()))
+                        lan.join(lan.hosts()[static_cast<std::size_t>(action.index)],lan_name,GetTime());
+                    break;
+                case Kind::CycleMode: {
+                    const auto mode=static_cast<game::GameMode>(lobby.mode);
+                    const auto next=mode==game::GameMode::BattleRoyale ? game::GameMode::ZombieSurvival :
+                                    mode==game::GameMode::ZombieSurvival ? game::GameMode::Explore : game::GameMode::BattleRoyale;
+                    lan.set_lobby(static_cast<std::uint8_t>(next),lobby.level);
+                    break;
+                }
+                case Kind::CycleLevel: lan.set_lobby(lobby.mode,static_cast<std::uint8_t>((lobby.level+1)%3));break;
+                case Kind::Start: lan.start_match((static_cast<std::uint64_t>(std::random_device{}())<<20)+static_cast<std::uint64_t>(GetTime()*1000.0)+1);break;
+                default: break;
+                }
+                lan_start=lan.take_start();
+                if(lan_start) lan_screen_open=false;
+            } else {
+                selected=queued_mode!=game::GameMode::Home ? queued_mode : home_screen.update(screen_width,screen_height);
+                if(home_screen.take_lan()) {lan_screen_open=true;lan.browse();}
+            }
             queued_mode=game::GameMode::Home;
+            if(lan_start) {
+                lan_match=true;lan_seed=lan_start->seed;
+                home_screen.set_bot_level(static_cast<game::ai::BotLevel>(std::min<int>(lan_start->level,2)));
+                selected=static_cast<game::GameMode>(lan_start->mode);
+                if(selected!=game::GameMode::ZombieSurvival && selected!=game::GameMode::Explore) selected=game::GameMode::BattleRoyale;
+            } else if(selected!=game::GameMode::Home && !lan_restart) {
+                // An ordinary match: done with LAN.
+                if(lan_match || lan.active()) lan.stop();
+                lan_match=false;
+            }
+            if(selected!=game::GameMode::Home) lan_restart=false;
             BeginDrawing();
-
-            home_screen.draw(
-                screen_width,
-                screen_height
-            );
-
+            if(lan_screen_open) lan_screen.draw(screen_width,screen_height,lan,lan_name);
+            else home_screen.draw(screen_width,screen_height);
             EndDrawing();
 
             if (
@@ -966,7 +1056,8 @@ void Renderer::run() {
                     selected;
 
                 bool explicit_spawn=false;
-                const auto session_seed=static_cast<std::uint64_t>(GetTime()*1000.0)+1;
+                // A LAN match: one seed for everyone (the same towns, loot, bots, helicopters and zone).
+                const auto session_seed=lan_match ? lan_seed : static_cast<std::uint64_t>(GetTime()*1000.0)+1;
                 player.position=Vector3Add(game::session_spawn(verda_region,game_mode,session_seed),{0,1,0});
                 player.yaw=player.pitch=0;
 
@@ -1021,6 +1112,8 @@ void Renderer::run() {
                     vehicles.reset_match_fleet(verda_region);
                 }
                 npcs.reset_session();
+                lan_play.clear();lan_state_wait=lan_snapshot_wait=0;lan_last_attacker=-1;lan_death_sent=lan_host_lost=false;
+                loot_session.drop_prefix=lan_match ? "drop_s"+std::to_string(lan.slot())+"_" : std::string{};
                 build_mode.set_active(false);bus_dwell_seen.clear();
                 if(game::rules_for(game_mode).civilian_life) {
                     builds_path=game::build::PlayerBuilds::path_beside(game::inventory::LootSave::profile_path(map_path,game_mode));
@@ -1143,6 +1236,7 @@ void Renderer::run() {
                 }
                 respawn_at_hospital=false;
                 mode_session.start(game_mode,static_cast<int>(br_bots.bots().size()),home_screen.bot_level());
+                if(lan_match) mode_session.add_participants(std::max(0,static_cast<int>(lan.roster().players.size())-1));
 #ifdef OUTLAND_DEV_TOOLS
                 // OUTLAND_DEV_ZONE=<metres>: start the Battle Royale circle smaller, to see its wall up close.
                 if(const char* zone=std::getenv("OUTLAND_DEV_ZONE")) mode_session.circle.start_radius=std::max(30.0F,static_cast<float>(std::atof(zone)));
@@ -1160,6 +1254,14 @@ void Renderer::run() {
                 trigger_ready = false;
                 inventory_open = false;
                 interaction_remaining = 0;
+                // On foot in a LAN match, everyone starts a few steps apart rather than inside each other.
+                if(lan_match && lan.slot()>0 && !dropping) {
+                    const float angle=static_cast<float>(lan.slot())*.785F;
+                    const float x=player.position.x+std::cos(angle)*2.5F,z=player.position.z+std::sin(angle)*2.5F,top=player.position.y+.2F;
+                    const Vector3 feet{x,world::physics::WorldCollision::ground_height({x,top,z},top,verda_region),z};
+                    if(std::isfinite(feet.y) && std::abs(feet.y-(player.position.y-1))<1.5F &&
+                       !world::physics::WorldCollision::body_blocked(feet,feet.y,verda_region,.4F)) player.position=Vector3Add(feet,{0,1,0});
+                }
 #ifdef OUTLAND_DEV_TOOLS
                 if(game_mode==game::GameMode::DevLab) {
                     dev_lab.begin_builder();
@@ -1189,6 +1291,7 @@ void Renderer::run() {
             restore_match_fleet();
             vehicles.leave_session();vehicle_audio.stop();vehicle_renderer.reset_camera();
             shop_open=inventory_open=false;
+            if(lan_match) {lan.stop();lan_play.clear(&npcs);lan_match=false;}
             game_mode=game::GameMode::Home;
             input_system.cancel_controls();
             input::PointerEvents::capture_mouse(false);mouse_wanted=mouse_was_captured=false;
@@ -1242,6 +1345,13 @@ void Renderer::run() {
                 } else {
                     queued_mode=action==game::ResultAction::Restart ? game_mode : game::GameMode::Home;
                     respawn_at_hospital=action==game::ResultAction::Restart && game_mode==game::GameMode::Explore && !player_health.alive();
+                    if(lan_match) {
+                        const bool again=action==game::ResultAction::Restart && lan.in_match();
+                        if(again && game_mode!=game::GameMode::BattleRoyale) lan_restart=true; // back into the same world, with the others
+                        else if(again) {queued_mode=game::GameMode::Home;lan.end_match();lan_screen_open=true;lan_match=false;} // the lobby, for the next one
+                        else {lan.stop();lan_match=false;}
+                        lan_play.clear(&npcs);
+                    }
                     restore_match_fleet();
                     vehicles.leave_session();vehicle_audio.stop();vehicle_renderer.reset_camera();
                     shop_open=inventory_open=false;input_system.cancel_controls();
@@ -1468,7 +1578,8 @@ void Renderer::run() {
         // Throttle: W/S (move_y) or the touch pedals - BRAKE slows, then reverses.
         const float pedal_throttle=std::clamp(-controls.move_y+controls.gas-controls.brake_pedal,-1.0F,1.0F);
         game::vehicles::VehicleInput driving_input{pedal_throttle,-controls.move_x,controls.brake,controls.crouch,IsKeyDown(KEY_H),controls.sprint};
-        const bool vehicle_paused=creator_active||inventory_open||shop_open||poker_open||mode_session.terminal()||!IsWindowFocused()
+        // In a LAN match the world goes on for everyone, whatever menu this player has open.
+        const bool vehicle_paused=lan_match ? creator_active : creator_active||inventory_open||shop_open||poker_open||mode_session.terminal()||!IsWindowFocused()
 #ifdef OUTLAND_DEV_TOOLS
             || (game_mode==game::GameMode::DevLab && dev_lab.tools_open())
 #endif
@@ -2174,6 +2285,8 @@ void Renderer::run() {
             const Vector3 carried=dt>0 ? Vector3Scale(Vector3Subtract(player.position,position_before_move),1.0F/dt) : Vector3{};
             if(grenades.throw_grenade(head_position,look_direction,carried)) {
                 gun_audio.grenade_pin();
+                if(lan_match && lan.in_match() && !grenades.live().empty())
+                    lan.send(net::Msg::Grenade,net::Grenade{grenades.live().back().position,grenades.live().back().velocity});
                 if(bag_grenades) {
                     loot_session.edit_inventory().remove("frag_grenade",1);
                     loot_session.changed();
@@ -2185,7 +2298,10 @@ void Renderer::run() {
             if(!hit.hit()) return false;
             point=hit.position;normal=hit.normal;return true;
         }});
-        for(const Vector3 blast:grenades.exploded()) {
+        for(std::size_t blast_index=0;blast_index<grenades.exploded().size();++blast_index) {
+            const Vector3 blast=grenades.exploded()[blast_index];
+            // Another player's grenade hurts the player here; its hits on everyone else are theirs to send.
+            const bool thrown_elsewhere=blast_index<grenades.exploded_remote().size() && grenades.exploded_remote()[blast_index];
             sound_bus.emit(game::sound::SoundKind::Gunshot,blast,400,0,match_time);
             gun_audio.explosion(blast,camera.position,Vector3Subtract(camera.target,camera.position));
             const Vector3 core=Vector3Add(blast,{0,.35F,0});
@@ -2198,7 +2314,7 @@ void Renderer::run() {
                 hurt_player(game::combat::Grenades::damage_at(near));
                 hurt_from=blast;hurt_directional=true;
             }
-            for(std::size_t i=0;i<npcs.actors().size();++i) {
+            for(std::size_t i=0;i<npcs.actors().size() && !thrown_elsewhere;++i) {
                 const auto& a=npcs.actors()[i];
                 if(a.state==characters::NpcState::Dead || a.health<=0) continue;
                 const Vector3 target{a.position.x,a.position.y+1.1F,a.position.z};
@@ -2341,9 +2457,108 @@ void Renderer::run() {
             }
         }
         crimes.clear();
+        // LAN play: what the others did since the last frame.
+        const bool lan_royale=lan_match && game_mode==game::GameMode::BattleRoyale;
+        if(lan_match) {
+            lan.poll(GetTime());
+            if(!lan.active() && !lan_host_lost) {
+                // The host has gone (or this was the host and the network went): the match goes on here alone.
+                lan_host_lost=true;interaction_message="LAN: the connection is gone - the match goes on here";interaction_remaining=4;
+                for(const auto& remote:std::vector<game::lan::Remote>(lan_play.remotes())) lan_play.remove(remote.slot,npcs,vehicles);
+            }
+            const Vector3 ear_forward=Vector3Subtract(camera.target,camera.position);
+            for(const auto& message:lan.take_inbox()) {
+                const auto from=message.header.from;
+                switch(message.header.type) {
+                case net::Msg::State: {
+                    net::PlayerState state;
+                    if(net::decode(message.payload,state)) lan_play.received(from,lan.name_of(from),state,GetTime());
+                    break;
+                }
+                case net::Msg::Hit: {
+                    net::Hit hit;
+                    if(net::decode(message.payload,hit) && player_health.alive() && !mode_session.terminal()) {
+                        hurt_player(hit.amount);hurt_from=hit.from;hurt_directional=true;lan_last_attacker=hit.attacker;
+                    }
+                    break;
+                }
+                case net::Msg::Died: {
+                    net::Died died;
+                    if(!net::decode(message.payload,died)) break;
+                    const auto victim=lan.name_of(from);
+                    if(died.killer>=0 && died.killer==static_cast<std::int32_t>(lan.slot())) {br_bots.credit_player_kill(victim);gun_audio.kill_confirm();}
+                    else if(died.killer>=0) br_bots.add_feed(lan.name_of(static_cast<std::uint8_t>(died.killer))+" ELIMINATED "+victim);
+                    else br_bots.add_feed(victim+" IS OUT");
+                    break;
+                }
+                case net::Msg::Taken: {
+                    net::Taken taken;
+                    if(net::decode(message.payload,taken)) loot_session.edit_world().taken_elsewhere(taken.pickup,taken.remaining);
+                    break;
+                }
+                case net::Msg::Dropped: {
+                    net::Dropped dropped;
+                    if(net::decode(message.payload,dropped))
+                        loot_session.edit_world().drop(item_registry,dropped.item,dropped.quantity,dropped.position,dropped.loaded,dropped.pickup);
+                    break;
+                }
+                case net::Msg::BotSnapshot: {
+                    net::BotSnapshot snapshot;
+                    if(!lan_royale || lan.hosting() || !net::decode(message.payload,snapshot)) break;
+                    lan_play.apply(snapshot,br_bots,vehicles,verda_region,dt);
+                    for(const auto& b:snapshot.bots)
+                        if(b.flags & net::BotFiring) if(const auto* bot=br_bots.find(b.id))
+                            gun_audio.world_shot(bot->weapon(),{b.feet.x,b.feet.y+1.4F,b.feet.z},camera.position,ear_forward);
+                    break;
+                }
+                case net::Msg::BotHit: {
+                    net::BotHit hit;
+                    if(!lan_royale || !lan.hosting() || !net::decode(message.payload,hit)) break;
+                    const auto who=lan.name_of(from);
+                    if(br_bots.damage_bot_by(hit.bot,hit.amount,hit.from,match_time,who)) {
+                        lan.send(net::Msg::KillCredit,net::KillCredit{hit.bot},from);
+                        // Everyone else reads it in the feed.
+                        if(!br_bots.feed().empty())
+                            for(const auto& player_entry:lan.roster().players)
+                                if(player_entry.slot!=0 && player_entry.slot!=from) lan.send(net::Msg::Feed,net::Feed{br_bots.feed().back()},player_entry.slot);
+                    }
+                    break;
+                }
+                case net::Msg::KillCredit: {
+                    net::KillCredit credit;
+                    if(net::decode(message.payload,credit)) {br_bots.credit_kill(credit.bot);gun_audio.kill_confirm();}
+                    break;
+                }
+                case net::Msg::Feed: {
+                    net::Feed feed;
+                    if(net::decode(message.payload,feed)) br_bots.add_feed(feed.text);
+                    break;
+                }
+                case net::Msg::Grenade: {
+                    net::Grenade grenade;
+                    if(net::decode(message.payload,grenade)) grenades.spawn_remote(grenade.origin,grenade.velocity);
+                    break;
+                }
+                case net::Msg::Leave: {
+                    const auto* remote=lan_play.find(from);
+                    br_bots.add_feed((remote ? remote->name : lan.name_of(from))+" LEFT");
+                    lan_play.remove(from,npcs,vehicles);
+                    break;
+                }
+                default: break;
+                }
+            }
+            for(const auto& [where,weapon]:lan_play.take_shots())
+                gun_audio.world_shot(static_cast<game::combat::WeaponId>(std::min<int>(weapon,static_cast<int>(game::combat::weapon_count)-1)),where,camera.position,ear_forward);
+            lan_play.update(dt,npcs,&character_registry,vehicles,verda_region);
+        }
+        // A LAN client mirrors the host's bots instead of running its own (unless the host has gone).
+        const bool bots_mirrored=lan_royale && lan.active() && !lan.hosting();
         {
             const Vector3 feet{player.position.x,player.position.y-1.0F,player.position.z};
-            if(game_mode==game::GameMode::BattleRoyale && !vehicle_paused) {
+            if(game_mode==game::GameMode::BattleRoyale && bots_mirrored) {
+                br_bots.sync_bodies(npcs,&character_registry);
+            } else if(game_mode==game::GameMode::BattleRoyale && !vehicle_paused) {
                 game::ai::BattleRoyaleFrame frame;
                 frame.dt=dt;frame.now=match_time;frame.player_feet=feet;
                 frame.player_velocity=dt>0 ? Vector3Scale(Vector3Subtract(feet,last_player_feet),1.0F/dt) : Vector3{};
@@ -2351,6 +2566,7 @@ void Renderer::run() {
                 frame.player_fired=weapons.events().shots>0;
                 frame.player_weapon=weapons.selected();
                 frame.player_in_vehicle=driving;
+                if(lan_royale) frame.others=lan_play.others();
                 const double bots_t0=GetTime();
                 bot_drivers.update(dt,br_bots,vehicles,verda_region,feet,player_health.alive(),mode_session.radius(),bot_world.environment.line_of_sight,mode_session.center());
                 br_bots.update(frame,bot_world);
@@ -2360,7 +2576,12 @@ void Renderer::run() {
                 const Vector3 ear_forward=Vector3Subtract(camera.target,camera.position);
                 for(const Vector3 past:br_bots.events().near_misses) gun_audio.near_miss(past,camera.position,ear_forward);
                 for(const Vector3 strike:br_bots.events().ricochets) gun_audio.ricochet(strike,camera.position,ear_forward);
-                if(br_bots.events().player_damage>0) {hurt_from=br_bots.events().player_damage_from;hurt_directional=true;}
+                if(br_bots.events().player_damage>0) {hurt_from=br_bots.events().player_damage_from;hurt_directional=true;lan_last_attacker=-1;}
+                // The host's bots shooting the other players: each hit goes to whoever it hit.
+                if(lan_royale && lan.in_match())
+                    for(const auto& hit:br_bots.events().other_hits)
+                        if(game::lan::LanPlay::is_remote_body(hit.player))
+                            lan.send(net::Msg::Hit,net::Hit{-std::max(1,hit.by),hit.amount,hit.from,0},game::lan::LanPlay::slot_of(hit.player));
             } else if(mafio.active() && !vehicle_paused) {
                 // La Mafio: crews at their hideouts, hit squads on the road, wars and respawns.
                 game::mafia::MafioFrame frame;
@@ -2404,6 +2625,7 @@ void Renderer::run() {
             // Riding and falling are out of the gas's reach (the line starts out over the sea).
             const bool in_drop=dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed;
             const Vector3 zone_feet=in_drop ? Vector3{mode_session.center().x,0,mode_session.center().y} : feet;
+            if(lan_royale) mode_session.set_lan(lan_play.alive(),!bots_mirrored);
             mode_session.update(dt,zone_feet,player_health,br_bots,vehicle_paused);
             if(game_mode==game::GameMode::BattleRoyale) {
                 br_bots.sync_bodies(npcs,&character_registry);
@@ -2431,6 +2653,48 @@ void Renderer::run() {
             if(!finished && mode_session.terminal()) {
                 shop_open=inventory_open=false;play_ui.opened();input_system.cancel_controls();
                 vehicle_audio.stop();
+            }
+            if(lan_match && lan.in_match()) {
+                // Out of the match: tell the others (and who did it).
+                if(!player_health.alive() && !lan_death_sent) {lan_death_sent=true;lan.send(net::Msg::Died,net::Died{lan_last_attacker});}
+                // Where this player is, 20 times a second.
+                lan_state_wait-=dt;
+                lan_fired=lan_fired || weapons.events().shots>0;
+                if(lan_state_wait<=0) {
+                    lan_state_wait=1.0F/game::lan::LanPlay::state_rate;
+                    net::PlayerState state;
+                    state.time=static_cast<float>(match_time);
+                    state.feet=feet;state.yaw=player.yaw;state.pitch=player.pitch;
+                    state.velocity=dt>0 ? Vector3Scale(Vector3Subtract(feet,last_player_feet),1.0F/dt) : Vector3{};
+                    state.health=player_health.current();
+                    state.weapon=static_cast<std::uint8_t>(weapons.selected());
+                    if(player_health.alive()) state.flags|=net::StateAlive;
+                    if(lan_fired) state.flags|=net::StateFiring;
+                    if(controls.aim) state.flags|=net::StateAiming;
+                    if(player.grounded) state.flags|=net::StateGrounded;
+                    if(in_drop) {
+                        state.flags|=net::StateDropping;
+                        state.dive=static_cast<std::uint8_t>(skydiver.stage());
+                        if(skydiver.stage()==game::aircraft::DiveStage::Canopy) state.flags|=net::StateCanopy;
+                    }
+                    if(const auto* car=vehicles.driver()) {
+                        const int index=vehicles.find(car->id);
+                        if(index>=0) {
+                            state.flags|=net::StateDriving;state.vehicle=static_cast<std::int16_t>(index);
+                            state.car=car->position;state.car_yaw=car->yaw;state.car_speed=car->speed;
+                        }
+                    }
+                    lan.send(net::Msg::State,state);
+                    lan_fired=false;
+                }
+                // The host: every bot and moving car, 10 times a second, for the others to mirror.
+                if(lan_royale && lan.hosting()) {
+                    lan_snapshot_wait-=dt;
+                    if(lan_snapshot_wait<=0) {
+                        lan_snapshot_wait=1.0F/game::lan::LanPlay::snapshot_rate;
+                        lan.send(net::Msg::BotSnapshot,lan_play.snapshot(br_bots,vehicles,static_cast<float>(match_time)));
+                    }
+                }
             }
             last_player_feet=feet;
             // Everyone else's gunfire, heard where it happened (bots, police): the bus says how far
@@ -3079,6 +3343,15 @@ void Renderer::run() {
                 DrawTriangle(tip,Vector2Subtract(base,side),Vector2Add(base,side),Color{230,40,30,alpha});
             }
         }
+        if(lan_match) {
+            lan_play.draw_names(camera,screen_width,screen_height);
+            if(game_mode!=game::GameMode::BattleRoyale) {
+                const char* people=TextFormat("LAN - %d PLAYERS",1+static_cast<int>(lan_play.remotes().size()));
+                DrawText(people,screen_width/2-MeasureText(people,18)/2,16,18,Color{120,220,255,235});
+                int line=0;
+                for(const auto& entry:br_bots.feed()) DrawText(entry.c_str(),screen_width/2-MeasureText(entry.c_str(),16)/2,40+20*line++,16,Color{235,215,180,255});
+            }
+        }
         if (!creator_active) {
             DrawText(TextFormat("HEALTH %.0f / %.0f",player_health.current(),player_health.maximum()),
                 16,16,20,player_health.alive() ? RAYWHITE : RED);
@@ -3090,8 +3363,9 @@ void Renderer::run() {
             }
 
             if (br_bots.active() && game_mode==game::GameMode::BattleRoyale) {
-                const int alive=br_bots.alive_bots()+(player_health.alive() ? 1 : 0);
-                const char* status=TextFormat("ALIVE %d   KILLS %d   BOTS %s",alive,br_bots.player_kills(),game::ai::bot_level_name(br_bots.level()));
+                const int alive=br_bots.alive_bots()+(player_health.alive() ? 1 : 0)+(lan_match ? lan_play.alive() : 0);
+                const char* status=TextFormat("ALIVE %d   KILLS %d   BOTS %s%s",alive,br_bots.player_kills(),game::ai::bot_level_name(br_bots.level()),
+                                              lan_match ? TextFormat("   LAN %d",1+static_cast<int>(lan_play.remotes().size())) : "");
                 DrawText(status,screen_width/2-MeasureText(status,20)/2,16,20,RAYWHITE);
                 int line=0;
                 // Kill feed under the match status, clear of the HUD labels and touch buttons.

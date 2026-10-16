@@ -114,6 +114,15 @@ bool LootWorld::reconcile(const world::VerdaRegion &region, const ItemRegistry &
         state_.sources.push_back(source);
         changed = true;
     }
+    // Pickups taken by someone else (LAN play) before they were rolled here.
+    for (std::size_t e = 0; e < elsewhere_.size();) {
+        const auto found = std::find_if(state_.pickups.begin(), state_.pickups.end(), [&](const auto &p) { return p.id == elsewhere_[e].first; });
+        if (found == state_.pickups.end()) {++e; continue;}
+        if (elsewhere_[e].second <= 0) state_.pickups.erase(found);
+        else found->quantity = std::min(found->quantity, elsewhere_[e].second);
+        elsewhere_.erase(elsewhere_.begin() + static_cast<std::ptrdiff_t>(e));
+        changed = true;
+    }
     return changed;
 }
 int LootWorld::nearest(Vector3 player, float radius,
@@ -132,9 +141,9 @@ int LootWorld::nearest(Vector3 player, float radius,
     }
     return result;
 }
-bool LootWorld::drop(const ItemRegistry &registry, const std::string &id, int quantity,
-                     Vector3 position, int loaded) {
-    const auto *item = registry.find(id);
+bool LootWorld::drop(const ItemRegistry &registry, const std::string &item_id, int quantity,
+                     Vector3 position, int loaded, const std::string &id) {
+    const auto *item = registry.find(item_id);
     if (!item || !finite(position) || quantity < 1 || quantity > 999 ||
         state_.pickups.size() >= max_pickups || loaded < 0 ||
         (loaded > 0 && (item->category != ItemCategory::Weapon ||
@@ -144,15 +153,34 @@ bool LootWorld::drop(const ItemRegistry &registry, const std::string &id, int qu
         return false;
     position.y =
         std::max(position.y, world::terrain::TerrainHeight::sample(position.x, position.z)) + .06F;
-    std::string key;
-    do {
+    std::string key = id;
+    if (!key.empty() && std::any_of(state_.pickups.begin(), state_.pickups.end(), [&](const auto &p) { return p.id == key; }))
+        return false;
+    while (key.empty() || std::any_of(state_.pickups.begin(), state_.pickups.end(),
+                                      [&](const auto &p) { return p.id == key; })) {
         if (state_.next_drop >= 1000000000000ULL)
             return false;
         key = "drop_" + std::to_string(state_.next_drop++);
-    } while (std::any_of(state_.pickups.begin(), state_.pickups.end(),
-                         [&](const auto &p) { return p.id == key; }));
-    state_.pickups.push_back({key, "", id, position, quantity, loaded});
+    }
+    state_.pickups.push_back({key, "", item_id, position, quantity, loaded});
     return true;
+}
+
+void LootWorld::taken_elsewhere(const std::string &id, int remaining) {
+    auto &pickups = state_.pickups;
+    const auto found = std::find_if(pickups.begin(), pickups.end(), [&](const auto &p) { return p.id == id; });
+    if (found == pickups.end()) {
+        std::erase_if(elsewhere_, [&](const auto &e) { return e.first == id; });
+        elsewhere_.emplace_back(id, remaining);
+        return;
+    }
+    if (remaining <= 0) pickups.erase(found);
+    else found->quantity = std::min(found->quantity, remaining);
+}
+
+const WorldPickup *LootWorld::find(const std::string &id) const {
+    for (const auto &p : state_.pickups) if (p.id == id) return &p;
+    return nullptr;
 }
 bool LootWorld::restore(const ItemRegistry &registry, LootWorldState state) {
     if (state.pickups.size() > max_pickups || state.sources.size() > 10000 || state.next_drop < 1 ||

@@ -26,6 +26,14 @@ struct BotWorld {
 
 struct BotTracer { Vector3 start{}, end{}; float life{0}; };
 
+// Another human in a LAN match: bots see, chase and shoot them like the player.
+struct OtherPlayer {
+    int id{0};                     // an agent id clear of the bots' (net play uses 900000 + slot)
+    Vector3 feet{}, velocity{};
+    bool alive{true}, in_vehicle{false};
+};
+struct OtherHit { int player{0}; float amount{0}; Vector3 from{}; int by{-1}; };
+
 struct BattleRoyaleFrame {
     float dt{0};
     double now{0};
@@ -34,6 +42,7 @@ struct BattleRoyaleFrame {
     bool player_fired{false};
     combat::WeaponId player_weapon{combat::WeaponId::Rifle};
     bool player_in_vehicle{false}; // the vehicle trace handles occupants
+    std::vector<OtherPlayer> others;
 };
 
 struct BattleRoyaleEvents {
@@ -44,6 +53,7 @@ struct BattleRoyaleEvents {
     // Rounds that missed the player narrowly: where each passed closest to the head (a crack
     // past the ear), and where each struck the ground or a wall close by (a ricochet).
     std::vector<Vector3> near_misses, ricochets;
+    std::vector<OtherHit> other_hits;   // bot rounds that hit the other players
 };
 
 class BattleRoyaleBots {
@@ -66,6 +76,12 @@ public:
     void update(const BattleRoyaleFrame& frame, const BotWorld& world);
     // The player's weapon hit a bot body. Returns true if it killed the bot.
     bool damage_bot(int bot, float amount, Vector3 from, double now);
+    // Someone else's weapon (a LAN player, named `who`) hit a bot: no kill for the player here.
+    bool damage_bot_by(int bot, float amount, Vector3 from, double now, const std::string& who);
+    // The host says this player's round killed `bot` (a LAN client); or they killed another player.
+    void credit_kill(int bot);
+    void credit_player_kill(const std::string& victim);
+    void add_feed(const std::string& line);
     // The owner applies player damage; it reports the death back for the kill feed.
     void report_player_death(int killer);
     // The zone: bots outside the circle take `damage`; bots outside the next circle (or close to

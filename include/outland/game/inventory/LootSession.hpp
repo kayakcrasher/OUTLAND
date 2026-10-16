@@ -60,6 +60,11 @@ class LootSession {
         return path_;
     }
     LootSnapshot snapshot(const combat::WeaponSystem &) const;
+    // LAN play: told when the player takes from or drops a pickup, so the others see it too. Drops
+    // get ids under `drop_prefix` ("drop_s2_" for slot 2) so they never clash with another player's.
+    std::function<void(const std::string &pickup, int remaining)> taken;
+    std::function<void(const WorldPickup &)> dropped;
+    std::string drop_prefix;
     // Future survival-stat consumers may subscribe; no hunger/thirst simulation yet.
     std::function<void(float food, float water)> consumed;
 
