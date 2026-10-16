@@ -1,4 +1,5 @@
 #include "outland/world/terrain/TerrainHeight.hpp"
+#include "outland/world/Highways.hpp"
 
 #include <cmath>
 #include <algorithm>
@@ -162,6 +163,43 @@ float TerrainHeight::small_variation(
 
 
 float TerrainHeight::sample(
+    const float world_x,
+    const float world_z
+) {
+    // The land, then cut and filled to the highways' roadbeds (world/Highways.hpp).
+    const float land = unpaved(world_x, world_z);
+    return coastal_enabled ? highways::graded(world_x, world_z, land, &TerrainHeight::unpaved, &TerrainHeight::pad_weight) : land;
+}
+
+// Mirrors the pads in unpaved() below: 1 on a pad's level ground, easing to 0 across its edge.
+float TerrainHeight::pad_weight(
+    const float world_x,
+    const float world_z
+) {
+    const float distance = std::hypot(world_x, world_z);
+    const float suburb=std::hypot(std::max({layout::suburb_near-std::abs(world_x),std::abs(world_x)-layout::suburb_far,0.0F}),
+                                  std::max(std::abs(world_z)-layout::suburb_half,0.0F));
+    float weight = 1 - smooth(std::min(distance-layout::capital_flat_radius,suburb)/80.0F);
+    const auto pad=[&](float cx,float cz,float flat,float band) {
+        const float d=std::hypot(world_x-cx,world_z-cz);
+        if(d<flat+band) weight=std::max(weight,1-smooth((d-flat)/band));
+    };
+    for (std::size_t i=1;i<layout::sites.size();++i) {
+        const auto c=layout::sites[i].center;
+        pad(c.x,c.z,layout::sites[i].id=="port_luma"?layout::port_flat_radius:layout::sites[i].id=="west_roka"?layout::roka_flat_radius:layout::town_flat_radius,65);
+    }
+    pad(layout::sovagejo_center.x,layout::sovagejo_center.z,layout::sovagejo_flat_radius,60);
+    for (const auto& hamlet:layout::hamlets) pad(hamlet.center.x,hamlet.center.z,layout::hamlet_flat_radius,60);
+    for (const auto& ranch:ranches::ranches) {
+        const auto c=ranches::Frame(ranch.gate,ranch.up_track).at(ranches::pad_centre);
+        pad(c.x,c.z,ranches::pad_radius,ranches::pad_blend);
+    }
+    const auto c=ranches::Frame(ranches::stockyard_gate,ranches::stockyard_up).at(ranches::stockyard_pad_centre);
+    pad(c.x,c.z,ranches::stockyard_pad_radius,40);
+    return std::clamp(weight,0.0F,1.0F);
+}
+
+float TerrainHeight::unpaved(
     const float world_x,
     const float world_z
 ) {

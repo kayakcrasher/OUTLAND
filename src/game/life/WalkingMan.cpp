@@ -1,4 +1,5 @@
 #include "outland/game/life/WalkingMan.hpp"
+#include "outland/world/Highways.hpp"
 #include "outland/characters/NpcSystem.hpp"
 #include "outland/game/ai/BattleRoyaleBots.hpp"
 #include "outland/game/ai/BotDrivers.hpp"
@@ -130,8 +131,10 @@ bool WalkingMan::start(const std::vector<Place>& places, const world::VerdaRegio
                     const Vector3 d = Vector3Normalize({b.x - a.x, 0, b.z - a.z});
                     const Vector3 right{-d.z, 0, d.x};
                     const float lane = i < home_way.lane.size() ? home_way.lane[i] : 1.5F;
-                    // Facing back toward town, parked on the shoulder of the town-bound side.
-                    plan_.parking = ground(Vector3Subtract(p, Vector3Scale(right, 2 * std::max(lane, 1.5F) + 2.4F)), region);
+                    // Facing back toward town, parked on the shoulder of the town-bound side (a
+                    // highway's hard shoulder, beyond the median).
+                    const float aside = lane >= world::highways::slow_lane - .01F ? world::highways::lanes_outer + .6F : 2 * std::max(lane, 1.5F) + 2.4F;
+                    plan_.parking = ground(Vector3Subtract(p, Vector3Scale(right, aside)), region);
                     plan_.parking_yaw = std::atan2(-d.x, -d.z) * RAD2DEG;
                     i = home_way.points.size();
                     break;

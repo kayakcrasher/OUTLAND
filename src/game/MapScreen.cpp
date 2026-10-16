@@ -228,7 +228,8 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
     }
     // Roads, then towns.
     for (const auto& town : region.settlements()) for (const auto& road : town.roads) {
-        const Color c = road.type == world::RoadType::Asphalt ? Color{58, 58, 56, 230} :
+        const Color c = road.type == world::RoadType::Highway ? Color{214, 156, 52, 240} :
+                        road.type == world::RoadType::Asphalt ? Color{58, 58, 56, 230} :
                         road.type == world::RoadType::Gravel ? Color{146, 128, 98, 230} : Color{120, 96, 66, 220};
         DrawLineEx(to_map(area, road.start.x, road.start.z), to_map(area, road.end.x, road.end.z),
                    std::max(1.5F, road.width / (2 * extent) * area.width * 2.5F), c);

@@ -48,8 +48,8 @@ the capital's population grows by three per house.
 
 ## Porto Luma
 - A 4 × 4 grid of 12 m streets (avenues and streets at ±40 and ±120 from the centre) around
-  Placo Luma, the central square. Highways stop at the grid's west edge on the street north of
-  the square.
+  Placo Luma, the central square. The highway from the capital stops at the grid's west edge on
+  the street north of the square (it crosses the ring road on the way; see [highways.md](highways.md)).
 - Main Street rows, a glass tower and office block, corner mid-rises, a car park, signals, street
   trees and lights, and parked cars.
 - Waterfront east of the grid: quay roads, six warehouses, a harbour office, a dock building,
@@ -68,7 +68,8 @@ from the centre) round Placo de la Laboristoj, on a level pad 220 m in radius.
 - East blocks: yards on asphalt - large sheds, hangars, a two-storey factory, trucks, pallets.
 - West of the grid, along the works road: the works - a long factory hall and a second hall,
   four sheds, a hangar, pipe runs, barricades and a chainlink-fenced stock yard.
-- The capital highway and the ring-road spur end at the grid's east edge (street z = −40).
+- The highway from the capital ends at the grid's east edge (street z = −40); it crosses the
+  ring road on the way (see [highways.md](highways.md)).
 Every home in the city is lived in (no population cap).
 
 ## Sovaĝejo

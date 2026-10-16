@@ -204,10 +204,13 @@ add_library(
     src/world/physics/MeshCollision.cpp
     src/world/navigation/NavGrid.cpp
     src/world/roads/RoadGraph.cpp
+    src/world/roads/HighwayNetwork.cpp
+    src/engine/render/HighwayRender.cpp
     src/world/sky/DayNight.cpp
     src/world/assets/VerdanArchitecture.cpp
     src/world/assets/VerdanProps.cpp
     src/world/terrain/TerrainHeight.cpp
+    src/world/Highways.cpp
     src/world/terrain/TerrainChunk.cpp
     src/world/terrain/TerrainWorld.cpp
 
@@ -488,8 +491,10 @@ if(OUTLAND_BUILD_TESTS)
         src/world/assets/VerdanArchitecture.cpp
         src/world/foliage/FoliageSystem.cpp
         src/world/physics/WorldCollision.cpp
+        src/world/roads/HighwayNetwork.cpp
         src/world/physics/MeshCollision.cpp
         src/world/terrain/TerrainHeight.cpp
+        src/world/Highways.cpp
         src/engine/audio/EnvironmentAudio.cpp
     )
     target_include_directories(outland_environment_tests PRIVATE
@@ -515,6 +520,7 @@ if(OUTLAND_BUILD_TESTS)
         src/world/physics/MeshCollision.cpp
         src/game/combat/WeaponSystem.cpp
         src/world/terrain/TerrainHeight.cpp
+        src/world/Highways.cpp
     )
     target_include_directories(outland_combat_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_combat_tests PRIVATE -Wall -Wextra -Wpedantic)
@@ -722,6 +728,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_bus_line_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_bus_line_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_bus_line_tests COMMAND outland_bus_line_tests)
+    add_executable(outland_highway_tests tests/integration/world/test_highways.cpp)
+    target_link_libraries(outland_highway_tests PRIVATE outland_render)
+    target_compile_options(outland_highway_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_highway_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_highway_tests COMMAND outland_highway_tests)
     add_executable(outland_city_driving_tests tests/integration/vehicles/test_city_driving.cpp)
     target_link_libraries(outland_city_driving_tests PRIVATE outland_render)
     target_compile_options(outland_city_driving_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

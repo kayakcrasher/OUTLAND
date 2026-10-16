@@ -1,6 +1,7 @@
 #include "outland/dev/VerdaWorldKit.hpp"
 #include "outland/creator/CreatorAssetRegistry.hpp"
 #include "outland/world/VerdaLayout.hpp"
+#include "outland/world/Highways.hpp"
 #include "outland/world/Ranches.hpp"
 #include "outland/world/Zones.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -1510,7 +1511,8 @@ const std::string police_model = "assets/verda/city/civic/police_station.glb";
 const std::string hospital_model = "assets/verda/city/civic/hospital.glb";
 
 bool civic_lot(Kit& kit, world::VerdaRegion& region, Vector3 near, float min_distance, float max_distance, float lot_x, float lot_z,
-               float half_x, float half_z, float front, float apron, CivicSpot& out) {
+               float half_x, float half_z, float front, float apron, CivicSpot& out,
+               const std::function<bool(const CivicSpot&)>& accept = {}) {
     struct Candidate { float score; Vector3 origin; float yaw; };
     std::vector<Candidate> candidates;
     for (const auto& town : region.settlements())
@@ -1561,8 +1563,10 @@ bool civic_lot(Kit& kit, world::VerdaRegion& region, Vector3 near, float min_dis
             }
             if (blocked) break;
         }
-        if (blocked || !kit.claim(centre, half_x, half_z, c.yaw)) continue;
-        out = {{c.origin.x, world::terrain::TerrainHeight::sample(c.origin.x, c.origin.z), c.origin.z}, c.yaw};
+        if (blocked) continue;
+        const CivicSpot spot{{c.origin.x, world::terrain::TerrainHeight::sample(c.origin.x, c.origin.z), c.origin.z}, c.yaw};
+        if ((accept && !accept(spot)) || !kit.claim(centre, half_x, half_z, c.yaw)) continue;
+        out = spot;
         return true;
     }
     return false;
@@ -1580,7 +1584,21 @@ void emergency_services(Kit& kit, world::VerdaRegion& region) {
         const Vector3 centre = town->center;
         // The station: 14 x 12 m with a 6 m carport on +X (model bounds x -7..13, z -6..6).
         CivicSpot spot;
-        if (!civic_lot(kit, region, centre, capital ? 60 : 15, capital ? 420 : 260, 3, 0, 10.5F, 7, 6, 5, spot)) continue;
+        // The patrol cars park along the kerb in front; each needs a clear run ahead to pull out
+        // (no lamp post or tree on the kerb in its way).
+        const auto way_out = [&](const CivicSpot& at) {
+            for (const float x : {9.0F, -6.0F}) {
+                const Vector3 from = to_world(at.origin, at.yaw, x, 0, -9.2F), to = to_world(at.origin, at.yaw, x + 14, 0, -9.2F);
+                for (const auto& town : region.settlements()) for (const auto& asset : town.assets) {
+                    if (!asset.collision || !asset.vehicle.definition.empty()) continue;
+                    const float dx = to.x - from.x, dz = to.z - from.z, l2 = dx * dx + dz * dz;
+                    const float t = std::clamp(((asset.position.x - from.x) * dx + (asset.position.z - from.z) * dz) / l2, 0.0F, 1.0F);
+                    if (std::hypot(asset.position.x - from.x - dx * t, asset.position.z - from.z - dz * t) < 1.6F + std::max(asset.size.x, asset.size.z) * .5F) return false;
+                }
+            }
+            return true;
+        };
+        if (!civic_lot(kit, region, centre, capital ? 60 : 15, capital ? 420 : 260, 3, 0, 10.5F, 7, 6, 5, spot, way_out)) continue;
         if (!kit.put(police_model, spot.origin, spot.yaw)) continue;
         kit.purpose(to_world(spot.origin, spot.yaw, 0, .35F, -4.8F), spot.yaw, world::BuildingPurpose::Police);
         // The patrol car on the apron in front, along the kerb (vehicles treat a model's whole
@@ -1833,8 +1851,26 @@ void ranches(Kit& kit, world::VerdaRegion& region) {
 }
 }
 
+namespace {
+// ------------------------------------------------------------------ highways
+// The old two-lane links between the towns (what is left of the capital's roads once downtown is
+// wiped) give way to the divided highways of world/Highways.hpp: the ring road and four spokes,
+// laid before anything else so every lot keeps off them.
+void lay_highways(world::VerdaRegion& region) {
+    auto* capital = settlement(region, "capital_verda");
+    if (!capital) return;
+    capital->roads.clear();
+    for (const auto& line : world::highways::lines()) {
+        const auto n = line.points.size();
+        for (std::size_t i = 0; i + (line.loop ? 0 : 1) < n; ++i)
+            capital->roads.push_back({line.points[i], line.points[(i + 1) % n], world::highways::width, world::RoadType::Highway});
+    }
+}
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
+    lay_highways(region);
     Kit kit(region, catalog);
     downtown(kit, region);
     downtown_south(kit, region);

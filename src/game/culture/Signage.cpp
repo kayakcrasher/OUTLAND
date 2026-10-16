@@ -417,19 +417,29 @@ void town_roads(const world::VerdaRegion& region, const life::Island& island, Si
         const float R = radius[s];
         struct Exit { Vector3 at, out; float width; std::vector<float> to; };
         std::vector<Exit> exits;
+        // Every place a road crosses the town's circle, leaving: a road with one end in town, or a
+        // highway passing through the edge of it (both ends out of town, crossing it twice).
+        struct Crossing { Vector3 at, outside; };
+        std::vector<std::pair<const world::Road*, Crossing>> crossings;
         for (const auto* road : roads) {
-            const float da = flat(road->start, c), db = flat(road->end, c);
-            if ((da < R) == (db < R)) continue;
-            const Vector3 inside = da < R ? road->start : road->end, outside = da < R ? road->end : road->start;
-            // Where the segment crosses the circle.
-            float lo = 0, hi = 1;
-            for (int k = 0; k < 30; ++k) {
-                const float mid = (lo + hi) * .5F;
-                (flat(Vector3Lerp(inside, outside, mid), c) < R ? lo : hi) = mid;
+            const float dx = road->end.x - road->start.x, dz = road->end.z - road->start.z;
+            const float fx = road->start.x - c.x, fz = road->start.z - c.z;
+            const float qa = dx * dx + dz * dz, qb = 2 * (fx * dx + fz * dz), qc = fx * fx + fz * fz - R * R;
+            const float disc = qb * qb - 4 * qa * qc;
+            if (qa < 1e-6F || disc <= 0) continue;
+            const bool through = flat(road->start, c) >= R && flat(road->end, c) >= R;
+            if (through && road->type != world::RoadType::Highway) continue;
+            for (const float sign : {-1.0F, 1.0F}) {
+                const float t = (-qb + sign * std::sqrt(disc)) / (2 * qa);
+                if (t <= 0 || t >= 1) continue;
+                // The smaller root enters the circle going start -> end; the larger leaves it.
+                crossings.push_back({road, {Vector3Lerp(road->start, road->end, t), sign < 0 ? road->start : road->end}});
             }
-            const Vector3 at = Vector3Lerp(inside, outside, lo);
+        }
+        for (const auto& [road, crossing] : crossings) {
+            const Vector3 at = crossing.at, outside = crossing.outside;
             if (std::any_of(exits.begin(), exits.end(), [&](const Exit& e) {return flat(e.at, at) < 12;})) continue;
-            Exit exit{at, flat_dir(inside, outside), road->width, std::vector<float>(towns.size(), -1)};
+            Exit exit{at, flat_dir(at, outside), road->width, std::vector<float>(towns.size(), -1)};
             // Shortest road distance to every other town, leaving this way (never back through town).
             std::vector<float> cost(nodes.size(), std::numeric_limits<float>::max());
             using Item = std::pair<float, int>;
@@ -531,10 +541,15 @@ void backcountry(const world::VerdaRegion& region, Signage& out) {
         if (world::zones::zone_at(road.start) != world::zones::ZoneId::Ferarbaro ||
             world::zones::zone_at(road.end) != world::zones::ZoneId::Ferarbaro) continue;
         // Highways get a board now and then; the gravel and dirt roads, more of them.
-        const float spacing = road.type == world::RoadType::Asphalt ? 170 : 55;
+        const float spacing = road.type == world::RoadType::Asphalt || road.type == world::RoadType::Highway ? 170 : 55;
         const float length = flat(road.start, road.end);
         const Vector3 d = flat_dir(road.start, road.end), side{d.z, 0, -d.x};
-        for (float t = spacing * .5F; t < length - 10; t += spacing) {
+        // A road shorter than the spacing (a piece of a highway's curve) gets one by chance.
+        std::vector<float> spots;
+        if (length >= spacing) for (float t = spacing * .5F; t < length - 10; t += spacing) spots.push_back(t);
+        else if ((static_cast<std::uint32_t>(std::abs(mid.x * 17 + mid.z * 29)) * 2654435761U >> 8) % 1000U < static_cast<std::uint32_t>(length / spacing * 1000))
+            spots.push_back(length * .5F);
+        for (const float t : spots) {
             const auto h = static_cast<std::uint32_t>(std::abs(mid.x * 13 + mid.z * 7 + t * 31)) * 2654435761U;
             const float flip = (h >> 3) % 2 ? 1.0F : -1.0F;
             Vector3 p = Vector3Add(Vector3Lerp(road.start, road.end, t / length), Vector3Scale(side, flip * (road.width * .5F + 2.2F)));

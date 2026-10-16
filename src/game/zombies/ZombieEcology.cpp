@@ -1,4 +1,5 @@
 #include "outland/game/zombies/ZombieEcology.hpp"
+#include "outland/world/Highways.hpp"
 #include "outland/characters/CharacterRegistry.hpp"
 #include "outland/characters/NpcSystem.hpp"
 #include "outland/game/sound/SoundBus.hpp"
@@ -73,17 +74,21 @@ void ZombieEcology::build(const world::VerdaRegion& region, const characters::Ch
             ++placed;
         }
     }
-    // Wrecks by the long roads between towns.
+    // Wrecks by the long roads between towns (a highway comes in short pieces round its curves;
+    // any piece of it out in the country will do).
     int roadside = 0;
     for (const auto& edge : roads_.edges()) {
-        if (roadside >= 10 || edge.length < 250) continue;
+        const bool highway = edge.width >= world::highways::min_width;
+        if (roadside >= 10 || edge.length < (highway ? 40 : 250)) continue;
         const auto a = roads_.nodes()[static_cast<std::size_t>(edge.a)], b = roads_.nodes()[static_cast<std::size_t>(edge.b)];
         const Vector3 mid = Vector3Lerp(a, b, .5F);
+        if (highway && std::any_of(settlements.begin(), settlements.end(), [&](const world::Settlement& town) {
+                return flat(town.center, mid) < 300; })) continue;
         const float l = flat(a, b);
         const Vector3 side{-(b.z - a.z) / l, 0, (b.x - a.x) / l};
         const float off = edge.width * .5F + 12;
         const Vector3 p{mid.x + side.x * off, 0, mid.z + side.z * off};
-        if (!standable(p) || !apart(p, 120)) continue;
+        if (!standable(p) || !apart(p, highway ? 500 : 120)) continue;
         sources_.push_back({{p.x, world::terrain::TerrainHeight::sample(p.x, p.z), p.z}, -1, 16, false, true});
         ++roadside;
     }

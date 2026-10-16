@@ -1,5 +1,6 @@
 #include "outland/world/roads/RoadGraph.hpp"
 #include "outland/world/VerdaRegion.hpp"
+#include "outland/world/Highways.hpp"
 #include <raymath.h>
 #include <algorithm>
 #include <cmath>
@@ -11,8 +12,15 @@ namespace {
 constexpr float merge = 1.5F; // metres: ends this close to a road join it
 float flat(Vector3 a, Vector3 b) { return std::hypot(a.x - b.x, a.z - b.z); }
 // Where the right-hand lane runs: a quarter of the way across a two-lane road; wide streets keep
-// a parking lane at the kerb, so traffic runs nearer the middle.
-float lane_of(float width) { return width >= 10 ? width * .15F : width * .25F; }
+// a parking lane at the kerb, so traffic runs nearer the middle; on a divided highway, the outer
+// (slow) lane of the right-hand carriageway.
+float lane_of(float width) {
+    if (width >= highways::min_width) return highways::slow_lane;
+    return width >= 10 ? width * .15F : width * .25F;
+}
+// Lane changes (a highway onto a street, a street onto a wider one) ease over this far either
+// side of the corner instead of jumping.
+constexpr float lane_ease = 16;
 Vector3 flat_dir(Vector3 a, Vector3 b) {
     const float l = flat(a, b);
     return l < 1e-4F ? Vector3{0, 0, 1} : Vector3{(b.x - a.x) / l, 0, (b.z - a.z) / l};
@@ -188,7 +196,17 @@ Vector3 route_point(const Route& route, float distance, float* yaw_degrees, bool
             const Vector3 d = flat_dir(a, b);
             if (yaw_degrees) *yaw_degrees = std::atan2(d.x, d.z) * RAD2DEG;
             const float t = l < 1e-4F ? 1 : std::clamp((distance - walked) / l, 0.0F, 1.0F);
-            const float lane = keep_lane && i < route.lane.size() ? route.lane[i] : 0;
+            float lane = keep_lane && i < route.lane.size() ? route.lane[i] : 0;
+            if (keep_lane && i < route.lane.size()) {
+                const float ease = std::min(lane_ease, l * .5F), into = distance - walked, left = walked + l - distance;
+                if (i > 0 && into < ease) {
+                    const float w = .5F + .5F * into / ease;
+                    lane = route.lane[i - 1] * (1 - w) + lane * w;
+                } else if (i + 1 < route.lane.size() && left < ease) {
+                    const float w = .5F - .5F * left / ease;
+                    lane = lane * (1 - w) + route.lane[i + 1] * w;
+                }
+            }
             const Vector3 p = Vector3Lerp(a, b, t);
             return {p.x - d.z * lane, 0, p.z + d.x * lane};
         }

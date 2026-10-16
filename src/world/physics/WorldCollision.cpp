@@ -1,4 +1,5 @@
 #include "outland/world/physics/WorldCollision.hpp"
+#include "outland/world/roads/HighwayNetwork.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -159,6 +160,8 @@ bool WorldCollision::blocked_impl(
     // Shoreline blocks walkers until swimming exists; Creator flight remains independent.
     if(region.coastal_layout() && std::hypot(position.x,position.z)>1950 &&
        terrain::TerrainHeight::sample(position.x,position.z)<=layout::sea_level) return true;
+    // A highway's median barrier stops cars (people climb over it).
+    if(vehicle && highways::network(region).barrier_hit(position,player_radius)) return true;
 
     for (
         const Settlement& settlement :

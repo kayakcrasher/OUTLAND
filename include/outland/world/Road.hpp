@@ -7,7 +7,8 @@ namespace outland::world {
 enum class RoadType {
     Dirt,
     Gravel,
-    Asphalt
+    Asphalt,
+    Highway     // a divided highway (world/Highways.hpp)
 };
 
 struct Road {

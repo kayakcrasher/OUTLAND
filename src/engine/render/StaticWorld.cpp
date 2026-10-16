@@ -1,5 +1,7 @@
 #include "outland/engine/render/StaticWorld.hpp"
 #include "outland/engine/render/ViewFrustum.hpp"
+#include "outland/engine/render/HighwayRender.hpp"
+#include "outland/world/roads/HighwayNetwork.hpp"
 #include "outland/world/RegionGeometry.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
@@ -72,17 +74,23 @@ void StaticWorld::draw(const world::VerdaRegion& region, Vector3 camera, const V
     // Roads: the same 340 m reach as before.
     const bool lifted = road_lift > 0;
     if (lifted) { rlDrawRenderBatchActive(); rlPushMatrix(); rlTranslatef(0, road_lift, 0); }
+    const auto& highways = world::highways::network(region);
     for (auto& chunk : roads_) {
         if (chunk.settlement >= towns.size() || chunk.index >= towns[chunk.settlement].roads.size()) continue;
         if (flat(chunk.centre, camera) > 340 * reach + chunk.radius || !visible(chunk.centre, chunk.radius)) continue;
         const auto& road = towns[chunk.settlement].roads[chunk.index];
+        const auto* highway = highways.info(chunk.settlement, chunk.index);
+        const auto draw_road = [&] {
+            if (highway) highway::draw(road, *highway, chunk.begin, chunk.end);
+            else world::geometry::road(road, chunk.begin, chunk.end);
+        };
         // Never record while lifted: rlgl bakes the current transform into the vertices, and the
         // lift would stay in the road mesh for good (roads floating metres up after the drop).
-        if (chunk.failed || (!chunk.mesh && (budget <= 0 || lifted))) {world::geometry::road(road, chunk.begin, chunk.end); continue;}
+        if (chunk.failed || (!chunk.mesh && (budget <= 0 || lifted))) {draw_road(); continue;}
         if (!chunk.mesh) {
             --budget;
             chunk.mesh = std::make_unique<RecordedGeometry>();
-            chunk.failed = !recorder_.record([&] {world::geometry::road(road, chunk.begin, chunk.end);}, *chunk.mesh);
+            chunk.failed = !recorder_.record(draw_road, *chunk.mesh);
             continue; // recording drew it this frame
         }
         chunk.mesh->draw(); ++draws_;

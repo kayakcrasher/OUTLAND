@@ -8,6 +8,7 @@
 #include "outland/characters/NpcSystem.hpp"
 #include "outland/world/VerdaLayout.hpp"
 #include "outland/world/VerdaRegion.hpp"
+#include "outland/world/Highways.hpp"
 #include "outland/world/roads/RoadGraph.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
@@ -241,12 +242,13 @@ int main() {
         // The grid, and its south blocks (avenues on to a street at z = 240).
         const auto grid = [](Vector3 p) { return std::abs(p.x) <= 167 && p.z >= -167 && p.z <= 247; };
         const bool inside = grid(road.start) && grid(road.end);
-        if (inside) { ++grid_streets; check(road.width == 12 && road.type == world::RoadType::Asphalt, "grid streets are 12 m asphalt"); }
+        if (road.type == world::RoadType::Highway) {
+            check(road.width == world::highways::width, "highways are divided highways");
+            // The spokes leave from the main avenue's ends (north and south) and the boulevards' (Roka, Porto Luma).
+            if ((road.start.x == 0 && std::abs(road.start.z) == 166) || (std::abs(road.start.x) == 476 && road.start.z == 0)) ++highways;
+        } else if (inside) { ++grid_streets; check(road.width == 12 && road.type == world::RoadType::Asphalt, "grid streets are 12 m asphalt"); }
         else if (in_suburbs(road.start) && in_suburbs(road.end)) ++suburb_streets;
-        else if (std::abs(road.start.x) < 167 && std::abs(road.start.z) < 167) {
-            ++highways;
-            check((road.start.x == 0 && std::abs(road.start.z) == 166) || (road.start.z == 0 && std::abs(road.start.x) == 166), "highway joins a main street at the grid edge");
-        } else if (std::abs(road.start.x) == 476 && road.start.z == 0) ++highways; // Roka and Porto Luma roads leave from the boulevards
+        else check(false, "a capital road that is neither street nor highway");
     }
     check(grid_streets == 10 + 6 && highways == 4 && suburb_streets == 14, // + the south blocks' four avenues and two streets
           "grid, suburbs and four highways: " + std::to_string(grid_streets) + "/" + std::to_string(suburb_streets) + "/" + std::to_string(highways));

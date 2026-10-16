@@ -27,11 +27,11 @@ struct Ranch {
 // Sites on open, gently rolling land beside a highway out in each county, clear of towns and
 // roads (chosen once by searching the island; the terrain levels a pad round each farm).
 inline constexpr std::array<Ranch, 5> ranches{{
-    {"ranch_kampoj", "Ranĉo Verdaj Kampoj", "Garza", zones::ZoneId::Verdkerno, {-5.50F, -551.00F}, {-1.0F, 0.0F}},
-    {"ranch_montaro", "Ranĉo Montaro", "Montoya", zones::ZoneId::Altverdo, {-405.00F, -1443.58F}, {-0.15129F, -0.98849F}},
-    {"ranch_sunlevigo", "Ranĉo Sunleviĝo", "Villarreal", zones::ZoneId::Lumamaro, {733.13F, -173.21F}, {-0.22282F, -0.97486F}},
-    {"ranch_kanoj", "Ranĉo Kanoj", "Cortez", zones::ZoneId::Marcfluo, {-18.40F, 1485.08F}, {-0.04145F, -0.99914F}},
-    {"ranch_pinarbo", "Ranĉo Pinarbo", "Salazar", zones::ZoneId::Ferarbaro, {-1475.37F, -160.18F}, {0.97928F, 0.20252F}},
+    {"ranch_kampoj", "Ranĉo Verdaj Kampoj", "Garza", zones::ZoneId::Verdkerno, {-12.50F, -551.00F}, {-1.0F, 0.0F}},
+    {"ranch_montaro", "Ranĉo Montaro", "Montoya", zones::ZoneId::Altverdo, {-408.61F, -1455.97F}, {-0.15129F, -0.98849F}},
+    {"ranch_sunlevigo", "Ranĉo Sunleviĝo", "Villarreal", zones::ZoneId::Lumamaro, {731.56F, -180.10F}, {-0.22282F, -0.97486F}},
+    {"ranch_kanoj", "Ranĉo Kanoj", "Cortez", zones::ZoneId::Marcfluo, {-18.44F, 1487.09F}, {-0.04145F, -0.99914F}},
+    {"ranch_pinarbo", "Ranĉo Pinarbo", "Salazar", zones::ZoneId::Ferarbaro, {-1478.46F, -160.52F}, {0.97928F, 0.20252F}},
 }};
 
 // A rectangle in the ranch frame (u0..u1 along the road, v0..v1 up the track).
@@ -62,7 +62,7 @@ inline constexpr Area stockyard_receiving{-12, 12, 8, 26};
 inline constexpr Area stockyard_pens[2]{{-42, -14, 8, 42}, {14, 42, 8, 42}};
 inline constexpr Vector2 stockyard_chute{0, 2.5F};
 inline constexpr Area stockyard_footprint{-46, 62, 4, 64};
-inline constexpr Vector2 stockyard_gate{1275.67F, -781.785F}, stockyard_up{0.8466F, -0.53223F};
+inline constexpr Vector2 stockyard_gate{1289.34F, -790.08F}, stockyard_up{0.8466F, -0.53223F};
 
 // The level pads the terrain makes for them (ranch frame centre, radius, blend).
 inline constexpr Vector2 pad_centre{-8, 64};
