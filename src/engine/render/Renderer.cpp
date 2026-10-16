@@ -3684,6 +3684,15 @@ void Renderer::run() {
             EndBlendMode();
             DrawCircle3D({at.x,ground+.15F,at.z},game::career::Career::arrive_radius*.5F,{1,0,0},90,Fade(beam,.8F));
         }
+        // The waypoint set on the map: a pink column of light.
+        if(const auto& pin=map_screen.pin();pin && std::hypot(pin->x-player.position.x,pin->z-player.position.z)>18) {
+            const float ground=world::terrain::TerrainHeight::sample(pin->x,pin->z);
+            const float pulse=.75F+.25F*std::sin(static_cast<float>(GetTime())*2.4F);
+            BeginBlendMode(BLEND_ADDITIVE);
+            DrawCylinder({pin->x,ground,pin->z},1.0F,1.0F,120,10,Fade(Color{255,110,210,255},.2F*pulse));
+            DrawCylinder({pin->x,ground,pin->z},.3F,.3F,120,8,Fade(Color{255,110,210,255},.5F*pulse));
+            EndBlendMode();
+        }
         game::career::draw_camp(police_camp,camera.position,static_cast<float>(GetTime()),
             [](float x,float z){return world::terrain::TerrainHeight::sample(x,z);});
         for(const auto& tag:territory.tags()) gang_logos.draw(tag,camera.position);
@@ -4400,9 +4409,83 @@ void Renderer::run() {
                 DrawText(warning,screen_width/2-ww/2,screen_height/2+96,22,Color{150,190,255,255});
             }
         }
+        // The compass's marks, to lead the player: the job or orders and the waypoint set on the map
+        // (always on the strip, with how far), the safe circle in Battle Royale, and the places that
+        // matter close by - your crew, rival hideouts, the police, the hospital, shops, the bus.
+        std::vector<game::hud::CompassMark> compass_marks;
+        {
+            using game::hud::Glyph;
+            const Vector3 me=player.position;
+            const auto flat=[&](Vector3 at){return std::hypot(at.x-me.x,at.z-me.z);};
+            if(const auto& pin=map_screen.pin();pin) {
+                if(flat(*pin)<18 && !map_screen.is_open()) {
+                    map_screen.clear_pin();interaction_message="Waypoint reached";interaction_remaining=2.5F;
+                } else compass_marks.push_back({*pin,Glyph::Waypoint,Color{255,110,210,255},"WAYPOINT",true});
+            }
+            if(career.job().kind!=game::career::JobKind::None && flat(career.job().target)>14)
+                compass_marks.push_back({career.job().target,Glyph::Objective,career.on_duty() ? Color{90,150,255,255} : Color{255,196,70,255},career.job().title,true});
+            if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal()) {
+                const auto zone=mode_session.zone();
+                const bool next=zone.next_radius<zone.radius-1;
+                const Vector2 centre=next ? zone.next_center : zone.center;
+                const float radius=next ? zone.next_radius : zone.radius;
+                const float out=std::hypot(me.x-centre.x,me.z-centre.y)-radius;
+                if(out>-15) compass_marks.push_back({{centre.x,0,centre.y},Glyph::Zone,Color{120,190,255,255},"SAFE ZONE",true});
+            }
+            if(game::rules_for(game_mode).civilian_life) {
+                // The nearest of each, if close enough to matter.
+                const auto nearest=[&](Glyph glyph,Color colour,const std::string& label,float range,auto&& points) {
+                    const Vector3* best=nullptr;float d=range;
+                    for(const Vector3& at:points) if(const float f=flat(at);f<d) {d=f;best=&at;}
+                    if(best) compass_marks.push_back({*best,glyph,colour,label,false});
+                };
+                if(services.has_hospital() && flat(services.hospital_door())<2500)
+                    compass_marks.push_back({services.hospital_door(),Glyph::Hospital,Color{220,50,50,255},"HOSPITAL",false});
+                {
+                    std::vector<Vector3> stations;
+                    for(const auto& unit:services.units()) if(unit.kind==game::services::UnitKind::Police) stations.push_back(unit.home);
+                    nearest(Glyph::Police,Color{70,130,255,255},"POLICE",career.on_duty() ? 2500.0F : 700.0F,stations);
+                }
+                for(const char* kind:{"general","medical","hardware","pub"}) {
+                    std::vector<Vector3> doors;
+                    for(const auto& shop:economy.shops()) if(shop.kind==kind) doors.push_back(shop.door);
+                    const std::string k=kind;
+                    nearest(Glyph::Shop,k=="medical" ? Color{240,120,140,255} : k=="hardware" ? Color{200,160,90,255} : k=="pub" ? Color{230,170,60,255} : Color{120,210,130,255},
+                            k=="general" ? "GENERAL STORE" : k=="medical" ? "PHARMACY" : k=="hardware" ? "HARDWARE" : "PUB",450.0F,doors);
+                }
+                {
+                    std::vector<Vector3> shelters;
+                    for(const auto& stop:bus_line.stops()) shelters.push_back(stop.shelter);
+                    nearest(Glyph::Bus,Color{250,205,40,255},"BUS STOP",260.0F,shelters);
+                }
+                if(penthouse.found() && game::economy::Penthouse::owned(loot_session.economy()))
+                    compass_marks.push_back({penthouse.to_world({0,0,0}),Glyph::Home,Color{255,214,90,255},"HOME",false});
+                // Hideouts: your own crew's (the nearest, anywhere) and any rival's close by.
+                const int mine=player_gang();
+                std::vector<Vector3> own;
+                for(const auto& crew:mafio.crews()) {
+                    const auto& gang=game::mafia::gangs[static_cast<std::size_t>(crew.gang)];
+                    if(crew.gang==mine) own.push_back(crew.door);
+                    else if(flat(crew.door)<(mine>=0 ? 400.0F : 220.0F))
+                        compass_marks.push_back({crew.door,Glyph::Hideout,gang.color,std::string(gang.name)+" - "+crew.town,false});
+                }
+                if(mine>=0) {
+                    nearest(Glyph::Hideout,game::mafia::gangs[static_cast<std::size_t>(mine)].color,"YOUR CREW",1e9F,own);
+                    std::vector<Vector3> docks;
+                    for(const auto& dock:smuggling_docks) docks.push_back(dock.point);
+                    nearest(Glyph::Dock,Color{90,210,230,255},"DOCKS",700.0F,docks);
+                }
+                for(const auto& t:territory.turfs()) if(t.ranch>=0 && flat(t.centre)<600) {
+                    const auto& family=territory.families()[static_cast<std::size_t>(t.ranch)];
+                    compass_marks.push_back({t.centre,Glyph::Ranch,Color{176,128,74,255},family.name.empty() ? t.name : family.name+" ranch",false});
+                }
+                if(career.on_duty() && police_camp.placed())
+                    compass_marks.push_back({police_camp.line(),Glyph::Camp,Color{215,60,50,255},"TRAINING CAMP",false});
+            }
+        }
         // The compass, in every circumstance: where the camera looks.
         if(!map_screen.is_open() && !poker_open)
-            game::hud::draw_compass(game::hud::bearing(Vector3Subtract(camera.target,camera.position)),screen_width,32);
+            game::hud::draw_compass(game::hud::bearing(Vector3Subtract(camera.target,camera.position)),screen_width,32,camera.position,compass_marks);
         // Battle Royale: a banner when a new circle is marked and when the zone starts to close.
         if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal() && !map_screen.is_open()) {
             const auto zone=mode_session.zone();
@@ -4511,6 +4594,7 @@ void Renderer::run() {
                 view.home=penthouse.to_world({0,0,0});
                 view.home_owned=game::economy::Penthouse::owned(loot_session.economy());
             }
+            view.marks=compass_marks;
             map_screen.draw(verda_region,view,settings,screen_width,screen_height);
         }
         // Mouse look waits for a click in the browser (pointer lock needs one).

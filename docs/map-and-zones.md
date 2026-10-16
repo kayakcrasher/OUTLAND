@@ -2,7 +2,7 @@
 
 ## Map (MAPO)
 
-Open the map with the **MAP · M** button at the top right, or the **M** key. Close it with **CLOSE**, **M** or Escape.
+Open the map with the **MAP · M** button at the top right, or the **M** key. Close it with **CLOSE**, **M** or Escape. Tap the map to set a waypoint ([below](#waypoints-and-the-compass)).
 
 - **What it shows:** the whole island, drawn from the terrain, with:
   - the sea, beaches and hill shading;
@@ -16,6 +16,32 @@ Open the map with the **MAP · M** button at the top right, or the **M** key. Cl
 - **Cost:** the map image is baked once (320×320 terrain samples), the first time the map opens.
 
 `game::MapScreen` (`src/game/MapScreen.cpp`) handles the drawing and touch input.
+
+## Waypoints and the compass
+
+- **Set a waypoint:** tap or click anywhere on the map. A pink pin goes there, with a dashed line from you and its distance. Tap the pin to clear it. In the world it stands as a pink column of light, and it clears itself when you get within 18 m ("Waypoint reached").
+- **The compass** (top centre) marks the places that matter as small icons at their bearing:
+
+  | Mark | Icon | When |
+  |---|---|---|
+  | Your job or police orders | gold diamond (blue on duty) | while you have one |
+  | Your waypoint | pink pin | while set |
+  | The safe zone | blue ring | Battle Royale, outside or near the edge of the next circle |
+  | Your crew's hideout | hexagon in your gang's colour | gang members, the nearest one anywhere |
+  | Rival hideouts | hexagon in their colour | within 400 m (220 m for civilians) |
+  | Police station | blue shield | the nearest within 700 m (anywhere for officers) |
+  | Hospital | red cross | within 2.5 km |
+  | Shops | bag: general store, pharmacy, hardware, pub | the nearest of each within 450 m |
+  | Bus stop | yellow H | the nearest within 260 m |
+  | Ranches | barn | within 600 m |
+  | Docks | anchor | gang members, the nearest within 700 m |
+  | Training camp | target | officers |
+  | Home | gold house | once you own the penthouse |
+
+- **Leading marks** (the job, the waypoint, the safe zone) are always on the strip, with their distance under them. When one is behind you it's pinned to the end of the strip with an arrow pointing the way to turn.
+- **Other marks** show only when they're in the strip's 120° view. Face one (within 6°) and its name and distance appear under the compass.
+- The map draws the same marks, with the leading ones named.
+- Logic: `game::hud::draw_compass` and `strip_spot` (`src/game/hud/Instruments.cpp`). The marks are gathered in `Renderer.cpp`.
 
 ## Zones (zonoj)
 

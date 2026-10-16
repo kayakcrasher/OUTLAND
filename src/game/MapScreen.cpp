@@ -60,6 +60,16 @@ Vector2 MapScreen::to_map(Rectangle area, float x, float z) {
     return {area.x + (x + extent) / (2 * extent) * area.width, area.y + (z + extent) / (2 * extent) * area.height};
 }
 
+Vector2 MapScreen::to_world(Rectangle area, Vector2 p) {
+    return {(p.x - area.x) / area.width * 2 * extent - extent, (p.y - area.y) / area.height * 2 * extent - extent};
+}
+void MapScreen::tap_map(Rectangle area, Vector2 point, float grab) {
+    if (!CheckCollisionPointRec(point, area)) return;
+    if (pin_ && Vector2Distance(to_map(area, pin_->x, pin_->z), point) <= grab) { pin_.reset(); return; }
+    const auto at = to_world(area, point);
+    pin_ = Vector3{at.x, world::terrain::TerrainHeight::sample(at.x, at.y), at.y};
+}
+
 // ---------------------------------------------------------------- input
 std::vector<Vector2> MapScreen::clicks(bool focused) {
     std::vector<Vector2> out;
@@ -90,6 +100,7 @@ MapScreen::Change MapScreen::update(GameSettings& settings, int width, int heigh
     const auto set = [&](auto& field, auto value) { if (field != value) { field = value; change = Change::Settings; } };
     for (const auto& p : clicks(focused)) {
         if (CheckCollisionPointRec(p, close_button(width, height))) change = Change::Close;
+        else if (CheckCollisionPointRec(p, map_area(width, height))) tap_map(map_area(width, height), p, 16 * scale_of(width, height));
         for (int i = 0; i < 8 && change != Change::Close; ++i) {
             if (!CheckCollisionPointRec(p, settings_button(i, width, height))) continue;
             switch (i) {
@@ -335,6 +346,39 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
             DrawTriangle(tip, l, rr, body);
             DrawTriangle(tip, rr, l, body);
         }
+    }
+    // The compass's marks: the places, then the way to go (named), then your waypoint.
+    for (int pass = 0; pass < 2; ++pass)
+        for (const auto& mark : view.marks) {
+            if (mark.lead != (pass == 1) || mark.glyph == hud::Glyph::Waypoint) continue;
+            const auto at = to_map(area, mark.at.x, mark.at.z);
+            if (!CheckCollisionPointRec(at, area)) continue;
+            hud::draw_glyph(mark.glyph, at, (mark.lead ? 8.0F : 6.0F) * s, mark.colour);
+            if (mark.lead && !mark.label.empty()) {
+                const float lx = at.x + 12 * s;
+                DrawRectangleRounded({lx - 3 * s, at.y - 9 * s, measure(font, mark.label.c_str(), 14 * s) + 6 * s, 18 * s}, .3F, 4, Fade(BLACK, .6F));
+                text(font, mark.label.c_str(), {lx, at.y - 7 * s}, 14 * s, mark.colour);
+            }
+        }
+    if (pin_) {
+        const auto at = to_map(area, pin_->x, pin_->z);
+        const auto from = to_map(area, view.player.x, view.player.z);
+        const float length = Vector2Distance(from, at);
+        // A dashed line from you to it.
+        for (float d = 0; d + 6 * s < length; d += 12 * s)
+            DrawLineEx(Vector2Lerp(from, at, d / length), Vector2Lerp(from, at, (d + 6 * s) / length), 2 * s, Color{255, 110, 210, 200});
+        hud::draw_glyph(hud::Glyph::Waypoint, at, 10 * s, Color{255, 110, 210, 255});
+        const float metres = std::hypot(pin_->x - view.player.x, pin_->z - view.player.z);
+        const char* label = metres >= 1000 ? TextFormat("WAYPOINT  %.1f km", metres / 1000) : TextFormat("WAYPOINT  %.0f m", metres);
+        DrawRectangleRounded({at.x + 10 * s, at.y - 22 * s, measure(font, label, 14 * s) + 8 * s, 18 * s}, .3F, 4, Fade(BLACK, .6F));
+        text(font, label, {at.x + 14 * s, at.y - 20 * s}, 14 * s, Color{255, 150, 225, 255});
+    }
+    {
+        const char* hint = pin_ ? "TAP THE PIN TO CLEAR THE WAYPOINT" : "TAP THE MAP TO SET A WAYPOINT";
+        const float hw = measure(font, hint, 14 * s);
+        const Vector2 at{area.x + area.width - hw - 14 * s, area.y + area.height - 26 * s};
+        DrawRectangleRounded({at.x - 6 * s, at.y - 3 * s, hw + 12 * s, 21 * s}, .3F, 4, Fade(BLACK, .55F));
+        text(font, hint, at, 14 * s, Color{255, 170, 230, 255});
     }
     // You: an arrow pointing the way you face, ringed so it reads on any ground.
     const auto you = to_map(area, view.player.x, view.player.z);

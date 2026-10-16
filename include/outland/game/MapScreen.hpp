@@ -1,5 +1,6 @@
 #pragma once
 #include "outland/game/Settings.hpp"
+#include "outland/game/hud/Instruments.hpp"
 #include "outland/world/Zones.hpp"
 #include <raylib.h>
 #include <string>
@@ -13,6 +14,8 @@ namespace outland::game {
 
 // The island map (MAPO): the whole of Verda with its five zones, the roads and towns, and where
 // the player stands and faces. It doubles as the pause menu for settings. Modal while open.
+// Tapping the map sets a waypoint (tapping it again clears it); the game shows it on the compass
+// and as a column of light, along with the places the compass marks.
 class MapScreen {
 public:
     struct View {
@@ -40,6 +43,8 @@ public:
         std::vector<std::pair<std::string, Color>> standings;   // biggest first: "La Verda Mano  4 towns, 2 ranches"
         std::string gang_goal;                                    // "Take the island: 3 of 10 turfs" 
         bool home_owned{false};
+        // The compass's marks (the job, the hospital, stations, shops...), drawn as on the compass.
+        std::vector<hud::CompassMark> marks;
         const Font* font{nullptr};
     };
     enum class Change { None, Settings, Close };
@@ -62,6 +67,14 @@ public:
     // World <-> map image: the island spans +-extent metres; north (-z) is up.
     static constexpr float extent = 2450;
     static Vector2 to_map(Rectangle area, float x, float z);
+    static Vector2 to_world(Rectangle area, Vector2 point);   // (x, z)
+
+    // The player's waypoint, set by tapping the map.
+    [[nodiscard]] const std::optional<Vector3>& pin() const { return pin_; }
+    void set_pin(Vector3 at) { pin_ = at; }
+    void clear_pin() { pin_.reset(); }
+    // A tap on the map at `point`: on the pin (within `grab` pixels) clears it, elsewhere moves it there.
+    void tap_map(Rectangle area, Vector2 point, float grab);
 
 private:
     std::vector<Vector2> clicks(bool focused);
@@ -71,6 +84,7 @@ private:
     Texture2D texture_{};
     bool baked_{false};
     std::vector<Vector2> zone_labels_; // zone centroids in world x/z
+    std::optional<Vector3> pin_;
 };
 
 }
