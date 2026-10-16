@@ -93,6 +93,27 @@ int main() {
     check(world::physics::WorldCollision::vehicle_blocked(median, region, .3F), "a car stops at the barrier");
     check(!world::physics::WorldCollision::blocked({0, 0, -1000}, region, .3F), "someone on foot climbs over it");
     check(!network.barrier_hit({hw::slow_lane, 0, -1000}, 1.2F) && !network.barrier_hit({-hw::fast_lane, 0, -1000}, 1.2F), "the lanes are clear of it");
+    // Crossovers: the median opens every few hundred metres along the open road (the north spoke
+    // from the city's edge to the ring has three, and the farm track's opening besides).
+    {
+        int openings = 0;
+        bool closed = true;
+        for (float z = -300; z > -1440; z -= 1) {
+            const bool hit = network.barrier_hit({0, 0, z}, .1F);
+            if (closed && !hit) ++openings;
+            closed = hit;
+        }
+        std::cout << openings << " median openings on the north spoke\n";
+        check(openings >= 3, "crossovers in the median: " + std::to_string(openings));
+    }
+    // Into a town the highway tapers to a little more than a street's width, with no barrier.
+    for (std::size_t s = 0; s < region.settlements().size(); ++s)
+        for (std::size_t r = 0; r < region.settlements()[s].roads.size(); ++r) {
+            const auto* info = network.info(s, r);
+            if (!info) continue;
+            check(info->start_half >= 7 && info->end_half >= 7 && info->start_half <= hw::paved_half + .01F && info->end_half <= hw::paved_half + .01F, "paved half-widths in range");
+        }
+    check(!network.barrier_hit({0, 0, -175}, 1.0F) && !network.barrier_hit({0, 0, -1670}, 1.0F), "no barrier where the north spoke meets the towns");
     for (const auto& ranch : world::ranches::ranches) {
         // Where the farm track meets the highway, cars can turn across.
         Vector3 best{};

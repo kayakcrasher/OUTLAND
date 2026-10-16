@@ -73,6 +73,8 @@ ShopAction PlayUI::shop_input(const economy::Economy& economy,const economy::Sho
 }
 int PlayUI::draw_objective(const ModeSession& session,int width) {
     constexpr int font=16,top=108,line_height=20;
+    // Explore needs no standing banner (it only cluttered the screen); the space it took closes up.
+    if(session.mode()==GameMode::Explore) return top-8;
     std::istringstream words(session.objective());std::string word,line;std::vector<std::string> lines;
     while(words>>word) {
         const auto candidate=line.empty() ? word : line+" "+word;

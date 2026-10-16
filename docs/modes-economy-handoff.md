@@ -42,7 +42,7 @@ Every changed file:
 | `src/game/HomeScreen.cpp` | Responsive mode/difficulty buttons and existing X11 click integration. |
 | `include/outland/game/ModeSession.hpp` | Reusable session phase, match result and circle configuration. |
 | `src/game/ModeSession.cpp` | Complete result lifecycle, circle and safe mode spawning. |
-| `include/outland/game/PlayUI.hpp` | Store/result modal interface and objective banner. |
+| `include/outland/game/PlayUI.hpp` | Store/result modal interface and objective banner (none in Explore). |
 | `src/game/PlayUI.cpp` | Responsive touch UI, objectives, results, trade selection. |
 | `include/outland/game/ai/BattleRoyaleBots.hpp` | Circle integration hook on the existing bot system. |
 | `src/game/ai/BattleRoyaleBots.cpp` | Safe-zone convergence and uncredited environmental eliminations. |

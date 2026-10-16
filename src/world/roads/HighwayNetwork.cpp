@@ -2,6 +2,7 @@
 #include "outland/world/Highways.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 
@@ -9,6 +10,10 @@ namespace outland::world::highways {
 namespace {
 constexpr float join = .75F;         // ends this close are the same point
 constexpr float side_join = paved_half + 3;
+constexpr float taper = 90;          // the last stretch into a town narrows over this far
+constexpr float town_half = 7.5F;    // to a little wider than the town's 12 m street
+constexpr float town_apron = 45;     // plain asphalt (no lane lines, no barrier) over the end of it
+constexpr float crossover_every = 420, crossover_half = 11;   // median openings along the open road
 
 struct Piece {
     std::size_t settlement, road;
@@ -80,29 +85,100 @@ void Network::build(const VerdaRegion& region) {
     // Joins: a piece that runs on into exactly one other at an end is mitred there.
     struct Junction { Vector2 p; float plain, gap; };
     std::vector<Junction> junctions;
-    for (const auto& piece : pieces) {
+    constexpr int none = -1;
+    std::vector<std::array<int, 2>> next(pieces.size(), {none, none});   // the piece running on at each end
+    std::vector<std::array<bool, 2>> ends(pieces.size(), {false, false}); // the highway ends there (a town)
+    for (std::size_t i = 0; i < pieces.size(); ++i) {
+        const auto& piece = pieces[i];
         auto& info = roads_[piece.settlement][piece.road];
         info.highway = true;
+        info.start_half = info.end_half = paved_half;
         for (int end = 0; end < 2; ++end) {
             const Vector2 at = end == 0 ? piece.a : piece.b;
             // The neighbours' directions of travel through `at`, the piece's way (leaving from its
             // end, arriving at its start).
             std::vector<Vector2> onward;
-            for (const auto& other : pieces) {
-                if (&other == &piece) continue;
-                if (len(sub(other.a, at)) < join) onward.push_back(end == 1 ? other.d : Vector2{-other.d.x, -other.d.y});
-                else if (len(sub(other.b, at)) < join) onward.push_back(end == 1 ? Vector2{-other.d.x, -other.d.y} : other.d);
+            int neighbour = none;
+            for (std::size_t j = 0; j < pieces.size(); ++j) {
+                const auto& other = pieces[j];
+                if (j == i) continue;
+                if (len(sub(other.a, at)) < join) {onward.push_back(end == 1 ? other.d : Vector2{-other.d.x, -other.d.y}); neighbour = static_cast<int>(j);}
+                else if (len(sub(other.b, at)) < join) {onward.push_back(end == 1 ? Vector2{-other.d.x, -other.d.y} : other.d); neighbour = static_cast<int>(j);}
             }
             Vector2 cross = piece.right;
             if (onward.size() == 1) {
-                const Vector2 next = onward[0];
-                if (dot(next, piece.d) > std::cos(50 * DEG2RAD)) cross = unit({piece.right.x + right_of(next).x, piece.right.y + right_of(next).y});
+                const Vector2 ahead = onward[0];
+                if (dot(ahead, piece.d) > std::cos(50 * DEG2RAD)) cross = unit({piece.right.x + right_of(ahead).x, piece.right.y + right_of(ahead).y});
+                next[i][static_cast<std::size_t>(end)] = neighbour;
             } else if (onward.empty()) {
-                junctions.push_back({at, 24, 24});       // the highway ends: an apron onto the town's street
+                ends[i][static_cast<std::size_t>(end)] = true;   // the highway ends: it tapers onto the town's street
             } else {
                 junctions.push_back({at, 26, 26});       // highways branch
             }
             (end == 0 ? info.start_cross : info.end_cross) = {cross.x, 0, cross.y};
+        }
+    }
+    // Chains: the pieces of each highway in order, with each piece's distance along it, for the
+    // tapers into towns and the crossovers.
+    std::vector<float> along(pieces.size(), 0);
+    std::vector<bool> forward(pieces.size(), true), seen(pieces.size(), false);
+    struct Chain { std::vector<std::size_t> pieces; float length{0}; bool open_start{false}, open_end{false}; };
+    std::vector<Chain> chains;
+    const auto walk = [&](std::size_t first, bool first_forward) {
+        Chain chain;
+        std::size_t at = first;
+        bool fwd = first_forward;
+        float s = 0;
+        while (!seen[at]) {
+            seen[at] = true;
+            along[at] = s; forward[at] = fwd;
+            chain.pieces.push_back(at);
+            s += pieces[at].length;
+            const int leaving_end = fwd ? 1 : 0;
+            const int n = next[at][static_cast<std::size_t>(leaving_end)];
+            if (n == none) {chain.open_end = ends[at][static_cast<std::size_t>(leaving_end)]; break;}
+            const Vector2 exit = fwd ? pieces[at].b : pieces[at].a;
+            fwd = len(sub(pieces[static_cast<std::size_t>(n)].a, exit)) < join;
+            at = static_cast<std::size_t>(n);
+        }
+        chain.length = s;
+        chains.push_back(std::move(chain));
+    };
+    for (std::size_t i = 0; i < pieces.size(); ++i) {     // spokes, from a town end
+        if (seen[i]) continue;
+        if (ends[i][0] && next[i][1] != none) {walk(i, true); chains.back().open_start = true;}
+        else if (ends[i][1] && next[i][0] != none) {walk(i, false); chains.back().open_start = true;}
+    }
+    for (std::size_t i = 0; i < pieces.size(); ++i) if (!seen[i]) walk(i, true);   // the ring (and loners)
+    std::vector<std::vector<Span>> extra_gaps(pieces.size()), extra_plain(pieces.size());
+    for (const auto& chain : chains) {
+        const auto half_at = [&](float s) {
+            float from_end = 1e9F;
+            if (chain.open_start) from_end = std::min(from_end, s);
+            if (chain.open_end) from_end = std::min(from_end, chain.length - s);
+            if (from_end >= taper) return paved_half;
+            const float t = std::clamp(from_end / taper, 0.0F, 1.0F), eased = t * t * (3 - 2 * t);
+            return town_half + (paved_half - town_half) * eased;
+        };
+        for (const auto i : chain.pieces) {
+            auto& info = roads_[pieces[i].settlement][pieces[i].road];
+            const float s0 = along[i], s1 = along[i] + pieces[i].length;
+            // Piece-local distances: chain distance s is local s - s0 going forward, s1 - s going back.
+            const auto local = [&](float s) { return forward[i] ? s - s0 : s1 - s; };
+            const float h0 = half_at(s0), h1 = half_at(s1);
+            info.start_half = forward[i] ? h0 : h1;
+            info.end_half = forward[i] ? h1 : h0;
+            const auto span = [&](float a, float b) {
+                const float la = local(a), lb = local(b);
+                return Span{std::clamp(std::min(la, lb), 0.0F, pieces[i].length), std::clamp(std::max(la, lb), 0.0F, pieces[i].length)};
+            };
+            if (chain.open_start && s0 < taper) {extra_gaps[i].push_back(span(0, taper)); extra_plain[i].push_back(span(0, town_apron));}
+            if (chain.open_end && s1 > chain.length - taper) {extra_gaps[i].push_back(span(chain.length - taper, chain.length)); extra_plain[i].push_back(span(chain.length - town_apron, chain.length));}
+            // Crossovers along the open road.
+            for (float c = crossover_every * .5F; c < chain.length; c += crossover_every)
+                if (c + crossover_half > s0 && c - crossover_half < s1) extra_gaps[i].push_back(span(c - crossover_half, c + crossover_half));
+            std::erase_if(extra_plain[i], [](const Span& x) { return x.to - x.from < .01F; });
+            std::erase_if(extra_gaps[i], [](const Span& x) { return x.to - x.from < .01F; });
         }
     }
     // Highways crossing each other (not at shared ends).
@@ -136,9 +212,11 @@ void Network::build(const VerdaRegion& region) {
         }
     junctions_ = junctions.size();
     // Each junction marks every highway piece that passes through it.
-    for (const auto& piece : pieces) {
+    for (std::size_t i = 0; i < pieces.size(); ++i) {
+        const auto& piece = pieces[i];
         auto& info = roads_[piece.settlement][piece.road];
-        std::vector<Span> gaps;
+        std::vector<Span> gaps = extra_gaps[i];
+        info.plain = extra_plain[i];
         for (const auto& j : junctions) {
             const float along = dot(sub(j.p, piece.a), piece.d), aside = std::abs(dot(sub(j.p, piece.a), piece.right));
             if (aside > side_join) continue;

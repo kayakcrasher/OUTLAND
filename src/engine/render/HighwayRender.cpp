@@ -120,7 +120,9 @@ void draw(const world::Road& road, const hw::RoadInfo& info, int begin, int end)
     const Vector3 direction{(road.end.x - road.start.x) / length, 0, (road.end.z - road.start.z) / length};
     const auto frame = [&](int i) {
         const float s = length * static_cast<float>(i) / static_cast<float>(segments);
-        return Frame{{road.start.x + direction.x * s, 0, road.start.z + direction.z * s}, hw::cross_at(info, direction, s, length)};
+        // Narrower where it tapers into a town: the whole cross-section scales with the paved width.
+        const float t = s / length, half = info.start_half > 0 ? info.start_half + (info.end_half - info.start_half) * t : hw::paved_half;
+        return Frame{{road.start.x + direction.x * s, 0, road.start.z + direction.z * s}, Vector3Scale(hw::cross_at(info, direction, s, length), half / hw::paved_half)};
     };
     const auto distance = [&](int i) { return length * static_cast<float>(i) / static_cast<float>(segments); };
     auto& r = resources();

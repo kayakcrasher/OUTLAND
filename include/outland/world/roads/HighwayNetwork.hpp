@@ -8,8 +8,9 @@ namespace outland::world { class VerdaRegion; }
 
 // The highways (RoadType::Highway) among a region's roads, worked out once for drawing and
 // collision: how consecutive pieces join (mitred, so curves are seamless), where junctions are
-// (plain aprons where highways cross or end; median openings where side roads join) and where the
-// Jersey barrier runs down the median.
+// (plain aprons where highways cross or end; median openings where side roads join, and a
+// crossover every few hundred metres) and where the Jersey barrier runs down the median. The last
+// stretch into a town tapers to a street's width.
 namespace outland::world::highways {
 
 struct Span { float from, to; };   // metres along a road from its start
@@ -19,6 +20,7 @@ struct RoadInfo {
     Vector3 start_cross{}, end_cross{}; // unit, to the road's right at each end (mitred where the highway runs on)
     std::vector<Span> plain;            // junction aprons: plain asphalt, no lines, no barrier
     std::vector<Span> barrier;          // where the median barrier stands
+    float start_half{0}, end_half{0};   // paved half-width at each end (narrower where it tapers into a town)
 };
 
 class Network {
