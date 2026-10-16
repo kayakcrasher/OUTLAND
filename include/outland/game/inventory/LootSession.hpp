@@ -1,4 +1,5 @@
 #pragma once
+#include <utility>
 #include "outland/game/inventory/LootSave.hpp"
 #include "outland/game/combat/WeaponSystem.hpp"
 #include "outland/game/combat/Health.hpp"
@@ -13,6 +14,16 @@ class LootSession {
     std::string interact(Vector3 player, combat::WeaponSystem &,
                          const std::function<bool(Vector3)> &reachable = {});
     std::string use(std::size_t slot, combat::WeaponSystem &, Health &);
+    // HEAL (H / the HEAL button): the medical item that best covers what is missing, else a bite or a
+    // drink for the boost.
+    std::string quick_heal(combat::WeaponSystem &, Health &);
+    // Boost (0..100), from food and drink: health comes back slowly while it lasts. Call every frame.
+    void tick(float dt, Health &);
+    float boost() const { return boost_; }
+    // Auto pickup's latest message ("+24 x 9mm rounds"), once; empty when nothing was picked up.
+    std::string take_auto_message() { return std::exchange(auto_message_, {}); }
+    static constexpr float boost_max = 100, boost_heal = .6F, boost_drain = 1.0F, auto_radius = 1.6F;
+    static constexpr float rest_cooldown = 120;
     std::string drop(std::size_t slot, bool whole_stack, Vector3 position, combat::WeaponSystem &,
                      const std::function<bool(Vector3)> &reachable = {});
     std::string trade(const economy::Economy&, const economy::Shop&, const economy::Offer&,
@@ -63,5 +74,10 @@ class LootSession {
     std::string path_, status_;
     bool dirty_{false}, blocked_save_{false};
     float quiet_{0}, reconcile_remaining_{0};
+    float boost_{0}, auto_wait_{0}, rest_wait_{0};
+    std::string auto_message_;
+    // Ammo for a gun you carry, medicine, food and drink, grenades and batteries are picked up just
+    // by walking over them (not what you dropped yourself).
+    bool auto_pickup(const ItemDefinition &, const WorldPickup &) const;
 };
 } // namespace outland::game::inventory

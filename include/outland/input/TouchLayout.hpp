@@ -189,6 +189,7 @@ struct TouchLayout {
 
     TouchElementLayout sprint{0.08F, 0.43F, 0.82F, 0.40F};
     TouchElementLayout grenade{0.665F, 0.46F, 0.78F, 0.40F}; // between the aim button and the look pad
+    TouchElementLayout heal{0.575F, 0.52F, 0.78F, 0.40F};    // quick heal, left of the grenade
     TouchElementLayout sight{0.605F, 0.22F, 0.70F, 0.40F};   // between BAG and VIEW
     // At the wheel: the left stick steers, the right thumb works the pedals, and the space above
     // the pedals pans the camera (drag anywhere there).

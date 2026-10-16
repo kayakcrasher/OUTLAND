@@ -742,6 +742,19 @@ void TouchHUD::draw(
 
     draw_text_button(
         position_of(
+            layout.heal,
+            screen_width,
+            screen_height
+        ),
+        base_button_radius *
+            layout.heal.scale,
+        layout.heal.opacity,
+        "HEAL",
+        input.heal
+    );
+
+    draw_text_button(
+        position_of(
             layout.weapon,
             screen_width,
             screen_height

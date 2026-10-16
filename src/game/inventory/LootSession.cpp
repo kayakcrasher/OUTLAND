@@ -38,6 +38,8 @@ void LootSession::start(GameMode mode, const std::string &map, combat::WeaponSys
     blocked_save_ = false;
     dirty_ = false;
     quiet_ = reconcile_remaining_ = 0;
+    boost_ = auto_wait_ = rest_wait_ = 0;
+    auto_message_.clear();
     status_.clear();
     for (std::size_t i = 0; i < combat::weapons.size(); ++i)
         weapons.set_loaded(static_cast<combat::WeaponId>(i), 0);
@@ -98,6 +100,27 @@ void LootSession::update(float dt, const world::VerdaRegion &region, Vector3 pla
     }
     if (weapons.events().shots > 0)
         changed();
+    rest_wait_ = std::max(0.0F, rest_wait_ - dt);
+    // Auto pickup, a few times a second.
+    auto_wait_ -= dt;
+    if (auto_wait_ <= 0) {
+        auto_wait_ = .2F;
+        auto &pickups = world_.edit().pickups;
+        for (std::size_t i = 0; i < pickups.size();) {
+            auto &pickup = pickups[i];
+            const auto *item = registry_.find(pickup.item);
+            const float dx = pickup.position.x - player.x, dz = pickup.position.z - player.z;
+            if (!item || dx * dx + dz * dz > auto_radius * auto_radius || std::abs(pickup.position.y - player.y) > 2 ||
+                !auto_pickup(*item, pickup)) {++i; continue;}
+            const int amount = inventory_.add(registry_, item->id, pickup.quantity);
+            if (amount <= 0) {++i; continue;}
+            pickup.quantity -= amount;
+            auto_message_ = "+" + std::to_string(amount) + " " + item->name;
+            changed();
+            if (pickup.quantity == 0) pickups.erase(pickups.begin() + static_cast<std::ptrdiff_t>(i));
+            else ++i;
+        }
+    }
     if (dirty_) {
         quiet_ += dt;
         const float delay = status_.starts_with("SAVE FAILED") ? 5 : 1;
@@ -105,6 +128,45 @@ void LootSession::update(float dt, const world::VerdaRegion &region, Vector3 pla
             save(weapons);
     }
 }
+bool LootSession::auto_pickup(const ItemDefinition &item, const WorldPickup &pickup) const {
+    if (pickup.id.starts_with("drop_")) return false; // what the player put down stays put
+    switch (item.category) {
+    case ItemCategory::Ammo: return item.weapon && inventory_.owns_weapon(registry_, *item.weapon);
+    case ItemCategory::Medical: case ItemCategory::Food: case ItemCategory::Water: return true;
+    default: return item.id == "frag_grenade" || item.id == "battery";
+    }
+}
+
+void LootSession::tick(float dt, Health &health) {
+    if (!std::isfinite(dt) || dt <= 0 || boost_ <= 0) return;
+    if (health.alive() && health.current() < health.maximum()) health.heal(boost_heal * dt);
+    boost_ = std::max(0.0F, boost_ - boost_drain * dt);
+}
+
+std::string LootSession::quick_heal(combat::WeaponSystem &weapons, Health &health) {
+    if (!health.alive()) return {};
+    const float missing = health.maximum() - health.current();
+    if (missing < 1) return "Health is full";
+    // The smallest medical item that covers what is missing, else the biggest there is.
+    std::size_t best = inventory_.state().stacks.size();
+    float best_value = 0;
+    for (std::size_t i = 0; i < inventory_.state().stacks.size(); ++i) {
+        const auto *item = registry_.find(inventory_.state().stacks[i].item);
+        if (!item || item->action != ItemAction::Heal) continue;
+        const bool covers = item->value >= missing, best_covers = best_value >= missing;
+        if (best == inventory_.state().stacks.size() || (covers && (!best_covers || item->value < best_value)) ||
+            (!covers && !best_covers && item->value > best_value)) {best = i; best_value = item->value;}
+    }
+    if (best < inventory_.state().stacks.size()) return use(best, weapons, health);
+    // No medicine: something to eat or drink, for the boost.
+    if (boost_ < boost_max * .5F)
+        for (std::size_t i = 0; i < inventory_.state().stacks.size(); ++i) {
+            const auto *item = registry_.find(inventory_.state().stacks[i].item);
+            if (item && (item->action == ItemAction::Eat || item->action == ItemAction::Drink)) return use(i, weapons, health);
+        }
+    return "No medical supplies";
+}
+
 std::string LootSession::trade(const economy::Economy& market, const economy::Shop& shop,
                                const economy::Offer& offer, int quantity, bool selling,
                                combat::WeaponSystem& weapons) {
@@ -189,8 +251,10 @@ std::string LootSession::use(std::size_t index, combat::WeaponSystem &weapons, H
                 std::min(1e9F, inventory_.state().water_consumed + item->value);
         if (consumed)
             consumed(food ? item->value : 0, food ? 0 : item->value);
+        // Food and drink boost: health comes back slowly while it lasts.
+        boost_ = std::min(boost_max, boost_ + item->value);
         changed();
-        return "Consumed " + item->name;
+        return "Consumed " + item->name + " - boost " + std::to_string(static_cast<int>(boost_));
     }
     case ItemAction::Heal:
         if (!health.alive() || health.current() >= health.maximum())
@@ -225,7 +289,28 @@ std::string LootSession::use(std::size_t index, combat::WeaponSystem &weapons, H
         return on ? "Light on - one battery used" : "Light off";
     }
     default:
-        return "Carry this item, or drop it into the world";
+        // Rest on a bedroll or in a tent (when you are not in a hurry): back to full health.
+        if (id == "sleeping_bag" || id == "tent") {
+            if (rest_wait_ > 0) return "Too restless to sleep again yet (" + std::to_string(static_cast<int>(rest_wait_)) + " s)";
+            if (!health.alive() || health.current() >= health.maximum()) return "You are rested";
+            health.reset();
+            boost_ = std::min(boost_max, boost_ + 40);
+            rest_wait_ = rest_cooldown;
+            changed();
+            return "You rest a while in the " + std::string(id == "tent" ? "tent" : "sleeping bag") + " - full health";
+        }
+        // A campfire kit and something to light it with: warmth and a hot meal's worth of boost.
+        if (id == "bonfire") {
+            const bool lighter = inventory_.count("lighter") > 0;
+            if (!lighter && inventory_.count("matches") == 0) return "Matches or a lighter are needed to light it";
+            inventory_.remove(id, 1);
+            if (!lighter) inventory_.remove("matches", 1);
+            if (health.alive()) health.heal(30);
+            boost_ = std::min(boost_max, boost_ + 50);
+            changed();
+            return "You sit by the campfire - warmed up";
+        }
+        return "Carry it, sell it at a store, or drop it";
     }
 }
 std::string LootSession::drop(std::size_t index, bool whole, Vector3 position,

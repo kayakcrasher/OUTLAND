@@ -3,6 +3,7 @@
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -179,6 +180,19 @@ int main() {
     session.start(GameMode::Explore, profile_map, weapons);
     assert(session.inventory().owns_weapon(registry, combat::WeaponId::Rifle) &&
            session.inventory().count("rifle_ammo") == 120);
+    // Auto pickup: walking over ammo for a gun you carry picks it up; what you dropped stays put.
+    {
+        const Vector3 here{500, outland::world::terrain::TerrainHeight::sample(500, 500) + .06F, 500}; // clear of the loot markers
+        const int before = session.inventory().count("pistol_ammo");
+        session.edit_world().edit().pickups.push_back({"test_auto_ammo", "", "pistol_ammo", here, 10, 0});
+        session.edit_world().edit().pickups.push_back({"drop_999", "", "bandage", here, 1, 0});
+        session.update(.3F, region, here, weapons);
+        assert(session.inventory().count("pistol_ammo") == before + 10);
+        assert(session.take_auto_message() == "+10 9mm rounds" && session.take_auto_message().empty());
+        assert(std::any_of(session.world().state().pickups.begin(), session.world().state().pickups.end(),
+                           [](const auto& p) { return p.id == "drop_999"; }));
+        std::erase_if(session.edit_world().edit().pickups, [](const auto& p) { return p.id == "drop_999"; });
+    }
     assert(weapons.ammo(combat::WeaponId::Rifle).loaded == 30 && weapons.ammo().reserve == 120);
     Health health;
     float food = 0, water = 0;
@@ -196,7 +210,17 @@ int main() {
            "Medical item not needed");
     health.damage(40);
     session.use(slot(session.inventory(), "bandage"), weapons, health);
-    assert(health.current() == 70 && session.inventory().count("bandage") == 0);
+    assert(health.current() == 75 && session.inventory().count("bandage") == 0);
+    // Food and drink gave a boost (25 + 30) that brings health back slowly.
+    assert(std::abs(session.boost() - 55) < .01F);
+    session.tick(10, health);
+    assert(std::abs(health.current() - 81) < .01F && std::abs(session.boost() - 45) < .01F);
+    // Quick heal picks the medicine that best covers the damage.
+    session.edit_inventory().add(registry, "antiseptic", 1);
+    session.edit_inventory().add(registry, "antibiotics", 1);
+    assert(session.quick_heal(weapons, health) == "Used Antiseptic" && session.inventory().count("antibiotics") == 1);
+    health.damage(60);
+    assert(session.quick_heal(weapons, health) == "Used Antibiotics" && session.inventory().count("antibiotics") == 0);
     assert(session.use(slot(session.inventory(), "pistol_ammo"), weapons, health) ==
            "Equip a compatible weapon first");
     assert(

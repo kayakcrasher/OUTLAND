@@ -767,7 +767,7 @@ void Renderer::run() {
 
     game::combat::WeaponSystem weapons;
     game::combat::CombatWorld combat_world(verda_region);
-    game::Health player_health;
+    game::Health player_health{game::player_max_health};
     // Armour from the bag: the best vest carried soaks part of every bullet, blast and bite.
     const auto armour_level=[&]{
         if(game_mode==game::GameMode::DevLab) return 0;
@@ -2163,6 +2163,13 @@ void Renderer::run() {
         // Outside the Dev Lab grenades are bag items (loot, shops, the starter kit): throw what you carry.
         const bool bag_grenades=game_mode!=game::GameMode::DevLab;
         if(bag_grenades) grenades.set_count(loot_session.inventory().count("frag_grenade"));
+        // Quick heal (H / HEAL): the medical item that best covers the damage; boost heals slowly.
+        if(controls.heal && !creator_active && !shop_open && !poker_open && player_health.alive() && !mode_session.terminal() &&
+           game_mode!=game::GameMode::DevLab) {
+            if(const auto said=loot_session.quick_heal(weapons,player_health); !said.empty()) {interaction_message=said;interaction_remaining=2.5F;}
+        }
+        if(!mode_session.terminal() && !vehicle_paused) loot_session.tick(dt,player_health);
+        if(auto picked=loot_session.take_auto_message(); !picked.empty()) {interaction_message=picked;interaction_remaining=1.6F;}
         if(controls.grenade && !driving && !creator_active && !inventory_open && !shop_open && !poker_open && player_health.alive() && !mode_session.terminal()) {
             const Vector3 carried=dt>0 ? Vector3Scale(Vector3Subtract(player.position,position_before_move),1.0F/dt) : Vector3{};
             if(grenades.throw_grenade(head_position,look_direction,carried)) {
@@ -2919,20 +2926,13 @@ void Renderer::run() {
         // HUD
         // ====================================================
 
-        DrawText(
-            "OUTLAND",
-            12,
-            10,
-            26,
-            BLACK
-        );
-
+        // (No "OUTLAND" title in play: it sat on top of the health line.)
         DrawText(
             game::game_mode_name(
                 game_mode
             ),
             12,
-            40,
+            50,
             14,
             DARKGRAY
         );
@@ -2942,7 +2942,7 @@ void Renderer::run() {
                 ? "TPS"
                 : "FPS",
             12,
-            60,
+            68,
             14,
             BLACK
         );
@@ -3082,6 +3082,12 @@ void Renderer::run() {
         if (!creator_active) {
             DrawText(TextFormat("HEALTH %.0f / %.0f",player_health.current(),player_health.maximum()),
                 16,16,20,player_health.alive() ? RAYWHITE : RED);
+            // The boost from food and drink: a thin amber bar under the health line while it lasts.
+            if(loot_session.boost()>0 && player_health.alive()) {
+                const float share=loot_session.boost()/game::inventory::LootSession::boost_max;
+                DrawRectangle(16,40,160,5,Fade(BLACK,.5F));
+                DrawRectangle(16,40,static_cast<int>(160*share),5,Color{240,180,60,230});
+            }
 
             if (br_bots.active() && game_mode==game::GameMode::BattleRoyale) {
                 const int alive=br_bots.alive_bots()+(player_health.alive() ? 1 : 0);

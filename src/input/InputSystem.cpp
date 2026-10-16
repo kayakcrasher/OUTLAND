@@ -174,6 +174,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
             if (hit(p, layout_.aim, 43)) return Control::Aim;
             if (hit(p, layout_.reload, 43)) return Control::Reload;
             if (hit(p, layout_.grenade, 43)) return Control::Grenade;
+            if (hit(p, layout_.heal, 43)) return Control::Heal;
             if (hit(p, layout_.sight, 43)) return Control::Sight;
             if (hit(p, layout_.weapon, 43)) return Control::Weapon;
             if (hit(p, layout_.sprint, 43)) return Control::Sprint;
@@ -218,6 +219,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         case Control::View: player_.toggle_view |= fresh; break;
         case Control::Reload: player_.reload |= fresh; break;
         case Control::Grenade: player_.grenade |= fresh; break;
+        case Control::Heal: player_.heal |= fresh; break;
         case Control::Sight: player_.sight |= fresh; break;
         case Control::Weapon: player_.next_weapon |= fresh; break;
         case Control::Inventory: player_.inventory |= fresh; break;
@@ -301,6 +303,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         player_.fire |= b.down(Action::Fire, mouse_buttons);
         player_.reload |= b.pressed(Action::Reload, mouse_buttons);
         player_.grenade |= b.pressed(Action::Grenade, mouse_buttons);
+        player_.heal |= b.pressed(Action::Heal, mouse_buttons);
         player_.sight |= b.pressed(Action::Sight, mouse_buttons);
         player_.next_weapon |= b.pressed(Action::NextWeapon, mouse_buttons);
         player_.fire_mode |= b.pressed(Action::FireMode, mouse_buttons);
@@ -327,7 +330,7 @@ void InputSystem::set_mouse_look(bool captured, Vector2 motion) {
 TouchLayout InputSystem::drawn_layout(int width, int height) const {
     TouchLayout out = layout_;
     for (auto* e : {&out.movement, &out.look, &out.fire, &out.fire_left, &out.fire_mode, &out.aim, &out.jump, &out.reload,
-                    &out.weapon, &out.view, &out.sprint, &out.grenade, &out.sight, &out.gas, &out.brake_pedal,
+                    &out.weapon, &out.view, &out.sprint, &out.grenade, &out.heal, &out.sight, &out.gas, &out.brake_pedal,
                     &out.handbrake, &out.crouch, &out.inventory, &out.interact})
         e->scale *= button_size_;
     if (stick_center_.x >= 0 && width > 0 && height > 0) {

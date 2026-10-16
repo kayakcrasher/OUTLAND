@@ -26,6 +26,7 @@ constexpr std::array<Info, action_count> info{{
     {"CAMERA VIEW", "view", KEY_V, 0},
     {"MAP", "map", KEY_M, 0},
     {"BUILD", "build", KEY_K, 0},
+    {"QUICK HEAL", "heal", KEY_H, 0},
 }};
 
 bool code_down(int code, bool mouse) {

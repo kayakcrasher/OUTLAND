@@ -12,6 +12,42 @@ The starting bag preserves the existing pistol/rifle and 12/30 loaded magazines,
 
 Food, water and soda consume one item and emit food/water hooks with configured values. Totals persist as foundation data; hunger/thirst meters or decay are not simulated. Antibiotics, antiseptic and bandages heal existing player Health and are retained when health is full or the player is dead. The medical items currently provide generic healing, not infection diagnosis.
 
+## Making loot count
+The player has 125 health (`game::player_max_health`), 25% more than everyone else.
+
+**Medicine** heals at once:
+
+| Item | Heals |
+|---|---|
+| Bandage | 15 |
+| Antiseptic | 30 |
+| Antibiotics | 45 |
+
+**Food and drink** fill a **boost** meter (0–100), shown as an amber bar under the health line.
+While the boost lasts, health comes back at 0.6 a second and the boost drains at 1 a second.
+
+| Item | Boost |
+|---|---|
+| Canned food | 25 |
+| Water | 30 |
+| Soda | 40 |
+
+**Quick heal** (H, or the HEAL touch button) picks the right item for you:
+- the smallest medicine that covers the damage, or else the biggest you carry;
+- with no medicine and the boost under half, something to eat or drink.
+
+**Auto pickup** happens just by walking within 1.6 m of:
+- ammo for a gun you carry;
+- medicine, food and drink;
+- frag grenades and batteries.
+
+It stops when the bag is full. Anything you dropped yourself (`drop_…` pickups) stays put.
+
+**Camping gear** is useful too:
+- Using a sleeping bag or tent rests you to full health, plus 40 boost. It can be used again after 2 minutes.
+- Using a campfire kit with matches or a lighter heals 30 and gives 50 boost. It uses up the kit, and a match if you have no lighter.
+- Everything else sells at the stores in Explore.
+
 Equipping a firearm selects the existing WeaponSystem backend. Ammo rows only reload compatible weapons. Loose rounds remain in inventory until reload completes; magazine rounds remain in WeaponSystem. A firearm drop transfers its actual loaded rounds into the pickup and clears its magazine; recollection restores those rounds. Cycling with only one owned firearm does not cancel its reload. Legacy `collect_ammo()` cannot bypass a bound inventory.
 
 Lantern/torch use toggles a portable light effect; switching on consumes one supplied battery. The current visual effect is a warm tint on nearby pickups and a ground ring, not dynamic scene lighting. Axe, knife, tent, sleeping bag, campfire kit, matches and lighter are real transportable pickups that can be carried and dropped. Melee attacks, sleeping, deployable camp mechanics and crafting are not included. Backpack/trunk are capacity items; nested inventories and separately accessible world storage are not implemented.
