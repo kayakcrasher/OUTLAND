@@ -70,6 +70,8 @@ public:
     void cancel_controls();
     // At the wheel: steer on the left stick, GAS and BRAKE pedals, a pan area above them.
     void set_driving(bool driving) { driving_ = driving; }
+    // At the wheel with a gun for a drive-by: the left FIRE button works while driving.
+    void set_drive_by(bool on) { drive_by_ = on; }
     [[nodiscard]] bool driving() const { return driving_; }
     // The camera-pan area while driving (screen pixels).
     [[nodiscard]] static Rectangle pan_area(int width, int height);
@@ -95,7 +97,7 @@ private:
     float button_size_{1.0F};
     Vector2 stick_center_{-1, -1}; // a floating movement stick's centre while held
     bool mouse_quarantined_{false},had_native_touch_{false};
-    bool gameplay_{true}, driving_{false}, was_driving_{false};
+    bool gameplay_{true}, driving_{false}, was_driving_{false}, drive_by_{false};
     // Aim button: a tap toggles aiming down sights, a hold aims while held.
     bool aim_toggled_{false}, aim_held_{false};
     double aim_pressed_at_{0};

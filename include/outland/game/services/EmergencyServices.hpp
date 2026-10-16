@@ -90,6 +90,13 @@ public:
     [[nodiscard]] Vector3 hospital_door() const { return hospital_door_; }
     [[nodiscard]] int count(UnitKind kind, UnitState state) const;
     [[nodiscard]] const ServicesEvents& events() const { return events_; }
+    // The player on the force (game::career): their patrol car leaves the dispatch, and its
+    // lights run while `siren` (on a call) and they are at the wheel. "" hands it back.
+    void assign_player_car(const std::string& vehicle) { player_car_ = vehicle; }
+    void set_player_siren(bool siren) { player_siren_ = siren; }
+    [[nodiscard]] const std::string& player_car() const { return player_car_; }
+    // The police station (its patrol car's parking place) within `radius` of `feet`, or null.
+    [[nodiscard]] const Unit* station_near(Vector3 feet, float radius) const;
 
 private:
     void police(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region, characters::NpcSystem& npcs);
@@ -113,6 +120,8 @@ private:
     int next_crew_{0};
     std::vector<int> claimed_;   // patients an ambulance is on its way to
     ServicesEvents events_;
+    std::string player_car_;
+    bool player_siren_{false};
     std::uint64_t rng_{0x6a09e667f3bcc909ULL};
 };
 

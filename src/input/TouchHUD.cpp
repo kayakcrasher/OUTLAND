@@ -591,6 +591,7 @@ void TouchHUD::draw(
         button(layout.handbrake, "HAND", input.brake);
         button(layout.interact, "EXIT", input.interact);
         button(layout.sprint, "BOOST", input.sprint);
+        if (drive_by_) button(layout.fire_left, "FIRE", input.fire);
         // The pan area above the pedals: a faint hint while no thumb is on it.
         const Rectangle pan = InputSystem::pan_area(screen_width, screen_height);
         if (input.look_dx == 0 && input.look_dy == 0) {

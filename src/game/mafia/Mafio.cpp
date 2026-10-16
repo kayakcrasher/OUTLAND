@@ -270,6 +270,7 @@ void Mafio::update(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotW
         for (const auto& m : members_) {
             const auto* bot = bots.find(m.bot);
             if (!bot || !bot->alive() || bots.mounted(m.bot)) continue;
+            if (player_gang_ >= 0 && gang_of(m.bot) == player_gang_) continue;   // the player's own crew trusts them
             const Vector3 chest{bot->position().x, bot->position().y + 1.2F, bot->position().z};
             const Vector3 to = Vector3Subtract(chest, frame.aim_origin);
             const float along = Vector3DotProduct(to, direction);
@@ -277,6 +278,20 @@ void Mafio::update(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotW
             if (Vector3Length(Vector3Subtract(to, Vector3Scale(direction, along))) < 1.8F) provoke(m.bot, now);
         }
     }
+
+    // A member of another gang on a rival's turf: they know the colours. A warning first; stay
+    // past it and they open fire.
+    if (player_gang_ >= 0 && frame.player_alive)
+        for (const auto& crew : crews_) {
+            if (crew.gang == player_gang_ || flat(crew.door, frame.player_feet) > rival_turf_alert) continue;
+            const auto g = static_cast<std::size_t>(crew.gang);
+            if (now - turf_warned_at_[g] > 40) {
+                turf_warned_at_[g] = now;
+                say(std::string(gangs[g].name) + " know your colours - get off their turf");
+            } else if (now - turf_warned_at_[g] >= turf_grace) {
+                provoked_until_[g] = std::max(provoked_until_[g], now + 20);
+            }
+        }
 
     // The dead come back to the hideout, out of the player's sight if possible.
     for (std::size_t i = 0; i < members_.size(); ++i) {

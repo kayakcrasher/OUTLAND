@@ -12,6 +12,7 @@
 #include "outland/game/ai/BotDrivers.hpp"
 #include "outland/game/casino/PokerTable.hpp"
 #include "outland/game/mafia/Mafio.hpp"
+#include "outland/game/career/Career.hpp"
 #include "outland/game/life/WalkingMan.hpp"
 #include "outland/game/ranch/Ranches.hpp"
 #include "outland/game/freight/Freight.hpp"
@@ -584,6 +585,13 @@ void Renderer::run() {
     // Explore: La Mafio, a Krimulo crew in every town (bots in br_bots), and the Green Hand's
     // poker table in Verda City.
     game::mafia::Mafio mafio;
+    // Explore: the player's life in a gang or on the police (respect, jobs, calls), saved beside
+    // their loot profile. A join at a hideout or a station takes a second USE within a few seconds.
+    game::career::Career career;
+    std::string career_path,career_saved;
+    float career_save_wait=0;
+    bool career_dead=false;
+    struct JoinOffer { int crew{-1}; std::string patrol_car; double until{-1}; } join_offer;
     game::casino::Poker poker;
     game::casino::PokerTable poker_table;
     bool poker_open=false;
@@ -818,7 +826,10 @@ void Renderer::run() {
            hit.target>=0 && static_cast<std::size_t>(hit.target)<vehicles.vehicles().size()) {
             const int driver=bot_drivers.driver_of(vehicles.vehicles()[static_cast<std::size_t>(hit.target)].id);
             if(driver>=0 && mafio.active()) {mafio.provoke(driver,match_time);walking_man.provoke(driver,match_time);ranches.provoke(driver,match_time);}
-            if(driver>=0 && br_bots.damage_bot(driver,amount*.8F,hit.position,match_time)) pending_kills.push_back(hit.position);
+            if(driver>=0 && br_bots.damage_bot(driver,amount*.8F,hit.position,match_time)) {
+                pending_kills.push_back(hit.position);
+                career.killed(mafio.active() ? mafio.gang_of(driver) : -1,vehicles.driver()!=nullptr);
+            }
         }
     });
     // The player's damage to a person (bullets and grenades): bots, residents, police, zombies.
@@ -853,6 +864,7 @@ void Renderer::run() {
                 victim.health<=0 ? game::law::CrimeKind::Murder : game::law::CrimeKind::Assault,victim.resident});
         }
         if(killed) pending_kills.push_back(where);
+        if(killed && body.bot>=0) career.killed(mafio.active() ? mafio.gang_of(body.bot) : -1,vehicles.driver()!=nullptr);
         return killed;
     };
     combat_world.bind_actors([&](Vector3 start,Vector3 end) {
@@ -1157,6 +1169,7 @@ void Renderer::run() {
                     poker_open=false;poker_buy_in=0;
                 }
                 walking_man.clear();
+                career=game::career::Career{};career_path.clear();mafio.set_player_gang(-1);services.assign_player_car({});
                 mafio.clear(br_bots,bot_drivers,vehicles);
                 services.clear(vehicles,npcs);
                 bot_drivers.clear(br_bots,vehicles);bots_looted.clear();
@@ -1207,6 +1220,10 @@ void Renderer::run() {
                 if(game::rules_for(game_mode).civilian_life && !island_life.empty()) {
                     // La Mafio: every town's crew moves into its building.
                     mafio.start(island_life.places(),verda_region,br_bots,session_seed);
+#ifdef OUTLAND_DEV_TOOLS
+                    for(const auto& crew:mafio.crews()) TraceLog(LOG_INFO,"OUTLAND crew %s at %s: door %.1f %.1f yaw %.0f",
+                        std::string(game::mafia::gangs[static_cast<std::size_t>(crew.gang)].name).c_str(),crew.town.c_str(),crew.door.x,crew.door.z,crew.yaw);
+#endif
                     if(const auto* casino=mafio.casino();casino &&
                        walking_man.start(island_life.places(),verda_region,casino->door,casino->table,br_bots,vehicles,session_seed,island_life.clock())) {
                         // His own face, not a gang member's.
@@ -1224,6 +1241,38 @@ void Renderer::run() {
                     br_bots.sync_bodies(npcs,&character_registry);
                     walking_man.dress(npcs);
                     services.start(vehicles,verda_region,&character_registry);
+#ifdef OUTLAND_DEV_TOOLS
+                    for(const auto& u:services.units()) if(u.kind==game::services::UnitKind::Police)
+                        TraceLog(LOG_INFO,"OUTLAND police car %s at %.1f %.1f",u.vehicle.c_str(),u.home.x,u.home.z);
+#endif
+                    // The player's career: gang or badge, from the last session.
+                    career=game::career::Career{};
+                    career_path=game::inventory::LootSave::profile_path(map_path,game_mode)+".career";
+                    if(FileExists(career_path.c_str())) if(char* text=LoadFileText(career_path.c_str())) {
+                        if(!career.parse(text)) TraceLog(LOG_WARNING,"Career: unreadable %s",career_path.c_str());
+                        UnloadFileText(text);
+                    }
+                    career_saved=career.serialise();career_dead=false;join_offer={};
+                    if(career.state().gang>=static_cast<int>(game::mafia::gangs.size())) career=game::career::Career{};
+#ifdef OUTLAND_DEV_TOOLS
+                    // OUTLAND_DEV_CAREER=gang:N or police: start this session in a gang or on the force.
+                    if(const char* dev=std::getenv("OUTLAND_DEV_CAREER"); dev && *dev) {
+                        std::string why;const std::string want=dev;
+                        career=game::career::Career{};
+                        if(want.rfind("gang:",0)==0) {
+                            const int gang=std::clamp(std::atoi(want.c_str()+5),0,static_cast<int>(game::mafia::gangs.size())-1);
+                            career.join_gang(gang,std::string(game::mafia::gangs[static_cast<std::size_t>(gang)].name),why);
+                        } else if(want=="police") {
+                            const Vector3 here{player.position.x,player.position.y-1,player.position.z};
+                            const game::services::Unit* best=nullptr;
+                            for(const auto& u:services.units()) if(u.kind==game::services::UnitKind::Police &&
+                                (!best || Vector3Distance(u.home,here)<Vector3Distance(best->home,here))) best=&u;
+                            if(best) career.join_police(best->vehicle,why);
+                        }
+                    }
+#endif
+                    mafio.set_player_gang(career.state().side==game::career::Side::Gang ? career.state().gang : -1);
+                    services.assign_player_car(career.on_duty() ? career.state().patrol_car : std::string());
                     // Back from the dead: out of the hospital's front door.
                     penthouse.locate(verda_region);was_in_penthouse=false;
                     if(respawn_at_hospital && penthouse.found() && game::economy::Penthouse::owned(loot_session.economy())) {
@@ -1442,6 +1491,11 @@ void Renderer::run() {
             const bool town_building=game::rules_for(game_mode).civilian_life;
             if(town_building) reserved=[&,base=reserved](Vector2 point){return base(point) || build_mode.owns_point(point,screen_width,screen_height);};
             input_system.set_driving(vehicles.driver()!=nullptr); // steer left, pedals right, pan above
+            {
+                const bool armed_at_wheel=vehicles.driver()!=nullptr && weapons.available() &&
+                    (weapons.selected()==game::combat::WeaponId::Pistol || weapons.selected()==game::combat::WeaponId::Smg);
+                input_system.set_drive_by(armed_at_wheel);touch_hud.set_drive_by(armed_at_wheel);
+            }
             input_system.set_look_stick(creator_active);
             input_system.update(screen_width, screen_height, !creator_active && !build_mode.active(),
 #ifdef OUTLAND_DEV_TOOLS
@@ -1553,6 +1607,45 @@ void Renderer::run() {
         if(controls.interact && nearby_shop && !inventory_open && !shop_open && !poker_open && !at_table && !mode_session.terminal()) {
             current_shop=nearby_shop;shop_open=true;shop_status="Select supplies, equipment or furniture. BUY / SELL transfers one item.";
             play_ui.opened();input_system.cancel_controls();
+        }
+        // Joining a gang (at its hideout's door) or the police (at a station): USE twice.
+        if(controls.interact && !creator_active && !inventory_open && !shop_open && !poker_open && !at_table && !vehicles.driver() &&
+           game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            const int crew=mafio.active() ? mafio.turf_at(feet,7) : -1;
+            const auto* station=crew<0 && services.active() ? services.station_near(feet,14) : nullptr;
+            const bool confirming=match_time<join_offer.until && ((crew>=0 && join_offer.crew==crew) || (station && join_offer.patrol_car==station->vehicle));
+            if(crew>=0 && !career.in_gang(mafio.crews()[static_cast<std::size_t>(crew)].gang) && !mafio.provoked(mafio.crews()[static_cast<std::size_t>(crew)].gang,match_time)) {
+                const int gang=mafio.crews()[static_cast<std::size_t>(crew)].gang;
+                const std::string name(game::mafia::gangs[static_cast<std::size_t>(gang)].name);
+                if(confirming) {
+                    std::string why;
+                    if(career.join_gang(gang,name,why)) {mafio.set_player_gang(gang);services.assign_player_car({});gun_audio.kill_confirm();interaction_message.clear();}
+                    else interaction_message=why;
+                    join_offer={};
+                } else {
+                    join_offer={crew,{},match_time+5};
+                    interaction_message="USE again to join "+name+(career.state().record ? std::string() : " - a record for life: the police will never take you");
+                }
+                interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
+            } else if(station && !career.on_duty()) {
+                if(career.state().record) {interaction_message="The Policio checked your record: no Krimuloj on the force";join_offer={};}
+                else if(confirming) {
+                    std::string why;
+                    if(career.join_police(station->vehicle,why)) {
+                        services.assign_player_car(station->vehicle);mafio.set_player_gang(-1);gun_audio.kill_confirm();interaction_message.clear();
+                        // Issued: a sidearm and two magazines.
+                        auto& bag=loot_session.edit_inventory();
+                        if(!bag.owns_weapon(item_registry,game::combat::WeaponId::Pistol)) bag.add(item_registry,"pistol",1);
+                        bag.add(item_registry,"pistol_ammo",30);loot_session.changed();
+                    } else interaction_message=why;
+                    join_offer={};
+                } else {
+                    join_offer={-1,station->vehicle,match_time+5};
+                    interaction_message="USE again to join the Policio de Verda - you get a patrol car and radio calls";
+                }
+                interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
+            }
         }
         if(controls.interact && !creator_active && !inventory_open && !shop_open && !poker_open && !at_table) {
             Vector3 exit{};
@@ -2234,10 +2327,25 @@ void Renderer::run() {
         const auto muzzle_obstruction=combat_world.trace_segment(head_position,gun_muzzle);
         if (muzzle_obstruction.hit()) gun_muzzle=Vector3Lerp(head_position,gun_muzzle,
             std::max(0.0F,muzzle_obstruction.fraction-.05F));
-        const Vector3 gun_direction=Vector3Normalize(Vector3Subtract(aim_point,gun_muzzle));
+        Vector3 gun_direction=Vector3Normalize(Vector3Subtract(aim_point,gun_muzzle));
+        // Drive-by: a pistol or SMG fires out of the driver's window, where the camera looks. The
+        // shot leaves from outside the car's body so it never hits the player's own car.
+        const bool drive_by=driving && weapons.available() && !creator_active &&
+            (weapons.selected()==game::combat::WeaponId::Pistol || weapons.selected()==game::combat::WeaponId::Smg);
+        if(drive_by) {
+            const auto* car=vehicles.driver();
+            const Vector3 seat{car->position.x,car->position.y+1.35F,car->position.z};
+            const Vector3 sight_from=Vector3Add(camera.position,Vector3Scale(camera_direction,Vector3Distance(camera.position,seat)+3.0F));
+            const auto past_car=combat_world.trace_segment(sight_from,Vector3Add(camera.position,Vector3Scale(camera_direction,500.0F)),true,true,true);
+            const Vector3 target=past_car.hit() ? past_car.position : Vector3Add(camera.position,Vector3Scale(camera_direction,500.0F));
+            Vector3 out=Vector3Subtract(target,seat);out.y=0;
+            out=Vector3Length(out)>.01F ? Vector3Normalize(out) : Vector3{0,0,1};
+            gun_muzzle=Vector3Add(seat,Vector3Scale(out,2.8F));
+            gun_direction=Vector3Normalize(Vector3Subtract(target,gun_muzzle));
+        }
         if (!controls.fire) trigger_ready=true;
         game::combat::WeaponInput weapon_input;
-        weapon_input.fire=controls.fire && trigger_ready && !driving && !creator_active && !inventory_open;
+        weapon_input.fire=controls.fire && trigger_ready && (!driving || drive_by) && !creator_active && !inventory_open;
         weapon_input.aim=controls.aim;
         weapon_input.reload=controls.reload;
         weapon_input.next_weapon=controls.next_weapon;
@@ -2452,8 +2560,10 @@ void Renderer::run() {
             // nobody's business.
             bool gang_business=mafio.active() && mafio.turf_at(frame.player,60)>=0;
             for(int g=0;g<static_cast<int>(game::mafia::gangs.size());++g) gang_business|=mafio.provoked(g,match_time);
-            if(frame.player_fired && !gang_business) justice.crime(game::law::CrimeKind::ShotsFired,frame.player,-1,frame,island_life);
+            if(frame.player_fired && !gang_business && !career.on_duty()) justice.crime(game::law::CrimeKind::ShotsFired,frame.player,-1,frame,island_life);
             for(const auto& c:crimes) {
+                // An officer who hurts the public (or another officer) is off the force.
+                career.crime(c.kind==game::law::CrimeKind::Assault || c.kind==game::law::CrimeKind::Murder || c.kind==game::law::CrimeKind::AttackOnPolice);
                 // Officers and paramedics from the services saw what happened to them.
                 if(game::services::EmergencyServices::crew_member(c.victim)) justice.witnessed(c.kind,frame.player,frame,island_life);
                 else justice.crime(c.kind,frame.player,c.victim,frame,island_life);
@@ -2629,6 +2739,43 @@ void Renderer::run() {
                     walking_man.update(paul,br_bots,bot_drivers,vehicles,verda_region);
                 }
                 mafio.update(frame,br_bots,bot_world,bot_drivers,vehicles,verda_region);
+                // The career: what the world holds for a job, and what the player did.
+                if(!career_path.empty()) {
+                    game::career::CareerFrame work;
+                    work.now=match_time;work.player=feet;work.alive=player_health.alive();
+                    if(const auto* car=vehicles.driver()) work.driving=car->id;
+                    for(const auto& g:game::mafia::gangs) work.gang_names.emplace_back(g.name);
+                    for(std::size_t c=0;c<mafio.crews().size();++c) {
+                        const auto& crew=mafio.crews()[c];
+                        int alive=0;
+                        for(const int id:crew.members) if(const auto* bot=br_bots.find(id);bot && bot->alive()) ++alive;
+                        work.crews.push_back({static_cast<int>(c),crew.gang,crew.door,crew.town,alive});
+                    }
+                    for(const auto& rig:freight.rigs()) {
+                        const int v=vehicles.find(rig.vehicle);
+                        if(v>=0) work.rigs.push_back({rig.vehicle,vehicles.vehicles()[static_cast<std::size_t>(v)].position,rig.cattle ? "cattle rig" : "supply rig"});
+                    }
+                    for(const auto& war:mafio.wars()) {
+                        if(war.until<match_time || war.target<0) continue;
+                        const auto& crew=mafio.crews()[static_cast<std::size_t>(war.target)];
+                        work.wars.push_back({war.attackers,war.defenders,crew.door,crew.town});
+                    }
+                    for(const auto& town:verda_region.settlements()) work.towns.push_back({town.name,town.center});
+                    if(!player_health.alive() && !career_dead) {career.died();career_dead=true;}
+                    if(player_health.alive()) career_dead=false;
+                    career.update(work);
+                    if(const int pay=career.take_pay();pay>0) {loot_session.economy().money+=pay;loot_session.changed();}
+                    mafio.set_player_gang(career.state().side==game::career::Side::Gang ? career.state().gang : -1);
+                    services.assign_player_car(career.on_duty() ? career.state().patrol_car : std::string());
+                    services.set_player_siren(career.on_duty() && career.job().kind!=game::career::JobKind::None);
+                    career.tick_message(dt);
+                    // Saved whenever it changes (at most once a second).
+                    career_save_wait-=dt;
+                    if(career_save_wait<=0) {
+                        career_save_wait=1;
+                        if(const auto text=career.serialise();text!=career_saved && SaveFileText(career_path.c_str(),const_cast<char*>(text.c_str()))) career_saved=text;
+                    }
+                }
                 br_bots.sync_bodies(npcs,&character_registry);
                 walking_man.dress(npcs);
                 world_draw_stats().bots=world_draw_stats().bots*.9+(GetTime()-bots_t0)*1000*.1;
@@ -3021,6 +3168,11 @@ void Renderer::run() {
         }
 
         game::combat::CombatRenderer::draw_world(weapons,combat_world);
+        // A drive-by's flash at the driver's window.
+        if(drive_by && weapons.muzzle_flash()>0) {
+            DrawSphere(gun_muzzle,.12F,Color{255,228,135,255});
+            DrawCylinderEx(gun_muzzle,Vector3Add(gun_muzzle,Vector3Scale(gun_direction,.45F)),.09F,0,6,Color{255,169,65,255});
+        }
         if(Model* grenade_model=grenades.live().empty() ? nullptr : get_world_asset_model("assets/verda/combat/frag_grenade.glb",character_registry))
             for(const auto& g:grenades.live()) {
                 if(g.rocket) continue;
@@ -3144,6 +3296,18 @@ void Renderer::run() {
 
         build_mode.draw_world(static_cast<float>(GetTime()));
         if(mafio.active()) game::mafia::draw_turf(mafio,camera.position,static_cast<float>(GetTime()));
+        // The current job's waypoint: a column of light to steer by, and a ring on the ground.
+        if(career.job().kind!=game::career::JobKind::None) {
+            const Vector3 at=career.job().target;
+            const float ground=world::terrain::TerrainHeight::sample(at.x,at.z);
+            const Color beam=career.on_duty() ? Color{90,150,255,255} : Color{255,196,70,255};
+            const float pulse=.75F+.25F*std::sin(static_cast<float>(GetTime())*3);
+            BeginBlendMode(BLEND_ADDITIVE);
+            DrawCylinder({at.x,ground,at.z},1.1F,1.1F,90,10,Fade(beam,.22F*pulse));
+            DrawCylinder({at.x,ground,at.z},.35F,.35F,90,8,Fade(beam,.5F*pulse));
+            EndBlendMode();
+            DrawCircle3D({at.x,ground+.15F,at.z},game::career::Career::arrive_radius*.5F,{1,0,0},90,Fade(beam,.8F));
+        }
         if(services.active()) game::services::draw_light_bars(services,vehicles,camera.position,static_cast<float>(GetTime()));
         // The drop: the helicopters on their routes, and the bots on their way down.
         if(game_mode==game::GameMode::BattleRoyale && dropping) {
@@ -3330,6 +3494,14 @@ void Renderer::run() {
                 code==input::Bindings::wheel ? "WHEEL" : input::Bindings::name(code);
             return name;
         };
+        // Driving with a pistol or SMG: what is in the hand for a drive-by (over the speedometer).
+        if(drive_by && !creator_active && !inventory_open) {
+            const char* line=TextFormat("DRIVE-BY  %s  %d / %d   %s",weapons.weapon().name,weapons.ammo().loaded,weapons.ammo().reserve,
+                touch_ui ? "" : "LMB FIRE - LOOK TO AIM");
+            const int lw=MeasureText(line,18);
+            DrawRectangle(12,screen_height-206,lw+24,30,Fade(BLACK,.6F));
+            DrawText(line,24,screen_height-200,18,weapons.ammo().loaded>0 ? RAYWHITE : ORANGE);
+        }
         if (!creator_active && !inventory_open && !build_mode.active() && !driving) {
             DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
             {
@@ -3551,15 +3723,65 @@ void Renderer::run() {
                 const auto& crew=mafio.crews()[static_cast<std::size_t>(turf)];
                 const auto& gang=game::mafia::gangs[static_cast<std::size_t>(crew.gang)];
                 const std::string title=std::string(gang.name)+"  ·  "+crew.town+" crew";
-                const std::string sub=mafio.provoked(crew.gang,match_time) ? std::string("They are shooting at you - the police won't come") :
+                const std::string sub=career.in_gang(crew.gang) ? std::string("Your crew - wait here for the word, bring the rig here") :
+                    mafio.provoked(crew.gang,match_time) ? std::string("They are shooting at you - the police won't come") :
+                    !career_path.empty() ? std::string(gang.meaning)+" - USE at the door to join them" :
                     std::string(gang.meaning)+" - leave them be and they leave you be";
                 const float tw=MeasureTextEx(font,title.c_str(),20,1).x,sw=MeasureTextEx(font,sub.c_str(),15,1).x;
                 // Left, under the money line: clear of the compass and the touch buttons.
-                const float w=std::max(tw,sw)+30,x=10,y=screen_height*.235F;
+                const float career_room=career.state().side==game::career::Side::Civilian ? 0.0F :
+                    career.job().kind!=game::career::JobKind::None ? 96.0F : 78.0F; // under the career panel
+                const float w=std::max(tw,sw)+30,x=10,y=screen_height*.235F+career_room;
                 DrawRectangle(static_cast<int>(x),static_cast<int>(y),static_cast<int>(w),50,Fade(BLACK,.5F));
                 DrawRectangle(static_cast<int>(x),static_cast<int>(y),5,50,gang.color);
                 DrawTextEx(font,title.c_str(),{x+15,y+5},20,1,gang.color);
                 DrawTextEx(font,sub.c_str(),{x+15,y+28},15,1,Color{220,226,206,255});
+            }
+            // At a police station: how to sign up (or why not).
+            if(!career_path.empty() && !career.on_duty() && services.active() &&
+               services.station_near({player.position.x,player.position.y-1,player.position.z},14) && !vehicles.driver()) {
+                const char* line=career.state().record ? "POLICIO DE VERDA  ·  no Krimuloj on the force - you have a record" :
+                                                         "POLICIO DE VERDA  ·  USE to join: a patrol car and radio calls";
+                const float lw=MeasureTextEx(font,line,17,1).x;
+                DrawRectangle(static_cast<int>(screen_width/2-lw/2-12),screen_height-246,static_cast<int>(lw+24),28,Fade(BLACK,.55F));
+                DrawTextEx(font,line,{screen_width/2-lw/2,static_cast<float>(screen_height-241)},17,1,career.state().record ? Color{255,140,120,255} : Color{150,190,255,255});
+            }
+            // The career: side and rank, the respect meter, the job in hand, and the news.
+            if(career.state().side!=game::career::Side::Civilian) {
+                const bool cop=career.on_duty();
+                const Color tint=cop ? Color{110,160,255,255} : game::mafia::gangs[static_cast<std::size_t>(std::max(0,career.state().gang))].color;
+                const std::string who=std::string(cop ? "POLICIO DE VERDA" : std::string(game::mafia::gangs[static_cast<std::size_t>(career.state().gang)].name))+"  ·  "+career.rank_name();
+                const auto& job=career.job();
+                std::string task,status;
+                if(job.kind!=game::career::JobKind::None) {
+                    task=std::string(job.title)+":  "+job.detail;
+                    const int left=static_cast<int>(std::max(0.0,job.deadline-match_time));
+                    const float metres=std::hypot(job.target.x-player.position.x,job.target.z-player.position.z);
+                    status=(job.kind==game::career::JobKind::RobRig ? std::string(job.taken ? "rig taken - to the hideout" : "find the rig") :
+                            std::to_string(job.done)+" of "+std::to_string(job.needed))+
+                        TextFormat("   ·   %d:%02d left   ·   %.0f m",left/60,left%60,metres);
+                } else status=cop ? "On patrol - waiting for a call" : "Waiting for the word";
+                const float x=10,y=screen_height*.235F;
+                const float w=std::max({340.0F,MeasureTextEx(font,task.c_str(),15,1).x+24,MeasureTextEx(font,who.c_str(),18,1).x+24});
+                const float h=task.empty() ? 70.0F : 88.0F;
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y),static_cast<int>(w),static_cast<int>(h),Fade(BLACK,.55F));
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y),5,static_cast<int>(h),tint);
+                DrawTextEx(font,who.c_str(),{x+14,y+5},18,1,tint);
+                // The respect meter: ticks at each rank.
+                const float bar=200,share=career.state().respect/game::career::Career::respect_max;
+                DrawRectangle(static_cast<int>(x+14),static_cast<int>(y+29),static_cast<int>(bar),8,Fade(WHITE,.15F));
+                DrawRectangle(static_cast<int>(x+14),static_cast<int>(y+29),static_cast<int>(bar*share),8,tint);
+                for(const float tick:{15.0F,40.0F,70.0F,95.0F}) DrawRectangle(static_cast<int>(x+14+bar*tick/100),static_cast<int>(y+27),1,12,Fade(WHITE,.6F));
+                DrawTextEx(font,TextFormat("RESPECT %d",static_cast<int>(career.state().respect)),{x+22+bar,y+25},15,1,RAYWHITE);
+                if(!task.empty()) DrawTextEx(font,task.c_str(),{x+14,y+44},15,1,Color{255,232,180,255});
+                DrawTextEx(font,status.c_str(),{x+14,y+(task.empty() ? 46.0F : 64.0F)},14,1,Color{205,212,196,255});
+            }
+            if(career.message_time()>0) {
+                const float alpha=std::clamp(career.message_time(),0.0F,1.0F);
+                const float mw=MeasureTextEx(font,career.message().c_str(),19,1).x;
+                const Color tint=career.on_duty() ? Color{150,190,255,255} : Color{255,210,120,255};
+                DrawRectangle(static_cast<int>(screen_width/2-mw/2-14),screen_height-206,static_cast<int>(mw+28),30,Fade(BLACK,.6F*alpha));
+                DrawTextEx(font,career.message().c_str(),{screen_width/2-mw/2,static_cast<float>(screen_height-201)},19,1,Fade(tint,alpha));
             }
             if(mafio.message_time()>0) {
                 const float alpha=std::clamp(mafio.message_time(),0.0F,1.0F);

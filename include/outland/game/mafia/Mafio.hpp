@@ -136,6 +136,12 @@ public:
     [[nodiscard]] const std::string& message() const { return message_; }
     [[nodiscard]] float message_time() const { return message_time_; }
     void set_next_war(double at) { next_war_ = at; }
+    // The player's own gang (game::career), or -1. Their crews never mind the player's gunfire
+    // near them; rival gangs open fire when the player comes onto their turf.
+    void set_player_gang(int gang) { player_gang_ = gang; }
+    [[nodiscard]] int player_gang() const { return player_gang_; }
+    static constexpr float rival_turf_alert = 45;   // metres from a rival hideout
+    static constexpr float turf_grace = 5;          // seconds' warning before they shoot
 
 private:
     Member* member(int bot);
@@ -154,6 +160,8 @@ private:
     std::string message_;
     float message_time_{0};
     std::function<bool(int, int, double)> outsiders_;
+    int player_gang_{-1};
+    std::array<double, world::zones::zone_count> turf_warned_at_{-1e9, -1e9, -1e9, -1e9, -1e9};
 };
 
 } // namespace outland::game::mafia

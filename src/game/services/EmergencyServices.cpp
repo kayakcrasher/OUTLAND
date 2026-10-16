@@ -372,6 +372,17 @@ void EmergencyServices::update(const ServicesFrame& frame, vehicles::VehicleSyst
     if (units_.empty() || !std::isfinite(frame.dt) || frame.dt <= 0) return;
     // A unit whose car is gone, wrecked or taken by the player is out of service.
     for (auto& u : units_) {
+        // The player's own patrol car (an officer): its lights are theirs to work.
+        if (!player_car_.empty() && u.vehicle == player_car_) {
+            u.siren = player_siren_ && cars.driver() && cars.driver()->id == u.vehicle;
+            if (u.state != UnitState::Out) {
+                cars.clear_autopilot(u.vehicle);
+                for (const int id : u.crew) npcs.arm_resident(id, false);
+                u.crew.clear();
+                u.state = UnitState::Out;
+            }
+            continue;
+        }
         if (u.state == UnitState::Out) continue;
         const int v = cars.find(u.vehicle);
         const auto* asset = v >= 0 ? cars.asset(region, u.vehicle) : nullptr;
@@ -436,6 +447,13 @@ void EmergencyServices::update(const ServicesFrame& frame, vehicles::VehicleSyst
         if (u.kind == UnitKind::Police) police(u, frame, cars, region, npcs);
         else ambulance(u, frame, cars, region, npcs, life);
     }
+}
+
+const Unit* EmergencyServices::station_near(Vector3 feet, float radius) const {
+    const Unit* best = nullptr;
+    for (const auto& u : units_)
+        if (u.kind == UnitKind::Police && flat(u.home, feet) < radius && (!best || flat(u.home, feet) < flat(best->home, feet))) best = &u;
+    return best;
 }
 
 void draw_light_bars(const EmergencyServices& services, const vehicles::VehicleSystem& cars, Vector3 camera, float time) {

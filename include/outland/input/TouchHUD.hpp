@@ -19,6 +19,11 @@ public:
         bool look_stick = false,          // the Creator's look stick (play and building swipe instead)
         bool skydiving = false            // the Battle Royale drop: the stick and JUMP, and a label on it
     ) const;
+    // At the wheel with a pistol or SMG: a FIRE button for drive-bys.
+    void set_drive_by(bool on) { drive_by_ = on; }
+
+private:
+    bool drive_by_{false};
 };
 
 }

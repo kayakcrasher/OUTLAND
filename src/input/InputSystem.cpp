@@ -161,6 +161,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
             if (hit(p, layout_.handbrake, 43)) return Control::Handbrake;
             if (hit(p, layout_.interact, 43)) return Control::Interact;
             if (hit(p, layout_.sprint, 43)) return Control::Sprint;
+            if (drive_by_ && hit(p, layout_.fire_left, 43)) return Control::FireLeft;
             if (hit(p, layout_.movement, 92)) return Control::Movement;
             if (const auto pan = pan_area(screen_width, screen_height); p.x >= pan.x && p.x <= pan.x + pan.width && p.y >= pan.y && p.y <= pan.y + pan.height) return Control::Pan;
             return Control::None;
