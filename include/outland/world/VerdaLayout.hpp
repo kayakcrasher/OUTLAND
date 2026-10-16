@@ -36,7 +36,7 @@ inline constexpr float capital_flat_radius = 180;
 // downtown, |x| in [suburb_near, suburb_far], |z| <= suburb_half.
 inline constexpr float suburb_near = 150, suburb_far = 485, suburb_half = 190;
 // Porto Luma is a city now: its building pad is wider than the other towns'.
-inline constexpr float town_flat_radius = 85, port_flat_radius = 205;
+inline constexpr float town_flat_radius = 205, port_flat_radius = 205;  // Espera and Suda Haveno are cities now too
 inline constexpr float shoreline_band = 160;
 inline float shore_radius(float x, float z) {
     const float angle = std::atan2(z, x);

@@ -12,6 +12,7 @@
 #include "outland/world/physics/MeshCollision.hpp"
 #include <raymath.h>
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cmath>
 #include <functional>
@@ -184,10 +185,10 @@ const std::string kit_roof = "assets/verda/kit/roof_slab_3x3.glb";
 // Width/depth in 3 m modules (at least 4 x 2). Front (-z) has the doorway; 8-wide buildings also
 // get a back door. Two storeys get a staircase along the back wall under a 6 m gap in the floor.
 bool modular_building(Kit& kit, Vector3 origin, float yaw, int modules_x, int modules_z, const std::string& style, int storeys, std::uint32_t seed,
-                      world::BuildingPurpose purpose = world::BuildingPurpose::Home) {
+                      world::BuildingPurpose purpose = world::BuildingPurpose::Home, float lift = 0) {
     const float w = modules_x * 3.0F, d = modules_z * 3.0F;
     if (!kit.claim(origin, w * .5F + 3, d * .5F + 3, yaw)) return false;
-    origin.y = world::terrain::TerrainHeight::sample(origin.x, origin.z);
+    origin.y = world::terrain::TerrainHeight::sample(origin.x, origin.z) + lift;   // lift: on a city block's paving
     const auto piece = [&](const std::string& name) { return parts + style + "_" + name + ".glb"; };
     const auto window = [&](int index) {
         const auto roll = hash(seed + static_cast<std::uint32_t>(index) * 7919U) % 5;
@@ -856,9 +857,11 @@ void bus_stops(Kit& kit, world::VerdaRegion& region) {
                         if (!dry || !open || !kit.claim(loop.centre, r + 1, r + 1, 0)) continue;
                         auto& roads = region.runtime_settlements()[t].roads;
                         const float w = world::roads::Turnaround::width;
-                        roads.push_back({loop.junction, loop.stem_end, w, spot.type}); // paved like the road it leaves
+                        // Paved like the road it leaves (asphalt off a highway).
+                        const auto paving = spot.type == world::RoadType::Highway ? world::RoadType::Asphalt : spot.type;
+                        roads.push_back({loop.junction, loop.stem_end, w, paving});
                         for (std::size_t k = 0; k < loop.ring.size(); ++k)
-                            roads.push_back({loop.ring[k], loop.ring[(k + 1) % loop.ring.size()], w, spot.type});
+                            roads.push_back({loop.ring[k], loop.ring[(k + 1) % loop.ring.size()], w, paving});
                         ++kit.report.turnarounds;
                         built = true;
                         break;
@@ -951,41 +954,166 @@ void trailer_park(Kit& kit, world::VerdaRegion& region) {
     ++kit.report.parks;
 }
 
-void suda_haveno(Kit& kit) {
-    const auto c = site("south_haven");
-    // Residential lanes: small homes with picket-fenced front gardens.
-    int seed = 41;
-    for (const auto& [x, z, yaw, style] : std::initializer_list<std::tuple<float, float, float, const char*>>{
-            {-50, -30, 90, "stuco"}, {-50, 25, 90, "brick"}, {50, -30, 270, "fancy_brick"}, {50, 25, 270, "stuco"}}) {
-        const Vector3 at{c.x + x, 0, c.z + z};
-        if (!modular_building(kit, at, yaw, 4, 4, style, seed % 2 ? 2 : 1, static_cast<std::uint32_t>(seed))) {++seed; continue;}
-        // Garden fence 4 m in front of the doorway, gate in the middle.
-        const Vector3 left = to_world(at, yaw, -6, 0, -10), right = to_world(at, yaw, 6, 0, -10);
-        const Vector3 gate_l = to_world(at, yaw, -1.2F, 0, -10), gate_r = to_world(at, yaw, 1.2F, 0, -10);
-        fence(kit, left, gate_l, {urban + "Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb"}, 2.38F, static_cast<std::uint32_t>(seed));
-        fence(kit, gate_r, right, {urban + "Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb"}, 2.38F, static_cast<std::uint32_t>(seed + 1));
-        kit.put(urban + "Litter/TrashCan/trash_can_alt1.glb", to_world(at, yaw, 7.5F, 0, -8), yaw);
-        ++seed;
+// ------------------------------------------------------------------ Espera and Suda Haveno
+// The two county towns are built to the same city plan as Porto Luma and Roka: a 4 x 4 grid of
+// 12 m streets (avenues and streets at +-40 and +-120 from the centre) round a central square,
+// Main Street rows facing the square and the streets behind, signals at the inner crossings,
+// street lights, kerbside cars. Then each its own: Espera, the farm town of the north, has the
+// farmers' co-op yard (a red barn, grain bins, hay) and a feed store; Suda Haveno, the harbour
+// town of the south, has the fish market and a boat shed by a warehouse yard. Both have blocks of
+// flats, a car park and a corner mid-rise. The highways from the capital end at the grid's
+// highway-side edge street.
+enum class TownBlock { Square, Rows, Flats, Parking, Yard, Midrise };
+struct TownPlan {
+    std::string_view id, tag;      // settlement, marker prefix
+    std::uint32_t seed;
+    bool farm;                     // Espera's co-op yard, or Suda Haveno's harbour yard
+    std::array<TownBlock, 9> blocks; // bx -80, 0, 80 (outer) by bz -80, 0, 80 (inner)
+};
+
+void county_town(Kit& kit, world::VerdaRegion& region, const TownPlan& plan) {
+    auto* town = settlement(region, plan.id);
+    if (!town) return;
+    const auto c = site(plan.id);
+    const float edge = pitch + street * .5F + 40; // 126
+    const float ground = world::terrain::TerrainHeight::sample(c.x, c.z);
+    // The old village goes: its houses, lanes, trees and loose pieces inside the new streets.
+    const float reach = edge + 30;
+    const auto inside = [&](Vector3 p) { return std::abs(p.x - c.x) < reach && std::abs(p.z - c.z) < reach; };
+    town->buildings.clear();
+    town->roads.clear();
+    for (auto& s : region.runtime_settlements())
+        kit.report.cleared += static_cast<int>(std::erase_if(s.assets, [&](const world::WorldAsset& a) { return a.vehicle.definition.empty() && inside(a.position); }));
+    kit.clear_area(c, reach);
+    // Loot laid out for the old village moves to the new square.
+    int moved = 0;
+    for (auto& m : town->gameplay_markers)
+        if (m.type == world::GameplayMarkerType::LootSpawn && inside(m.position)) {
+            m.position = {c.x + (moved % 2 ? 24.0F : -24.0F), ground + pad_top + .3F, c.z + (moved / 2 % 2 ? 24.0F : -24.0F)};
+            ++moved;
+        }
+    for (const float o : {-120.0F, -40.0F, 40.0F, 120.0F}) {
+        town->roads.push_back({{c.x + o, 0, c.z - edge}, {c.x + o, 0, c.z + edge}, street, world::RoadType::Asphalt});
+        town->roads.push_back({{c.x - edge, 0, c.z + o}, {c.x + edge, 0, c.z + o}, street, world::RoadType::Asphalt});
     }
-    prop(kit, urban + "Bus stops/busstop_round_roof.glb", {c.x + 9, 0, c.z + 60}, 90, 2.5F);
-    for (int i = -3; i <= 3; ++i) kit.put(urban + "Traffic lights/street_light.glb", {c.x - 6.5F, 0, c.z + i * 25.0F + 5}, -90);
+    kit.add_roads(town->roads);
+    for (const float i : {-120.0F, -40.0F, 40.0F, 120.0F}) for (const float j : {-120.0F, -40.0F, 40.0F, 120.0F})
+        kit.put(city + "ground/intersection_12.glb", {c.x + i, ground, c.z + j}, 0, false);
+    const auto at = [&](float x, float z) { return Vector3{c.x + x, ground + pad_top, c.z + z}; };
+    const auto home_marker = [&](Vector3 p, float yaw) { kit.purpose({p.x, ground + .3F, p.z}, yaw, world::BuildingPurpose::Home); };
+    int parked = 0, block = 0;
+    for (const float bx : {-80.0F, 0.0F, 80.0F}) for (const float bz : {-80.0F, 0.0F, 80.0F}) {
+        const TownBlock kind = plan.blocks[static_cast<std::size_t>(block++)];
+        const auto seed = plan.seed + static_cast<std::uint32_t>((bx + 300) * 11 + (bz + 300) * 17);
+        const bool square = kind == TownBlock::Square, open = kind == TownBlock::Parking || kind == TownBlock::Yard;
+        // (Yards stand on the sidewalk block like Roka's: the car-park surface would lift a floor.)
+        kit.put(city + (square ? "ground/courthouse_square_68.glb" : kind == TownBlock::Parking ? "ground/parking_lot_68.glb" : "ground/sidewalk_block_68.glb"),
+                {c.x + bx, ground, c.z + bz}, 0, false);
+        // The side toward the centre (a row there faces the square or the main street).
+        const int toward = bx > 0 ? 3 : bx < 0 ? 1 : bz > 0 ? 0 : 2;
+        switch (kind) {
+        case TownBlock::Square:
+            for (int i = 0; i < 4; ++i) for (const float t : {-22.0F, 22.0F})
+                kit.tree(at(i % 2 ? t : (i < 2 ? -27 : 27), i % 2 ? (i < 2 ? -27 : 27) : t));
+            kit.put(urban + "Bus stops/busstop_clean_bench.glb", at(31, 12), 270, false);
+            kit.put(urban + "Bus stops/busstop_clean_bench.glb", at(-31, -12), 90, false);
+            if (plan.farm) kit.put("assets/verda/ranch/windmill.glb", at(0, 0), 45, false); // the old village pump
+            break;
+        case TownBlock::Rows:
+            main_street_row(kit, ground, c.x + bx, c.z + bz, toward, seed);
+            main_street_row(kit, ground, c.x + bx, c.z + bz, (toward + 2) % 4, seed + 7);
+            break;
+        case TownBlock::Midrise:
+            main_street_row(kit, ground, c.x + bx, c.z + bz, toward, seed);
+            kit.put(city + "towers/" + (seed % 2 ? "brick_midrise" : "stone_midrise") + ".glb",
+                    at(bx + (bx > 0 ? 14 : -14), bz + (bz > 0 ? 14 : -14)), 0, false);
+            break;
+        case TownBlock::Flats: {
+            // Flats round a courtyard, each a home.
+            const char* models[]{"flat_square_brick.glb", "flat_square_concrete.glb", "flat_square_brick_alt.glb", "flat_square_concrete_alt.glb"};
+            int n = 0;
+            for (const float dx : {-15.0F, 15.0F}) for (const float dz : {-15.0F, 15.0F}) {
+                const Vector3 p = at(bx + dx, bz + dz);
+                if (!kit.claim(p, 8.6F, 8.6F, 0)) continue;
+                kit.put(prebuild + models[(n + static_cast<int>(seed)) % 4], p, dx < 0 ? 90.0F : 270.0F, false);
+                home_marker(at(bx + dx * .5F, bz + dz), dx < 0 ? 90.0F : 270.0F);
+                ++n;
+            }
+            kit.tree(at(bx, bz - 4));
+            kit.tree(at(bx, bz + 4));
+            break;
+        }
+        case TownBlock::Parking:
+            for (const float dz : {-12.0F, 12.0F}) for (const float dx : {-20.0F, -6.0F, 8.0F})
+                if (hash(seed + static_cast<std::uint32_t>(dx * 3 + dz * 7 + 100)) % 3 == 0)
+                    vehicle_marker(*town, "vehicle_spawn_hatchback_" + std::string(plan.tag) + "_lot_" + std::to_string(++parked), {c.x + bx + dx, 0, c.z + bz + dz}, 0);
+            break;
+        case TownBlock::Yard: {
+            const float back = bz > 0 ? 1.0F : -1.0F;   // the far side, away from the centre
+            if (plan.farm) {
+                // The farmers' co-op: a red barn and grain bins on the far side, the feed store on
+                // the street, hay and pallets in the yard.
+                const std::string ranch = "assets/verda/ranch/";
+                if (kit.claim(at(bx - 8, bz + back * 14), 9, 14, 90)) kit.put(ranch + "barn.glb", at(bx - 8, bz + back * 14), 90, false);
+                for (const float dx : {16.0F, 26.0F}) kit.put(ranch + "grain_bin.glb", at(bx + dx, bz + back * 20), 0, false);
+                modular_building(kit, at(bx + 14, bz - back * 18), back > 0 ? 180.0F : 0.0F, 4, 3, "brick", 1, seed, world::BuildingPurpose::Shop, pad_top);
+                for (int i = 0; i < 10; ++i) kit.put(ranch + "hay_bale.glb", at(bx - 26 + (i % 5) * 1.8F, bz - back * 4 + (i / 5) * 1.9F), 0, false);
+                kit.put(ranch + "water_trough.glb", at(bx + 4, bz - back * 2), 0, false);
+            } else {
+                // The harbour yard: the fish market hall and a boat shed, pallets and barrels.
+                modular_building(kit, at(bx - 12, bz + back * 14), back > 0 ? 180.0F : 0.0F, 6, 3, "stuco", 1, seed, world::BuildingPurpose::Dock, pad_top);
+                if (kit.claim(at(bx + 22, bz + back * 14), 4.6F, 7.4F, 0)) kit.put(shacks + "Large Shed A.glb", at(bx + 22, bz + back * 14), 0, false);
+                for (int i = 0; i < 12; ++i) {
+                    const auto r = hash(seed + 50U + static_cast<std::uint32_t>(i));
+                    prop(kit, shacks + (i % 3 ? "Pallet.glb" : "Barrel.glb"),
+                         at(bx - 26 + static_cast<float>(r % 52), bz - back * (8 + static_cast<float>((r / 53) % 10))), static_cast<float>(r % 360), .9F);
+                }
+            }
+            prop(kit, urban + "Litter/Dumpsters/dumpster_lid_closed_red.glb", at(bx + 28, bz - back * 6), 90, 2);
+            break;
+        }
+        }
+        for (int side = 0; side < 4; ++side) {
+            const float e = pad_size * .5F - 1.6F;
+            const auto spot = [&](float along) {
+                return side == 0 ? at(bx + along, bz - e) : side == 1 ? at(bx + e, bz + along) : side == 2 ? at(bx - along, bz + e) : at(bx - e, bz - along);
+            };
+            if (!square && !open) for (const float along : {-16.0F, 16.0F}) kit.tree(spot(along));
+            kit.put(urban + "Traffic lights/street_light.glb", spot(0), side == 0 ? 0.0F : side == 1 ? 270.0F : side == 2 ? 180.0F : 90.0F, false);
+        }
+        // Kerbside cars on the streets round the square, tight to the kerb (clear of the bus).
+        if (!square && (bx == 0 || bz == 0)) for (const float along : {8.0F, -18.0F}) {
+            const bool along_z = bz == 0;
+            const float curb = pad_size * .5F + 1.2F;
+            const Vector3 p = along_z ? Vector3{c.x + bx + (bx > 0 ? -curb : curb), 0, c.z + along} : Vector3{c.x + along, 0, c.z + bz + (bz > 0 ? -curb : curb)};
+            vehicle_marker(*town, "vehicle_spawn_hatchback_" + std::string(plan.tag) + "_" + std::to_string(++parked), p, along_z ? 0.0F : 90.0F);
+        }
+    }
+    for (const float i : {-40.0F, 40.0F}) for (const float j : {-40.0F, 40.0F}) {
+        const float o = street * .5F + 1.2F;
+        kit.put(urban + "Traffic lights/traffic_light.glb", at(i + o, j - o), 0, false);
+        kit.put(urban + "Traffic lights/traffic_light.glb", at(i - o, j + o), 180, false);
+    }
+    kit.claim(c, edge + 2, edge + 2, 0);
+    town->survivors = 0; // every home in the town is lived in
+    ++kit.report.cities;
 }
 
-void espera(Kit& kit) {
-    const auto c = site("village_espera");
-    // Farmland: drystone field walls, a lean-to barn and post-and-rail paddock fences.
-    const std::vector<std::string> stone{urban + "Walls & Fences/drystone_wall/drystone_wall.glb", urban + "Walls & Fences/drystone_wall/drystone_wall_capped.glb"};
-    fence(kit, {c.x - 90, 0, c.z + 40}, {c.x - 40, 0, c.z + 40}, stone, 2.0F, 61);
-    fence(kit, {c.x - 90, 0, c.z + 40}, {c.x - 90, 0, c.z + 90}, stone, 2.0F, 62);
-    const std::vector<std::string> rails{urban + "Fences/low_wooden_fence/wooden_fence_closed.glb", urban + "Fences/low_wooden_fence/wooden_fence_open.glb",
-        urban + "Fences/low_wooden_fence/wooden_fence_broken.glb"};
-    fence(kit, {c.x + 40, 0, c.z + 45}, {c.x + 85, 0, c.z + 45}, rails, 2.2F, 63);
-    fence(kit, {c.x + 85, 0, c.z + 45}, {c.x + 85, 0, c.z + 85}, rails, 2.2F, 64);
-    if (kit.claim({c.x - 60, 0, c.z + 65}, 3, 4, 0)) kit.put(shacks + "Leanto B.glb", {c.x - 60, 0, c.z + 65}, 0);
-    if (kit.claim({c.x + 60, 0, c.z + 65}, 3, 4, 0)) kit.put(shacks + "Shack A.glb", {c.x + 60, 0, c.z + 65}, 90);
-    modular_building(kit, {c.x - 55, 0, c.z - 45}, 90, 4, 4, "stuco", 1, 65);
-    modular_building(kit, {c.x + 55, 0, c.z - 45}, 270, 4, 4, "brick", 2, 66);
-    prop(kit, urban + "Bus stops/busstop_single_seat.glb", {c.x + 9, 0, c.z + 34}, 90, 2.5F);
+// Espera faces south down the highway to the capital (which ends at its south edge street);
+// Suda Haveno faces north up it.
+void espera(Kit& kit, world::VerdaRegion& region) {
+    using B = TownBlock;
+    county_town(kit, region, {"village_espera", "espera", 6100, true,
+        {B::Flats, B::Rows, B::Yard,        // bx -80: north, middle, south
+         B::Rows, B::Square, B::Rows,       // bx 0
+         B::Midrise, B::Rows, B::Parking}}); // bx 80
+}
+void suda_haveno(Kit& kit, world::VerdaRegion& region) {
+    using B = TownBlock;
+    county_town(kit, region, {"south_haven", "suda", 6200, false,
+        {B::Parking, B::Rows, B::Flats,
+         B::Rows, B::Square, B::Rows,
+         B::Midrise, B::Rows, B::Yard}});
 }
 
 // Island life drives: most houses in the small towns get the family car on the drive beside them.
@@ -1327,7 +1455,7 @@ void trucks(Kit& kit, world::VerdaRegion& region) {
     const auto port = site("port_luma"), espera = site("village_espera");
     const Want wanted[]{
         {"port_luma", {port.x + 186, 0, port.z - 62}, 0}, {"port_luma", {port.x + 186, 0, port.z + 62}, 180},
-        {"village_espera", {espera.x - 50, 0, espera.z + 58}, 90},
+        {"village_espera", {espera.x - 80 + 20, 0, espera.z + 80 - 8}, 90},   // in the co-op yard
         {"ferarbaro_sovagejo", {world::layout::sovagejo_center.x + 9, 0, world::layout::sovagejo_center.z + 64}, 0}, // by the park gate
     };
     std::map<std::string, int> count;
@@ -1876,8 +2004,8 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     downtown_south(kit, region);
     roka_city(kit, region);
     trailer_park(kit, region);
-    suda_haveno(kit);
-    espera(kit);
+    suda_haveno(kit, region);
+    espera(kit, region);
     driveways(kit, region);
     // Last, so every older piece keeps its id (saves refer to them).
     sovagejo_homesteads(kit, region);

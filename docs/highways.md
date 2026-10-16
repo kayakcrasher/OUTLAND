@@ -5,9 +5,9 @@ the island at 1,500 m. Four spokes leave Verda City and run to the towns:
 
 | Spoke | Leaves Verda City from | Ends at |
 |---|---|---|
-| north | the main avenue (0, −166) | Espera's main street (0, −1750) |
+| north | the main avenue (0, −166) | Espera's south edge street (0, −1680) |
 | east | the Orienta boulevard (476, 0) | Porto Luma's grid (1624, −440) |
-| south | the main avenue (0, 166), between the south blocks | Suda Haveno's main street (300, 1710) |
+| south | the main avenue (0, 166), between the south blocks | Suda Haveno's north edge street (300, 1680) |
 | west | the Okcidenta boulevard (−476, 0) | Roka's grid (−1624, 410) |
 
 The spokes cross the ring road at grade, at four junctions. The old two-lane links have been

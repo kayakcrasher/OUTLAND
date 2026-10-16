@@ -9,6 +9,7 @@
 #include "outland/world/VerdaLayout.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/Highways.hpp"
+#include "outland/world/roads/Turnaround.hpp"
 #include "outland/world/roads/RoadGraph.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
@@ -64,7 +65,7 @@ int main() {
     for (const auto& p : report.skipped) std::cout << "  skipped lot " << p.x << ", " << p.z << '\n';
     check(report.missing.empty(), "every kit model is in the catalog");
     check(report.buildings >= 40 && report.assets > 400, "towns dressed: " + std::to_string(report.buildings));
-    check(count_assets(region) == before + static_cast<std::size_t>(report.assets), "every piece is a world asset");
+    check(count_assets(region) + static_cast<std::size_t>(report.cleared) == before + static_cast<std::size_t>(report.assets), "every piece is a world asset");
     world::VerdaRegion again(true);
     const auto repeat = make(again);
     check(repeat.assets == report.assets && count_assets(again) == count_assets(region), "deterministic");
@@ -182,7 +183,7 @@ int main() {
     // works west of it, worker flats, and on a wide level pad. Sovaĝejo is north of it at the end
     // of a dirt road.
     {
-        check(report.cities == 1, "Roka rebuilt as a city");
+        check(report.cities == 3, "Roka, Espera and Suda Haveno built as cities");
         const world::Settlement* roka = nullptr;
         const world::Settlement* sovagejo = nullptr;
         for (const auto& s : region.settlements()) { if (s.id == "west_roka") roka = &s; if (s.id == "ferarbaro_sovagejo") sovagejo = &s; }
@@ -210,6 +211,39 @@ int main() {
         for (const auto& s : region.settlements()) for (const auto& asset : s.assets)
             if (asset.model_path.find("transit/bus_stop") != std::string::npos)
                 check(std::hypot(asset.position.x - sovagejo->center.x, asset.position.z - sovagejo->center.z) > 300, "no bus stop at Sovaĝejo");
+    }
+
+    // Espera and Suda Haveno: the same city plan - a 4 x 4 grid round a square, Main Street rows,
+    // flats, a car park and a yard (the co-op's barn, the fish market) - on level pads, with the
+    // highway from the capital joining the grid's edge street.
+    {
+        world::roads::RoadGraph graph(region);
+        const world::Settlement* capital = nullptr;
+        for (const auto& s : region.settlements()) if (s.id == "capital_verda") capital = &s;
+        for (const char* id : {"village_espera", "south_haven"}) {
+            const world::Settlement* town = nullptr;
+            for (const auto& s : region.settlements()) if (s.id == id) town = &s;
+            check(town != nullptr && capital != nullptr, std::string(id) + " is there");
+            if (!town || !capital) continue;
+            int grid = 0;
+            for (const auto& road : town->roads) grid += road.type == world::RoadType::Asphalt && road.width == 12;
+            check(grid == 8, town->name + "'s street grid: " + std::to_string(grid));
+            int rows = 0, flats = 0, yard = 0, square = 0;
+            for (const auto& s : region.settlements()) for (const auto& asset : s.assets) {
+                if (std::hypot(asset.position.x - town->center.x, asset.position.z - town->center.z) > 200) continue;
+                rows += asset.model_path.find("/main_street/") != std::string::npos;
+                flats += asset.model_path.find("Buildings Prebuild/flat_") != std::string::npos;
+                yard += asset.model_path.find("ranch/barn") != std::string::npos || asset.model_path.find("Large Shed") != std::string::npos;
+                square += asset.model_path.find("courthouse_square") != std::string::npos;
+            }
+            check(rows >= 30 && flats == 4 && yard >= 1 && square == 1, town->name + ": rows, flats, the yard and the square: " +
+                  std::to_string(rows) + "/" + std::to_string(flats) + "/" + std::to_string(yard) + "/" + std::to_string(square));
+            const float h = world::terrain::TerrainHeight::sample(town->center.x, town->center.z);
+            for (const auto& [x, z] : std::initializer_list<std::pair<float, float>>{{-150, 0}, {130, 130}, {-130, -130}, {150, -60}})
+                check(std::abs(world::terrain::TerrainHeight::sample(town->center.x + x, town->center.z + z) - h) < .05F, town->name + " on a level pad");
+            const auto route = graph.route(capital->center, town->center);
+            check(route.complete && route.length < 2600, "the highway runs into " + town->name + "'s streets: " + std::to_string(route.length));
+        }
     }
 
     // Downtown: the old capital is gone, the grid is in, highways meet the grid edge.
@@ -248,7 +282,7 @@ int main() {
             if ((road.start.x == 0 && std::abs(road.start.z) == 166) || (std::abs(road.start.x) == 476 && road.start.z == 0)) ++highways;
         } else if (inside) { ++grid_streets; check(road.width == 12 && road.type == world::RoadType::Asphalt, "grid streets are 12 m asphalt"); }
         else if (in_suburbs(road.start) && in_suburbs(road.end)) ++suburb_streets;
-        else check(false, "a capital road that is neither street nor highway");
+        else check(world::roads::turnaround_road(road.width), "a capital road that is neither street, highway nor bus turnaround");
     }
     check(grid_streets == 10 + 6 && highways == 4 && suburb_streets == 14, // + the south blocks' four avenues and two streets
           "grid, suburbs and four highways: " + std::to_string(grid_streets) + "/" + std::to_string(suburb_streets) + "/" + std::to_string(highways));

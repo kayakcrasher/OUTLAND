@@ -55,9 +55,37 @@ the capital's population grows by three per house.
 - Waterfront east of the grid: quay roads, six warehouses, a harbour office, a dock building,
   pallets and barrels, and a line of bollards.
 
+## Espera and Suda Haveno
+The two county towns are built to the same city plan as Porto Luma and Roka by
+`county_town` in the world kit. It replaces the old villages: their houses, lanes, field walls
+and trees go, and the old village loot moves to the square.
+
+**The plan**
+- A 4 × 4 grid of 12 m streets: avenues and streets at ±40 and ±120 m from the centre.
+- Nine 68 m blocks, with the square in the middle and Main Street rows facing the square and the
+  streets behind it.
+- Signals at the four inner crossings, street lights and trees round every block, and cars
+  parked tight to the kerb on the streets round the square (clear of the bus lane).
+- The highway from the capital ends on the grid's edge street: Espera's south edge at
+  (0, −1680), Suda Haveno's north edge at (300, 1680).
+
+**The blocks** (bx, bz are a block's offset from the centre)
+
+| | Espera, the farm town | Suda Haveno, the harbour town |
+|---|---|---|
+| square | Placo de Espera, with the old village windmill | the square |
+| yard | the farmers' co-op (−80, 80), by the highway: a red barn, grain bins, a brick feed store (shop), hay bales, a water trough and the farm truck | the fish market (80, 80), on the sea side: a stucco market hall (dock), a boat shed, pallets and barrels |
+| flats | (−80, −80), four blocks of flats, each a home | (−80, 80) |
+| corner mid-rise | (80, −80) | (80, −80) |
+| car park | (80, 80) | (−80, −80), by the highway |
+| everything else | Main Street rows | Main Street rows |
+
+Every home in both towns is lived in. The police station and town hall find lots just outside
+the grid.
+
 ## Terrain
-`TerrainHeight` levels both suburbs (|x| 150–485, |z| ≤ 190) with downtown, and Porto Luma's
-building pad is 205 m in radius, up from 85 m.
+`TerrainHeight` levels both suburbs (|x| 150–485, |z| ≤ 190) with downtown. Porto Luma's,
+Espera's and Suda Haveno's building pads are 205 m in radius (up from 85 m).
 
 ## Roka, the industrial city
 Rebuilt on Porto Luma's plan (`roka_city` in the world kit): a 4 × 4 grid of 12 m streets (±40, ±120

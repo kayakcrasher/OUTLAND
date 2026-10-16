@@ -60,12 +60,12 @@ std::vector<Vector3> rounded(std::initializer_list<V2> corners) {
 
 std::vector<Line> make_lines() {
     std::vector<Line> lines;
-    // The spokes leave Verda City from the ends of its avenues and boulevard and end where each
-    // town's own streets begin (Espera's and Suda Haveno's main streets, the city grids of Porto
-    // Luma and Roka).
-    lines.push_back({"north", rounded({{0, -166}, {0, -1750}}), false});
+    // The spokes leave Verda City from the ends of its avenues and boulevard and end on the edge
+    // of each town's street grid (Espera's and Suda Haveno's edge streets, Porto Luma's and
+    // Roka's grids).
+    lines.push_back({"north", rounded({{0, -166}, {0, -1680}}), false});
     lines.push_back({"east", rounded({{476, 0}, {612, -140}, {1138, -260}, {1624, -440}}), false});
-    lines.push_back({"south", rounded({{0, 166}, {105, 630}, {195, 1170}, {300, 1710}}), false});
+    lines.push_back({"south", rounded({{0, 166}, {105, 630}, {195, 1170}, {300, 1680}}), false});
     lines.push_back({"west", rounded({{-476, 0}, {-612, 158}, {-1138, 292}, {-1624, 410}}), false});
     Line ring{"ring", {}, true};
     constexpr int ring_points = 144;   // 2.5 degrees, 65 m apart

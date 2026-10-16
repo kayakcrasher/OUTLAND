@@ -22,6 +22,7 @@ struct WorldKitReport {
     int assets{0}, buildings{0}, skipped_lots{0}, purposes{0}, parks{0}, driveways{0}, homesteads{0}, bus_stops{0}, turnarounds{0}, houses{0}, trucks{0}, hamlets{0}, cities{0}, loot_spots{0};
     int police_stations{0}, police_cars{0}, ambulances{0}, south_blocks{0};
     int retagged{0}; // purpose markers inside a model building (they retag it, not make a place)
+    int cleared{0};  // older pieces removed where a town was rebuilt (Espera's and Suda Haveno's villages)
     bool hospital{false};
     bool parliament{false}, stadium_reserved{false}, stela_turo{false};
     Vector3 stela_turo_at{};
