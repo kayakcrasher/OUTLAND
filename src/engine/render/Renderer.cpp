@@ -1087,6 +1087,9 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
                 // OUTLAND_DEV_ARMOURY=1: every gun, loaded, for trying them out.
                 if(const char* armoury=std::getenv("OUTLAND_DEV_ARMOURY"); armoury && *armoury=='1' && game_mode!=game::GameMode::DevLab) {
+                    // A backpack first: every gun does not fit in the bare bag.
+                    if(loot_session.inventory().count("backpack")==0) loot_session.edit_inventory().add(item_registry,"backpack",1);
+                    loot_session.edit_inventory().equip_container(item_registry,"backpack");
                     for(const auto sight:game::combat::attachments) // one of each optic first, while the bag has room
                         if(loot_session.inventory().count(std::string(game::combat::sight_info(sight).item))==0)
                             loot_session.edit_inventory().add(item_registry,std::string(game::combat::sight_info(sight).item),1);
@@ -2269,6 +2272,11 @@ void Renderer::run() {
             }
         }
         for(const auto& note:weapons.events().hits) combat_feedback.hit(note.position,note.damage,note.headshot);
+        // The rocket launcher: each shot sends a rocket off (flown and burst by the grenade system).
+        for(const auto& launch:weapons.events().launches) {
+            grenades.launch_rocket(launch.origin,launch.velocity);
+            if(lan_match && lan.in_match()) lan.send(net::Msg::Grenade,net::Grenade{launch.origin,launch.velocity,1});
+        }
         // Grenades: G or NADE throws one where the camera looks; blasts hurt everyone in reach
         // whom no wall shields - the player too - and wreck cars.
         // Outside the Dev Lab grenades are bag items (loot, shops, the starter kit): throw what you carry.
@@ -2297,11 +2305,18 @@ void Renderer::run() {
             const auto hit=combat_world.trace_segment(a,b,false,false,true);
             if(!hit.hit()) return false;
             point=hit.position;normal=hit.normal;return true;
+        },[&](Vector3 a,Vector3 b,Vector3& point,Vector3& normal) {
+            // A rocket also goes off on people (and the targets in the Dev Lab).
+            const auto hit=combat_world.trace_segment(a,b,true,true,true);
+            if(!hit.hit()) return false;
+            point=hit.position;normal=hit.normal;return true;
         }});
         for(std::size_t blast_index=0;blast_index<grenades.exploded().size();++blast_index) {
             const Vector3 blast=grenades.exploded()[blast_index];
             // Another player's grenade hurts the player here; its hits on everyone else are theirs to send.
             const bool thrown_elsewhere=blast_index<grenades.exploded_remote().size() && grenades.exploded_remote()[blast_index];
+            const bool rocket=blast_index<grenades.exploded_rocket().size() && grenades.exploded_rocket()[blast_index];
+            const float reach=game::combat::Grenades::blast_radius_of(rocket);
             sound_bus.emit(game::sound::SoundKind::Gunshot,blast,400,0,match_time);
             gun_audio.explosion(blast,camera.position,Vector3Subtract(camera.target,camera.position));
             const Vector3 core=Vector3Add(blast,{0,.35F,0});
@@ -2310,8 +2325,8 @@ void Renderer::run() {
             const float near=Vector3Distance(core,chest);
             haptics.explosion(near);
             combat_feedback.blast(std::clamp(1-near/45,0.0F,1.0F)*.6F);
-            if(!driving && near<game::combat::Grenades::blast_radius && open(chest)) {
-                hurt_player(game::combat::Grenades::damage_at(near));
+            if(!driving && near<reach && open(chest)) {
+                hurt_player(game::combat::Grenades::damage_at(near,rocket));
                 hurt_from=blast;hurt_directional=true;
             }
             for(std::size_t i=0;i<npcs.actors().size() && !thrown_elsewhere;++i) {
@@ -2319,8 +2334,8 @@ void Renderer::run() {
                 if(a.state==characters::NpcState::Dead || a.health<=0) continue;
                 const Vector3 target{a.position.x,a.position.y+1.1F,a.position.z};
                 const float d=Vector3Distance(core,target);
-                if(d>=game::combat::Grenades::blast_radius || !open(target)) continue;
-                const float amount=game::combat::Grenades::damage_at(d);
+                if(d>=reach || !open(target)) continue;
+                const float amount=game::combat::Grenades::damage_at(d,rocket);
                 combat_feedback.hit(target,amount,false);
                 damage_actor(static_cast<int>(i),amount,blast);
             }
@@ -2328,9 +2343,9 @@ void Renderer::run() {
                 const auto* car=vehicles.asset(verda_region,vehicles.vehicles()[i].id);
                 if(!car || car->vehicle.destroyed) continue;
                 const float d=std::max(0.0F,Vector3Distance(core,Vector3Add(car->position,{0,.8F,0}))-1.5F);
-                if(d>=game::combat::Grenades::blast_radius) continue;
+                if(d>=reach) continue;
                 game::combat::BulletHit hit;hit.kind=game::combat::HitKind::Vehicle;hit.target=static_cast<int>(i);hit.zone=static_cast<int>(game::vehicles::VehicleZone::Body);
-                vehicles.damage(verda_region,hit,game::combat::Grenades::damage_at(d)*.8F);
+                vehicles.damage(verda_region,hit,game::combat::Grenades::damage_at(d,rocket)*(rocket ? 2.0F : .8F)); // a rocket wrecks a car
                 vehicle_dirty=true;
             }
         }
@@ -2536,7 +2551,9 @@ void Renderer::run() {
                 }
                 case net::Msg::Grenade: {
                     net::Grenade grenade;
-                    if(net::decode(message.payload,grenade)) grenades.spawn_remote(grenade.origin,grenade.velocity);
+                    if(!net::decode(message.payload,grenade)) break;
+                    if(grenade.rocket) grenades.launch_rocket(grenade.origin,grenade.velocity,true);
+                    else grenades.spawn_remote(grenade.origin,grenade.velocity);
                     break;
                 }
                 case net::Msg::Leave: {
@@ -2639,7 +2656,8 @@ void Renderer::run() {
                     const std::uint32_t roll=static_cast<std::uint32_t>(bot.id())*2654435761U;
                     int k=0;
                     for(const auto& item:item_registry.items()) {
-                        if(!item.weapon || *item.weapon!=weapon) continue;
+                        // Its gun, and the rounds it loads (every shotgun takes the same shells).
+                        if(!item.weapon || (*item.weapon!=weapon && !(item.category==game::inventory::ItemCategory::Ammo && *item.weapon==game::combat::ammo_of(weapon)))) continue;
                         if(item.category==game::inventory::ItemCategory::Weapon)
                             loot_session.edit_world().drop(item_registry,item.id,1,spot(k++),game::combat::definition(weapon).magazine);
                         else if(item.category==game::inventory::ItemCategory::Ammo)
@@ -3005,23 +3023,42 @@ void Renderer::run() {
         game::combat::CombatRenderer::draw_world(weapons,combat_world);
         if(Model* grenade_model=grenades.live().empty() ? nullptr : get_world_asset_model("assets/verda/combat/frag_grenade.glb",character_registry))
             for(const auto& g:grenades.live()) {
+                if(g.rocket) continue;
                 // Tumbling through the air, settling once it has stopped.
                 const float spin=g.fuse*720.0F*std::min(1.0F,Vector3Length(g.velocity)/4.0F);
                 DrawModelEx(*grenade_model,Vector3Subtract(g.position,{0,.05F,0}),Vector3Normalize({1,.3F,.2F}),spin,{1.6F,1.6F,1.6F},WHITE);
             }
+        // Rockets in flight: a dark body nose-first, the motor's flame and a trail of smoke.
+        for(const auto& g:grenades.live()) {
+            if(!g.rocket) continue;
+            const Vector3 heading=Vector3Normalize(g.velocity);
+            const Vector3 tail=Vector3Subtract(g.position,Vector3Scale(heading,.7F));
+            DrawCylinderEx(tail,g.position,.05F,.05F,8,Color{70,76,58,255});
+            DrawCylinderEx(g.position,Vector3Add(g.position,Vector3Scale(heading,.18F)),.05F,0,8,Color{92,98,70,255});
+            BeginBlendMode(BLEND_ADDITIVE);
+            DrawSphere(tail,.14F,Color{255,190,90,255});
+            DrawCylinderEx(tail,Vector3Subtract(tail,Vector3Scale(heading,.6F)),.09F,0,6,Color{255,140,50,255});
+            EndBlendMode();
+            const float flown=game::combat::Grenades::rocket_life-g.fuse;
+            for(int k=1;k<=16;++k) {
+                const float back=static_cast<float>(k)*.8F;
+                if(back>flown*Vector3Length(g.velocity)) break;
+                DrawSphere(Vector3Subtract(tail,Vector3Scale(heading,back)),.14F+.045F*static_cast<float>(k),Fade(Color{196,192,184,255},.55F-.03F*static_cast<float>(k)));
+            }
+        }
         for(const auto& e:grenades.explosions()) {
-            const float t=e.age/game::combat::Grenades::explosion_life;
+            const float t=e.age/game::combat::Grenades::explosion_life, big=e.rocket ? 1.5F : 1.0F;
             if(t<.25F) {
                 // The fireball: a solid white-hot core inside an additive orange burst.
                 const float k=t/.25F;
-                DrawSphere(e.position,1.0F+k*3.2F,Color{236,110,24,static_cast<unsigned char>(235*(1-k*.6F))});
-                if(k<.6F) DrawSphere(e.position,.6F+k*2.0F,Color{255,214,120,255});
+                DrawSphere(e.position,(1.0F+k*3.2F)*big,Color{236,110,24,static_cast<unsigned char>(235*(1-k*.6F))});
+                if(k<.6F) DrawSphere(e.position,(.6F+k*2.0F)*big,Color{255,214,120,255});
                 BeginBlendMode(BLEND_ADDITIVE);
-                DrawSphere(e.position,.5F+k*1.4F,Color{static_cast<unsigned char>(200*(1-k)),static_cast<unsigned char>(150*(1-k)),static_cast<unsigned char>(60*(1-k)),255});
+                DrawSphere(e.position,(.5F+k*1.4F)*big,Color{static_cast<unsigned char>(200*(1-k)),static_cast<unsigned char>(150*(1-k)),static_cast<unsigned char>(60*(1-k)),255});
                 EndBlendMode();
             }
             const float rise=std::min(1.0F,t*1.6F);
-            DrawSphere({e.position.x,e.position.y+.6F+t*2.6F,e.position.z},1.0F+rise*2.4F,Fade(Color{72,70,66,255},.6F*(1-t)));
+            DrawSphere({e.position.x,e.position.y+.6F+t*2.6F,e.position.z},(1.0F+rise*2.4F)*big,Fade(Color{72,70,66,255},.6F*(1-t)));
         }
         }
         // A pump or bolt works through the cycle after each shot of a slow gun.
@@ -3295,7 +3332,13 @@ void Renderer::run() {
         };
         if (!creator_active && !inventory_open && !build_mode.active() && !driving) {
             DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
-            DrawText(weapons.available()?weapons.weapon().name:"NO WEAPON - OPEN BAG",24,screen_height-94,19,RAYWHITE);
+            {
+                // Long names (VR7 ROCKET LAUNCHER) shrink to stay clear of the sight label.
+                const char* held=weapons.available()?weapons.weapon().name:"NO WEAPON - OPEN BAG";
+                int size=19;
+                while(size>12 && weapons.available() && MeasureText(held,size)>170) --size;
+                DrawText(held,24,screen_height-94+(19-size)/2,size,RAYWHITE);
+            }
             DrawText(TextFormat("NADES %d  %s",grenades.count(),touch_ui ? "" : key_of(input::Action::Grenade).c_str()),222,screen_height-68,16,grenades.count()>0 ? Color{190,220,150,255} : GRAY);
             if(const int armour=armour_level(); armour>0)
                 DrawText(armour==2 ? "ARMOUR II  -45%" : "ARMOUR I  -30%",200,screen_height-112,14,game::inventory::LootUI::rarity_color(armour==2 ? game::inventory::Rarity::Epic : game::inventory::Rarity::Rare));

@@ -27,9 +27,11 @@ struct BulletImpact {
     float life{0};
 };
 struct HitNote { Vector3 position{}; float damage{0}; bool headshot{false}; };
+struct Launch { Vector3 origin{}, velocity{}; };   // a rocket leaving the launcher (the caller flies it)
 struct WeaponEvents {
     int shots{0};
     std::vector<HitNote> hits; // what this update's bullets struck (people, targets, vehicles)
+    std::vector<Launch> launches;
     int target_hits{0};
     bool reload_started{false}, reload_finished{false}, dry_fire{false};
     float pitch_kick{0}, yaw_kick{0};

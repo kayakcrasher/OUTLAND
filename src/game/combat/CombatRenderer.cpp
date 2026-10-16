@@ -175,8 +175,76 @@ void optic(WeaponId id,Sight sight) {
     if(id==WeaponId::Pistol) { rail=.023F;z=-.02F; }
     else if(id==WeaponId::Smg) { rail=.041F;z=.04F; }
     else if(id==WeaponId::Shotgun) { rail=.030F;z=.03F; box(0,.032F,.03F,.02F,.006F,.12F,black); } // saddle rail
+    else if(id==WeaponId::DoubleBarrel) { rail=.030F;z=.0F; box(0,.032F,0,.02F,.006F,.08F,black); }
+    else if(id==WeaponId::AutoShotgun) { rail=.046F;z=.10F; }
+    else if(id==WeaponId::Rocket) { rail=.058F;z=.02F; box(0,.05F,.02F,.02F,.012F,.12F,black); }
     if(sight==Sight::RedDot) red_dot(rail,z,id==WeaponId::Pistol);
     else scope(rail,z,sight==Sight::Scope4x ? 4 : 2);
+}
+void double_barrel(float reload,float line) {
+    // Side-by-side barrels hinged at the action: they drop open while it reloads.
+    rlPushMatrix();
+    rlTranslatef(0,-.004F,.05F);rlRotatef(reload*28,1,0,0);rlTranslatef(0,.004F,-.05F);
+    for(const float side:{-1.0F,1.0F}) {
+        tube(.05F,.50F,.0118F,.008F,metal,side*.0122F);
+        DrawCylinderEx({side*.0122F,.008F,.499F},{side*.0122F,.008F,.501F},.0075F,.0075F,10,dark); // the bores
+    }
+    box(0,.0215F,.28F,.008F,.005F,.44F,dark);            // flat rib between the barrels
+    box(0,line-.0025F,.49F,.005F,.005F,.005F,tan);        // brass bead on the line
+    box(0,-.012F,.20F,.036F,.026F,.20F,wood);             // splinter fore-end under the barrels
+    rlPopMatrix();
+    for(const float side:{-1.0F,1.0F}) box(side*.006F,line-.004F,.035F,.003F,.007F,.01F,dark); // rear groove
+    box(0,.0F,0,.040F,.05F,.12F,metal);                   // the action (box lock)
+    box(0,.03F,-.02F,.008F,.012F,.04F,dark);              // top lever
+    for(const float side:{-1.0F,1.0F}) tilted(-30,side*.006F,.026F,-.06F,.004F,.018F,.006F,dark); // twin hammers
+    box(0,-.036F,-.01F,.006F,.006F,.05F,black);           // trigger guard
+    tilted(-10,0,-.034F,-.11F,.032F,.05F,.12F,wood_dark); // wrist
+    box(0,-.05F,-.24F,.038F,.10F,.17F,wood);              // butt
+    box(0,-.054F,-.32F,.04F,.112F,.012F,dark);            // recoil pad
+}
+void auto_shotgun(float reload,bool irons,float line) {
+    tube(.40F,.58F,.0125F,0,metal);                       // barrel
+    for(int k=0;k<5;++k) tube(.42F+k*.03F,.43F+k*.03F,.0145F,0,dark); // muzzle brake fins
+    box(0,0,.24F,.05F,.052F,.32F,polymer);                // ribbed shroud
+    for(int k=0;k<6;++k) box(0,.027F,.13F+k*.045F,.04F,.004F,.012F,dark);
+    box(0,.002F,-.02F,.054F,.07F,.26F,polymer);           // long receiver, stock in line
+    box(0,.04F,.10F,.012F,.012F,.2F,black);               // carry handle rail
+    for(const float at:{.0F,.19F}) box(0,.034F,at,.014F,.012F,.014F,black);
+    box(0,.049F,.30F,.014F,.012F,.012F,black);            // front sight base
+    front_post(.30F,line,.055F,true);
+    if(irons) rear_aperture(.02F,line,.046F,.006F,.0035F);
+    // The 20-round drum under the receiver (it drops away while it reloads).
+    const float drop=reload*.1F;
+    DrawCylinderEx({-.03F,-.085F-drop,.10F},{.03F,-.085F-drop,.10F},.062F,.062F,16,black);
+    DrawCylinderEx({-.031F,-.085F-drop,.10F},{.031F,-.085F-drop,.10F},.02F,.02F,10,metal);
+    box(0,-.035F-drop,.10F,.03F,.03F,.05F,black);         // drum neck
+    box(0,-.046F,-.03F,.006F,.006F,.05F,black);           // trigger guard
+    tilted(16,0,-.08F,-.07F,.03F,.09F,.036F,polymer);     // pistol grip
+    box(0,-.03F,-.20F,.05F,.10F,.10F,polymer);            // butt
+    box(0,-.03F,-.256F,.052F,.11F,.012F,dark);            // butt pad
+}
+void rocket_launcher(float reload,bool irons,float line) {
+    tube(-.50F,.50F,.044F,0,olive);                       // the launch tube
+    tube(.47F,.55F,.050F,0,dark);                         // muzzle ring
+    DrawCylinderEx({0,0,-.58F},{0,0,-.50F},.062F,.046F,14,dark); // venturi bell at the back
+    for(const float at:{-.30F,.10F,.36F}) tube(at,at+.03F,.047F,0,black); // bands
+    if(reload<.05F) {                                     // the warhead, loaded
+        tube(.55F,.62F,.036F,0,olive);
+        DrawCylinderEx({0,0,.62F},{0,0,.74F},.04F,.0F,12,Color{92,98,70,255});
+        DrawCylinderEx({0,0,.74F},{0,0,.77F},.008F,.003F,6,metal); // the fuse probe
+    }
+    box(0,.052F,.29F,.012F,.012F,.02F,black);             // front sight mount
+    front_post(.29F,line,.06F,true);
+    if(irons) {
+        box(0,.05F,-.08F,.02F,.012F,.02F,black);
+        rear_aperture(-.08F,line,.058F,.0065F,.0038F);
+    }
+    box(-.05F,.0F,.05F,.012F,.06F,.12F,dark);             // trigger housing on the side
+    box(0,-.06F,.0F,.022F,.03F,.06F,black);               // trigger group
+    box(0,-.07F,.01F,.006F,.006F,.045F,black);            // trigger guard
+    tilted(14,0,-.10F,-.02F,.03F,.085F,.04F,black);       // pistol grip
+    tilted(6,0,-.09F,.25F,.03F,.08F,.035F,black);         // fore grip
+    box(0,-.05F,-.30F,.03F,.04F,.14F,dark);               // shoulder rest
 }
 // First-person hands and forearms: trigger hand on the grip, support hand under the fore-end.
 void hands(WeaponId id,const GunLayout& layout) {
@@ -201,6 +269,9 @@ GunLayout gun_layout(WeaponId id,Sight sight) {
         case WeaponId::Smg: return {.26F,.17F,line,definition(id).length};
         case WeaponId::Shotgun: return {.34F,.24F,line,definition(id).length};
         case WeaponId::Sniper: return {.36F,.24F,line,definition(id).length};
+        case WeaponId::DoubleBarrel: return {.33F,.20F,line,definition(id).length};
+        case WeaponId::AutoShotgun: return {.26F,.25F,line,definition(id).length};
+        case WeaponId::Rocket: return {.50F,.25F,line,definition(id).length};
         default: return {.30F,.22F,line,definition(id).length};
     }
 }
@@ -227,12 +298,15 @@ void CombatRenderer::draw_gun(Vector3 grip,Vector3 aim,Vector3 up,WeaponId id,fl
         case WeaponId::Smg: smg(reload,sight==Sight::Iron,line);break;
         case WeaponId::Shotgun: shotgun(reload,work,line);break;
         case WeaponId::Sniper: sniper(reload,work);break;
+        case WeaponId::DoubleBarrel: double_barrel(reload,line);break;
+        case WeaponId::AutoShotgun: auto_shotgun(reload,sight==Sight::Iron,line);break;
+        case WeaponId::Rocket: rocket_launcher(reload,sight==Sight::Iron,line);break;
         default: rifle(reload,sight==Sight::Iron,line);break;
     }
     if(draw_hands) hands(id,gun_layout(id));
     optic(id,sight);
     if(flash>0) {
-        const float l=definition(id).length+.02F,size=id==WeaponId::Shotgun || id==WeaponId::Sniper ? 1.5F : 1.0F;
+        const float l=definition(id).length+.02F,size=id==WeaponId::Rocket ? 2.4F : is_shotgun(id) || id==WeaponId::Sniper ? 1.5F : 1.0F;
         DrawSphereEx({0,0,l+.03F},.035F*size,4,6,Color{255,228,135,255});
         DrawCylinderEx({0,0,l},{0,0,l+.16F*size},.03F*size,0,5,Color{255,169,65,255});
     }

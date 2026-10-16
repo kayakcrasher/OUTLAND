@@ -44,6 +44,8 @@ GUNS = {
     "smg":     dict(crack=(2.6, 1700, .85), boom=(120, 62, .050, .90), bark=(550, 2000, .038, .75), tail=(.65, .22), drive=2.6),
     "shotgun": dict(crack=(3.5, 1300, .90), boom=(95, 40, .095, 1.0), bark=(420, 1600, .060, .80), tail=(1.10, .30), drive=3.0),
     "sniper":  dict(crack=(1.4, 3200, 1.0), boom=(85, 36, .120, 1.0), bark=(600, 2500, .065, .85), tail=(1.50, .32), drive=3.2),
+    "double_barrel": dict(crack=(4.0, 1100, .95), boom=(85, 34, .115, 1.0), bark=(380, 1500, .070, .85), tail=(1.30, .34), drive=3.3),
+    "auto_shotgun":  dict(crack=(3.0, 1400, .85), boom=(105, 46, .080, .95), bark=(450, 1700, .050, .80), tail=(.95, .28), drive=2.9),
 }
 
 
@@ -110,6 +112,30 @@ def gunshot(name, variant, distant=False):
     x = band(x, 40, 1500)
     x += echoes(band(x, 40, 900), [.21, .47, .83], [.45, .30, .18], 900)
     return finish(x, p["drive"] * .7, .85)
+
+
+def rocket(variant, distant=False):
+    """A launch: the thump of the motor kicking, then the rocket's roar tearing away."""
+    rng = np.random.default_rng(500 + variant * 13 + distant)
+    t = np.arange(int((2.2 if distant else 1.6) * RATE)) / RATE
+    noise = rng.uniform(-1, 1, len(t))
+    freq = 48 + 70 * np.exp(-t / .05) * (1 + .05 * (variant - 1))
+    thump = np.sin(2 * np.pi * np.cumsum(freq) / RATE) * np.exp(-t / .16) * (1 - np.exp(-t / .002))
+    pop = band(noise, 700, 7000) * np.exp(-t / .02)
+    # The motor: a hiss that swells, then falls away (and lower) as the rocket leaves.
+    swell = (1 - np.exp(-t / .05)) * np.exp(-t / .45)
+    hiss = np.zeros_like(t)
+    edges = np.linspace(0, len(t), 9).astype(int)
+    for k in range(8):
+        a, b = edges[k], edges[k + 1]
+        hiss[a:b] = band(noise, 400 - 30 * k, 5200 - 520 * k)[a:b]
+    roar = hiss * swell + band(noise, 40, 400) * swell * .6
+    x = thump * 1.1 + pop * .6 + roar * .9
+    x += echoes(band(x, 40, 1600), [.11, .27, .52], [.35, .22, .12], 1600)
+    if distant:
+        x = band(x, 30, 900) + echoes(band(x, 30, 600), [.25, .6], [.4, .25], 600)
+        return finish(x, 1.8, .85)
+    return finish(x, 2.4)
 
 
 def explosion(distant=False):
@@ -198,6 +224,9 @@ RELOADS = {
     "smg":     (2.3, [("release", .14), ("out", .25), ("in", 1.18), ("slap", 1.34), ("handle", 1.85)]),
     "shotgun": (4.2, [("shell", .45), ("shell", 1.05), ("shell", 1.65), ("shell", 2.25), ("shell", 2.85), ("pump", 3.55)]),
     "sniper":  (3.8, [("bolt_up", .18), ("bolt_back", .34), ("release", .70), ("out", .80), ("in", 1.95), ("bolt_fwd", 3.0), ("bolt_down", 3.16)]),
+    "double_barrel": (2.6, [("lever", .18), ("hinge", .30), ("eject", .52), ("shell", 1.25), ("shell", 1.72), ("hinge_shut", 2.3)]),
+    "auto_shotgun":  (3.4, [("release", .15), ("out", .30), ("in", 2.0), ("slap", 2.2), ("handle", 2.85)]),
+    "rocket":        (3.6, [("release", .25), ("slide_in", 1.6), ("in", 2.6), ("slap", 2.8), ("handle", 3.3)]),
 }
 
 
@@ -223,6 +252,16 @@ def reload(name):
         elif kind == "pump":
             x += thing(t, at, 500, 4500, 900, .035, seed, .9) + scrape(t, at, .14, 1200, 5000, seed + 1, .35)
             x += thing(t, at + .17, 500, 5000, 1250, .03, seed + 2, 1.0, ring=.3)
+        elif kind == "lever":
+            x += thing(t, at, 1000, 7000, 1100, .025, seed, .7, ring=.2)
+        elif kind in ("hinge", "hinge_shut"):
+            x += scrape(t, at - .06, .08, 600, 3000, seed, .3)
+            x += thing(t, at, 200, 3500, 300 if kind == "hinge" else 380, .05, seed + 1, 1.0, ring=.3)
+        elif kind == "eject":
+            for k in range(2):
+                x += thing(t, at + k * .05, 1500, 8000, 2600 + 300 * k, .03, seed + k, .5, ring=.4)
+        elif kind == "slide_in":
+            x += scrape(t, at, .8, 300, 2200, seed, .4)
         elif kind.startswith("bolt_"):
             freq = {"bolt_up": 1500, "bolt_back": 800, "bolt_fwd": 950, "bolt_down": 1700}[kind]
             x += thing(t, at, 900, 8000, freq, .03, seed, .8, ring=.25)
@@ -444,6 +483,9 @@ def sounds():
         for variant in range(3):
             out[f"{name}_{variant}.wav"] = gunshot(name, variant)
         out[f"{name}_distant.wav"] = gunshot(name, 1, distant=True)
+    for variant in range(3):
+        out[f"rocket_{variant}.wav"] = rocket(variant)
+    out["rocket_distant.wav"] = rocket(1, distant=True)
     out["explosion.wav"] = explosion()
     out["explosion_distant.wav"] = explosion(True)
     out["shotgun_pump.wav"] = clicks([0, .17], [900, 1250], [.035, .03], .32, 5)

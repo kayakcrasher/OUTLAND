@@ -16,7 +16,7 @@ models.update(path.relative_to(ROOT).as_posix() for path in (ROOT/'assets/verda/
 for item in items:
     model=item['model']
     if not model:
-        assert item['category']=='weapon' and item['weapon'] in ('pistol','smg','shotgun','sniper'),'Only the procedural firearms have no supplied Survival GLB'
+        assert item['category']=='weapon' and item['weapon'] in ('pistol','smg','shotgun','sniper','double_barrel','auto_shotgun','rocket_launcher'),'Only the procedural firearms have no supplied Survival GLB'
         continue
     assert model in models,f'Item is not in a checked runtime pack: {model}'
     document,binary=read_gltf(ROOT/model);low,high=scene_bounds(document)

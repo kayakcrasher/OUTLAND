@@ -59,6 +59,23 @@ int main() {
     for (int i = 0; i < 40; ++i) grenades.update(.02F, world);
     check(!grenades.live().empty() && grenades.live().front().bounces > 0 && grenades.live().front().position.z < 20, "bounces off the wall");
 
+    // Rockets: fly straight at the wall and go off on it, a bigger blast than a frag.
+    {
+        Grenades rockets;
+        rockets.launch_rocket({0, 1.5F, 0}, {0, 0, 60});
+        float flown = 0;
+        while (rockets.exploded().empty() && flown < 2) { rockets.update(.02F, world); flown += .02F; }
+        check(rockets.exploded().size() == 1 && rockets.exploded_rocket().size() == 1 && rockets.exploded_rocket()[0], "a rocket bursts on what it hits");
+        check(rockets.exploded()[0].z > 19 && rockets.exploded()[0].z < 20.01F && rockets.exploded()[0].y > 1.2F, "at the wall, still at shoulder height");
+        check(flown < .45F, "60 m/s: there in a third of a second");
+        check(Grenades::rocket_damage_at(5) > Grenades::damage_at(5) && Grenades::rocket_damage_at(9) > 0 &&
+              Grenades::rocket_damage_at(Grenades::rocket_blast_radius) == 0, "a rocket's blast is bigger");
+        rockets.launch_rocket({0, 1.5F, 0}, {0, 8, -60});      // up and away from the wall: gone at the end of its motor
+        float life = 0;
+        do { rockets.update(.05F, world); life += .05F; } while (rockets.exploded().empty() && life < 8);
+        check(std::abs(life - Grenades::rocket_life) < .11F, "a miss bursts when the motor is spent");
+    }
+
     // Feedback: hits merge per target, kills mark and streak, hurt flashes, points and shakes.
     CombatFeedback feedback;
     feedback.hit({5, 1, 5}, 20, false);

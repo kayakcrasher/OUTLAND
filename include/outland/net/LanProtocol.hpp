@@ -9,7 +9,7 @@
 namespace outland::net {
 
 inline constexpr std::uint32_t magic = 0x4E414C4FU;   // "OLAN"
-inline constexpr std::uint8_t version = 1;
+inline constexpr std::uint8_t version = 2;   // 2: rockets
 inline constexpr std::uint16_t discovery_port = 47821;
 inline constexpr int max_players = 8;
 inline constexpr std::uint8_t everyone = 255;
@@ -97,7 +97,7 @@ struct BotSnapshot { float elapsed{0}; std::vector<BotState> bots; std::vector<C
 struct BotHit { std::uint16_t bot{0}; float amount{0}; Vector3 from{}; };
 struct KillCredit { std::int32_t bot{0}; };
 struct Feed { std::string text; };
-struct Grenade { Vector3 origin{}, velocity{}; };
+struct Grenade { Vector3 origin{}, velocity{}; std::uint8_t rocket{0}; };   // a frag, or a rocket (1)
 
 void write(Writer&, const Beacon&);      bool read(Reader&, Beacon&);
 void write(Writer&, const Roster&);      bool read(Reader&, Roster&);

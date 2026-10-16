@@ -141,7 +141,7 @@ bool read(Reader& r, KillCredit& m) { m.bot = r.i32(); return r.ok(); }
 void write(Writer& w, const Feed& m) { w.str(m.text); }
 bool read(Reader& r, Feed& m) { m.text = r.str(); return r.ok(); }
 
-void write(Writer& w, const Grenade& m) { w.v3(m.origin); w.v3(m.velocity); }
-bool read(Reader& r, Grenade& m) { m.origin = r.v3(); m.velocity = r.v3(); return r.ok(); }
+void write(Writer& w, const Grenade& m) { w.v3(m.origin); w.v3(m.velocity); w.u8(m.rocket); }
+bool read(Reader& r, Grenade& m) { m.origin = r.v3(); m.velocity = r.v3(); m.rocket = r.u8(); return r.ok(); }
 
 }

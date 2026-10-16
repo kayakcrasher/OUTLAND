@@ -7,7 +7,7 @@ int LootSession::ammo_count(combat::WeaponId weapon) const {
     int count = 0;
     for (const auto &stack : inventory_.state().stacks) {
         const auto *item = registry_.find(stack.item);
-        if (item && item->category == ItemCategory::Ammo && item->weapon == weapon)
+        if (item && item->category == ItemCategory::Ammo && item->weapon == combat::ammo_of(weapon))
             count += stack.quantity;
     }
     return count;
@@ -15,7 +15,7 @@ int LootSession::ammo_count(combat::WeaponId weapon) const {
 int LootSession::take_ammo(combat::WeaponId weapon, int requested) {
     int taken = 0;
     for (const auto &item : registry_.items())
-        if (item.category == ItemCategory::Ammo && item.weapon == weapon && taken < requested)
+        if (item.category == ItemCategory::Ammo && item.weapon == combat::ammo_of(weapon) && taken < requested)
             taken += inventory_.remove(item.id, requested - taken);
     if (taken > 0)
         changed();
@@ -132,7 +132,14 @@ void LootSession::update(float dt, const world::VerdaRegion &region, Vector3 pla
 bool LootSession::auto_pickup(const ItemDefinition &item, const WorldPickup &pickup) const {
     if (pickup.id.starts_with("drop_")) return false; // what the player put down stays put
     switch (item.category) {
-    case ItemCategory::Ammo: return item.weapon && inventory_.owns_weapon(registry_, *item.weapon);
+    case ItemCategory::Ammo:
+        if (!item.weapon) return false;
+        // Shells for any shotgun carried.
+        for (std::size_t i = 0; i < combat::weapon_count; ++i)
+            if (combat::ammo_of(static_cast<combat::WeaponId>(i)) == *item.weapon &&
+                inventory_.owns_weapon(registry_, static_cast<combat::WeaponId>(i)))
+                return true;
+        return false;
     case ItemCategory::Medical: case ItemCategory::Food: case ItemCategory::Water: return true;
     default: return item.id == "frag_grenade" || item.id == "battery";
     }

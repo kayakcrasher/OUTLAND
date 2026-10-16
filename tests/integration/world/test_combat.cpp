@@ -1,6 +1,7 @@
 #include "outland/game/combat/WeaponSystem.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include "outland/world/assets/VerdaGeometry.hpp"
+#include <algorithm>
 #include <cassert>
 #include <vector>
 #include <cmath>
@@ -175,6 +176,23 @@ int main() {
             widest=std::max(widest,std::acos(std::min(1.0F,c)));
         }
         assert(widest>.02F && widest<.12F);
+        // The other shotguns: a double barrel empties both barrels in a moment (twelve pellets each);
+        // the drum-fed automatic out-fires the pump; all three load the same shells.
+        assert(count(WeaponId::AutoShotgun,1.5F)>count(WeaponId::Shotgun,1.5F)+3);
+        armoury.reset(true);assert(armoury.select(WeaponId::DoubleBarrel));
+        for(int i=0;i<10;++i){WeaponInput idle;armoury.update(.05F,idle,high,world);}
+        armoury.update(.001F,hold,high,world);
+        assert(armoury.events().shots==1 && std::count_if(armoury.bullets().begin(),armoury.bullets().end(),[](const auto& b){return b.active;})==12);
+        assert(definition(WeaponId::DoubleBarrel).magazine==2 && definition(WeaponId::DoubleBarrel).interval<.3F);
+        assert(ammo_of(WeaponId::DoubleBarrel)==WeaponId::Shotgun && ammo_of(WeaponId::AutoShotgun)==WeaponId::Shotgun && ammo_of(WeaponId::Rocket)==WeaponId::Rocket);
+        // The rocket launcher fires no bullets: it hands a rocket to the caller to fly.
+        armoury.reset(true);assert(armoury.select(WeaponId::Rocket));
+        for(int i=0;i<10;++i){WeaponInput idle;armoury.update(.05F,idle,high,world);}
+        armoury.update(.001F,hold,high,world);
+        assert(armoury.events().shots==1 && armoury.events().launches.size()==1);
+        assert(std::none_of(armoury.bullets().begin(),armoury.bullets().end(),[](const auto& b){return b.active;}));
+        const auto& launched=armoury.events().launches.front().velocity;
+        assert(std::abs(std::sqrt(launched.x*launched.x+launched.y*launched.y+launched.z*launched.z)-definition(WeaponId::Rocket).muzzle_speed)<.01F);
         const auto& sniper=definition(WeaponId::Sniper);
         assert(sniper.damage*sniper.head_multiplier>=200 && sniper.ads_fov<20);
         for(std::size_t i=0;i<weapon_count;++i) {

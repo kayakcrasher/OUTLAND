@@ -42,6 +42,10 @@ general_knife	general	knife	35	14	5
 general_hunting_rifle	general	hunting_rifle	220	90	2
 general_smg	general	smg	260	100	2
 general_shotgun	general	shotgun	180	70	2
+general_double_barrel	general	double_barrel	220	85	2
+general_auto_shotgun	general	auto_shotgun	420	160	1
+general_rocket_launcher	general	rocket_launcher	900	300	1
+general_rockets	general	rockets	120	40	4
 general_sniper	general	sniper	420	160	1
 general_wood_chair	general	wood_chair	40	15	8
 general_wood_table	general	wood_table	80	30	4

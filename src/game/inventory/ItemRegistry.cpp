@@ -101,7 +101,7 @@ const ItemDefinition *ItemRegistry::ammo_for(const ItemDefinition &firearm) cons
     if (firearm.category != ItemCategory::Weapon || !firearm.weapon)
         return nullptr;
     for (const auto &item : items_)
-        if (item.category == ItemCategory::Ammo && item.weapon == firearm.weapon)
+        if (item.category == ItemCategory::Ammo && item.weapon == combat::ammo_of(*firearm.weapon))
             return &item;
     return nullptr;
 }

@@ -82,7 +82,7 @@ void WeaponSystem::start_reload() {
 }
 bool WeaponSystem::shoot(const WeaponInput& input, ShotPose pose) {
     const auto& def=weapon();
-    const int pellets=std::max(1,def.pellets);
+    const int pellets=def.launcher ? 0 : std::max(1,def.pellets);
     if(std::count_if(bullets_.begin(),bullets_.end(),[](const Bullet& b){return !b.active;})<pellets)return false;
     const auto forward=normalized(pose.direction);
     const auto right=normalized(cross(std::abs(forward.y)>.95F ? Vector3{1,0,0} : Vector3{0,1,0},forward));
@@ -96,6 +96,7 @@ bool WeaponSystem::shoot(const WeaponInput& input, ShotPose pose) {
     const float radius=std::sqrt(random())*spread, angle=random()*2*PI;
     const auto aim=normalized(add(forward,add(mul(right,std::cos(angle)*radius),mul(up,std::sin(angle)*radius))));
     const bool tracer=(shot_number_++%3)==0;
+    if(def.launcher) events_.launches.push_back({pose.origin,mul(aim,def.muzzle_speed)});
     for(int pellet=0;pellet<pellets;++pellet) {
         // Shotgun pellets spread in a fixed cone round the aim point, whatever the stance.
         auto direction=aim;

@@ -39,7 +39,7 @@ int main() {
     ItemRegistry registry;
     std::string error;
     assert(registry.load(items.string(), tables.string(), error));
-    assert(registry.items().size() == 79);
+    assert(registry.items().size() == 83);
     assert(registry.find("frag_grenade") && registry.find("frag_grenade")->starting_quantity == 2);
     for (const char *optic : {"red_dot_sight", "scope_2x", "scope_4x"})
         assert(registry.find(optic) && registry.find(optic)->starting_quantity == 0);
@@ -61,7 +61,11 @@ int main() {
     assert(registry.table("general", LootMode::Normal) == registry.table("general", false));
     for (const auto &item : registry.items())
         if (item.category == ItemCategory::Weapon)
-            assert(registry.ammo_for(item) && registry.ammo_for(item)->weapon == item.weapon);
+            assert(registry.ammo_for(item) && registry.ammo_for(item)->weapon == combat::ammo_of(*item.weapon));
+    // Every shotgun loads the same 12-gauge shells.
+    assert(registry.ammo_for(*registry.find("double_barrel"))->id == "shotgun_shells" &&
+           registry.ammo_for(*registry.find("auto_shotgun"))->id == "shotgun_shells" &&
+           registry.ammo_for(*registry.find("rocket_launcher"))->id == "rockets");
     assert(!registry.ammo_for(*registry.find("water")));
     // Every item lies on the ground at its real size (its longest side, in metres).
     for (const char *flat : {"vest_light", "vest_heavy", "matches", "lantern"})
@@ -84,7 +88,7 @@ int main() {
         file << "bad header\n";
     }
     assert(!registry.load(invalid.string(), tables.string(), error) &&
-           registry.items().size() == 79);
+           registry.items().size() == 83);
 
     Inventory bag;
     assert(bag.add(registry, "water", 8) == 8);

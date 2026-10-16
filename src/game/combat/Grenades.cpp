@@ -12,6 +12,13 @@ float Grenades::damage_at(float distance) {
     return max_damage * std::pow(1 - t, 1.6F);
 }
 
+float Grenades::rocket_damage_at(float distance) {
+    if (!std::isfinite(distance) || distance >= rocket_blast_radius) return 0;
+    if (distance <= rocket_lethal_radius) return rocket_max_damage;
+    const float t = (distance - rocket_lethal_radius) / (rocket_blast_radius - rocket_lethal_radius);
+    return rocket_max_damage * std::pow(1 - t, 1.4F);
+}
+
 bool Grenades::throw_grenade(Vector3 from, Vector3 direction, Vector3 carried) {
     if (!ready() || Vector3Length(direction) < .001F) return false;
     const Vector3 aim = Vector3Normalize(direction);
@@ -27,6 +34,7 @@ bool Grenades::throw_grenade(Vector3 from, Vector3 direction, Vector3 carried) {
 void Grenades::update(float dt, const GrenadeWorld& world) {
     exploded_.clear();
     exploded_remote_.clear();
+    exploded_rocket_.clear();
     if (!std::isfinite(dt) || dt <= 0) return;
     dt = std::min(dt, .1F);
     cooldown_ = std::max(0.0F, cooldown_ - dt);
@@ -34,6 +42,31 @@ void Grenades::update(float dt, const GrenadeWorld& world) {
     std::erase_if(explosions_, [](const Explosion& e) { return e.age > explosion_life; });
     for (auto& g : live_) {
         g.fuse -= dt;
+        if (g.rocket) {
+            // Straight and fast: swept in short steps against people, cars and walls; it goes off
+            // on the first thing it touches (or at the end of its motor).
+            const auto& collide = world.rocket_collide ? world.rocket_collide : world.collide;
+            const int steps = std::clamp(static_cast<int>(std::ceil(Vector3Length(g.velocity) * dt / .5F)), 1, 16);
+            const float h = dt / static_cast<float>(steps);
+            for (int s = 0; s < steps && g.fuse > 0; ++s) {
+                g.velocity.y -= rocket_drop * h;
+                const Vector3 next = Vector3Add(g.position, Vector3Scale(g.velocity, h));
+                Vector3 point{}, normal{};
+                if (collide && collide(g.position, next, point, normal)) {
+                    g.position = Vector3Add(point, Vector3Scale(normal, .15F));
+                    g.fuse = 0;
+                } else {
+                    g.position = next;
+                }
+            }
+            if (g.fuse <= 0) {
+                explosions_.push_back({g.position, 0, true});
+                exploded_.push_back(g.position);
+                exploded_remote_.push_back(g.remote);
+                exploded_rocket_.push_back(true);
+            }
+            continue;
+        }
         // Small substeps so a fast grenade cannot pass through a wall.
         const int steps = std::clamp(static_cast<int>(std::ceil(Vector3Length(g.velocity) * dt / .25F)), 1, 8);
         const float h = dt / static_cast<float>(steps);
@@ -60,6 +93,7 @@ void Grenades::update(float dt, const GrenadeWorld& world) {
             explosions_.push_back({g.position, 0});
             exploded_.push_back(g.position);
             exploded_remote_.push_back(g.remote);
+            exploded_rocket_.push_back(false);
         }
     }
     std::erase_if(live_, [](const Grenade& g) { return g.fuse <= 0; });
