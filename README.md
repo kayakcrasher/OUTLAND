@@ -16,7 +16,7 @@ DEV vehicle driving, map building, controls, save compatibility and Termux steps
 
 The three player modes are one island lived three ways: [modes roadmap](docs/outland-modes-roadmap.md).
 Play any of them with friends on the same Wi-Fi: [LAN play](docs/lan-play.md).
-In Explore, join a gang or the police and earn respect: [careers](docs/careers.md).
+In Explore, join a gang or the police and earn respect: [careers](docs/careers.md). Gangsters fight for every town and ranch on the island: [gang wars](docs/gangs.md).
 Explore's resident simulation (homes, jobs, schedules, fear): [Verdan life handoff](docs/verda-life-handoff.md).
 Real building collision, open windows, builder previews and the dressed towns: [buildings handoff](docs/buildings-battle-royale-handoff.md).
 

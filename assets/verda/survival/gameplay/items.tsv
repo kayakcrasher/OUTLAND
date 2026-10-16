@@ -82,3 +82,4 @@ interior_trash_bin	Trash bin	furniture	assets/verda/interiors/props/trashBin.glb
 interior_tv	Tv	furniture	assets/verda/interiors/props/tv.glb	1	0.66	none	0		0		0	0
 interior_wall_light	Wall light	furniture	assets/verda/interiors/props/wallLight.glb	1	0.37	none	0		0		0	0
 interior_washing_machine	Washing machine	furniture	assets/verda/interiors/props/washingMachine.glb	1	0.9	none	0		0		0	0
+spray_paint	Spray paint	utility	assets/verda/survival/runtime/Can.glb	5	0.2	none	0		0		0	0

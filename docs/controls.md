@@ -29,6 +29,8 @@ pointer, and that opens the pause menu.
 | Map | M |
 | Build (Explore) | K. While building: left click places, right click removes, the wheel picks the piece |
 | Pause menu | ESC |
+| Spray a gang tag (Explore, gang members) | T |
+| Emergency lights (police car) | L |
 | Mute | N |
 
 Every action except ESC and N can be rebound on the **CONTROLS** page. Each action has two slots:

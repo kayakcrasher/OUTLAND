@@ -179,6 +179,19 @@ void Mafio::provoke(int bot, double now) {
     provoked_until_[static_cast<std::size_t>(gang)] = now + provoked_seconds;
 }
 
+void Mafio::provoke_gang(int gang, double now, const std::string& why) {
+    if (gang < 0 || gang >= static_cast<int>(gangs.size())) return;
+    if (!provoked(gang, now) && !why.empty()) say(why);
+    provoked_until_[static_cast<std::size_t>(gang)] = now + provoked_seconds;
+}
+
+void Mafio::set_crew_gang(int crew, int gang) {
+    if (crew < 0 || static_cast<std::size_t>(crew) >= crews_.size() || gang < 0 || gang >= static_cast<int>(gangs.size())) return;
+    crews_[static_cast<std::size_t>(crew)].gang = gang;
+    // Nobody stays at war on behalf of a crew that changed sides.
+    std::erase_if(wars_, [&](const War& w) { return w.target == crew || w.from == crew; });
+}
+
 void Mafio::forgive() { provoked_until_.fill(-1e9); }
 
 bool Mafio::hostile(int a, int b, double now) const {

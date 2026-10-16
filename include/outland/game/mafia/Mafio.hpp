@@ -112,6 +112,10 @@ public:
 
     // The player hurt a member (their gang turns on the player).
     void provoke(int bot, double now);
+    // A whole gang turns on the player (a family they protect was squeezed, their walls tagged).
+    void provoke_gang(int gang, double now, const std::string& why);
+    // A town changed hands (game::mafia::Territory): the crew there wears its new gang's colours.
+    void set_crew_gang(int crew, int gang);
     // The player died or left: everyone forgets.
     void forgive();
     [[nodiscard]] bool provoked(int gang, double now) const;

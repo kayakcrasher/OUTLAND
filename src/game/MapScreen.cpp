@@ -234,6 +234,24 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
         DrawLineEx(to_map(area, road.start.x, road.start.z), to_map(area, road.end.x, road.end.z),
                    std::max(1.5F, road.width / (2 * extent) * area.width * 2.5F), c);
     }
+    // The gang map: each turf washed in its holder's colour, its name and what hold is left.
+    const auto pixels = [&](float metres) { return metres / (2 * extent) * area.width; };
+    if (view.gang_map) {
+        for (const auto& t : view.territory) {
+            const auto at = to_map(area, t.centre.x, t.centre.z);
+            const float r = std::max(10 * s, pixels(t.radius));
+            DrawCircleV(at, r, Fade(t.color, t.ranch ? .22F : .32F));
+            DrawRing(at, r - (t.yours ? 3.0F : 1.5F) * s, r, 0, 360, 48, Fade(t.yours ? WHITE : t.color, .9F));
+            const float bw = 46 * s;
+            DrawRectangleV({at.x - bw / 2, at.y + r + 3 * s}, {bw, 5 * s}, Color{0, 0, 0, 170});
+            DrawRectangleV({at.x - bw / 2, at.y + r + 3 * s}, {bw * std::clamp(t.hold / 100.0F, 0.0F, 1.0F), 5 * s}, t.color);
+            centred(font, t.holder.c_str(), {at.x, at.y + r + 15 * s}, 12 * s, Fade(t.color, .95F));
+        }
+        for (const auto& [where, color] : view.tags) {
+            const auto at = to_map(area, where.x, where.z);
+            DrawRectangleV({at.x - 2 * s, at.y - 2 * s}, {4 * s, 4 * s}, color);
+        }
+    }
     for (const auto& town : region.settlements()) {
         const auto at = to_map(area, town.center.x, town.center.z);
         DrawCircleV(at, 6 * s, Color{250, 248, 236, 255});
@@ -370,6 +388,7 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
     // Legend.
     float y = settings_button(5, width, height).y + 76 * s;
     for (const auto& zone : world::zones::zones) {
+        if (view.gang_map) break;   // a gangster's map has the standings there instead
         DrawRectangleRec({x, y, 14 * s, 14 * s}, zone.color);
         text(font, TextFormat("%s - %s", std::string(zone.name).c_str(), std::string(zone.meaning).c_str()), {x + 22 * s, y - 1 * s}, 14 * s, ink);
         y += 20 * s;
@@ -384,6 +403,18 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
         DrawTriangle({x + 7 * s, y}, {x, y + 7 * s}, {x + 14 * s, y + 7 * s}, Color{46, 204, 96, 255});
         DrawTriangle({x, y + 7 * s}, {x + 7 * s, y + 14 * s}, {x + 14 * s, y + 7 * s}, Color{46, 204, 96, 255});
         text(font, "Krimuloj crew (gang colour) - the police are paid off", {x + 22 * s, y - 1 * s}, 14 * s, ink);
+    }
+    // The gang map: the standings, biggest first, and how far your gang has to go.
+    if (view.gang_map && !view.standings.empty()) {
+        y += 22 * s;
+        text(font, "WHO RUNS VERDA", {x, y}, 15 * s, Color{240, 214, 150, 255});
+        y += 19 * s;
+        for (const auto& [line, color] : view.standings) {
+            DrawRectangleRec({x, y + 2 * s, 9 * s, 9 * s}, color);
+            text(font, line.c_str(), {x + 16 * s, y - 1 * s}, 12 * s, ink);
+            y += 14 * s;
+        }
+        if (!view.gang_goal.empty()) { y += 6 * s; text(font, view.gang_goal.c_str(), {x, y}, 14 * s, Color{255, 226, 140, 255}); }
     }
     button(close_button(width, height), "CLOSE  (M)", true, font, s);
 }

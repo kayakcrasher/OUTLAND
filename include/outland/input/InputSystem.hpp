@@ -74,6 +74,8 @@ public:
     void set_drive_by(bool on) { drive_by_ = on; }
     // At the wheel of a police car: the LIGHTS button works.
     void set_police_car(bool on) { police_car_ = on; }
+    // A gang member on foot: the TAG button works.
+    void set_tagger(bool on) { tagger_ = on; }
     [[nodiscard]] bool driving() const { return driving_; }
     // The camera-pan area while driving (screen pixels).
     [[nodiscard]] static Rectangle pan_area(int width, int height);
@@ -83,7 +85,7 @@ private:
     TouchLayout layout_{};
 
     enum class Control {
-        None, Movement, Look, Swipe, Jump, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon, Grenade, Heal, Lights, Sight,
+        None, Movement, Look, Swipe, Jump, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon, Grenade, Heal, Lights, Tag, Sight,
         Sprint, Crouch, Inventory, Interact, Gas, BrakePedal, Handbrake, Pan
     };
     // A finger and what it works; origin is where a floating stick was put down, last where a
@@ -99,7 +101,7 @@ private:
     float button_size_{1.0F};
     Vector2 stick_center_{-1, -1}; // a floating movement stick's centre while held
     bool mouse_quarantined_{false},had_native_touch_{false};
-    bool gameplay_{true}, driving_{false}, was_driving_{false}, drive_by_{false}, police_car_{false};
+    bool gameplay_{true}, driving_{false}, was_driving_{false}, drive_by_{false}, police_car_{false}, tagger_{false};
     // Aim button: a tap toggles aiming down sights, a hold aims while held.
     bool aim_toggled_{false}, aim_held_{false};
     double aim_pressed_at_{0};

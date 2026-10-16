@@ -39,7 +39,7 @@ int main() {
     ItemRegistry registry;
     std::string error;
     assert(registry.load(items.string(), tables.string(), error));
-    assert(registry.items().size() == 83);
+    assert(registry.items().size() == 84);
     assert(registry.find("frag_grenade") && registry.find("frag_grenade")->starting_quantity == 2);
     for (const char *optic : {"red_dot_sight", "scope_2x", "scope_4x"})
         assert(registry.find(optic) && registry.find(optic)->starting_quantity == 0);
@@ -88,7 +88,7 @@ int main() {
         file << "bad header\n";
     }
     assert(!registry.load(invalid.string(), tables.string(), error) &&
-           registry.items().size() == 83);
+           registry.items().size() == 84);
 
     Inventory bag;
     assert(bag.add(registry, "water", 8) == 8);

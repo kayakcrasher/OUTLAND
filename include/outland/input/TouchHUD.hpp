@@ -23,9 +23,11 @@ public:
     void set_drive_by(bool on) { drive_by_ = on; }
     // At the wheel of a police car: the LIGHTS button (lit while they run).
     void set_police_car(bool car, bool lights_on) { police_car_ = car; lights_on_ = lights_on; }
+    // A gang member on foot: the TAG button.
+    void set_tagger(bool on) { tagger_ = on; }
 
 private:
-    bool drive_by_{false}, police_car_{false}, lights_on_{false};
+    bool drive_by_{false}, police_car_{false}, lights_on_{false}, tagger_{false};
 };
 
 }

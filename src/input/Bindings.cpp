@@ -28,6 +28,7 @@ constexpr std::array<Info, action_count> info{{
     {"BUILD", "build", KEY_K, 0},
     {"QUICK HEAL", "heal", KEY_H, 0},
     {"EMERGENCY LIGHTS", "lights", KEY_L, 0},
+    {"SPRAY TAG", "tag", KEY_T, 0},
 }};
 
 bool code_down(int code, bool mouse) {

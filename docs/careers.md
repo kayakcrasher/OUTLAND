@@ -47,15 +47,16 @@ A job comes a few seconds after joining, then 12 s after each one ends. A column
 
 - **On rival turf:** within 45 m of a rival hideout, a member gets a warning ("they know your colours"). Stay 5 s more and that gang opens fire.
 - **Your own crew:** they don't mind your gunfire near them. Only a real hit turns them.
+- Smuggling, extortion and taking turf, and the fight for the island: [gang wars](gangs.md).
 
 ## The police questline
 
 Every recruit, at any station, starts a Kadeto **in training**. There are no calls until they graduate. The panel shows ORDERS and a light column marks the next place to go.
 
 1. **Report to the Chief.**
-   - **Ĉefo Elena Forta** heads the Policio de Verda; the Verda City HQ outranks every other police department.
-   - She stands beside the capital's first patrol car in a navy uniform, peaked cap and gold braid. Her name and "USE to talk" show over her head.
-   - Press **USE** next to her and she sends you to the training camp. Nobody can shoot her.
+   - **Ĉefo Marko Forta** heads the Policio de Verda; the Verda City HQ outranks every other police department.
+   - He stands beside the capital's first patrol car in a navy uniform, peaked cap and gold braid. His name and "USE to talk" show over his head.
+   - Press **USE** next to him and he sends you to the training camp. Nobody can shoot him.
 2. **Qualify at the training camp.**
    - The camp is a fenced range on open, level ground 300–1000 m outside Verda City, clear of roads and buildings. Its downrange points away from the city.
    - It has a gravel apron, a firing line with booth dividers and a lectern, distance posts at 10, 15 and 25 m, an earth berm, a range hut and a blue-and-white flag.
@@ -72,7 +73,7 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
    - Qualify all three and you **graduate**. Officers can come back to practise.
 3. **Report back.**
    - The Chief promotes you to **Patrolano** (respect 15).
-   - She hands over the **Interceptor**: a long, low pursuit sedan in black with white doors and roof and a gold pinstripe. It has a slim LED light bar, a push bar with flashers, a bonnet scoop and a boot spoiler.
+   - He hands over the **Interceptor**: a long, low pursuit sedan in black with white doors and roof and a gold pinstripe. It has a slim LED light bar, a push bar with flashers, a bonnet scoop and a boot spoiler.
    - It is quicker than a patrol car (top speed 60, 220 health) and becomes your patrol car. Then the calls begin.
 
 - **Emergency lights:** at the wheel of any police car or the Interceptor, **L** (or the **LIGHTS** touch button above HAND) switches the light bar, grille flashers and siren on or off.

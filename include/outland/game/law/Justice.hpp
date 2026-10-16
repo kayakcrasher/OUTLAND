@@ -62,6 +62,8 @@ public:
     // saw it, and it is reported at once.
     void witnessed(CrimeKind kind, Vector3 where, const JusticeFrame& frame, game::life::LifeSimulation& life);
 
+    // A tip-off (contraband coming ashore, ...): wanted at once at `stars`, the trail warm at `where`.
+    void tip_off(int stars, Vector3 where, const JusticeFrame& frame, game::life::LifeSimulation& life, const std::string& why);
     [[nodiscard]] int wanted() const { return wanted_; }
     [[nodiscard]] Vector3 last_known() const { return last_known_; }
     [[nodiscard]] const std::vector<Witness>& witnesses() const { return pending_; }

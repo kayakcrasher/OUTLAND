@@ -107,6 +107,14 @@ void Justice::dispatch(int count, Vector3 where, life::LifeSimulation& life) {
     }
 }
 
+void Justice::tip_off(int stars, Vector3 where, const JusticeFrame& frame, life::LifeSimulation& life, const std::string& why) {
+    wanted_ = std::max(wanted_, std::clamp(stars, 1, 5));
+    last_known_ = where;
+    last_seen_ = std::max(last_seen_, frame.now);
+    dispatch(1 + wanted_, where, life);
+    say(why);
+}
+
 void Justice::report(const Witness& witness, const JusticeFrame& frame, life::LifeSimulation& life, characters::NpcSystem& npcs) {
     (void)npcs;
     ++reports_;

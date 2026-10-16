@@ -85,6 +85,65 @@ int main() {
         // The record shuts the police door.
         check(!c.join_police("car", why) && why.find("record") != std::string::npos, "no Krimuloj on the force");
     }
+    // The underworld's jobs: smuggling (a load, a tip-off, home), extortion (pay or fight), turf.
+    {
+        Career c;
+        std::string why;
+        c.join_gang(0, "La Verda Mano", why);
+        const auto full = [](double now) {
+            auto f = world(now);
+            f.docks = {{"Porto Luma docks", {1800, 0, -400}}};
+            f.ranches = {{2, "Ranĉo Sunleviĝo", "Villarreal", {730, 0, -180}, false}};
+            f.turfs = {{0, "Verda", {0, 0, 0}, 0, 100}, {1, "Roka", {400, 0, 0}, 4, 35}, {2, "Espera", {-600, 0, 0}, 2, 90}};
+            return f;
+        };
+        bool smuggle = false, extort = false, turf = false;
+        double now = 0;
+        for (int i = 0; i < 3000 && !(smuggle && extort && turf); ++i) {
+            now += 1;
+            auto f = full(now);
+            c.update(f);
+            const auto kind = c.job().kind;
+            if (kind == JobKind::Smuggle && !smuggle) {
+                smuggle = true;
+                f.player = {1800, 0, -405};
+                f.driving = "";
+                c.update(f);
+                check(!c.job().taken, "the load needs a car");
+                f.driving = "van";
+                c.update(f);
+                check(c.job().taken && c.take_tipoff() && !c.take_tipoff() && std::abs(c.job().target.x - 30) < .1F, "loaded, the police tipped, now home");
+                f.player = {32, 0, 2};
+                c.update(f);
+                Job done;
+                check(c.job().kind == JobKind::None && c.take_finished(done) && done.kind == JobKind::Smuggle && c.take_pay() >= 1300, "delivered");
+            } else if (kind == JobKind::Extort && !extort) {
+                extort = true;
+                check(c.job().ranch == 2, "the family's ranch");
+                f.player = {735, 0, -170};
+                c.update(f);
+                check(c.take_extort_arrival() && !c.take_extort_arrival(), "the demand is made");
+                c.extort_result(false, 7);
+                check(c.job().needed == 2 && c.job().gang == 7, "they fight");
+                c.killed(3, false);
+                c.killed(7, false); c.killed(7, false);
+                c.update(f);
+                Job done;
+                check(c.job().kind == JobKind::None && c.take_finished(done) && done.kind == JobKind::Extort && done.ranch == 2, "beaten, they pay");
+            } else if (kind == JobKind::TakeTurf && !turf) {
+                turf = true;
+                check(c.job().turf == 1 && c.job().gang == 4, "the weakest rival town first");
+                c.turf_taken(2, "Espera");
+                check(c.job().kind == JobKind::TakeTurf, "another town falling is not this job");
+                c.turf_taken(1, "Roka");
+                Job done;
+                check(c.job().kind == JobKind::None && c.take_finished(done) && done.kind == JobKind::TakeTurf, "Roka taken");
+            } else if (kind != JobKind::None) {
+                now += 2000; f.now = now; c.update(f);
+            }
+        }
+        check(smuggle && extort && turf, "all three jobs come up");
+    }
     // The police: patrols in the car, raids, calls; going bad.
     {
         Career c;

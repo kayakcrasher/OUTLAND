@@ -31,6 +31,14 @@ public:
         std::vector<std::pair<Vector3, float>> buses;  // buses on the line: where, and heading (degrees)
         std::vector<std::pair<Vector3, Color>> turf;    // Mafio hideouts: where, and the gang's colour
         std::optional<Vector3> home;                    // Stela Turo: the penthouse for sale, or your home
+        // The gang map (a gangster's map): every turf in its holder's colour with the hold left,
+        // the tags on the walls, and who is biggest.
+        struct TurfMark { Vector3 centre{}; float radius{150}; Color color{}; std::string name, holder; float hold{100}; bool yours{false}, ranch{false}; };
+        bool gang_map{false};
+        std::vector<TurfMark> territory;
+        std::vector<std::pair<Vector3, Color>> tags;
+        std::vector<std::pair<std::string, Color>> standings;   // biggest first: "La Verda Mano  4 towns, 2 ranches"
+        std::string gang_goal;                                    // "Take the island: 3 of 10 turfs" 
         bool home_owned{false};
         const Font* font{nullptr};
     };

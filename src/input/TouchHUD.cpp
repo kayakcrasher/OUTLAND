@@ -608,6 +608,7 @@ void TouchHUD::draw(
     button(layout.crouch, "CROUCH", input.crouch);
     button(layout.inventory, "BAG", input.inventory);
     button(layout.interact, "USE", input.interact);
+    if (tagger_) button(layout.tag, "TAG", input.tag);
     if (sight) button(layout.sight, sight, input.sight);
     }
 

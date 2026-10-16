@@ -12,6 +12,8 @@
 #include "outland/game/ai/BotDrivers.hpp"
 #include "outland/game/casino/PokerTable.hpp"
 #include "outland/game/mafia/Mafio.hpp"
+#include "outland/game/mafia/Territory.hpp"
+#include "outland/game/mafia/GangLogos.hpp"
 #include "outland/game/career/Career.hpp"
 #include "outland/game/career/TrainingCamp.hpp"
 #include "outland/game/career/CampRenderer.hpp"
@@ -594,7 +596,7 @@ void Renderer::run() {
     float career_save_wait=0;
     bool career_dead=false;
     struct JoinOffer { int crew{-1}; std::string patrol_car; double until{-1}; } join_offer;
-    // The police questline: Chief Elena Forta at Verda City HQ (a body in NpcSystem under her own
+    // The police questline: Chief Marko Forta at Verda City HQ (a body in NpcSystem under his own
     // id), the training camp's range outside the city, and the player's own car's lights.
     game::career::TrainingCamp police_camp;
     struct PoliceChief { Vector3 at{}; float yaw{0}; bool placed{false}; } chief;
@@ -602,6 +604,15 @@ void Renderer::run() {
     constexpr const char* chief_character="character_22_police";
     std::string chief_line;float chief_line_time=0;
     std::string lights_car;          // the police car whose lights the player switched on ("" none)
+    // Who runs Verda: every town and ranch, their holders and holds, the tags on the walls (saved
+    // beside the career); the logos the tags are painted with; the underworld's news.
+    game::mafia::Territory territory;
+    game::mafia::GangLogos gang_logos;
+    std::string territory_path,territory_saved;
+    float territory_save_wait=0;
+    std::string gang_news;float gang_news_time=0;
+    bool island_ruled=false;
+    std::vector<game::career::DockSpot> smuggling_docks;
     game::casino::Poker poker;
     game::casino::PokerTable poker_table;
     bool poker_open=false;
@@ -854,6 +865,25 @@ void Renderer::run() {
     };
     game::vehicles::VehicleAudio vehicle_audio;
     vehicles.bind_occupant_damage([&](float amount){player_health.damage(amount);});
+    const auto gang_name=[](int faction) -> std::string {
+        return faction>=0 && faction<game::mafia::gang_count ? std::string(game::mafia::gangs[static_cast<std::size_t>(faction)].name) : std::string("?");
+    };
+    const auto faction_name=[&](int faction) -> std::string {
+        if(faction<game::mafia::gang_count) return gang_name(faction);
+        return "the "+territory.families()[static_cast<std::size_t>(faction-game::mafia::gang_count)].name+" family";
+    };
+    const auto faction_color=[&](int faction) -> Color {
+        if(faction>=0 && faction<game::mafia::gang_count) return game::mafia::gangs[static_cast<std::size_t>(faction)].color;
+        return Color{176,128,74,255};   // the ranching families: saddle brown
+    };
+    const auto player_gang=[&]{return career.state().side==game::career::Side::Gang ? career.state().gang : -1;};
+    // Who a body fights for: a gang (its crew), a ranching family, or -1.
+    const auto faction_of=[&](int bot) -> int {
+        if(bot<0) return -1;
+        if(mafio.active()) if(const int g=mafio.gang_of(bot);g>=0) return g;
+        if(ranches.active()) if(const auto* v=ranches.vakero(bot)) return game::mafia::family_faction(v->ranch);
+        return -1;
+    };
     combat_world.bind_vehicles([&](Vector3 start,Vector3 end,bool occupants){return vehicles.trace(verda_region,start,end,occupants);},[&](const game::combat::BulletHit& hit,float amount){
         vehicles.damage(verda_region,hit,amount);vehicle_dirty=true;
         // Through the glass into a bot at the wheel.
@@ -863,7 +893,8 @@ void Renderer::run() {
             if(driver>=0 && mafio.active()) {mafio.provoke(driver,match_time);walking_man.provoke(driver,match_time);ranches.provoke(driver,match_time);}
             if(driver>=0 && br_bots.damage_bot(driver,amount*.8F,hit.position,match_time)) {
                 pending_kills.push_back(hit.position);
-                career.killed(mafio.active() ? mafio.gang_of(driver) : -1,vehicles.driver()!=nullptr);
+                career.killed(faction_of(driver),vehicles.driver()!=nullptr);
+                territory.killed(faction_of(driver),hit.position,player_gang());
             }
         }
     });
@@ -900,7 +931,11 @@ void Renderer::run() {
                 victim.health<=0 ? game::law::CrimeKind::Murder : game::law::CrimeKind::Assault,victim.resident});
         }
         if(killed) pending_kills.push_back(where);
-        if(killed && body.bot>=0) career.killed(mafio.active() ? mafio.gang_of(body.bot) : -1,vehicles.driver()!=nullptr);
+        if(killed && body.bot>=0) {
+            const int victim=faction_of(body.bot);
+            career.killed(victim,vehicles.driver()!=nullptr);
+            territory.killed(victim,where,player_gang());
+        }
         return killed;
     };
     combat_world.bind_actors([&](Vector3 start,Vector3 end) {
@@ -1209,6 +1244,7 @@ void Renderer::run() {
                 walking_man.clear();
                 career=game::career::Career{};career_path.clear();mafio.set_player_gang(-1);services.assign_player_car({});
                 police_camp=game::career::TrainingCamp{};chief={};lights_car.clear();
+                territory.clear();territory_path.clear();smuggling_docks.clear();
                 mafio.clear(br_bots,bot_drivers,vehicles);
                 services.clear(vehicles,npcs);
                 bot_drivers.clear(br_bots,vehicles);bots_looted.clear();
@@ -1301,6 +1337,7 @@ void Renderer::run() {
                         if(want.rfind("gang:",0)==0) {
                             const int gang=std::clamp(std::atoi(want.c_str()+5),0,static_cast<int>(game::mafia::gangs.size())-1);
                             career.join_gang(gang,std::string(game::mafia::gangs[static_cast<std::size_t>(gang)].name),why);
+                            loot_session.edit_inventory().add(item_registry,"spray_paint",4);
                         } else if(want=="police") {
                             const Vector3 here{player.position.x,player.position.y-1,player.position.z};
                             const game::services::Unit* best=nullptr;
@@ -1381,6 +1418,56 @@ void Renderer::run() {
                             }
                         if(career.on_duty() && career.police_stage()>=game::career::PoliceStage::Graduated) police_camp.restore(true);
                     }
+                    // Who runs Verda: each crew's town (its county's gang to begin with) and each ranch.
+                    territory.clear();island_ruled=false;gang_news.clear();gang_news_time=0;smuggling_docks.clear();
+                    gang_logos.prepare();
+                    for(std::size_t c=0;c<mafio.crews().size();++c) {
+                        const auto& crew=mafio.crews()[c];
+                        if(crew.settlement<0 || static_cast<std::size_t>(crew.settlement)>=verda_region.settlements().size()) continue;
+                        const auto& town=verda_region.settlements()[static_cast<std::size_t>(crew.settlement)];
+                        if(territory.turf_at(town.center)>=0) continue;   // one turf a town
+                        territory.add_town(town.id,town.name,town.center,town.id=="capital_verda" ? 320.0F : 190.0F,crew.gang,static_cast<int>(c));
+                    }
+                    for(std::size_t r=0;r<ranches.ranches().size() && r<static_cast<std::size_t>(game::mafia::family_count);++r) {
+                        const auto& ranch=ranches.ranches()[r];
+                        if(!ranch.spec) continue;
+                        territory.add_ranch(std::string(ranch.spec->id),std::string(ranch.spec->name),ranch.frame.at(0,110),150,static_cast<int>(r),
+                            std::string(ranch.spec->family),game::mafia::gang_of_zone(ranch.spec->county),session_seed);
+                    }
+                    for(const auto& place:island_life.places())
+                        if(place.kind==game::life::PlaceKind::Dock && static_cast<std::size_t>(place.settlement)<verda_region.settlements().size())
+                            smuggling_docks.push_back({verda_region.settlements()[static_cast<std::size_t>(place.settlement)].name+" docks",place.door});
+                    territory_path=game::inventory::LootSave::profile_path(map_path,game_mode)+".territory";
+                    bool territory_loaded=false;
+                    if(FileExists(territory_path.c_str())) if(char* text=LoadFileText(territory_path.c_str())) {
+                        territory_loaded=territory.parse(text);
+                        if(!territory_loaded) TraceLog(LOG_WARNING,"Territory: unreadable %s",territory_path.c_str());
+                        UnloadFileText(text);
+                    }
+                    // Crews wear the colours of whoever holds their town now.
+                    for(const auto& t:territory.turfs()) if(t.crew>=0 && t.ranch<0) mafio.set_crew_gang(t.crew,t.owner);
+                    if(!territory_loaded) {
+                        // Every hideout starts with its gang's tag beside the door.
+                        for(const auto& crew:mafio.crews()) {
+                            Vector3 out=Vector3Subtract(crew.door,crew.interior);out.y=0;
+                            if(Vector3Length(out)<.1F) continue;
+                            out=Vector3Normalize(out);
+                            const Vector3 side{-out.z,0,out.x};
+                            for(const float along:{1.9F,-1.9F,3.2F}) {
+                                const Vector3 from=Vector3Add(Vector3Add(crew.door,Vector3Scale(out,1.2F)),Vector3Add(Vector3Scale(side,along),{0,1.7F,0}));
+                                const auto wall=combat_world.trace_segment(from,Vector3Subtract(from,Vector3Scale(out,4.5F)),false,false,false);
+                                if((wall.kind==game::combat::HitKind::Building || wall.kind==game::combat::HitKind::Structure) && std::abs(wall.normal.y)<.4F) {
+                                    // The paint faces the street, whichever way the wall's face was wound.
+                                    const Vector3 face=Vector3DotProduct(wall.normal,Vector3Subtract(from,wall.position))<0 ? Vector3Negate(wall.normal) : wall.normal;
+                                    territory.tag(wall.position,face,crew.gang);break;
+                                }
+                            }
+                        }
+                    }
+                    TraceLog(LOG_INFO,"OUTLAND territory: %d turfs, %d tags, %d docks%s",static_cast<int>(territory.turfs().size()),
+                             static_cast<int>(territory.tags().size()),static_cast<int>(smuggling_docks.size()),territory_loaded ? " (saved)" : "");
+                    territory_saved=territory_loaded ? territory.serialise() : std::string();   // a fresh island is saved at once
+                    island_ruled=player_gang()>=0 && territory.rules_island(player_gang());
                     // A serving officer whose Interceptor went missing gets another at HQ.
                     if(career.serving() && chief.placed && career.state().patrol_car.rfind("creator_vehicle_",0)==0 && vehicles.find(career.state().patrol_car)<0) {
                         std::vector<std::string> before;for(const auto& v:vehicles.vehicles()) before.push_back(v.id);
@@ -1618,6 +1705,8 @@ void Renderer::run() {
                 const auto* asset=car ? vehicles.asset(verda_region,car->id) : nullptr;
                 const bool police_car=asset && (asset->vehicle.definition=="police" || asset->vehicle.definition=="interceptor");
                 input_system.set_police_car(police_car);touch_hud.set_police_car(police_car,police_car && lights_car==car->id);
+                const bool tagger=!car && player_gang()>=0;
+                input_system.set_tagger(tagger);touch_hud.set_tagger(tagger);
             }
             input_system.set_look_stick(creator_active);
             input_system.update(screen_width, screen_height, !creator_active && !build_mode.active(),
@@ -1768,7 +1857,11 @@ void Renderer::run() {
                 const std::string name(game::mafia::gangs[static_cast<std::size_t>(gang)].name);
                 if(confirming) {
                     std::string why;
-                    if(career.join_gang(gang,name,why)) {mafio.set_player_gang(gang);services.assign_player_car({});gun_audio.kill_confirm();interaction_message.clear();}
+                    if(career.join_gang(gang,name,why)) {
+                        mafio.set_player_gang(gang);services.assign_player_car({});gun_audio.kill_confirm();interaction_message.clear();
+                        loot_session.edit_inventory().add(item_registry,"spray_paint",4);loot_session.changed();   // cans to mark your turf
+                        island_ruled=territory.rules_island(gang);
+                    }
                     else interaction_message=why;
                     join_offer={};
                 } else {
@@ -2502,6 +2595,48 @@ void Renderer::run() {
             gun_muzzle=Vector3Add(seat,Vector3Scale(out,2.8F));
             gun_direction=Vector3Normalize(Vector3Subtract(target,gun_muzzle));
         }
+        // TAG / T: spray your gang's tag on the wall in front of you (a can of spray paint).
+        if(controls.tag && !driving && !creator_active && !inventory_open && player_gang()>=0 && player_health.alive()) {
+            const int gang=player_gang();
+            // Level, where the player faces, at a few heights (a can reaches about arm's length plus a step).
+            Vector3 level{look_direction.x,0,look_direction.z};
+            level=Vector3Length(level)>.01F ? Vector3Normalize(level) : Vector3{std::sin(player.yaw),0,std::cos(player.yaw)};
+            game::combat::BulletHit wall;
+            for(const float h:{.55F,.15F,.95F}) {
+                const Vector3 from{player.position.x,player.position.y+h,player.position.z};
+                wall=combat_world.trace_segment(from,Vector3Add(from,Vector3Scale(level,4.5F)),false,false,false);
+                if((wall.kind==game::combat::HitKind::Building || wall.kind==game::combat::HitKind::Structure) && std::abs(wall.normal.y)<.45F) break;
+            }
+            if(loot_session.inventory().count("spray_paint")<=0) interaction_message="No spray paint - general stores sell it, or find some";
+            else if((wall.kind!=game::combat::HitKind::Building && wall.kind!=game::combat::HitKind::Structure) || std::abs(wall.normal.y)>.45F)
+                interaction_message="Face a wall to tag it";
+            else {
+                const Vector3 face=Vector3DotProduct(wall.normal,Vector3Subtract(player.position,wall.position))<0 ? Vector3Negate(wall.normal) : wall.normal;
+                const int turf=territory.tag(wall.position,face,gang);
+                loot_session.edit_inventory().remove("spray_paint",1);loot_session.changed();
+                sound_bus.emit(game::sound::SoundKind::Footstep,wall.position,12,0,match_time);
+                if(turf<0) interaction_message="Tagged - but nobody out here cares";
+                else {
+                    const auto& t=territory.turfs()[static_cast<std::size_t>(turf)];
+                    if(t.ranch>=0) interaction_message="Tagged the "+territory.families()[static_cast<std::size_t>(t.ranch)].name+" family's land";
+                    else if(t.owner==gang) interaction_message=t.name+" is ours - the tag shores up our hold";
+                    else {
+                        interaction_message=TextFormat("Tagged %s's wall in %s - hold %d",gang_name(t.owner).c_str(),t.name.c_str(),static_cast<int>(t.hold));
+                        // They will not stand for it: war, and a squad sent at your nearest crew.
+                        mafio.provoke_gang(t.owner,match_time,gang_name(t.owner)+" saw your tag on their wall - it's war");
+                        int from=-1,to=-1;float near_from=1e9F,near_to=1e9F;
+                        for(std::size_t c=0;c<mafio.crews().size();++c) {
+                            const auto& crew=mafio.crews()[c];
+                            const float d=Vector3Distance(crew.door,wall.position);
+                            if(crew.gang==t.owner && d<near_from) {near_from=d;from=static_cast<int>(c);}
+                            if(crew.gang==gang && d<near_to) {near_to=d;to=static_cast<int>(c);}
+                        }
+                        if(from>=0 && to>=0) mafio.send_hit_squad(from,to,br_bots,bot_drivers,vehicles,verda_region,match_time);
+                    }
+                }
+            }
+            interaction_remaining=3;
+        }
         if (!controls.fire) trigger_ready=true;
         game::combat::WeaponInput weapon_input;
         weapon_input.fire=controls.fire && trigger_ready && (!driving || drive_by) && !creator_active && !inventory_open;
@@ -2922,16 +3057,81 @@ void Renderer::run() {
                     for(const auto& town:verda_region.settlements()) work.towns.push_back({town.name,town.center});
                     work.chief=chief.at;work.chief_known=chief.placed;
                     work.camp=police_camp.line();work.camp_known=police_camp.placed();
-                    // The Chief stands at her post; the range runs its drill (counting the shots fired).
+                    // The Chief stands at his post; the range runs its drill (counting the shots fired).
                     if(chief.placed) npcs.set_bot(chief_bot,chief.at,chief.yaw,100,characters::NpcState::Idle);
                     if(police_camp.placed()) {
                         police_camp.update(dt,feet,weapons.events().shots);
                         if(police_camp.take_graduation()) career.passed_training();
                     }
                     chief_line_time=std::max(0.0F,chief_line_time-dt);
+                    // The underworld: docks, ranches and towns, and who holds them.
+                    work.docks=smuggling_docks;
+                    for(std::size_t i=0;i<territory.turfs().size();++i) {
+                        const auto& t=territory.turfs()[i];
+                        if(t.ranch>=0) {
+                            const auto& family=territory.families()[static_cast<std::size_t>(t.ranch)];
+                            if(static_cast<std::size_t>(t.ranch)<ranches.ranches().size())
+                                work.ranches.push_back({t.ranch,t.name,family.name,ranches.ranches()[static_cast<std::size_t>(t.ranch)].frame.gate,
+                                                        territory.controls(static_cast<int>(i),player_gang())});
+                        } else work.turfs.push_back({static_cast<int>(i),t.name,t.centre,t.owner,t.hold});
+                    }
+                    // AI gangs push on each other's towns (a hit squad goes in); towns change hands.
+                    if(const auto raid=territory.update(dt,match_time,player_gang());raid.turf>=0) {
+                        const auto& target=territory.turfs()[static_cast<std::size_t>(raid.turf)];
+                        int from=-1;float nearest=1e9F;
+                        for(std::size_t c=0;c<mafio.crews().size();++c) {
+                            const auto& crew=mafio.crews()[c];
+                            const float d=Vector3Distance(crew.door,target.centre);
+                            if(crew.gang==raid.attacker && d<nearest) {nearest=d;from=static_cast<int>(c);}
+                        }
+                        if(from>=0 && target.crew>=0) mafio.send_hit_squad(from,target.crew,br_bots,bot_drivers,vehicles,verda_region,match_time);
+                        if(target.owner==player_gang()) {gang_news=gang_name(raid.attacker)+" are hitting "+target.name+" - your turf. Defend it";gang_news_time=7;}
+                        else if(Vector3Distance(target.centre,feet)<700) {gang_news=gang_name(raid.attacker)+" hit "+faction_name(target.owner)+" at "+target.name;gang_news_time=5;}
+                    }
+                    for(const auto& flip:territory.take_flips()) {
+                        const auto& t=territory.turfs()[static_cast<std::size_t>(flip.turf)];
+                        if(t.crew>=0) mafio.set_crew_gang(t.crew,flip.to);
+                        gang_news=gang_name(flip.to)+" took "+t.name+" from "+faction_name(flip.from);gang_news_time=7;
+                        if(flip.to==player_gang()) career.turf_taken(flip.turf,t.name);
+                        else if(flip.from==player_gang()) {gang_news="You lost "+t.name+" to "+gang_name(flip.to);gang_news_time=8;}
+                    }
                     if(!player_health.alive() && !career_dead) {career.died();career_dead=true;}
                     if(player_health.alive()) career_dead=false;
                     career.update(work);
+                    // What the job set off: the police tipped off, a demand at a ranch, a job paid out.
+                    if(career.take_tipoff()) {
+                        game::law::JusticeFrame tip;tip.now=match_time;tip.player=feet;
+                        justice.tip_off(2,feet,tip,island_life,"Contraband run: someone tipped off the police");
+                    }
+                    if(career.take_extort_arrival()) {
+                        const int ranch=career.job().ranch,gang=player_gang();
+                        if(ranch>=0 && territory.extort(ranch,gang)) {
+                            career.extort_result(true,game::mafia::family_faction(ranch));
+                            gang_news="The "+territory.families()[static_cast<std::size_t>(ranch)].name+" family pays "+gang_name(gang);gang_news_time=6;
+                        } else if(ranch>=0) {
+                            const auto& family=territory.families()[static_cast<std::size_t>(ranch)];
+                            if(static_cast<std::size_t>(ranch)<ranches.ranches().size())
+                                ranches.provoke_ranch(ranch,match_time,"The "+family.name+" family won't be squeezed");
+                            if(family.stance==game::mafia::Stance::Allied && family.gang>=0 && family.gang!=gang)
+                                mafio.provoke_gang(family.gang,match_time,gang_name(family.gang)+" stand by the "+family.name+" family - they want you dead");
+                            career.extort_result(false,game::mafia::family_faction(ranch));
+                        }
+                    }
+                    if(game::career::Job done;career.take_finished(done)) {
+                        if(done.kind==game::career::JobKind::Smuggle) territory.delivered(territory.turf_at(done.target),player_gang());
+                        if(done.kind==game::career::JobKind::Extort && done.ranch>=0) territory.subdued(done.ranch,player_gang());
+                    }
+                    if(const int mine=player_gang();mine>=0 && !island_ruled && territory.rules_island(mine)) {
+                        island_ruled=true;
+                        gang_news=gang_name(mine)+" RULE VERDA - every town and every ranch is yours";gang_news_time=12;
+                        gun_audio.kill_confirm();
+                    }
+                    gang_news_time=std::max(0.0F,gang_news_time-dt);
+                    territory_save_wait-=dt;
+                    if(territory_save_wait<=0 && !territory_path.empty()) {
+                        territory_save_wait=2;
+                        if(const auto text=territory.serialise();text!=territory_saved && SaveFileText(territory_path.c_str(),const_cast<char*>(text.c_str()))) territory_saved=text;
+                    }
                     if(const int pay=career.take_pay();pay>0) {loot_session.economy().money+=pay;loot_session.changed();}
                     mafio.set_player_gang(career.state().side==game::career::Side::Gang ? career.state().gang : -1);
                     services.assign_player_car(career.on_duty() ? career.state().patrol_car : std::string());
@@ -3486,6 +3686,7 @@ void Renderer::run() {
         }
         game::career::draw_camp(police_camp,camera.position,static_cast<float>(GetTime()),
             [](float x,float z){return world::terrain::TerrainHeight::sample(x,z);});
+        for(const auto& tag:territory.tags()) gang_logos.draw(tag,camera.position);
         if(services.active()) game::services::draw_light_bars(services,vehicles,camera.position,static_cast<float>(GetTime()));
         if(const int lit=lights_car.empty() ? -1 : vehicles.find(lights_car);lit>=0) {
             const auto& car=vehicles.vehicles()[static_cast<std::size_t>(lit)];
@@ -3929,7 +4130,7 @@ void Renderer::run() {
                 DrawTextEx(font,title.c_str(),{x+15,y+5},20,1,gang.color);
                 DrawTextEx(font,sub.c_str(),{x+15,y+28},15,1,Color{220,226,206,255});
             }
-            // The Chief: her name over her head, and what she says.
+            // The Chief: his name over his head, and what he says.
             if(chief.placed && Vector3Distance(chief.at,camera.position)<30) {
                 const Vector3 over{chief.at.x,chief.at.y+2.3F,chief.at.z};
                 if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))>0) {
@@ -4005,6 +4206,36 @@ void Renderer::run() {
                 const float lw=MeasureTextEx(font,line,17,1).x;
                 DrawRectangle(static_cast<int>(screen_width/2-lw/2-12),screen_height-246,static_cast<int>(lw+24),28,Fade(BLACK,.55F));
                 DrawTextEx(font,line,{screen_width/2-lw/2,static_cast<float>(screen_height-241)},17,1,career.state().record ? Color{255,140,120,255} : Color{150,190,255,255});
+            }
+            // The turf you stand on: its holder and their hold (gang members); the underworld's news.
+            if(player_gang()>=0) {
+                const int here=territory.turf_at({player.position.x,player.position.y-1,player.position.z});
+                if(here>=0) {
+                    const auto& t=territory.turfs()[static_cast<std::size_t>(here)];
+                    const bool held=territory.controls(here,player_gang());
+                    const int holder=t.ranch>=0 ? (territory.families()[static_cast<std::size_t>(t.ranch)].gang>=0 &&
+                        territory.families()[static_cast<std::size_t>(t.ranch)].stance!=game::mafia::Stance::Independent ?
+                        territory.families()[static_cast<std::size_t>(t.ranch)].gang : t.owner) : t.owner;
+                    const std::string line=t.ranch>=0 ? t.name+"  ·  "+faction_name(t.owner)+(held ? "  ·  WITH YOU" : "") :
+                        t.name+"  ·  "+gang_name(t.owner)+(held ? "  ·  YOURS" : "")+TextFormat("  ·  HOLD %d",static_cast<int>(t.hold));
+                    const float lw=MeasureTextEx(font,line.c_str(),15,1).x;
+                    const float x=10,y=screen_height*.235F-30;
+                    DrawRectangle(static_cast<int>(x),static_cast<int>(y),static_cast<int>(lw+30),24,Fade(BLACK,.55F));
+                    DrawRectangle(static_cast<int>(x),static_cast<int>(y),5,24,faction_color(holder));
+                    if(t.ranch<0) DrawRectangle(static_cast<int>(x+5),static_cast<int>(y+21),static_cast<int>((lw+25)*t.hold/100),3,faction_color(holder));
+                    DrawTextEx(font,line.c_str(),{x+16,y+4},15,1,held ? Color{170,240,170,255} : faction_color(holder));
+                }
+            }
+            if(gang_news_time>0 && !gang_news.empty()) {
+                const float alpha=std::clamp(gang_news_time,0.0F,1.0F);
+                const float mw=MeasureTextEx(font,gang_news.c_str(),19,1).x;
+                DrawRectangle(static_cast<int>(screen_width/2-mw/2-14),screen_height-384,static_cast<int>(mw+28),30,Fade(Color{30,10,10,255},.7F*alpha));
+                DrawTextEx(font,gang_news.c_str(),{screen_width/2-mw/2,static_cast<float>(screen_height-379)},19,1,Fade(Color{255,190,140,255},alpha));
+            }
+            if(island_ruled && player_gang()>=0) {
+                const std::string crown=gang_name(player_gang())+" RULE VERDA";
+                const float cw=MeasureTextEx(font,crown.c_str(),18,1).x;
+                DrawTextEx(font,crown.c_str(),{screen_width/2-cw/2,58},18,1,Color{240,200,90,255});
             }
             // The career: side and rank, the respect meter, the job in hand, and the news.
             if(career.state().side!=game::career::Side::Civilian) {
@@ -4249,6 +4480,33 @@ void Renderer::run() {
             for(const auto& stop:bus_line.stops()) view.stops.push_back(stop.shelter);
             if(bus_line.running()) for(const auto& bus:bus_line.buses()) if(bus.running) view.buses.push_back({bus.position,bus.yaw});
             for(const auto& crew:mafio.crews()) view.turf.push_back({crew.door,game::mafia::gangs[static_cast<std::size_t>(crew.gang)].color});
+            // A gangster's map: who holds every town and ranch, the tags, the standings.
+            if(const int mine=player_gang();mine>=0 && !territory.turfs().empty()) {
+                view.gang_map=true;
+                int yours=0;
+                for(std::size_t i=0;i<territory.turfs().size();++i) {
+                    const auto& t=territory.turfs()[i];
+                    const bool held=territory.controls(static_cast<int>(i),mine);
+                    yours+=held;
+                    if(t.ranch>=0) {
+                        const auto& family=territory.families()[static_cast<std::size_t>(t.ranch)];
+                        const bool tied=family.stance!=game::mafia::Stance::Independent && family.gang>=0;
+                        const std::string holder=family.name+(family.stance==game::mafia::Stance::Allied ? " - with "+gang_name(family.gang) :
+                            family.stance==game::mafia::Stance::Extorted ? " - pays "+gang_name(family.gang) : family.fierce ? " - fiercely independent" : " - independent");
+                        view.territory.push_back({t.centre,t.radius,tied ? faction_color(family.gang) : faction_color(t.owner),t.name,holder,100,held,true});
+                    } else view.territory.push_back({t.centre,t.radius,faction_color(t.owner),t.name,gang_name(t.owner),t.hold,held,false});
+                }
+                for(const auto& tag:territory.tags()) view.tags.push_back({tag.position,faction_color(tag.gang)});
+                for(const int f:territory.ranking()) {
+                    std::string line=faction_name(f);
+                    if(f<game::mafia::gang_count) line+=TextFormat("  -  %d towns, %d ranches",territory.towns_of(f),territory.ranches_with(f));
+                    else line+=territory.families()[static_cast<std::size_t>(f-game::mafia::gang_count)].stance==game::mafia::Stance::Independent ? "  -  their own ranch" : "";
+                    if(f==mine) line+="  (YOU)";
+                    view.standings.push_back({line,faction_color(f)});
+                }
+                view.gang_goal=island_ruled ? "YOUR GANG RULES VERDA" :
+                    TextFormat("Take the island: %d of %d turfs are yours",yours,static_cast<int>(territory.turfs().size()));
+            }
             if(game::rules_for(game_mode).civilian_life && penthouse.found()) {
                 view.home=penthouse.to_world({0,0,0});
                 view.home_owned=game::economy::Penthouse::owned(loot_session.economy());
