@@ -126,6 +126,7 @@ void CombatWorld::damage_target(int index, float damage) {
 
 void CombatWorld::damage_hit(const BulletHit& hit,float damage,Vector3 attacker) {
     if((hit.kind==HitKind::Vehicle || hit.kind==HitKind::VehicleWindow || hit.kind==HitKind::VehicleOccupant) && vehicle_damage_)vehicle_damage_(hit,damage);
+    else if(hit.kind==HitKind::Target && hit.target>=drill_base) { if(drill_hit_) drill_hit_(hit.target-drill_base,hit.headshot); }
     else if(hit.kind==HitKind::Target) damage_target(hit.target,damage);
     else if(hit.kind==HitKind::Npc && actor_damage_) actor_damage_(hit.target,damage,attacker);
 }
@@ -211,6 +212,12 @@ BulletHit CombatWorld::trace_segment(Vector3 start, Vector3 end,bool actors,bool
         if(box(start,end,sub(target.center,{.5F,1,.25F}),add(target.center,{.5F,1,.25F}),t,n)) {
             record(HitKind::Target,t,n,static_cast<int>(i));
             if(best.target==static_cast<int>(i)) best.headshot=best.position.y>target.center.y+.5F;
+        }
+    }
+    if(targets && drill_trace_) {
+        auto drill=drill_trace_(start,end);
+        if(drill.hit() && drill.fraction>=0 && drill.fraction<=1 && (!best.hit() || drill.fraction<best.fraction)) {
+            drill.target+=drill_base;best=drill;
         }
     }
     if(actors && actor_trace_) {

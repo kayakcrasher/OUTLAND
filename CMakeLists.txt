@@ -192,6 +192,8 @@ add_library(
     src/game/ai/BotDrivers.cpp
     src/game/mafia/Mafio.cpp
     src/game/career/Career.cpp
+    src/game/career/TrainingCamp.cpp
+    src/game/career/CampRenderer.cpp
     src/game/services/EmergencyServices.cpp
     src/game/mafia/MafioRenderer.cpp
     src/game/casino/Poker.cpp
@@ -742,6 +744,10 @@ if(OUTLAND_BUILD_TESTS)
     target_include_directories(outland_career_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_career_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_career_tests COMMAND outland_career_tests)
+    add_executable(outland_training_camp_tests tests/unit/career/test_training_camp.cpp src/game/career/TrainingCamp.cpp)
+    target_include_directories(outland_training_camp_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
+    target_compile_options(outland_training_camp_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_training_camp_tests COMMAND outland_training_camp_tests)
     add_executable(outland_highway_tests tests/integration/world/test_highways.cpp)
     target_link_libraries(outland_highway_tests PRIVATE outland_render)
     target_compile_options(outland_highway_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

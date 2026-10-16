@@ -22,7 +22,11 @@
 namespace outland::game::career {
 
 enum class Side : std::uint8_t { Civilian, Gang, Police };
-enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, Raid, BreakUpWar };
+enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, Raid, BreakUpWar, Quest };
+// A recruit's road onto the force: report to the Chief at Verda City HQ, qualify at the training
+// camp's range, report back for the badge and the Interceptor, then serve (calls).
+enum class PoliceStage : std::uint8_t { Report, Training, Graduated, Serving };
+inline constexpr const char* chief_name = "Ĉefo Elena Forta";
 const char* job_name(JobKind kind);
 
 struct CrewSpot {                // a gang crew's hideout
@@ -46,6 +50,9 @@ struct CareerFrame {
     std::vector<WarSpot> wars;
     std::vector<TownSpot> towns;
     std::vector<std::string> gang_names;   // by gang index
+    // The police questline's places: the Chief at Verda City HQ and the training camp.
+    Vector3 chief{}, camp{};
+    bool chief_known{false}, camp_known{false};
 };
 
 struct Job {
@@ -68,6 +75,7 @@ struct CareerState {
     bool record{false};            // ever a Krimulo: the Policio will not have them
     int jobs_done{0};
     std::string patrol_car;        // the officer's car (vehicle id)
+    PoliceStage police_stage{PoliceStage::Report};
 };
 
 class Career {
@@ -87,6 +95,15 @@ public:
     void killed(int gang, bool from_vehicle);        // a Krimulo of `gang` (-1: not a Krimulo)
     void crime(bool serious);                        // a crime someone reported (assault, murder, attacking police)
     void died();
+    // The police questline. Talking to the Chief moves a recruit on (and says what she says);
+    // `issue_car` comes back true when she hands over the Interceptor (the game spawns it and
+    // calls issue_car with its id).
+    std::string chief_talk(bool& issue_car);
+    void issue_car(const std::string& vehicle) { state_.patrol_car = vehicle; }
+    // The camp's range: every drill qualified.
+    void passed_training();
+    [[nodiscard]] PoliceStage police_stage() const { return state_.police_stage; }
+    [[nodiscard]] bool serving() const { return on_duty() && state_.police_stage == PoliceStage::Serving; }
 
     void update(const CareerFrame& frame);
 

@@ -10,8 +10,8 @@ In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. E
   - You can't join while that gang is shooting at you.
 - **The police:**
   - Walk up to a police station (where its patrol car parks) and press **USE** twice.
-  - You are sworn in as a Kadeto and issued a pistol and two magazines.
-  - That station's patrol car becomes yours. It leaves the AI dispatch, nobody reports it stolen, and its light bar runs while you drive it on a call.
+  - You are sworn in as a Kadeto and issued a pistol and two magazines, then sent to the Chief (the questline below).
+  - That station's patrol car becomes yours until the Interceptor replaces it. It leaves the AI dispatch and nobody reports it stolen.
 - **The one-way door:**
   - Joining a gang gives you a **record**, for good. The Policio turns away anyone with a record ("no Krimuloj on the force").
   - An officer can always go bad: joining a gang ends the career on the force.
@@ -48,6 +48,37 @@ A job comes a few seconds after joining, then 12 s after each one ends. A column
 - **On rival turf:** within 45 m of a rival hideout, a member gets a warning ("they know your colours"). Stay 5 s more and that gang opens fire.
 - **Your own crew:** they don't mind your gunfire near them. Only a real hit turns them.
 
+## The police questline
+
+Every recruit, at any station, starts a Kadeto **in training**. There are no calls until they graduate. The panel shows ORDERS and a light column marks the next place to go.
+
+1. **Report to the Chief.**
+   - **Ĉefo Elena Forta** heads the Policio de Verda; the Verda City HQ outranks every other police department.
+   - She stands beside the capital's first patrol car in a navy uniform, peaked cap and gold braid. Her name and "USE to talk" show over her head.
+   - Press **USE** next to her and she sends you to the training camp. Nobody can shoot her.
+2. **Qualify at the training camp.**
+   - The camp is a fenced range on open, level ground 300–1000 m outside Verda City, clear of roads and buildings. Its downrange points away from the city.
+   - It has a gravel apron, a firing line with booth dividers and a lectern, distance posts at 10, 15 and 25 m, an earth berm, a range hut and a blue-and-white flag.
+   - Stand at the lectern and press **USE** to start the next drill. A 3 s countdown runs, then silhouette targets flip up one at a time and drop when hit or when their time runs out.
+   - Leaving the firing line stops the drill. Real bullets hit the targets (`CombatWorld::bind_drill`).
+
+   | Drill | Targets | Up for | To qualify |
+   |---|---|---|---|
+   | PISTOL – 10 m | 10 | 2.6 s | 7 hits |
+   | RIFLE – 25 m | 10 | 2.2 s | 7 hits |
+   | MOVERS – 15 m | 8, sliding across the lanes | 3.4 s | 5 hits |
+
+   - The camp panel (right) lists the drills with your best score. During a drill it shows target, hits, shots and accuracy.
+   - Qualify all three and you **graduate**. Officers can come back to practise.
+3. **Report back.**
+   - The Chief promotes you to **Patrolano** (respect 15).
+   - She hands over the **Interceptor**: a long, low pursuit sedan in black with white doors and roof and a gold pinstripe. It has a slim LED light bar, a push bar with flashers, a bonnet scoop and a boot spoiler.
+   - It is quicker than a patrol car (top speed 60, 220 health) and becomes your patrol car. Then the calls begin.
+
+- **Emergency lights:** at the wheel of any police car or the Interceptor, **L** (or the **LIGHTS** touch button above HAND) switches the light bar, grille flashers and siren on or off.
+- **Older saves:** officers from before the questline are already serving.
+- **Dev:** `OUTLAND_DEV_CAREER=police:training`, `police:graduated` or `police:serving` starts further along. Dev builds log where the camp, the Chief and the Interceptor are.
+
 ## Police calls
 
 | Call | What | Pay | Respect |
@@ -72,9 +103,11 @@ The career is saved beside the Explore loot profile (`<profile>.career`): side, 
 
 - `OUTLAND_DEV_CAREER=gang:N` or `police` starts the session in a gang or on the force.
 - Dev builds log every crew door and police station.
+- `outland_training_camp_tests`: a drill starts from the line, targets take real traces and head shots, leaving the line stops it, retries, movers and graduation.
 - `outland_career_tests` covers:
   - joining, and the record shutting the police door;
   - hits, drive-bys only counting from a car, and robbing a rig;
   - a lapsed job costing respect, and killing your own;
+  - the questline (orders, the Chief, the camp, the Interceptor);
   - patrols needing the patrol car, raids, gang-war calls;
   - going bad, ranks, and save/load.

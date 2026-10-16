@@ -162,6 +162,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
             if (hit(p, layout_.interact, 43)) return Control::Interact;
             if (hit(p, layout_.sprint, 43)) return Control::Sprint;
             if (drive_by_ && hit(p, layout_.fire_left, 43)) return Control::FireLeft;
+            if (police_car_ && hit(p, layout_.lights, 43)) return Control::Lights;
             if (hit(p, layout_.movement, 92)) return Control::Movement;
             if (const auto pan = pan_area(screen_width, screen_height); p.x >= pan.x && p.x <= pan.x + pan.width && p.y >= pan.y && p.y <= pan.y + pan.height) return Control::Pan;
             return Control::None;
@@ -221,6 +222,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         case Control::Reload: player_.reload |= fresh; break;
         case Control::Grenade: player_.grenade |= fresh; break;
         case Control::Heal: player_.heal |= fresh; break;
+        case Control::Lights: player_.lights |= fresh; break;
         case Control::Sight: player_.sight |= fresh; break;
         case Control::Weapon: player_.next_weapon |= fresh; break;
         case Control::Inventory: player_.inventory |= fresh; break;
@@ -299,6 +301,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
     player_.brake |= b.down(Action::Jump, mouse_buttons);
     player_.sprint |= b.down(Action::Sprint, mouse_buttons);
     player_.toggle_view |= b.pressed(Action::View, mouse_buttons);
+    player_.lights |= b.pressed(Action::Lights, mouse_buttons);
     if (gameplay) {
         player_.crouch |= b.down(Action::Crouch, mouse_buttons);
         player_.fire |= b.down(Action::Fire, mouse_buttons);
@@ -332,7 +335,7 @@ TouchLayout InputSystem::drawn_layout(int width, int height) const {
     TouchLayout out = layout_;
     for (auto* e : {&out.movement, &out.look, &out.fire, &out.fire_left, &out.fire_mode, &out.aim, &out.jump, &out.reload,
                     &out.weapon, &out.view, &out.sprint, &out.grenade, &out.heal, &out.sight, &out.gas, &out.brake_pedal,
-                    &out.handbrake, &out.crouch, &out.inventory, &out.interact})
+                    &out.handbrake, &out.lights, &out.crouch, &out.inventory, &out.interact})
         e->scale *= button_size_;
     if (stick_center_.x >= 0 && width > 0 && height > 0) {
         out.movement.x = stick_center_.x / static_cast<float>(width);

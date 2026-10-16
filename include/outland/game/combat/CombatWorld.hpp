@@ -33,6 +33,12 @@ public:
         actor_trace_=std::move(trace);actor_damage_=std::move(damage);
     }
     void bind_vehicles(std::function<BulletHit(Vector3,Vector3,bool)> trace,std::function<void(const BulletHit&,float)> damage) {vehicle_trace_=std::move(trace);vehicle_damage_=std::move(damage);}
+    // Extra targets (the police training camp's pop-ups): hit as HitKind::Target with indices
+    // from drill_base up; `hit` hears which, and whether it was a head shot.
+    static constexpr int drill_base = 100;
+    void bind_drill(std::function<BulletHit(Vector3,Vector3)> trace, std::function<void(int,bool)> hit) {
+        drill_trace_=std::move(trace);drill_hit_=std::move(hit);
+    }
     void damage_hit(const BulletHit& hit,float damage,Vector3 attacker);
     void damage_target(int index, float damage);
     void update(float dt, bool respawn_targets);
@@ -48,6 +54,8 @@ private:
     std::function<void(const BulletHit&,float)> vehicle_damage_;
     std::function<BulletHit(Vector3,Vector3)> actor_trace_;
     std::function<void(int,float,Vector3)> actor_damage_;
+    std::function<BulletHit(Vector3,Vector3)> drill_trace_;
+    std::function<void(int,bool)> drill_hit_;
     const world::VerdaRegion& region_;
     std::array<RangeTarget, 9> targets_{};
 };

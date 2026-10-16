@@ -21,9 +21,11 @@ public:
     ) const;
     // At the wheel with a pistol or SMG: a FIRE button for drive-bys.
     void set_drive_by(bool on) { drive_by_ = on; }
+    // At the wheel of a police car: the LIGHTS button (lit while they run).
+    void set_police_car(bool car, bool lights_on) { police_car_ = car; lights_on_ = lights_on; }
 
 private:
-    bool drive_by_{false};
+    bool drive_by_{false}, police_car_{false}, lights_on_{false};
 };
 
 }

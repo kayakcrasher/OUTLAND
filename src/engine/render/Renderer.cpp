@@ -13,6 +13,8 @@
 #include "outland/game/casino/PokerTable.hpp"
 #include "outland/game/mafia/Mafio.hpp"
 #include "outland/game/career/Career.hpp"
+#include "outland/game/career/TrainingCamp.hpp"
+#include "outland/game/career/CampRenderer.hpp"
 #include "outland/game/life/WalkingMan.hpp"
 #include "outland/game/ranch/Ranches.hpp"
 #include "outland/game/freight/Freight.hpp"
@@ -592,6 +594,14 @@ void Renderer::run() {
     float career_save_wait=0;
     bool career_dead=false;
     struct JoinOffer { int crew{-1}; std::string patrol_car; double until{-1}; } join_offer;
+    // The police questline: Chief Elena Forta at Verda City HQ (a body in NpcSystem under her own
+    // id), the training camp's range outside the city, and the player's own car's lights.
+    game::career::TrainingCamp police_camp;
+    struct PoliceChief { Vector3 at{}; float yaw{0}; bool placed{false}; } chief;
+    constexpr int chief_bot=910001;
+    constexpr const char* chief_character="character_22_police";
+    std::string chief_line;float chief_line_time=0;
+    std::string lights_car;          // the police car whose lights the player switched on ("" none)
     game::casino::Poker poker;
     game::casino::PokerTable poker_table;
     bool poker_open=false;
@@ -654,6 +664,31 @@ void Renderer::run() {
         rlPushMatrix();
         rlMultMatrixf(MatrixToFloat(m));
         DrawModel(*hat,{0,0,0},1,WHITE);
+        rlPopMatrix();
+    };
+    // The Chief's peaked cap: navy crown, gold band and badge, black peak (built from parts).
+    const auto draw_chief_cap=[&](const characters::HeldGun& head) {
+        if(!head.hat) return;
+        const Vector3 up=Vector3Normalize(head.crown_up);
+        Vector3 forward=Vector3Subtract(head.crown_forward,Vector3Scale(up,Vector3DotProduct(head.crown_forward,up)));
+        if(Vector3Length(forward)<1e-3F) return;
+        forward=Vector3Normalize(forward);
+        const Vector3 right=Vector3CrossProduct(up,forward);
+        const Vector3 at=Vector3Subtract(Vector3Subtract(head.crown,Vector3Scale(up,.075F)),Vector3Scale(forward,.02F));
+        Matrix m=MatrixIdentity();
+        m.m0=right.x;m.m1=right.y;m.m2=right.z;m.m4=up.x;m.m5=up.y;m.m6=up.z;m.m8=forward.x;m.m9=forward.y;m.m10=forward.z;
+        m.m12=at.x;m.m13=at.y;m.m14=at.z;
+        rlPushMatrix();
+        rlMultMatrixf(MatrixToFloat(m));
+        const Color navy{22,36,84,255},gold{212,170,60,255},black{14,14,16,255};
+        DrawCylinder({0,0,0},.112F,.112F,.065F,14,navy);                 // the band
+        DrawCylinder({0,.018F,0},.1135F,.1135F,.022F,14,gold);            // gold braid
+        DrawCylinder({0,.065F,.008F},.112F,.142F,.035F,14,navy);          // the crown, flaring out
+        DrawCylinder({0,.1F,.008F},.142F,.142F,.008F,14,navy);
+        rlPushMatrix();rlTranslatef(0,.006F,.1F);rlRotatef(-14,1,0,0);
+        DrawCube({0,0,0},.2F,.012F,.085F,black);                         // the peak
+        rlPopMatrix();
+        DrawCube({0,.065F,.135F},.04F,.045F,.012F,gold);                 // the badge
         rlPopMatrix();
     };
     const auto krimulo_hostile=[&](int bot){return !mafio.active() || mafio.provoked(mafio.gang_of(bot),match_time) ||
@@ -839,6 +874,7 @@ void Renderer::run() {
         // Battle Royale bodies belong to their bot brains; everyone else is an NpcSystem actor.
         const auto& body=npcs.actors()[static_cast<std::size_t>(actor)];
         const Vector3 where=body.position;
+        if(body.bot==chief_bot) return false;   // the Chief: nobody shoots the Chief
         if(lan_match && game::lan::LanPlay::is_remote_body(body.bot)) {
             // Another player: the hit is theirs to take, and their death theirs to tell.
             if(lan.in_match()) lan.send(net::Msg::Hit,net::Hit{static_cast<std::int32_t>(lan.slot()),damage,attacker,static_cast<std::uint8_t>(weapons.selected())},
@@ -872,6 +908,8 @@ void Renderer::run() {
         return game::combat::BulletHit{hit.actor>=0 ? game::combat::HitKind::Npc : game::combat::HitKind::None,
             hit.fraction,hit.position,hit.normal,hit.actor,hit.headshot,hit.legs ? 2 : 0};
     },[&](int actor,float damage,Vector3 attacker) {damage_actor(actor,damage,attacker);});
+    // The training camp's pop-up targets take real bullets.
+    combat_world.bind_drill([&](Vector3 a,Vector3 b){return police_camp.trace(a,b);},[&](int target,bool head){police_camp.hit(target,head);});
     // Battle Royale bots see, walk and shoot through the same world as the player.
     game::ai::BotWorld bot_world;
     bot_world.environment.line_of_sight=[&](Vector3 a,Vector3 b){return !combat_world.trace_segment(a,b,false,false,true).hit();};
@@ -1170,6 +1208,7 @@ void Renderer::run() {
                 }
                 walking_man.clear();
                 career=game::career::Career{};career_path.clear();mafio.set_player_gang(-1);services.assign_player_car({});
+                police_camp=game::career::TrainingCamp{};chief={};lights_car.clear();
                 mafio.clear(br_bots,bot_drivers,vehicles);
                 services.clear(vehicles,npcs);
                 bot_drivers.clear(br_bots,vehicles);bots_looted.clear();
@@ -1268,10 +1307,89 @@ void Renderer::run() {
                             for(const auto& u:services.units()) if(u.kind==game::services::UnitKind::Police &&
                                 (!best || Vector3Distance(u.home,here)<Vector3Distance(best->home,here))) best=&u;
                             if(best) career.join_police(best->vehicle,why);
+                        } else if(want.rfind("police:",0)==0) {
+                            // police:training / police:graduated / police:serving - further along the questline.
+                            for(const auto& u:services.units()) if(u.kind==game::services::UnitKind::Police) {career.join_police(u.vehicle,why);break;}
+                            bool car=false;
+                            career.chief_talk(car);
+                            if(want!="police:training") career.passed_training();
+                            if(want=="police:serving") {career.chief_talk(car);career.issue_car("creator_vehicle_reissue");} // the Interceptor at HQ, below
                         }
                     }
 #endif
                     mafio.set_player_gang(career.state().side==game::career::Side::Gang ? career.state().gang : -1);
+                    // The Chief, at Verda City HQ: beside the capital's first patrol car, facing it.
+                    chief={};chief_line.clear();chief_line_time=0;lights_car.clear();
+                    for(const auto& u:services.units()) {
+                        if(u.kind!=game::services::UnitKind::Police || u.vehicle.find("capital_verda")==std::string::npos) continue;
+                        const float r=u.home_yaw*DEG2RAD;
+                        const Vector3 side{std::cos(r),0,-std::sin(r)},ahead{std::sin(r),0,std::cos(r)};
+                        for(const Vector3 offset:{Vector3Scale(side,-3.2F),Vector3Scale(side,3.2F),Vector3Scale(ahead,-4.5F),Vector3Scale(ahead,4.5F)}) {
+                            const Vector3 at=Vector3Add(u.home,offset);
+                            const float top=u.home.y+2;
+                            const Vector3 feet{at.x,world::physics::WorldCollision::ground_height({at.x,top,at.z},top,verda_region),at.z};
+                            if(!std::isfinite(feet.y) || std::abs(feet.y-u.home.y)>1.2F || world::physics::WorldCollision::body_blocked(feet,feet.y,verda_region,.4F)) continue;
+                            chief={feet,std::atan2(u.home.x-feet.x,u.home.z-feet.z)*RAD2DEG,true};
+                            break;
+                        }
+                        if(chief.placed) break;
+                    }
+                    if(chief.placed) TraceLog(LOG_INFO,"OUTLAND police chief at %.1f %.1f facing %.0f",chief.at.x,chief.at.z,chief.yaw);
+                    if(chief.placed) {
+                        const std::string character=character_registry.find(chief_character) ? chief_character : "bot";
+                        npcs.spawn_bot(chief_bot,character,chief.at,chief.yaw);
+                    }
+                    // The training camp: open, level ground outside Verda City, downrange pointing away from it.
+                    police_camp=game::career::TrainingCamp{};
+                    {
+                        Vector3 centre{};
+                        for(const auto& town:verda_region.settlements()) if(town.id=="capital_verda") centre=town.center;
+                        // Clear of every road (and a margin) as well as of buildings, trees and props.
+                        const auto on_road=[&](float px,float pz) {
+                            for(const auto& town:verda_region.settlements())
+                                for(const auto& road:town.roads) {
+                                    const Vector2 a{road.start.x,road.start.z},b{road.end.x,road.end.z},p{px,pz};
+                                    const Vector2 ab=Vector2Subtract(b,a);
+                                    const float len=Vector2LengthSqr(ab);
+                                    const float t=len>0 ? std::clamp(Vector2DotProduct(Vector2Subtract(p,a),ab)/len,0.0F,1.0F) : 0;
+                                    if(Vector2Distance(p,Vector2Add(a,Vector2Scale(ab,t)))<road.width*.5F+4) return true;
+                                }
+                            return false;
+                        };
+                        bool placed=false;
+                        for(float radius=320;radius<=980 && !placed;radius+=45)
+                            for(int k=0;k<28 && !placed;++k) {
+                                const float a=static_cast<float>(k)*2*PI/28+radius*.013F;
+                                const float x=centre.x+std::sin(a)*radius,z=centre.z+std::cos(a)*radius;
+                                const float yaw=std::atan2(x-centre.x,z-centre.z)*RAD2DEG;
+                                const float r=yaw*DEG2RAD;
+                                const Vector3 right{std::cos(r),0,-std::sin(r)},ahead{std::sin(r),0,std::cos(r)};
+                                float low=1e9F,high=-1e9F;bool ok=true;
+                                for(float lx=-22;lx<=22 && ok;lx+=4)
+                                    for(float lz=-12;lz<=40 && ok;lz+=4) {
+                                        const float px=x+right.x*lx+ahead.x*lz,pz=z+right.z*lx+ahead.z*lz;
+                                        const float g=world::terrain::TerrainHeight::sample(px,pz);
+                                        if(!std::isfinite(g) || g<world::layout::sea_level+2.5F || on_road(px,pz) ||
+                                           world::physics::WorldCollision::body_blocked({px,g,pz},g,verda_region,.8F)) ok=false;
+                                        low=std::min(low,g);high=std::max(high,g);
+                                    }
+                                if(!ok || high-low>3.0F) continue;
+                                police_camp.place({x,world::terrain::TerrainHeight::sample(x,z),z},yaw,
+                                    [](float px,float pz){return world::terrain::TerrainHeight::sample(px,pz);});
+                                placed=true;
+                                TraceLog(LOG_INFO,"OUTLAND police training camp at %.0f %.0f facing %.0f",x,z,yaw);
+                            }
+                        if(career.on_duty() && career.police_stage()>=game::career::PoliceStage::Graduated) police_camp.restore(true);
+                    }
+                    // A serving officer whose Interceptor went missing gets another at HQ.
+                    if(career.serving() && chief.placed && career.state().patrol_car.rfind("creator_vehicle_",0)==0 && vehicles.find(career.state().patrol_car)<0) {
+                        std::vector<std::string> before;for(const auto& v:vehicles.vehicles()) before.push_back(v.id);
+                        if(vehicles.spawn(verda_region,chief.at,chief.yaw,"interceptor"))
+                            for(const auto& v:vehicles.vehicles()) if(std::find(before.begin(),before.end(),v.id)==before.end()) {
+                                career.issue_car(v.id);vehicle_dirty=true;
+                                TraceLog(LOG_INFO,"OUTLAND Interceptor %s at %.1f %.1f",v.id.c_str(),v.position.x,v.position.z);break;
+                            }
+                    }
                     services.assign_player_car(career.on_duty() ? career.state().patrol_car : std::string());
                     // Back from the dead: out of the hospital's front door.
                     penthouse.locate(verda_region);was_in_penthouse=false;
@@ -1495,6 +1613,11 @@ void Renderer::run() {
                 const bool armed_at_wheel=vehicles.driver()!=nullptr && weapons.available() &&
                     (weapons.selected()==game::combat::WeaponId::Pistol || weapons.selected()==game::combat::WeaponId::Smg);
                 input_system.set_drive_by(armed_at_wheel);touch_hud.set_drive_by(armed_at_wheel);
+                // At the wheel of a police car (any patrol car, or the Interceptor): LIGHTS.
+                const auto* car=vehicles.driver();
+                const auto* asset=car ? vehicles.asset(verda_region,car->id) : nullptr;
+                const bool police_car=asset && (asset->vehicle.definition=="police" || asset->vehicle.definition=="interceptor");
+                input_system.set_police_car(police_car);touch_hud.set_police_car(police_car,police_car && lights_car==car->id);
             }
             input_system.set_look_stick(creator_active);
             input_system.update(screen_width, screen_height, !creator_active && !build_mode.active(),
@@ -1608,6 +1731,31 @@ void Renderer::run() {
             current_shop=nearby_shop;shop_open=true;shop_status="Select supplies, equipment or furniture. BUY / SELL transfers one item.";
             play_ui.opened();input_system.cancel_controls();
         }
+        // The Chief (talk), and the training camp's stand (start the next drill).
+        if(controls.interact && !creator_active && !inventory_open && !shop_open && !poker_open && !at_table && !vehicles.driver() &&
+           game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            if(chief.placed && Vector3Distance(feet,chief.at)<3.2F) {
+                bool issue=false;
+                chief_line=career.chief_talk(issue);chief_line_time=10;
+                if(issue) {
+                    // The Interceptor, out front.
+                    std::vector<std::string> before;for(const auto& v:vehicles.vehicles()) before.push_back(v.id);
+                    if(vehicles.spawn(verda_region,chief.at,chief.yaw,"interceptor"))
+                        for(const auto& v:vehicles.vehicles()) if(std::find(before.begin(),before.end(),v.id)==before.end()) {
+                            career.issue_car(v.id);services.assign_player_car(v.id);vehicle_dirty=true;break;
+                        }
+                    gun_audio.kill_confirm();
+                }
+                input_system.player().interact=false;
+            } else if(police_camp.placed() && police_camp.at_line(feet) &&
+                      police_camp.phase()!=game::career::CampPhase::Countdown && police_camp.phase()!=game::career::CampPhase::Running) {
+                if(!career.on_duty()) {interaction_message="The range is for Policio recruits - sign up at any police station";interaction_remaining=4;}
+                else if(career.police_stage()==game::career::PoliceStage::Report) {interaction_message=std::string("Report to ")+game::career::chief_name+" at Verda City HQ first";interaction_remaining=4;}
+                else police_camp.start(police_camp.next_drill());
+                input_system.player().interact=false;
+            }
+        }
         // Joining a gang (at its hideout's door) or the police (at a station): USE twice.
         if(controls.interact && !creator_active && !inventory_open && !shop_open && !poker_open && !at_table && !vehicles.driver() &&
            game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
@@ -1670,6 +1818,17 @@ void Renderer::run() {
             interaction_remaining=3;
         }
         const bool driving=vehicles.driver()!=nullptr;
+        // LIGHTS / L in a police car: the light bar and siren on or off (they stay on if you get out).
+        if(controls.lights && driving) {
+            const auto* car=vehicles.driver();
+            if(const auto* asset=vehicles.asset(verda_region,car->id);
+               asset && (asset->vehicle.definition=="police" || asset->vehicle.definition=="interceptor")) {
+                lights_car=lights_car==car->id ? std::string() : car->id;
+                interaction_message=lights_car.empty() ? "Emergency lights off" : "Emergency lights ON - traffic, make way";
+                interaction_remaining=2;
+            }
+        }
+        if(!lights_car.empty() && vehicles.find(lights_car)<0) lights_car.clear();
         // Handbrake on JUMP (Space), boost on SPRINT (Shift), parking brake on CROUCH, horn on H.
         // Throttle: W/S (move_y) or the touch pedals - BRAKE slows, then reverses.
         const float pedal_throttle=std::clamp(-controls.move_y+controls.gas-controls.brake_pedal,-1.0F,1.0F);
@@ -2761,13 +2920,22 @@ void Renderer::run() {
                         work.wars.push_back({war.attackers,war.defenders,crew.door,crew.town});
                     }
                     for(const auto& town:verda_region.settlements()) work.towns.push_back({town.name,town.center});
+                    work.chief=chief.at;work.chief_known=chief.placed;
+                    work.camp=police_camp.line();work.camp_known=police_camp.placed();
+                    // The Chief stands at her post; the range runs its drill (counting the shots fired).
+                    if(chief.placed) npcs.set_bot(chief_bot,chief.at,chief.yaw,100,characters::NpcState::Idle);
+                    if(police_camp.placed()) {
+                        police_camp.update(dt,feet,weapons.events().shots);
+                        if(police_camp.take_graduation()) career.passed_training();
+                    }
+                    chief_line_time=std::max(0.0F,chief_line_time-dt);
                     if(!player_health.alive() && !career_dead) {career.died();career_dead=true;}
                     if(player_health.alive()) career_dead=false;
                     career.update(work);
                     if(const int pay=career.take_pay();pay>0) {loot_session.economy().money+=pay;loot_session.changed();}
                     mafio.set_player_gang(career.state().side==game::career::Side::Gang ? career.state().gang : -1);
                     services.assign_player_car(career.on_duty() ? career.state().patrol_car : std::string());
-                    services.set_player_siren(career.on_duty() && career.job().kind!=game::career::JobKind::None);
+                    services.set_player_siren(false);   // the player works their own lights (LIGHTS / L)
                     career.tick_message(dt);
                     // Saved whenever it changes (at most once a second).
                     career_save_wait-=dt;
@@ -2889,6 +3057,12 @@ void Renderer::run() {
                     const int v=vehicles.find(unit.vehicle);
                     if(v<0) continue;
                     const auto mix=audio::mix_shot(vehicles.vehicles()[static_cast<std::size_t>(v)].position,camera.position,
+                        Vector3Subtract(camera.target,camera.position),520,1.8F);
+                    if(mix.audible && mix.volume>loudest) {loudest=mix.volume;pan=mix.pan;}
+                }
+                // The player's own car, lights on: its siren too (loudest at the wheel).
+                if(const int lit=lights_car.empty() || vehicle_paused ? -1 : vehicles.find(lights_car);lit>=0) {
+                    const auto mix=audio::mix_shot(vehicles.vehicles()[static_cast<std::size_t>(lit)].position,camera.position,
                         Vector3Subtract(camera.target,camera.position),520,1.8F);
                     if(mix.audible && mix.volume>loudest) {loudest=mix.volume;pan=mix.pan;}
                 }
@@ -3227,6 +3401,7 @@ void Renderer::run() {
         // Hats: the Vakeroj's cattleman hats (game::ranch).
         const auto draw_hat=[&](const characters::NpcInstance& actor,const characters::HeldGun& held) {
             if(actor.bot>=0 && ranches.vakero(actor.bot) && actor.state!=characters::NpcState::Dead) draw_cowboy_hat(held);
+            if(actor.bot==chief_bot) draw_chief_cap(held);
         };
         character_renderer.draw_npcs(npcs, camera.position, &view,
             [](const characters::NpcInstance& actor,characters::BodyPose& body) {
@@ -3297,7 +3472,8 @@ void Renderer::run() {
         build_mode.draw_world(static_cast<float>(GetTime()));
         if(mafio.active()) game::mafia::draw_turf(mafio,camera.position,static_cast<float>(GetTime()));
         // The current job's waypoint: a column of light to steer by, and a ring on the ground.
-        if(career.job().kind!=game::career::JobKind::None) {
+        if(career.job().kind!=game::career::JobKind::None &&
+           std::hypot(career.job().target.x-player.position.x,career.job().target.z-player.position.z)>14) {   // not when you are there
             const Vector3 at=career.job().target;
             const float ground=world::terrain::TerrainHeight::sample(at.x,at.z);
             const Color beam=career.on_duty() ? Color{90,150,255,255} : Color{255,196,70,255};
@@ -3308,7 +3484,16 @@ void Renderer::run() {
             EndBlendMode();
             DrawCircle3D({at.x,ground+.15F,at.z},game::career::Career::arrive_radius*.5F,{1,0,0},90,Fade(beam,.8F));
         }
+        game::career::draw_camp(police_camp,camera.position,static_cast<float>(GetTime()),
+            [](float x,float z){return world::terrain::TerrainHeight::sample(x,z);});
         if(services.active()) game::services::draw_light_bars(services,vehicles,camera.position,static_cast<float>(GetTime()));
+        if(const int lit=lights_car.empty() ? -1 : vehicles.find(lights_car);lit>=0) {
+            const auto& car=vehicles.vehicles()[static_cast<std::size_t>(lit)];
+            const auto* asset=vehicles.asset(verda_region,car.id);
+            const bool interceptor=asset && asset->vehicle.definition=="interceptor";
+            game::services::draw_light_bar(car.position,car.yaw,interceptor ? 1.36F : 1.6F,interceptor ? 0.0F : -.1F,interceptor ? .45F : .42F,
+                                           lit,camera.position,static_cast<float>(GetTime()));
+        }
         // The drop: the helicopters on their routes, and the bots on their way down.
         if(game_mode==game::GameMode::BattleRoyale && dropping) {
             if(drop_flying)
@@ -3345,6 +3530,13 @@ void Renderer::run() {
         world::sky::draw_lights(scene_lights,sky,camera.position,static_cast<float>(GetTime()));
         if(const auto* car=vehicles.driver()) world::sky::draw_headlights(car->position,car->yaw,sky);
         if(services.active()) game::services::draw_light_bars(services,vehicles,camera.position,static_cast<float>(GetTime()));
+        if(const int lit=lights_car.empty() ? -1 : vehicles.find(lights_car);lit>=0) {
+            const auto& car=vehicles.vehicles()[static_cast<std::size_t>(lit)];
+            const auto* asset=vehicles.asset(verda_region,car.id);
+            const bool interceptor=asset && asset->vehicle.definition=="interceptor";
+            game::services::draw_light_bar(car.position,car.yaw,interceptor ? 1.36F : 1.6F,interceptor ? 0.0F : -.1F,interceptor ? .45F : .42F,
+                                           lit,camera.position,static_cast<float>(GetTime()));
+        }
         if(bus_line.running()) for(const auto& bus:bus_line.buses())
             if(bus.running && Vector3DistanceSqr(bus.position,camera.position)<350*350) world::sky::draw_headlights(bus.position,bus.yaw,sky);
         EndMode3D();
@@ -3737,6 +3929,74 @@ void Renderer::run() {
                 DrawTextEx(font,title.c_str(),{x+15,y+5},20,1,gang.color);
                 DrawTextEx(font,sub.c_str(),{x+15,y+28},15,1,Color{220,226,206,255});
             }
+            // The Chief: her name over her head, and what she says.
+            if(chief.placed && Vector3Distance(chief.at,camera.position)<30) {
+                const Vector3 over{chief.at.x,chief.at.y+2.3F,chief.at.z};
+                if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))>0) {
+                    const Vector2 at=GetWorldToScreen(over,camera);
+                    const std::string title=std::string(game::career::chief_name)+"  ·  Policio de Verda";
+                    const char* sub=Vector3Distance(chief.at,{player.position.x,player.position.y-1,player.position.z})<3.2F ? "USE to talk" : "Head of every police department on Verda";
+                    const float tw=MeasureTextEx(font,title.c_str(),16,1).x,sw=MeasureTextEx(font,sub,13,1).x,w=std::max(tw,sw);
+                    DrawRectangle(static_cast<int>(at.x-w/2-6),static_cast<int>(at.y-18),static_cast<int>(w+12),36,Fade(BLACK,.55F));
+                    DrawTextEx(font,title.c_str(),{at.x-tw/2,at.y-16},16,1,Color{212,170,60,255});
+                    DrawTextEx(font,sub,{at.x-sw/2,at.y+2},13,1,Color{170,200,255,255});
+                }
+            }
+            if(chief_line_time>0 && !chief_line.empty()) {
+                // A dialogue box, wrapped to two or three lines.
+                const float alpha=std::clamp(chief_line_time,0.0F,1.0F);
+                const float max_w=std::min(760.0F,screen_width-60.0F);
+                std::vector<std::string> lines;std::string line,word;
+                for(std::size_t i=0;i<=chief_line.size();++i) {
+                    const char c=i<chief_line.size() ? chief_line[i] : ' ';
+                    if(c!=' ') {word+=c;continue;}
+                    const std::string trial=line.empty() ? word : line+" "+word;
+                    if(MeasureTextEx(font,trial.c_str(),18,1).x>max_w && !line.empty()) {lines.push_back(line);line=word;}
+                    else line=trial;
+                    word.clear();
+                }
+                if(!line.empty()) lines.push_back(line);
+                const float h=static_cast<float>(lines.size())*24+20,y=screen_height-300-h;
+                DrawRectangle(static_cast<int>(screen_width/2-max_w/2-16),static_cast<int>(y),static_cast<int>(max_w+32),static_cast<int>(h),Fade(Color{10,16,36,255},.82F*alpha));
+                DrawRectangle(static_cast<int>(screen_width/2-max_w/2-16),static_cast<int>(y),4,static_cast<int>(h),Fade(Color{212,170,60,255},alpha));
+                for(std::size_t i=0;i<lines.size();++i)
+                    DrawTextEx(font,lines[i].c_str(),{screen_width/2-max_w/2,y+10+static_cast<float>(i)*24},18,1,Fade(i==0 ? Color{235,215,160,255} : RAYWHITE,alpha));
+            }
+            // The training camp: its name and the drills, the drill in progress, the result.
+            if(police_camp.placed() && Vector3Distance(police_camp.line(),camera.position)<75) {
+                const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+                const float x=screen_width-350.0F,y=screen_height*.235F;
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y),340,118,Fade(BLACK,.6F));
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y),4,118,Color{90,150,255,255});
+                DrawTextEx(font,"POLICIO TRAINING CAMP",{x+14,y+6},18,1,Color{150,190,255,255});
+                for(int d=0;d<static_cast<int>(game::career::drills.size());++d) {
+                    const bool ok=police_camp.qualified(d),now=police_camp.phase()!=game::career::CampPhase::Idle && police_camp.drill()==d;
+                    const char* row=TextFormat("%s %s   best %d/%d, need %d",ok ? "[OK]" : "[  ]",game::career::drills[static_cast<std::size_t>(d)].name,
+                        police_camp.best(d),game::career::drills[static_cast<std::size_t>(d)].count,game::career::drills[static_cast<std::size_t>(d)].pass);
+                    DrawTextEx(font,row,{x+14,y+32+static_cast<float>(d)*20},15,1,ok ? Color{140,230,140,255} : now ? Color{255,226,140,255} : Color{205,212,196,255});
+                }
+                const char* hint=police_camp.graduated() ? "Qualified on every drill" :
+                    police_camp.at_line(feet) ? TextFormat("USE at the line: %s",game::career::drills[static_cast<std::size_t>(police_camp.next_drill())].name) :
+                    "Stand at the firing line (the lectern) to begin";
+                DrawTextEx(font,hint,{x+14,y+96},14,1,Color{220,226,206,255});
+                if(police_camp.phase()==game::career::CampPhase::Countdown) {
+                    const char* count=TextFormat("%d",static_cast<int>(std::ceil(police_camp.clock())));
+                    const float cw=MeasureTextEx(font,count,72,1).x;
+                    DrawTextEx(font,count,{screen_width/2-cw/2,screen_height*.3F},72,1,Color{255,226,140,255});
+                } else if(police_camp.phase()==game::career::CampPhase::Running) {
+                    const auto& d=game::career::drills[static_cast<std::size_t>(police_camp.drill())];
+                    const char* line=TextFormat("%s   TARGET %d/%d   HITS %d (need %d)   SHOTS %d",d.name,police_camp.shown(),d.count,police_camp.hits(),d.pass,police_camp.shots());
+                    const float lw=MeasureTextEx(font,line,20,1).x;
+                    DrawRectangle(static_cast<int>(screen_width/2-lw/2-14),static_cast<int>(screen_height*.18F),static_cast<int>(lw+28),32,Fade(BLACK,.6F));
+                    DrawTextEx(font,line,{screen_width/2-lw/2,screen_height*.18F+6},20,1,RAYWHITE);
+                }
+                if(police_camp.message_time()>0) {
+                    const float alpha=std::clamp(police_camp.message_time(),0.0F,1.0F);
+                    const float mw=MeasureTextEx(font,police_camp.message().c_str(),19,1).x;
+                    DrawRectangle(static_cast<int>(screen_width/2-mw/2-14),screen_height-166,static_cast<int>(mw+28),30,Fade(BLACK,.6F*alpha));
+                    DrawTextEx(font,police_camp.message().c_str(),{screen_width/2-mw/2,static_cast<float>(screen_height-161)},19,1,Fade(Color{150,200,255,255},alpha));
+                }
+            }
             // At a police station: how to sign up (or why not).
             if(!career_path.empty() && !career.on_duty() && services.active() &&
                services.station_near({player.position.x,player.position.y-1,player.position.z},14) && !vehicles.driver()) {
@@ -3757,7 +4017,8 @@ void Renderer::run() {
                     task=std::string(job.title)+":  "+job.detail;
                     const int left=static_cast<int>(std::max(0.0,job.deadline-match_time));
                     const float metres=std::hypot(job.target.x-player.position.x,job.target.z-player.position.z);
-                    status=(job.kind==game::career::JobKind::RobRig ? std::string(job.taken ? "rig taken - to the hideout" : "find the rig") :
+                    if(job.kind==game::career::JobKind::Quest) status=TextFormat("%.0f m",metres);
+                    else status=(job.kind==game::career::JobKind::RobRig ? std::string(job.taken ? "rig taken - to the hideout" : "find the rig") :
                             std::to_string(job.done)+" of "+std::to_string(job.needed))+
                         TextFormat("   ·   %d:%02d left   ·   %.0f m",left/60,left%60,metres);
                 } else status=cop ? "On patrol - waiting for a call" : "Waiting for the word";

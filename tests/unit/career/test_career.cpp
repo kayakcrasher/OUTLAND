@@ -90,6 +90,28 @@ int main() {
         Career c;
         std::string why;
         check(c.join_police("police_1", why) && c.on_duty() && std::string(c.rank_name()) == "Kadeto", "sworn in");
+        // The questline: report to the Chief, train, report back, then the Interceptor and calls.
+        auto q = world(1);
+        q.chief = {11, 0, -175}; q.chief_known = true; q.camp = {-400, 0, -60}; q.camp_known = true;
+        c.update(q);
+        check(c.job().kind == JobKind::Quest && std::abs(c.job().target.x - 11) < .1F && !c.serving(), "orders: report to the Chief");
+        for (int i = 0; i < 30; ++i) { q.now += 1; c.update(q); }
+        check(c.job().kind == JobKind::Quest, "no calls for a recruit");
+        bool car = false;
+        c.chief_talk(car);
+        c.update(q);
+        check(!car && c.police_stage() == PoliceStage::Training && std::abs(c.job().target.x + 400) < .1F, "sent to the camp");
+        c.chief_talk(car);
+        check(!car && c.police_stage() == PoliceStage::Training, "not until qualified");
+        c.died();
+        check(c.state().respect == 0 && c.on_duty(), "dying in training costs nothing");
+        c.passed_training();
+        c.update(q);
+        check(c.police_stage() == PoliceStage::Graduated && std::abs(c.job().target.x - 11) < .1F, "qualified: back to the Chief");
+        c.chief_talk(car);
+        check(car && c.serving() && std::string(c.rank_name()) == "Patrolano", "the Interceptor, and a promotion");
+        c.issue_car("interceptor_1");
+        check(c.state().patrol_car == "interceptor_1", "the new car is the patrol car");
         double now = 0;
         check(wait_for(c, JobKind::Patrol, now), "a patrol call");
         auto f = world(now);
@@ -98,7 +120,7 @@ int main() {
             f.driving = "some_other_car";
             c.update(f);
             check(c.job().done == stop, "a patrol needs the patrol car");
-            f.driving = "police_1";
+            f.driving = "interceptor_1";
             c.update(f);
         }
         check(c.job().kind == JobKind::None && c.state().jobs_done == 1, "patrol done");
@@ -110,6 +132,7 @@ int main() {
         // Gang war calls when there is one.
         Career d;
         d.join_police("police_2", why);
+        { bool car = false; d.chief_talk(car); d.passed_training(); d.chief_talk(car); }
         bool war_call = false;
         for (int i = 0; i < 400 && !war_call; ++i) {
             auto w = world(i);
@@ -140,7 +163,10 @@ int main() {
         check(back.parse(c.serialise()) && back.state().side == Side::Gang && back.state().gang == 2 && back.state().record, "saved and loaded");
         Career cop;
         cop.join_police("police_9", why);
-        check(back.parse(cop.serialise()) && back.on_duty() && back.state().patrol_car == "police_9", "an officer keeps the car");
+        { bool car = false; cop.chief_talk(car); }
+        check(back.parse(cop.serialise()) && back.on_duty() && back.state().patrol_car == "police_9" &&
+              back.police_stage() == PoliceStage::Training, "an officer keeps the car and the training stage");
+        check(back.parse("career 1 2 -1 30 0 4 police_7") && back.serving(), "an officer from before the questline is serving");
         check(!back.parse("career 1 7 0 0 0 0 -") && !back.parse("nonsense"), "bad saves refused");
     }
     if (failures) return 1;

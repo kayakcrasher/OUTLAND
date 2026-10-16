@@ -127,6 +127,9 @@ private:
 
 // The light bars: flashing red and blue (police) or red and amber (ambulance) over the roof of
 // every unit running with its siren, drawn inside BeginMode3D.
+// One police car's bar running (the player's car with its lights on): bar lenses at (±width, y, z)
+// in the car's frame, and the grille flashers.
+void draw_light_bar(Vector3 position, float yaw, float y, float z, float width, int seed, Vector3 camera, float time);
 void draw_light_bars(const EmergencyServices& services, const vehicles::VehicleSystem& cars, Vector3 camera, float time);
 
 } // namespace outland::game::services

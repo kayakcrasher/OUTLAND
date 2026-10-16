@@ -456,6 +456,27 @@ const Unit* EmergencyServices::station_near(Vector3 feet, float radius) const {
     return best;
 }
 
+void draw_light_bar(Vector3 position, float yaw, float y, float z, float width, int seed, Vector3 camera, float time) {
+    if (flat(position, camera) > 350) return;
+    const Color left = RED, right{40, 110, 255, 255};
+    // A faster double-flash than the AI cars: two pulses a side.
+    const float cycle = std::fmod(time * 2.5F + static_cast<float>(seed) * .37F, 1.0F);
+    const bool phase = cycle < .5F;
+    const bool pulse = std::fmod(cycle * 4, 1.0F) < .6F;
+    for (const float side : {1.0F, -1.0F}) {
+        const bool on = (side > 0) == phase && pulse;
+        const Color c = side > 0 ? left : right;
+        const Vector3 p = vehicles::VehicleSystem::world_point({side * width, y, z}, position, yaw);
+        DrawSphere(p, on ? .12F : .06F, on ? c : Fade(c, .5F));
+        if (on) DrawSphere(p, .55F, Fade(c, .3F));
+    }
+    // The flashers in the grille, alternating with the bar.
+    for (const float side : {1.0F, -1.0F}) {
+        const bool on = (side > 0) != phase && pulse;
+        if (on) DrawSphere(vehicles::VehicleSystem::world_point({side * .2F, .74F, 2.75F}, position, yaw), .18F, Fade(side > 0 ? left : right, .55F));
+    }
+}
+
 void draw_light_bars(const EmergencyServices& services, const vehicles::VehicleSystem& cars, Vector3 camera, float time) {
     for (const auto& u : services.units()) {
         if (!u.siren) continue;

@@ -20,6 +20,7 @@ const char* job_name(JobKind kind) {
         case JobKind::Patrol: return "PATROL";
         case JobKind::Raid: return "RAID";
         case JobKind::BreakUpWar: return "GANG WAR";
+        case JobKind::Quest: return "ORDERS";
         case JobKind::None: break;
     }
     return "";
@@ -64,9 +65,10 @@ bool Career::join_police(const std::string& patrol_car, std::string& why) {
     state_.gang = -1;
     state_.respect = 0;
     state_.patrol_car = patrol_car;
+    state_.police_stage = PoliceStage::Report;
     job_ = {};
     next_offer_ = -1;
-    say("Sworn in: Kadeto of the Policio de Verda. Your patrol car is outside - listen for calls");
+    say(std::string("Sworn in as a Kadeto. Report to ") + chief_name + " at Verda City HQ");
     return true;
 }
 
@@ -125,8 +127,47 @@ void Career::crime(bool serious) {
     say("A crime on duty: the Policio takes your badge. You have a record now");
 }
 
+std::string Career::chief_talk(bool& issue) {
+    issue = false;
+    const std::string chief = std::string(chief_name) + ": ";
+    if (state_.side != Side::Police) {
+        if (state_.record) return chief + "I know your record. Get out of my station before I remember your face.";
+        return chief + "Verda needs officers. Sign up at any station - then come and see me.";
+    }
+    switch (state_.police_stage) {
+        case PoliceStage::Report:
+            state_.police_stage = PoliceStage::Training;
+            job_ = {};
+            return chief + "So you're the new Kadeto. Nobody wears my badge until they can shoot straight. "
+                           "The training camp is outside the city - qualify on all three drills, then report back.";
+        case PoliceStage::Training:
+            return chief + "Not yet. Three drills at the camp, all qualified. Pistol, rifle, then the movers.";
+        case PoliceStage::Graduated: {
+            state_.police_stage = PoliceStage::Serving;
+            job_ = {};
+            next_offer_ = -1;
+            issue = true;
+            if (state_.respect < 15) gain(15 - state_.respect);
+            return chief + "The range says you'll do. Patrolano now - and you get the Interceptor out front. "
+                           "L works the lights. The radio is yours.";
+        }
+        case PoliceStage::Serving: break;
+    }
+    if (rank() >= 3) return chief + "Leŭtenanto. Verda sleeps better with you on the street. Keep it that way.";
+    if (job_.kind != JobKind::None) return chief + "You have a call. Why are you standing in my office?";
+    return chief + "Keep your radio on, and keep your nose clean. One crime on duty and the badge is mine.";
+}
+
+void Career::passed_training() {
+    if (state_.side != Side::Police || state_.police_stage != PoliceStage::Training) return;
+    state_.police_stage = PoliceStage::Graduated;
+    job_ = {};
+    say(std::string("QUALIFIED on every drill - report back to ") + chief_name);
+}
+
 void Career::died() {
     if (state_.side == Side::Civilian) return;
+    if (job_.kind == JobKind::Quest) return;            // orders stand
     if (job_.kind != JobKind::None) finish(false, "You went down - the job is off");
     else gain(-3);
 }
@@ -217,6 +258,22 @@ void Career::offer(const CareerFrame& frame) {
 void Career::update(const CareerFrame& frame) {
     if (state_.side == Side::Civilian) { job_ = {}; return; }
     if (state_.side == Side::Gang && state_.gang < 0) { quit(); return; }
+    if (state_.side == Side::Police && state_.police_stage != PoliceStage::Serving) {
+        // A recruit has orders, not calls.
+        Job orders;
+        orders.kind = JobKind::Quest;
+        orders.title = job_name(JobKind::Quest);
+        if (state_.police_stage == PoliceStage::Training) {
+            orders.detail = "Qualify on all three drills at the training camp";
+            orders.target = frame.camp;
+            if (!frame.camp_known) orders.target = frame.player;
+        } else {
+            orders.detail = std::string(state_.police_stage == PoliceStage::Report ? "Report to " : "Qualified - report back to ") + chief_name + " at Verda City HQ";
+            orders.target = frame.chief_known ? frame.chief : frame.player;
+        }
+        job_ = orders;
+        return;
+    }
     if (next_offer_ < 0) next_offer_ = frame.now + (state_.jobs_done == 0 ? 4 : job_gap);
     if (job_.kind == JobKind::None) {
         if (frame.alive && frame.now >= next_offer_) offer(frame);
@@ -266,8 +323,9 @@ void Career::update(const CareerFrame& frame) {
 
 std::string Career::serialise() const {
     std::ostringstream out;
-    out << "career 1 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
-        << (state_.record ? 1 : 0) << ' ' << state_.jobs_done << ' ' << (state_.patrol_car.empty() ? "-" : state_.patrol_car) << '\n';
+    out << "career 2 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
+        << (state_.record ? 1 : 0) << ' ' << state_.jobs_done << ' ' << (state_.patrol_car.empty() ? "-" : state_.patrol_car) << ' '
+        << static_cast<int>(state_.police_stage) << '\n';
     return out.str();
 }
 
@@ -276,9 +334,12 @@ bool Career::parse(const std::string& text) {
     std::string tag, car;
     int version = 0, side = 0, gang = -1, record = 0, jobs = 0;
     float respect = 0;
-    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version != 1 ||
+    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 2 ||
         side < 0 || side > 2 || !std::isfinite(respect))
         return false;
+    // Officers from before the questline are already serving.
+    int stage = static_cast<int>(PoliceStage::Serving);
+    if (version >= 2 && (!(in >> stage) || stage < 0 || stage > 3)) return false;
     CareerState s;
     s.side = static_cast<Side>(side);
     s.gang = s.side == Side::Gang ? gang : -1;
@@ -286,6 +347,7 @@ bool Career::parse(const std::string& text) {
     s.record = record != 0 || s.side == Side::Gang;
     s.jobs_done = std::max(0, jobs);
     s.patrol_car = s.side == Side::Police && car != "-" ? car : std::string();
+    s.police_stage = s.side == Side::Police ? static_cast<PoliceStage>(stage) : PoliceStage::Report;
     if (s.side == Side::Gang && s.gang < 0) s = {};
     restore(s);
     next_offer_ = -1;

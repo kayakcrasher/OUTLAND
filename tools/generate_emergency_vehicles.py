@@ -6,6 +6,9 @@ Original, light models built from boxes with vertex colours, like the pickup tru
   police     a four-door sedan in the Policio's navy and white: navy body, white doors and roof,
              a blue-and-white chequered band along the sides, a push bar, a roof light bar
              (red and blue lenses; the game makes them flash), see-through glass, seats and a cage.
+  interceptor  the Chief's upgrade for a qualified officer: a long, low pursuit sedan in black with
+             white doors and roof and a gold pinstripe, a slim LED light bar, a heavy push bar with
+             flashers in it, a bonnet scoop and a boot spoiler (assets/.../interceptor_body.glb).
   ambulance  a box ambulance on a van cab: white body, a green waist stripe and red crosses on the
              sides and back, amber and red light bar, rear doors, side door, tinted cab glass.
 
@@ -25,6 +28,7 @@ import generate_truck_model as truck  # noqa: E402  (glb writer)
 ROOT = Path(__file__).resolve().parents[1]
 POLICE = ROOT / "assets/verda/vehicles/runtime/police_body.glb"
 AMBULANCE = ROOT / "assets/verda/vehicles/runtime/ambulance_body.glb"
+INTERCEPTOR = ROOT / "assets/verda/vehicles/runtime/interceptor_body.glb"
 
 NAVY = (22, 36, 84)
 NAVY_DARK = (14, 24, 58)
@@ -39,6 +43,9 @@ AMBER = (255, 168, 36)
 RED = (210, 24, 24)
 BLUE = (40, 90, 255)
 GREEN = (0, 140, 70)
+BLACK = (18, 19, 22)
+BLACK_SHINE = (34, 36, 42)
+GOLD = (212, 170, 60)
 
 
 def arches(half_w, axles, sill, top, colour_dark):
@@ -107,6 +114,72 @@ def police():
     return truck.glb(kit.mesh(), "verda_police_car", True)
 
 
+def interceptor():
+    kit.boxes.clear()
+    W = .95
+    FRONT, REAR = 2.5, -2.5
+    # Interior: floor, two rows, dashboard with a laptop, the cage.
+    kit.box(-W + .06, W - .06, .38, .42, -1.3, 1.15, DARK)
+    for z in (.25, -.8):
+        kit.box(-W + .12, W - .12, .42, .72, z - .3, z + .2, SEAT)
+        kit.box(-W + .12, W - .12, .72, 1.1, z - .38, z - .26, SEAT)
+    kit.box(-W + .08, W - .08, .64, .88, .95, 1.2, DARK)
+    kit.box(-.05, .3, .86, 1.02, .7, .74, (60, 70, 80))          # the laptop on its mount
+    for x in (-.6, -.3, 0, .3, .6):
+        kit.box(x - .015, x + .015, .74, 1.2, -.32, -.29, CHROME)
+    # Lower body: black wings and quarters, white doors, a gold pinstripe along the waist.
+    kit.box(-W, W, .28, .76, FRONT - 1.25, FRONT, BLACK)
+    kit.box(-W, W, .28, .76, REAR, REAR + 1.2, BLACK)
+    kit.box(-W, W, .28, .76, REAR + 1.2, FRONT - 1.25, WHITE)
+    for side in (-1, 1):
+        kit.box(side * W, side * (W + .008), .6, .63, REAR + .1, FRONT - .1, GOLD)
+        kit.box(side * W, side * (W + .008), .4, .52, REAR + 1.4, FRONT - 1.5, NAVY)   # the door panel band
+        kit.box(side * W, side * (W + .005), .3, .76, -.3, -.28, WHITE_SHADE)           # door gap
+        kit.box(side * W, side * (W + .02), .68, .72, .45, .6, CHROME)
+        kit.box(side * W, side * (W + .02), .68, .72, -.62, -.47, CHROME)
+        kit.box(side * W, side * (W + .15), .82, .92, 1.1, 1.2, BLACK)                 # mirrors
+    # A long low bonnet with a scoop, the boot with a lip spoiler.
+    kit.box(-W + .04, W - .04, .76, .8, FRONT - 1.25, FRONT - .05, BLACK_SHINE)
+    kit.box(-.3, .3, .8, .88, FRONT - 1.0, FRONT - .45, BLACK)
+    kit.box(-.24, .24, .82, .86, FRONT - .46, FRONT - .44, DARK)
+    kit.box(-W + .04, W - .04, .76, .82, REAR + .05, REAR + 1.0, BLACK_SHINE)
+    kit.box(-W + .08, W - .08, .9, .94, REAR + .05, REAR + .3, BLACK)
+    for side in (-1, 1):
+        kit.box(side * (W - .2), side * (W - .12), .82, .9, REAR + .12, REAR + .22, BLACK)
+    # Greenhouse (lower, raked), white roof, pillars.
+    kit.box(-W + .06, W - .06, .8, 1.2, -1.2, 1.15, GLASS)
+    kit.box(-W + .05, W - .05, 1.2, 1.26, -1.15, 1.0, WHITE)
+    for z in (-1.2, -.3, 1.1):
+        for side in (-1, 1):
+            kit.box(side * (W - .07), side * (W - .01), .76, 1.22, z - .05, z + .05, BLACK)
+    # The slim LED bar: one long dark base, three lenses a side.
+    kit.box(-.62, .62, 1.26, 1.3, -.15, .15, DARK)
+    for i in range(3):
+        x0 = .06 + i * .18
+        kit.box(x0, x0 + .14, 1.3, 1.36, -.12, .12, RED)
+        kit.box(-x0 - .14, -x0, 1.3, 1.36, -.12, .12, BLUE)
+    kit.box(-.04, .04, 1.3, 1.37, -.12, .12, WHITE)
+    # Front: black grille, slim headlights, the push bar with flashers; rear: wide tail lights.
+    kit.box(-.55, .55, .38, .66, FRONT - .04, FRONT, DARK)
+    for side in (-1, 1):
+        kit.box(side * .58, side * .9, .58, .68, FRONT - .04, FRONT, LAMP)
+        kit.box(side * .58, side * .9, .5, .56, FRONT - .04, FRONT, AMBER)
+        kit.box(side * .45, side * .92, .62, .74, REAR - .02, REAR + .02, RED)
+        kit.box(side * .32, side * .42, .22, .82, FRONT + .1, FRONT + .22, DARK)
+        kit.box(side * .12, side * .3, .7, .78, FRONT + .2, FRONT + .23, RED if side > 0 else BLUE)
+    kit.box(-.55, .55, .36, .48, FRONT + .1, FRONT + .22, DARK)
+    kit.box(-.55, .55, .7, .8, FRONT + .1, FRONT + .2, DARK)
+    kit.box(-W - .02, W + .02, .26, .4, FRONT, FRONT + .08, BLACK)
+    kit.box(-W - .02, W + .02, .26, .4, REAR - .08, REAR, BLACK)
+    kit.box(-.25, .25, .46, .58, REAR - .09, REAR - .08, (226, 224, 214))
+    # The Policio's star on the doors (gold) and on the boot.
+    for side in (-1, 1):
+        kit.box(side * W, side * (W + .012), .55, .7, .1, .25, GOLD)
+    kit.box(-.08, .08, .66, .74, REAR - .1, REAR - .09, GOLD)
+    arches(W, (1.45, -1.45), .28, .6, DARK)
+    return truck.glb(kit.mesh(), "verda_police_interceptor", True)
+
+
 def cross(side_x, y, z, size, facing_x=True):
     """A red cross on a white panel, on a side (x = side_x) or on the back (z = side_x)."""
     a, b = size / 2, size / 6
@@ -173,7 +246,7 @@ def ambulance():
 
 
 if __name__ == "__main__":
-    outputs = {POLICE: police(), AMBULANCE: ambulance()}
+    outputs = {POLICE: police(), AMBULANCE: ambulance(), INTERCEPTOR: interceptor()}
     for path, data in outputs.items():
         if "--check" in sys.argv:
             if not path.exists() or path.read_bytes() != data:

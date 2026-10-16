@@ -28,6 +28,7 @@ struct PlayerInput {
     bool reload{false};
     bool grenade{false};     // throw a frag grenade
     bool heal{false};        // quick heal: the best medical item in the bag
+    bool lights{false};      // a police car's emergency lights and siren, on / off
     bool sight{false};       // change the held gun's optic (iron, red dot, 2x, 4x)
     bool next_weapon{false};
     bool fire_mode{false};   // switch automatic / single shots
@@ -49,6 +50,7 @@ struct PlayerInput {
         inventory = false;
         toggle_view = false;
         heal = false;
+        lights = false;
     }
 };
 

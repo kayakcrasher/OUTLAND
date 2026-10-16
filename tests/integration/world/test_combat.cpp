@@ -202,6 +202,22 @@ int main() {
         assert(definition(WeaponId::Pistol).hold==WeaponHold::Pistol && definition(WeaponId::Sniper).hold==WeaponHold::Shouldered);
     }
 
+    // Extra drill targets (the police training camp): traced as targets from drill_base, a bullet's
+    // hit is passed on with whether it was a head shot.
+    {
+        int drilled=-1;bool head=false;
+        world.bind_drill([](Vector3 a,Vector3 b) {
+            BulletHit hit;
+            if(a.z<500 && b.z>500 && std::abs(a.x-1000)<1) {hit.kind=HitKind::Target;hit.fraction=(500-a.z)/(b.z-a.z);hit.position={1000,a.y,500};hit.target=2;hit.headshot=a.y>50;}
+            return hit;
+        },[&](int target,bool headshot){drilled=target;head=headshot;});
+        const float y=outland::world::terrain::TerrainHeight::sample(1000,495)+60;
+        const auto hit=world.trace_segment({1000,y,495},{1000,y,505});
+        assert(hit.kind==HitKind::Target && hit.target==CombatWorld::drill_base+2);
+        world.damage_hit(hit,30,{1000,y,495});
+        assert(drilled==2 && head);
+        world.bind_drill({},{});
+    }
     world.damage_target(6,150);assert(world.targets()[6].health==0);
     world.update(10,false);assert(world.targets()[6].health==0);
     world.update(4.1F,true);assert(world.targets()[6].health==100);
