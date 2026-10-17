@@ -277,7 +277,8 @@ void Career::offer(const CareerFrame& frame) {
         return pool[std::min(choices - 1, static_cast<std::size_t>(random() * static_cast<float>(choices)))];
     };
     Job job;
-    if (state_.side == Side::Gang && !state_.chief_dead && frame.chief_known && state_.respect >= hit_rank_respect && random() < .35F) {
+    if (state_.side == Side::Gang && !state_.chief_dead && frame.chief_known && state_.respect >= hit_rank_respect &&
+        frame.crew_share >= hit_island_share && random() < .35F) {
         // The summit: the boss orders the Chief dead.
         job.kind = JobKind::HitChief;
         job.gang = state_.gang;

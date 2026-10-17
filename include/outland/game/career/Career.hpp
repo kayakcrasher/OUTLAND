@@ -24,7 +24,7 @@
 // town is clean; then the capital, and Verda is free.
 //
 // The other road's summit: a gang member who reaches Leŭtenanto may get the boss's order to kill
-// the Chief himself. Do it and the gang takes the whole island (and 500 000 kronoj); the Policio
+// the Chief himself - late in the game, once the gang runs at least three quarters of the island. Do it and the gang takes the whole island (and 500 000 kronoj); the Policio
 // is left without a head and takes no more recruits.
 //
 // This class is the rules and the bookkeeping only; the game tells it what happened (kills,
@@ -69,6 +69,7 @@ struct CareerFrame {
     // The police questline's places: the Chief at Verda City HQ and the training camp.
     Vector3 chief{}, camp{};
     bool chief_known{false}, camp_known{false};
+    float crew_share{0};           // the share of the island's towns the player's gang runs (0..1)
     // The underworld's map: docks, ranches, towns (turf) and who holds them.
     std::vector<DockSpot> docks;
     std::vector<RanchSpot> ranches;
@@ -122,7 +123,8 @@ public:
     // The Chief went down on a HitChief job.
     void chief_killed();
     static constexpr int hit_pay = 500000;              // kronoj, flat (no rank bonus)
-    static constexpr float hit_rank_respect = 70;       // Leŭtenanto and up get the order
+    static constexpr float hit_rank_respect = 70;       // Leŭtenanto and up get the order...
+    static constexpr float hit_island_share = .75F;     // ...once the gang runs three quarters of Verda
     // A rival gangster taken down on the player's own gang's turf (defending the town).
     void defended(const std::string& town);
     // An officer shot at Verda City's crew before the Chief allowed it.

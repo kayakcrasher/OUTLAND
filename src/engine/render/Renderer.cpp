@@ -3172,6 +3172,7 @@ void Renderer::run() {
                     }
                     for(const auto& town:verda_region.settlements()) work.towns.push_back({town.name,town.center});
                     work.chief=chief.at;work.chief_known=chief.placed;
+                    work.crew_share=territory.balance(player_gang()).crime;
                     work.camp=police_camp.line();work.camp_known=police_camp.placed();
                     // The Chief stands at his post; the range runs its drill (counting the shots fired).
                     if(chief.placed) npcs.set_bot(chief_bot,chief.at,chief.yaw,100,characters::NpcState::Idle);

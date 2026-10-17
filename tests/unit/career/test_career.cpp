@@ -281,8 +281,19 @@ int main() {
         auto st = c.state(); st.respect = 75; c.restore(st);
         auto f = world(0);
         f.chief = {11, 0, -185}; f.chief_known = true;
+        f.crew_share = .5F;   // half the island: not yet
+        bool early = false;
+        double t = 0;
+        for (int i = 0; i < 400; ++i) {
+            f.now = t += 1;
+            c.update(f);
+            early |= c.job().kind == JobKind::HitChief;
+            if (c.job().kind != JobKind::None) c.restore(st);
+        }
+        check(!early, "no hit on the Chief before the gang runs three quarters of Verda");
+        f.crew_share = .8F;
         bool order = false;
-        double now = 0;
+        double now = t;
         for (int i = 0; i < 400 && !order; ++i) {
             f.now = now += 1;
             c.update(f);

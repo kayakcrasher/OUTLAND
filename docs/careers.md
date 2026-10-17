@@ -108,7 +108,7 @@ The goal of the police questline is to get rid of the gangs. Once you serve, abo
   - Ask him (USE) and he tells you how many towns the gangs still hold.
 - **Then Verda City:** once every other town is clean, the last order is the capital (4000 pay, 25 respect).
 - **The end:** when the last crew is gone, **VERDA IS CLEAN** and he makes you Komisaro.
-- This is the law's side of Verda's yin and yang (see [gang wars](gangs.md#yin-and-yang)): every town you clean up makes the island safer. On the other side, a gang Leŭtenanto may be ordered to kill the Chief (THE BIG HIT). If that happens, the Policio is left without a head and takes no more recruits.
+- This is the law's side of Verda's yin and yang (see [gang wars](gangs.md#yin-and-yang)): every town you clean up makes the island safer. On the other side, a gang Leŭtenanto whose gang runs at least 75% of the island may be ordered to kill the Chief (THE BIG HIT). If that happens, the Policio is left without a head and takes no more recruits.
 
 ## Drive-bys
 
