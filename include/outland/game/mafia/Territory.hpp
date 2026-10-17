@@ -59,6 +59,9 @@ struct Tag {
 };
 
 struct Flip { int turf{-1}, from{-1}, to{-1}; };
+// Verda's yin and yang: how much of the island the law has won back (towns the Policio cleared)
+// and how much the player's crew runs (towns its gang holds), each 0..1 of the towns.
+struct Balance { float law{0}, crime{0}; };
 struct Raid { int attacker{-1}, turf{-1}; };
 
 class Territory {
@@ -87,6 +90,8 @@ public:
     void delivered(int turf, int gang);                  // contraband run home to `gang`'s turf
     void defended(int turf, int gang);                   // a raider taken down on `gang`'s own turf
     void clear_town(int turf);                           // the Policio broke up the crew there
+    // The Chief is dead: `gang` takes every town (cleared ones too) and every family rides with it.
+    void take_island(int gang);
     // Lean on a family for `gang`. True if they pay now; false if they fight first (fierce, or
     // allied with someone else) - beat them (`subdued`) and they pay.
     bool extort(int ranch, int gang);
@@ -97,7 +102,8 @@ public:
     // player's gang, which plays its own moves). Returns the raid started this tick, if any.
     // `player_regain` scales how fast the player's gang's towns come back (an honourable gang's
     // are quicker).
-    Raid update(float dt, double now, int player_gang, float player_regain = 1);
+    // `calm` (0..1, the law's share) spaces the AI gangs' raids further apart.
+    Raid update(float dt, double now, int player_gang, float player_regain = 1, float calm = 0);
     // Turfs that changed hands since last asked.
     std::vector<Flip> take_flips() { auto f = std::move(flips_); flips_.clear(); return f; }
 
@@ -107,6 +113,7 @@ public:
     [[nodiscard]] bool controls(int turf, int gang) const;   // a town it owns or a ranch with it
     [[nodiscard]] bool rules_island(int gang) const;     // every turf the Policio has not cleared
     [[nodiscard]] int cleared() const;                   // towns the Policio cleared
+    [[nodiscard]] Balance balance(int player_gang) const;
     // Gangs and families, biggest first (towns, then ranches).
     [[nodiscard]] std::vector<int> ranking() const;
 

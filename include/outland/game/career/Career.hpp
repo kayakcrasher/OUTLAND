@@ -23,13 +23,17 @@
 // a time - every crew broken up for good. He will not have Verda City touched until every other
 // town is clean; then the capital, and Verda is free.
 //
+// The other road's summit: a gang member who reaches Leŭtenanto may get the boss's order to kill
+// the Chief himself. Do it and the gang takes the whole island (and 500 000 kronoj); the Policio
+// is left without a head and takes no more recruits.
+//
 // This class is the rules and the bookkeeping only; the game tells it what happened (kills,
 // crimes, where the player is and what they drive) and what the world holds (crews, rigs,
 // towns), and reads back the job, the respect and the pay.
 namespace outland::game::career {
 
 enum class Side : std::uint8_t { Civilian, Gang, Police };
-enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, Raid, BreakUpWar, Quest, Smuggle, Extort, TakeTurf, CleanUp };
+enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, Raid, BreakUpWar, Quest, Smuggle, Extort, TakeTurf, CleanUp, HitChief };
 // A recruit's road onto the force: report to the Chief at Verda City HQ, qualify at the training
 // camp's range, report back for the badge and the Interceptor, then serve (calls).
 enum class PoliceStage : std::uint8_t { Report, Training, Graduated, Serving };
@@ -93,6 +97,7 @@ struct CareerState {
     bool record{false};            // a crime on file: the Policio will not have them
     bool honourable{true};         // a gang member who has hurt nobody but gangsters
     int defended{0};               // raiders taken down on the gang's own turf
+    bool chief_dead{false};        // the Chief was hit (for good): the Policio is leaderless
     int jobs_done{0};
     std::string patrol_car;        // the officer's car (vehicle id)
     PoliceStage police_stage{PoliceStage::Report};
@@ -114,6 +119,10 @@ public:
     // Something the player did.
     void killed(int gang, bool from_vehicle);        // a Krimulo of `gang` (-1: not a Krimulo)
     void crime(bool serious);                        // a crime someone reported (assault, murder, attacking police)
+    // The Chief went down on a HitChief job.
+    void chief_killed();
+    static constexpr int hit_pay = 500000;              // kronoj, flat (no rank bonus)
+    static constexpr float hit_rank_respect = 70;       // Leŭtenanto and up get the order
     // A rival gangster taken down on the player's own gang's turf (defending the town).
     void defended(const std::string& town);
     // An officer shot at Verda City's crew before the Chief allowed it.
@@ -163,6 +172,13 @@ public:
     [[nodiscard]] std::string serialise() const;
     bool parse(const std::string& text);
     void restore(const CareerState& state) { state_ = state; job_ = {}; }
+    // Which jobs come up: different every session.
+    void seed(std::uint64_t value) {
+        std::uint64_t z = value + 0x9e3779b97f4a7c15ULL;   // splitmix64: nearby seeds, unrelated runs
+        z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+        z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+        rng_ = (z ^ (z >> 31)) | 1;
+    }
 
 private:
     void offer(const CareerFrame& frame);

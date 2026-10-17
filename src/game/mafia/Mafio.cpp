@@ -367,7 +367,7 @@ void Mafio::update(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotW
     }
     std::erase_if(wars_, [&](const War& w) { return w.until <= now; });
     if (now >= next_war_) {
-        next_war_ = now + 150 + random() * 150;
+        next_war_ = now + (150 + random() * 150) * (1 + 3 * calm_);
         if (wars_.size() < 2) plan_war(frame, bots, drivers, cars, region);
     }
 

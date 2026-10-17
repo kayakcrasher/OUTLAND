@@ -410,6 +410,28 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
     DrawTriangle(tip, right, left, Color{255, 220, 60, 255});
     DrawTriangle(tip, left, right, Color{255, 220, 60, 255});
     DrawTriangleLines(tip, left, right, Color{40, 30, 0, 255});
+    // Yin and yang: the law (pale) and the crew (its colour), the ring showing each one's share.
+    if (view.law >= 0) {
+        const float R = 26 * s;
+        const Vector2 c{area.x + 16 * s + R + 6 * s, area.y + area.height - 64 * s - R};
+        const Color pale{236, 240, 246, 255}, dark{18, 22, 20, 255};
+        DrawRectangleRounded({c.x - R - 12 * s, c.y - R - 12 * s, 2 * R + 190 * s, 2 * R + 24 * s}, .2F, 6, Fade(BLACK, .55F));
+        DrawRing(c, R + 3 * s, R + 7 * s, 0, 360, 48, Color{70, 74, 72, 255});
+        if (view.law > 0) DrawRing(c, R + 3 * s, R + 7 * s, -90, -90 + 360 * view.law, 48, Color{120, 180, 255, 255});
+        if (view.crime > 0) DrawRing(c, R + 3 * s, R + 7 * s, -90 - 360 * view.crime, -90, 48, view.crime_color);
+        DrawCircleSector(c, R, 90, 270, 32, pale);    // the left half
+        DrawCircleSector(c, R, -90, 90, 32, dark);    // the right half
+        DrawCircleV({c.x, c.y - R / 2}, R / 2, pale);
+        DrawCircleV({c.x, c.y + R / 2}, R / 2, dark);
+        DrawCircleV({c.x, c.y - R / 2}, R / 6, dark);
+        DrawCircleV({c.x, c.y + R / 2}, R / 6, pale);
+        DrawCircleLinesV(c, R, Color{90, 94, 92, 255});
+        const float tx = c.x + R + 16 * s;
+        text(font, TextFormat("LEĜO  %d%%", static_cast<int>(std::lround(view.law * 100))), {tx, c.y - R + 2 * s}, 15 * s, Color{150, 200, 255, 255});
+        text(font, TextFormat("KRIMO  %d%%", static_cast<int>(std::lround(view.crime * 100))), {tx, c.y - 8 * s}, 15 * s, view.crime_color);
+        const char* mood = view.law > view.crime + .05F ? "Verda grows safer" : view.crime > view.law + .05F ? "Your crew runs Verda" : "In the balance";
+        text(font, mood, {tx, c.y + R - 16 * s}, 13 * s, dim);
+    }
     // North arrow and a 500 m scale bar.
     const Vector2 north{area.x + area.width - 30 * s, area.y + 34 * s};
     DrawTriangle({north.x, north.y - 16 * s}, {north.x - 8 * s, north.y + 4 * s}, {north.x + 8 * s, north.y + 4 * s}, ink);

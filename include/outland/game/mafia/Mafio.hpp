@@ -151,6 +151,8 @@ public:
     [[nodiscard]] const std::string& message() const { return message_; }
     [[nodiscard]] float message_time() const { return message_time_; }
     void set_next_war(double at) { next_war_ = at; }
+    // How safe Verda has become (the law's share, 0..1): gang wars come that much less often.
+    void set_calm(float calm) { calm_ = calm < 0 ? 0 : calm > 1 ? 1 : calm; }
     // The player's own gang (game::career), or -1. Their crews never mind the player's gunfire
     // near them; rival gangs open fire when the player comes onto their turf.
     void set_player_gang(int gang) { player_gang_ = gang; }
@@ -159,6 +161,7 @@ public:
     static constexpr float turf_grace = 5;          // seconds' warning before they shoot
 
 private:
+    float calm_{0};
     Member* member(int bot);
     void say(std::string text) { message_ = std::move(text); message_time_ = 6; }
     float random();

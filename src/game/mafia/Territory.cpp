@@ -118,6 +118,29 @@ void Territory::clear_town(int index) {
     t.pressure.fill(0);
 }
 
+void Territory::take_island(int gang) {
+    if (gang < 0 || gang >= gang_count) return;
+    for (std::size_t i = 0; i < turfs_.size(); ++i) {
+        auto& t = turfs_[i];
+        if (t.ranch >= 0) continue;
+        if (t.owner != gang) flips_.push_back({static_cast<int>(i), t.owner, gang});
+        t.owner = gang; t.hold = 100; t.cleared = false; t.pressure.fill(0);
+    }
+    for (auto& f : families_) if (!f.name.empty()) { f.stance = Stance::Allied; f.gang = gang; }
+}
+
+Balance Territory::balance(int player_gang) const {
+    int towns = 0, clean = 0, ours = 0;
+    for (const auto& t : turfs_) {
+        if (t.ranch >= 0) continue;
+        ++towns;
+        if (t.cleared) ++clean;
+        else if (player_gang >= 0 && t.owner == player_gang) ++ours;
+    }
+    if (towns == 0) return {};
+    return {static_cast<float>(clean) / static_cast<float>(towns), static_cast<float>(ours) / static_cast<float>(towns)};
+}
+
 int Territory::cleared() const {
     return static_cast<int>(std::count_if(turfs_.begin(), turfs_.end(), [](const Turf& t) { return t.cleared; }));
 }
@@ -146,7 +169,7 @@ void Territory::ally(int ranch, int gang) {
     f.gang = gang;
 }
 
-Raid Territory::update(float dt, double now, int player_gang, float player_regain) {
+Raid Territory::update(float dt, double now, int player_gang, float player_regain, float calm) {
     Raid raid;
     if (!std::isfinite(dt) || dt <= 0 || turfs_.empty()) return raid;
     for (auto& t : turfs_) {
@@ -156,7 +179,7 @@ Raid Territory::update(float dt, double now, int player_gang, float player_regai
     }
     if (next_raid_ < 0) next_raid_ = now + raid_every * .6;
     if (now < next_raid_) return raid;
-    next_raid_ = now + raid_every * (.7 + .6 * random());
+    next_raid_ = now + raid_every * (.7 + .6 * random()) * (1 + 3 * std::clamp(calm, 0.0F, 1.0F));
     // An AI gang with a town pushes into the nearest town held by someone else.
     std::vector<int> attackers;
     for (int g = 0; g < gang_count; ++g)

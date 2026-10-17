@@ -36,6 +36,10 @@ public:
         struct Base { Vector3 at{}; Color color{}; std::string name; };
         std::vector<Base> bases;                        // each gang's main base (its county's main town)
         std::vector<Vector3> cleared;                   // hideouts the Policio broke up
+        // Verda's yin and yang (Explore): the law's share of the towns and the player's crew's,
+        // drawn as the emblem with a ring showing each share. law < 0: not shown.
+        float law{-1}, crime{0};
+        Color crime_color{46, 204, 96, 255};
         std::optional<Vector3> home;                    // Stela Turo: the penthouse for sale, or your home
         // The gang map (a gangster's map): every turf in its holder's colour with the hold left,
         // the tags on the walls, and who is biggest.

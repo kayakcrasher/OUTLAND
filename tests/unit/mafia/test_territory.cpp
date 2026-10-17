@@ -1,6 +1,7 @@
 // Territory: towns start with their county's gang; kills, tags and raids wear a hold down and
 // the town flips; own tags and contraband shore it up; families ally, pay or fight; the island.
 #include "outland/game/mafia/Territory.hpp"
+#include <cmath>
 #include <iostream>
 using namespace outland::game::mafia;
 namespace {
@@ -123,6 +124,14 @@ int main() {
         check(p.turfs()[1].owner == 4 && p.turfs()[1].hold == 100, "and nobody can fight over it");
         Territory q = island();
         check(q.parse(p.serialise()) && q.turfs()[1].cleared, "a cleared town stays cleared");
+        // Yin and yang: a quarter of the towns cleared, a quarter La Verda Mano's.
+        const auto b = p.balance(0);
+        check(std::abs(b.law - .25F) < .01F && std::abs(b.crime - .25F) < .01F, "the law's share and the crew's");
+        check(p.balance(-1).crime == 0, "no crew, no crime share");
+        // The Chief is dead: the gang takes the island, cleared towns and families too.
+        p.take_island(0);
+        check(p.rules_island(0) && p.cleared() == 0 && p.balance(0).crime == 1 && p.balance(0).law == 0, "the gang takes Verda");
+        check(!p.take_flips().empty(), "the towns that changed hands are told");
     }
     if (failures) return 1;
     std::cout << "[PASS] Territory: holds, kills, tags, flips, families, raids, the island\n";

@@ -273,6 +273,41 @@ int main() {
         d.warned_off_capital(105);
         check(std::abs(d.state().respect - (r - 3)) < .01F, "warned off Verda City (once in a while)");
     }
+    // The big hit: a Leŭtenanto gets the boss's order on the Chief; 500 000 and the island.
+    {
+        Career c;
+        std::string why;
+        c.join_gang(0, "La Verda Mano", why);
+        auto st = c.state(); st.respect = 75; c.restore(st);
+        auto f = world(0);
+        f.chief = {11, 0, -185}; f.chief_known = true;
+        bool order = false;
+        double now = 0;
+        for (int i = 0; i < 400 && !order; ++i) {
+            f.now = now += 1;
+            c.update(f);
+            order = c.job().kind == JobKind::HitChief;
+            if (c.job().kind != JobKind::None && !order) c.restore(st);   // turned down, at no cost
+        }
+        check(order && std::abs(c.job().target.z + 185) < .1F, "the boss orders the Chief dead");
+        c.take_pay();
+        c.chief_killed();
+        check(c.take_pay() == Career::hit_pay && c.state().chief_dead && c.job().kind == JobKind::None, "the hit pays 500 000 kronoj");
+        Job done;
+        check(c.take_finished(done) && done.kind == JobKind::HitChief, "the game hears the Chief is dead");
+        check(c.state().record && !c.state().honourable, "killing a cop is no gangster's quarrel");
+        Career back;
+        check(back.parse(c.serialise()) && back.state().chief_dead, "the Chief stays dead");
+        back.quit();
+        check(!back.join_police("car", why) && why.find("no head") != std::string::npos, "the Policio takes nobody now");
+        // Below Leŭtenanto: never ordered.
+        Career low;
+        low.join_gang(1, "Montaj Lupoj", why);
+        bool ordered = false;
+        for (int i = 0; i < 300; ++i) { f.now = now += 1; low.update(f); ordered |= low.job().kind == JobKind::HitChief;
+            if (low.job().kind != JobKind::None) { f.now = now += 2000; low.update(f); } }
+        check(!ordered, "only a Leŭtenanto gets that order");
+    }
     // Ranks and saving.
     {
         check(Career::rank_of(0) == 0 && Career::rank_of(15) == 1 && Career::rank_of(40) == 2 && Career::rank_of(100) == 4, "ranks");

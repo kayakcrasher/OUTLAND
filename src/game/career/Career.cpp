@@ -25,6 +25,7 @@ const char* job_name(JobKind kind) {
         case JobKind::Extort: return "EXTORTION";
         case JobKind::TakeTurf: return "TAKE TURF";
         case JobKind::CleanUp: return "CLEAN UP";
+        case JobKind::HitChief: return "THE BIG HIT";
         case JobKind::None: break;
     }
     return "";
@@ -65,6 +66,7 @@ bool Career::join_gang(int gang, const std::string& gang_name, std::string& why)
 }
 
 bool Career::join_police(const std::string& patrol_car, std::string& why) {
+    if (state_.chief_dead) { why = "The Policio has no head since the Chief was hit - the gangs run Verda"; return false; }
     if (state_.record) { why = "The Policio checked your record: no criminals on the force"; return false; }
     if (state_.side == Side::Gang) { why = "You still run with a gang - leave them first"; return false; }
     if (state_.side == Side::Police) { why = "You are already on the force"; return false; }
@@ -142,6 +144,17 @@ void Career::crime(bool serious) {
     state_.patrol_car.clear();
     job_ = {};
     say("A crime on duty: the Policio takes your badge. You have a record now");
+}
+
+void Career::chief_killed() {
+    state_.chief_dead = true;
+    if (job_.kind != JobKind::HitChief) return;
+    // A cop killed: a crime, whoever ordered it.
+    state_.record = true;
+    state_.honourable = false;
+    job_.done = job_.needed;
+    finish(true, "");
+    say(std::string(chief_name) + " is dead. Verda is yours - +" + std::to_string(hit_pay) + " kronoj");
 }
 
 void Career::defended(const std::string& town) {
@@ -234,7 +247,7 @@ void Career::died() {
 void Career::finish(bool success, const std::string& why) {
     if (success) {
         finished_ = job_;
-        const int paid = static_cast<int>(std::lround(static_cast<float>(job_.pay) * pay_scale()));
+        const int paid = job_.kind == JobKind::HitChief ? job_.pay : static_cast<int>(std::lround(static_cast<float>(job_.pay) * pay_scale()));
         pay_ += paid;
         ++state_.jobs_done;
         say(std::string(job_name(job_.kind)) + " DONE: +" + std::to_string(static_cast<int>(job_.respect)) + " respect, +" +
@@ -264,7 +277,15 @@ void Career::offer(const CareerFrame& frame) {
         return pool[std::min(choices - 1, static_cast<std::size_t>(random() * static_cast<float>(choices)))];
     };
     Job job;
-    if (state_.side == Side::Gang) {
+    if (state_.side == Side::Gang && !state_.chief_dead && frame.chief_known && state_.respect >= hit_rank_respect && random() < .35F) {
+        // The summit: the boss orders the Chief dead.
+        job.kind = JobKind::HitChief;
+        job.gang = state_.gang;
+        job.target = frame.chief;
+        job.needed = 1;
+        job.detail = "The boss of " + name_of(state_.gang) + " wants " + chief_name + " dead - at Verda City HQ. Do it and Verda is ours";
+        job.pay = hit_pay; job.respect = 30; job.deadline = frame.now + 1800;
+    } else if (state_.side == Side::Gang) {
         const float roll = random();
         const auto home = [&]() -> const CrewSpot* {
             const CrewSpot* h = nullptr;
@@ -365,6 +386,7 @@ void Career::offer(const CareerFrame& frame) {
 void Career::update(const CareerFrame& frame) {
     if (state_.side == Side::Civilian) { job_ = {}; return; }
     if (state_.side == Side::Gang && state_.gang < 0) { quit(); return; }
+    if (job_.kind == JobKind::HitChief && frame.chief_known) job_.target = frame.chief;
     if (state_.side == Side::Police && state_.police_stage != PoliceStage::Serving) {
         // A recruit has orders, not calls.
         Job orders;
@@ -469,9 +491,9 @@ void Career::update(const CareerFrame& frame) {
 
 std::string Career::serialise() const {
     std::ostringstream out;
-    out << "career 3 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
+    out << "career 4 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
         << (state_.record ? 1 : 0) << ' ' << state_.jobs_done << ' ' << (state_.patrol_car.empty() ? "-" : state_.patrol_car) << ' '
-        << static_cast<int>(state_.police_stage) << ' ' << (state_.honourable ? 1 : 0) << ' ' << state_.defended << '\n';
+        << static_cast<int>(state_.police_stage) << ' ' << (state_.honourable ? 1 : 0) << ' ' << state_.defended << ' ' << (state_.chief_dead ? 1 : 0) << '\n';
     return out.str();
 }
 
@@ -480,7 +502,7 @@ bool Career::parse(const std::string& text) {
     std::string tag, car;
     int version = 0, side = 0, gang = -1, record = 0, jobs = 0;
     float respect = 0;
-    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 3 ||
+    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 4 ||
         side < 0 || side > 2 || !std::isfinite(respect))
         return false;
     // Officers from before the questline are already serving.
@@ -488,6 +510,8 @@ bool Career::parse(const std::string& text) {
     if (version >= 2 && (!(in >> stage) || stage < 0 || stage > 3)) return false;
     int honour = 1, defended = 0;
     if (version >= 3 && (!(in >> honour >> defended) || defended < 0)) return false;
+    int chief_dead = 0;
+    if (version >= 4 && !(in >> chief_dead)) return false;
     CareerState s;
     s.side = static_cast<Side>(side);
     s.gang = s.side == Side::Gang ? gang : -1;
@@ -495,6 +519,7 @@ bool Career::parse(const std::string& text) {
     s.record = record != 0;
     s.honourable = honour != 0;
     s.defended = defended;
+    s.chief_dead = chief_dead != 0;
     s.jobs_done = std::max(0, jobs);
     s.patrol_car = s.side == Side::Police && car != "-" ? car : std::string();
     s.police_stage = s.side == Side::Police ? static_cast<PoliceStage>(stage) : PoliceStage::Report;

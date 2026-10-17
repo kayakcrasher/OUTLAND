@@ -599,7 +599,7 @@ void Renderer::run() {
     // The police questline: Chief Marko Forta at Verda City HQ (a body in NpcSystem under his own
     // id), the training camp's range outside the city, and the player's own car's lights.
     game::career::TrainingCamp police_camp;
-    struct PoliceChief { Vector3 at{}; float yaw{0}; bool placed{false}; } chief;
+    struct PoliceChief { Vector3 at{}; float yaw{0}; bool placed{false}; float health{100}; } chief;
     constexpr int chief_bot=910001;
     constexpr const char* chief_character="character_22_police";
     std::string chief_line;float chief_line_time=0;
@@ -929,7 +929,17 @@ void Renderer::run() {
         // Battle Royale bodies belong to their bot brains; everyone else is an NpcSystem actor.
         const auto& body=npcs.actors()[static_cast<std::size_t>(actor)];
         const Vector3 where=body.position;
-        if(body.bot==chief_bot) return false;   // the Chief: nobody shoots the Chief
+        if(body.bot==chief_bot) {
+            // Nobody shoots the Chief - unless the boss ordered it (THE BIG HIT).
+            if(!chief.placed || career.job().kind!=game::career::JobKind::HitChief) return false;
+            chief.health-=damage;
+            if(chief.health>0) return false;
+            npcs.set_bot(chief_bot,chief.at,chief.yaw,0,characters::NpcState::Dead);
+            chief.placed=false;
+            career.chief_killed();
+            pending_kills.push_back(where);
+            return true;
+        }
         if(lan_match && game::lan::LanPlay::is_remote_body(body.bot)) {
             // Another player: the hit is theirs to take, and their death theirs to tell.
             if(lan.in_match()) lan.send(net::Msg::Hit,net::Hit{static_cast<std::int32_t>(lan.slot()),damage,attacker,static_cast<std::uint8_t>(weapons.selected())},
@@ -1370,7 +1380,7 @@ void Renderer::run() {
                     career_saved=career.serialise();career_dead=false;join_offer={};
                     if(career.state().gang>=static_cast<int>(game::mafia::gangs.size())) career=game::career::Career{};
 #ifdef OUTLAND_DEV_TOOLS
-                    // OUTLAND_DEV_CAREER=gang:N or police: start this session in a gang or on the force.
+                    // OUTLAND_DEV_CAREER=gang:N[:respect] or police: start this session in a gang or on the force.
                     if(const char* dev=std::getenv("OUTLAND_DEV_CAREER"); dev && *dev) {
                         std::string why;const std::string want=dev;
                         career=game::career::Career{};
@@ -1378,6 +1388,9 @@ void Renderer::run() {
                             const int gang=std::clamp(std::atoi(want.c_str()+5),0,static_cast<int>(game::mafia::gangs.size())-1);
                             career.join_gang(gang,std::string(game::mafia::gangs[static_cast<std::size_t>(gang)].name),why);
                             loot_session.edit_inventory().add(item_registry,"spray_paint",4);
+                            if(const auto colon=want.find(':',5);colon!=std::string::npos) {
+                                auto st=career.state();st.respect=std::clamp(static_cast<float>(std::atof(want.c_str()+colon+1)),0.0F,100.0F);career.restore(st);
+                            }
                         } else if(want=="police") {
                             const Vector3 here{player.position.x,player.position.y-1,player.position.z};
                             const game::services::Unit* best=nullptr;
@@ -1411,11 +1424,14 @@ void Renderer::run() {
                         }
                         if(chief.placed) break;
                     }
+                    if(career.state().chief_dead) chief.placed=false;   // hit in an earlier session: the office is empty
+                    chief.health=100;
                     if(chief.placed) TraceLog(LOG_INFO,"OUTLAND police chief at %.1f %.1f facing %.0f",chief.at.x,chief.at.z,chief.yaw);
                     if(chief.placed) {
                         const std::string character=character_registry.find(chief_character) ? chief_character : "bot";
                         npcs.spawn_bot(chief_bot,character,chief.at,chief.yaw);
                     }
+                    career.seed(session_seed);   // which jobs come up: different every session
                     // The training camp: open, level ground outside Verda City, downrange pointing away from it.
                     police_camp=game::career::TrainingCamp{};
                     {
@@ -2945,6 +2961,16 @@ void Renderer::run() {
             bool gang_business=mafio.active() && mafio.turf_at(frame.player,60)>=0;
             for(int g=0;g<static_cast<int>(game::mafia::gangs.size());++g) gang_business|=mafio.provoked(g,match_time);
             if(frame.player_fired && !gang_business && !career.on_duty()) justice.crime(game::law::CrimeKind::ShotsFired,frame.player,-1,frame,island_life);
+            // Your crew runs this town: the more of Verda it runs, the more often nobody saw a thing.
+            if(const int mine=player_gang();mine>=0 && !crimes.empty())
+                if(const int here=territory.turf_at(frame.player);here>=0) {
+                    const auto& t=territory.turfs()[static_cast<std::size_t>(here)];
+                    const float share=territory.balance(mine).crime;
+                    if(t.ranch<0 && !t.cleared && t.owner==mine && static_cast<float>(GetRandomValue(0,999))<share*1000) {
+                        crimes.clear();
+                        interaction_message="Your crew's town - nobody saw a thing";interaction_remaining=3;
+                    }
+                }
             for(const auto& c:crimes) {
                 // An officer who hurts the public (or another officer) is off the force.
                 career.crime(c.kind==game::law::CrimeKind::Assault || c.kind==game::law::CrimeKind::Murder || c.kind==game::law::CrimeKind::AttackOnPolice);
@@ -3166,7 +3192,8 @@ void Renderer::run() {
                         } else work.turfs.push_back({static_cast<int>(i),t.name,t.centre,t.owner,t.hold});
                     }
                     // AI gangs push on each other's towns (a hit squad goes in); towns change hands.
-                    if(const auto raid=territory.update(dt,match_time,player_gang(),player_gang()>=0 && career.state().honourable ? 2.0F : 1.0F);raid.turf>=0) {
+                    if(const auto raid=territory.update(dt,match_time,player_gang(),player_gang()>=0 && career.state().honourable ? 2.0F : 1.0F,
+                                                        territory.balance(player_gang()).law);raid.turf>=0) {
                         const auto& target=territory.turfs()[static_cast<std::size_t>(raid.turf)];
                         int from=-1;float nearest=1e9F;
                         for(std::size_t c=0;c<mafio.crews().size();++c) {
@@ -3187,7 +3214,14 @@ void Renderer::run() {
                     }
                     if(!player_health.alive() && !career_dead) {career.died();career_dead=true;}
                     if(player_health.alive()) career_dead=false;
+                    mafio.set_calm(territory.balance(player_gang()).law);   // a safer Verda has fewer gang wars
                     career.update(work);
+#ifdef OUTLAND_DEV_TOOLS
+                    if(static game::career::JobKind logged=game::career::JobKind::None;career.job().kind!=logged) {
+                        logged=career.job().kind;
+                        if(logged!=game::career::JobKind::None) TraceLog(LOG_INFO,"OUTLAND job: %s - %s (chief %d, respect %.0f)",career.job().title.c_str(),career.job().detail.c_str(),work.chief_known ? 1 : 0,career.state().respect);
+                    }
+#endif
                     // What the job set off: the police tipped off, a demand at a ranch, a job paid out.
                     if(career.take_tipoff()) {
                         game::law::JusticeFrame tip;tip.now=match_time;tip.player=feet;
@@ -3210,6 +3244,18 @@ void Renderer::run() {
                     if(game::career::Job done;career.take_finished(done)) {
                         if(done.kind==game::career::JobKind::Smuggle) territory.delivered(territory.turf_at(done.target),player_gang());
                         if(done.kind==game::career::JobKind::Extort && done.ranch>=0) territory.subdued(done.ranch,player_gang());
+                        if(done.kind==game::career::JobKind::HitChief && player_gang()>=0) {
+                            // The Chief is dead: the gang takes Verda, and every crew wears its colours.
+                            const int mine=player_gang();
+                            territory.take_island(mine);
+                            for(std::size_t c=0;c<mafio.crews().size();++c) mafio.set_crew_gang(static_cast<int>(c),mine);
+                            territory.take_flips();
+                            island_ruled=true;banner_key.clear();
+                            gang_news="THE CHIEF IS DEAD - "+gang_name(mine)+" TAKE VERDA";gang_news_time=14;
+                            gun_audio.kill_confirm();
+                            game::law::JusticeFrame tip;tip.now=match_time;tip.player=feet;
+                            justice.tip_off(3,feet,tip,island_life,"The Chief has been shot - every officer on the island is coming");
+                        }
                         if(done.kind==game::career::JobKind::CleanUp && done.crew>=0 && static_cast<std::size_t>(done.crew)<mafio.crews().size()) {
                             // Broken up for good: the hideout stands empty, the town is nobody's.
                             mafio.disband(done.crew);
@@ -4319,7 +4365,9 @@ void Renderer::run() {
             // At a police station: how to sign up (or why not).
             if(!career_path.empty() && !career.on_duty() && services.active() &&
                services.station_near({player.position.x,player.position.y-1,player.position.z},14) && !vehicles.driver()) {
-                const char* line=career.state().record ? "POLICIO DE VERDA  ·  no Krimuloj on the force - you have a record" :
+                const char* line=career.state().chief_dead ? "POLICIO DE VERDA  ·  leaderless since the Chief was hit - no recruits" :
+                                 career.state().record ? "POLICIO DE VERDA  ·  no criminals on the force - you have a record" :
+                                 career.state().side==game::career::Side::Gang ? "POLICIO DE VERDA  ·  leave your gang before you sign up" :
                                                          "POLICIO DE VERDA  ·  USE to join: a patrol car and radio calls";
                 const float lw=MeasureTextEx(font,line,17,1).x;
                 DrawRectangle(static_cast<int>(screen_width/2-lw/2-12),screen_height-246,static_cast<int>(lw+24),28,Fade(BLACK,.55F));
@@ -4848,6 +4896,11 @@ void Renderer::run() {
                 view.home_owned=game::economy::Penthouse::owned(loot_session.economy());
             }
             view.marks=compass_marks;
+            if(game::rules_for(game_mode).civilian_life && !territory.turfs().empty()) {
+                const auto balance=territory.balance(player_gang());
+                view.law=balance.law;view.crime=balance.crime;
+                if(player_gang()>=0) view.crime_color=game::mafia::gangs[static_cast<std::size_t>(player_gang())].color;
+            }
             map_screen.draw(verda_region,view,settings,screen_width,screen_height);
         }
         // Mouse look waits for a click in the browser (pointer lock needs one).
