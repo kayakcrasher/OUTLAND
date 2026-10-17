@@ -5,6 +5,11 @@ Verda's residents now drive their own cars in Explore.
 2. They pull straight out of the space, drive the roads on the right-hand side, and park at the kerb near where they're going.
 3. They walk the rest of the way.
 
+The everyday cars are of two kinds. One is the little blue hatchback. The other is the Verda
+Sedano, a maroon four-door saloon with chrome bumpers (`tools/generate_sedan_model.py`,
+manifest id `sedan`). About two in five of the parked cars are Sedanos. Which ones is fixed by
+where they park, so a car stays what it is.
+
 Off-screen this is simulated on the island clock. Near the player, the real vehicle is driven through the same physics the player uses.
 
 ## Who owns a car

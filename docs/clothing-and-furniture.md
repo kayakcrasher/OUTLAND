@@ -53,3 +53,23 @@ Pieces are ordinary world assets (`furnish_*`, rebuilt with island life each ses
 like other props, except the rug. Layout and the store: `game::interiors::Furnishing`. Catalogue,
 buying and wearing: `game::wardrobe::Wardrobe`. The panel: `game::wardrobe::StoreUI`. Tests:
 `outland_clothing_and_furniture_tests` and `outland_generated_furniture`.
+
+## Homes for sale
+
+Besides the Stela Turo penthouse, fourteen homes are for sale in Explore:
+- six detached houses in Okcidenta Verda, Verda City's west suburb (3,500–7,500 kr);
+- two Main Street flats in each of Espera, Porto Luma, Suda Haveno and Roka (1,500–3,000 kr).
+  These are the rows furthest from each town's centre.
+
+Each has a red **VENDATA** board with its price out front. The map marks each one as FOR SALE,
+or as HOME once it is yours. Nobody lives in a home for sale.
+
+Walk in and press **E / USE** to buy it. The furniture moves in at once: a kitchen, a table, a
+sofa and the television, a bed and a wardrobe.
+
+At home:
+- **USE** by the bed sleeps till morning and heals you.
+- When you die, you wake up in the home you bought last (or the penthouse, if that was last).
+
+Homes are kept with the Explore wallet. Code: `game::economy::Homes`. Tests:
+`outland_homes_for_sale_tests`.

@@ -201,6 +201,7 @@ add_library(
     src/game/interiors/Furnishing.cpp
     src/game/wardrobe/Wardrobe.cpp
     src/game/wardrobe/StoreUI.cpp
+    src/game/economy/Homes.cpp
     src/game/mafia/MafioRenderer.cpp
     src/game/casino/Poker.cpp
     src/game/casino/PokerTable.cpp
@@ -768,6 +769,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_clothing_and_furniture_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_clothing_and_furniture_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_clothing_and_furniture_tests COMMAND outland_clothing_and_furniture_tests)
+    add_executable(outland_homes_for_sale_tests tests/integration/interiors/test_homes_for_sale.cpp)
+    target_link_libraries(outland_homes_for_sale_tests PRIVATE outland_render)
+    target_compile_options(outland_homes_for_sale_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_homes_for_sale_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_homes_for_sale_tests COMMAND outland_homes_for_sale_tests)
     add_executable(outland_highway_patrol_tests tests/integration/services/test_highway_patrol.cpp)
     target_link_libraries(outland_highway_patrol_tests PRIVATE outland_render)
     target_compile_options(outland_highway_patrol_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -812,6 +818,7 @@ if(OUTLAND_BUILD_TESTS)
         add_test(NAME outland_survival_catalog_validation COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_survival_catalog.py" --check)
         add_test(NAME outland_generated_vehicle_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_truck_model.py" --check)
         add_test(NAME outland_generated_emergency_vehicles COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_emergency_vehicles.py" --check)
+        add_test(NAME outland_generated_sedan COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_sedan_model.py" --check)
         add_test(NAME outland_generated_green_hand_car COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_green_hand_car.py" --check)
         add_test(NAME outland_generated_furniture COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_furniture.py" --check)
         add_test(NAME outland_generated_gang_outfits COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_gang_outfits.py" --check)

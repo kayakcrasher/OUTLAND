@@ -2,6 +2,7 @@
 #include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <cmath>
 #include <raymath.h>
 #include <set>
@@ -212,6 +213,15 @@ bool VehicleSystem::reconcile(world::VerdaRegion &region) {
                     for (const auto &definition : registry_.definitions())
                         if (m.id.find("vehicle_spawn_" + definition.id + "_") != std::string::npos)
                             d = &definition;
+                    // Variety: about two in five of the island's everyday hatchbacks are the
+                    // Sedano, the family saloon (fixed by the marker, so a car stays what it is).
+                    if (d && d->id == "hatchback") {
+                        std::uint64_t h = 1469598103934665603ULL;
+                        for (const char c : m.id) h = (h ^ static_cast<unsigned char>(c)) * 1099511628211ULL;
+                        h ^= h >> 29;
+                        if (h % 5 < 2)
+                            if (const auto *sedan = registry_.find("sedan")) d = sedan;
+                    }
                     if (!d)
                         continue;
                     world::WorldAsset a;

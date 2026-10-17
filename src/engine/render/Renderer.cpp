@@ -53,6 +53,7 @@
 #include "outland/game/aircraft/HelicopterDrop.hpp"
 #include "outland/game/aircraft/DropRenderer.hpp"
 #include "outland/game/economy/Penthouse.hpp"
+#include "outland/game/economy/Homes.hpp"
 #include "outland/game/sound/SoundBus.hpp"
 #include "outland/world/navigation/NavGrid.hpp"
 #include "outland/world/sky/DayNight.hpp"
@@ -651,6 +652,11 @@ void Renderer::run() {
     // Explore: the Stela Turo penthouse, for sale; once bought, home (sleep there, wake there).
     game::economy::Penthouse penthouse;
     bool was_in_penthouse=false;
+    // Homes for sale round the island (besides the penthouse): vacant while listed this session.
+    std::vector<game::economy::Listing> homes_for_sale;
+    std::vector<game::economy::Vacated> vacated_homes;
+    const game::economy::Listing* home_here=nullptr;   // the listing the player stands in
+    const game::economy::Listing* was_in_home=nullptr;
     game::ModeSession mode_session;
     game::PlayUI play_ui;
     game::economy::Economy economy;
@@ -828,6 +834,20 @@ void Renderer::run() {
             sign.board=Color{0,96,52,255};sign.ink=Color{255,244,214,255};
             signage.signs.push_back(std::move(sign));
         }
+        // VENDATA boards in front of the homes for sale.
+        for(const auto& home:homes_for_sale) {
+            if(game::economy::owns(loot_session.economy(),home)) continue;
+            game::culture::Sign sign;
+            sign.kind=game::culture::SignKind::Shopfront;
+            sign.place=home.id;
+            const float ground=home.house ? world::terrain::TerrainHeight::sample(home.board.x,home.board.z) : home.centre.y;
+            sign.position={home.board.x,ground+1.75F,home.board.z};
+            sign.yaw=home.yaw+180;   // facing the street
+            sign.max_width=1.6F;
+            sign.front={{"VENDATA",.26F},{TextFormat("%lld kr",static_cast<long long>(home.price)),.2F}};
+            sign.board=Color{176,32,36,255};sign.ink=WHITE;
+            signage.signs.push_back(std::move(sign));   // its post is drawn with the world (below)
+        }
         sign_renderer.set(std::move(signage));
         signed_world=world_size();
     };
@@ -847,6 +867,11 @@ void Renderer::run() {
         if(site) {
             clothing_store=game::interiors::clothing_store(*site,std::max(0,static_cast<int>(wardrobe_catalogue.looks().size())-1));
             pieces.insert(pieces.end(),clothing_store->pieces.begin(),clothing_store->pieces.end());
+        }
+        // The homes the player owns come furnished.
+        for(const auto& home:homes_for_sale) if(game::economy::owns(loot_session.economy(),home)) {
+            const auto furniture=game::interiors::furnish_home(game::economy::place_of(home),home.centre.y);
+            pieces.insert(pieces.end(),furniture.begin(),furniture.end());
         }
         int pubs=0,homes=0;
         for(const auto& place:places) {
@@ -1343,6 +1368,16 @@ void Renderer::run() {
                     if(!player_builds.load(builds_path,builds_error)) {TraceLog(LOG_WARNING,"Player builds: %s",builds_error.c_str());player_builds.clear();}
                 } else player_builds.clear();
                 player_builds.apply(verda_region); // other modes take the player's town away again
+                // The homes for sale stand empty (Explore); other modes get the buildings back as they were.
+                game::economy::restore_purposes(verda_region,vacated_homes);
+                vacated_homes.clear();homes_for_sale.clear();home_here=was_in_home=nullptr;
+                if(game::rules_for(game_mode).civilian_life) {
+                    homes_for_sale=game::economy::plan_homes(verda_region);
+                    vacated_homes=game::economy::vacate(verda_region,homes_for_sale);
+                    TraceLog(LOG_INFO,"OUTLAND homes for sale: %d",static_cast<int>(homes_for_sale.size()));
+                    for(const auto& home:homes_for_sale)
+                        TraceLog(LOG_DEBUG,"OUTLAND for sale: %s (%s) %lld kr at %.0f %.0f",home.name.c_str(),home.building.c_str(),static_cast<long long>(home.price),home.board.x,home.board.z);
+                }
                 world::physics::MeshCollisionLibrary::preload(verda_region);
                 // Explore lives on Verda: rebuild residents from the current (possibly Creator-edited) towns.
                 if(game::rules_for(game_mode).civilian_life) {
@@ -1699,7 +1734,21 @@ void Renderer::run() {
                     services.assign_player_car(career.on_duty() ? career.state().patrol_car : std::string());
                     // Back from the dead: out of the hospital's front door.
                     penthouse.locate(verda_region);was_in_penthouse=false;
-                    if(respawn_at_hospital && penthouse.found() && game::economy::Penthouse::owned(loot_session.economy())) {
+                    // Owners wake up at home: the one they bought last (a house, a flat or the penthouse).
+                    const game::economy::Listing* wake_home=nullptr;
+                    {
+                        const auto& owned=loot_session.economy().properties;
+                        for(auto it=owned.rbegin();it!=owned.rend() && !wake_home;++it) {
+                            if(*it==game::economy::Penthouse::property_id) break;
+                            for(const auto& home:homes_for_sale) if(home.id==*it) {wake_home=&home;break;}
+                        }
+                    }
+                    if(respawn_at_hospital && wake_home) {
+                        const Vector3 c=wake_home->centre;
+                        const float floor=world::physics::WorldCollision::ground_height({c.x,c.y+1.2F,c.z},c.y+1.2F,verda_region);
+                        player.position={c.x,floor+1,c.z};player.yaw=0;
+                        interaction_message="You wake up at home: "+wake_home->name;interaction_remaining=5;
+                    } else if(respawn_at_hospital && penthouse.found() && game::economy::Penthouse::owned(loot_session.economy())) {
                         // Owners wake up at home, in the penthouse, mended.
                         const auto bed=penthouse.to_world(game::economy::Penthouse::wake);
                         player.position={bed.x,bed.y+1,bed.z};player.yaw=0;
@@ -2184,7 +2233,7 @@ void Renderer::run() {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
             bool here=store_mannequin>=0 || at_store_counter || nearby_shop || at_table ||
                 vehicles.nearest(verda_region,feet)>=0 || loot_session.world().nearest(feet,2.8F)>=0 ||
-                (game::rules_for(game_mode).civilian_life && penthouse.inside(feet));
+                (game::rules_for(game_mode).civilian_life && penthouse.inside(feet)) || home_here;
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
                 here=(chief.placed && Vector3Distance(feet,chief.at)<3.2F) || (police_camp.placed() && police_camp.at_line(feet)) ||
                     (mafio.active() && mafio.turf_at(feet,7)>=0) || (services.active() && services.station_near(feet,14));
@@ -2304,6 +2353,36 @@ void Renderer::run() {
                 }
             }
             was_in_penthouse=penthouse.inside(loot_feet);
+            // The homes for sale: buy the one you stand in; at home, sleep in your bed.
+            home_here=nullptr;
+            if(game::rules_for(game_mode).civilian_life && !vehicles.driver())
+                for(const auto& home:homes_for_sale) if(game::economy::inside(home,loot_feet)) {home_here=&home;break;}
+            if(home_here && !(shop_open||store_open) && !poker_open && !inventory_open && !home_used) {
+                const bool owned=game::economy::owns(loot_session.economy(),*home_here);
+                if(home_here!=was_in_home) {interaction_message=owned ? "Home: "+home_here->name : home_here->name+" - for sale";interaction_remaining=3;}
+                if(controls.interact && loot_session.world().nearest(loot_feet,2.8F,reachable_pickup)<0) {
+                    if(!owned) {
+                        interaction_message=game::economy::buy(loot_session.economy(),*home_here);loot_session.changed();
+                        if(game::economy::owns(loot_session.economy(),*home_here)) {
+                            gun_audio.kill_confirm();haptics.hit_given(true);
+                            furnish_island();rebuild_signs();   // the furniture moves in; the board comes down
+                        }
+                        interaction_remaining=4;home_used=true;
+                    } else {
+                        bool by_bed=false;
+                        for(const auto& piece:game::interiors::furnish_home(game::economy::place_of(*home_here),home_here->centre.y))
+                            if(piece.model.ends_with("bed_double.glb") && std::hypot(piece.at.x-loot_feet.x,piece.at.z-loot_feet.z)<2.4F) by_bed=true;
+                        if(by_bed) {
+                            const auto clock=island_life.clock();
+                            const int days=clock.minute_of_day()>=7*60 ? clock.day()+1 : clock.day();
+                            island_life.set_clock(game::life::WorldClock::at(days,7,0));
+                            player_health.reset();health_seen=player_health.current();
+                            interaction_message="Slept until morning - "+island_life.clock().label();interaction_remaining=4;home_used=true;
+                        }
+                    }
+                }
+            }
+            was_in_home=home_here;
             if(controls.interact && !home_used && !(shop_open||store_open) && !poker_open && !at_table && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){
                 interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;
                 if(interaction_message.starts_with("Picked up")) gun_audio.pickup();
@@ -3967,6 +4046,12 @@ void Renderer::run() {
             if(actor.resident>=0 && actor.state!=characters::NpcState::Dead && services.trooper(actor.resident))
                 draw_cowboy_hat(held,"assets/verda/ranch/trooper_hat.glb");
         };
+        // The VENDATA boards' posts (the boards are signs).
+        for(const auto& home:homes_for_sale) {
+            if(std::hypot(home.board.x-camera.position.x,home.board.z-camera.position.z)>120 || game::economy::owns(loot_session.economy(),home)) continue;
+            const float ground=home.house ? world::terrain::TerrainHeight::sample(home.board.x,home.board.z) : home.centre.y;
+            DrawCube({home.board.x,ground+.7F,home.board.z},.09F,1.4F,.09F,Color{120,124,128,255});
+        }
         // Vestaĵejo Verda's mannequins (every look but your own clothes), and the hats on the stand.
         if(clothing_store && std::hypot(clothing_store->centre.x-camera.position.x,clothing_store->centre.z-camera.position.z)<60) {
             const auto& looks=wardrobe_catalogue.looks();
@@ -4787,6 +4872,15 @@ void Renderer::run() {
             if(game_mode==game::GameMode::Explore) {
                 DrawText(TextFormat("%lld kr",static_cast<long long>(loot_session.economy().money)),20,objective_bottom+6,16,GOLD);
                 if(nearby_shop && !at_table && !poker_open) DrawText(TextFormat("E / USE: %s",nearby_shop->name.c_str()),screen_width/2-160,screen_height-165,20,GOLD);
+                if(home_here) {
+                    const bool owned=game::economy::owns(loot_session.economy(),*home_here);
+                    const std::string line=!owned ? home_here->name+" - FOR SALE "+std::to_string(home_here->price)+" kr   USE: BUY" :
+                        "Home: "+home_here->name+" - USE by the bed: SLEEP";
+                    const Font& font=sign_renderer.font();
+                    const float tw=MeasureTextEx(font,line.c_str(),20,1).x;
+                    DrawRectangle(static_cast<int>(screen_width/2-tw/2-14),screen_height-252,static_cast<int>(tw+28),32,Fade(BLACK,.6F));
+                    DrawTextEx(font,line.c_str(),{screen_width/2-tw/2,static_cast<float>(screen_height-246)},20,1,owned ? Color{140,220,150,255} : GOLD);
+                }
                 if(penthouse.inside(loot_feet)) {
                     const bool owned=game::economy::Penthouse::owned(loot_session.economy());
                     const char* line=!owned ? TextFormat("PENTHOUSE FOR SALE - %lld kronoj   E / USE: BUY",static_cast<long long>(game::economy::Penthouse::price)) :
@@ -5212,6 +5306,11 @@ void Renderer::run() {
                 view.home_owned=game::economy::Penthouse::owned(loot_session.economy());
             }
             view.marks=compass_marks;
+            for(const auto& home:homes_for_sale) {
+                const bool mine=game::economy::owns(loot_session.economy(),home);
+                view.marks.push_back({home.board,game::hud::Glyph::Home,mine ? Color{255,214,90,255} : Color{230,90,90,255},
+                    mine ? "HOME" : TextFormat("FOR SALE %lld kr",static_cast<long long>(home.price)),false});
+            }
             if(clothing_store && std::hypot(clothing_store->front.x-player.position.x,clothing_store->front.z-player.position.z)>=900)
                 view.marks.push_back({clothing_store->front,game::hud::Glyph::Shop,Color{60,200,130,255},"VESTAĴEJO",false});
             for(int i=0;i<patrol_open && i<static_cast<int>(patrol_posts.size());++i) {   // every outpost, near or far
