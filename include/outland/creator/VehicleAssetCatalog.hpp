@@ -12,6 +12,7 @@ inline void register_vehicle_assets(CreatorAssetRegistry& registry) {
 (void)registry.add({.id="vehicle_sxs",.name="Vakero side-by-side",.category=CreatorAssetCategory::Vehicle,.model_path="assets/verda/vehicles/runtime/sxs_body.glb",.thumbnail_path="",.footprint={1.68F,3.12F,1.88F},.placement={},.default_scale=1,.tags={"vehicles","vehicle_definition:sxs"}});
 (void)registry.add({.id="vehicle_semi",.name="Verda big rig tractor",.category=CreatorAssetCategory::Vehicle,.model_path="assets/verda/vehicles/runtime/semi_body.glb",.thumbnail_path="",.footprint={2.5F,7.41F,4.32F},.placement={},.default_scale=1,.tags={"vehicles","vehicle_definition:semi"}});
 (void)registry.add({.id="vehicle_green_hand_gt",.name="Verda Mano GT",.category=CreatorAssetCategory::Vehicle,.model_path="assets/verda/vehicles/runtime/green_hand_gt_body.glb",.thumbnail_path="",.footprint={1.94F,4.6F,1.22F},.placement={},.default_scale=1,.tags={"vehicles","vehicle_definition:green_hand_gt"}});
+(void)registry.add({.id="vehicle_highway_patrol",.name="\u015cosea Patrolo cruiser",.category=CreatorAssetCategory::Vehicle,.model_path="assets/verda/vehicles/runtime/highway_patrol_body.glb",.thumbnail_path="",.footprint={1.84F,4.8F,1.52F},.placement={},.default_scale=1,.tags={"vehicles","vehicle_definition:highway_patrol"}});
 }
 }
 #endif

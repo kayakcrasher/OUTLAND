@@ -197,6 +197,7 @@ add_library(
     src/game/career/TrainingCamp.cpp
     src/game/career/CampRenderer.cpp
     src/game/services/EmergencyServices.cpp
+    src/game/services/HighwayPatrol.cpp
     src/game/mafia/MafioRenderer.cpp
     src/game/casino/Poker.cpp
     src/game/casino/PokerTable.cpp
@@ -759,6 +760,10 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_highway_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_highway_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_highway_tests COMMAND outland_highway_tests)
+    add_executable(outland_highway_patrol_tests tests/integration/services/test_highway_patrol.cpp)
+    target_link_libraries(outland_highway_patrol_tests PRIVATE outland_render)
+    target_compile_options(outland_highway_patrol_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_highway_patrol_tests COMMAND outland_highway_patrol_tests)
     add_executable(outland_city_driving_tests tests/integration/vehicles/test_city_driving.cpp)
     target_link_libraries(outland_city_driving_tests PRIVATE outland_render)
     target_compile_options(outland_city_driving_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

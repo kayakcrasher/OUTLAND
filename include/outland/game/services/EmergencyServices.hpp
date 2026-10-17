@@ -27,12 +27,17 @@ namespace outland::game::life { class LifeSimulation; }
 // back to the hospital - lights and siren if the patient is alive. The wounded are treated and
 // walk out of the hospital door later (game::life); the dead go to the morgue.
 //
+// The Ŝosea Patrolo (game::services::HighwayPatrol): tan cruisers the game adds one per outpost.
+// They drive the ring road's beat round and round; one that finds a wanted player close by joins
+// the chase and radios the Policio for backup (events().backup); guard() sends the nearest to a
+// ranch in trouble. Two troopers stand at each outpost, and turn on a dangerous player near it.
+//
 // Officers and paramedics on foot are NpcSystem residents with ids from crew_base up (not island
 // life's residents).
 namespace outland::game::services {
 
-enum class UnitKind : std::uint8_t { Police, Ambulance };
-enum class UnitState : std::uint8_t { Parked, Responding, Pursuit, OnScene, Returning, Out };
+enum class UnitKind : std::uint8_t { Police, Ambulance, Highway };
+enum class UnitState : std::uint8_t { Parked, Responding, Pursuit, OnScene, Returning, Out, Patrol };
 const char* unit_state_name(UnitState state);
 
 struct Unit {
@@ -49,6 +54,7 @@ struct Unit {
     std::vector<int> crew;     // NpcSystem resident ids on foot
     int patient{-1};           // NpcSystem resident id being collected (ambulance)
     bool loaded{false}, patient_alive{false};
+    int waypoint{-1};          // Ŝosea Patrolo: where on the beat
 };
 
 struct ServicesFrame {
@@ -65,6 +71,7 @@ struct ServicesEvents {
     std::vector<int> hospitalised;  // island life residents brought in alive
     std::vector<int> morgue;        // island life residents brought in dead
     std::string message;
+    bool backup{false};             // a Ŝosea Patrolo car found the wanted player and radioed for backup
 };
 
 class EmergencyServices {
@@ -95,10 +102,19 @@ public:
     void assign_player_car(const std::string& vehicle) { player_car_ = vehicle; }
     void set_player_siren(bool siren) { player_siren_ = siren; }
     [[nodiscard]] const std::string& player_car() const { return player_car_; }
+    // The Ŝosea Patrolo: the ring road's beat, a cruiser (an outpost's), its two troopers at the
+    // outpost, and a call to a ranch in trouble (the nearest cruiser rides out with its lights).
+    void set_beat(std::vector<Vector3> beat) { beat_ = std::move(beat); }
+    void add_highway(const std::string& vehicle, Vector3 home, float yaw);
+    void post_troopers(Vector3 at, float yaw, characters::NpcSystem& npcs);
+    void guard(Vector3 where, vehicles::VehicleSystem& cars);
+    [[nodiscard]] bool trooper(int resident) const;
+    static constexpr const char* trooper_characters[2]{"character_19_police", "character_20_police"};
     // The police station (its patrol car's parking place) within `radius` of `feet`, or null.
     [[nodiscard]] const Unit* station_near(Vector3 feet, float radius) const;
 
 private:
+    void highway(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region, characters::NpcSystem& npcs);
     void police(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region, characters::NpcSystem& npcs);
     void ambulance(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
                    characters::NpcSystem& npcs, life::LifeSimulation* life);
@@ -122,6 +138,10 @@ private:
     ServicesEvents events_;
     std::string player_car_;
     bool player_siren_{false};
+    struct Trooper { int resident{-1}; Vector3 post{}; float yaw{0}; };
+    std::vector<Vector3> beat_;
+    std::vector<Trooper> troopers_;
+    double backup_at_{-1e9};
     std::uint64_t rng_{0x6a09e667f3bcc909ULL};
 };
 

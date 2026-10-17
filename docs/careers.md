@@ -93,6 +93,21 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
 
 - Firing your gun on duty is never reported as "shots fired".
 
+## La Ŝosea Patrolo (the highway patrol)
+
+The law on Verda's highways, and above all the giant ring road round the island.
+
+- **The look:** troopers wear tan shirts with olive trousers and a tan campaign hat. Their cruisers are tan with an orange waist stripe and a red and blue light bar, and carry the orange star and "ŜOSEA PATROLO" on the doors. The outposts are small tan booths with a brown roof, the star sign and a barrier arm.
+- **Outposts:** at first there is just one, beside the north highway half a kilometre out of Verda City.
+  - The patrol grows with the police campaign: one more outpost for every quarter of the towns cleared, all **five** once Verda is clean. The others stand round the ring road.
+  - Each outpost has a cruiser and two troopers.
+  - The map shows every outpost (tan shield); the compass shows them within 1.4 km.
+- **On the beat:** each cruiser drives round and round the ring road.
+- **Backup:** a cruiser that spots a wanted player close by joins the chase and radios the Policio for backup (+1 star, at most every 30 s).
+- **Guarding the ranchers:** when a ranching family is in trouble (the player provoked it), the nearest cruiser rides out with its lights on, and the law is told (at least 1 star).
+- **At the outposts:** the two troopers stand their post, and draw on a player with two stars or more within 70 m.
+- **Tech:** placement, the beat and the art are in `game::services::HighwayPatrol`; the cars and troopers are driven by `EmergencyServices` (`UnitKind::Highway`). The cruiser comes from `tools/generate_emergency_vehicles.py` (`highway_patrol`) and the hat from `tools/generate_ranch_models.py` (`trooper_hat.glb`). Dev: `OUTLAND_DEV_PATROL=5` opens every outpost.
+
 ## The campaign: rid Verda of the gangs
 
 The goal of the police questline is to get rid of the gangs. Once you serve, about 4 calls in 10 are the Chief's own orders: **CLEAN UP** (1400 pay, 14 respect).

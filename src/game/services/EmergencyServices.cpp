@@ -25,6 +25,7 @@ const char* unit_state_name(UnitState state) {
         case UnitState::OnScene: return "on scene";
         case UnitState::Returning: return "returning";
         case UnitState::Out: return "out of service";
+        case UnitState::Patrol: return "on patrol";
     }
     return "?";
 }
@@ -74,6 +75,9 @@ void EmergencyServices::clear(vehicles::VehicleSystem& cars, characters::NpcSyst
         cars.clear_autopilot(u.vehicle);
         for (const int id : u.crew) npcs.despawn_resident(id);
     }
+    for (const auto& t : troopers_) npcs.despawn_resident(t.resident);
+    troopers_.clear();
+    beat_.clear();
     units_.clear();
     claimed_.clear();
 }
@@ -94,8 +98,12 @@ int EmergencyServices::count(UnitKind kind, UnitState state) const {
 
 std::vector<Vector3> EmergencyServices::officers_on_foot(const characters::NpcSystem& npcs) const {
     std::vector<Vector3> out;
+    for (const auto& t : troopers_) {
+        const int index = npcs.find_resident(t.resident);
+        if (index >= 0 && npcs.actors()[static_cast<std::size_t>(index)].health > 0) out.push_back(npcs.actors()[static_cast<std::size_t>(index)].position);
+    }
     for (const auto& u : units_) {
-        if (u.kind != UnitKind::Police) continue;
+        if (u.kind == UnitKind::Ambulance) continue;
         for (const int id : u.crew) {
             const int index = npcs.find_resident(id);
             if (index < 0) continue;
@@ -104,6 +112,85 @@ std::vector<Vector3> EmergencyServices::officers_on_foot(const characters::NpcSy
         }
     }
     return out;
+}
+
+void EmergencyServices::add_highway(const std::string& vehicle, Vector3 home, float yaw) {
+    if (unit(vehicle)) return;
+    Unit u;
+    u.kind = UnitKind::Highway;
+    u.vehicle = vehicle;
+    u.home = home;
+    u.home_yaw = yaw;
+    units_.push_back(std::move(u));
+}
+
+void EmergencyServices::post_troopers(Vector3 at, float yaw, characters::NpcSystem& npcs) {
+    const float a = yaw * DEG2RAD;
+    const Vector3 ahead{std::sin(a), 0, std::cos(a)}, side{std::cos(a), 0, -std::sin(a)};
+    for (int k = 0; k < 2; ++k) {
+        characters::ResidentSpawn spawn;
+        spawn.resident = crew_base + next_crew_++;
+        spawn.character_id = trooper_characters[k % 2];
+        spawn.pool = characters::CharacterPool::Emergency;
+        spawn.position = Vector3Add(Vector3Add(at, Vector3Scale(ahead, 3.4F)), Vector3Scale(side, k == 0 ? -1.4F : 1.6F));
+        spawn.anchor = spawn.position;
+        spawn.anchor_radius = 1.2F;
+        spawn.yaw_degrees = yaw;
+        spawn.police = true;
+        npcs.spawn_resident(spawn);
+        troopers_.push_back({spawn.resident, spawn.position, yaw});
+    }
+}
+
+void EmergencyServices::guard(Vector3 where, vehicles::VehicleSystem& cars) {
+    Unit* best = nullptr;
+    float nearest = 1e9F;
+    for (auto& u : units_) {
+        if (u.kind != UnitKind::Highway || u.state == UnitState::Out || busy(u)) continue;
+        const int v = cars.find(u.vehicle);
+        if (v < 0) continue;
+        const float d = flat(cars.vehicles()[static_cast<std::size_t>(v)].position, where);
+        if (d < nearest) { nearest = d; best = &u; }
+    }
+    if (best) { dispatch(*best, where, true, cars); events_.message = "The Ŝosea Patrolo is riding out to the ranch"; }
+}
+
+bool EmergencyServices::trooper(int resident) const {
+    for (const auto& t : troopers_) if (t.resident == resident) return true;
+    for (const auto& u : units_)
+        if (u.kind == UnitKind::Highway && std::find(u.crew.begin(), u.crew.end(), resident) != u.crew.end()) return true;
+    return false;
+}
+
+void EmergencyServices::highway(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
+                                characters::NpcSystem& npcs) {
+    const int v = cars.find(u.vehicle);
+    const auto& car = cars.vehicles()[static_cast<std::size_t>(v)];
+    const float distance = flat(car.position, frame.player);
+    const bool visible = frame.player_alive && distance < 200 &&
+        (!frame.sight || frame.sight(lift(car.position, 1.4F), lift(frame.player, 1.5F)));
+    if (frame.wanted > 0 && visible && frame.now - backup_at_ > 30) {   // "send backup"
+        backup_at_ = frame.now;
+        events_.backup = true;
+    }
+    if (frame.wanted > 0 && !busy(u) && visible && distance < 220) dispatch(u, frame.last_known, true, cars);
+    if (busy(u)) { police(u, frame, cars, region, npcs); return; }
+    // Back on the beat: on round the ring road, one point after another.
+    // No road there: wait a moment before trying the next point (not a new route every frame).
+    if (u.state == UnitState::Patrol && !u.route.complete && (u.replan -= frame.dt) > 0) return;
+    const bool arrived = u.state == UnitState::Patrol && drive(u, cars, frame.dt);
+    if (beat_.empty() || (u.state == UnitState::Patrol && !arrived)) return;
+    const int n = static_cast<int>(beat_.size());
+    if (u.waypoint < 0 || u.state != UnitState::Patrol) {
+        int best = 0;
+        for (int i = 1; i < n; ++i)
+            if (flat(beat_[static_cast<std::size_t>(i)], car.position) < flat(beat_[static_cast<std::size_t>(best)], car.position)) best = i;
+        u.waypoint = (best + 1) % n;
+    } else {
+        u.waypoint = (u.waypoint + 1) % n;
+    }
+    dispatch(u, beat_[static_cast<std::size_t>(u.waypoint)], false, cars);
+    u.state = UnitState::Patrol;
 }
 
 std::string EmergencyServices::character(bool police) {
@@ -185,7 +272,7 @@ void EmergencyServices::crew_out(Unit& u, int count, bool police, bool armed, ve
     for (int k = 0; k < count; ++k) {
         characters::ResidentSpawn spawn;
         spawn.resident = crew_base + next_crew_++;
-        spawn.character_id = character(police);
+        spawn.character_id = u.kind == UnitKind::Highway ? std::string(trooper_characters[k % 2]) : character(police);
         spawn.pool = characters::CharacterPool::Emergency;
         // Officers from the front doors; paramedics round the back.
         const float side = k % 2 == 0 ? 1.7F : -1.7F;
@@ -395,7 +482,8 @@ void EmergencyServices::update(const ServicesFrame& frame, vehicles::VehicleSyst
             u.patient = -1;
             u.siren = false;
             u.state = UnitState::Out;
-            if (stolen) events_.message = u.kind == UnitKind::Police ? "You took a police car" : "You took an ambulance";
+            if (stolen) events_.message = u.kind == UnitKind::Ambulance ? "You took an ambulance" :
+                                          u.kind == UnitKind::Highway ? "You took a Ŝosea Patrolo cruiser" : "You took a police car";
         }
     }
 
@@ -442,8 +530,20 @@ void EmergencyServices::update(const ServicesFrame& frame, vehicles::VehicleSyst
         dispatch(*best, actor.position, true, cars);
         if (events_.message.empty()) events_.message = "An ambulance is on its way";
     }
+    // The troopers at the outposts: they stand their post, and draw on a dangerous man close by.
+    for (const auto& t : troopers_) {
+        const int index = npcs.find_resident(t.resident);
+        if (index < 0) continue;
+        const auto& actor = npcs.actors()[static_cast<std::size_t>(index)];
+        if (actor.state == characters::NpcState::Dead || actor.health <= 0) continue;
+        const bool danger = frame.wanted >= 2 && frame.player_alive && flat(actor.position, frame.player) < 70;
+        npcs.arm_resident(t.resident, danger);
+        npcs.direct_resident(t.resident, danger ? frame.player : t.post, danger ? 1.2F : .8F, danger);
+    }
     for (auto& u : units_) {
-        if (u.state == UnitState::Out || u.state == UnitState::Parked || cars.find(u.vehicle) < 0) continue;
+        if (u.state == UnitState::Out || cars.find(u.vehicle) < 0) continue;
+        if (u.kind == UnitKind::Highway) { highway(u, frame, cars, region, npcs); continue; }
+        if (u.state == UnitState::Parked) continue;
         if (u.kind == UnitKind::Police) police(u, frame, cars, region, npcs);
         else ambulance(u, frame, cars, region, npcs, life);
     }
@@ -484,7 +584,7 @@ void draw_light_bars(const EmergencyServices& services, const vehicles::VehicleS
         if (v < 0) continue;
         const auto& car = cars.vehicles()[static_cast<std::size_t>(v)];
         if (flat(car.position, camera) > 350) continue;
-        const bool police = u.kind == UnitKind::Police;
+        const bool police = u.kind != UnitKind::Ambulance;
         const Color left = RED, right = police ? Color{40, 110, 255, 255} : Color{255, 170, 30, 255};
         const float y = police ? 1.6F : 1.98F, z = police ? -.1F : 1.8F;
         const bool phase = std::fmod(time * 3.0F + static_cast<float>(v) * .37F, 1.0F) < .5F;

@@ -76,6 +76,7 @@
 #include "outland/world/physics/MeshCollision.hpp"
 
 #include "outland/game/culture/SignRenderer.hpp"
+#include "outland/game/services/HighwayPatrol.hpp"
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/game/zombies/ZombieEcology.hpp"
 #include "outland/game/LanScreen.hpp"
@@ -619,6 +620,12 @@ void Renderer::run() {
     std::string banner_key;
     int mural_attempts=0;float mural_wait=0;
     bool gt_stolen=false;
+    // La Ŝosea Patrolo: its outposts on the ring road (how many are open grows with the law), the
+    // art for the booths and the cruisers' doors, and which ranches have already called them.
+    std::vector<game::services::Outpost> patrol_posts;
+    int patrol_open=0;
+    game::services::HighwayPatrolArt patrol_art;
+    std::array<bool,game::mafia::family_count> ranch_alarm{};
     std::vector<int> retired_bots;   // crews broken up in an earlier session: not drawn            // an outsider at the wheel of the Verda Mano GT (once a drive)
     game::casino::Poker poker;
     game::casino::PokerTable poker_table;
@@ -663,8 +670,8 @@ void Renderer::run() {
     bot_drivers.reserve("vehicle_spawn_sxs_");
     bot_drivers.reserve("vehicle_spawn_semi_");
     // A cattleman hat on a head (the crown from the body's pose): its band ~10 cm below the top.
-    const auto draw_cowboy_hat=[&](const characters::HeldGun& head) {
-        Model* hat=get_world_asset_model("assets/verda/ranch/cowboy_hat.glb",character_registry);
+    const auto draw_cowboy_hat=[&](const characters::HeldGun& head,const char* model="assets/verda/ranch/cowboy_hat.glb") {
+        Model* hat=get_world_asset_model(model,character_registry);
         if(!hat || !head.hat) return;
         const Vector3 up=Vector3Normalize(head.crown_up);
         Vector3 forward=Vector3Subtract(head.crown_forward,Vector3Scale(up,Vector3DotProduct(head.crown_forward,up)));
@@ -1366,6 +1373,29 @@ void Renderer::run() {
                     br_bots.sync_bodies(npcs,&character_registry);
                     walking_man.dress(npcs);
                     services.start(vehicles,verda_region,&character_registry);
+                    // The Ŝosea Patrolo's plan: five places on the ring road, the first by Verda City.
+                    patrol_posts.clear();patrol_open=0;ranch_alarm.fill(false);
+                    if(game::rules_for(game_mode).civilian_life) {
+                        Vector3 capital{};
+                        for(const auto& town:verda_region.settlements()) if(town.id=="capital_verda") capital=town.center;
+                        // Open ground: nothing built or placed within reach (the ranches' fences included).
+                        const auto free=[&](Vector3 at) {
+                            for(const auto& town:verda_region.settlements()) {
+                                for(const auto& asset:town.assets)
+                                    if(std::hypot(asset.position.x-at.x,asset.position.z-at.z)<std::max(asset.size.x,asset.size.z)*.5F+7) return false;
+                                for(const auto& building:town.buildings)
+                                    if(std::hypot(building.position.x-at.x,building.position.z-at.z)<std::max(building.size.x,building.size.z)*.5F+7) return false;
+                            }
+                            return true;
+                        };
+                        patrol_posts=game::services::plan_outposts(capital,free);
+                        for(auto& post:patrol_posts) {
+                            post.at.y=world::terrain::TerrainHeight::sample(post.at.x,post.at.z);
+                            post.parking.y=world::terrain::TerrainHeight::sample(post.parking.x,post.parking.z);
+                        }
+                        services.set_beat(game::services::patrol_loop(250));
+                        patrol_art.prepare(sign_renderer.font());
+                    }
 #ifdef OUTLAND_DEV_TOOLS
                     for(const auto& u:services.units()) if(u.kind==game::services::UnitKind::Police)
                         TraceLog(LOG_INFO,"OUTLAND police car %s at %.1f %.1f",u.vehicle.c_str(),u.home.x,u.home.z);
@@ -2989,6 +3019,8 @@ void Renderer::run() {
                 call.sight=frame.line_of_sight;
                 services.update(call,vehicles,verda_region,npcs,&island_life);
                 if(!services.events().message.empty()) {interaction_message=services.events().message;interaction_remaining=3;}
+                if(services.events().backup)   // a Ŝosea Patrolo cruiser found you: the Policio sends more
+                    justice.tip_off(std::min(5,justice.wanted()+1),frame.player,frame,island_life,"The Ŝosea Patrolo radioed the Policio for backup");
             }
         }
         crimes.clear();
@@ -3749,6 +3781,8 @@ void Renderer::run() {
         const auto draw_hat=[&](const characters::NpcInstance& actor,const characters::HeldGun& held) {
             if(actor.bot>=0 && ranches.vakero(actor.bot) && actor.state!=characters::NpcState::Dead) draw_cowboy_hat(held);
             if(actor.bot==chief_bot) draw_chief_cap(held);
+            if(actor.resident>=0 && actor.state!=characters::NpcState::Dead && services.trooper(actor.resident))
+                draw_cowboy_hat(held,"assets/verda/ranch/trooper_hat.glb");
         };
         character_renderer.draw_npcs(npcs, camera.position, &view,
             [&](const characters::NpcInstance& actor,characters::BodyPose& body) {
@@ -3850,8 +3884,13 @@ void Renderer::run() {
             gang_logos.draw_mural(green_hand_mural.centre,green_hand_mural.normal,green_hand_mural.width,camera.position);
         for(const auto& car:vehicles.vehicles())
             if(Vector3Distance(car.position,camera.position)<120)
-                if(const auto* a=vehicles.asset(verda_region,car.id);a && a->vehicle.definition==game::mafia::green_hand_car)
-                    game::mafia::draw_green_hand_livery(car.position,car.yaw,sign_renderer.verda_mano_texture(),camera.position);
+                if(const auto* a=vehicles.asset(verda_region,car.id)) {
+                    if(a->vehicle.definition==game::mafia::green_hand_car)
+                        game::mafia::draw_green_hand_livery(car.position,car.yaw,sign_renderer.verda_mano_texture(),camera.position);
+                    else if(a->vehicle.definition=="highway_patrol") patrol_art.draw_livery(car.position,car.yaw,camera.position);
+                }
+        for(int i=0;i<patrol_open && i<static_cast<int>(patrol_posts.size());++i)
+            patrol_art.draw_outpost(patrol_posts[static_cast<std::size_t>(i)],camera.position);
         if(services.active()) game::services::draw_light_bars(services,vehicles,camera.position,static_cast<float>(GetTime()));
         if(const int lit=lights_car.empty() ? -1 : vehicles.find(lights_car);lit>=0) {
             const auto& car=vehicles.vehicles()[static_cast<std::size_t>(lit)];
@@ -4585,6 +4624,40 @@ void Renderer::run() {
                 gt_stolen=true;interaction_message="The crew's Verda Mano GT - bring it back in one piece";interaction_remaining=3;
             }
         } else gt_stolen=false;
+        // The Ŝosea Patrolo grows with the law: an outpost more for every quarter of the towns the
+        // Policio has cleared (all five once Verda is clean), each with its cruiser and two troopers.
+        if(game::rules_for(game_mode).civilian_life && services.active() && !territory.turfs().empty() && !patrol_posts.empty()) {
+            const float law=territory.balance(-1).law;
+            int want=std::min(static_cast<int>(patrol_posts.size()),game::services::outposts_open(law,law>=.999F));
+#ifdef OUTLAND_DEV_TOOLS
+            // OUTLAND_DEV_PATROL=N: open N outposts at once.
+            if(const char* dev=std::getenv("OUTLAND_DEV_PATROL")) want=std::clamp(std::atoi(dev),want,static_cast<int>(patrol_posts.size()));
+#endif
+            if(patrol_open<want) {
+                const auto& post=patrol_posts[static_cast<std::size_t>(patrol_open)];
+                std::vector<std::string> before;for(const auto& v:vehicles.vehicles()) before.push_back(v.id);
+                if(vehicles.spawn(verda_region,post.parking,post.parking_yaw,"highway_patrol"))
+                    for(const auto& v:vehicles.vehicles())
+                        if(std::find(before.begin(),before.end(),v.id)==before.end()) {services.add_highway(v.id,v.position,v.yaw);break;}
+                services.post_troopers(post.at,post.yaw,npcs);
+                if(patrol_open>0) {interaction_message="The Ŝosea Patrolo opens another outpost on the ring road";interaction_remaining=4;}
+                TraceLog(LOG_INFO,"OUTLAND Ŝosea Patrolo outpost %d at %.0f %.0f",patrol_open+1,post.at.x,post.at.z);
+                ++patrol_open;
+            }
+            // Ranchers in trouble call the patrol: the nearest cruiser rides out, the law is told.
+            if(ranches.active())
+                for(std::size_t r=0;r<ranches.ranches().size() && r<ranch_alarm.size();++r) {
+                    const auto& ranch=ranches.ranches()[r];
+                    const bool trouble=ranch.provoked_until>match_time;
+                    if(trouble && !ranch_alarm[r] && ranch.spec) {
+                        const Vector3 gate=ranch.frame.at(0,110);
+                        services.guard(gate,vehicles);
+                        game::law::JusticeFrame call;call.now=match_time;call.player={player.position.x,player.position.y-1,player.position.z};
+                        justice.tip_off(1,call.player,call,island_life,"The "+std::string(ranch.spec->family)+" ranch called the Ŝosea Patrolo");
+                    }
+                    ranch_alarm[r]=trouble;
+                }
+        }
         // The mural: a side wall of the Verda City hideout (or its back), the one with the most
         // open ground in front of it.
         if(game::rules_for(game_mode).civilian_life && mafio.active() && !green_hand_mural.placed && mural_attempts<30 &&
@@ -4775,6 +4848,9 @@ void Renderer::run() {
                     const auto& family=territory.families()[static_cast<std::size_t>(t.ranch)];
                     compass_marks.push_back({t.centre,Glyph::Ranch,Color{176,128,74,255},family.name.empty() ? t.name : family.name+" ranch",false});
                 }
+                for(int i=0;i<patrol_open && i<static_cast<int>(patrol_posts.size());++i)
+                    if(flat(patrol_posts[static_cast<std::size_t>(i)].at)<1400)
+                        compass_marks.push_back({patrol_posts[static_cast<std::size_t>(i)].at,Glyph::Police,Color{214,170,100,255},"ŜOSEA PATROLO",false});
                 if(career.on_duty() && police_camp.placed())
                     compass_marks.push_back({police_camp.line(),Glyph::Camp,Color{215,60,50,255},"TRAINING CAMP",false});
             }
@@ -4897,6 +4973,11 @@ void Renderer::run() {
                 view.home_owned=game::economy::Penthouse::owned(loot_session.economy());
             }
             view.marks=compass_marks;
+            for(int i=0;i<patrol_open && i<static_cast<int>(patrol_posts.size());++i) {   // every outpost, near or far
+                const auto& post=patrol_posts[static_cast<std::size_t>(i)];
+                if(std::hypot(post.at.x-player.position.x,post.at.z-player.position.z)>=1400)
+                    view.marks.push_back({post.at,game::hud::Glyph::Police,Color{214,170,100,255},"ŜOSEA PATROLO",false});
+            }
             if(game::rules_for(game_mode).civilian_life && !territory.turfs().empty()) {
                 const auto balance=territory.balance(player_gang());
                 view.law=balance.law;view.crime=balance.crime;

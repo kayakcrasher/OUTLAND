@@ -17,7 +17,8 @@ the game draws the four turning wheels from truck_wheel.glb at the manifest's an
                           a drop deck between the gooseneck and the rear axles, rear swing gate.
 Livestock and gear (assets/verda/ranch/):
   cow_hereford.glb, cow_angus.glb   a beef cow (red with a white face / black), facing +Z.
-  cowboy_hat.glb          a felt cattleman hat: pinched crown, band, brim curled up at the sides;
+  cowboy_hat.glb          a felt cattleman hat: pinched crown, band, brim curled up at the sides
+                          (trooper_hat.glb: the same in tan, for the Ŝosea Patrolo);
                           the crown's base ring is at Y = HAT_SEAT, the brim's front toward +Z.
 Farm buildings and props (assets/verda/ranch/, catalogued in RanchAssetCatalog.hpp):
   barn.glb                a red gambrel barn 14 x 22 m, open sliding doors at both ends, hayloft,
@@ -393,8 +394,9 @@ FELT_DARK = (84, 58, 34, 255)
 BAND = (40, 28, 20, 255)
 
 
-def cowboy_hat():
+def cowboy_hat(felt=FELT, felt_dark=FELT_DARK, band=BAND):
     """Brim 0.36 m across and 0.32 m front to back, crown 0.12 m high, pinched at the front."""
+    FELT, FELT_DARK, BAND = felt, felt_dark, band
     m = Mesh()
     seg = 20
     # The brim: an oval ring, flat at front and back and rolled up at the sides.
@@ -717,6 +719,8 @@ GEAR_MODELS = [
     ("cow_hereford.glb", lambda: cow((150, 62, 34, 255), (238, 232, 220, 255), (236, 230, 218, 255))),
     ("cow_angus.glb", lambda: cow((30, 28, 28, 255), (34, 32, 32, 255), (40, 36, 36, 255))),
     ("cowboy_hat.glb", cowboy_hat),
+    # The Ŝosea Patrolo's campaign hat: tan felt, a brown band.
+    ("trooper_hat.glb", lambda: cowboy_hat((206, 176, 122, 255), (170, 140, 92, 255), (92, 62, 32, 255))),
 ]
 # Catalogued farm pieces: file, builder, id, name, category, footprint w, d, h.
 FARM_PIECES = [

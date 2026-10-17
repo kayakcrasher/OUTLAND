@@ -9,6 +9,10 @@ Original, light models built from boxes with vertex colours, like the pickup tru
   interceptor  the Chief's upgrade for a qualified officer: a long, low pursuit sedan in black with
              white doors and roof and a gold pinstripe, a slim LED light bar, a heavy push bar with
              flashers in it, a bonnet scoop and a boot spoiler (assets/.../interceptor_body.glb).
+  highway    the Ŝosea Patrolo's cruiser, which patrols the ring road: a sedan in tan with a
+             darker tan bonnet and boot, an orange stripe along the waist, red and blue light
+             bar and a push bar; the game paints the orange star and "ŜOSEA PATROLO" on the
+             doors (assets/.../highway_patrol_body.glb).
   ambulance  a box ambulance on a van cab: white body, a green waist stripe and red crosses on the
              sides and back, amber and red light bar, rear doors, side door, tinted cab glass.
 
@@ -29,6 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 POLICE = ROOT / "assets/verda/vehicles/runtime/police_body.glb"
 AMBULANCE = ROOT / "assets/verda/vehicles/runtime/ambulance_body.glb"
 INTERCEPTOR = ROOT / "assets/verda/vehicles/runtime/interceptor_body.glb"
+HIGHWAY = ROOT / "assets/verda/vehicles/runtime/highway_patrol_body.glb"
 
 NAVY = (22, 36, 84)
 NAVY_DARK = (14, 24, 58)
@@ -46,6 +51,10 @@ GREEN = (0, 140, 70)
 BLACK = (18, 19, 22)
 BLACK_SHINE = (34, 36, 42)
 GOLD = (212, 170, 60)
+TAN = (198, 168, 116)
+TAN_DARK = (164, 134, 88)
+TAN_SHADE = (180, 150, 102)
+ORANGE = (232, 118, 28)
 
 
 def arches(half_w, axles, sill, top, colour_dark):
@@ -180,6 +189,52 @@ def interceptor():
     return truck.glb(kit.mesh(), "verda_police_interceptor", True)
 
 
+def highway():
+    kit.boxes.clear()
+    W = .92
+    FRONT, REAR = 2.4, -2.4
+    kit.box(-W + .06, W - .06, .42, .46, -1.2, 1.1, DARK)
+    for z in (.2, -.75):
+        kit.box(-W + .12, W - .12, .46, .78, z - .3, z + .2, SEAT)
+        kit.box(-W + .12, W - .12, .78, 1.2, z - .38, z - .26, SEAT)
+    kit.box(-W + .08, W - .08, .7, .95, .9, 1.15, DARK)
+    for x in (-.6, -.3, 0, .3, .6):
+        kit.box(x - .015, x + .015, .8, 1.28, -.3, -.27, CHROME)
+    # Tan all over; the bonnet and boot a shade darker; an orange stripe at the waist.
+    kit.box(-W, W, .3, .82, REAR, FRONT, TAN)
+    for side in (-1, 1):
+        kit.box(side * W, side * (W + .008), .72, .78, REAR + .05, FRONT - .05, ORANGE)
+        kit.box(side * W, side * (W + .008), .7, .72, REAR + .05, FRONT - .05, DARK)
+        kit.box(side * W, side * (W + .005), .32, .7, -.27, -.25, TAN_SHADE)      # door gaps
+        kit.box(side * W, side * (W + .005), .32, .7, 1.18, 1.2, TAN_SHADE)
+        kit.box(side * W, side * (W + .02), .62, .66, .45, .6, CHROME)
+        kit.box(side * W, side * (W + .02), .62, .66, -.6, -.45, CHROME)
+        kit.box(side * W, side * (W + .16), .88, 1.0, 1.05, 1.15, TAN_DARK)        # mirrors
+    kit.box(-W + .04, W - .04, .82, .86, FRONT - 1.2, FRONT - .05, TAN_DARK)
+    kit.box(-W + .04, W - .04, .82, .88, REAR + .05, REAR + .9, TAN_DARK)
+    kit.box(-.07, .07, .86, .87, FRONT - 1.1, FRONT - .1, ORANGE)                  # bonnet pinstripe
+    kit.box(-W + .05, W - .05, .86, 1.3, -1.25, 1.2, GLASS)
+    kit.box(-W + .03, W - .03, 1.3, 1.36, -1.3, 1.22, TAN)
+    for z in (-1.28, -.27, 1.2):
+        for side in (-1, 1):
+            kit.box(side * (W - .06), side * W, .82, 1.32, z - .05, z + .05, TAN_SHADE)
+    light_bar(1.36, -.1, 1.3, RED, BLUE)
+    kit.box(-.5, .5, .4, .7, FRONT - .04, FRONT, DARK)
+    for side in (-1, 1):
+        kit.box(side * .55, side * .86, .56, .72, FRONT - .04, FRONT, LAMP)
+        kit.box(side * .55, side * .86, .48, .55, FRONT - .04, FRONT, AMBER)
+        kit.box(side * .6, side * .9, .6, .8, REAR - .02, REAR + .02, RED)
+        kit.box(side * .35, side * .45, .25, .85, FRONT + .1, FRONT + .2, DARK)
+    kit.box(-.5, .5, .4, .5, FRONT + .1, FRONT + .2, DARK)
+    kit.box(-.5, .5, .72, .8, FRONT + .1, FRONT + .2, DARK)
+    kit.box(-W - .02, W + .02, .28, .42, FRONT, FRONT + .08, DARK)
+    kit.box(-W - .02, W + .02, .28, .42, REAR - .08, REAR, DARK)
+    kit.box(-.22, .22, .5, .62, REAR - .09, REAR - .08, (226, 224, 214))
+    kit.box(-.1, .1, .64, .74, REAR - .1, REAR - .09, ORANGE)                       # the star's place on the boot
+    arches(W, (1.4, -1.35), .3, .62, DARK)
+    return truck.glb(kit.mesh(), "verda_highway_patrol", True)
+
+
 def cross(side_x, y, z, size, facing_x=True):
     """A red cross on a white panel, on a side (x = side_x) or on the back (z = side_x)."""
     a, b = size / 2, size / 6
@@ -246,7 +301,7 @@ def ambulance():
 
 
 if __name__ == "__main__":
-    outputs = {POLICE: police(), AMBULANCE: ambulance(), INTERCEPTOR: interceptor()}
+    outputs = {POLICE: police(), AMBULANCE: ambulance(), INTERCEPTOR: interceptor(), HIGHWAY: highway()}
     for path, data in outputs.items():
         if "--check" in sys.argv:
             if not path.exists() or path.read_bytes() != data:
