@@ -32,8 +32,9 @@ struct Sign {
     float post{0};              // >0: one post this tall from the ground up to the board's bottom
 };
 
-// Which cloth a pole flies: the national flag, or the Apelacio - the backcountry's pine tree.
-enum class FlagDesign : unsigned char { Verda, Apelacio };
+// Which cloth a pole flies: the national flag, the Apelacio - the backcountry's pine tree - or
+// La Verda Mano's banner over its hideouts and the towns it holds.
+enum class FlagDesign : unsigned char { Verda, Apelacio, VerdaMano };
 
 struct FlagPole {
     std::string place;
@@ -62,4 +63,8 @@ Image flag_image(int width);
 inline constexpr const char* apelacio_motto = "APELACIO AL LA ĈIELO";
 Image apelacio_image(int width, const Font* font);
 inline constexpr Color verda_green{0, 153, 0, 255};
+// La Standardo de la Verda Mano: the Ulster Banner in Esperanto - a green cross on white, and on it
+// Esperanto's five-pointed star in white carrying the open green hand, under a gold crown topped
+// with a green star. CPU image, `width` x width/2.
+Image verda_mano_image(int width);
 }

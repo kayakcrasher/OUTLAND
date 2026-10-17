@@ -74,6 +74,24 @@ int main() {
         UnloadFont(font);
     }
 
+    {   // La Verda Mano's banner: a green cross on white, the white star with the green hand, a gold crown.
+        Image banner = verda_mano_image(512);
+        if (const char* out = std::getenv("OUTLAND_VERDA_MANO_PNG")) ExportImage(banner, out);
+        check(banner.width == 512 && banner.height == 256, "the banner is 2:1");
+        const auto px = [&](float x, float y) { return GetImageColor(banner, static_cast<int>(x * 511), static_cast<int>(y * 255)); };
+        const auto green = [](Color c) { return c.g > 120 && c.r < 40 && c.b < 60; };
+        const auto white = [](Color c) { return c.r > 230 && c.g > 230 && c.b > 220; };
+        const auto gold = [](Color c) { return c.r > 200 && c.g > 150 && c.b < 90; };
+        check(white(px(.1F, .15F)) && white(px(.9F, .85F)), "white field in the corners");
+        check(green(px(.05F, .5F)) && green(px(.95F, .5F)) && green(px(.5F, .03F)) && green(px(.5F, .97F)), "the green cross runs edge to edge");
+        check(white(px(.39F, .48F)) && white(px(.58F, .74F)), "the white star sits on the cross");
+        check(green(px(.5F, .6F)), "the green hand in the star");
+        int crown = 0;
+        for (int x = 200; x < 312; ++x) for (int y = 30; y < 110; ++y) crown += gold(GetImageColor(banner, x, y));
+        check(crown > 600, "a gold crown above the star: " + std::to_string(crown));
+        UnloadImage(banner);
+    }
+
     // The published world.
     world::physics::MeshCollisionLibrary::add_root(OUTLAND_SOURCE_DIR);
     world::VerdaRegion region(true);

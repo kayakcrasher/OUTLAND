@@ -19,6 +19,11 @@ public:
     void unload();
     void set(Signage signage);
     const Signage& signage() const { return signage_; }
+    // Flags that come and go (the gangs' banners over the turf they hold), drawn with the rest.
+    void set_banners(std::vector<FlagPole> banners) { banners_ = std::move(banners); }
+    const std::vector<FlagPole>& banners() const { return banners_; }
+    // La Verda Mano's banner as a texture (the mural and the car's livery use it too).
+    const Texture2D& verda_mano_texture() const { return verda_mano_; }
     const Font& font() const { return font_; } // also for HUD text with Esperanto letters
     void draw(Vector3 camera, Vector3 camera_target, float time_seconds) const;
 
@@ -36,7 +41,8 @@ private:
     std::vector<Measured> measured_;
     Font font_{};
     bool own_font_{false};
-    Texture2D flag_{}, apelacio_{};
+    std::vector<FlagPole> banners_;
+    Texture2D flag_{}, apelacio_{}, verda_mano_{};
     bool loaded_{false};
     mutable engine::GeometryRecorder recorder_;
     mutable engine::RecordedGeometry baked_;

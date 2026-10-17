@@ -684,4 +684,101 @@ Image apelacio_image(int width, const Font* font) {
     ImageResize(&image, width, height);
     return image;
 }
+
+namespace {
+bool in_polygon(const std::vector<Vector2>& poly, float x, float y) {
+    bool inside = false;
+    for (std::size_t i = 0, j = poly.size() - 1; i < poly.size(); j = i++)
+        if ((poly[i].y > y) != (poly[j].y > y) &&
+            x < (poly[j].x - poly[i].x) * (y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x) inside = !inside;
+    return inside;
+}
+std::vector<Vector2> star_points(Vector2 c, float outer, float inner, int points, float turn) {
+    std::vector<Vector2> out;
+    for (int k = 0; k < points * 2; ++k) {
+        const float a = turn + static_cast<float>(k) * PI / static_cast<float>(points);
+        const float r = k % 2 ? inner : outer;
+        out.push_back({c.x + std::sin(a) * r, c.y - std::cos(a) * r});
+    }
+    return out;
+}
+float capsule(float x, float y, Vector2 a, Vector2 b) {   // distance to the segment ab
+    const Vector2 ab{b.x - a.x, b.y - a.y};
+    const float t = std::clamp(((x - a.x) * ab.x + (y - a.y) * ab.y) / std::max(1e-6F, ab.x * ab.x + ab.y * ab.y), 0.0F, 1.0F);
+    return std::hypot(x - (a.x + ab.x * t), y - (a.y + ab.y * t));
+}
+}
+
+Image verda_mano_image(int width) {
+    width = std::max(16, width);
+    const int height = width / 2;
+    const int W = width * 3, H = height * 3;   // drawn large, then shrunk (smooth edges)
+    const float w = static_cast<float>(W), h = static_cast<float>(H);
+    const Color field{247, 246, 240, 255}, green{0, 153, 0, 255}, ink{0, 84, 30, 255}, gold{232, 186, 52, 255},
+                gold_dark{150, 106, 22, 255}, velvet{0, 86, 40, 255}, pearl{252, 250, 236, 255};
+    Image image = GenImageColor(W, H, field);
+    auto* px = static_cast<Color*>(image.data);
+    const Vector2 c{w * .5F, h * .56F};
+    const float band = h * .2F;
+    const float star_r = h * .33F;
+    const auto star = star_points(c, star_r, star_r * .52F, 5, 0);
+    const auto star_rim = star_points(c, star_r + h * .018F, star_r * .52F + h * .018F, 5, 0);
+    // The hand: palm, four fingers and the thumb out to the left (as on the hideout tags).
+    const float u = h * .022F;
+    const Vector2 palm{c.x, c.y + 3.5F * u};
+    const Vector2 finger_base[4]{{c.x - 3.3F * u, c.y - .5F * u}, {c.x - 1.1F * u, c.y - 1.2F * u}, {c.x + 1.1F * u, c.y - 1.2F * u}, {c.x + 3.3F * u, c.y - .5F * u}};
+    const float finger_len[4]{5.2F * u, 6.6F * u, 6.8F * u, 5.4F * u};
+    const auto in_hand = [&](float x, float y) {
+        const float dx = (x - palm.x) / (4.6F * u), dy = (y - palm.y) / (4.6F * u);
+        if (dx * dx + dy * dy < 1 && y > c.y - 1.5F * u) return true;
+        if (std::abs(x - palm.x) < 4.3F * u && y > c.y - .5F * u && y < palm.y + 2 * u) return true;
+        for (int f = 0; f < 4; ++f)
+            if (capsule(x, y, finger_base[f], {finger_base[f].x, finger_base[f].y - finger_len[f]}) < 1.05F * u) return true;
+        return capsule(x, y, {palm.x - 3.2F * u, palm.y + .6F * u}, {palm.x - 6.4F * u, palm.y - 2.2F * u}) < 1.05F * u;   // the thumb
+    };
+    // The crown: a jewelled gold band, two pearled arches over a green velvet cap, and on top an
+    // orb carrying Esperanto's green star.
+    const float crown_w = h * .3F, crown_base = c.y - star_r * .74F, band_h = h * .05F;
+    const float arch_h = h * .17F, arch_t = h * .022F;
+    const Vector2 orb{c.x, crown_base - band_h - arch_h - h * .012F};
+    const auto crown_star = star_points({orb.x, orb.y - h * .052F}, h * .042F, h * .019F, 5, 0);
+    const auto crown_star_rim = star_points({orb.x, orb.y - h * .052F}, h * .058F, h * .03F, 5, 0);
+    const auto arch_at = [&](float fx) {   // height of the arches' outline above the band at x
+        const float rel = (fx - c.x) / (crown_w * .5F);
+        return std::abs(rel) > 1 ? -1.0F : arch_h * std::sqrt(std::max(0.0F, 1 - rel * rel)) * (.82F + .18F * std::abs(rel));
+    };
+    for (int y = 0; y < H; ++y) for (int x = 0; x < W; ++x) {
+        const float fx = x + .5F, fy = y + .5F;
+        Color col = field;
+        if (std::abs(fx - c.x) < band * .5F || std::abs(fy - h * .5F) < band * .5F) col = green;
+        if (in_polygon(star_rim, fx, fy)) col = ink;
+        if (in_polygon(star, fx, fy)) col = field;
+        if (in_hand(fx, fy)) col = green;
+        // Crown: cap, arches (outer and middle), band, pearls, orb, star.
+        const float top = crown_base - band_h;
+        if (const float arch = arch_at(fx); arch >= 0 && fy < top && fy > top - arch) {
+            col = velvet;
+            if (fy < top - arch + arch_t) col = gold;                                     // the outer arch
+            if (std::abs(fx - c.x) < arch_t * .5F) col = gold;                           // the middle arch
+            if (std::abs(fx - c.x) > crown_w * .5F - arch_t) col = gold;
+        }
+        for (int k = 0; k < 9; ++k) {   // pearls along the outer arch
+            const float rel = -.88F + static_cast<float>(k) * .22F;
+            const float px_ = c.x + rel * crown_w * .5F;
+            if (std::hypot(fx - px_, fy - (top - arch_at(px_) + arch_t * .3F)) < h * .011F) col = pearl;
+        }
+        if (fy >= top && fy <= crown_base && std::abs(fx - c.x) < crown_w * .56F) {
+            col = gold;
+            const float slot = std::fmod(fx - c.x + crown_w, h * .06F);
+            if (slot < h * .026F && std::abs(fy - (top + band_h * .5F)) < band_h * .28F) col = slot < h * .013F ? green : pearl;   // emeralds and pearls
+            if (fy > crown_base - h * .007F || fy < top + h * .006F) col = gold_dark;
+        }
+        if (std::hypot(fx - orb.x, fy - orb.y) < h * .026F) col = std::abs(fy - orb.y) < h * .005F ? gold_dark : gold;
+        if (in_polygon(crown_star_rim, fx, fy)) col = field;
+        if (in_polygon(crown_star, fx, fy)) col = green;
+        px[y * W + x] = col;
+    }
+    ImageResize(&image, width, height);
+    return image;
+}
 }

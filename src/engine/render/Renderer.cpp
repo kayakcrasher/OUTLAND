@@ -613,6 +613,12 @@ void Renderer::run() {
     std::string gang_news;float gang_news_time=0;
     bool island_ruled=false;
     std::vector<game::career::DockSpot> smuggling_docks;
+    // La Verda Mano's colours: the gable mural on the Verda City hideout, and the banners over the
+    // hideouts and town squares it holds (rebuilt when a town changes hands).
+    struct Mural { Vector3 centre{}, normal{}; float width{0}; bool placed{false}; } green_hand_mural;
+    std::string banner_key;
+    int mural_attempts=0;float mural_wait=0;
+    bool gt_stolen=false;            // an outsider at the wheel of the Verda Mano GT (once a drive)
     game::casino::Poker poker;
     game::casino::PokerTable poker_table;
     bool poker_open=false;
@@ -1464,9 +1470,38 @@ void Renderer::run() {
                             }
                         }
                     }
+                    // The Green Hand's mural goes up once the city's walls can be traced (retried
+                    // every couple of seconds until then).
+                    green_hand_mural={};mural_attempts=0;mural_wait=0;banner_key.clear();sign_renderer.set_banners({});
+                    gang_logos.prepare_mural(sign_renderer.verda_mano_texture(),sign_renderer.font());
                     TraceLog(LOG_INFO,"OUTLAND territory: %d turfs, %d tags, %d docks%s",static_cast<int>(territory.turfs().size()),
                              static_cast<int>(territory.tags().size()),static_cast<int>(smuggling_docks.size()),territory_loaded ? " (saved)" : "");
                     territory_saved=territory_loaded ? territory.serialise() : std::string();   // a fresh island is saved at once
+                    // The Verda Mano GT waits outside the Verda City hideout (one on the island).
+                    if(const auto* home=mafio.casino()) {
+                        bool parked=false;
+                        for(const auto& v:vehicles.vehicles())
+                            if(const auto* a=vehicles.asset(verda_region,v.id);a && a->vehicle.definition==game::mafia::green_hand_car) {
+                                parked=true;
+                                TraceLog(LOG_INFO,"OUTLAND Verda Mano GT at %.1f %.1f",v.position.x,v.position.z);
+                            }
+                        Vector3 out=Vector3Subtract(home->door,home->interior);out.y=0;
+                        if(!parked && Vector3Length(out)>.1F) {
+                            out=Vector3Normalize(out);
+                            // Along the kerb: the car's right (its local -x) toward the hideout.
+                            const float yaw=std::atan2(-out.z,out.x)*RAD2DEG;
+                            const Vector3 along{-out.z,0,out.x};
+                            bool done=false;
+                            for(const float k:{0.0F,6.0F,-6.0F,12.0F,-12.0F,18.0F,-18.0F}) {
+                                if(vehicles.spawn(verda_region,Vector3Add(Vector3Add(home->door,Vector3Scale(out,-1.0F)),Vector3Scale(along,k)),yaw,game::mafia::green_hand_car)) {
+                                    done=vehicle_dirty=true;
+                                    TraceLog(LOG_INFO,"OUTLAND Verda Mano GT parked outside %s",home->town.c_str());
+                                    break;
+                                }
+                            }
+                            if(!done) TraceLog(LOG_WARNING,"OUTLAND Verda Mano GT: no room outside %s",home->town.c_str());
+                        }
+                    }
                     island_ruled=player_gang()>=0 && territory.rules_island(player_gang());
                     // A serving officer whose Interceptor went missing gets another at HQ.
                     if(career.serving() && chief.placed && career.state().patrol_car.rfind("creator_vehicle_",0)==0 && vehicles.find(career.state().patrol_car)<0) {
@@ -3696,6 +3731,12 @@ void Renderer::run() {
         game::career::draw_camp(police_camp,camera.position,static_cast<float>(GetTime()),
             [](float x,float z){return world::terrain::TerrainHeight::sample(x,z);});
         for(const auto& tag:territory.tags()) gang_logos.draw(tag,camera.position);
+        if(green_hand_mural.placed && mafio.casino() && mafio.casino()->gang==0)   // painted over if the city falls
+            gang_logos.draw_mural(green_hand_mural.centre,green_hand_mural.normal,green_hand_mural.width,camera.position);
+        for(const auto& car:vehicles.vehicles())
+            if(Vector3Distance(car.position,camera.position)<120)
+                if(const auto* a=vehicles.asset(verda_region,car.id);a && a->vehicle.definition==game::mafia::green_hand_car)
+                    game::mafia::draw_green_hand_livery(car.position,car.yaw,sign_renderer.verda_mano_texture(),camera.position);
         if(services.active()) game::services::draw_light_bars(services,vehicles,camera.position,static_cast<float>(GetTime()));
         if(const int lit=lights_car.empty() ? -1 : vehicles.find(lights_car);lit>=0) {
             const auto& car=vehicles.vehicles()[static_cast<std::size_t>(lit)];
@@ -4407,6 +4448,136 @@ void Renderer::run() {
                 const int ww=MeasureText(warning,22);
                 DrawRectangle(screen_width/2-ww/2-12,screen_height/2+90,ww+24,34,Fade(BLACK,.6F));
                 DrawText(warning,screen_width/2-ww/2,screen_height/2+96,22,Color{150,190,255,255});
+            }
+        }
+        // The Green Hand's GT is theirs: an outsider at the wheel has the gang after them.
+        if(const auto* car=vehicles.driver();car && game_mode==game::GameMode::Explore && mafio.active()) {
+            const auto* a=vehicles.asset(verda_region,car->id);
+            if(a && a->vehicle.definition==game::mafia::green_hand_car && player_gang()!=0 && !gt_stolen) {
+                gt_stolen=true;
+                mafio.provoke_gang(0,match_time,"You took La Verda Mano's GT - the Green Hand wants it back");
+            } else if(a && a->vehicle.definition==game::mafia::green_hand_car && player_gang()==0 && !gt_stolen) {
+                gt_stolen=true;interaction_message="The crew's Verda Mano GT - bring it back in one piece";interaction_remaining=3;
+            }
+        } else gt_stolen=false;
+        // The mural: a side wall of the Verda City hideout (or its back), the one with the most
+        // open ground in front of it.
+        if(game::rules_for(game_mode).civilian_life && mafio.active() && !green_hand_mural.placed && mural_attempts<30 &&
+           (mural_wait-=GetFrameTime())<=0) {
+            mural_wait=2;++mural_attempts;
+            if(const auto* home=mafio.casino()) {
+                const game::life::Place* place=nullptr;
+                for(const auto& p:island_life.places()) if(p.building_id==home->building) {place=&p;break;}
+                Vector3 out=Vector3Subtract(home->door,home->interior);out.y=0;
+                if(place && Vector3Length(out)>.1F) {
+                    out=Vector3Normalize(out);
+                    const float yaw=place->building_yaw*DEG2RAD;
+                    const Vector3 lx{std::cos(yaw),0,-std::sin(yaw)},lz{std::sin(yaw),0,std::cos(yaw)};
+                    const Vector3 centre{place->interior.x,home->interior.y,place->interior.z};
+                    const float tall=std::max(3.0F,place->building_size.y);
+                    float best=0;
+                    // Walls, seen through the street trees.
+                    const auto solid=[&](Vector3 a,Vector3 b) {
+                        auto hit=combat_world.trace_segment(a,b,false,false,false);
+                        for(int k=0;k<4 && hit.kind==game::combat::HitKind::Tree;++k) {
+                            a=Vector3Add(hit.position,Vector3Scale(Vector3Normalize(Vector3Subtract(b,a)),.8F));
+                            hit=combat_world.trace_segment(a,b,false,false,false);
+                        }
+                        return hit;
+                    };
+                    for(const Vector3 want:{Vector3{-out.z,0,out.x},Vector3{out.z,0,-out.x},Vector3Negate(out)}) {
+                        // Square to the building: the face whose axis is nearest.
+                        const bool along_x=std::abs(Vector3DotProduct(want,lx))>std::abs(Vector3DotProduct(want,lz));
+                        const Vector3 axis=Vector3Scale(along_x ? lx : lz,Vector3DotProduct(want,along_x ? lx : lz)<0 ? -1.0F : 1.0F);
+                        const float reach=(along_x ? place->building_size.x : place->building_size.z)*.5F;
+                        const float length=along_x ? place->building_size.z : place->building_size.x;
+                        float width=std::min(length*.85F,11.0F),height=width*game::mafia::GangLogos::mural_height/game::mafia::GangLogos::mural_width;
+                        if(height>tall*.8F) {height=tall*.8F;width=height*game::mafia::GangLogos::mural_width/game::mafia::GangLogos::mural_height;}
+                        if(width<3) continue;
+                        const float y=centre.y+std::min(.8F+height*.5F,tall-.25F-height*.5F);
+                        const Vector3 face{centre.x+axis.x*reach,y,centre.z+axis.z*reach};
+                        const auto wall=solid(Vector3Add(face,Vector3Scale(axis,6)),Vector3Subtract(face,Vector3Scale(axis,3)));
+                        if((wall.kind!=game::combat::HitKind::Building && wall.kind!=game::combat::HitKind::Structure) || std::abs(wall.normal.y)>.3F) continue;
+                        // Both ends on the same wall, and open ground in front.
+                        const Vector3 run{-axis.z,0,axis.x};
+                        bool flat=true;
+                        for(const float s:{-.45F,.45F}) {
+                            const Vector3 end=Vector3Add(wall.position,Vector3Scale(run,s*width));
+                            const auto edge=solid(Vector3Add(end,Vector3Scale(axis,2)),Vector3Subtract(end,Vector3Scale(axis,1)));
+                            flat=flat && (edge.kind==game::combat::HitKind::Building || edge.kind==game::combat::HitKind::Structure) && std::abs(Vector3DotProduct(Vector3Subtract(edge.position,wall.position),axis))<.4F;
+                        }
+                        if(!flat) continue;
+                        // Outdoors: open sky in front of it (a wall shared with the next building is not).
+                        bool outdoors=true;
+                        for(const float s:{-.3F,.3F}) {
+                            const Vector3 from=Vector3Add(Vector3Add(wall.position,Vector3Scale(axis,2.5F)),Vector3Scale(run,s*width));
+                            const auto roof=combat_world.trace_segment(from,Vector3Add(from,{0,30,0}),false,false,false);
+                            outdoors=outdoors && (!roof.hit() || roof.kind==game::combat::HitKind::Tree);
+                        }
+                        if(!outdoors) continue;
+                        float open=0;
+                        for(const float s:{-.35F,0.0F,.35F}) {
+                            const Vector3 from=Vector3Add(Vector3Add(wall.position,Vector3Scale(axis,.3F)),Vector3Scale(run,s*width));
+                            const auto view=combat_world.trace_segment(from,Vector3Add(from,Vector3Scale(axis,14)),false,false,false);
+                            open+=view.hit() ? Vector3Distance(from,view.position) : 14.0F;
+                        }
+                        if(open>best+1) {best=open;green_hand_mural={wall.position,axis,width,true};}
+                    }
+                    if(green_hand_mural.placed) banner_key.clear();   // the walls are in: hang the banners on them
+                    if(green_hand_mural.placed)
+                        TraceLog(LOG_INFO,"OUTLAND Green Hand mural at %.1f %.1f %.1f facing %.2f %.2f, %.1f m wide",green_hand_mural.centre.x,green_hand_mural.centre.y,
+                                 green_hand_mural.centre.z,green_hand_mural.normal.x,green_hand_mural.normal.z,green_hand_mural.width);
+                }
+            }
+        }
+        // La Verda Mano's banners: over each hideout it holds (on a staff off the wall above the
+        // door) and on a pole beside the flag in the square of every town it holds.
+        if(game::rules_for(game_mode).civilian_life && mafio.active()) {
+            std::string key;
+            for(const auto& crew:mafio.crews()) key+=static_cast<char>('0'+crew.gang);
+            if(key!=banner_key) {
+                banner_key=key;
+                std::vector<game::culture::FlagPole> banners;
+                for(const auto& crew:mafio.crews()) {
+                    if(crew.gang!=0) continue;
+                    Vector3 out=Vector3Subtract(crew.door,crew.interior);out.y=0;
+                    if(Vector3Length(out)<.1F) continue;
+                    out=Vector3Normalize(out);
+                    const Vector3 side{-out.z,0,out.x};
+                    game::culture::FlagPole pole;
+                    pole.place="verda_mano:"+crew.building;pole.design=game::culture::FlagDesign::VerdaMano;
+                    const Vector3 from=Vector3Add(crew.door,Vector3Add(Vector3Scale(out,1.2F),{0,3.5F,0}));
+                    const auto wall=combat_world.trace_segment(from,Vector3Subtract(from,Vector3Scale(out,4.5F)),false,false,false);
+                    if((wall.kind==game::combat::HitKind::Building || wall.kind==game::combat::HitKind::Structure) && std::abs(wall.normal.y)<.4F) {
+                        pole.base=Vector3Add(wall.position,Vector3Scale(out,.05F));
+                        pole.tip=Vector3Add(pole.base,Vector3Scale(Vector3Normalize(Vector3Add(Vector3Scale(out,.75F),{0,.66F,0})),3.2F));
+                        pole.width=2.3F;
+                    } else {
+                        const Vector3 foot=Vector3Add(crew.door,Vector3Add(Vector3Scale(out,2.2F),Vector3Scale(side,2.6F)));
+                        pole.base={foot.x,world::terrain::TerrainHeight::sample(foot.x,foot.z),foot.z};
+                        pole.tip=Vector3Add(pole.base,{0,6.5F,0});
+                        pole.width=1.8F;
+                    }
+                    pole.fly=side;
+                    banners.push_back(pole);
+                }
+                for(const auto& flag:sign_renderer.signage().flags) {
+                    const auto colon=flag.place.rfind(":square");
+                    if(colon==std::string::npos) continue;
+                    const std::string town=flag.place.substr(0,colon);
+                    const auto held=std::find_if(territory.turfs().begin(),territory.turfs().end(),
+                        [&](const game::mafia::Turf& t){return t.id==town && t.ranch<0 && t.owner==0;});
+                    if(held==territory.turfs().end()) continue;
+                    const Vector3 across=Vector3Normalize(Vector3{-flag.fly.z,0,flag.fly.x});
+                    game::culture::FlagPole pole;
+                    pole.place="verda_mano:"+flag.place;pole.design=game::culture::FlagDesign::VerdaMano;
+                    const Vector3 foot=Vector3Add(flag.base,Vector3Scale(across,2.8F));
+                    pole.base={foot.x,world::terrain::TerrainHeight::sample(foot.x,foot.z),foot.z};
+                    pole.tip=Vector3Add(pole.base,{0,std::max(5.0F,flag.tip.y-flag.base.y-1.2F),0});
+                    pole.fly=flag.fly;pole.width=std::max(2.0F,flag.width*.85F);
+                    banners.push_back(pole);
+                }
+                sign_renderer.set_banners(std::move(banners));
             }
         }
         // The compass's marks, to lead the player: the job or orders and the waypoint set on the map

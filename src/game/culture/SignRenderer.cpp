@@ -46,6 +46,11 @@ void SignRenderer::load(const std::string& application_dir) {
     UnloadImage(cross);
     GenTextureMipmaps(&apelacio_);
     SetTextureFilter(apelacio_, TEXTURE_FILTER_TRILINEAR);
+    Image banner = verda_mano_image(512);
+    verda_mano_ = LoadTextureFromImage(banner);
+    UnloadImage(banner);
+    GenTextureMipmaps(&verda_mano_);
+    SetTextureFilter(verda_mano_, TEXTURE_FILTER_TRILINEAR);
     loaded_ = true;
     layout();
 }
@@ -56,7 +61,8 @@ void SignRenderer::unload() {
     if (own_font_) UnloadFont(font_);
     if (flag_.id) UnloadTexture(flag_);
     if (apelacio_.id) UnloadTexture(apelacio_);
-    font_ = {}; flag_ = {}; apelacio_ = {}; own_font_ = false; loaded_ = false;
+    if (verda_mano_.id) UnloadTexture(verda_mano_);
+    font_ = {}; flag_ = {}; apelacio_ = {}; verda_mano_ = {}; own_font_ = false; loaded_ = false;
 }
 
 void SignRenderer::set(Signage signage) {
@@ -193,13 +199,14 @@ void SignRenderer::draw(Vector3 camera, Vector3 camera_target, float time_second
     } else if (baked_ready_) baked_.draw();
     else {boards(shown); lettering(shown, true);}
 
-    std::vector<std::size_t> flags;
-    for (std::size_t i = 0; i < signage_.flags.size(); ++i) if (visible(signage_.flags[i].tip, flag_range)) flags.push_back(i);
-    for (const auto i : flags) {
-        const auto& flag = signage_.flags[i];
-        const float r = flag.width > 3 ? .09F : .05F;
-        DrawCylinderEx(flag.base, flag.tip, r, r * .75F, 6, Color{205, 208, 212, 255});
-        DrawCube(Vector3Add(flag.tip, {0, .06F, 0}), r * 3, r * 2.4F, r * 3, Color{214, 180, 70, 255});
+    // The poles: the island's own, then the gangs' banners (which come and go with the turf).
+    std::vector<const FlagPole*> flags;
+    for (const auto& flag : signage_.flags) if (visible(flag.tip, flag_range)) flags.push_back(&flag);
+    for (const auto& flag : banners_) if (visible(flag.tip, flag_range)) flags.push_back(&flag);
+    for (const auto* flag : flags) {
+        const float r = flag->width > 3 ? .09F : .05F;
+        DrawCylinderEx(flag->base, flag->tip, r, r * .75F, 6, Color{205, 208, 212, 255});
+        DrawCube(Vector3Add(flag->tip, {0, .06F, 0}), r * 3, r * 2.4F, r * 3, Color{214, 180, 70, 255});
     }
 
     // 3. Flags: the cloth ripples away from the staff, more toward the free end.
@@ -207,14 +214,14 @@ void SignRenderer::draw(Vector3 camera, Vector3 camera_target, float time_second
     rlDrawRenderBatchActive();
     rlDisableBackfaceCulling();
     constexpr int columns = 12, rows = 4;
-    for (const auto design : {FlagDesign::Verda, FlagDesign::Apelacio}) {
-    rlSetTexture(design == FlagDesign::Verda ? flag_.id : apelacio_.id);
-    for (const auto i : flags) {
-        const auto& flag = signage_.flags[i];
+    for (const auto design : {FlagDesign::Verda, FlagDesign::Apelacio, FlagDesign::VerdaMano}) {
+    rlSetTexture(design == FlagDesign::Verda ? flag_.id : design == FlagDesign::Apelacio ? apelacio_.id : verda_mano_.id);
+    for (std::size_t i = 0; i < flags.size(); ++i) {
+        const auto& flag = *flags[i];
         if (flag.design != design) continue;
         const float W = flag.width, H = flag.width * .5F;
         const Vector3 across{-flag.fly.z, 0, flag.fly.x};
-        const float phase = static_cast<float>(i) * 1.7F;
+        const float phase = (flag.tip.x + flag.tip.z) * .37F;
         const auto at = [&](int c, int r, float& shade) {
             const float u = static_cast<float>(c) / columns, v = static_cast<float>(r) / rows;
             const float arg = u * 7.0F - time_seconds * 5.5F + phase + v * .8F;

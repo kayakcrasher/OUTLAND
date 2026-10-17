@@ -82,7 +82,7 @@ bool VehicleRegistry::load(const std::string &path, std::string &error) {
             d.id.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789_") != std::string::npos ||
             !ids.insert(d.id).second || !asset(d.body) || (!d.wheel.empty() && !asset(d.wheel)) ||
             d.length <= 0 || d.width <= 0 || d.height <= 0 || d.wheel_radius <= 0 ||
-            d.front_z <= d.rear_z || d.track <= 0 || d.top_speed <= 0 || d.top_speed > 60 ||
+            d.front_z <= d.rear_z || d.track <= 0 || d.top_speed <= 0 || d.top_speed > 75 ||
             d.acceleration <= 0 || d.brake <= 0 || d.reverse <= 0 || d.drag < 0 || d.steer <= 0 ||
             d.steer > 45 || d.max_slope <= 0 || d.max_slope > 40 || d.health <= 0 ||
             d.engine_health <= 0 || d.tire_health <= 0 || d.fuel < 0 || d.fuel > 1 ||

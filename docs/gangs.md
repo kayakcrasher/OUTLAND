@@ -18,6 +18,31 @@ Each gang starts with every town in its county, its major city included. A crew 
 
 La Verda Mano, round the capital, is the hardest crew to fight.
 
+## La Verda Mano's colours
+
+- **The banner:** La Standardo de la Verda Mano is the Ulster Banner done in Esperanto:
+  - a green cross on white;
+  - Esperanto's five-pointed star in white, carrying the open green hand;
+  - a gold crown above it (green velvet, emeralds and pearls) with a green star on top.
+
+  It is drawn in `game::culture::verda_mano_image`.
+- **Flags:** the banner flies over every hideout La Verda Mano holds, on a staff off the wall above the door. In every town it holds, it also flies on a pole beside the national flag in the square.
+  - When the gang takes a town, the banner goes up there.
+  - When it loses one, the banner comes down.
+- **The mural:** a gable-end mural, Belfast style, is painted on an open side wall of the Verda City hideout (`GangLogos::prepare_mural`). It has:
+  - a painted frame with gold corner blocks;
+  - the banner in the middle, between two flags on poles, in a laurel wreath;
+  - the hand in roundels over "VERDKERNO" and "FONDITA 1887";
+  - scrolls reading "LA VERDA MANO" and "NENIAM CEDI" (never yield);
+  - "VERDA URBO - ĈI TIE REGAS LA VERDA MANO" at the foot.
+
+  If the city falls, it is painted over.
+- **The Verda Mano GT:** the gang's sports car is parked outside the Verda City hideout. It is the quickest car on the island (top speed 70, against the Interceptor's 60).
+  - **Paint:** a low pearl-white coupe carrying the banner's cross: a green stripe nose to tail, crossed by a green band over the roof and down the doors, edged in gold. It has a wing on gold endplates.
+  - **Livery:** the star, hand and crown are on the bonnet, and the banner is on both front wings (`draw_green_hand_livery`).
+  - **Who drives it:** members drive it freely. Anyone else who takes it has La Verda Mano after them.
+  - **Model:** `tools/generate_green_hand_car.py`.
+
 ## The ranching families
 
 Each county has one ranch, and each ranch's family is a faction in its own right: Garza, Montoya, Villarreal, Cortez and Salazar. Their stance depends on the island's seed:
@@ -82,4 +107,5 @@ When every town is your gang's and every family rides with you or pays you, a go
 
 - Territory is saved beside the Explore profile (`<profile>.territory`): owners, holds, family stances and tags. It is saved every couple of seconds whenever something changes.
 - Dev builds log the counts: `OUTLAND territory: N turfs, N tags, N docks`.
+- `outland_signage_tests` checks the banner's cross, star, hand and crown; `outland_generated_green_hand_car` keeps the GT's model in step with its generator.
 - `outland_territory_tests` covers hold, flips, tags painting over, extortion by stance, raids and the save. `outland_career_tests` covers the three jobs.
