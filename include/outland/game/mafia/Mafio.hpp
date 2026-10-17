@@ -65,6 +65,8 @@ struct Crew {
     std::vector<int> members;  // bot ids
     bool casino{false};        // the poker table (Verda City only)
     Vector3 table{};
+    bool base{false};          // the gang's main base: its county's main town (fixed, the same every game)
+    bool disbanded{false};     // broken up by the Policio: nobody comes back to it
 };
 
 struct Member {
@@ -73,6 +75,7 @@ struct Member {
     float post_radius{3}, yaw{0};
     bool dead{false};
     double respawn_at{0};
+    bool officer{false};       // the crew's boss and the men at the casino table (dressed sharp)
 };
 
 struct War {
@@ -102,7 +105,9 @@ public:
     static constexpr float turf_radius = 35;
 
     // Picks a building in every town (from island life's places) for the county's gang and puts
-    // its crew there, in `bots`. Returns the number of crews.
+    // its crew there, in `bots`. The buildings are fixed (the same every game, nearest the middle
+    // of town for their kind); each gang's main base is in its county's main town and holds the
+    // most men. Returns the number of crews.
     int start(const std::vector<life::Place>& places, const world::VerdaRegion& region, ai::BattleRoyaleBots& bots, std::uint64_t seed);
     void clear(ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers, vehicles::VehicleSystem& cars);
     [[nodiscard]] bool active() const { return !crews_.empty(); }
@@ -116,6 +121,12 @@ public:
     void provoke_gang(int gang, double now, const std::string& why);
     // A town changed hands (game::mafia::Territory): the crew there wears its new gang's colours.
     void set_crew_gang(int crew, int gang);
+    // The Policio broke this crew up (game::career's campaign): its dead stay dead, it sends no
+    // hit squads and nobody attacks it any more.
+    void disband(int crew);
+    // Members of `crew` still standing.
+    [[nodiscard]] int standing(int crew, ai::BattleRoyaleBots& bots) const;
+    [[nodiscard]] bool officer(int bot) const;
     // The player died or left: everyone forgets.
     void forgive();
     [[nodiscard]] bool provoked(int gang, double now) const;

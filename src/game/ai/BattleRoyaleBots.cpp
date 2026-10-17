@@ -182,6 +182,11 @@ void BattleRoyaleBots::respawn(int bot,Vector3 feet,float yaw,std::uint64_t seed
     }
 }
 
+void BattleRoyaleBots::retire(int bot) {
+    if(auto* brain=find(bot)) brain->set_health(0);
+    set_asleep(bot,true);
+}
+
 void BattleRoyaleBots::report_player_death(int killer) {
     feed_.push_back(killer>0 ? bot_name(killer)+" ELIMINATED YOU" : std::string("YOU WERE ELIMINATED"));
     if(feed_.size()>feed_lines) feed_.erase(feed_.begin());

@@ -20,6 +20,9 @@
 // the rest pay. A ranch allied with your gang, or paying it, counts as yours.
 //
 // The goal for a gangster: every town your gang's, every family allied with you or paying you.
+// The goal for the Policio: every crew broken up - a town it clears is nobody's turf for good.
+// A gang that keeps its honour (game::career) holds its towns more easily: their hold comes back
+// faster, and every raider taken down on its own turf shores it up.
 namespace outland::game::mafia {
 
 inline constexpr int gang_count = 5;
@@ -39,6 +42,7 @@ struct Turf {
     int owner{0};                  // faction
     float hold{100};               // the owner's grip, 0..100
     std::array<float, faction_count> pressure{};   // what each challenger has put in since the last flip
+    bool cleared{false};           // the Policio broke up its crew: nobody's turf any more
 };
 
 struct Family {
@@ -60,7 +64,7 @@ struct Raid { int attacker{-1}, turf{-1}; };
 class Territory {
 public:
     static constexpr float regain_per_second = 1.0F / 30;   // a point every half minute, uncontested
-    static constexpr float kill_wear = 7, tag_wear = 12, own_tag = 6, delivery = 25, raid_wear = 9;
+    static constexpr float kill_wear = 7, tag_wear = 12, own_tag = 6, delivery = 25, raid_wear = 9, defence = 4;
     static constexpr float tag_spacing = 2.5F;               // a tag within this of another paints over it
     static constexpr double raid_every = 150;                 // seconds between AI gangs' pushes
 
@@ -81,6 +85,8 @@ public:
     // Returns the turf it counted for (-1 outside every turf).
     int tag(Vector3 position, Vector3 normal, int gang);
     void delivered(int turf, int gang);                  // contraband run home to `gang`'s turf
+    void defended(int turf, int gang);                   // a raider taken down on `gang`'s own turf
+    void clear_town(int turf);                           // the Policio broke up the crew there
     // Lean on a family for `gang`. True if they pay now; false if they fight first (fierce, or
     // allied with someone else) - beat them (`subdued`) and they pay.
     bool extort(int ranch, int gang);
@@ -89,7 +95,9 @@ public:
 
     // Time: holds creep back; now and then an AI gang pushes into a neighbour's town (not the
     // player's gang, which plays its own moves). Returns the raid started this tick, if any.
-    Raid update(float dt, double now, int player_gang);
+    // `player_regain` scales how fast the player's gang's towns come back (an honourable gang's
+    // are quicker).
+    Raid update(float dt, double now, int player_gang, float player_regain = 1);
     // Turfs that changed hands since last asked.
     std::vector<Flip> take_flips() { auto f = std::move(flips_); flips_.clear(); return f; }
 
@@ -97,7 +105,8 @@ public:
     [[nodiscard]] int towns_of(int faction) const;
     [[nodiscard]] int ranches_with(int gang) const;
     [[nodiscard]] bool controls(int turf, int gang) const;   // a town it owns or a ranch with it
-    [[nodiscard]] bool rules_island(int gang) const;
+    [[nodiscard]] bool rules_island(int gang) const;     // every turf the Policio has not cleared
+    [[nodiscard]] int cleared() const;                   // towns the Policio cleared
     // Gangs and families, biggest first (towns, then ranches).
     [[nodiscard]] std::vector<int> ranking() const;
 

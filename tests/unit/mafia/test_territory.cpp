@@ -100,6 +100,30 @@ int main() {
     check(back.parse(t.serialise()) && back.turfs()[1].owner == 0 && back.tags().size() == t.tags().size() &&
           back.families()[static_cast<std::size_t>(open_ranch)].stance == Stance::Extorted, "saved and loaded");
     check(!back.parse("territory 9") && !back.parse("territory 1 turf roka 99 50"), "bad saves refused");
+    check(back.parse("territory 1\nturf roka 1 60\n") && back.turfs()[1].owner == 1 && !back.turfs()[1].cleared, "older saves load");
+
+    // Honour and defence: a raider down on your own turf shores it up; a just gang's towns recover faster.
+    {
+        auto d = island();
+        d.killed(0, {10, 0, 10}, 4);
+        const float worn = d.turfs()[0].hold;
+        d.defended(0, 0);
+        check(d.turfs()[0].hold > worn, "defending the town shores up its hold");
+        auto slow = d, quick = d;
+        slow.update(30, 1, 0, 1);
+        quick.update(30, 1, 0, 2);
+        check(quick.turfs()[0].hold > slow.turfs()[0].hold, "an honourable gang's hold comes back faster");
+    }
+    // The Policio clears a town: nobody's turf, out of every count, saved.
+    {
+        auto p = island();
+        p.clear_town(1);
+        check(p.turfs()[1].cleared && p.towns_of(4) == 1 && !p.controls(1, 4) && p.cleared() == 1, "a cleared town is nobody's");
+        p.killed(4, {1000, 0, 0}, 0);
+        check(p.turfs()[1].owner == 4 && p.turfs()[1].hold == 100, "and nobody can fight over it");
+        Territory q = island();
+        check(q.parse(p.serialise()) && q.turfs()[1].cleared, "a cleared town stays cleared");
+    }
     if (failures) return 1;
     std::cout << "[PASS] Territory: holds, kills, tags, flips, families, raids, the island\n";
     return 0;

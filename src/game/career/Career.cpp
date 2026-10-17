@@ -24,6 +24,7 @@ const char* job_name(JobKind kind) {
         case JobKind::Smuggle: return "SMUGGLE";
         case JobKind::Extort: return "EXTORTION";
         case JobKind::TakeTurf: return "TAKE TURF";
+        case JobKind::CleanUp: return "CLEAN UP";
         case JobKind::None: break;
     }
     return "";
@@ -52,17 +53,20 @@ bool Career::join_gang(int gang, const std::string& gang_name, std::string& why)
     state_.side = Side::Gang;
     state_.gang = gang;
     state_.respect = 0;            // a new crew: respect is earned again
-    state_.record = true;          // for good
+    state_.honourable = true;      // and an honour of their own to keep
+    state_.defended = 0;
     state_.patrol_car.clear();
     job_ = {};
     next_offer_ = -1;
+    if (was_cop) state_.record = true;   // a cop gone bad: on file for good
     say(was_cop ? "You turned: the badge is gone, " + gang_name + " take you in. The Policio will never have you back"
-                : "Welcome to " + gang_name + ". Respect is earned - wait for the word");
+                : "Welcome to " + gang_name + ". Respect is earned - and keep your honour: gangsters only");
     return true;
 }
 
 bool Career::join_police(const std::string& patrol_car, std::string& why) {
-    if (state_.record) { why = "The Policio checked your record: no Krimuloj on the force"; return false; }
+    if (state_.record) { why = "The Policio checked your record: no criminals on the force"; return false; }
+    if (state_.side == Side::Gang) { why = "You still run with a gang - leave them first"; return false; }
     if (state_.side == Side::Police) { why = "You are already on the force"; return false; }
     state_.side = Side::Police;
     state_.gang = -1;
@@ -121,6 +125,15 @@ void Career::killed(int gang, bool from_vehicle) {
 }
 
 void Career::crime(bool serious) {
+    if (state_.side == Side::Gang) {
+        // The people of Verda are not gangsters: the honour is gone, the record is for good.
+        state_.record = true;
+        if (state_.honourable) {
+            state_.honourable = false;
+            say("You hurt the people of Verda: no honour now - and a record for good");
+        }
+        return;
+    }
     if (state_.side != Side::Police || !serious) return;
     // A crime on duty: off the force, and a record from now on.
     state_.side = Side::Civilian;
@@ -129,6 +142,26 @@ void Career::crime(bool serious) {
     state_.patrol_car.clear();
     job_ = {};
     say("A crime on duty: the Policio takes your badge. You have a record now");
+}
+
+void Career::defended(const std::string& town) {
+    if (state_.side != Side::Gang) return;
+    ++state_.defended;
+    gain(2);
+    say("You defended " + town + (state_.honourable ? " - a just fight" : ""));
+}
+
+void Career::warned_off_capital(double now) {
+    if (state_.side != Side::Police || now - capital_warned_ < 20) return;
+    capital_warned_ = now;
+    state_.respect = std::max(0.0F, state_.respect - 3);
+    say(std::string(chief_name) + ": Not Verda City. Not yet - the towns first. (-3 respect)");
+}
+
+int Career::towns_left(const CareerFrame& frame) {
+    int n = 0;
+    for (const auto& c : frame.crews) n += !c.cleared && !c.capital;
+    return n;
 }
 
 std::string Career::chief_talk(bool& issue) {
@@ -157,6 +190,11 @@ std::string Career::chief_talk(bool& issue) {
         }
         case PoliceStage::Serving: break;
     }
+    if (verda_clean_) return chief + "The gangs are gone. Verda is free - you did that. Komisaro suits you.";
+    if (campaign_left_ > 0)
+        return chief + "Our work is the gangs. " + std::to_string(campaign_left_) + (campaign_left_ == 1 ? " town" : " towns") +
+               " still under them - start out there, not here. Verda City is mine to say when.";
+    if (campaign_left_ == 0) return chief + "The towns are clean. Now Verda City: bring them down, every one.";
     if (rank() >= 3) return chief + "Leŭtenanto. Verda sleeps better with you on the street. Keep it that way.";
     if (job_.kind != JobKind::None) return chief + "You have a call. Why are you standing in my office?";
     return chief + "Keep your radio on, and keep your nose clean. One crime on duty and the badge is mine.";
@@ -218,7 +256,8 @@ void Career::offer(const CareerFrame& frame) {
     const auto pick_crew = [&](bool rivals_only) -> const CrewSpot* {
         std::vector<const CrewSpot*> pool;
         for (const auto& c : frame.crews)
-            if (c.alive >= 2 && (!rivals_only || c.gang != state_.gang)) pool.push_back(&c);
+            if (c.alive >= 2 && !c.cleared && (!rivals_only || c.gang != state_.gang) &&
+                (state_.side != Side::Police || !c.capital || capital_allowed(frame))) pool.push_back(&c);
         if (pool.empty()) return nullptr;
         std::sort(pool.begin(), pool.end(), [&](auto* a, auto* b) { return flat(a->door, frame.player) < flat(b->door, frame.player); });
         const std::size_t choices = std::min<std::size_t>(3, pool.size());
@@ -280,7 +319,19 @@ void Career::offer(const CareerFrame& frame) {
         }
     } else if (state_.side == Side::Police) {
         const float roll = random();
-        if (!frame.wars.empty() && roll < .5F) {
+        // The campaign: the Chief's orders to break up the gangs, the towns first, Verda City last.
+        const bool capital_ok = capital_allowed(frame);
+        const CrewSpot* order = nullptr;
+        for (const auto& c : frame.crews)
+            if (!c.cleared && (!c.capital || capital_ok) && (!order || flat(c.door, frame.player) < flat(order->door, frame.player))) order = &c;
+        if (order && random() < .4F) {
+            job.kind = JobKind::CleanUp;
+            job.gang = order->gang; job.crew = order->crew; job.target = order->door;
+            job.needed = std::max(1, order->alive);
+            job.detail = std::string(chief_name) + "'s orders: break up the " + name_of(order->gang) + " in " + order->town +
+                         (order->capital ? " - Verda City, at last. Every one of them" : " - every one of them, so they never come back");
+            job.pay = order->capital ? 4000 : 1400; job.respect = order->capital ? 25 : 14; job.deadline = frame.now + 1500;
+        } else if (!frame.wars.empty() && roll < .5F) {
             const auto& war = frame.wars.front();
             job.kind = JobKind::BreakUpWar;
             job.gang = war.attackers; job.crew = war.defenders; job.target = war.where;
@@ -329,6 +380,17 @@ void Career::update(const CareerFrame& frame) {
         }
         job_ = orders;
         return;
+    }
+    if (state_.side == Side::Police && !frame.crews.empty()) {
+        // The campaign's progress: how many towns the gangs still hold, and the end of them.
+        campaign_left_ = towns_left(frame);
+        const bool all = std::all_of(frame.crews.begin(), frame.crews.end(), [](const CrewSpot& c) { return c.cleared; });
+        if (all && !verda_clean_) {
+            verda_clean_ = true;
+            if (state_.respect < 95) gain(95 - state_.respect);
+            say("VERDA IS CLEAN: the last of the gangs is gone - " + std::string(chief_name) + " makes you Komisaro");
+        }
+        if (all && job_.kind == JobKind::None) return;   // nothing left to fight
     }
     if (next_offer_ < 0) next_offer_ = frame.now + (state_.jobs_done == 0 ? 4 : job_gap);
     if (job_.kind == JobKind::None) {
@@ -393,6 +455,13 @@ void Career::update(const CareerFrame& frame) {
             if (war != frame.wars.end()) job_.target = war->where;
             break;
         }
+        case JobKind::CleanUp: {
+            const auto crew = std::find_if(frame.crews.begin(), frame.crews.end(), [&](const CrewSpot& c) { return c.crew == job_.crew; });
+            if (crew == frame.crews.end() || crew->cleared) { job_.done = job_.needed; break; }
+            job_.done = std::max(0, job_.needed - crew->alive);
+            if (crew->alive == 0) job_.done = job_.needed;
+            break;
+        }
         default: break;
     }
     if (job_.needed > 0 && job_.done >= job_.needed) finish(true, "");
@@ -400,9 +469,9 @@ void Career::update(const CareerFrame& frame) {
 
 std::string Career::serialise() const {
     std::ostringstream out;
-    out << "career 2 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
+    out << "career 3 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
         << (state_.record ? 1 : 0) << ' ' << state_.jobs_done << ' ' << (state_.patrol_car.empty() ? "-" : state_.patrol_car) << ' '
-        << static_cast<int>(state_.police_stage) << '\n';
+        << static_cast<int>(state_.police_stage) << ' ' << (state_.honourable ? 1 : 0) << ' ' << state_.defended << '\n';
     return out.str();
 }
 
@@ -411,17 +480,21 @@ bool Career::parse(const std::string& text) {
     std::string tag, car;
     int version = 0, side = 0, gang = -1, record = 0, jobs = 0;
     float respect = 0;
-    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 2 ||
+    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 3 ||
         side < 0 || side > 2 || !std::isfinite(respect))
         return false;
     // Officers from before the questline are already serving.
     int stage = static_cast<int>(PoliceStage::Serving);
     if (version >= 2 && (!(in >> stage) || stage < 0 || stage > 3)) return false;
+    int honour = 1, defended = 0;
+    if (version >= 3 && (!(in >> honour >> defended) || defended < 0)) return false;
     CareerState s;
     s.side = static_cast<Side>(side);
     s.gang = s.side == Side::Gang ? gang : -1;
     s.respect = std::clamp(respect, 0.0F, respect_max);
-    s.record = record != 0 || s.side == Side::Gang;
+    s.record = record != 0;
+    s.honourable = honour != 0;
+    s.defended = defended;
     s.jobs_done = std::max(0, jobs);
     s.patrol_car = s.side == Side::Police && car != "-" ? car : std::string();
     s.police_stage = s.side == Side::Police ? static_cast<PoliceStage>(stage) : PoliceStage::Report;

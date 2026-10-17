@@ -61,7 +61,7 @@ void Territory::flip(int index, int to) {
 }
 
 void Territory::wear(Turf& t, int by, float amount) {
-    if (t.ranch >= 0 || by < 0 || by >= gang_count || by == t.owner || amount <= 0) return;
+    if (t.ranch >= 0 || t.cleared || by < 0 || by >= gang_count || by == t.owner || amount <= 0) return;
     t.hold -= amount;
     t.pressure[static_cast<std::size_t>(by)] += amount;
     if (t.hold > 0) return;
@@ -104,6 +104,24 @@ void Territory::delivered(int index, int gang) {
     if (t.owner == gang) t.hold = std::min(100.0F, t.hold + delivery);
 }
 
+void Territory::defended(int index, int gang) {
+    if (index < 0 || static_cast<std::size_t>(index) >= turfs_.size()) return;
+    auto& t = turfs_[static_cast<std::size_t>(index)];
+    if (t.owner == gang && !t.cleared && t.ranch < 0) t.hold = std::min(100.0F, t.hold + defence);
+}
+
+void Territory::clear_town(int index) {
+    if (index < 0 || static_cast<std::size_t>(index) >= turfs_.size()) return;
+    auto& t = turfs_[static_cast<std::size_t>(index)];
+    if (t.ranch >= 0) return;
+    t.cleared = true;
+    t.pressure.fill(0);
+}
+
+int Territory::cleared() const {
+    return static_cast<int>(std::count_if(turfs_.begin(), turfs_.end(), [](const Turf& t) { return t.cleared; }));
+}
+
 bool Territory::extort(int ranch, int gang) {
     if (ranch < 0 || ranch >= family_count || gang < 0) return false;
     auto& f = families_[static_cast<std::size_t>(ranch)];
@@ -128,12 +146,12 @@ void Territory::ally(int ranch, int gang) {
     f.gang = gang;
 }
 
-Raid Territory::update(float dt, double now, int player_gang) {
+Raid Territory::update(float dt, double now, int player_gang, float player_regain) {
     Raid raid;
     if (!std::isfinite(dt) || dt <= 0 || turfs_.empty()) return raid;
     for (auto& t : turfs_) {
-        if (t.ranch >= 0) continue;
-        t.hold = std::min(100.0F, t.hold + regain_per_second * dt);
+        if (t.ranch >= 0 || t.cleared) continue;
+        t.hold = std::min(100.0F, t.hold + regain_per_second * dt * (t.owner == player_gang ? player_regain : 1.0F));
         for (auto& p : t.pressure) p *= std::exp(-dt / 900.0F);
     }
     if (next_raid_ < 0) next_raid_ = now + raid_every * .6;
@@ -148,9 +166,9 @@ Raid Territory::update(float dt, double now, int player_gang) {
     float best = 1e9F;
     for (std::size_t i = 0; i < turfs_.size(); ++i) {
         const auto& target = turfs_[i];
-        if (target.ranch >= 0 || target.owner == attacker) continue;
+        if (target.ranch >= 0 || target.cleared || target.owner == attacker) continue;
         for (const auto& home : turfs_) {
-            if (home.ranch >= 0 || home.owner != attacker) continue;
+            if (home.ranch >= 0 || home.cleared || home.owner != attacker) continue;
             const float d = flat(home.centre, target.centre) * (.8F + .4F * random());
             if (d < best) { best = d; raid = {attacker, static_cast<int>(i)}; }
         }
@@ -160,7 +178,7 @@ Raid Territory::update(float dt, double now, int player_gang) {
 }
 
 int Territory::towns_of(int faction) const {
-    return static_cast<int>(std::count_if(turfs_.begin(), turfs_.end(), [&](const Turf& t) { return t.ranch < 0 && t.owner == faction; }));
+    return static_cast<int>(std::count_if(turfs_.begin(), turfs_.end(), [&](const Turf& t) { return t.ranch < 0 && !t.cleared && t.owner == faction; }));
 }
 
 int Territory::ranches_with(int gang) const {
@@ -171,6 +189,7 @@ int Territory::ranches_with(int gang) const {
 bool Territory::controls(int index, int gang) const {
     if (index < 0 || static_cast<std::size_t>(index) >= turfs_.size()) return false;
     const auto& t = turfs_[static_cast<std::size_t>(index)];
+    if (t.cleared) return false;
     if (t.ranch < 0) return t.owner == gang;
     const auto& f = families_[static_cast<std::size_t>(t.ranch)];
     return f.stance != Stance::Independent && f.gang == gang;
@@ -179,7 +198,7 @@ bool Territory::controls(int index, int gang) const {
 bool Territory::rules_island(int gang) const {
     if (turfs_.empty() || gang < 0) return false;
     for (std::size_t i = 0; i < turfs_.size(); ++i)
-        if (!controls(static_cast<int>(i), gang)) return false;
+        if (!turfs_[i].cleared && !controls(static_cast<int>(i), gang)) return false;
     return true;
 }
 
@@ -200,8 +219,8 @@ std::vector<int> Territory::ranking() const {
 
 std::string Territory::serialise() const {
     std::ostringstream out;
-    out << "territory 1\n";
-    for (const auto& t : turfs_) out << "turf " << t.id << ' ' << t.owner << ' ' << t.hold << '\n';
+    out << "territory 2\n";
+    for (const auto& t : turfs_) out << "turf " << t.id << ' ' << t.owner << ' ' << t.hold << ' ' << (t.cleared ? 1 : 0) << '\n';
     for (std::size_t i = 0; i < families_.size(); ++i)
         if (!families_[i].name.empty())
             out << "family " << i << ' ' << static_cast<int>(families_[i].stance) << ' ' << families_[i].gang << '\n';
@@ -215,16 +234,19 @@ bool Territory::parse(const std::string& text) {
     std::istringstream in(text);
     std::string word;
     int version = 0;
-    if (!(in >> word >> version) || word != "territory" || version != 1) return false;
+    if (!(in >> word >> version) || word != "territory" || version < 1 || version > 2) return false;
     auto turfs = turfs_;
     auto families = families_;
     std::vector<Tag> tags;
     while (in >> word) {
         if (word == "turf") {
-            std::string id; int owner = 0; float hold = 0;
+            std::string id; int owner = 0, cleared = 0; float hold = 0;
             if (!(in >> id >> owner >> hold) || owner < 0 || owner >= faction_count || !std::isfinite(hold)) return false;
+            if (version >= 2 && !(in >> cleared)) return false;
             for (auto& t : turfs)
-                if (t.id == id && (t.ranch >= 0) == is_family(owner)) { t.owner = owner; t.hold = std::clamp(hold, 1.0F, 100.0F); }
+                if (t.id == id && (t.ranch >= 0) == is_family(owner)) {
+                    t.owner = owner; t.hold = std::clamp(hold, 1.0F, 100.0F); t.cleared = cleared != 0 && t.ranch < 0;
+                }
         } else if (word == "family") {
             std::size_t i = 0; int stance = 0, gang = -1;
             if (!(in >> i >> stance >> gang) || i >= families.size() || stance < 0 || stance > 2 || gang < -1 || gang >= gang_count) return false;

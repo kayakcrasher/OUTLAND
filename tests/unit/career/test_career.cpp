@@ -35,7 +35,8 @@ int main() {
     {
         Career c;
         std::string why;
-        check(c.join_gang(0, "La Verda Mano", why) && c.state().side == Side::Gang && c.state().record, "join a gang (a record from now on)");
+        check(c.join_gang(0, "La Verda Mano", why) && c.state().side == Side::Gang && !c.state().record && c.state().honourable,
+              "join a gang: honourable, no record");
         check(!c.join_gang(0, "La Verda Mano", why), "already in");
         check(std::string(c.rank_name()) == "Novulo" && c.state().respect == 0, "start at the bottom");
         double now = 0;
@@ -82,8 +83,18 @@ int main() {
         c.update(world(now));
         check(c.job().kind == JobKind::None && c.state().respect < had, "a lapsed job costs respect");
 
-        // The record shuts the police door.
-        check(!c.join_police("car", why) && why.find("record") != std::string::npos, "no Krimuloj on the force");
+        // Still in a gang: not on the force.
+        check(!c.join_police("car", why) && why.find("leave") != std::string::npos, "leave the gang first");
+        // Honour: defending the town is a just fight; hurting the people of Verda ends it.
+        const float r0 = c.state().respect;
+        c.defended("Verda");
+        check(c.state().defended == 1 && c.state().respect > r0 && c.state().honourable, "defending your town");
+        c.crime(true);
+        check(!c.state().honourable && c.state().record && c.state().side == Side::Gang, "a crime: no honour, a record for good");
+        Career saved;
+        check(saved.parse(c.serialise()) && !saved.state().honourable && saved.state().record && saved.state().defended == 1, "honour is saved");
+        c.quit();
+        check(!c.join_police("car", why) && why.find("record") != std::string::npos, "the record shuts the police door");
     }
     // The underworld's jobs: smuggling (a load, a tip-off, home), extortion (pay or fight), turf.
     {
@@ -210,7 +221,57 @@ int main() {
         check(!c.join_police("police_1", why), "and never back");
         Career e;
         e.join_police("police_3", why);
-        check(e.join_gang(1, "Montaj Lupoj", why) && e.state().side == Side::Gang && e.state().record, "or just join a gang");
+        check(e.join_gang(1, "Montaj Lupoj", why) && e.state().side == Side::Gang && e.state().record, "or just join a gang (a cop gone bad is on file)");
+    }
+    // The police campaign: the towns first, Verda City last, then the gangs are gone.
+    {
+        Career c;
+        std::string why;
+        c.join_police("police_1", why);
+        { bool car = false; c.chief_talk(car); c.passed_training(); c.chief_talk(car); }
+        auto f = world(0);
+        f.crews[0].capital = true;   // Verda's crew
+        double now = 0;
+        bool order = false;
+        for (int i = 0; i < 400 && !order; ++i) {
+            f.now = now += 1;
+            c.update(f);
+            order = c.job().kind == JobKind::CleanUp;
+            if (c.job().kind != JobKind::None && !order) { f.now = now += 2000; c.update(f); }
+        }
+        check(order && c.job().crew != 0, "the Chief's orders: a town first, not Verda City");
+        { bool car = false; check(c.chief_talk(car).find("start out there") != std::string::npos, "the Chief says the towns first"); }
+        // Every one of them down: the crew is broken up.
+        const int first = c.job().crew;
+        f.crews[static_cast<std::size_t>(first)].alive = 0;
+        c.update(f);
+        check(c.job().kind == JobKind::None && c.state().jobs_done >= 1, "a town cleaned up");
+        Job done;
+        check(c.take_finished(done) && done.kind == JobKind::CleanUp && done.crew == first, "the game hears which crew to break up");
+        f.crews[static_cast<std::size_t>(first)].cleared = true;
+        for (auto& crew : f.crews) if (!crew.capital) { crew.cleared = true; crew.alive = 0; }
+        check(Career::capital_allowed(f), "the towns are clean");
+        order = false;
+        for (int i = 0; i < 400 && !order; ++i) {
+            f.now = now += 1;
+            c.update(f);
+            order = c.job().kind == JobKind::CleanUp;
+            if (c.job().kind != JobKind::None && !order) { f.now = now += 2000; c.update(f); }
+        }
+        check(order && c.job().crew == 0, "then Verda City");
+        f.crews[0].alive = 0;
+        c.update(f);
+        f.crews[0].cleared = true;
+        c.update(f);
+        check(c.verda_clean() && c.state().respect >= 95, "Verda is clean: Komisaro");
+        // An officer warned off the capital too early loses a little respect.
+        Career d;
+        d.join_police("police_2", why);
+        { bool car = false; d.chief_talk(car); d.passed_training(); d.chief_talk(car); }
+        const float r = d.state().respect;
+        d.warned_off_capital(100);
+        d.warned_off_capital(105);
+        check(std::abs(d.state().respect - (r - 3)) < .01F, "warned off Verda City (once in a while)");
     }
     // Ranks and saving.
     {
@@ -219,7 +280,8 @@ int main() {
         std::string why;
         c.join_gang(2, "La Ora Ankro", why);
         Career back;
-        check(back.parse(c.serialise()) && back.state().side == Side::Gang && back.state().gang == 2 && back.state().record, "saved and loaded");
+        check(back.parse(c.serialise()) && back.state().side == Side::Gang && back.state().gang == 2 && back.state().honourable, "saved and loaded");
+        check(back.parse("career 2 1 2 10 1 0 - 0") && back.state().record && back.state().honourable, "older saves keep their record");
         Career cop;
         cop.join_police("police_9", why);
         { bool car = false; cop.chief_talk(car); }

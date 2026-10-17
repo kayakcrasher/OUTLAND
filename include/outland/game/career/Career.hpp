@@ -12,9 +12,16 @@
 // raids on the Krimuloj, breaking up gang wars). Respect raises their rank and their pay; failing
 // a job, dying or betraying their own costs it.
 //
-// The one-way door: anyone who has joined a gang has a record, and the Policio never takes a
-// player with a record. An officer can always go bad - join a gang, or commit a crime on duty,
-// and they are off the force for good.
+// Honour: a gang that only kills other gangsters (Krimuloj and the ranching families) and defends
+// its towns has broken no law. A member keeps a clean record while they stay HONOURABLE; one crime
+// against the people of Verda or its police (reported: assault, murder) and the honour is gone
+// and the record stays for good. The Policio never takes a player with a record, nor one still
+// running with a gang (they leave first). An officer can always go bad - join a gang, or commit
+// a crime on duty, and they are off the force for good.
+//
+// The police campaign: once serving, the Chief's orders are to rid Verda of the gangs, a town at
+// a time - every crew broken up for good. He will not have Verda City touched until every other
+// town is clean; then the capital, and Verda is free.
 //
 // This class is the rules and the bookkeeping only; the game tells it what happened (kills,
 // crimes, where the player is and what they drive) and what the world holds (crews, rigs,
@@ -22,7 +29,7 @@
 namespace outland::game::career {
 
 enum class Side : std::uint8_t { Civilian, Gang, Police };
-enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, Raid, BreakUpWar, Quest, Smuggle, Extort, TakeTurf };
+enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, Raid, BreakUpWar, Quest, Smuggle, Extort, TakeTurf, CleanUp };
 // A recruit's road onto the force: report to the Chief at Verda City HQ, qualify at the training
 // camp's range, report back for the badge and the Interceptor, then serve (calls).
 enum class PoliceStage : std::uint8_t { Report, Training, Graduated, Serving };
@@ -34,6 +41,8 @@ struct CrewSpot {                // a gang crew's hideout
     Vector3 door{};
     std::string town;
     int alive{0};                // members standing
+    bool capital{false};         // Verda City's (the Chief leaves it for last)
+    bool cleared{false};         // broken up by the Policio for good
 };
 struct RigSpot { std::string vehicle; Vector3 position{}; std::string name; };
 struct WarSpot { int attackers{-1}, defenders{-1}; Vector3 where{}; std::string town; };
@@ -81,7 +90,9 @@ struct CareerState {
     Side side{Side::Civilian};
     int gang{-1};
     float respect{0};
-    bool record{false};            // ever a Krimulo: the Policio will not have them
+    bool record{false};            // a crime on file: the Policio will not have them
+    bool honourable{true};         // a gang member who has hurt nobody but gangsters
+    int defended{0};               // raiders taken down on the gang's own turf
     int jobs_done{0};
     std::string patrol_car;        // the officer's car (vehicle id)
     PoliceStage police_stage{PoliceStage::Report};
@@ -103,6 +114,14 @@ public:
     // Something the player did.
     void killed(int gang, bool from_vehicle);        // a Krimulo of `gang` (-1: not a Krimulo)
     void crime(bool serious);                        // a crime someone reported (assault, murder, attacking police)
+    // A rival gangster taken down on the player's own gang's turf (defending the town).
+    void defended(const std::string& town);
+    // An officer shot at Verda City's crew before the Chief allowed it.
+    void warned_off_capital(double now);
+    // The police campaign: crews still standing outside Verda City, and in it.
+    [[nodiscard]] static int towns_left(const CareerFrame& frame);
+    [[nodiscard]] static bool capital_allowed(const CareerFrame& frame) { return towns_left(frame) == 0; }
+    [[nodiscard]] bool verda_clean() const { return verda_clean_; }
     void died();
     // The police questline. Talking to the Chief moves a recruit on (and says what he says);
     // `issue_car` comes back true when he hands over the Interceptor (the game spawns it and
@@ -157,6 +176,9 @@ private:
     double next_offer_{0};
     int pay_{0};
     bool tipoff_{false}, demanded_{false};
+    bool verda_clean_{false};
+    double capital_warned_{-1e9};
+    int campaign_left_{-1};
     Job finished_;
     std::string message_;
     float message_time_{0};

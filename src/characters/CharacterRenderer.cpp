@@ -104,7 +104,15 @@ void CharacterRenderer::draw(const std::string& id,Vector3 feet,float yaw,float 
     }
     if(!posed) posed=AnimationController::apply_sample(*model,clips,sample,models_.posed(model));
     models_.mark_posed(model,posed);
+    // An outfit: the same body in other clothes (its texture swapped in for this draw only).
+    std::vector<unsigned int> own;
+    if(body.outfit) for(int i=0;i<model->materialCount;++i) {
+        auto& map=model->materials[i].maps[MATERIAL_MAP_ALBEDO];
+        own.push_back(map.texture.id);
+        if(map.texture.id) map.texture.id=body.outfit;
+    }
     DrawModelEx(*model,feet,{0,1,0},yaw+asset->facing_degrees,{scale,scale,scale},WHITE);
+    for(std::size_t i=0;i<own.size();++i) model->materials[i].maps[MATERIAL_MAP_ALBEDO].texture.id=own[i];
 }
 HeldGun CharacterRenderer::draw_player(Vector3 feet,float yaw,const BodyPose& body) {
     HeldGun held;

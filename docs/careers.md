@@ -12,10 +12,13 @@ In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. E
   - Walk up to a police station (where its patrol car parks) and press **USE** twice.
   - You are sworn in as a Kadeto and issued a pistol and two magazines, then sent to the Chief (the questline below).
   - That station's patrol car becomes yours until the Interceptor replaces it. It leaves the AI dispatch and nobody reports it stolen.
-- **The one-way door:**
-  - Joining a gang gives you a **record**, for good. The Policio turns away anyone with a record ("no Krimuloj on the force").
-  - An officer can always go bad: joining a gang ends the career on the force.
-  - So does a crime on duty: assaulting or killing a resident, or attacking an officer. Either one leaves a record.
+- **Honour and the record:**
+  - A gang that only kills other gangsters (the crews and the ranching families) and defends its towns has broken no law. A member starts **HONOURABLE** (shown by the respect meter) and keeps a clean record.
+  - One reported crime against the people of Verda or the police (assault, murder, attacking an officer) ends it: **NO HONOUR**, and a **record** for good.
+  - An honourable gang's towns win back their hold twice as fast. Every rival gangster you take down on your own gang's turf counts as defending the town: +2 respect and +4 hold.
+  - **Leaving:** press USE twice at your own crew's door to walk away from the gang.
+  - The Policio turns away anyone with a record ("no criminals on the force"), and anyone still running with a gang.
+- **An officer can always go bad:** joining a gang ends the career on the force and leaves a record. So does a crime on duty: assaulting or killing a resident, or attacking an officer.
 - Joining a different gang starts your respect again from zero.
 
 ## Respect and ranks
@@ -90,6 +93,22 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
 
 - Firing your gun on duty is never reported as "shots fired".
 
+## The campaign: rid Verda of the gangs
+
+The goal of the police questline is to get rid of the gangs. Once you serve, about 4 calls in 10 are the Chief's own orders: **CLEAN UP** (1400 pay, 14 respect).
+
+- **What it takes:** go to a crew's hideout and take down every one of them. The crew is broken up for good.
+  - Nobody comes back to it, and it sends no more hit squads.
+  - The town becomes nobody's turf (blue on the gang map, a blue cross on the map).
+  - It stays that way across saves.
+- **The towns first:** Ĉefo Marko Forta won't have you start in Verda City.
+  - His orders take you to the other towns, the nearest first.
+  - Raids skip Verda City's crew too.
+  - Shooting the Green Hand's capital crew before he gives the word costs 3 respect and earns a warning.
+  - Ask him (USE) and he tells you how many towns the gangs still hold.
+- **Then Verda City:** once every other town is clean, the last order is the capital (4000 pay, 25 respect).
+- **The end:** when the last crew is gone, **VERDA IS CLEAN** and he makes you Komisaro.
+
 ## Drive-bys
 
 - Anyone at the wheel with a **pistol or SMG** can shoot out of the driver's window: look to aim, LMB to fire, or the left **FIRE** button on touch screens.
@@ -98,7 +117,7 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
 
 ## Saving
 
-The career is saved beside the Explore loot profile (`<profile>.career`): side, gang, respect, record, jobs done and the patrol car. A job in progress is not saved; a new one comes after loading.
+The career is saved beside the Explore loot profile (`<profile>.career`): side, gang, respect, record, honour, towns defended, jobs done and the patrol car. The towns the Policio has cleared are saved with the territory. A job in progress is not saved; a new one comes after loading.
 
 ## Dev and tests
 

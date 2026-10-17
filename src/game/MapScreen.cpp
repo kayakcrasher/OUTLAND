@@ -298,6 +298,25 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
         DrawTriangle({at.x, at.y - r + 2}, {at.x - r + 2, at.y}, {at.x + r - 2, at.y}, color);
         DrawTriangle({at.x - r + 2, at.y}, {at.x, at.y + r - 2}, {at.x + r - 2, at.y}, color);
     }
+    // Each gang's main base: a star in its colour, ringed, with the gang's name.
+    for (const auto& base : view.bases) {
+        const auto at = to_map(area, base.at.x, base.at.z);
+        DrawCircleV(at, 13 * s, Fade(BLACK, .55F));
+        DrawRing(at, 11 * s, 13 * s, 0, 360, 24, base.color);
+        DrawPoly(at, 5, 9 * s, -90, BLACK);
+        DrawPoly(at, 5, 7 * s, -90, base.color);
+        const std::string label = base.name + " - BAZO";
+        const float w = measure(font, label.c_str(), 13 * s);
+        DrawRectangleRounded({at.x + 15 * s, at.y - 9 * s, w + 8 * s, 17 * s}, .3F, 4, Fade(BLACK, .6F));
+        text(font, label.c_str(), {at.x + 19 * s, at.y - 7 * s}, 13 * s, base.color);
+    }
+    // Broken up by the Policio: a blue cross where the hideout was.
+    for (const auto& where : view.cleared) {
+        const auto at = to_map(area, where.x, where.z);
+        const float r = 6 * s;
+        DrawLineEx({at.x - r, at.y - r}, {at.x + r, at.y + r}, 3 * s, Color{90, 150, 255, 255});
+        DrawLineEx({at.x - r, at.y + r}, {at.x + r, at.y - r}, 3 * s, Color{90, 150, 255, 255});
+    }
     // Stela Turo: a gold house (a star while it is for sale) and its name.
     if (view.home) {
         const auto at = to_map(area, view.home->x, view.home->z);
@@ -446,7 +465,7 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
         y += 20 * s;
         DrawTriangle({x + 7 * s, y}, {x, y + 7 * s}, {x + 14 * s, y + 7 * s}, Color{46, 204, 96, 255});
         DrawTriangle({x, y + 7 * s}, {x + 7 * s, y + 14 * s}, {x + 14 * s, y + 7 * s}, Color{46, 204, 96, 255});
-        text(font, "Krimuloj crew (gang colour) - the police are paid off", {x + 22 * s, y - 1 * s}, 14 * s, ink);
+        text(font, "Krimuloj crew (gang colour)  ·  ringed star: the gang's main base", {x + 22 * s, y - 1 * s}, 14 * s, ink);
     }
     // The gang map: the standings, biggest first, and how far your gang has to go.
     if (view.gang_map && !view.standings.empty()) {

@@ -33,6 +33,9 @@ public:
         std::vector<Vector3> stops;                    // bus stops
         std::vector<std::pair<Vector3, float>> buses;  // buses on the line: where, and heading (degrees)
         std::vector<std::pair<Vector3, Color>> turf;    // Mafio hideouts: where, and the gang's colour
+        struct Base { Vector3 at{}; Color color{}; std::string name; };
+        std::vector<Base> bases;                        // each gang's main base (its county's main town)
+        std::vector<Vector3> cleared;                   // hideouts the Policio broke up
         std::optional<Vector3> home;                    // Stela Turo: the penthouse for sale, or your home
         // The gang map (a gangster's map): every turf in its holder's colour with the hold left,
         // the tags on the walls, and who is biggest.

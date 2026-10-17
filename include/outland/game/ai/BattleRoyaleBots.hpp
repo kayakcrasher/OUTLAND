@@ -98,6 +98,8 @@ public:
     [[nodiscard]] bool asleep(int bot) const;
     // Back on its feet at `feet`, full health and a fresh mind (a crew member's respawn).
     void respawn(int bot, Vector3 feet, float yaw, std::uint64_t seed);
+    // Out of the game without a fight (a crew the Policio broke up in an earlier session).
+    void retire(int bot);
 
     // Keep bot bodies in NpcSystem in step with the brains (spawns missing bodies).
     void sync_bodies(characters::NpcSystem& npcs, const characters::CharacterRegistry* registry) const;

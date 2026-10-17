@@ -18,6 +18,8 @@ struct BodyPose {
     // bent back. `hang` 0..1: under a canopy, hands up on the toggles, legs dangling. The whole
     // body tilts forward `body_pitch` radians about the hips and rolls `body_roll` (banking).
     float skydive{0}, hang{0}, body_pitch{0}, body_roll{0};
+    // Clothes: a texture drawn in place of the body's own (0 keeps its own) - same UV layout.
+    unsigned int outfit{0};
 };
 // Authored procedural fallback, not a claim that source GLBs contain walk clips.
 // Deforms each body's own bind skeleton; unknown rigs keep their bind pose.
