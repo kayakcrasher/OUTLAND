@@ -13,17 +13,22 @@
 // every quarter of the towns cleared, five when Verda is clean.
 //
 // This file is the plan (where the outposts stand, how many are open, the patrol's loop) and the
-// art (the outposts, the cruisers' door livery); game::services::EmergencyServices drives the cars.
+// art (the outposts' star sign, the cruisers' door livery); game::services::EmergencyServices drives the cars.
 namespace outland::game::services {
 
 struct Outpost {
-    Vector3 at{};          // the booth's centre on the ground beside the ring road
-    float yaw{0};          // degrees; the booth's front looks along (sin, cos) - toward the road
-    Vector3 parking{};     // where its cruiser waits
-    float parking_yaw{0};  // degrees, along the road
+    Vector3 at{};          // the building's centre on the ground beside the highway
+    float yaw{0};          // degrees; its front looks along (sin, cos) - toward the road
+    Vector3 parking{};     // where its cruiser waits: under the carport
+    float parking_yaw{0};  // degrees, nose toward the road
 };
 
 inline constexpr int max_outposts = 5;
+// Each outpost is one small modular building from the city kit (tools/generate_city_kit.py): an
+// 8 x 6 m block with a door, a counter and a carport on its +X side. Its front is the model's -Z,
+// so it stands at rotation yaw + 180; the cruiser parks `outpost_carport` metres to its side.
+inline constexpr const char* outpost_model = "assets/verda/city/civic/patrol_outpost.glb";
+inline constexpr float outpost_carport = 7;
 
 // Five places beside the highways, off the shoulder: the first on a spoke about half a kilometre
 // out of `capital` (Verda City), the other four spread evenly round the ring road, clear of the
@@ -36,7 +41,7 @@ int outposts_open(float law, bool clean);
 // The patrol's beat: points round the ring, `spacing` metres apart, in driving order.
 std::vector<Vector3> patrol_loop(float spacing);
 
-// The outposts and the cruisers' door livery (needs a GL context; prepare outside drawing).
+// The outposts' roof sign and the cruisers' door livery (needs a GL context; prepare outside drawing).
 class HighwayPatrolArt {
 public:
     ~HighwayPatrolArt() { unload(); }
@@ -45,7 +50,7 @@ public:
     [[nodiscard]] bool ready() const { return ready_; }
     // The badge: an orange star over "ŜOSEA PATROLO" (doors, signs).
     [[nodiscard]] const Texture2D& badge() const { return badge_.texture; }
-    void draw_outpost(const Outpost& post, Vector3 camera) const;      // inside BeginMode3D
+    void draw_outpost(const Outpost& post, Vector3 camera) const;      // the roof sign, inside BeginMode3D
     void draw_livery(Vector3 position, float yaw, Vector3 camera) const; // a cruiser's doors and boot
 
 private:

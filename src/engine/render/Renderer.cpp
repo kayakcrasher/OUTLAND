@@ -1375,11 +1375,24 @@ void Renderer::run() {
                     services.start(vehicles,verda_region,&character_registry);
                     // The Ŝosea Patrolo's plan: five places on the ring road, the first by Verda City.
                     patrol_posts.clear();patrol_open=0;ranch_alarm.fill(false);
+                    for(auto& town:verda_region.runtime_settlements())
+                        std::erase_if(town.assets,[](const world::WorldAsset& a){return a.id.starts_with("patrol_outpost_");});
                     if(game::rules_for(game_mode).civilian_life) {
                         Vector3 capital{};
                         for(const auto& town:verda_region.settlements()) if(town.id=="capital_verda") capital=town.center;
                         // Open ground: nothing built or placed within reach (the ranches' fences included).
                         const auto free=[&](Vector3 at) {
+                            // Well clear of the farms (fields, pens and the yard in front of the gate) and the stockyard.
+                            for(const auto& ranch:world::ranches::ranches) {
+                                const world::ranches::Frame frame(ranch.gate,ranch.up_track);
+                                const auto& f=world::ranches::footprint;
+                                if(frame.inside(at,{f.u0-40,f.u1+40,f.v0-45,f.v1+40})) return false;
+                            }
+                            {
+                                const world::ranches::Frame frame(world::ranches::stockyard_gate,world::ranches::stockyard_up);
+                                const auto& f=world::ranches::stockyard_footprint;
+                                if(frame.inside(at,{f.u0-40,f.u1+40,f.v0-45,f.v1+40})) return false;
+                            }
                             for(const auto& town:verda_region.settlements()) {
                                 for(const auto& asset:town.assets)
                                     if(std::hypot(asset.position.x-at.x,asset.position.z-at.z)<std::max(asset.size.x,asset.size.z)*.5F+7) return false;
@@ -4639,6 +4652,25 @@ void Renderer::run() {
                 if(vehicles.spawn(verda_region,post.parking,post.parking_yaw,"highway_patrol"))
                     for(const auto& v:vehicles.vehicles())
                         if(std::find(before.begin(),before.end(),v.id)==before.end()) {services.add_highway(v.id,v.position,v.yaw);break;}
+                // The outpost itself: the city kit's small modular building, in the nearest town's assets.
+                if(auto& towns=verda_region.runtime_settlements();!towns.empty()) {
+                    std::size_t near=0;
+                    for(std::size_t t=1;t<towns.size();++t)
+                        if(Vector3Distance(towns[t].center,post.at)<Vector3Distance(towns[near].center,post.at)) near=t;
+                    world::WorldAsset asset;
+                    asset.id="patrol_outpost_"+std::to_string(patrol_open+1);
+                    asset.type=world::AssetType::House;
+                    asset.purpose=world::BuildingPurpose::Police;
+                    asset.model_path=game::services::outpost_model;
+                    asset.position=post.at;
+                    asset.rotation_y=post.yaw+180;
+                    asset.size={14,3.8F,6};
+                    asset.collision=true;
+                    towns[near].assets.push_back(std::move(asset));
+                    world::physics::MeshCollisionLibrary::preload(verda_region);
+                    world::physics::WorldCollision::invalidate_index();
+                    static_world.invalidate();
+                }
                 services.post_troopers(post.at,post.yaw,npcs);
                 if(patrol_open>0) {interaction_message="The Ŝosea Patrolo opens another outpost on the ring road";interaction_remaining=4;}
                 TraceLog(LOG_INFO,"OUTLAND Ŝosea Patrolo outpost %d at %.0f %.0f",patrol_open+1,post.at.x,post.at.z);

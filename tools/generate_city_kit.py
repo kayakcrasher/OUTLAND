@@ -822,6 +822,48 @@ def police_station():
     return b
 
 
+def patrol_outpost():
+    """A Ŝosea Patrolo outpost (modular, one storey, enterable): a small block in tan render over a
+    brown plinth, an orange fascia band for the star sign, a glass door and front window, a counter
+    and a desk inside, and a carport on the +X side for the cruiser. Front faces -Z; 8 x 6 m plus
+    the 6 m carport."""
+    b = Builder()
+    b.material("render", flat((206, 178, 128), 4), 3, 3)
+    b.material("brown", flat((104, 72, 40), 4), 3, 1)
+    b.material("orange", flat((232, 118, 28), 2), 3, 1)
+    b.material("plaster", flat((214, 200, 170), 3), 3, 3)
+    b.material("floor", flat((128, 120, 108), 6), 3, 3)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("steel", flat((120, 124, 130), 3), 3, 3)
+    b.material("wood", wood(), 2, 2)
+    w, d, height, t, slab = 4.0, 3.0, 3.4, .25, .2
+    front = [(-3.4, -2.2, slab, 2.4), (-1.6, 3.2, .9, 2.4)]          # the door, the long front window
+    back = [(-1.0, 1.0, 1.2, 2.2)]
+    sides = [(-1.0, 1.0, 1.0, 2.2)]
+    wall_with_openings(b, 'x', -d, (-w, w), height, t, front, "render", "plaster", -1)
+    wall_with_openings(b, 'x', d, (-w, w), height, t, back, "render", "plaster", +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), height, t, sides, "render", "plaster", -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, [(-1.2, 1.2, slab, 2.3)], "render", "plaster", +1)  # door to the carport
+    b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
+    b.box((-w, height - .2, -d), (w, height, d), {'+y': "roof", '-y': "plaster", '+x': "brown", '-x': "brown", '+z': "brown", '-z': "brown"})
+    b.solid((-w - .05, 0, -d - .05), (w + .05, .45, d + .05), "brown")
+    b.solid((-w - .1, height - .75, -d - .15), (w + .1, height - .2, -d), "orange")       # the fascia (sign band)
+    for lo, hi in (((-w, height, -d), (w, height + .35, -d + .15)), ((-w, height, d - .15), (w, height + .35, d)),
+                   ((-w, height, -d), (-w + .15, height + .35, d)), ((w - .15, height, -d), (w, height + .35, d))):
+        b.solid(lo, hi, "render")
+    # A canopy over the door, the counter by the window, a desk at the back, a radio mast.
+    b.solid((-3.7, 2.55, -d - .9), (-1.9, 2.68, -d), "brown")
+    b.solid((-1.4, slab, -d + .5), (3.0, 1.05, -d + .9), "wood")
+    b.solid((-.8, slab, d - 1.1), (1.6, .8, d - .4), "wood")
+    b.solid((-w + .6, height, d - .8), (-w + .75, height + 4, d - .65), "steel")
+    # The carport on +X: two posts and a flat brown roof with an orange edge.
+    for z in (-d + .2, d - .4):
+        b.solid((w + 5.6, 0, z), (w + 5.8, 2.8, z + .2), "steel")
+    b.solid((w, 2.8, -d), (w + 6, 2.95, d), "brown")
+    b.solid((w, 2.95, -d - .02), (w + 6, 3.05, -d + .1), "orange")
+    return b
+
+
 def hospital():
     """Hospitalo de Verda: a three-storey hospital (36 x 20 m) in white render with blue ribbon
     windows, an enterable ground-floor hall (glass entrance, reception, beds), sealed wards
@@ -1126,6 +1168,7 @@ def kit():
             add(f"main_street/{ident}.glb", main_street(width, 20, storeys, brick_color, trim, awning if seed % 3 else None, seed),
                 "city_" + ident, f"Main Street {color.title()} Brick {width} m, {storeys} storeys (enterable)", "Building", width, 20, storeys * FLOOR + .9)
     add("civic/police_station.glb", police_station(), "city_police_station", "Police Station (modular, enterable, carport)", "Building", 20, 12, 4.7)
+    add("civic/patrol_outpost.glb", patrol_outpost(), "city_patrol_outpost", "Ŝosea Patrolo outpost (modular, enterable, carport)", "Building", 14, 6, 3.8)
     add("civic/hospital.glb", hospital(), "city_hospital", "Hospitalo - hospital with ambulance bay", "Building", 46, 23, 12.7)
     add("civic/parliament.glb", parliament(), "city_parliament", "Registaro de Verda - domed parliament (enterable hall)", "Building", 48, 33, 29.6)
     add("civic/town_hall.glb", town_hall(), "city_town_hall", "Urbodomo - county town hall with clock tower (enterable)", "Building", 23, 17, 17.0)

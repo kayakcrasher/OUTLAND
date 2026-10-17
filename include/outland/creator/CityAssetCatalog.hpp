@@ -66,6 +66,9 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_police_station", .name = "Police Station (modular, enterable, carport)", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/police_station.glb", .thumbnail_path = "", .footprint = {20.00F, 12.00F, 4.70F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_patrol_outpost", .name = "Ŝosea Patrolo outpost (modular, enterable, carport)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/patrol_outpost.glb", .thumbnail_path = "", .footprint = {14.00F, 6.00F, 3.80F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_hospital", .name = "Hospitalo - hospital with ambulance bay", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/hospital.glb", .thumbnail_path = "", .footprint = {46.00F, 23.00F, 12.70F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

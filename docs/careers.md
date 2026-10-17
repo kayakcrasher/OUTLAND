@@ -97,7 +97,7 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
 
 The law on Verda's highways, and above all the giant ring road round the island.
 
-- **The look:** troopers wear tan shirts with olive trousers and a tan campaign hat. Their cruisers are tan with an orange waist stripe and a red and blue light bar, and carry the orange star and "ŜOSEA PATROLO" on the doors. The outposts are small tan booths with a brown roof, the star sign and a barrier arm.
+- **The look:** troopers wear tan shirts with olive trousers and a tan campaign hat. Their cruisers are tan with an orange waist stripe and a red and blue light bar, and carry the orange star and "ŜOSEA PATROLO" on the doors. Each outpost is one small modular building from the city kit (`civic/patrol_outpost.glb`, an 8 x 6 m tan block with a door, a counter, an orange fascia and the star sign on the roof) with a carport on its side for the cruiser. They stand on open ground, well clear of the ranches and the stockyard.
 - **Outposts:** at first there is just one, beside the north highway half a kilometre out of Verda City.
   - The patrol grows with the police campaign: one more outpost for every quarter of the towns cleared, all **five** once Verda is clean. The others stand round the ring road.
   - Each outpost has a cruiser and two troopers.

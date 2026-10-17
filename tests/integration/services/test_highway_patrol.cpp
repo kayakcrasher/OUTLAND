@@ -41,7 +41,19 @@ int main() {
         // The booth faces the road.
         const float a = posts[0].yaw * DEG2RAD;
         const Vector3 front{posts[0].at.x + std::sin(a) * 12, 0, posts[0].at.z + std::cos(a) * 12};
-        check(off_road(front) < off_road(posts[0].at), "the booth looks out on the road");
+        check(off_road(front) < off_road(posts[0].at), "the outpost looks out on the road");
+        // The cruiser waits under the carport, beside the building, nose to the road.
+        bool carport = true;
+        for (const auto& post : posts)
+            carport = carport && std::abs(flat(post.parking, post.at) - outpost_carport) < .01F &&
+                      std::abs(off_road(post.parking) - off_road(post.at)) < 3 && post.parking_yaw == post.yaw;
+        check(carport, "the cruiser parks under the carport");
+        // Kept off ground the game marks as taken (a farm, say).
+        const Vector3 taken = posts[0].at;
+        const auto moved = plan_outposts(capital, [&](Vector3 p) { return flat(p, taken) > 150; });
+        bool away = !moved.empty();
+        for (const auto& post : moved) away = away && flat(post.at, taken) > 150 && flat(post.parking, taken) > 150;
+        check(away, "outposts stay off taken ground");
     }
     check(outposts_open(0, false) == 1 && outposts_open(.25F, false) == 2 && outposts_open(.5F, false) == 3 &&
           outposts_open(.74F, false) == 3 && outposts_open(.75F, false) == 4 && outposts_open(1, false) == 5 &&

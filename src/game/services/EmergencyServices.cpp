@@ -132,7 +132,7 @@ void EmergencyServices::post_troopers(Vector3 at, float yaw, characters::NpcSyst
         spawn.resident = crew_base + next_crew_++;
         spawn.character_id = trooper_characters[k % 2];
         spawn.pool = characters::CharacterPool::Emergency;
-        spawn.position = Vector3Add(Vector3Add(at, Vector3Scale(ahead, 3.4F)), Vector3Scale(side, k == 0 ? -1.4F : 1.6F));
+        spawn.position = Vector3Add(Vector3Add(at, Vector3Scale(ahead, 4.4F)), Vector3Scale(side, k == 0 ? -1.4F : 1.2F));
         spawn.anchor = spawn.position;
         spawn.anchor_radius = 1.2F;
         spawn.yaw_degrees = yaw;

@@ -13,7 +13,7 @@ const world::highways::Line* ring() {
     return nullptr;
 }
 float flat(Vector3 a, Vector3 b) { return std::hypot(a.x - b.x, a.z - b.z); }
-const Color tan{198, 168, 116, 255}, tan_dark{150, 120, 78, 255}, roof{92, 62, 34, 255}, orange{232, 118, 28, 255};
+const Color orange{232, 118, 28, 255};
 }
 
 std::vector<Outpost> plan_outposts(Vector3 capital, const std::function<bool(Vector3)>& free) {
@@ -36,15 +36,24 @@ std::vector<Outpost> plan_outposts(Vector3 capital, const std::function<bool(Vec
         return true;
     };
     const float edge = world::highways::paved_half + world::highways::verge;
-    const auto beside = [&](Vector3 here, Vector3 along, Vector3 outward) {
+    const auto beside = [&](Vector3 here, Vector3 outward) {
         Outpost post;
         post.at = Vector3Add(here, Vector3Scale(outward, edge + 11));
         post.yaw = std::atan2(-outward.x, -outward.z) * RAD2DEG;      // facing the road
-        post.parking = Vector3Add(Vector3Add(here, Vector3Scale(outward, edge + 4.5F)), Vector3Scale(along, 7));
-        post.parking_yaw = std::atan2(along.x, along.z) * RAD2DEG;
+        // Under the carport on the building's +X side (the model turned to face the road), nose out.
+        const float a = post.yaw * DEG2RAD;
+        post.parking = Vector3Add(post.at, Vector3Scale({-std::cos(a), 0, std::sin(a)}, outpost_carport));
+        post.parking_yaw = post.yaw;
         return post;
     };
-    const auto open = [&](const Outpost& post) { return !free || (free(post.at) && free(post.parking)); };
+    // The whole lot clear: the building, its carport and the yard in front.
+    const auto open = [&](const Outpost& post) {
+        if (!free) return true;
+        const float a = post.yaw * DEG2RAD;
+        const Vector3 ahead{std::sin(a), 0, std::cos(a)}, back = Vector3Scale(ahead, -4);
+        return free(post.at) && free(post.parking) && free(Vector3Add(post.at, Vector3Scale(ahead, 5))) &&
+               free(Vector3Add(post.at, back)) && free(Vector3Add(post.parking, back));
+    };
     // The first, the patrol's home: beside a spoke, as near half a kilometre out of Verda City as
     // there is open ground.
     {
@@ -60,7 +69,7 @@ std::vector<Outpost> plan_outposts(Vector3 capital, const std::function<bool(Vec
                 Vector3 along = Vector3Subtract(line.points[i + 1], line.points[i]); along.y = 0;
                 along = Vector3Normalize(along);
                 for (const float side : {1.0F, -1.0F}) {
-                    const auto post = beside(line.points[i], along, {side * along.z, 0, -side * along.x});
+                    const auto post = beside(line.points[i], {side * along.z, 0, -side * along.x});
                     if (!open(post)) continue;
                     found = post; best = score;
                     break;
@@ -74,11 +83,9 @@ std::vector<Outpost> plan_outposts(Vector3 capital, const std::function<bool(Vec
     for (int k = 0; k < rest; ++k) {
         int i = (first + k * n / rest) % n;
         const auto at = [&](int index) {
-            const Vector3 here = p[static_cast<std::size_t>(index)], next = p[static_cast<std::size_t>((index + 1) % n)];
-            Vector3 along = Vector3Subtract(next, here); along.y = 0;
-            along = Vector3Normalize(along);
+            const Vector3 here = p[static_cast<std::size_t>(index)];
             Vector3 outward = Vector3Subtract(here, middle); outward.y = 0;
-            return beside(here, along, Vector3Normalize(outward));
+            return beside(here, Vector3Normalize(outward));
         };
         for (int step = 0; step < n / 8 && (!clear(p[static_cast<std::size_t>(i)]) || !open(at(i))); ++step) i = (i + 1) % n;
         out.push_back(at(i));
@@ -142,32 +149,27 @@ void HighwayPatrolArt::unload() {
 }
 
 void HighwayPatrolArt::draw_outpost(const Outpost& post, Vector3 camera) const {
-    if (flat(post.at, camera) > 320) return;
-    rlPushMatrix();
-    rlTranslatef(post.at.x, post.at.y, post.at.z);
-    rlRotatef(post.yaw, 0, 1, 0);
-    // A small booth: tan walls on a concrete step, a window band, the door, a flat brown roof
-    // with an overhang, the star sign on the front; a barrier arm beside it.
-    DrawCube({0, .1F, 0}, 5.4F, .2F, 4.4F, Color{150, 150, 144, 255});
-    DrawCube({0, 1.5F, 0}, 4.6F, 2.6F, 3.6F, tan);
-    DrawCube({0, 1.75F, 1.81F}, 3.4F, .9F, .04F, Color{58, 78, 90, 255});      // window
-    DrawCube({-1.8F, 1.1F, 1.81F}, .8F, 2.0F, .04F, tan_dark);                  // door
-    DrawCube({0, 2.92F, .2F}, 5.4F, .24F, 4.6F, roof);
-    DrawCube({0, 2.7F, 2.4F}, 5.4F, .2F, .1F, orange);                          // fascia stripe
-    DrawCube({2.9F, .55F, 3.6F}, .25F, 1.1F, .25F, Color{230, 230, 226, 255});   // barrier post
-    for (int k = 0; k < 6; ++k)
-        DrawCube({2.9F - .3F - .6F * static_cast<float>(k), 1.0F, 3.6F}, .6F, .12F, .12F, k % 2 ? Color{230, 230, 226, 255} : orange);
-    rlPopMatrix();
-    if (!ready_) return;
-    // The sign on the roof's front edge.
+    if (!ready_ || flat(post.at, camera) > 320) return;
+    // The building is the city kit's (outpost_model); this is the star sign standing on its roof
+    // over the front, above the orange fascia.
     const float a = post.yaw * DEG2RAD;
     const Vector3 n{std::sin(a), 0, std::cos(a)}, right{std::cos(a), 0, -std::sin(a)};
-    const Vector3 c = Vector3Add(post.at, Vector3Add(Vector3Scale(n, 2.52F), {0, 3.55F, 0}));
-    const float w = 1.6F, h = .8F;
+    const Vector3 c = Vector3Add(post.at, Vector3Add(Vector3Scale(n, 2.9F), {0, 4.4F, 0}));
+    const float w = 1.5F, h = .75F;
     const Vector3 bl = Vector3Subtract(Vector3Subtract(c, Vector3Scale(right, w)), {0, h, 0});
     const Vector3 br = Vector3Subtract(Vector3Add(c, Vector3Scale(right, w)), {0, h, 0});
     const Vector3 tr = Vector3Add(Vector3Add(c, Vector3Scale(right, w)), {0, h, 0});
     const Vector3 tl = Vector3Add(Vector3Subtract(c, Vector3Scale(right, w)), {0, h, 0});
+    // Two legs and a brown backing board.
+    for (const float side : {-1.0F, 1.0F}) {
+        const Vector3 leg = Vector3Add(Vector3Subtract(c, Vector3Scale(n, .06F)), Vector3Scale(right, side * (w - .25F)));
+        DrawCube({leg.x, post.at.y + 3.55F + .3F, leg.z}, .1F, .6F, .1F, Color{120, 124, 130, 255});
+    }
+    rlPushMatrix();
+    rlTranslatef(c.x - n.x * .05F, c.y, c.z - n.z * .05F);
+    rlRotatef(post.yaw, 0, 1, 0);
+    DrawCube({0, 0, 0}, w * 2 + .12F, h * 2 + .12F, .06F, Color{92, 62, 34, 255});
+    rlPopMatrix();
     rlDrawRenderBatchActive();
     rlDisableBackfaceCulling();
     rlSetTexture(badge_.texture.id);
