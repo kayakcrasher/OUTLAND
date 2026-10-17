@@ -116,7 +116,8 @@ void CharacterRenderer::draw(const std::string& id,Vector3 feet,float yaw,float 
 }
 HeldGun CharacterRenderer::draw_player(Vector3 feet,float yaw,const BodyPose& body) {
     HeldGun held;
-    const auto* asset=registry_.player();
+    const auto* asset=player_id_.empty() ? nullptr : registry_.find(player_id_);
+    if (!asset) asset=registry_.player();
     if (asset) draw(asset->id,feet,yaw*RAD2DEG,1,&player_animation_,body,&held);
     return held;
 }

@@ -132,6 +132,20 @@ int main() {
         assert(!inventory::LootSave::save(items,twice,legacy,error));
         home.economy.properties.clear();home.economy.money=0;assert(inventory::LootSave::save(items,home,legacy,error));
     }
+    {
+        // Clothes from Vestaĵejo Verda are kept: what you own, what you have on, your hat.
+        auto dressed=snapshot;
+        dressed.economy.wardrobe={"look_character_07","hat_cowboy"};dressed.economy.wearing="look_character_07";dressed.economy.hat="hat_cowboy";
+        assert(inventory::LootSave::save(items,dressed,legacy,error));
+        inventory::LootSnapshot back;back.mode=dressed.mode;
+        assert(inventory::LootSave::load(items,back,legacy,error) && back.economy.wardrobe==dressed.economy.wardrobe &&
+               back.economy.wearing=="look_character_07" && back.economy.hat=="hat_cowboy");
+        auto stray=dressed;stray.economy.wearing="look_character_09";   // on, but never bought
+        assert(!inventory::LootSave::save(items,stray,legacy,error));
+        auto twice=dressed;twice.economy.wardrobe.push_back("hat_cowboy");
+        assert(!inventory::LootSave::save(items,twice,legacy,error));
+        assert(inventory::LootSave::save(items,snapshot,legacy,error));
+    }
     invalid=snapshot;invalid.economy.stock={{"s","o",1},{"s","o",1}};assert(!inventory::LootSave::save(items,invalid,legacy,error));
     assert(inventory::LootSave::load(items,snapshot,legacy,error) && snapshot.economy.money==0);
     std::ofstream(dir/"bad.tsv")<<"bad\n";const auto count=economy.offers().size();

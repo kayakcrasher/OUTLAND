@@ -139,6 +139,7 @@ inline void register_trailer_assets(CreatorAssetRegistry& registry);
 inline void register_transit_assets(CreatorAssetRegistry& registry);
 inline void register_residential_assets(CreatorAssetRegistry& registry);
 inline void register_ranch_assets(CreatorAssetRegistry& registry);
+inline void register_furniture_assets(CreatorAssetRegistry& registry);
 
 class CreatorAssetRegistry {
 public:
@@ -156,6 +157,7 @@ public:
         register_transit_assets(*this);
         register_residential_assets(*this);
         register_ranch_assets(*this);
+        register_furniture_assets(*this);
         // Verda building kit: textured 3 x 3 m slabs that tile with the 3 m Building Parts walls
         // (tools/generate_kit_slabs.py). Floors, ceilings and roofs for enterable buildings.
         for (const auto& [id, name, file] : {std::tuple{"verda_kit_floor_slab", "Kit Floor Slab 3x3", "floor_slab_3x3.glb"},
@@ -922,5 +924,6 @@ private:
 #include "outland/creator/TransitAssetCatalog.hpp"
 #include "outland/creator/ResidentialAssetCatalog.hpp"
 #include "outland/creator/RanchAssetCatalog.hpp"
+#include "outland/creator/FurnitureAssetCatalog.hpp"
 
 #endif // OUTLAND_DEV_TOOLS

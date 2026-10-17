@@ -1,0 +1,55 @@
+# Vestaĵejo Verda and furnished interiors
+
+## Vestaĵejo Verda, the clothing store
+
+Verda City's clothing store sells every set of clothes on the island. It takes the three-storey,
+18 m Main Street building nearest the city centre. On the map and compass it is the green shop
+marked VESTAĴEJO, and its sign over the windows reads "VESTAĴEJO VERDA - VESTOJ · ĈAPELOJ · KOSTUMOJ".
+
+- **What it sells:**
+  - Every civilian body's clothes, 44 looks besides your own: men's and women's styles and the
+    yellow hazard suits ("Protekta kostumo").
+  - La Verda Mano's two outfits: the white shirt with the green hand (400 kr) and the officers'
+    charcoal suit (2500 kr). These are sold to members only.
+  - Two hats: the Vakeroj's cattleman hat (150 kr) and the patrol's tan campaign hat (300 kr).
+  - Other looks cost 180–495 kr.
+- **On display:** every look stands on a mannequin.
+  - Ground floor: three in the window, a row down the side wall, the counter, three fitting
+    rooms, a mirror, a hat stand with both hats, racks and tables of folded clothes.
+  - The two floors above: rows of mannequins between racks. The stairs are on the right.
+- **Buying:**
+  - Stand by a mannequin and press **E** to try on what it wears. At the counter or the fitting
+    rooms, **E** browses everything.
+  - The panel on the right dresses you as you browse.
+  - **LEFT/RIGHT** changes the look, **UP/DOWN** the hat, **ENTER** buys or wears the look,
+    **T** the hat, **X** takes the hat off, **ESC** closes. Every button can also be tapped.
+  - Closing puts you back in what you own.
+  - The clothes you started in are always yours.
+- **Saved:** what you own and what you have on are kept in the Explore profile (`WARDROBE` and
+  `WEARING` lines).
+
+## Furniture
+
+Furniture models come from `tools/generate_furniture.py` (`assets/verda/furniture/`, 26 pieces,
+also in the Creator under Props).
+
+- **Every pub** (Main Street pubs) has:
+  - the bar along the back wall, with a brass foot rail, beer taps, a till and a back bar of
+    bottles under a mirror;
+  - four stools;
+  - tables with chairs down one wall, and a darts panel between them;
+  - a booth and the jukebox by the stairs;
+  - a pool table in the wide pubs, another table in the narrow ones;
+  - a plant in the window.
+- **Some homes, about one in four, never all.** The choice is fixed per building.
+  - A detached house gets a kitchen with a fridge, a dining table and chairs, a sofa facing the
+    television across a rug and a coffee table, a double bed with nightstands, a wardrobe, a
+    bookshelf and a plant.
+  - A Main Street flat gets the same on its ground floor.
+- **Kept clear:** the doors, the middle of the room (residents walk there) and the stairs.
+- **Not furnished:** buildings put together in the Creator (no known shell) and shops.
+
+Pieces are ordinary world assets (`furnish_*`, rebuilt with island life each session) and collide
+like other props, except the rug. Layout and the store: `game::interiors::Furnishing`. Catalogue,
+buying and wearing: `game::wardrobe::Wardrobe`. The panel: `game::wardrobe::StoreUI`. Tests:
+`outland_clothing_and_furniture_tests` and `outland_generated_furniture`.

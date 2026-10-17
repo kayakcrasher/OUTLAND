@@ -23,6 +23,8 @@ public:
               const BodyPose& body={},HeldGun* held=nullptr);
     void update_player(AnimationAction action,float dt,float ground_speed=-1) { player_animation_.advance(action,dt,ground_speed); }
     HeldGun draw_player(Vector3 feet,float yaw_radians,const BodyPose& body={});
+    // The body the player is drawn in (clothes from Vestaĵejo Verda); empty: the registry's player.
+    void set_player(std::string id) { player_id_=std::move(id); }
     // `dress` says what each body holds (zombies are styled here); `armed` draws what they hold
     // (and what they wear: called when a gun is held or the crown of the head is known).
     using Dress=std::function<void(const NpcInstance&,BodyPose&)>;
@@ -32,6 +34,7 @@ public:
     static bool prepare(const CharacterDefinition& definition,Model& model);
 private:
     AnimationController player_animation_;
+    std::string player_id_;
     SkeletalGait gait_;
     const CharacterRegistry& registry_;
     std::string asset_root_;

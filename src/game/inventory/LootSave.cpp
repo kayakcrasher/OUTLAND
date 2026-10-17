@@ -76,6 +76,10 @@ bool LootSave::save(const ItemRegistry &registry, const LootSnapshot &state,
         out << "STOCK " << std::quoted(stock.shop) << ' ' << std::quoted(stock.offer) << ' ' << stock.quantity << '\n';
     for(const auto& property : state.economy.properties)
         out << "PROPERTY " << std::quoted(property) << '\n';
+    for(const auto& clothes : state.economy.wardrobe)
+        out << "WARDROBE " << std::quoted(clothes) << '\n';
+    if(!state.economy.wearing.empty() || !state.economy.hat.empty())
+        out << "WEARING " << std::quoted(state.economy.wearing) << ' ' << std::quoted(state.economy.hat) << '\n';
     out << "END\n";
     out.flush();
     bool good = out.good();
@@ -175,6 +179,12 @@ bool LootSave::load(const ItemRegistry &registry, LootSnapshot &destination,
             std::string property;
             if(version!=2 || parsed.economy.properties.size()>=64 || !(input >> std::quoted(property))) return fail();
             parsed.economy.properties.push_back(std::move(property));
+        } else if (token == "WARDROBE") {
+            std::string clothes;
+            if(version!=2 || parsed.economy.wardrobe.size()>=256 || !(input >> std::quoted(clothes))) return fail();
+            parsed.economy.wardrobe.push_back(std::move(clothes));
+        } else if (token == "WEARING") {
+            if(version!=2 || !(input >> std::quoted(parsed.economy.wearing) >> std::quoted(parsed.economy.hat))) return fail();
         } else if (token == "END") {
             end = true;
             break;

@@ -29,6 +29,9 @@ inline constexpr int max_outposts = 5;
 // so it stands at rotation yaw + 180; the cruiser parks `outpost_carport` metres to its side.
 inline constexpr const char* outpost_model = "assets/verda/city/civic/patrol_outpost.glb";
 inline constexpr float outpost_carport = 7;
+// The model's bounds centre on the ground (x, z in the model): the game stands models on their
+// bounds' centre, so the asset goes this far (turned with it) from the outpost's origin.
+inline constexpr Vector2 outpost_model_centre{2.95F, -.425F};
 
 // Five places beside the highways, off the shoulder: the first on a spoke about half a kilometre
 // out of `capital` (Verda City), the other four spread evenly round the ring road, clear of the

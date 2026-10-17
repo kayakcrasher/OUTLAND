@@ -77,6 +77,8 @@
 
 #include "outland/game/culture/SignRenderer.hpp"
 #include "outland/game/services/HighwayPatrol.hpp"
+#include "outland/game/interiors/Furnishing.hpp"
+#include "outland/game/wardrobe/StoreUI.hpp"
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/game/zombies/ZombieEcology.hpp"
 #include "outland/game/LanScreen.hpp"
@@ -625,6 +627,14 @@ void Renderer::run() {
     std::vector<game::services::Outpost> patrol_posts;
     int patrol_open=0;
     game::services::HighwayPatrolArt patrol_art;
+    // Furniture in the pubs and some homes; Vestaĵejo Verda, the clothing store, and what you wear.
+    std::optional<game::interiors::ClothingStore> clothing_store;
+    game::wardrobe::Catalogue wardrobe_catalogue;
+    game::wardrobe::StoreUI store_ui;
+    bool store_open=false;
+    std::string store_status,store_prompt;
+    characters::AnimationController mannequin_pose;
+    mannequin_pose.advance(characters::AnimationAction::Idle,0);
     std::array<bool,game::mafia::family_count> ranch_alarm{};
     std::vector<int> retired_bots;   // crews broken up in an earlier session: not drawn            // an outsider at the wheel of the Verda Mano GT (once a drive)
     game::casino::Poker poker;
@@ -786,6 +796,11 @@ void Renderer::run() {
         outfits.soldato=load_outfit("assets/verda/characters/outfits/verda_mano_soldato.png");
         outfits.kapo=load_outfit("assets/verda/characters/outfits/verda_mano_kapo.png");
     }
+    const auto outfit_texture=[&](const std::string& outfit)->unsigned int {
+        if(outfit=="verda_mano_soldato") return outfits.soldato.id;
+        if(outfit=="verda_mano_kapo") return outfits.kapo.id;
+        return 0U;
+    };
     std::size_t signed_world=static_cast<std::size_t>(-1);
     const auto world_size=[&]{
         std::size_t n=0;
@@ -794,9 +809,72 @@ void Renderer::run() {
     };
     const auto rebuild_signs=[&]{
         world::physics::MeshCollisionLibrary::preload(verda_region);
-        sign_renderer.set(game::culture::build_signage(verda_region,island_life.island().places.empty() ?
-            game::life::build_island(verda_region,&character_registry) : island_life.island()));
+        auto signage=game::culture::build_signage(verda_region,island_life.island().places.empty() ?
+            game::life::build_island(verda_region,&character_registry) : island_life.island());
+        // Vestaĵejo Verda's board over its windows.
+        if(clothing_store) {
+            std::erase_if(signage.signs,[&](const game::culture::Sign& sign){return sign.place==clothing_store->place_id;});
+            game::culture::Sign sign;
+            sign.kind=game::culture::SignKind::Shopfront;
+            sign.place=clothing_store->place_id;
+            sign.position=clothing_store->sign;
+            sign.yaw=clothing_store->yaw+180;   // the face looks out of the shop front
+            sign.max_width=clothing_store->width*.7F;
+            sign.front={{"VESTAĴEJO VERDA",.36F},{"VESTOJ · ĈAPELOJ · KOSTUMOJ",.17F}};
+            sign.board=Color{0,96,52,255};sign.ink=Color{255,244,214,255};
+            signage.signs.push_back(std::move(sign));
+        }
+        sign_renderer.set(std::move(signage));
         signed_world=world_size();
+    };
+    wardrobe_catalogue.build(character_registry);
+    // The pubs' and some homes' furniture, and Vestaĵejo Verda, as ordinary world assets
+    // ("furnish_*"; they collide like any prop). Rebuilt with island life each session.
+    const auto furnish_island=[&]{
+        for(auto& town:verda_region.runtime_settlements())
+            std::erase_if(town.assets,[](const world::WorldAsset& a){return a.id.starts_with("furnish_");});
+        clothing_store.reset();
+        const auto& places=island_life.places();
+        auto& towns=verda_region.runtime_settlements();
+        int capital=-1;
+        for(std::size_t t=0;t<towns.size();++t) if(towns[t].id=="capital_verda") capital=static_cast<int>(t);
+        const auto* site=capital>=0 ? game::interiors::store_site(places,capital,towns[static_cast<std::size_t>(capital)].center) : nullptr;
+        auto pieces=game::interiors::furnish(places,[](float x,float z){return world::terrain::TerrainHeight::sample(x,z);},site ? site->id : std::string());
+        if(site) {
+            clothing_store=game::interiors::clothing_store(*site,std::max(0,static_cast<int>(wardrobe_catalogue.looks().size())-1));
+            pieces.insert(pieces.end(),clothing_store->pieces.begin(),clothing_store->pieces.end());
+        }
+        int pubs=0,homes=0;
+        for(const auto& place:places) {
+            if(site && place.id==site->id) continue;
+            if(place.kind==game::life::PlaceKind::Pub && game::interiors::shell_of(place)!=game::interiors::Shell::None) ++pubs;
+            else if(game::interiors::furnished_home(place)) {
+                if(++homes<=2 || game::interiors::shell_of(place)==game::interiors::Shell::House)
+                    TraceLog(LOG_INFO,"OUTLAND furnished home %s at %.0f %.0f",place.id.c_str(),place.interior.x,place.interior.z);
+            }
+        }
+        std::size_t n=0;
+        for(const auto& piece:pieces) {
+            // Into the nearest town's assets (they draw and collide with it).
+            std::size_t near=0;
+            for(std::size_t t=1;t<towns.size();++t)
+                if(Vector3Distance(towns[t].center,piece.at)<Vector3Distance(towns[near].center,piece.at)) near=t;
+            world::WorldAsset asset;
+            asset.id="furnish_"+std::to_string(++n);
+            asset.type=world::AssetType::Sign;
+            asset.model_path=piece.model;
+            asset.position=piece.at;
+            asset.rotation_y=piece.yaw;
+            asset.size=game::interiors::footprint(piece.model);
+            asset.collision=piece.solid;
+            if(!towns.empty()) towns[near].assets.push_back(std::move(asset));
+        }
+        world::physics::MeshCollisionLibrary::preload(verda_region);
+        world::physics::WorldCollision::invalidate_index();
+        static_world.invalidate();
+        TraceLog(LOG_INFO,"OUTLAND furnished: %d pubs and %d homes, %d pieces%s",pubs,homes,static_cast<int>(n),
+                 clothing_store ? TextFormat("; Vestaĵejo Verda in %s, door %.1f %.1f facing %.0f, %d mannequins",clothing_store->place_id.c_str(),
+                     clothing_store->front.x,clothing_store->front.z,clothing_store->yaw+180,static_cast<int>(clothing_store->mannequins.size())) : "");
     };
     game::vehicles::VehicleRegistry vehicle_registry;
     std::string vehicle_error;
@@ -1273,6 +1351,7 @@ void Renderer::run() {
                     // Linio 1: the island buses, each with a driver.
                     if(bus_line.build(verda_region,vehicles,&character_registry,++bus_seed)) bus_line.start(verda_region,vehicles);
                     economy.build(island_life.places());
+                    furnish_island();
                     // Start outside a populated public shop, using authored purpose/door data.
                     if(!explicit_spawn && !economy.shops().empty()) {
                         const auto start_feet=Vector3Subtract(player.position,{0,1,0});
@@ -1700,6 +1779,7 @@ void Renderer::run() {
             if(!pause_menu.is_open() && !poker_open && !map_screen.is_open()) {
                 if(escape && inventory_open) {inventory_open=false;input_system.cancel_controls();}
                 else if(escape && shop_open) {shop_open=false;input_system.cancel_controls();}
+                else if(escape && store_open) {store_open=false;input_system.cancel_controls();}
                 else if(escape && build_mode.active()) {}
                 else if(escape || lost_mouse || menu_tapped) {pause_menu.open();input_system.cancel_controls();}
             }
@@ -1798,7 +1878,7 @@ void Renderer::run() {
         if(game_mode==game::GameMode::DevLab && !creator_active)reserved=[&](Vector2 point){return CheckCollisionPointRec(point,audio_button)||dev_lab.owns_point(point,screen_width,screen_height);};
 #endif
         // The map is modal like the bag; MAP / M opens it during play.
-        if(!map_screen.is_open() && !pause_menu.is_open() && game_mode!=game::GameMode::DevLab && !shop_open && !poker_open && !inventory_open && !mode_session.terminal() &&
+        if(!map_screen.is_open() && !pause_menu.is_open() && game_mode!=game::GameMode::DevLab && !(shop_open||store_open) && !poker_open && !inventory_open && !mode_session.terminal() &&
            (map_screen.tapped_map_button(screen_width,screen_height,IsWindowFocused()) || (IsWindowFocused() && settings.bindings.pressed(input::Action::Map,mouse_captured)))) {
             map_screen.open();input_system.cancel_controls();
         }
@@ -1814,7 +1894,7 @@ void Renderer::run() {
             const auto change=map_screen.update(settings,screen_width,screen_height,IsWindowFocused());
             if(change!=game::MapScreen::Change::None) {apply_settings();store_settings();}
             if(change==game::MapScreen::Change::Close) input_system.cancel_controls();
-        } else if(shop_open || poker_open || mode_session.terminal()) {
+        } else if(shop_open || store_open || poker_open || mode_session.terminal()) {
             input_system.update(screen_width,screen_height,true,true,[](Vector2){return true;});
             input_system.player()={};
         } else if (inventory_open) {
@@ -1869,7 +1949,7 @@ void Renderer::run() {
             dev_ui=game_mode==game::GameMode::DevLab && (dev_lab.tools_open() || creator_active);
 #endif
             const bool want=!touch_ui && IsWindowFocused() && !pause_menu.is_open() && !map_screen.is_open() && !inventory_open &&
-                !shop_open && !poker_open && !mode_session.terminal() && !dev_ui;
+                !(shop_open||store_open) && !poker_open && !mode_session.terminal() && !dev_ui;
             input::PointerEvents::capture_mouse(want);
             mouse_wanted=want;
             build_mode.set_mouse_aim(mouse_captured);
@@ -1891,7 +1971,7 @@ void Renderer::run() {
         {
             // BUILD (K): lay roads, homes and bus stops in Explore, on foot.
             const bool can_build=game::rules_for(game_mode).civilian_life && !vehicles.driver() && !map_screen.is_open() &&
-                !inventory_open && !shop_open && !poker_open && !mode_session.terminal() && player_health.alive();
+                !inventory_open && !(shop_open||store_open) && !poker_open && !mode_session.terminal() && player_health.alive();
             build_mode.tick(dt);
             bool toggled_now=false;
             if(can_build && build_mode.toggled(screen_width,screen_height,IsWindowFocused())) {
@@ -1922,11 +2002,35 @@ void Renderer::run() {
         const auto reachable_shop=[&](Vector3 door){return !combat_world.trace_segment(
             {player.position.x,player.position.y+.5F,player.position.z},Vector3Add(door,{0,.8F,0}),false,false).hit();};
         const auto* nearby_shop=game_mode==game::GameMode::Explore && !vehicles.driver() ? economy.nearest(shop_feet,reachable_shop) : nullptr;
+        // Vestaĵejo Verda: try on what a mannequin wears, or browse everything at the counter or
+        // the fitting rooms (the store sells clothes, not the supplies counter's goods).
+        int store_mannequin=-1;
+        bool at_store_counter=false;
+        store_prompt.clear();
+        if(clothing_store && game_mode==game::GameMode::Explore && !vehicles.driver() && player_health.alive() && !store_open) {
+            if(nearby_shop && nearby_shop->id==clothing_store->place_id) nearby_shop=nullptr;
+            const auto close_to=[&](Vector3 at,float reach){
+                return std::hypot(at.x-shop_feet.x,at.z-shop_feet.z)<reach && std::abs(at.y-shop_feet.y)<1.6F;};
+            float best=1.5F;
+            const auto& looks=wardrobe_catalogue.looks();
+            for(std::size_t i=0;i<clothing_store->mannequins.size() && i+1<looks.size();++i) {
+                const auto& m=clothing_store->mannequins[i];
+                const float d=std::hypot(m.at.x-shop_feet.x,m.at.z-shop_feet.z);
+                if(d<best && std::abs(m.at.y-shop_feet.y)<1.6F) {best=d;store_mannequin=static_cast<int>(i);}
+            }
+            at_store_counter=store_mannequin<0 && (close_to(clothing_store->counter,2.2F) || close_to(clothing_store->fitting,2.2F));
+            const auto& state=loot_session.economy();
+            if(store_mannequin>=0) {
+                const auto& look=looks[static_cast<std::size_t>(store_mannequin)+1];
+                store_prompt=std::string("E - Try on: ")+look.name+"  ("+(game::wardrobe::owns(state,wardrobe_catalogue,look.id) ? std::string("yours") :
+                    look.green_hand && mafio.player_gang()!=0 ? std::string("La Verda Mano only") : std::to_string(look.price)+" kr")+")";
+            } else if(at_store_counter) store_prompt="E - Vestaĵejo Verda: every look and hat";
+        }
         // The Green Hand's poker table in Verda City: sit down with up to 300 kr.
         const auto* table_crew=game_mode==game::GameMode::Explore ? mafio.casino() : nullptr;
         const bool at_table=table_crew && !vehicles.driver() && !poker_open && player_health.alive() &&
             Vector3Distance(shop_feet,table_crew->table)<2.8F && !mafio.provoked(table_crew->gang,match_time);
-        if(controls.interact && at_table && !inventory_open && !shop_open && !mode_session.terminal()) {
+        if(controls.interact && at_table && !inventory_open && !(shop_open||store_open) && !mode_session.terminal()) {
             const auto money=loot_session.economy().money;
             if(money<20) {interaction_message="The Green Hand's table: 20 kr to sit down";interaction_remaining=3;}
             else {
@@ -1952,12 +2056,24 @@ void Renderer::run() {
                 poker_open=false;input_system.cancel_controls();
             }
         }
-        if(controls.interact && nearby_shop && !inventory_open && !shop_open && !poker_open && !at_table && !mode_session.terminal()) {
+        if(controls.interact && (store_mannequin>=0 || at_store_counter) && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && !mode_session.terminal()) {
+            const auto& state=loot_session.economy();
+            int look=store_mannequin>=0 ? store_mannequin+1 : 0;
+            if(store_mannequin<0) if(const auto* on=game::wardrobe::wearing(state,wardrobe_catalogue))
+                for(std::size_t i=0;i<wardrobe_catalogue.looks().size();++i) if(wardrobe_catalogue.looks()[i].id==on->id) look=static_cast<int>(i);
+            int hat=-1;
+            for(std::size_t i=0;i<wardrobe_catalogue.hats().size();++i) if(wardrobe_catalogue.hats()[i].id==state.hat) hat=static_cast<int>(i);
+            store_ui.set_font(sign_renderer.font());
+            store_ui.open(look,hat);
+            store_open=true;store_status.clear();player.third_person=true;
+            input_system.cancel_controls();
+        }
+        else if(controls.interact && nearby_shop && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && !mode_session.terminal()) {
             current_shop=nearby_shop;shop_open=true;shop_status="Select supplies, equipment or furniture. BUY / SELL transfers one item.";
             play_ui.opened();input_system.cancel_controls();
         }
         // The Chief (talk), and the training camp's stand (start the next drill).
-        if(controls.interact && !creator_active && !inventory_open && !shop_open && !poker_open && !at_table && !vehicles.driver() &&
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && !vehicles.driver() &&
            game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
             if(chief.placed && Vector3Distance(feet,chief.at)<3.2F) {
@@ -1982,7 +2098,7 @@ void Renderer::run() {
             }
         }
         // Joining a gang (at its hideout's door) or the police (at a station): USE twice.
-        if(controls.interact && !creator_active && !inventory_open && !shop_open && !poker_open && !at_table && !vehicles.driver() &&
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && !vehicles.driver() &&
            game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
             const int crew=mafio.active() ? mafio.turf_at(feet,7) : -1;
@@ -2037,7 +2153,7 @@ void Renderer::run() {
                 interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
             }
         }
-        if(controls.interact && !creator_active && !inventory_open && !shop_open && !poker_open && !at_table) {
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table) {
             Vector3 exit{};
             if(vehicles.driver()){
                 if(vehicles.exit(verda_region,exit)){player.position=Vector3Add(exit,{0,1,0});player.vertical_velocity=0;vehicle_renderer.reset_camera();interaction_message="Exited vehicle";}
@@ -2076,7 +2192,7 @@ void Renderer::run() {
         const float pedal_throttle=std::clamp(-controls.move_y+controls.gas-controls.brake_pedal,-1.0F,1.0F);
         game::vehicles::VehicleInput driving_input{pedal_throttle,-controls.move_x,controls.brake,controls.crouch,IsKeyDown(KEY_H),controls.sprint};
         // In a LAN match the world goes on for everyone, whatever menu this player has open.
-        const bool vehicle_paused=lan_match ? creator_active : creator_active||inventory_open||shop_open||poker_open||mode_session.terminal()||!IsWindowFocused()
+        const bool vehicle_paused=lan_match ? creator_active : creator_active||inventory_open||shop_open||store_open||poker_open||mode_session.terminal()||!IsWindowFocused()
 #ifdef OUTLAND_DEV_TOOLS
             || (game_mode==game::GameMode::DevLab && dev_lab.tools_open())
 #endif
@@ -2104,6 +2220,21 @@ void Renderer::run() {
             loot_session.update(mode_session.terminal() ? 0.0F : dt,verda_region,loot_feet,weapons);
             if(game_mode==game::GameMode::Explore) {
                 if(economy.update(loot_session.economy(),dt,vehicle_paused)) loot_session.changed();
+                if(store_open) {
+                    const auto action=store_ui.input(wardrobe_catalogue,screen_width,screen_height,IsWindowFocused());
+                    auto& state=loot_session.economy();
+                    const bool member=mafio.player_gang()==0;
+                    if(action.buy_look) {
+                        store_status=game::wardrobe::buy(state,wardrobe_catalogue,wardrobe_catalogue.looks()[static_cast<std::size_t>(store_ui.look())].id,member);
+                        loot_session.changed();
+                    }
+                    if(action.buy_hat && store_ui.hat()>=0) {
+                        store_status=game::wardrobe::buy(state,wardrobe_catalogue,wardrobe_catalogue.hats()[static_cast<std::size_t>(store_ui.hat())].id,member);
+                        loot_session.changed();
+                    }
+                    if(action.no_hat && !state.hat.empty()) {game::wardrobe::take_off_hat(state);store_status="Hat off";loot_session.changed();}
+                    if(action.close) {store_open=false;input_system.cancel_controls();}
+                }
                 if(shop_open && current_shop) {
                     const auto action=play_ui.shop_input(economy,*current_shop,screen_width,screen_height,IsWindowFocused());
                     if(action.close) {shop_open=false;input_system.cancel_controls();}
@@ -2115,7 +2246,7 @@ void Renderer::run() {
             if(controls.next_weapon)loot_session.changed();
             // The penthouse: buy it (anywhere on its floor), or sleep in its bed once it is yours.
             bool home_used=false;
-            if(game::rules_for(game_mode).civilian_life && penthouse.inside(loot_feet) && !shop_open && !poker_open && !inventory_open) {
+            if(game::rules_for(game_mode).civilian_life && penthouse.inside(loot_feet) && !(shop_open||store_open) && !poker_open && !inventory_open) {
                 const bool owned=game::economy::Penthouse::owned(loot_session.economy());
                 if(!was_in_penthouse) {interaction_message=owned ? "Home: the Stela Turo penthouse" : "Stela Turo penthouse - for sale";interaction_remaining=3;}
                 if(controls.interact && loot_session.world().nearest(loot_feet,2.8F,reachable_pickup)<0) {
@@ -2134,7 +2265,7 @@ void Renderer::run() {
                 }
             }
             was_in_penthouse=penthouse.inside(loot_feet);
-            if(controls.interact && !home_used && !shop_open && !poker_open && !at_table && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){
+            if(controls.interact && !home_used && !(shop_open||store_open) && !poker_open && !at_table && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){
                 interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;
                 if(interaction_message.starts_with("Picked up")) gun_audio.pickup();
             }
@@ -2209,7 +2340,7 @@ void Renderer::run() {
                         [&](game::combat::WeaponId id){return loot_session.inventory().owns_weapon(item_registry,id);},sights_owned);
                 sight_seen[i]=held_now;
             }
-            if(controls.sight && !driving && !inventory_open && !shop_open) sight_mounts.cycle(weapons.selected(),sights_owned);
+            if(controls.sight && !driving && !inventory_open && !(shop_open||store_open)) sight_mounts.cycle(weapons.selected(),sights_owned);
         }
         const auto sight=weapons.available() ? sight_mounts.mounted(weapons.selected()) : game::combat::Sight::Iron;
         const float sight_fov=weapons.available() ? game::combat::sight_fov(weapons.selected(),sight) : 70.0F;
@@ -2834,13 +2965,13 @@ void Renderer::run() {
         const bool bag_grenades=game_mode!=game::GameMode::DevLab;
         if(bag_grenades) grenades.set_count(loot_session.inventory().count("frag_grenade"));
         // Quick heal (H / HEAL): the medical item that best covers the damage; boost heals slowly.
-        if(controls.heal && !creator_active && !shop_open && !poker_open && player_health.alive() && !mode_session.terminal() &&
+        if(controls.heal && !creator_active && !(shop_open||store_open) && !poker_open && player_health.alive() && !mode_session.terminal() &&
            game_mode!=game::GameMode::DevLab) {
             if(const auto said=loot_session.quick_heal(weapons,player_health); !said.empty()) {interaction_message=said;interaction_remaining=2.5F;}
         }
         if(!mode_session.terminal() && !vehicle_paused) loot_session.tick(dt,player_health);
         if(auto picked=loot_session.take_auto_message(); !picked.empty()) {interaction_message=picked;interaction_remaining=1.6F;}
-        if(controls.grenade && !driving && !creator_active && !inventory_open && !shop_open && !poker_open && player_health.alive() && !mode_session.terminal()) {
+        if(controls.grenade && !driving && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && player_health.alive() && !mode_session.terminal()) {
             const Vector3 carried=dt>0 ? Vector3Scale(Vector3Subtract(player.position,position_before_move),1.0F/dt) : Vector3{};
             if(grenades.throw_grenade(head_position,look_direction,carried)) {
                 gun_audio.grenade_pin();
@@ -3797,6 +3928,31 @@ void Renderer::run() {
             if(actor.resident>=0 && actor.state!=characters::NpcState::Dead && services.trooper(actor.resident))
                 draw_cowboy_hat(held,"assets/verda/ranch/trooper_hat.glb");
         };
+        // Vestaĵejo Verda's mannequins (every look but your own clothes), and the hats on the stand.
+        if(clothing_store && std::hypot(clothing_store->centre.x-camera.position.x,clothing_store->centre.z-camera.position.z)<60) {
+            const auto& looks=wardrobe_catalogue.looks();
+            // Only the floor you are on (from the street: the ground floor, through the windows),
+            // and the nearest score of those in view (each is a posed body).
+            std::vector<std::pair<float,std::size_t>> shown;
+            for(std::size_t i=0;i<clothing_store->mannequins.size() && i+1<looks.size();++i) {
+                const auto& m=clothing_store->mannequins[i];
+                const float d=Vector3Distance(m.at,camera.position);
+                if(std::abs(m.at.y-(player.position.y-1))>2.2F || d>34 || !view.sphere({m.at.x,m.at.y+1,m.at.z},1.2F)) continue;
+                shown.emplace_back(d,i);
+            }
+            std::sort(shown.begin(),shown.end());
+            if(shown.size()>20) shown.resize(20);
+            for(const auto& [d,i]:shown) {
+                const auto& m=clothing_store->mannequins[i];
+                const auto& look=looks[i+1];
+                characters::BodyPose pose;
+                pose.outfit=outfit_texture(look.outfit);
+                character_renderer.draw(look.character,m.at,m.yaw,1,&mannequin_pose,pose);
+            }
+            for(std::size_t i=0;i<clothing_store->hats.size() && i<wardrobe_catalogue.hats().size();++i)
+                if(Model* hat=get_world_asset_model(wardrobe_catalogue.hats()[i].model,character_registry))
+                    DrawModelEx(*hat,clothing_store->hats[i],{0,1,0},clothing_store->hat_yaw,{1.12F,1.12F,1.12F},WHITE);
+        }
         character_renderer.draw_npcs(npcs, camera.position, &view,
             [&](const characters::NpcInstance& actor,characters::BodyPose& body) {
                 // The Green Hand in their colours: officers sharp, soldiers in the white shirt.
@@ -3855,7 +4011,16 @@ void Renderer::run() {
                 // Sprinting carries the gun low; otherwise the chest follows the sights.
                 body.aim_pitch=weapon_input.sprint ? -.55F : shot_pitch;
             }
+            // In the clothes you bought (or are trying on at Vestaĵejo Verda).
+            const auto& looks=wardrobe_catalogue.looks();
+            const auto* look=store_open && store_ui.look()<static_cast<int>(looks.size()) ? &looks[static_cast<std::size_t>(store_ui.look())] :
+                game::wardrobe::wearing(loot_session.economy(),wardrobe_catalogue);
+            character_renderer.set_player(look ? look->character : std::string());
+            body.outfit=look ? outfit_texture(look->outfit) : 0U;
             const auto held=character_renderer.draw_player(character_feet, player.yaw, body);
+            const auto* hat=store_open ? (store_ui.hat()>=0 ? &wardrobe_catalogue.hats()[static_cast<std::size_t>(store_ui.hat())] : nullptr) :
+                game::wardrobe::wearing_hat(loot_session.economy(),wardrobe_catalogue);
+            if(hat && !scoped) draw_cowboy_hat(held,hat->model.c_str());
 #ifdef OUTLAND_DEV_TOOLS
             // OUTLAND_DEV_HAT=1: the player wears a Vakero hat (to check how hats sit).
             if(static const bool hat=[]{const char* v=std::getenv("OUTLAND_DEV_HAT");return v && *v=='1';}();hat && !scoped) draw_cowboy_hat(held);
@@ -4201,7 +4366,7 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
         asset_drawer_open = game_mode == game::GameMode::DevLab && creator_touch_ui.inventory_open();
 #endif
-        if (touch_ui && !inventory_open && !shop_open && !poker_open && !mode_session.terminal() && !asset_drawer_open && !pause_menu.is_open()) touch_hud.draw(
+        if (touch_ui && !inventory_open && !(shop_open||store_open) && !poker_open && !mode_session.terminal() && !asset_drawer_open && !pause_menu.is_open()) touch_hud.draw(
             controls,
             input_system.drawn_layout(screen_width,screen_height),
             screen_width,
@@ -4250,7 +4415,7 @@ void Renderer::run() {
 #endif
 
         if(inventory_open)loot_ui.draw_inventory(item_registry,loot_session,weapons,screen_width,screen_height);
-        if(!creator_active && !inventory_open && !shop_open && !poker_open && !mode_session.terminal()){
+        if(!creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !mode_session.terminal()){
             const int nearby=loot_session.world().nearest(loot_feet,2.8F,reachable_pickup);
             if(nearby>=0){const auto& pickup=loot_session.world().state().pickups[static_cast<std::size_t>(nearby)];
                 const auto* item=item_registry.find(pickup.item);
@@ -4263,7 +4428,7 @@ void Renderer::run() {
             }
         }
         // La Mafio: gang tags over Krimuloj near by, whose turf this is, the news, the poker table.
-        if(mafio.active() && !poker_open && !inventory_open && !shop_open) {
+        if(mafio.active() && !poker_open && !inventory_open && !(shop_open||store_open)) {
             const Font& font=sign_renderer.font();
             std::vector<Vector2> tagged; // one tag per spot on screen: a crew standing together shares one
             for(const auto& body:npcs.actors()) {
@@ -4524,7 +4689,7 @@ void Renderer::run() {
             const auto map_button=game::MapScreen::map_button(screen_width,screen_height);
             DrawRectangleRec(map_button,Fade(BLACK,.60F));
             DrawText("MAP · M",static_cast<int>(map_button.x)+14,53,14,RAYWHITE);
-            if(game::rules_for(game_mode).civilian_life && !map_screen.is_open() && !inventory_open && !shop_open)
+            if(game::rules_for(game_mode).civilian_life && !map_screen.is_open() && !inventory_open && !(shop_open||store_open))
                 build_mode.draw_hud(player_builds,screen_width,screen_height);
             // Entering a zone: its name, what it means, and what it is like.
             const int here=static_cast<int>(world::zones::zone_at(player.position));
@@ -4564,7 +4729,7 @@ void Renderer::run() {
                          static_cast<int>(screen_width*.42F)+84,screen_height-26,15,YELLOW);
         }
         else if(!creator_active && !inventory_open && vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z})>=0)DrawText("USE / E - Enter vehicle",screen_width/2-120,screen_height-100,20,YELLOW);
-        if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !shop_open && !poker_open && !inventory_open) {
+        if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !(shop_open||store_open) && !poker_open && !inventory_open) {
             const int objective_bottom=game::PlayUI::draw_objective(mode_session,screen_width);
             if(game_mode==game::GameMode::BattleRoyale) {
                 // The zone: its phase, the countdown, and how far the next circle is.
@@ -4604,6 +4769,13 @@ void Renderer::run() {
                     }
                 }
             }
+        }
+        if(store_open) store_ui.draw(wardrobe_catalogue,loot_session.economy(),mafio.player_gang()==0,store_status,screen_width,screen_height);
+        else if(!store_prompt.empty() && !inventory_open && !(shop_open||poker_open)) {
+            const Font& font=sign_renderer.font();
+            const float size=20,width=MeasureTextEx(font,store_prompt.c_str(),size,1).x;
+            DrawRectangle(static_cast<int>(screen_width/2-width/2-10),screen_height-134,static_cast<int>(width+20),30,Fade(BLACK,.55F));
+            DrawTextEx(font,store_prompt.c_str(),{screen_width/2-width/2,static_cast<float>(screen_height-129)},size,1,YELLOW);
         }
         if(shop_open && current_shop) play_ui.draw_shop(economy,*current_shop,loot_session.economy(),item_registry,loot_session.inventory(),shop_status,screen_width,screen_height);
         if(mode_session.terminal()) play_ui.draw_result(mode_session,screen_width,screen_height);
@@ -4662,8 +4834,12 @@ void Renderer::run() {
                     asset.type=world::AssetType::House;
                     asset.purpose=world::BuildingPurpose::Police;
                     asset.model_path=game::services::outpost_model;
-                    asset.position=post.at;
                     asset.rotation_y=post.yaw+180;
+                    {
+                        const float r=asset.rotation_y*DEG2RAD;
+                        const Vector2 c=game::services::outpost_model_centre;
+                        asset.position={post.at.x+c.x*std::cos(r)+c.y*std::sin(r),post.at.y,post.at.z-c.x*std::sin(r)+c.y*std::cos(r)};
+                    }
                     asset.size={14,3.8F,6};
                     asset.collision=true;
                     towns[near].assets.push_back(std::move(asset));
@@ -4859,6 +5035,8 @@ void Renderer::run() {
                     for(const auto& stop:bus_line.stops()) shelters.push_back(stop.shelter);
                     nearest(Glyph::Bus,Color{250,205,40,255},"BUS STOP",260.0F,shelters);
                 }
+                if(clothing_store && flat(clothing_store->front)<900)
+                    compass_marks.push_back({clothing_store->front,Glyph::Shop,Color{60,200,130,255},"VESTAĴEJO",false});
                 if(penthouse.found() && game::economy::Penthouse::owned(loot_session.economy()))
                     compass_marks.push_back({penthouse.to_world({0,0,0}),Glyph::Home,Color{255,214,90,255},"HOME",false});
                 // Hideouts: your own crew's (the nearest, anywhere) and any rival's close by.
@@ -5005,6 +5183,8 @@ void Renderer::run() {
                 view.home_owned=game::economy::Penthouse::owned(loot_session.economy());
             }
             view.marks=compass_marks;
+            if(clothing_store && std::hypot(clothing_store->front.x-player.position.x,clothing_store->front.z-player.position.z)>=900)
+                view.marks.push_back({clothing_store->front,game::hud::Glyph::Shop,Color{60,200,130,255},"VESTAĴEJO",false});
             for(int i=0;i<patrol_open && i<static_cast<int>(patrol_posts.size());++i) {   // every outpost, near or far
                 const auto& post=patrol_posts[static_cast<std::size_t>(i)];
                 if(std::hypot(post.at.x-player.position.x,post.at.z-player.position.z)>=1400)

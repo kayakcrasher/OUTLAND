@@ -18,6 +18,7 @@ The three player modes are one island lived three ways: [modes roadmap](docs/out
 Play any of them with friends on the same Wi-Fi: [LAN play](docs/lan-play.md).
 In Explore, join a gang or the police and earn respect: [careers](docs/careers.md). Gangsters fight for every town and ranch on the island: [gang wars](docs/gangs.md).
 Explore's resident simulation (homes, jobs, schedules, fear): [Verdan life handoff](docs/verda-life-handoff.md).
+Buy any look on the island at Vestaĵejo Verda; the pubs and some homes are furnished: [clothing and furniture](docs/clothing-and-furniture.md).
 Real building collision, open windows, builder previews and the dressed towns: [buildings handoff](docs/buildings-battle-royale-handoff.md).
 
 Native Samsung/Android APK and iPhone/Safari WebAssembly builds share the same game core:
