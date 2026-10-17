@@ -19,9 +19,11 @@ namespace outland::world {
 
 namespace {
 
+// part: 0 the whole house, 1 the shell without its front door, 2 the front door alone.
 void draw_building_lod(
     const Building& building,
-    bool detailed
+    bool detailed,
+    int part = 0
 ) {
     using assets::HouseStyle;
     using assets::VerdanArchitecture;
@@ -145,7 +147,8 @@ void draw_building_lod(
     rlPushMatrix();
     rlTranslatef(building.position.x, ground_y, building.position.z);
     rlRotatef(building.rotation_y, 0.0F, 1.0F, 0.0F);
-    VerdanArchitecture::draw_house({0.0F, 0.0F, 0.0F}, building.size, style, detailed);
+    if (part == 2) VerdanArchitecture::draw_front_door({0.0F, 0.0F, 0.0F}, building.size, style, building.door);
+    else VerdanArchitecture::draw_house({0.0F, 0.0F, 0.0F}, building.size, style, detailed, part == 1 ? -1.0F : building.door);
     rlPopMatrix();
 }
 
@@ -238,7 +241,8 @@ void draw_tree(Vector3 position, const Vector3& camera_position,const engine::Vi
 }
 
 namespace geometry {
-void building(const Building& value, bool detailed) { draw_building_lod(value, detailed); }
+void building(const Building& value, bool detailed) { draw_building_lod(value, detailed, 1); }
+void building_door(const Building& value) { draw_building_lod(value, true, 2); }
 void tree(Vector3 position, int lod) { draw_tree_lod(position, lod); }
 int road_segments(const Road& road) {
     const float length = std::hypot(road.end.x - road.start.x, road.end.z - road.start.z);

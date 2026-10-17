@@ -22,8 +22,11 @@ public:
         Vector3 ground_position,
         Vector3 size,
         const HouseStyle& style,
-        bool detailed = true
+        bool detailed = true,
+        float door = 0      // the front door: 0 shut .. 1 open; < 0 leaves it out
     );
+    // Just the front door (for a shell drawn without it).
+    static void draw_front_door(Vector3 ground_position, Vector3 size, const HouseStyle& style, float open);
 
 private:
     static void draw_window(
@@ -35,7 +38,8 @@ private:
 
     static void draw_door(
         Vector3 position,
-        const HouseStyle& style
+        const HouseStyle& style,
+        float open
     );
 
     static void draw_balcony(

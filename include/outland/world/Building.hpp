@@ -52,6 +52,7 @@ struct Building {
 
     bool enterable{true};
     BuildingPurpose purpose{BuildingPurpose::Auto}; // authored in the Creator; Auto = designated by island life
+    float door{0};  // the front door at play time (not saved): 0 shut .. 1 open; shut, it stops the player
 };
 
 }

@@ -17,6 +17,8 @@ class LootSession {
     // HEAL (H / the HEAL button): the medical item that best covers what is missing, else a bite or a
     // drink for the boost.
     std::string quick_heal(combat::WeaponSystem &, Health &);
+    // Hurt, with something in the bag to mend with or eat or drink (the HEAL button shows then).
+    [[nodiscard]] bool can_heal(const Health &) const;
     // Boost (0..100), from food and drink: health comes back slowly while it lasts. Call every frame.
     void tick(float dt, Health &);
     float boost() const { return boost_; }

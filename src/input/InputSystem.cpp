@@ -175,15 +175,15 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
             if (hit(p, layout_.fire_mode, 43)) return Control::FireMode;
             if (hit(p, layout_.aim, 43)) return Control::Aim;
             if (hit(p, layout_.reload, 43)) return Control::Reload;
-            if (hit(p, layout_.grenade, 43)) return Control::Grenade;
-            if (hit(p, layout_.heal, 43)) return Control::Heal;
+            if (grenade_ && hit(p, layout_.grenade, 43)) return Control::Grenade;
+            if (heal_ && hit(p, layout_.heal, 43)) return Control::Heal;
             if (tagger_ && hit(p, layout_.tag, 43)) return Control::Tag;
             if (hit(p, layout_.sight, 43)) return Control::Sight;
             if (hit(p, layout_.weapon, 43)) return Control::Weapon;
             if (hit(p, layout_.sprint, 43)) return Control::Sprint;
             if (hit(p, layout_.crouch, 43)) return Control::Crouch;
             if (hit(p, layout_.inventory, 43)) return Control::Inventory;
-            if (hit(p, layout_.interact, 43)) return Control::Interact;
+            if (usable_ && hit(p, layout_.interact, 43)) return Control::Interact;
         }
         if (hit(p, layout_.movement, 92)) return Control::Movement;
         if (on_foot && p.x < w * .40F && p.y > h * .40F) return Control::Movement; // floating

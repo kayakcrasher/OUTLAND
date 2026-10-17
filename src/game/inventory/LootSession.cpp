@@ -151,6 +151,14 @@ void LootSession::tick(float dt, Health &health) {
     boost_ = std::max(0.0F, boost_ - boost_drain * dt);
 }
 
+bool LootSession::can_heal(const Health &health) const {
+    if (!health.alive() || health.maximum() - health.current() < 1) return false;
+    for (const auto &stack : inventory_.state().stacks)
+        if (const auto *item = registry_.find(stack.item);
+            item && (item->action == ItemAction::Heal || item->action == ItemAction::Eat || item->action == ItemAction::Drink)) return true;
+    return false;
+}
+
 std::string LootSession::quick_heal(combat::WeaponSystem &weapons, Health &health) {
     if (!health.alive()) return {};
     const float missing = health.maximum() - health.current();

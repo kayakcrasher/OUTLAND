@@ -607,7 +607,7 @@ void TouchHUD::draw(
     button(layout.sprint, "SPRINT", input.sprint);
     button(layout.crouch, "CROUCH", input.crouch);
     button(layout.inventory, "BAG", input.inventory);
-    button(layout.interact, "USE", input.interact);
+    if (usable_) button(layout.interact, "USE", input.interact);
     if (tagger_) button(layout.tag, "TAG", input.tag);
     if (sight) button(layout.sight, sight, input.sight);
     }
@@ -730,7 +730,7 @@ void TouchHUD::draw(
         input.reload
     );
 
-    draw_text_button(
+    if (grenade_) draw_text_button(
         position_of(
             layout.grenade,
             screen_width,
@@ -743,7 +743,7 @@ void TouchHUD::draw(
         input.grenade
     );
 
-    draw_text_button(
+    if (heal_) draw_text_button(
         position_of(
             layout.heal,
             screen_width,

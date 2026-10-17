@@ -48,6 +48,18 @@ public:
         float player_radius,
         std::string_view ignore_asset = {}
     );
+    // The player: a body that shut front doors stop (Building::door). Doors open by themselves
+    // as people walk up; everyone else walks through them.
+    static Vector3 resolve_player_body(
+        Vector3 current_position,
+        Vector3 desired_position,
+        float feet_y,
+        const VerdaRegion& region,
+        float player_radius = 0.45F
+    );
+    // A building's front doorway: the middle of its front wall, at the building's base (x, z
+    // are what count; y is the building's stored height, 0 for most).
+    static Vector3 door_point(const Building& building);
     static Vector3 resolve_body_movement(
         Vector3 current_position,
         Vector3 desired_position,

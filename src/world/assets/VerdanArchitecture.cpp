@@ -1,5 +1,7 @@
 #include "outland/world/assets/VerdanArchitecture.hpp"
 #include "outland/world/assets/VerdaGeometry.hpp"
+#include <rlgl.h>
+#include <algorithm>
 
 namespace outland::world::assets {
 
@@ -46,50 +48,23 @@ void VerdanArchitecture::draw_window(
 
 void VerdanArchitecture::draw_door(
     const Vector3 position,
-    const HouseStyle& style
+    const HouseStyle& style,
+    const float open
 ) {
-    DrawCube(
-        position,
-        1.35F,
-        2.35F,
-        0.15F,
-        style.trim
-    );
+    // Hinged on the left jamb, swinging in (toward +Z, the inside) as it opens.
+    rlPushMatrix();
+    rlTranslatef(position.x - 0.675F, position.y, position.z);
+    rlRotatef(-100.0F * std::clamp(open, 0.0F, 1.0F), 0.0F, 1.0F, 0.0F);
+    DrawCube({0.675F, 0.0F, 0.0F}, 1.35F, 2.35F, 0.15F, style.trim);
+    DrawCube({0.675F, 0.0F, -0.09F}, 1.12F, 2.12F, 0.08F, Color{82, 65, 48, 255});
+    // Handles, both sides.
+    DrawSphereEx({1.055F, 0.0F, -0.17F}, 0.07F, 4, 6, Color{170, 150, 95, 255});
+    DrawSphereEx({1.055F, 0.0F, 0.11F}, 0.06F, 4, 6, Color{170, 150, 95, 255});
+    rlPopMatrix();
+}
 
-    DrawCube(
-        {
-            position.x,
-            position.y,
-            position.z - 0.09F
-        },
-        1.12F,
-        2.12F,
-        0.08F,
-        Color{
-            82,
-            65,
-            48,
-            255
-        }
-    );
-
-    // Handle.
-    DrawSphereEx(
-        {
-            position.x + 0.38F,
-            position.y,
-            position.z - 0.17F
-        },
-        0.07F,
-        4,
-        6,
-        Color{
-            170,
-            150,
-            95,
-            255
-        }
-    );
+void VerdanArchitecture::draw_front_door(const Vector3 ground_position, const Vector3 size, const HouseStyle& style, const float open) {
+    draw_door({ground_position.x, ground_position.y + 1.60F, ground_position.z - size.z * 0.5F - 0.06F}, style, open);
 }
 
 void VerdanArchitecture::draw_balcony(
@@ -169,7 +144,8 @@ void VerdanArchitecture::draw_house(
     const Vector3 ground_position,
     const Vector3 size,
     const HouseStyle& style,
-    const bool detailed
+    const bool detailed,
+    const float door
 ) {
     // Foundation.
     DrawCube(
@@ -388,15 +364,16 @@ void VerdanArchitecture::draw_house(
     const float front =
         front_z - 0.06F;
 
-    if (detailed) {
-        // Door.
+    if (detailed && door >= 0) {
+        // Door (drawn on its own, live, when the shell is cached: door < 0 leaves it out).
         draw_door(
             {
                 ground_position.x,
                 ground_position.y + 1.60F,
                 front
             },
-            style
+            style,
+            door
         );
 
         // Ground-floor windows are real gameplay openings.

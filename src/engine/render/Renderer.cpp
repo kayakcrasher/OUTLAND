@@ -631,6 +631,10 @@ void Renderer::run() {
     std::optional<game::interiors::ClothingStore> clothing_store;
     game::wardrobe::Catalogue wardrobe_catalogue;
     game::wardrobe::StoreUI store_ui;
+    // Whether anything is in reach of USE (the touch USE button shows only then).
+    bool use_available=false;
+    int banner_turf=-1;float banner_time=0;   // the crew banner shows a few seconds on arriving
+    float drive_hint=0;                       // the driving keys, shown for a while after getting in
     bool store_open=false;
     std::string store_status,store_prompt;
     characters::AnimationController mannequin_pose;
@@ -1923,6 +1927,9 @@ void Renderer::run() {
                 input_system.set_police_car(police_car);touch_hud.set_police_car(police_car,police_car && lights_car==car->id);
                 const bool tagger=!car && player_gang()>=0;
                 input_system.set_tagger(tagger);touch_hud.set_tagger(tagger);
+                input_system.set_usable(use_available);touch_hud.set_usable(use_available);
+                const bool can_throw=grenades.count()>0, can_heal=loot_session.can_heal(player_health);
+                input_system.set_kit(can_throw,can_heal);touch_hud.set_kit(can_throw,can_heal);
             }
             input_system.set_look_stick(creator_active);
             input_system.update(screen_width, screen_height, !creator_active && !build_mode.active(),
@@ -2153,6 +2160,36 @@ void Renderer::run() {
                 interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
             }
         }
+        // Front doors open by themselves as anyone walks up (the player, residents, bots) and swing
+        // shut behind them; shut, a door stops the player (WorldCollision::resolve_player_body).
+        {
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            const float step=dt*4.0F;
+            for(auto& town:verda_region.runtime_settlements()) for(auto& building:town.buildings) {
+                if(!building.enterable) continue;
+                const Vector3 door=world::physics::WorldCollision::door_point(building);
+                const float player_distance=std::hypot(door.x-feet.x,door.z-feet.z);
+                if(player_distance>60) {building.door=0;continue;}
+                bool open=player_distance<2.6F && !vehicles.driver();
+                for(const auto& actor:npcs.actors()) {
+                    if(open) break;
+                    if(actor.state!=characters::NpcState::Dead && std::hypot(actor.position.x-door.x,actor.position.z-door.z)<1.8F) open=true;
+                }
+                building.door=open ? std::min(1.0F,building.door+step) : std::max(0.0F,building.door-step*.6F);
+            }
+        }
+        {
+            // Anything in reach of USE: shows the touch USE button next frame.
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            bool here=store_mannequin>=0 || at_store_counter || nearby_shop || at_table ||
+                vehicles.nearest(verda_region,feet)>=0 || loot_session.world().nearest(feet,2.8F)>=0 ||
+                (game::rules_for(game_mode).civilian_life && penthouse.inside(feet));
+            if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
+                here=(chief.placed && Vector3Distance(feet,chief.at)<3.2F) || (police_camp.placed() && police_camp.at_line(feet)) ||
+                    (mafio.active() && mafio.turf_at(feet,7)>=0) || (services.active() && services.station_near(feet,14));
+            }
+            use_available=here && !creator_active && player_health.alive();
+        }
         if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table) {
             Vector3 exit{};
             if(vehicles.driver()){
@@ -2165,7 +2202,8 @@ void Renderer::run() {
                 const std::string id=vehicle>=0 ? vehicles.vehicles()[static_cast<std::size_t>(vehicle)].id : std::string();
                 if(vehicle>=0 && island_life.car_moving(id) && std::abs(vehicles.vehicles()[static_cast<std::size_t>(vehicle)].speed)>3) interaction_message="It's moving";
                 else if(vehicle>=0 && vehicles.enter(verda_region,vehicle,feet)){
-                    vehicle_orbit=vehicle_pitch=0;input_system.cancel_controls();interaction_message="Driving - steer left, GAS/BRAKE right (W/S), drag above the pedals to look; USE exits";
+                    vehicle_orbit=vehicle_pitch=0;input_system.cancel_controls();drive_hint=8;
+                    interaction_message=touch_ui ? "Steer left, GAS and BRAKE right; USE gets out" : "";
                     if(game::rules_for(game_mode).civilian_life) {
                         const auto taken=island_life.take_car(id);
                         if(taken.occupied) {crimes.push_back({game::law::CrimeKind::Assault,taken.owner});interaction_message="You pulled the driver out - carjacking";}
@@ -2485,7 +2523,7 @@ void Renderer::run() {
 
             player.position = creator_flying ? desired_position :
                 world::physics::WorldCollision::
-                    resolve_body_movement(
+                    resolve_player_body(
                         player.position,
                         desired_position,
                         player.position.y - 1.0F,
@@ -4166,26 +4204,7 @@ void Renderer::run() {
         // HUD
         // ====================================================
 
-        // (No "OUTLAND" title in play: it sat on top of the health line.)
-        DrawText(
-            game::game_mode_name(
-                game_mode
-            ),
-            12,
-            50,
-            14,
-            DARKGRAY
-        );
-
-        DrawText(
-            player.third_person
-                ? "TPS"
-                : "FPS",
-            12,
-            68,
-            14,
-            BLACK
-        );
+        // (No title, mode name or camera label in play: as much of the game in view as can be.)
 
         if(!island_life.empty() && !creator_active) {
             const auto clock_label=island_life.clock().label();
@@ -4278,7 +4297,7 @@ void Renderer::run() {
             DrawText(line,24,screen_height-200,18,weapons.ammo().loaded>0 ? RAYWHITE : ORANGE);
         }
         if (!creator_active && !inventory_open && !build_mode.active() && !driving) {
-            DrawRectangle(12,screen_height-103,320,91,Fade(BLACK,.65F));
+            DrawRectangle(12,screen_height-103,320,weapons.reload_remaining()>0 || (weapons.available() && weapons.ammo().loaded==0) ? 91 : 68,Fade(BLACK,.65F));
             {
                 // Long names (VR7 ROCKET LAUNCHER) shrink to stay clear of the sight label.
                 const char* held=weapons.available()?weapons.weapon().name:"NO WEAPON - OPEN BAG";
@@ -4286,23 +4305,20 @@ void Renderer::run() {
                 while(size>12 && weapons.available() && MeasureText(held,size)>170) --size;
                 DrawText(held,24,screen_height-94+(19-size)/2,size,RAYWHITE);
             }
-            DrawText(TextFormat("NADES %d  %s",grenades.count(),touch_ui ? "" : key_of(input::Action::Grenade).c_str()),222,screen_height-68,16,grenades.count()>0 ? Color{190,220,150,255} : GRAY);
+            DrawText(TextFormat("NADES %d",grenades.count()),222,screen_height-68,16,grenades.count()>0 ? Color{190,220,150,255} : GRAY);
             if(const int armour=armour_level(); armour>0)
                 DrawText(armour==2 ? "ARMOUR II  -45%" : "ARMOUR I  -30%",200,screen_height-112,14,game::inventory::LootUI::rarity_color(armour==2 ? game::inventory::Rarity::Epic : game::inventory::Rarity::Rare));
-            if(weapons.available()) DrawText(TextFormat("%s  %s",game::combat::sight_info(sight).name,sight==game::combat::Sight::Sniper || touch_ui ? "" : key_of(input::Action::Sight).c_str()),
+            if(weapons.available()) DrawText(game::combat::sight_info(sight).name,
                 200,screen_height-92,14,sight==game::combat::Sight::Iron ? GRAY : Color{235,120,110,255});
             if (weapons.unlimited()) DrawText("AMMO UNLIMITED - DEV LAB",24,screen_height-68,18,YELLOW);
             else DrawText(TextFormat("%d / %d",weapons.ammo().loaded,weapons.ammo().reserve),
                 24,screen_height-68,22,RAYWHITE);
             if (weapons.reload_remaining()>0) DrawText(TextFormat("RELOADING %.1fs",weapons.reload_remaining()),
                 24,screen_height-39,16,ORANGE);
-            else if(touch_ui) DrawText(weapons.ammo().loaded==0 && !weapons.unlimited() ? "EMPTY - LOAD TO RELOAD" : "SWIPE RIGHT SIDE TO LOOK",
-                24,screen_height-39,12,RAYWHITE);
-            else {
-                std::string line=weapons.ammo().loaded==0 && !weapons.unlimited() ? "EMPTY - "+key_of(input::Action::Reload)+" TO RELOAD" :
-                    key_of(input::Action::Fire)+" FIRE  "+key_of(input::Action::Aim)+" AIM  "+key_of(input::Action::Reload)+" RELOAD  "+
-                    key_of(input::Action::NextWeapon)+" SWAP";
-                DrawText(line.c_str(),24,screen_height-39,12,RAYWHITE);
+            else if(weapons.available() && weapons.ammo().loaded==0 && !weapons.unlimited()) {
+                // Only what needs doing: no standing list of controls (they are in the menu).
+                const std::string line=touch_ui ? std::string("EMPTY - LOAD TO RELOAD") : "EMPTY - "+key_of(input::Action::Reload)+" TO RELOAD";
+                DrawText(line.c_str(),24,screen_height-39,12,ORANGE);
             }
         }
 
@@ -4434,7 +4450,7 @@ void Renderer::run() {
             for(const auto& body:npcs.actors()) {
                 if(body.bot<0 || body.hidden || body.state==characters::NpcState::Dead) continue;
                 const int gang=mafio.gang_of(body.bot);
-                if(gang<0 || Vector3Distance(body.position,camera.position)>22) continue;
+                if(gang<0 || Vector3Distance(body.position,camera.position)>13) continue;
                 const Vector3 over{body.position.x,body.position.y+2.15F,body.position.z};
                 if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))<=0) continue;
                 const Vector2 at=GetWorldToScreen(over,camera);
@@ -4449,7 +4465,7 @@ void Renderer::run() {
             // Paul Acosta: his name and what he is up to, close by.
             if(walking_man.active()) for(const auto& body:npcs.actors()) {
                 if(body.bot!=walking_man.bot() || body.hidden || body.state==characters::NpcState::Dead) continue;
-                if(Vector3Distance(body.position,camera.position)>26) break;
+                if(Vector3Distance(body.position,camera.position)>13) break;
                 const Vector3 over{body.position.x,body.position.y+2.2F,body.position.z};
                 if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))<=0) break;
                 const Vector2 at=GetWorldToScreen(over,camera);
@@ -4466,7 +4482,7 @@ void Renderer::run() {
             if(ranches.active()) for(const auto& body:npcs.actors()) {
                 if(body.bot<0 || body.hidden || body.state==characters::NpcState::Dead) continue;
                 const auto* v=ranches.vakero(body.bot);
-                if(!v || Vector3Distance(body.position,camera.position)>20) continue;
+                if(!v || Vector3Distance(body.position,camera.position)>13) continue;
                 const Vector3 over{body.position.x,body.position.y+2.25F,body.position.z};
                 if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))<=0) continue;
                 const Vector2 at=GetWorldToScreen(over,camera);
@@ -4493,8 +4509,11 @@ void Renderer::run() {
                 DrawRectangle(static_cast<int>(screen_width/2-mw/2-12),screen_height-276,static_cast<int>(mw+24),28,Fade(Color{40,30,10,255},.65F*alpha));
                 DrawTextEx(font,walking_man.message().c_str(),{screen_width/2-mw/2,static_cast<float>(screen_height-271)},18,1,Fade(Color{255,226,160,255},alpha));
             }
+            // Whose turf: a few seconds on arriving, or while you stand at their door.
             const int turf=mafio.turf_at({player.position.x,player.position.y-1,player.position.z},30);
-            if(turf>=0) {
+            if(turf!=banner_turf) {banner_turf=turf;banner_time=5;}
+            banner_time=std::max(0.0F,banner_time-GetFrameTime());
+            if(turf>=0 && (banner_time>0 || mafio.turf_at({player.position.x,player.position.y-1,player.position.z},7)>=0)) {
                 const auto& crew=mafio.crews()[static_cast<std::size_t>(turf)];
                 const auto& gang=game::mafia::gangs[static_cast<std::size_t>(crew.gang)];
                 const std::string title=std::string(gang.name)+"  ·  "+crew.town+" crew";
@@ -4513,7 +4532,7 @@ void Renderer::run() {
                 DrawTextEx(font,sub.c_str(),{x+15,y+28},15,1,Color{220,226,206,255});
             }
             // The Chief: his name over his head, and what he says.
-            if(chief.placed && Vector3Distance(chief.at,camera.position)<30) {
+            if(chief.placed && Vector3Distance(chief.at,camera.position)<14) {
                 const Vector3 over{chief.at.x,chief.at.y+2.3F,chief.at.z};
                 if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))>0) {
                     const Vector2 at=GetWorldToScreen(over,camera);
@@ -4724,7 +4743,8 @@ void Renderer::run() {
             }
             // Bottom middle, between the steering stick and the pedals.
             game::hud::draw_speedometer(gauge,{screen_width*.42F,screen_height-92.0F},66);
-            if(!touch_ui)
+            drive_hint=std::max(0.0F,drive_hint-GetFrameTime());
+            if(!touch_ui && drive_hint>0)
                 DrawText("W/S drive | A/D steer | SPACE handbrake | SHIFT boost | C park | H horn | E exit",
                          static_cast<int>(screen_width*.42F)+84,screen_height-26,15,YELLOW);
         }
@@ -4756,7 +4776,7 @@ void Renderer::run() {
                 DrawTriangle(tip,r,l,arrow);DrawTriangle(tip,l,r,arrow);
             }
             if(game_mode==game::GameMode::Explore) {
-                DrawText(TextFormat("%lld kronoj | stores: BUY supplies / SELL scavenged goods",static_cast<long long>(loot_session.economy().money)),20,objective_bottom+6,16,GOLD);
+                DrawText(TextFormat("%lld kr",static_cast<long long>(loot_session.economy().money)),20,objective_bottom+6,16,GOLD);
                 if(nearby_shop && !at_table && !poker_open) DrawText(TextFormat("E / USE: %s",nearby_shop->name.c_str()),screen_width/2-160,screen_height-165,20,GOLD);
                 if(penthouse.inside(loot_feet)) {
                     const bool owned=game::economy::Penthouse::owned(loot_session.economy());
@@ -5205,10 +5225,12 @@ void Renderer::run() {
             DrawText(line,screen_width/2-tw/2,screen_height/2-55,size,RAYWHITE);
         }
         pause_menu.draw(settings,screen_width,screen_height,&sign_renderer.font(),can_quit_game);
+#ifdef OUTLAND_DEV_TOOLS
         DrawFPS(
             screen_width - 90,
             10
         );
+#endif
 
         if(perf.enabled()) {
             DrawRectangle(8,screen_height-102,std::min(screen_width-16,670),70,Fade(BLACK,.8F));

@@ -25,9 +25,13 @@ public:
     void set_police_car(bool car, bool lights_on) { police_car_ = car; lights_on_ = lights_on; }
     // A gang member on foot: the TAG button.
     void set_tagger(bool on) { tagger_ = on; }
+    // USE appears only when something is in reach to use.
+    void set_usable(bool on) { usable_ = on; }
+    // NADE and HEAL show only with a grenade to throw / something to heal with.
+    void set_kit(bool grenade, bool heal) { grenade_ = grenade; heal_ = heal; }
 
 private:
-    bool drive_by_{false}, police_car_{false}, lights_on_{false}, tagger_{false};
+    bool drive_by_{false}, police_car_{false}, lights_on_{false}, tagger_{false}, usable_{false}, grenade_{true}, heal_{true};
 };
 
 }

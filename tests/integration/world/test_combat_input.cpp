@@ -132,6 +132,10 @@ int main() {
     touches.erase(touches.begin());
     input.update(1280,720); assert(input.player().move_x==0);
     release();
+    // USE only answers while something is in reach to use (the game says so each frame).
+    touches={{11,point(layout.interact)}};
+    input.set_usable(false);input.update(1280,720);assert(!input.player().interact);
+    release();input.set_usable(true);
     touches={{10,point(layout.jump)},{11,point(layout.interact)},
         {12,point(layout.inventory)},{13,point(layout.sprint)}};
     input.update(1280,720);

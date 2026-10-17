@@ -3,6 +3,22 @@
 OUTLAND plays like other shooters: on a PC with the keyboard and mouse, and on phones and tablets
 with on-screen buttons and swipe-to-look. Both can be changed from the pause menu.
 
+## A clear screen
+
+The play screen keeps to what you need, and the rest shows only when it matters:
+- **USE** appears on touch screens only with something in reach: a car, a pickup, a counter, a
+  mannequin, a door to join at, the Chief.
+- **NADE** appears only with a grenade to throw, and **HEAL** only when you are hurt and carry
+  something to mend with, eat or drink.
+- The money shows as a short "250 kr". There is no mode or camera label, and no standing list of
+  keys (they are below and in SETTINGS). The FPS counter is in development builds only.
+- The driving keys show for the first few seconds at the wheel.
+- A gang's banner shows for a few seconds as you walk onto its turf, and again at its door.
+- Name tags show over people within about 13 m.
+
+**Doors:** a house's front door opens by itself as you walk up to it and swings shut behind you.
+Shut, it is solid: no walking through it. Residents open the doors as they reach them too.
+
 ## PC: keyboard and mouse
 
 The mouse looks around. The game captures the pointer while you play and lets it go in menus.

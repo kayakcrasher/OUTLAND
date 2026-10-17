@@ -76,6 +76,10 @@ public:
     void set_police_car(bool on) { police_car_ = on; }
     // A gang member on foot: the TAG button works.
     void set_tagger(bool on) { tagger_ = on; }
+    // Something in reach to use (a door, a car, a pickup, a counter...): the USE button works.
+    void set_usable(bool on) { usable_ = on; }
+    // NADE and HEAL show only with a grenade to throw / something to heal with.
+    void set_kit(bool grenade, bool heal) { grenade_ = grenade; heal_ = heal; }
     [[nodiscard]] bool driving() const { return driving_; }
     // The camera-pan area while driving (screen pixels).
     [[nodiscard]] static Rectangle pan_area(int width, int height);
@@ -101,7 +105,7 @@ private:
     float button_size_{1.0F};
     Vector2 stick_center_{-1, -1}; // a floating movement stick's centre while held
     bool mouse_quarantined_{false},had_native_touch_{false};
-    bool gameplay_{true}, driving_{false}, was_driving_{false}, drive_by_{false}, police_car_{false}, tagger_{false};
+    bool gameplay_{true}, driving_{false}, was_driving_{false}, drive_by_{false}, police_car_{false}, tagger_{false}, usable_{false}, grenade_{true}, heal_{true};
     // Aim button: a tap toggles aiming down sights, a hold aims while held.
     bool aim_toggled_{false}, aim_held_{false};
     double aim_pressed_at_{0};

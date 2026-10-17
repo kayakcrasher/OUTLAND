@@ -103,6 +103,7 @@ void StaticWorld::draw(const world::VerdaRegion& region, Vector3 camera, const V
         if (distance > 320 * reach || !visible(house.centre, house.radius)) continue;
         const auto& value = towns[house.settlement].buildings[house.index];
         const bool detailed = distance < 90;
+        if (detailed) world::geometry::building_door(value);   // live: doors swing
         auto& lod = house.lods[detailed ? 0 : 1];
         if (house.failed || (!lod && budget <= 0)) {world::geometry::building(value, detailed); continue;}
         if (!lod) {

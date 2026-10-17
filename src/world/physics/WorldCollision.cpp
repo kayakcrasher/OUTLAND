@@ -11,6 +11,7 @@
 #include "outland/world/physics/MeshCollision.hpp"
 
 namespace outland::world::physics {
+namespace { bool doors_shut = false; }   // set while the player's movement is resolved
 
 bool WorldCollision::circle_hits_box(
     const float player_x,
@@ -324,7 +325,10 @@ bool WorldCollision::blocked_impl(
                 return true;
             }
 
-            // Doorway intentionally has NO collision.
+            // The doorway: open, unless the player meets a shut door.
+            if (doors_shut && building.door < .6F && front_wall_hit(-doorway_width * 0.5F, doorway_width * 0.5F)) {
+                return true;
+            }
 
             // Wall between doorway and right window.
             if (
@@ -469,6 +473,24 @@ Vector3 WorldCollision::resolve_player_movement(
     return resolved;
 }
 
+
+Vector3 WorldCollision::resolve_player_body(
+    const Vector3 current_position,
+    const Vector3 desired_position,
+    const float feet_y,
+    const VerdaRegion& region,
+    const float player_radius
+) {
+    doors_shut = true;
+    const Vector3 resolved = resolve_body_movement(current_position, desired_position, feet_y, region, player_radius);
+    doors_shut = false;
+    return resolved;
+}
+
+Vector3 WorldCollision::door_point(const Building& building) {
+    const float angle = building.rotation_y * DEG2RAD, local_z = -building.size.z * .5F;
+    return {building.position.x + local_z * std::sin(angle), building.position.y, building.position.z + local_z * std::cos(angle)};
+}
 
 Vector3 WorldCollision::resolve_body_movement(
     const Vector3 current_position,
