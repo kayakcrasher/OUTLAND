@@ -278,8 +278,9 @@ int main() {
         const bool inside = grid(road.start) && grid(road.end);
         if (road.type == world::RoadType::Highway) {
             check(road.width == world::highways::width, "highways are divided highways");
-            // The spokes leave from the main avenue's ends (north and south) and the boulevards' (Roka, Porto Luma).
-            if ((road.start.x == 0 && std::abs(road.start.z) == 166) || (std::abs(road.start.x) == 476 && road.start.z == 0)) ++highways;
+            // The spokes leave from the main avenue's ends (north and south; the south one a little
+            // east of its line, clear of the Parliament block) and the boulevards' (Roka, Porto Luma).
+            if ((std::abs(road.start.x) <= 4 && std::abs(road.start.z) == 166) || (std::abs(road.start.x) == 476 && road.start.z == 0)) ++highways;
         } else if (inside) { ++grid_streets; check(road.width == 12 && road.type == world::RoadType::Asphalt, "grid streets are 12 m asphalt"); }
         else if (in_suburbs(road.start) && in_suburbs(road.end)) ++suburb_streets;
         else check(world::roads::turnaround_road(road.width), "a capital road that is neither street, highway nor bus turnaround");

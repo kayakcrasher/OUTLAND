@@ -65,7 +65,9 @@ std::vector<Line> make_lines() {
     // Roka's grids).
     lines.push_back({"north", rounded({{0, -166}, {0, -1680}}), false});
     lines.push_back({"east", rounded({{476, 0}, {612, -140}, {1138, -260}, {1624, -440}}), false});
-    lines.push_back({"south", rounded({{0, 166}, {105, 630}, {195, 1170}, {300, 1680}}), false});
+    // South: straight on out of the avenue first (a little east of its line, clear of the
+    // Parliament block), then away - not slantwise across the blocks and crossings.
+    lines.push_back({"south", rounded({{4, 166}, {4, 300}, {105, 630}, {195, 1170}, {300, 1680}}), false});
     lines.push_back({"west", rounded({{-476, 0}, {-612, 158}, {-1138, 292}, {-1624, 410}}), false});
     Line ring{"ring", {}, true};
     constexpr int ring_points = 144;   // 2.5 degrees, 65 m apart
