@@ -1930,6 +1930,7 @@ void Renderer::run() {
                 input_system.set_usable(use_available);touch_hud.set_usable(use_available);
                 const bool can_throw=grenades.count()>0, can_heal=loot_session.can_heal(player_health);
                 input_system.set_kit(can_throw,can_heal);touch_hud.set_kit(can_throw,can_heal);
+                touch_hud.set_more(input_system.more_open());
             }
             input_system.set_look_stick(creator_active);
             input_system.update(screen_width, screen_height, !creator_active && !build_mode.active(),
@@ -4296,7 +4297,15 @@ void Renderer::run() {
             DrawRectangle(12,screen_height-206,lw+24,30,Fade(BLACK,.6F));
             DrawText(line,24,screen_height-200,18,weapons.ammo().loaded>0 ? RAYWHITE : ORANGE);
         }
-        if (!creator_active && !inventory_open && !build_mode.active() && !driving) {
+        if (touch_ui && !creator_active && !inventory_open && !build_mode.active() && !driving) {
+            // On a touch screen the stick lives bottom left: the gun is one short line up top instead.
+            const char* held=weapons.available() ? TextFormat("%s  %d/%d",weapons.weapon().name,weapons.ammo().loaded,weapons.ammo().reserve) : "NO WEAPON - BAG";
+            const bool empty=weapons.available() && weapons.ammo().loaded==0 && !weapons.unlimited();
+            const char* line=weapons.reload_remaining()>0 ? TextFormat("%s  RELOADING",held) : empty ? TextFormat("%s  EMPTY - LOAD",held) : held;
+            DrawText(line,17,49,16,Color{0,0,0,150});
+            DrawText(line,16,48,16,weapons.reload_remaining()>0 || empty ? ORANGE : RAYWHITE);
+        }
+        else if (!creator_active && !inventory_open && !build_mode.active() && !driving) {
             DrawRectangle(12,screen_height-103,320,weapons.reload_remaining()>0 || (weapons.available() && weapons.ammo().loaded==0) ? 91 : 68,Fade(BLACK,.65F));
             {
                 // Long names (VR7 ROCKET LAUNCHER) shrink to stay clear of the sight label.

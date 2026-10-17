@@ -609,7 +609,7 @@ void TouchHUD::draw(
     button(layout.inventory, "BAG", input.inventory);
     if (usable_) button(layout.interact, "USE", input.interact);
     if (tagger_) button(layout.tag, "TAG", input.tag);
-    if (sight) button(layout.sight, sight, input.sight);
+    if (sight && more_) button(layout.sight, sight, input.sight);
     }
 
     // ========================================================
@@ -675,7 +675,7 @@ void TouchHUD::draw(
         input.fire
     );
 
-    if (fire_mode) draw_text_button(
+    if (fire_mode && more_) draw_text_button(
         position_of(
             layout.fire_mode,
             screen_width,
@@ -778,7 +778,7 @@ void TouchHUD::draw(
         base_button_radius *
             layout.view.scale,
         layout.view.opacity,
-        "VIEW",
+        more_ ? "VIEW" : "MORE",
         input.toggle_view
     );
 }

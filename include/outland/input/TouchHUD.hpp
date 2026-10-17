@@ -29,9 +29,11 @@ public:
     void set_usable(bool on) { usable_ = on; }
     // NADE and HEAL show only with a grenade to throw / something to heal with.
     void set_kit(bool grenade, bool heal) { grenade_ = grenade; heal_ = heal; }
+    // MORE folded open: VIEW, the sight and the fire mode show (InputSystem::more_open).
+    void set_more(bool open) { more_ = open; }
 
 private:
-    bool drive_by_{false}, police_car_{false}, lights_on_{false}, tagger_{false}, usable_{false}, grenade_{true}, heal_{true};
+    bool drive_by_{false}, police_car_{false}, lights_on_{false}, tagger_{false}, usable_{false}, grenade_{true}, heal_{true}, more_{false};
 };
 
 }

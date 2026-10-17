@@ -80,6 +80,8 @@ public:
     void set_usable(bool on) { usable_ = on; }
     // NADE and HEAL show only with a grenade to throw / something to heal with.
     void set_kit(bool grenade, bool heal) { grenade_ = grenade; heal_ = heal; }
+    // MORE: VIEW, the sight and the fire mode stay folded away until MORE is tapped (a few seconds).
+    [[nodiscard]] bool more_open() const { return more_; }
     [[nodiscard]] bool driving() const { return driving_; }
     // The camera-pan area while driving (screen pixels).
     [[nodiscard]] static Rectangle pan_area(int width, int height);
@@ -89,7 +91,7 @@ private:
     TouchLayout layout_{};
 
     enum class Control {
-        None, Movement, Look, Swipe, Jump, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon, Grenade, Heal, Lights, Tag, Sight,
+        None, Movement, Look, Swipe, Jump, More, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon, Grenade, Heal, Lights, Tag, Sight,
         Sprint, Crouch, Inventory, Interact, Gas, BrakePedal, Handbrake, Pan
     };
     // A finger and what it works; origin is where a floating stick was put down, last where a
@@ -109,6 +111,8 @@ private:
     // Aim button: a tap toggles aiming down sights, a hold aims while held.
     bool aim_toggled_{false}, aim_held_{false};
     double aim_pressed_at_{0};
+    bool more_{false};
+    double more_until_{0};
     bool blocked_{false};
     int width_{0}, height_{0};
 };

@@ -47,6 +47,13 @@ int main() {
     for (const auto* other : {&layout.aim, &layout.reload, &layout.look, &layout.interact, &layout.fire_mode})
         assert(std::hypot((other->x-layout.grenade.x)*1280,(other->y-layout.grenade.y)*720)>80);
     key_grenade=true; input.update(1280,720); assert(input.player().grenade); key_grenade=false; release();
+    // SIGHT, VIEW and the fire mode are folded behind MORE (on VIEW's spot) until it is tapped.
+    touches={{43,point(layout.sight)}};
+    input.update(1280,720); assert(!input.player().sight && !input.more_open());
+    release();
+    touches={{44,point(layout.view)}};
+    input.update(1280,720); assert(input.more_open() && !input.player().toggle_view);
+    release();
     // SIGHT changes the optic once per tap (X on a keyboard); its button sits clear of BAG and VIEW.
     touches={{43,point(layout.sight)}};
     input.update(1280,720); assert(input.player().sight && !input.player().inventory && !input.player().toggle_view);

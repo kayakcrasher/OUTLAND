@@ -129,6 +129,7 @@ bool InputSystem::navigation_owns_point(Vector2 point,int width,int height) cons
 void InputSystem::update(int screen_width, int screen_height, bool gameplay, bool blocked,
     const std::function<bool(Vector2)>& reserved) {
     player_ = {};
+    if (more_ && seconds_now() > more_until_) more_ = false;
     if (screen_width <= 0 || screen_height <= 0) { cancel_controls(); return; }
     const bool changed = width_ != 0 && (gameplay != gameplay_ || blocked != blocked_ ||
         screen_width != width_ || screen_height != height_ || driving_ != was_driving_);
@@ -169,16 +170,16 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         }
         if (gameplay) {
             if (hit(p, layout_.jump, 43)) return Control::Jump;
-            if (hit(p, layout_.view, 43)) return Control::View;
+            if (hit(p, layout_.view, 43)) return more_ ? Control::View : Control::More;
             if (hit(p, layout_.fire, 43)) return Control::Fire;
             if (hit(p, layout_.fire_left, 43)) return Control::FireLeft;
-            if (hit(p, layout_.fire_mode, 43)) return Control::FireMode;
+            if (more_ && hit(p, layout_.fire_mode, 43)) return Control::FireMode;
             if (hit(p, layout_.aim, 43)) return Control::Aim;
             if (hit(p, layout_.reload, 43)) return Control::Reload;
             if (grenade_ && hit(p, layout_.grenade, 43)) return Control::Grenade;
             if (heal_ && hit(p, layout_.heal, 43)) return Control::Heal;
             if (tagger_ && hit(p, layout_.tag, 43)) return Control::Tag;
-            if (hit(p, layout_.sight, 43)) return Control::Sight;
+            if (more_ && hit(p, layout_.sight, 43)) return Control::Sight;
             if (hit(p, layout_.weapon, 43)) return Control::Weapon;
             if (hit(p, layout_.sprint, 43)) return Control::Sprint;
             if (hit(p, layout_.crouch, 43)) return Control::Crouch;
@@ -219,13 +220,14 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         }
         case Control::Swipe: drag(p, last); break;
         case Control::Jump: player_.jump |= fresh; player_.brake = true; break;
-        case Control::View: player_.toggle_view |= fresh; break;
+        case Control::More: if (fresh) {more_ = true; more_until_ = seconds_now() + 4;} break;
+        case Control::View: player_.toggle_view |= fresh; if (fresh) more_ = false; break;
         case Control::Reload: player_.reload |= fresh; break;
         case Control::Grenade: player_.grenade |= fresh; break;
         case Control::Heal: player_.heal |= fresh; break;
         case Control::Lights: player_.lights |= fresh; break;
         case Control::Tag: player_.tag |= fresh; break;
-        case Control::Sight: player_.sight |= fresh; break;
+        case Control::Sight: player_.sight |= fresh; if (fresh) more_until_ = seconds_now() + 4; break;
         case Control::Weapon: player_.next_weapon |= fresh; break;
         case Control::Inventory: player_.inventory |= fresh; break;
         case Control::Interact: player_.interact |= fresh; break;
@@ -233,7 +235,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         case Control::Crouch: player_.crouch = true; break;
         // Fire and keep aiming: the thumb on FIRE steers the sights as it slides.
         case Control::Fire: case Control::FireLeft: player_.fire = true; drag(p, last); break;
-        case Control::FireMode: player_.fire_mode |= fresh; break;
+        case Control::FireMode: player_.fire_mode |= fresh; if (fresh) more_until_ = seconds_now() + 4; break;
         case Control::Aim:
             if (fresh) aim_pressed_at_ = seconds_now();
             aim_held_ = true;

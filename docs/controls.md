@@ -10,6 +10,11 @@ The play screen keeps to what you need, and the rest shows only when it matters:
   mannequin, a door to join at, the Chief.
 - **NADE** appears only with a grenade to throw, and **HEAL** only when you are hurt and carry
   something to mend with, eat or drink.
+- Always on a touch screen: the movement stick, swipe-to-look on the right, both FIRE buttons, AIM,
+  JUMP, LOAD, CROUCH, SPRINT, GUN and BAG.
+- **MORE** (where VIEW was) folds away the rarely used ones: tap it and VIEW, the sight (IRON / DOT
+  / 2X / 4X) and the fire mode (AUTO / SINGLE) appear for a few seconds.
+- On a touch screen the gun and its ammo are one short line under the health, not a panel under the stick.
 - The money shows as a short "250 kr". There is no mode or camera label, and no standing list of
   keys (they are below and in SETTINGS). The FPS counter is in development builds only.
 - The driving keys show for the first few seconds at the wheel.
