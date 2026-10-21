@@ -22,6 +22,8 @@
 #include "outland/game/life/WalkingMan.hpp"
 #include "outland/game/ranch/Ranches.hpp"
 #include "outland/game/freight/Freight.hpp"
+#include "outland/game/freight/Trucking.hpp"
+#include "outland/world/roads/RoadGraph.hpp"
 #include "outland/game/mafia/MafioRenderer.hpp"
 #include "outland/game/services/EmergencyServices.hpp"
 #include "outland/game/ZoneWall.hpp"
@@ -638,6 +640,14 @@ void Renderer::run() {
     constexpr const char* chief_character="character_22_police";
     constexpr const char* police_uniform="character_17_police";   // the player's, on duty
     std::string chief_line;float chief_line_time=0;
+    // Verda Transporto: the boss at the depot door (a body under his own id), the loads he gives out
+    // (saved beside the career) and where they go.
+    game::freight::Trucking trucking;
+    game::freight::HaulWorld haul_world;
+    std::string trucking_path,trucking_saved;
+    struct DepotBoss { Vector3 at{}; float yaw{180}; bool placed{false}; } depot_boss;
+    constexpr int depot_boss_bot=930001;
+    constexpr const char* depot_boss_name="Tomaso Rado";
     std::string lights_car;          // the police car whose lights the player switched on ("" none)
     // Who runs Verda: every town and ranch, their holders and holds, the tags on the walls (saved
     // beside the career); the logos the tags are painted with; the underworld's news.
@@ -1474,6 +1484,7 @@ void Renderer::run() {
                     poker_open=false;poker_buy_in=0;
                 }
                 walking_man.clear();backup.clear();prison_yard.clear();
+                trucking=game::freight::Trucking{};trucking_path.clear();depot_boss={};haul_world={};
                 career=game::career::Career{};career_path.clear();mafio.set_player_gang(-1);services.assign_player_car({});
                 police_camp=game::career::TrainingCamp{};chief={};lights_car.clear();
                 territory.clear();territory_path.clear();smuggling_docks.clear();
@@ -1674,6 +1685,44 @@ void Renderer::run() {
                         npcs.spawn_bot(chief_bot,character,chief.at,chief.yaw);
                     }
                     career.seed(session_seed);   // which jobs come up: different every session
+                    // Verda Transporto: the boss at the depot door, the places loads go, the player's trucking.
+                    trucking=game::freight::Trucking{};trucking.seed(session_seed);haul_world={};depot_boss={};
+                    trucking_path=career_path+".trucking";
+                    if(FileExists(trucking_path.c_str())) if(char* text=LoadFileText(trucking_path.c_str())) {trucking.parse(text);UnloadFileText(text);}
+                    trucking_saved=trucking.serialise();
+                    {
+                        bool depot=false;
+                        for(const auto& town:verda_region.settlements()) for(const auto& asset:town.assets) {
+                            depot|=asset.model_path.ends_with("civic/truck_depot.glb");
+                            haul_world.terminal|=asset.model_path.ends_with("civic/cargo_ship.glb");
+                        }
+                        if(depot) {
+                            const world::roads::RoadGraph graph(verda_region);
+                            haul_world.depot=graph.nearest(world::layout::freight_depot_gate).point;
+                            haul_world.cargo_quay=graph.nearest(world::layout::cargo_loading).point;
+                            if(ranches.cattle_quay().found)
+                                haul_world.cattle_quay=graph.nearest(ranches.cattle_quay().frame.at(world::ranches::cattle_quay_chute.x,-3)).point;
+                            else haul_world.terminal=false;
+                            for(const auto& town:verda_region.settlements()) {
+                                if(town.id.starts_with("ranch_") || town.id.starts_with("hamlet_") || town.id.find("bovbazaro")!=std::string::npos) continue;
+                                // Verda City's drop: Main Street west of the boulevard (its centre is the highway).
+                                const Vector3 at=town.id=="capital_verda" ? Vector3{-87,0,-42} : town.center;
+                                haul_world.towns.push_back({town.name,graph.nearest(at).point,-1});
+                            }
+                            for(std::size_t i=0;i<ranches.ranches().size();++i) {
+                                const auto& r=ranches.ranches()[i];
+                                haul_world.ranches.push_back({std::string(r.spec->name),graph.nearest(r.frame.at(world::ranches::chute.x,-3)).point,static_cast<int>(i)});
+                            }
+                            const Vector3 b=world::layout::freight_boss;
+                            depot_boss={{b.x,world::terrain::TerrainHeight::sample(b.x,b.z)+.1F,b.z},180,true};
+                            std::string body="character_05";   // a man in everyday clothes, whoever the registry offers
+                            for(std::uint64_t k=0;k<40;++k)
+                                if(const auto* d=character_registry.choose(characters::CharacterPool::Civilian,session_seed+77+k);
+                                   d && d->id.find("female")==std::string::npos && d->id.find("police")==std::string::npos && d->id.find("doctor")==std::string::npos) {body=d->id;break;}
+                            npcs.spawn_bot(depot_boss_bot,body,depot_boss.at,depot_boss.yaw);
+                            TraceLog(LOG_INFO,"OUTLAND Verda Transporto boss %s at %.1f %.1f",body.c_str(),depot_boss.at.x,depot_boss.at.z);
+                        }
+                    }
                     // The training camp: open, level ground outside Verda City, downrange pointing away from it.
                     police_camp=game::career::TrainingCamp{};
                     {
@@ -2383,6 +2432,9 @@ void Renderer::run() {
                     gun_audio.kill_confirm();
                 }
                 input_system.player().interact=false;
+            } else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) {
+                chief_line=trucking.talk(career.on_duty(),match_time,haul_world);chief_line_time=9;
+                input_system.player().interact=false;
             } else if(police_camp.placed() && police_camp.at_line(feet) &&
                       police_camp.phase()!=game::career::CampPhase::Countdown && police_camp.phase()!=game::career::CampPhase::Running) {
                 if(!career.on_duty()) {interaction_message="The range is for Policio recruits - sign up at any police station";interaction_remaining=4;}
@@ -2417,10 +2469,14 @@ void Renderer::run() {
                 (game::rules_for(game_mode).civilian_life && penthouse.inside(feet)) || home_here;
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
                 here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 ||
+                    (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) ||
                     boss_near(feet)>=0 || station_desk(feet)!=nullptr;
                 // Who you'd be talking to.
                 if(store_prompt.empty() && player_health.alive()) {
                     if(arrestable(feet)>=0) store_prompt="E - Arrest him";
+                    else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F)
+                        store_prompt=!trucking.hired() ? "E - Ask the boss of Verda Transporto for work" :
+                            trucking.job().stage==game::freight::HaulStage::Report ? "E - Report in for your pay" : "E - Talk to the boss";
                     else if(const int crew=boss_near(feet);crew>=0) {
                         const std::string name(game::mafia::gangs[static_cast<std::size_t>(mafio.crews()[static_cast<std::size_t>(crew)].gang)].name);
                         store_prompt=career.in_gang(mafio.crews()[static_cast<std::size_t>(crew)].gang) ? "E - Talk to your boss" : "E - Talk to the boss of "+name;
@@ -3728,6 +3784,22 @@ void Renderer::run() {
                     work.camp=police_camp.line();work.camp_known=police_camp.placed();
                     // The Chief stands at his post; the range runs its drill (counting the shots fired).
                     if(chief.placed) npcs.set_bot(chief_bot,chief.at,chief.yaw,100,characters::NpcState::Idle);
+                    // Verda Transporto: the boss at his door; the load in hand (cattle called, loaded, shipped).
+                    if(depot_boss.placed) {
+                        npcs.set_bot(depot_boss_bot,depot_boss.at,depot_boss.yaw,100,characters::NpcState::Idle);
+                        game::freight::TruckFrame haul;
+                        haul.dt=dt;haul.now=match_time;haul.player=feet;
+                        if(const auto* car=vehicles.driver()) {haul.driving=car->id;haul.speed=car->speed;}
+                        const int ranch=trucking.job().ranch;
+                        switch(trucking.update(haul)) {
+                            case game::freight::TruckEvent::CallCattle: ranches.call_cattle(ranch,4);break;
+                            case game::freight::TruckEvent::LoadCattle: trucking.cattle_loaded(ranches.load_cattle(ranch,4));break;
+                            case game::freight::TruckEvent::ShipCattle: ranches.ship_cattle(ranch,trucking.job().head);gun_audio.kill_confirm();break;
+                            case game::freight::TruckEvent::Loaded: case game::freight::TruckEvent::Delivered: gun_audio.kill_confirm();break;
+                            default: break;
+                        }
+                        if(const int pay=trucking.take_pay();pay>0) {loot_session.economy().money+=pay;loot_session.changed();}
+                    }
                     if(police_camp.placed()) {
                         police_camp.update(dt,feet,weapons.events().shots);
                         if(police_camp.take_graduation()) career.passed_training();
@@ -3853,6 +3925,7 @@ void Renderer::run() {
                     if(career_save_wait<=0) {
                         career_save_wait=1;
                         if(const auto text=career.serialise();text!=career_saved && SaveFileText(career_path.c_str(),const_cast<char*>(text.c_str()))) career_saved=text;
+                        if(const auto text=trucking.serialise();!trucking_path.empty() && text!=trucking_saved && SaveFileText(trucking_path.c_str(),const_cast<char*>(text.c_str()))) trucking_saved=text;
                     }
                 }
                 br_bots.sync_bodies(npcs,&character_registry);
@@ -4196,6 +4269,7 @@ void Renderer::run() {
             };
             for(const auto& ranch:ranches.ranches()) for(const auto& cow:ranch.herd) draw_cow(cow);
             for(const auto& cow:ranches.stockyard().pen) draw_cow(cow);
+            for(const auto& cow:ranches.cattle_quay().pen) draw_cow(cow);
         }
         double sub_t3=GetTime();
         sign_renderer.draw(camera.position,camera.target,static_cast<float>(GetTime()));
@@ -4441,6 +4515,19 @@ void Renderer::run() {
             DrawCylinder({at.x,ground,at.z},.35F,.35F,90,8,Fade(beam,.5F*pulse));
             EndBlendMode();
             DrawCircle3D({at.x,ground+.15F,at.z},game::career::Career::arrive_radius*.5F,{1,0,0},90,Fade(beam,.8F));
+        }
+        // The load in hand: a green column of light.
+        if(trucking.hired() && trucking.job().stage!=game::freight::HaulStage::None &&
+           std::hypot(trucking.target().x-player.position.x,trucking.target().z-player.position.z)>game::freight::Trucking::stop_radius) {
+            const Vector3 at=trucking.target();
+            const float ground=world::terrain::TerrainHeight::sample(at.x,at.z);
+            const Color beam{90,220,140,255};
+            const float pulse=.75F+.25F*std::sin(static_cast<float>(GetTime())*3);
+            BeginBlendMode(BLEND_ADDITIVE);
+            DrawCylinder({at.x,ground,at.z},1.1F,1.1F,90,10,Fade(beam,.22F*pulse));
+            DrawCylinder({at.x,ground,at.z},.35F,.35F,90,8,Fade(beam,.5F*pulse));
+            EndBlendMode();
+            DrawCircle3D({at.x,ground+.15F,at.z},game::freight::Trucking::stop_radius*.6F,{1,0,0},90,Fade(beam,.8F));
         }
         // The waypoint set on the map: a pink column of light.
         if(const auto& pin=map_screen.pin();pin && std::hypot(pin->x-player.position.x,pin->z-player.position.z)>18) {
@@ -4910,6 +4997,51 @@ void Renderer::run() {
                     DrawTextEx(font,title.c_str(),{at.x-tw/2,at.y-16},16,1,Color{212,170,60,255});
                     DrawTextEx(font,sub,{at.x-sw/2,at.y+2},13,1,Color{170,200,255,255});
                 }
+            }
+            // The boss of Verda Transporto: his name over his head.
+            if(depot_boss.placed && Vector3Distance(depot_boss.at,camera.position)<14) {
+                const Vector3 over{depot_boss.at.x,depot_boss.at.y+2.3F,depot_boss.at.z};
+                if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))>0) {
+                    const Vector2 at=GetWorldToScreen(over,camera);
+                    const std::string title=std::string(depot_boss_name)+"  ·  Verda Transporto";
+                    const char* sub=Vector3Distance(depot_boss.at,{player.position.x,player.position.y-1,player.position.z})<3.2F ? "USE to talk" : "The boss - loads for the ship, the towns and the ranches";
+                    const float tw=MeasureTextEx(font,title.c_str(),16,1).x,sw=MeasureTextEx(font,sub,13,1).x,w=std::max(tw,sw);
+                    DrawRectangle(static_cast<int>(at.x-w/2-6),static_cast<int>(at.y-18),static_cast<int>(w+12),36,Fade(BLACK,.55F));
+                    DrawTextEx(font,title.c_str(),{at.x-tw/2,at.y-16},16,1,Color{90,220,140,255});
+                    DrawTextEx(font,sub,{at.x-sw/2,at.y+2},13,1,Color{220,226,206,255});
+                }
+            }
+            // The load in hand (top right, under the buttons), and what is happening with it.
+            if(trucking.hired() && trucking.job().stage!=game::freight::HaulStage::None && !map_screen.is_open()) {
+                const std::string title=trucking.title()+"  ·  Verda Transporto";
+                std::string sub=trucking.detail();
+                if(!sub.empty()) sub[0]=static_cast<char>(std::toupper(static_cast<unsigned char>(sub[0])));
+                // Under the buttons, clear of the compass: what to do now, wrapped to fit.
+                const float max_w=std::min(420.0F,screen_width*.4F);
+                std::vector<std::string> lines;std::string line,word;
+                for(std::size_t i=0;i<=sub.size();++i) {
+                    const char c=i<sub.size() ? sub[i] : ' ';
+                    if(c!=' ') {word+=c;continue;}
+                    const std::string trial=line.empty() ? word : line+" "+word;
+                    if(MeasureTextEx(font,trial.c_str(),14,1).x>max_w-24 && !line.empty()) {lines.push_back(line);line=word;}
+                    else line=trial;
+                    word.clear();
+                }
+                if(!line.empty()) lines.push_back(line);
+                float w=MeasureTextEx(font,title.c_str(),17,1).x;
+                for(const auto& l:lines) w=std::max(w,MeasureTextEx(font,l.c_str(),14,1).x);
+                w=std::min(w+24,max_w);
+                const float h=26+17*static_cast<float>(lines.size()),x=screen_width-w-10,y=88;
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y),static_cast<int>(w),static_cast<int>(h),Fade(BLACK,.5F));
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y),4,static_cast<int>(h),Color{90,220,140,255});
+                DrawTextEx(font,title.c_str(),{x+12,y+4},17,1,Color{90,220,140,255});
+                for(std::size_t k=0;k<lines.size();++k) DrawTextEx(font,lines[k].c_str(),{x+12,y+24+17*static_cast<float>(k)},14,1,Color{220,226,206,255});
+            }
+            if(trucking.message_time()>0) {
+                const float alpha=std::clamp(trucking.message_time(),0.0F,1.0F);
+                const float mw=MeasureTextEx(font,trucking.message().c_str(),18,1).x;
+                DrawRectangle(static_cast<int>(screen_width/2-mw/2-12),screen_height-389,static_cast<int>(mw+24),28,Fade(Color{10,40,24,255},.65F*alpha));
+                DrawTextEx(font,trucking.message().c_str(),{screen_width/2-mw/2,static_cast<float>(screen_height-384)},18,1,Fade(Color{170,240,190,255},alpha));
             }
             if(chief_line_time>0 && !chief_line.empty()) {
                 // A dialogue box, wrapped to two or three lines.
@@ -5406,6 +5538,8 @@ void Renderer::run() {
             }
             if(career.job().kind!=game::career::JobKind::None && flat(career.job().target)>14)
                 compass_marks.push_back({career.job().target,Glyph::Objective,career.on_duty() ? Color{90,150,255,255} : Color{255,196,70,255},career.job().title,true});
+            if(trucking.hired() && trucking.job().stage!=game::freight::HaulStage::None && flat(trucking.target())>game::freight::Trucking::stop_radius)
+                compass_marks.push_back({trucking.target(),Glyph::Objective,Color{90,220,140,255},trucking.title(),true});
             if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal()) {
                 const auto zone=mode_session.zone();
                 const bool next=zone.next_radius<zone.radius-1;

@@ -1289,11 +1289,12 @@ void west_suburbs(Kit& kit, world::VerdaRegion& region) {
             for (const auto& [from, count, step] : std::initializer_list<std::tuple<float, int, float>>{{-200, 6, 22}, {-348, 5, 24}})
                 for (int i = 0; i < count; ++i) suburban_house(kit, *capital, {from - static_cast<float>(i) * step, 0, z}, facing, ++seed, cars);
         }
-    // Street lights at lot lines, alternating sides.
+    // Street lights in front yards, alternating sides, well clear of the driveways (8.9 m west of
+    // each home's centre).
     for (const float street_z : {-168.0F, -84.0F, 0.0F, 84.0F, 168.0F})
         for (int i = 0; i < 6; ++i) {
-            const float x = suburb_east_x - 26 - i * 50.0F, side = i % 2 ? 1.0F : -1.0F;
-            if (std::abs(x - suburb_mid_x) < 8) continue;
+            constexpr float lights[]{-196, -240, -284, -344, -392, -440};
+            const float x = lights[i], side = i % 2 ? 1.0F : -1.0F;
             kit.put(urban + "Traffic lights/street_light.glb", {x, 0, street_z + side * (street_z == 0 ? 6.4F : 5.4F)}, side > 0 ? 0.0F : 180.0F);
         }
     // On the boulevard: the park (north-east), shops (south-east), a church and a clinic (west).
@@ -2108,6 +2109,91 @@ void smugglers_jetties(Kit& kit, world::VerdaRegion& region) {
     }
 }
 
+// ------------------------------------------------------------------ Porto Luma's cargo terminal
+// Kargohaveno de Porto Luma (layout::cargo_*): a ramp from the quay road down to the quay at the
+// shore, a lane along it, two ship-to-shore cranes on the quay edge over Stella Maris (a feeder
+// container ship at the berth), stacks of containers either side of the ramp's mouth, and the
+// cattle quay (world/Ranches.hpp): a pen behind a loading chute, and the gangway up the ship's side.
+void cargo_terminal(Kit& kit, world::VerdaRegion& region) {
+    namespace L = world::layout;
+    auto* port = settlement(region, "port_luma");
+    if (!port) return;
+    const float z = L::cargo_z, quay = L::cargo_quay_height, lane = 2214;
+    // Nothing (bollards, lamps, props) on the ramp or the apron.
+    for (auto& town : region.runtime_settlements())
+        kit.report.cleared += static_cast<int>(std::erase_if(town.assets, [&](const world::WorldAsset& a) {
+            if (!a.vehicle.definition.empty() || a.position.x < L::cargo_ramp_x0 - 6 || a.position.x > L::cargo_quay_x1 + 80) return false;
+            return std::abs(a.position.z - z) < (a.position.x < L::cargo_ramp_x1 ? L::cargo_ramp_half + 3 : L::cargo_quay_half + 4);
+        }));
+    port->roads.push_back({{1946, 0, z}, {lane, 0, z}, 10, world::RoadType::Asphalt});
+    port->roads.push_back({{lane, 0, z - L::cargo_quay_half + 4}, {lane, 0, z + L::cargo_quay_half - 4}, 10, world::RoadType::Asphalt});
+    kit.add_roads(port->roads);
+    kit.put(city + "civic/quay_apron.glb", {(L::cargo_ramp_x1 + L::cargo_quay_x1) * .5F, quay + .02F, z}, 0, false, false);
+    // The ship at the berth, her quay side 1.2 m off the quay face; the keel 5 m under the sea.
+    if (!kit.put(city + "civic/cargo_ship.glb", {L::cargo_quay_x1 + 9.2F, L::sea_level - 5, z}, 0, false, false)) return;
+    for (const float cz : {z - 22, z})
+        kit.put(city + "civic/harbour_crane.glb", {L::cargo_quay_x1 - 9, quay, cz}, 0, false, false);
+    // Containers waiting on the quay, either side of the ramp's mouth (the cattle pen north).
+    kit.put(city + "civic/container_stack.glb", {lane - 23, quay, z - 33}, 0, false);
+    kit.put(city + "civic/container_stack.glb", {lane - 36, quay, z - 33}, 0, false);
+    kit.put(city + "civic/container_stack.glb", {lane - 36, quay, z + 24}, 180, false);
+    // The cattle quay.
+    const rr::Frame f(rr::cattle_quay_gate, rr::cattle_quay_up);
+    fence_box(kit, f, rr::cattle_quay_pen, 9700, {{0, rr::cattle_quay_chute.x - 2, rr::cattle_quay_chute.x + 2}, {3, 10, 14}});
+    kit.put(ranch_dir + "loading_chute.glb", f.at(rr::cattle_quay_chute.x, rr::cattle_quay_chute.y + 2.2F), f.yaw() + 180);
+    kit.put(ranch_dir + "water_trough.glb", f.at(-6, 22), f.yaw());
+    kit.put(city + "civic/cattle_gangway.glb", {rr::cattle_gangway_foot.x, quay, rr::cattle_gangway_foot.y}, 0, false, false);
+    // Lamps and bollards along the quay edge.
+    for (int i = -2; i <= 2; ++i)
+        kit.put(urban + "Traffic lights/street_light_clean.glb", {L::cargo_quay_x1 - 2, quay, z + i * 25.0F}, 90, false);
+    for (int i = 0; i < 13; ++i)
+        kit.put(urban + "Cones & Barriers/Bollards/square_bollard.glb", {L::cargo_quay_x1 - .6F, quay, z - 48 + i * 8.0F}, 0, false);
+    kit.report.cargo_terminal = true;
+}
+
+// ------------------------------------------------------------------ Verda Transporto
+// Verda City's industrial quarter (layout::freight_*), west of Okcidenta: the suburb street on
+// z = -84 runs on into the yard of Verda Transporto, the island's trucking company - the depot
+// (sheds and the office, where the boss gives out loads) on its north side, the truck park on the
+// south: the company's rigs for hire (vehicle_spawn_semi_depot_...) and its own drivers' rigs
+// (vehicle_spawn_semi_haul_..., game::freight), with sheds and containers round about.
+void freight_depot(Kit& kit, world::VerdaRegion& region) {
+    namespace L = world::layout;
+    auto* capital = settlement(region, "capital_verda");
+    if (!capital) return;
+    constexpr float road_z = -84;
+    for (auto& town : region.runtime_settlements())
+        kit.report.cleared += static_cast<int>(std::erase_if(town.assets, [&](const world::WorldAsset& a) {
+            return a.vehicle.definition.empty() && a.position.x > L::freight_x0 && a.position.x < L::freight_x1 - 10 &&
+                   a.position.z > L::freight_z0 && a.position.z < L::freight_z1; }));
+    capital->roads.push_back({{suburb_west_x, 0, road_z}, {L::freight_x0 + 14, 0, road_z}, 12, world::RoadType::Asphalt});
+    kit.add_roads({capital->roads.back()});
+    const float ground = world::terrain::TerrainHeight::sample(-560, -54);
+    if (!kit.put(city + "civic/truck_depot.glb", {-560, ground, -52}, 0, false)) return;
+    kit.purpose({-560, ground, -52 - 11 - 3.5F}, 0, world::BuildingPurpose::Office);   // the office, inside its door
+    for (const float x : {-524.0F, -592.0F})
+        kit.put(city + "ground/parking_lot_68.glb", {x, ground, -126}, 0, false);
+    kit.put(shacks + std::string("Large Shed A.glb"), {-622, 0, -52}, 0);
+    kit.put(shacks + std::string("Large Shed B.glb"), {-638, 0, -52}, 0);
+    kit.put(shacks + std::string("Large Shed B.glb"), {-508, 0, -52}, 0);
+    kit.put(city + "civic/container_stack.glb", {-640, ground, -128}, 0, false);
+    for (int i = 0; i < 6; ++i) {   // pallets and drums against the shed's flank
+        const auto r = hash(9800U + static_cast<std::uint32_t>(i));
+        kit.put(shacks + (i % 2 ? "Pallet.glb" : "Barrel.glb"), {-582 - static_cast<float>(i % 3) * 1.6F, 0, -48 + static_cast<float>(i / 3) * 1.6F}, static_cast<float>(r % 360));
+    }
+    for (int i = 0; i < 4; ++i)
+        kit.put(urban + "Traffic lights/street_light.glb", {-500 - i * 40.0F, 0, road_z - 7}, 0);
+    // The truck park: noses to the road.
+    int n = 0;
+    for (const float x : {-512.0F, -526.0F, -540.0F})
+        vehicle_marker(*capital, "vehicle_spawn_semi_depot_" + std::to_string(++n), {x, 0, -100}, 0);
+    vehicle_marker(*capital, "vehicle_spawn_semi_depot_cattle_1", {-554, 0, -100}, 0);
+    n = 0;
+    for (const float x : {-580.0F, -594.0F, -608.0F})
+        vehicle_marker(*capital, "vehicle_spawn_semi_haul_" + std::to_string(++n), {x, 0, -100}, 0);
+    kit.report.freight_depot = true;
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     lay_highways(region);
@@ -2137,6 +2223,9 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     // After them (new pieces only): the state prison and the smugglers' jetties.
     state_prison(kit, region);
     smugglers_jetties(kit, region);
+    // After those (new pieces only): Porto Luma's cargo terminal and Verda Transporto's depot.
+    cargo_terminal(kit, region);
+    freight_depot(kit, region);
     return kit.report;
 }
 }

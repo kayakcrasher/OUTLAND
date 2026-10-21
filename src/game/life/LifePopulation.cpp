@@ -176,6 +176,20 @@ void build_places(Island& island,const world::VerdaRegion& region) {
             place.interior=marker.position;place.building_yaw=marker.rotation_y;place.building_size={3,3,3};
             place.door=door_position(marker.position,{0,0,0},marker.rotation_y,2.0F);
             place.kind=kind_of(marker.purpose);
+            // The marker in Registaro de Verda's hall: the whole hall (24 x 22 m behind the portico)
+            // is the workplace, and the island's parliament keeps a full house.
+            for(const auto& seat:owner.assets) {
+                if(!seat.model_path.ends_with("civic/parliament.glb") || flat_distance(seat.position,marker.position)>20) continue;
+                const float a=seat.rotation_y*DEG2RAD;
+                place.interior={seat.position.x+std::sin(a)*4.7F,marker.position.y,seat.position.z+std::cos(a)*4.7F};
+                place.building_yaw=seat.rotation_y;place.building_size={23,12,21};
+                place.door=door_position(place.interior,place.building_size,place.building_yaw,1.8F);
+                place.civic_hall=true;
+                break;
+            }
+            // Verda Transporto's office (in the depot's solid shell): the dispatchers go in at the door.
+            for(const auto& depot:owner.assets)
+                if(depot.model_path.ends_with("civic/truck_depot.glb") && flat_distance(depot.position,marker.position)<25) place.sealed=true;
             named.push_back(true);vacant.push_back(false);
             island.places.push_back(std::move(place));
         }
@@ -215,9 +229,9 @@ void build_places(Island& island,const world::VerdaRegion& region) {
             auto& place=island.places[i];
             const bool two_story=place.building_size.y>5.5F;
             if(place.kind==PlaceKind::Home) place.home_capacity=tenement[i-first] || place.building_id.starts_with("creator_city_main_street") ? 6 : two_story ? 8 : 4;
-            if(place.sealed) {place.job_capacity=24;continue;}
+            if(place.sealed) {place.job_capacity=place.building_size.x<=3.01F ? 6 : 24;continue;}
             if(place.kind==PlaceKind::Shop || place.kind==PlaceKind::Pub) {place.mixed_home=true;place.home_capacity=3;}
-            place.job_capacity=job_capacity(place.kind);
+            place.job_capacity=place.civic_hall ? 20 : job_capacity(place.kind);
             place.id=town.id+":"+place_name(place.kind)+":"+place.building_id;
         }
         const auto outdoor=[&](PlaceKind kind,Vector3 offset,const char* name){
@@ -225,7 +239,9 @@ void build_places(Island& island,const world::VerdaRegion& region) {
             place.interior=place.door=Vector3Add(town.center,offset);place.job_capacity=job_capacity(kind);
             place.id=town.id+":"+name;island.places.push_back(std::move(place));
         };
-        outdoor(PlaceKind::Square,{4,0,4},"square");
+        // Verda City's square is the little park on the courthouse block (the city centre itself is
+        // the boulevard's crossing); elsewhere it is the town centre.
+        outdoor(PlaceKind::Square,who==Identity::Capital ? Vector3{-45,0,42} : Vector3{4,0,4},"square");
         if(who==Identity::Rural) {
             // Fields sit between the village and the island interior, away from the north shore.
             const float length=std::max(1.0F,std::sqrt(town.center.x*town.center.x+town.center.z*town.center.z));

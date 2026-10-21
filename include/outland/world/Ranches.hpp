@@ -64,6 +64,16 @@ inline constexpr Vector2 stockyard_chute{0, 2.5F};
 inline constexpr Area stockyard_footprint{-46, 62, 4, 64};
 inline constexpr Vector2 stockyard_gate{1289.34F, -790.08F}, stockyard_up{0.8466F, -0.53223F};
 
+// The cattle quay at Porto Luma's cargo terminal (world::layout::cargo_*), where the ranches' cattle
+// are shipped: the frame's gate is on the quay lane (x 2214) and +v runs west, away from the ship,
+// into a pen behind a loading chute. From the pen the cattle walk across the lane and up the
+// gangway (foot to top, world x/z) into the livestock deck of the ship at the berth.
+inline constexpr std::string_view cattle_quay_name = "Brutkajo de Porto Luma";
+inline constexpr Vector2 cattle_quay_gate{2209, -430}, cattle_quay_up{-1, 0};
+inline constexpr Area cattle_quay_pen{-10, 10, 8, 24};
+inline constexpr Vector2 cattle_quay_chute{0, 2.5F};
+inline constexpr Vector2 cattle_gangway_foot{2225, -447}, cattle_gangway_top{2244, -447};
+
 // The level pads the terrain makes for them (ranch frame centre, radius, blend).
 inline constexpr Vector2 pad_centre{-8, 64};
 inline constexpr float pad_radius = 102, pad_blend = 60;

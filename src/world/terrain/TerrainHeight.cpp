@@ -179,7 +179,8 @@ float TerrainHeight::pad_weight(
     const float distance = std::hypot(world_x, world_z);
     const float suburb=std::hypot(std::max({layout::suburb_near-std::abs(world_x),std::abs(world_x)-layout::suburb_far,0.0F}),
                                   std::max(std::abs(world_z)-layout::suburb_half,0.0F));
-    float weight = 1 - smooth(std::min({distance-layout::capital_flat_radius,suburb,layout::downtown_outside(world_x,world_z)})/80.0F);
+    float weight = 1 - smooth(std::min({distance-layout::capital_flat_radius,suburb,layout::downtown_outside(world_x,world_z),
+                                        layout::freight_outside(world_x,world_z)})/80.0F);
     const auto pad=[&](float cx,float cz,float flat,float band) {
         const float d=std::hypot(world_x-cx,world_z-cz);
         if(d<flat+band) weight=std::max(weight,1-smooth((d-flat)/band));
@@ -291,7 +292,8 @@ float TerrainHeight::unpaved(
         // Flat central building pad (downtown and the suburbs either side), then the original countryside.
         const float suburb=std::hypot(std::max({layout::suburb_near-std::abs(world_x),std::abs(world_x)-layout::suburb_far,0.0F}),
                                       std::max(std::abs(world_z)-layout::suburb_half,0.0F));
-        height *= smooth(std::min({distance-layout::capital_flat_radius,suburb,layout::downtown_outside(world_x,world_z)})/80.0F);
+        height *= smooth(std::min({distance-layout::capital_flat_radius,suburb,layout::downtown_outside(world_x,world_z),
+                                   layout::freight_outside(world_x,world_z)})/80.0F);
         // Small building pads retain hills and wilderness between towns.
         for (std::size_t i=1;i<layout::sites.size();++i) {
             const auto c=layout::sites[i].center;
@@ -336,6 +338,28 @@ float TerrainHeight::unpaved(
         const float shore=layout::shore_radius(world_x,world_z);
         const float blend=smooth((distance-(shore-layout::shoreline_band))/(2*layout::shoreline_band));
         if (distance>shore-layout::shoreline_band) height=height*(1-blend)+(layout::sea_level-8.0F)*blend;
+        // Porto Luma's cargo terminal: the ramp down from the town, the quay apron at the shore and
+        // the dredged berth along its face (layout::cargo_*).
+        const float dz=std::abs(world_z-layout::cargo_z);
+        if (world_x>layout::cargo_ramp_x0 && world_x<layout::cargo_quay_x1+90 && dz<layout::cargo_quay_half+40) {
+            const auto port=layout::sites[2].center;
+            const float top=std::max(6.0F,large_hills(port.x,port.z)+rolling_ground(port.x,port.z)+small_variation(port.x,port.z));
+            if (world_x<=layout::cargo_quay_x1) {
+                const float d=std::hypot(std::max(layout::cargo_ramp_x1-world_x,0.0F),std::max(dz-layout::cargo_quay_half,0.0F));
+                const float w=1-smooth(d/25.0F);
+                height=height+(layout::cargo_quay_height-height)*w;
+            } else {
+                const float w=(1-smooth((world_x-layout::cargo_quay_x1-45)/40.0F))*(1-smooth((dz-layout::cargo_quay_half-10)/25.0F));
+                height=std::min(height,height+(layout::cargo_berth_depth-height)*w);
+            }
+            // (The ramp last: its grade stays even right down to the apron.)
+            if (world_x<layout::cargo_ramp_x1) {
+                const float t=(world_x-layout::cargo_ramp_x0)/(layout::cargo_ramp_x1-layout::cargo_ramp_x0);
+                const float ramp=top+(layout::cargo_quay_height-top)*t;
+                const float w=1-smooth((dz-layout::cargo_ramp_half)/22.0F);
+                height=height+(ramp-height)*w;
+            }
+        }
     }
     return height;
 }

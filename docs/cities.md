@@ -8,6 +8,8 @@ Built by `outland_build_world` (`src/dev/VerdaWorldKit.cpp`) into `maps/verda_wo
   - Five streets at z = 0, ±84 and ±168.
   - Sixteen 68 m blocks; the grid reaches |x| 179, |z| 176.
 - **South row:** one more row of blocks beyond the grid. From west to east: the apartments, the office plaza, Parliament (beside the highway) and the corner-bar block where La Verda Mano keep their hideout. A street runs along their far side.
+- **Parliament** (Registaro de Verda) is a working building: twenty staff work in its great hall under the dome (island life), and its name, REGISTARO DE VERDA, runs across the portico's entablature over the columns.
+- **The square:** Verda City's square, where residents meet and loiter, is the courthouse park block (north-west of the boulevard's crossing, around x −45, z 42). The city centre itself is the boulevard's crossing, so people no longer crowd the street there.
 - **Level ground:** the terrain is levelled under the whole of it (`layout::downtown_outside`).
 - **Traffic:** keeps right, 2.4 m off the centre line. Parked cars sit tight to the kerb.
 
@@ -18,6 +20,10 @@ Built by `outland_build_world` (`src/dev/VerdaWorldKit.cpp`) into `maps/verda_wo
   capital, on 24 m lots set 14 m back from the street. Yard trees, some picket fences, bins, a car
   on about a quarter of the drives.
 - On the boulevard: a park, two shops, a church and a clinic.
+
+## The industrial quarter
+West of Okcidenta, south of the Roka highway, on level ground (`layout::freight_*`): the z = −84
+street runs on into the yard of **Verda Transporto**, the trucking company. See [trucking](trucking.md).
 
 ## Orienta Verda (east suburbs, the fancy side)
 - Same street plan mirrored east (to x = 476). The Porto Luma highway leaves from the boulevard's
@@ -63,6 +69,9 @@ the capital's population grows by three per house.
   trees and lights, and parked cars.
 - Waterfront east of the grid: quay roads, six warehouses, a harbour office, a dock building,
   pallets and barrels, and a line of bollards.
+- The cargo terminal (Kargohaveno) below the town: a ramp from the quay road down to a quay at the
+  shore, with Stella Maris at the berth, two container cranes, and the cattle quay. See
+  [trucking](trucking.md).
 
 ## Espera and Suda Haveno
 The two county towns are built to the same city plan as Porto Luma and Roka by

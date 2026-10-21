@@ -140,6 +140,8 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
             for (auto& c : name) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
             text = {"URBODOMO", name};
         }
+        // The trucking company's office at its depot.
+        if (place.kind == PlaceKind::Office && near_model("civic/truck_depot.glb")) text = {"VERDA TRANSPORTO", "KAMIONADO · ŜARĜOJ · BRUTARO"};
         // The clinic in the hospital building is Hospitalo de Verda.
         if (place.kind == PlaceKind::Clinic)
             for (const auto& town : towns) for (const auto& asset : town.assets)
@@ -178,13 +180,23 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
             const float lift = place.sealed ? 4.4F : std::clamp(place.building_size.y * .45F, 2.7F, 3.5F);
             wall = facade(region, place, facing, base + lift);
         }
+        // Registaro de Verda's name runs across the portico's entablature (12-13.2 m up, its face
+        // 10.5 m in front of the model's centre), over the columns.
+        if (parliament)
+            for (const auto& town : towns) for (const auto& asset : town.assets) {
+                if (!asset.model_path.ends_with("civic/parliament.glb") || flat(asset.position, place.door) > 30) continue;
+                const float a = asset.rotation_y * DEG2RAD;
+                facing = {-std::sin(a), 0, -std::cos(a)};
+                wall = {asset.position.x + facing.x * 10.5F, asset.position.y + 12.6F, asset.position.z + facing.z * 10.5F};
+            }
         sign.kind = SignKind::Shopfront;
         sign.yaw = yaw_of(facing);
         sign.position = {wall.x + facing.x * .11F, wall.y, wall.z + facing.z * .11F};
         sign.max_width = place.sealed ? 12.0F : marker ? 5.0F : std::clamp(place.building_size.x * .85F, 1.6F, 9.0F);
-        const float title = place.sealed ? .8F : .5F;
+        if (parliament) sign.max_width = 20;
+        const float title = place.sealed ? .8F : parliament ? .9F : .5F;
         sign.front.push_back({text.title, title});
-        if (!text.subtitle.empty()) sign.front.push_back({text.subtitle, title * .45F});
+        if (!text.subtitle.empty() && !parliament) sign.front.push_back({text.subtitle, title * .45F});   // (the entablature takes one line)
         // Government buildings fly the flag from a staff beside the sign.
         // (The parliament and the town halls fly their own from poles in front.)
         if (place.kind == PlaceKind::Police || (place.kind == PlaceKind::Office && ordinal == 0 && !seat_in_town)) {

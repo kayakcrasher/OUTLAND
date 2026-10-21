@@ -12,13 +12,19 @@ namespace outland::game::vehicles { class VehicleSystem; }
 namespace outland::game::transit { class BusLine; }
 namespace outland::game::ranch { class Ranches; }
 
-// Verda's big rigs: two 18-wheelers (the "semi" tractor, vehicle_spawn_semi_..., parked at the
-// stockyard of Porto Luma) with articulated trailers.
-//   The supply rig hauls a 53 ft dry van round the island on the bus line's loop and pulls up in
-//   every town on the line to deliver (Verda, Espera, Porto Luma, Suda Haveno, Roka).
-//   The cattle rig hauls a livestock "pot" trailer from ranch to ranch: at each ranch's gate the
-//   family has a few head waiting in the corral and they go up the chute; then on to the stockyard
-//   (Bovbazaro de Porto Luma), where they come off into the pens.
+// Verda's big rigs: 18-wheelers (the "semi" tractor) with articulated trailers.
+//   The supply rig (vehicle_spawn_semi_freight_..., parked at the stockyard of Porto Luma) hauls a
+//   53 ft dry van round the island on the bus line's loop and pulls up in every town on the line
+//   to deliver (Verda, Espera, Porto Luma, Suda Haveno, Roka).
+//   The cattle rig (vehicle_spawn_semi_cattle_...) hauls a livestock "pot" trailer from ranch to
+//   ranch: at each ranch's gate the family has a few head waiting in the corral and they go up the
+//   chute; then on to the cattle quay at Porto Luma's cargo terminal, where they come off and are
+//   shipped - and each ranch is paid for its cattle (ranch::Ranches::ship_cattle). (Without the
+//   cargo terminal, to the stockyard, Bovbazaro de Porto Luma, where they come off into the pens.)
+//   Verda Transporto's own drivers (vehicle_spawn_semi_haul_..., at the depot in Verda City's
+//   industrial quarter): a container shuttle between the depot and the cargo terminal's cranes, a
+//   second supply run on the bus loop (starting halfway round), and a run from the terminal to Roka
+//   and back to the depot.
 // Like the buses they drive kinematically (VehicleSystem::glide) along the road; the trailer
 // follows the fifth wheel (its axles trail the kingpin) wherever the tractor goes, the player's
 // hands included. A rig that is wrecked or taken leaves its run.
@@ -33,11 +39,14 @@ inline constexpr float fifth_wheel_height = 1.18F;
 inline constexpr const char* box_trailer = "assets/verda/vehicles/runtime/trailer_box.glb";
 inline constexpr const char* cattle_trailer = "assets/verda/vehicles/runtime/trailer_cattle.glb";
 
+// What a stop is (FreightStop::ranch when not a ranch's index).
+inline constexpr int stop_town = -1, stop_stockyard = -2, stop_cattle_quay = -3, stop_cargo_quay = -4, stop_depot = -5;
+
 struct FreightStop {
     std::string name;     // town or ranch
     Vector3 point{};      // on the road
     float at{0};          // metres along the loop where the rig stops (its centre)
-    int ranch{-1};        // the cattle run: ranch index, -2 the stockyard
+    int ranch{stop_town}; // a ranch's index, or what else it is (stop_*)
 };
 
 struct Rig {
@@ -53,6 +62,8 @@ struct Rig {
     int next_stop{0};
     bool running{false}, blocked{false}, called{false};
     int head{0};                  // cattle aboard
+    std::vector<int> aboard;      // ...by ranch
+    int first_stop{0};            // where the run starts
     int deliveries{0};
     Vector3 position{};
     float yaw{0};

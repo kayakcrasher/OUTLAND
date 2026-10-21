@@ -21,6 +21,7 @@ In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. E
   - The Policio turns away anyone with a record ("no criminals on the force"), and anyone still running with a gang.
 - **No gang takes a cop:** an officer hands in the badge first. A crime on duty (assaulting or killing a resident, or attacking an officer) ends the career on the force and leaves a record.
 - Joining a different gang starts your respect again from zero.
+- **Trucking** is open to anyone but a serving officer, gang members included: sign on with the boss at Verda Transporto's depot and drive loads for pay by the trip. See [trucking](trucking.md).
 
 ## Ŝtata Malliberejo, the state prison
 

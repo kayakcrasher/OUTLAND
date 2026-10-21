@@ -1015,6 +1015,205 @@ def smugglers_jetty():
     return b
 
 
+CONTAINER_COLOURS = ((176, 52, 40), (40, 92, 150), (40, 120, 76), (210, 150, 40), (120, 124, 130), (150, 70, 40), (60, 60, 66))
+
+
+def containers(b, x0, z0, rows, cols, tiers, seed, along_z=True, y0=0.0):
+    """Stacked 40 ft boxes (12.2 x 2.44 x 2.6 m), corrugated, in mixed liveries: `rows` side by side
+    (x), `cols` end to end (z, or x when not along_z), up to `tiers` high (some stacks lower)."""
+    rng = random.Random(seed)
+    for k, colour in enumerate(CONTAINER_COLOURS):
+        b.material(f"box{k}", stripes(colour, shade(colour, -26), 4, 60 + k), 1.2, 1.2)
+    L, W, H = 12.2, 2.44, 2.6
+    for r in range(rows):
+        for c in range(cols):
+            high = tiers if rng.random() < .7 else rng.randint(1, tiers)
+            for t in range(high):
+                m = f"box{rng.randrange(len(CONTAINER_COLOURS))}"
+                if along_z:
+                    lo = (x0 + r * (W + .1), y0 + t * H, z0 + c * (L + .3))
+                    hi = (lo[0] + W, lo[1] + H - .02, lo[2] + L)
+                else:
+                    lo = (x0 + c * (L + .3), y0 + t * H, z0 + r * (W + .1))
+                    hi = (lo[0] + L, lo[1] + H - .02, lo[2] + W)
+                b.solid(lo, hi, m)
+
+
+def container_stack():
+    """A block of 40 ft containers on the quay: four rows of three end to end, up to three high
+    (24 x 37 m footprint centred on the origin, long side along Z)."""
+    b = Builder()
+    containers(b, -5.1, -18.6, 4, 3, 3, 7)
+    return b
+
+
+def quay_apron():
+    """The cargo terminal's quay: a 60 x 112 m concrete apron (top at y = 0, the seaward face at
+    +X) with lane markings, the crane rails along the edge, a yellow safety line, and the quay wall
+    going down 14 m into the water with black rubber fenders and bollards along the top."""
+    b = Builder()
+    b.material("concrete", flat((170, 168, 160), 7), 4, 4)
+    b.material("wall", flat((128, 126, 118), 8), 3, 3)
+    b.material("yellow", flat((230, 190, 40), 2), 1, 1)
+    b.material("white", flat((236, 236, 230), 2), 1, 1)
+    b.material("rail", flat((90, 92, 96), 3), 1, 1)
+    b.material("fender", flat((26, 26, 28), 3), 1, 1)
+    hx, hz = 30.0, 56.0
+    b.box((-hx, -.4, -hz), (hx, 0, hz), {'+y': "concrete", '-x': "wall", '+z': "wall", '-z': "wall"})
+    b.box((hx - 1.5, -14, -hz), (hx, 0, hz), {'+x': "wall", '+z': "wall", '-z': "wall"})
+    b.solid((hx - 2.2, 0, -hz), (hx - 1.9, .01, hz), "yellow")
+    for x in (7.0, 23.0):                                 # crane rails
+        b.solid((x - .15, 0, -hz), (x + .15, .03, hz), "rail")
+    for z in range(-50, 51, 8):                          # the lane's dashes (x = 6 local)
+        b.solid((5.85, 0, z), (6.15, .01, z + 4), "white")
+    for z in range(-52, 53, 8):
+        b.solid((hx, -6, z - .6), (hx + .5, -1, z + .6), "fender")
+    return b
+
+
+def cargo_ship():
+    """Stella Maris, a feeder container ship (96 x 16 m, along Z, bow at -Z). Keel at y = 0, the
+    waterline at 5 m and the main deck at 11 m (placed with the keel 5 m under the sea). A red
+    bottom and a dark blue hull with a white sheer line, a raked bow, containers in four bays on
+    deck, the white accommodation block aft with the bridge and its wings, a funnel in the line's
+    green with a white band, masts, and a gangway hatch on the quay (-X) side."""
+    b = Builder()
+    b.material("bottom", flat((150, 44, 36), 4), 3, 3)
+    b.material("hull", flat((28, 40, 64), 4), 3, 3)
+    b.material("sheer", flat((236, 236, 230), 2), 3, 1)
+    b.material("deck", flat((96, 110, 96), 6), 3, 3)
+    b.material("white", window_tile((236, 236, 230), (200, 200, 196), (40, 60, 80), .45, .8, .5), 2.4, 2.8)
+    b.material("plain", flat((236, 236, 230), 2), 3, 3)
+    b.material("glass", flat((40, 60, 80), 2), 1, 1)
+    b.material("funnel", flat((16, 128, 70), 2), 1, 1)
+    b.material("black", flat((30, 30, 32), 2), 1, 1)
+    b.material("steel", flat((150, 154, 160), 3), 2, 2)
+    b.material("hatch", flat((140, 130, 60), 5), 3, 3)
+    hw, z0, z1, water, deck = 8.0, -48.0, 48.0, 5.0, 11.0
+    # The hull: a parallel body, then the bow narrowing in steps to the stem, and a square stern.
+    body0 = z0 + 16
+    b.box((-hw, 0, body0), (hw, water, z1), {'+x': "bottom", '-x': "bottom", '+z': "bottom", '-y': "bottom", '-z': "bottom"})
+    b.box((-hw, water, body0), (hw, deck, z1), {'+x': "hull", '-x': "hull", '+z': "hull", '+y': "deck", '-z': "hull"})
+    b.solid((-hw - .02, deck - .5, body0), (hw + .02, deck - .2, z1 + .02), "sheer")
+    steps = 8
+    for k in range(steps):
+        t0, t1 = k / steps, (k + 1) / steps
+        za, zb = body0 - t0 * 16, body0 - t1 * 16
+        w = hw * (1 - (t1 ** 1.6) * .85)
+        lift = t1 * 2.2       # the sheer rises toward the bow
+        b.box((-w, t1 * 3, zb), (w, water, za), {'+x': "bottom", '-x': "bottom", '-y': "bottom", '-z': "bottom"})
+        b.box((-w, water, zb), (w, deck + lift, za), {'+x': "hull", '-x': "hull", '+y': "deck", '-z': "hull"})
+    b.solid((-1.4, deck + 2.2, z0 + .2), (1.4, deck + 3.2, z0 + 4), "hull")       # the forecastle
+    b.solid((-.1, deck + 3.2, z0 + 1), (.1, deck + 10, z0 + 1.2), "steel")        # foremast
+    # Hatch covers and four bays of containers forward of the house.
+    for bay in range(4):
+        zc = -24 + bay * 13.2
+        b.solid((-hw + .8, deck, zc), (hw - .8, deck + .6, zc + 12.6), "hatch")
+        containers(b, -6.1 + .02, zc + .2, 5, 1, 2 + (bay % 2), 40 + bay, True, deck + .6)
+    # The accommodation block aft: five decks, the bridge on top with wings, the funnel behind.
+    a0, a1 = 30.0, 44.0
+    b.box((-6.5, deck, a0), (6.5, deck + 12.5, a1), {'+x': "white", '-x': "white", '-z': "white", '+z': "white", '+y': "plain"}, v_origin=deck + 12.5)
+    b.solid((-hw, deck + 12.5, a0 + .5), (hw, deck + 15.0, a0 + 5.5), "plain")    # the bridge, full beam
+    b.solid((-hw + .2, deck + 13.4, a0 + .45), (hw - .2, deck + 14.6, a0 + .5), "glass")
+    b.solid((-4.0, deck + 15.0, a0 + 1.5), (4.0, deck + 15.2, a0 + 4.5), "steel")
+    b.solid((-.1, deck + 15.2, a0 + 3), (.1, deck + 21, a0 + 3.2), "steel")      # the mast and radar
+    b.solid((-1.6, deck + 19.5, a0 + 2.9), (1.6, deck + 19.7, a0 + 3.3), "steel")
+    b.solid((-2.2, deck + 12.5, a1 - 3.5), (2.2, deck + 19.0, a1 - .5), "funnel")
+    b.solid((-2.25, deck + 16.4, a1 - 3.55), (2.25, deck + 17.2, a1 - .45), "plain")
+    b.solid((-2.25, deck + 19.0, a1 - 3.55), (2.25, deck + 19.4, a1 - .45), "black")
+    # Bulwark rails, and the hatch on the quay side where the gangway comes aboard (aft).
+    for x in (-hw + .1, hw - .3):
+        b.solid((x, deck, body0), (x + .2, deck + 1.1, a0), "steel")
+    b.solid((-hw - .05, deck - 2.8, 20), (-hw + .1, deck - .2, 26), "black")
+    return b
+
+
+def harbour_crane():
+    """A ship-to-shore container crane on rails along the quay: two portal frames 16 m apart
+    (across the quay, X) and 12 m between them along it (Z), a machinery house, and the boom at
+    32 m - out 40 m over the water (+X) and back 18 m over the quay - with its trolley and
+    spreader. Red and white."""
+    b = Builder()
+    b.material("red", flat((196, 50, 36), 3), 2, 2)
+    b.material("white", flat((232, 232, 226), 3), 2, 2)
+    b.material("dark", flat((70, 74, 80), 3), 2, 2)
+    b.material("glass", flat((50, 70, 88), 2), 1, 1)
+    g, s, top = 8.0, 6.0, 30.0
+    for x in (-g, g):
+        for z in (-s, s):
+            b.solid((x - .7, 0, z - .7), (x + .7, top, z + .7), "red")
+        b.solid((x - .9, 0, -s - 1.5), (x + .9, 1.2, s + 1.5), "dark")            # the bogies
+        b.solid((x - .6, 12, -s), (x + .6, 13.2, s), "red")                         # portal ties
+    for z in (-s, s):
+        b.solid((-g - .7, top - 1.4, z - .7), (g + .7, top, z + .7), "red")
+    b.solid((-g - 2, top, -s - 1), (-g + 6, top + 4, s + 1), "white")            # machinery house
+    for z in (-1.4, 1.4):
+        b.solid((-18, top + 1.2, z - .5), (40, top + 2.6, z + .5), "white")       # the boom
+    b.solid((-18, top + 2.6, -1.9), (-14, top + 3.4, 1.9), "dark")
+    b.solid((-3, top + 2.6, -.3), (-2.4, top + 12, .3), "red")                    # the A-frame
+    for zz in (-1.4, 1.4):
+        b.solid((-2.7, top + 11.4, zz - .2), (34, top + 11.7, zz + .2), "dark")   # stays (simplified)
+    b.solid((20, top - 1.2, -2.2), (24, top + 1.2, 2.2), "white")                 # the trolley and cab
+    b.solid((20.2, top - 1.0, -2.25), (23.8, top - .2, 2.25), "glass")
+    for zz in (-1.6, 1.6):
+        b.solid((21.9, top - 14, zz - .05), (22.1, top - 1.2, zz + .05), "dark")  # hoist ropes
+    b.solid((19, top - 15, -6), (25, top - 14, 6), "dark")                        # the spreader
+    return b
+
+
+def cattle_gangway():
+    """The cattle gangway up to a livestock ship's side: an 18 m ramp along +X rising 2.4 m, 2.4 m
+    wide with high slatted sides, on two trestles; the foot at x = 0, the top at x = 18."""
+    b = Builder()
+    b.material("steel", flat((120, 126, 130), 3), 2, 2)
+    b.material("deck", flat((96, 90, 80), 8), 1, 1)
+    run, rise, w = 18.0, 2.4, 1.2
+    n = 18
+    for k in range(n):
+        x0, x1 = run * k / n, run * (k + 1) / n
+        y = rise * (k + .5) / n
+        b.solid((x0, y, -w), (x1, y + .15, w), "deck")
+        for z in (-w - .1, w):
+            for h in (.6, 1.1, 1.6):
+                b.solid((x0, y + h, z), (x1, y + h + .1, z + .1), "steel")
+            b.solid((x0, y, z), (x0 + .1, y + 1.7, z + .1), "steel")
+    for x in (6.0, 13.0):
+        b.solid((x - .2, 0, -w), (x + .2, rise * x / run, w), "steel")
+    return b
+
+
+def truck_depot():
+    """Verda Transporto's depot: a steel-clad truck shed (36 x 22 m, 9 m to the eaves) with three
+    roller doors in the front (-Z), and the two-storey office across the middle of the front with
+    its door, windows and a canopy. The game hangs the company's sign over the office."""
+    b = Builder()
+    b.material("clad", stripes((176, 184, 190), (150, 158, 166), 6, 71), 1.0, 1.0)
+    b.material("office", window_tile((214, 208, 196), (110, 114, 120), (60, 86, 110)), BAY, FLOOR)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("door", stripes((120, 130, 140), (100, 108, 118), 3, 72), 1.0, 1.0)
+    b.material("slab", flat((150, 148, 142), 6), 3, 3)
+    b.material("green", flat((16, 128, 70), 2), 1, 1)
+    b.material("steel", flat((90, 96, 100), 3), 2, 2)
+    b.material("glass", flat((60, 86, 110), 2), 1, 1)
+    b.material("yellow", flat((230, 190, 40), 2), 1, 1)
+    w, d, h = 18.0, 11.0, 9.0
+    b.box((-w, 0, -d), (w, h, d), {'+x': "clad", '-x': "clad", '+z': "clad", '-z': "clad", '+y': "roof"}, v_origin=h)
+    b.solid((-w - .1, h - .6, -d - .1), (w + .1, h, d + .1), "green")             # the eaves band
+    for x in (-15.0, 9.0):
+        b.solid((x, 0, -d - .06), (x + 6, 5.5, -d), "door")                        # roller doors
+        b.solid((x - .2, 0, -d - .3), (x, 1.0, -d), "yellow")                      # bollards
+        b.solid((x + 6, 0, -d - .3), (x + 6.2, 1.0, -d), "yellow")
+    # The office: two storeys across the middle of the front.
+    b.box((-6, 0, -d - 5), (6, 7.0, -d), {'+x': "office", '-x': "office", '-z': "office", '+y': "roof"}, v_origin=7.0)
+    b.solid((-1.2, 0, -d - 5.06), (1.2, 2.4, -d - 5.0), "glass")                  # the door
+    b.solid((-3, 2.9, -d - 7), (3, 3.1, -d - 5), "steel")                          # canopy
+    for x in (-2.9, 2.7):
+        b.solid((x, 0, -d - 6.9), (x + .2, 2.9, -d - 6.7), "steel")
+    b.solid((-6.1, 6.6, -d - 5.1), (6.1, 7.0, -d), "green")
+    b.box((-w - 1, 0, -d - 9), (w + 1, .1, -d), {'+y': "slab"})                     # the apron
+    return b
+
+
 def hospital():
     """Hospitalo de Verda: a three-storey hospital (36 x 20 m) in white render with blue ribbon
     windows, an enterable ground-floor hall (glass entrance, reception, beds), sealed wards
@@ -1323,6 +1522,12 @@ def kit():
     add("civic/state_prison.glb", state_prison(), "city_state_prison", "Ŝtata Malliberejo - walled state prison, towers, cell block, yard", "Building", 84, 64, 11.5)
     add("civic/highway_gantry.glb", highway_gantry(), "city_highway_gantry", "Highway sign gantry (spans the highway)", "BuildingPart", 27, 2.4, 7.64)
     add("civic/smugglers_jetty.glb", smugglers_jetty(), "city_smugglers_jetty", "Jetty with a moored coaster and contraband crates", "BuildingPart", 18, 44, 19)
+    add("civic/cargo_ship.glb", cargo_ship(), "city_cargo_ship", "Stella Maris - feeder container ship (moored)", "BuildingPart", 16, 96, 32)
+    add("civic/quay_apron.glb", quay_apron(), "city_quay_apron", "Concrete quay apron with quay wall and crane rails", "BuildingPart", 60.5, 112, 14)
+    add("civic/harbour_crane.glb", harbour_crane(), "city_harbour_crane", "Ship-to-shore container crane on quay rails", "BuildingPart", 58, 15, 42)
+    add("civic/container_stack.glb", container_stack(), "city_container_stack", "Stacked shipping containers (40 ft)", "BuildingPart", 10.5, 37.5, 7.8)
+    add("civic/cattle_gangway.glb", cattle_gangway(), "city_cattle_gangway", "Cattle gangway up a ship's side", "BuildingPart", 18, 2.6, 4.2)
+    add("civic/truck_depot.glb", truck_depot(), "city_truck_depot", "Verda Transporto - truck depot with office", "Building", 38, 31, 9)
     add("civic/hospital.glb", hospital(), "city_hospital", "Hospitalo - hospital with ambulance bay", "Building", 46, 23, 12.7)
     add("civic/parliament.glb", parliament(), "city_parliament", "Registaro de Verda - domed parliament (enterable hall)", "Building", 48, 33, 29.6)
     add("civic/town_hall.glb", town_hall(), "city_town_hall", "Urbodomo - county town hall with clock tower (enterable)", "Building", 23, 17, 17.0)

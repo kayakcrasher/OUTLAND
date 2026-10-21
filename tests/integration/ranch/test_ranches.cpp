@@ -1,5 +1,5 @@
 // The Vakeroj: five ranches with a family of four (hats, shotguns) and a herd each, a side-by-side
-// running the farm roads; the cattle truck taking cattle from the corrals to the stockyard; the
+// running the farm roads; the cattle truck taking cattle from the corrals to the cattle quay (shipped, the ranches paid); the
 // supply rig delivering round the towns; trailers that follow their tractors.
 #include "outland/characters/CharacterRegistry.hpp"
 #include "outland/creator/CreatorMapIO.hpp"
@@ -80,7 +80,8 @@ int main() {
         sxs += car.id.find("vehicle_spawn_sxs_") != std::string::npos;
         semis += car.id.find("vehicle_spawn_semi_") != std::string::npos;
     }
-    check(sxs == 5 && semis == 2, "a side-by-side on every ranch, two big rigs");
+    // The stockyard's two, and Verda Transporto's: four for hire and three of its own drivers'.
+    check(sxs == 5 && semis == 9, "a side-by-side on every ranch, nine big rigs (" + std::to_string(semis) + ")");
     const auto* sxs_type = types.find("sxs");
     const auto* semi_type = types.find("semi");
     check(sxs_type && semi_type && sxs_type->length < 3.5F && semi_type->length > 7, "the side-by-side and the tractor are vehicle types");
@@ -91,6 +92,7 @@ int main() {
     auto clock = game::life::WorldClock::at(1, 9, 30);
     check(ranches.start(region, bots, cars, &people, 5, clock) == 5, "the game finds the five ranches");
     check(ranches.vakeros().size() == 20 && ranches.stockyard().found, "four Vakeroj on each, and the stockyard");
+    check(ranches.cattle_quay().found, "the cattle quay at Porto Luma's cargo terminal");
     std::set<std::string> names;
     for (const auto& v : ranches.vakeros()) {
         const auto* bot = bots.find(v.bot);
@@ -204,20 +206,30 @@ int main() {
     check(buses.build(region, cars, &people, 1), "the bus loop");
     game::freight::Freight freight;
     check(freight.build(region, cars, buses, &ranches, &people, 3), "the rigs");
-    check(freight.rigs().size() == 2, "two rigs");
+    check(freight.rigs().size() == 5, "five rigs on the road (" + std::to_string(freight.rigs().size()) + ")");
     const game::freight::Rig* supply = nullptr;
     const game::freight::Rig* cattle = nullptr;
-    for (const auto& rig : freight.rigs()) (rig.cattle ? cattle : supply) = &rig;
+    const game::freight::Rig* shuttle = nullptr;
+    for (const auto& rig : freight.rigs()) {
+        if (rig.cattle) cattle = &rig;
+        else if (rig.vehicle.find("semi_freight_") != std::string::npos) supply = &rig;
+        else if (rig.vehicle.ends_with("semi_haul_1")) shuttle = &rig;
+    }
     check(supply && supply->stops.size() >= 5, "the supply rig calls at the towns");
-    check(cattle && cattle->stops.size() == 6, "the cattle rig calls at the stockyard and every ranch");
+    check(cattle && cattle->stops.size() == 6 && std::any_of(cattle->stops.begin(), cattle->stops.end(),
+          [](const game::freight::FreightStop& s) { return s.ranch == game::freight::stop_cattle_quay; }),
+          "the cattle rig calls at every ranch and the cattle quay");
+    check(shuttle && shuttle->stops.size() == 2 && std::any_of(shuttle->stops.begin(), shuttle->stops.end(),
+          [](const game::freight::FreightStop& s) { return s.ranch == game::freight::stop_cargo_quay; }),
+          "Verda Transporto's shuttle runs between the depot and the ship");
     if (supply) { std::cout << "supply run: " << supply->loop.length / 1000 << " km:"; for (const auto& s : supply->stops) std::cout << ' ' << s.name; std::cout << '\n'; }
     if (cattle) { std::cout << "cattle run: " << cattle->loop.length / 1000 << " km, " << freight.reversals() << " reversals:"; for (const auto& s : cattle->stops) std::cout << ' ' << s.name; std::cout << '\n'; }
     freight.start(region, cars);
     freight.follow_trailers(region, cars);
-    check(freight.trailers().size() == 2, "both tractors have their trailers");
-    int unloaded = 0, loads = 0, deliveries = 0;
+    check(freight.trailers().size() == 9, "every tractor has its trailer");
+    int unloaded = 0, loads = 0, deliveries = 0, calls = 0;
     float worst_fold = 0;
-    const int start_received = ranches.stockyard().received;
+    const int start_shipped = ranches.cattle_quay().shipped;
     frame.player_feet = {5000, 0, 5000};
     for (int i = 0; i < 35 * 60 * 10; ++i) {   // 35 minutes
         clock = game::life::WorldClock::at(2, 10, 0);
@@ -231,16 +243,25 @@ int main() {
         if (i % 50 == 0)
             for (const auto& t : freight.trailers()) {
                 const int v = cars.find(t.vehicle);
-                if (v >= 0) worst_fold = std::max(worst_fold, std::abs(std::remainder(t.yaw - cars.vehicles()[static_cast<std::size_t>(v)].yaw, 360.0F)));
+                if (v >= 0) {
+                    const float fold = std::abs(std::remainder(t.yaw - cars.vehicles()[static_cast<std::size_t>(v)].yaw, 360.0F));
+                    worst_fold = std::max(worst_fold, fold);
+                }
             }
         if (cattle) loads = std::max(loads, cattle->head);
         if (supply) deliveries = supply->deliveries;
+        if (shuttle) calls = shuttle->deliveries;
     }
-    unloaded = ranches.stockyard().received - start_received;
-    std::cout << "in 35 minutes: " << deliveries << " deliveries, most aboard " << loads << ", " << unloaded << " delivered to the stockyard, trailer fold up to " << worst_fold << " deg\n";
+    unloaded = ranches.cattle_quay().shipped - start_shipped;
+    int earned = 0;
+    for (const auto& r : ranches.ranches()) earned += r.earned;
+    std::cout << "in 35 minutes: " << deliveries << " deliveries, most aboard " << loads << ", " << unloaded << " shipped from the cattle quay ("
+              << earned << " kr to the ranches), " << calls << " shuttle calls, trailer fold up to " << worst_fold << " deg\n";
     check(deliveries >= 2, "the supply rig delivers to towns");
     check(loads > 0, "the cattle truck loads cattle at the ranches");
-    check(unloaded > 0, "and takes them to the stockyard");
+    check(unloaded > 0, "and takes them to the cattle quay to be shipped");
+    check(earned == unloaded * game::ranch::Ranches::cattle_price, "the ranches are paid for their cattle");
+    check(calls >= 2, "the shuttle calls at the depot and the cargo terminal");
     check(worst_fold < 95, "trailers never fold past a right angle");
     for (const auto& t : freight.trailers()) check(std::isfinite(t.centre.x) && std::isfinite(t.yaw), "trailer pose");
 

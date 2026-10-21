@@ -5,6 +5,7 @@
 #include "outland/game/transit/BusLine.hpp"
 #include "outland/game/vehicles/VehicleSystem.hpp"
 #include "outland/world/Ranches.hpp"
+#include "outland/world/VerdaLayout.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <raymath.h>
@@ -37,6 +38,43 @@ float Freight::wrap(const Rig& rig, float distance) const {
     return distance < 0 ? distance + rig.loop.length : distance;
 }
 
+namespace {
+// A loop through `stops` in order by road: each leg routed on the road graph, each stop's `at`
+// where the trailer's middle comes beside its point. False if a leg cannot be routed.
+bool lay_loop(const world::roads::RoadGraph& graph, const std::vector<FreightStop>& stops, Rig& rig, int& reversals) {
+    if (stops.size() < 2) return false;
+    float walked = 0;
+    std::vector<world::roads::Route> legs;
+    for (std::size_t i = 0; i < stops.size(); ++i) legs.push_back(graph.route(stops[i].point, stops[(i + 1) % stops.size()].point));
+    for (std::size_t i = 0; i < stops.size(); ++i) {
+        const auto& leg = legs[i];
+        if (!leg.complete || leg.points.size() < 2) return false;
+        Vector3 arrive{}, leave{};
+        if (heading(legs[(i + stops.size() - 1) % stops.size()], true, arrive) && heading(leg, false, leave) &&
+            arrive.x * leave.x + arrive.z * leave.z < -.5F) ++reversals;
+        auto stop = stops[i];
+        stop.at = walked;
+        rig.stops.push_back(stop);
+        if (rig.loop.points.empty()) rig.loop.points.push_back(leg.points.front());
+        else if (flat(rig.loop.points.back(), leg.points.front()) > .01F) {
+            walked += flat(rig.loop.points.back(), leg.points.front());
+            rig.loop.points.push_back(leg.points.front());
+            rig.loop.lane.push_back(0);
+        }
+        for (std::size_t k = 1; k < leg.points.size(); ++k) {
+            walked += flat(rig.loop.points.back(), leg.points[k]);
+            rig.loop.points.push_back(leg.points[k]);
+            rig.loop.lane.push_back(k - 1 < leg.lane.size() ? leg.lane[k - 1] : 0);
+        }
+    }
+    rig.loop.length = walked;
+    rig.loop.complete = walked > 0;
+    for (auto& stop : rig.stops) stop.at = std::fmod(stop.at + trailer_alongside, walked);
+    std::sort(rig.stops.begin(), rig.stops.end(), [](const FreightStop& a, const FreightStop& b) { return a.at < b.at; });
+    return rig.loop.complete;
+}
+}
+
 bool Freight::build(const world::VerdaRegion& region, const vehicles::VehicleSystem& cars, const transit::BusLine& buses,
                     const ranch::Ranches* ranches, const characters::CharacterRegistry* characters, std::uint64_t seed) {
     rigs_.clear();
@@ -44,9 +82,12 @@ bool Freight::build(const world::VerdaRegion& region, const vehicles::VehicleSys
     running_ = false;
     reversals_ = 0;
     std::string supply, cattle;
+    std::vector<std::string> haul(3);
     for (const auto& car : cars.vehicles()) {
         if (car.id.find("vehicle_spawn_semi_freight_") != std::string::npos) supply = car.id;
         if (car.id.find("vehicle_spawn_semi_cattle_") != std::string::npos) cattle = car.id;
+        for (std::size_t k = 0; k < haul.size(); ++k)
+            if (car.id.ends_with("vehicle_spawn_semi_haul_" + std::to_string(k + 1))) haul[k] = car.id;
     }
     const auto driver = [&](std::uint64_t k) -> std::string {
         if (!characters) return {};
@@ -55,46 +96,55 @@ bool Freight::build(const world::VerdaRegion& region, const vehicles::VehicleSys
             if (d->id.find("female") == std::string::npos && d->id.find("police") == std::string::npos) men.push_back(d->id);
         return men.empty() ? std::string() : men[(seed * 131 + k * 7919) % men.size()];
     };
-    // The supply run: the bus loop, pulling up a little short of each town's bus stop.
-    if (!supply.empty() && buses.loop().complete && buses.loop().length > 0) {
+    bool terminal = false, depot = false;
+    for (const auto& town : region.settlements())
+        for (const auto& asset : town.assets) {
+            terminal |= asset.model_path.ends_with("civic/cargo_ship.glb");
+            depot |= asset.model_path.ends_with("civic/truck_depot.glb");
+        }
+    const world::roads::RoadGraph graph(region);
+    const auto stop = [&](std::string name, Vector3 at, int kind) {
+        FreightStop s;
+        s.name = std::move(name);
+        s.point = graph.nearest(at).point;
+        s.ranch = kind;
+        return s;
+    };
+    // The supply run: the bus loop, pulling up a little short of each town's bus stop. (Verda
+    // Transporto's second supply rig runs it too, starting halfway round.)
+    const auto supply_run = [&](const std::string& vehicle, std::uint64_t who, bool halfway) {
+        if (vehicle.empty() || !buses.loop().complete || buses.loop().length <= 0) return;
         Rig rig;
-        rig.vehicle = supply;
-        rig.driver = driver(1);
+        rig.vehicle = vehicle;
+        rig.driver = driver(who);
         rig.trailer = box_trailer;
         rig.loop = buses.loop();
         std::vector<std::string> towns;
         for (const auto& town : region.settlements())
             if (!town.id.starts_with("hamlet_") && !town.id.starts_with("ranch_")) towns.push_back(town.name);
-        for (const auto& stop : buses.stops()) {
-            if (std::find(towns.begin(), towns.end(), stop.town) == towns.end()) continue;
+        for (const auto& bus_stop : buses.stops()) {
+            if (std::find(towns.begin(), towns.end(), bus_stop.town) == towns.end()) continue;
             FreightStop s;
-            s.name = stop.town;
-            s.point = stop.kerb;
-            s.at = wrap(rig, stop.at - 45);
+            s.name = bus_stop.town;
+            s.point = bus_stop.kerb;
+            s.at = wrap(rig, bus_stop.at - 45);
             rig.stops.push_back(s);
         }
         std::sort(rig.stops.begin(), rig.stops.end(), [](const FreightStop& a, const FreightStop& b) { return a.at < b.at; });
+        rig.first_stop = halfway ? static_cast<int>(rig.stops.size() / 2) : 0;
         if (!rig.stops.empty()) rigs_.push_back(std::move(rig));
-    }
-    // The cattle run: the stockyard, then every ranch's gate clockwise, and back.
-    if (!cattle.empty() && ranches && ranches->active() && ranches->stockyard().found) {
-        const world::roads::RoadGraph graph(region);
-        std::vector<FreightStop> stops;
-        {
-            FreightStop s;
-            s.name = std::string(world::ranches::stockyard_name);
-            s.point = graph.nearest(ranches->stockyard().frame.at(world::ranches::stockyard_chute.x, -3)).point;
-            s.ranch = -2;
-            stops.push_back(s);
-        }
-        std::vector<FreightStop> gates;
+    };
+    supply_run(supply, 1, false);
+    // The cattle run: every ranch's gate, then the cattle quay (or the stockyard), and round again.
+    if (!cattle.empty() && ranches && ranches->active() && (ranches->cattle_quay().found || ranches->stockyard().found)) {
+        std::vector<FreightStop> all;
+        if (ranches->cattle_quay().found)
+            all.push_back(stop(std::string(world::ranches::cattle_quay_name), ranches->cattle_quay().frame.at(world::ranches::cattle_quay_chute.x, -3), stop_cattle_quay));
+        else
+            all.push_back(stop(std::string(world::ranches::stockyard_name), ranches->stockyard().frame.at(world::ranches::stockyard_chute.x, -3), stop_stockyard));
         for (std::size_t i = 0; i < ranches->ranches().size(); ++i) {
             const auto& r = ranches->ranches()[i];
-            FreightStop s;
-            s.name = std::string(r.spec->name);
-            s.point = graph.nearest(r.frame.at(world::ranches::chute.x, -3)).point;
-            s.ranch = static_cast<int>(i);
-            gates.push_back(s);
+            all.push_back(stop(std::string(r.spec->name), r.frame.at(world::ranches::chute.x, -3), static_cast<int>(i)));
         }
         // The order of calls: fewest turnabouts on the road (a rig cannot turn on the spot), then
         // the shortest run.
@@ -102,13 +152,11 @@ bool Freight::build(const world::VerdaRegion& region, const vehicles::VehicleSys
             Vector3 arrive{}, leave{};
             return heading(in, true, arrive) && heading(out, false, leave) && arrive.x * leave.x + arrive.z * leave.z < -.5F;
         };
-        std::vector<std::vector<world::roads::Route>> leg(gates.size() + 1, std::vector<world::roads::Route>(gates.size() + 1));
-        std::vector<FreightStop> all{stops[0]};
-        all.insert(all.end(), gates.begin(), gates.end());
+        std::vector<std::vector<world::roads::Route>> leg(all.size(), std::vector<world::roads::Route>(all.size()));
         for (std::size_t i = 0; i < all.size(); ++i)
             for (std::size_t j = 0; j < all.size(); ++j)
                 if (i != j) leg[i][j] = graph.route(all[i].point, all[j].point);
-        std::vector<std::size_t> order(gates.size()), best_order;
+        std::vector<std::size_t> order(all.size() - 1), best_order;
         for (std::size_t i = 0; i < order.size(); ++i) order[i] = i + 1;
         float best_score = 1e30F;
         do {
@@ -127,42 +175,32 @@ bool Freight::build(const world::VerdaRegion& region, const vehicles::VehicleSys
             const float score = static_cast<float>(turns) * 1e6F + length;
             if (ok && score < best_score) { best_score = score; best_order = visit; }
         } while (std::next_permutation(order.begin(), order.end()));
-        stops.clear();
+        std::vector<FreightStop> stops;
         for (const auto k : best_order) stops.push_back(all[k]);
         Rig rig;
         rig.vehicle = cattle;
         rig.driver = driver(2);
         rig.trailer = cattle_trailer;
         rig.cattle = true;
-        float walked = 0;
-        std::vector<world::roads::Route> legs;
-        for (std::size_t i = 0; i < stops.size(); ++i) legs.push_back(graph.route(stops[i].point, stops[(i + 1) % stops.size()].point));
-        for (std::size_t i = 0; i < stops.size(); ++i) {
-            const auto& leg = legs[i];
-            if (!leg.complete || leg.points.size() < 2) continue;
-            Vector3 arrive{}, leave{};
-            if (heading(legs[(i + stops.size() - 1) % stops.size()], true, arrive) && heading(leg, false, leave) &&
-                arrive.x * leave.x + arrive.z * leave.z < -.5F) ++reversals_;
-            auto stop = stops[i];
-            stop.at = walked;
-            rig.stops.push_back(stop);
-            if (rig.loop.points.empty()) rig.loop.points.push_back(leg.points.front());
-            else if (flat(rig.loop.points.back(), leg.points.front()) > .01F) {
-                walked += flat(rig.loop.points.back(), leg.points.front());
-                rig.loop.points.push_back(leg.points.front());
-                rig.loop.lane.push_back(0);
-            }
-            for (std::size_t k = 1; k < leg.points.size(); ++k) {
-                walked += flat(rig.loop.points.back(), leg.points[k]);
-                rig.loop.points.push_back(leg.points[k]);
-                rig.loop.lane.push_back(k - 1 < leg.lane.size() ? leg.lane[k - 1] : 0);
-            }
-        }
-        rig.loop.length = walked;
-        rig.loop.complete = walked > 0;
-        for (auto& stop : rig.stops) stop.at = wrap(rig, stop.at + trailer_alongside);
-        std::sort(rig.stops.begin(), rig.stops.end(), [](const FreightStop& a, const FreightStop& b) { return a.at < b.at; });
-        if (rig.stops.size() >= 2 && rig.loop.complete) rigs_.push_back(std::move(rig));
+        rig.aboard.assign(ranches->ranches().size(), 0);
+        if (lay_loop(graph, stops, rig, reversals_)) rigs_.push_back(std::move(rig));
+    }
+    // Verda Transporto's own drivers.
+    if (depot) {
+        const auto haul_run = [&](const std::string& vehicle, std::uint64_t who, std::vector<FreightStop> stops) {
+            if (vehicle.empty()) return;
+            Rig rig;
+            rig.vehicle = vehicle;
+            rig.driver = driver(who);
+            rig.trailer = box_trailer;
+            if (lay_loop(graph, stops, rig, reversals_)) rigs_.push_back(std::move(rig));
+        };
+        const auto home = stop("Verda Transporto", world::layout::freight_depot_gate, stop_depot);
+        const auto quay = stop("Kargohaveno de Porto Luma", world::layout::cargo_loading, stop_cargo_quay);
+        if (terminal) haul_run(haul[0], 3, {home, quay});
+        supply_run(haul[1], 4, true);
+        const auto* roka = world::layout::find("west_roka");
+        if (terminal && roka) haul_run(haul[2], 5, {quay, stop("Roka", roka->center, stop_town), home});
     }
     return !rigs_.empty();
 }
@@ -180,10 +218,11 @@ void Freight::start(world::VerdaRegion& region, vehicles::VehicleSystem& cars) {
     running_ = !rigs_.empty();
     for (auto& rig : rigs_) {
         // Just short of the first stop.
-        rig.progress = wrap(rig, rig.stops.front().at - 80);
+        rig.next_stop = std::clamp(rig.first_stop, 0, static_cast<int>(rig.stops.size()) - 1);
+        rig.progress = wrap(rig, rig.stops[static_cast<std::size_t>(rig.next_stop)].at - 80);
         rig.speed = rig.dwell = 0;
-        rig.next_stop = 0;
         rig.head = 0;
+        std::fill(rig.aboard.begin(), rig.aboard.end(), 0);
         rig.called = false;
         float steering = 0;
         pose(rig, rig.progress, rig.position, rig.yaw, steering);
@@ -269,18 +308,31 @@ void Freight::update(float dt, world::VerdaRegion& region, vehicles::VehicleSyst
             if (!rig.cattle) {
                 rig.dwell = town_dwell;
                 ++rig.deliveries;
-                if (seen) say("The big rig is unloading supplies for " + stop.name);
+                if (seen)
+                    say(stop.ranch == stop_cargo_quay ? "The crane swings a container onto the rig at the cargo terminal" :
+                        stop.ranch == stop_depot ? "A Verda Transporto rig is unloading at the depot" :
+                        "The big rig is unloading supplies for " + stop.name);
             } else if (stop.ranch >= 0 && ranches) {
                 rig.dwell = ranch_dwell;
                 const int loaded = ranches->load_cattle(stop.ranch, 4);
                 rig.head += loaded;
+                if (static_cast<std::size_t>(stop.ranch) < rig.aboard.size()) rig.aboard[static_cast<std::size_t>(stop.ranch)] += loaded;
                 if (seen) say(loaded > 0 ? "Cattle truck: " + std::to_string(loaded) + " head up the chute at " + stop.name
                                          : "Cattle truck at " + stop.name + " - no cattle ready");
+            } else if (ranches && stop.ranch == stop_cattle_quay) {
+                // Off at the quay and shipped: each family paid for its own.
+                rig.dwell = stockyard_dwell;
+                for (std::size_t r = 0; r < rig.aboard.size(); ++r)
+                    if (rig.aboard[r] > 0) ranches->ship_cattle(static_cast<int>(r), rig.aboard[r]);
+                std::fill(rig.aboard.begin(), rig.aboard.end(), 0);
+                if (seen && rig.head > 0) say("Cattle truck: " + std::to_string(rig.head) + " head off at the cattle quay, for the ship");
+                rig.head = 0;
             } else if (ranches) {
                 rig.dwell = stockyard_dwell;
                 if (rig.head > 0) ranches->unload_cattle(rig.head);
                 if (seen && rig.head > 0) say("Cattle truck: " + std::to_string(rig.head) + " head off at the stockyard");
                 rig.head = 0;
+                std::fill(rig.aboard.begin(), rig.aboard.end(), 0);
             }
         }
         if (rig.speed < limit) rig.speed = std::min(limit, rig.speed + accel * dt);
@@ -301,7 +353,7 @@ void Freight::follow_trailers(const world::VerdaRegion& region, const vehicles::
         const auto* asset = cars.asset(region, car.id);
         if (!asset || asset->vehicle.definition != "semi") continue;
         auto& hitch = hitches_[car.id];
-        if (hitch.model.empty()) hitch.model = car.id.find("cattle") != std::string::npos ? cattle_trailer : box_trailer;
+        if (hitch.model.empty()) hitch.model = car.id.find("cattle") != std::string::npos ? cattle_trailer : box_trailer;   // (the depot's stock rig too)
         const float a = asset->rotation_y * DEG2RAD;
         const Vector3 forward{std::sin(a), 0, std::cos(a)};
         hitch.kingpin = Vector3Add(asset->position, Vector3Scale(forward, fifth_wheel));
@@ -314,8 +366,13 @@ void Freight::follow_trailers(const world::VerdaRegion& region, const vehicles::
         const float length = Vector3Length(d);
         if (length > 1e-3F) {
             d = Vector3Scale(d, 1 / length);
-            // Never folded past a right angle to the tractor (a jack-knife).
-            if (d.x * forward.x + d.z * forward.z < .1F) d = Vector3Normalize(Vector3Add(d, Vector3Scale(forward, .3F)));
+            // Never folded past 80 degrees to the tractor (a jack-knife), however sharp the corner.
+            const float fold = std::atan2(forward.x * d.z - forward.z * d.x, forward.x * d.x + forward.z * d.z);
+            constexpr float limit = 80 * DEG2RAD;
+            if (std::abs(fold) > limit) {
+                const float a = std::copysign(limit, fold), c = std::cos(a), s = std::sin(a);
+                d = {forward.x * c - forward.z * s, 0, forward.x * s + forward.z * c};
+            }
             hitch.axles = {hitch.kingpin.x - d.x * kingpin_to_axles, 0, hitch.kingpin.z - d.z * kingpin_to_axles};
         }
     }

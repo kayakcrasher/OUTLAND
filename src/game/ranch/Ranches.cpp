@@ -62,6 +62,7 @@ int Ranches::start(const world::VerdaRegion& region, ai::BattleRoyaleBots& bots,
     ranches_.clear();
     vakeros_.clear();
     stockyard_ = {};
+    quay_ = {};
     message_.clear();
     rng_ = (seed ^ 0x9a3c51f7d2e4b081ULL) | 1;
     // Bodies: everyday civilians (no uniforms), men and women.
@@ -71,6 +72,14 @@ int Ranches::start(const world::VerdaRegion& region, ai::BattleRoyaleBots& bots,
             if (d->id.find("police") != std::string::npos || d->id.find("doctor") != std::string::npos) continue;
             (d->id.find("female") != std::string::npos ? female : male).push_back(d->id);
         }
+    // The cattle quay, where the cargo terminal has its gangway.
+    for (const auto& town : region.settlements())
+        for (const auto& asset : town.assets)
+            if (asset.model_path.ends_with("civic/cattle_gangway.glb")) {
+                quay_.found = true;
+                quay_.frame = rr::Frame(rr::cattle_quay_gate, rr::cattle_quay_up);
+                quay_.frame.gate = on_ground(quay_.frame.gate);
+            }
     for (const auto& town : region.settlements()) {
         if (town.id == rr::stockyard_id) {
             stockyard_.found = frame_of(town, stockyard_.frame);
@@ -136,6 +145,7 @@ void Ranches::clear(vehicles::VehicleSystem& cars) {
     for (auto& r : ranches_) if (r.sxs_running) cars.release(r.sxs);
     ranches_.clear();
     vakeros_.clear();
+    quay_ = {};
     stockyard_ = {};
 }
 
@@ -252,6 +262,34 @@ void Ranches::unload_cattle(int count) {
     }
     stockyard_.received += count;
     while (stockyard_.pen.size() > static_cast<std::size_t>(stockyard_size)) stockyard_.pen.erase(stockyard_.pen.begin()); // sold at auction
+}
+
+int Ranches::ship_cattle(int ranch, int count) {
+    if (count <= 0) return 0;
+    if (quay_.found) {
+        const auto& f = quay_.frame;
+        const auto& pen = rr::cattle_quay_pen;
+        for (int i = 0; i < count; ++i) {
+            Cow cow;
+            Vector3 top = on_ground(f.at(rr::cattle_quay_chute.x, rr::cattle_quay_chute.y + 2.2F - 1.7F));
+            top.y += chute_height;
+            cow.position = top;
+            cow.angus = random() < .4F;
+            cow.state = CowState::ToCorral;
+            cow.pause = static_cast<float>(i) * 2.0F;
+            cow.path = {on_ground(f.at(rr::cattle_quay_chute.x, rr::cattle_quay_chute.y + 2.2F + 3.2F)),
+                        on_ground(f.at(pen.u0 + 3 + random() * (pen.u1 - pen.u0 - 6), pen.v0 + 4 + random() * (pen.v1 - pen.v0 - 7)))};
+            quay_.pen.push_back(cow);
+        }
+        quay_.boarding = 40 + 2.0F * static_cast<float>(count);
+    }
+    quay_.shipped += count;
+    if (ranch < 0 || static_cast<std::size_t>(ranch) >= ranches_.size()) return 0;
+    auto& r = ranches_[static_cast<std::size_t>(ranch)];
+    const int paid = count * cattle_price;
+    r.earned += paid;
+    say(std::to_string(count) + " head shipped from Porto Luma - " + std::string(r.spec->name) + " paid " + std::to_string(paid) + " kr");
+    return paid;
 }
 
 Vector3 Ranches::stockyard_spot(int pen) {
@@ -505,6 +543,46 @@ void Ranches::update(const RanchFrame& frame, ai::BattleRoyaleBots& bots, vehicl
         update_herd(r, ranch, dt, region, flat(yard, frame.player_feet) < cattle_radius);
         update_family(r, frame, bots, near);
         update_sxs(r, frame, bots, cars, region, near);
+    }
+    // The cattle quay: down the chute into the pen; after a while, single file across the quay and
+    // up the gangway into the ship.
+    if (quay_.found) {
+        const auto& f = quay_.frame;
+        const bool near = flat(f.gate, frame.player_feet) < cattle_radius;
+        if (quay_.boarding > 0 && (quay_.boarding -= dt) <= 0) {
+            const Vector3 foot{rr::cattle_gangway_foot.x, 0, rr::cattle_gangway_foot.y}, top{rr::cattle_gangway_top.x, 0, rr::cattle_gangway_top.y};
+            int k = 0;
+            for (auto& cow : quay_.pen) {
+                if (cow.state != CowState::InCorral) continue;
+                cow.state = CowState::Loading;
+                const Vector3 base = on_ground(foot);
+                cow.path = {on_ground(f.at(rr::cattle_quay_pen.u1 - 2, 12)), on_ground(f.at(rr::cattle_quay_pen.u1 + 4, 12)), base,
+                            {top.x, base.y + 2.4F, top.z}, {top.x + 5, base.y + 2.4F, top.z}};
+                cow.pause = static_cast<float>(k++) * 2.5F;
+            }
+        }
+        for (auto& cow : quay_.pen) {
+            if (cow.state != CowState::ToCorral && cow.state != CowState::Loading) continue;
+            const CowState done = cow.state == CowState::ToCorral ? CowState::InCorral : CowState::Gone;
+            if (!near || cow.path.empty()) {
+                if (!cow.path.empty()) cow.position = cow.path.back();
+                cow.path.clear();
+                cow.state = done;
+                continue;
+            }
+            if (cow.pause > 0) { cow.pause -= dt; continue; }
+            const Vector3 goal = cow.path.front();
+            const Vector3 to{goal.x - cow.position.x, goal.y - cow.position.y, goal.z - cow.position.z};
+            const float distance = std::hypot(to.x, to.z);
+            if (distance < .4F) { cow.path.erase(cow.path.begin()); continue; }
+            cow.yaw = std::atan2(to.x, to.z) * RAD2DEG;
+            const float step = std::min(distance, 1.2F * dt);
+            cow.position.x += to.x / distance * step;
+            cow.position.z += to.z / distance * step;
+            cow.position.y += to.y * step / distance;   // down the chute, up the gangway
+            cow.stride += step;
+        }
+        std::erase_if(quay_.pen, [](const Cow& c) { return c.state == CowState::Gone; });
     }
     // The stockyard pen: newcomers walk down the chute into the pen and stand about.
     if (stockyard_.found) {

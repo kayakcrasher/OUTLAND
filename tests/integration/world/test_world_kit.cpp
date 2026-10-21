@@ -270,7 +270,7 @@ int main() {
         ++suburb_homes;
     }
     check(suburb_homes >= 80, "western suburbs: " + std::to_string(suburb_homes) + " homes");
-    int grid_streets = 0, highways = 0, through = 0, suburb_streets = 0;
+    int grid_streets = 0, highways = 0, through = 0, suburb_streets = 0, freight_roads = 0;
     for (const auto& road : capital->roads) {
         const auto in_suburbs = [](Vector3 p) { return std::abs(p.x) >= 179 && std::abs(p.x) <= 476 && std::abs(p.z) <= 168; };
         // The grid, and its south blocks (avenues on to a street along their far side).
@@ -284,11 +284,48 @@ int main() {
             if (std::abs(road.start.x) < .5F && std::abs(road.end.x) < .5F && std::abs(road.start.z) < 176 && std::abs(road.end.z) < 176) ++through;
         } else if (inside) { ++grid_streets; check(road.width == 16 && road.type == world::RoadType::Asphalt, "grid streets are 16 m asphalt"); }
         else if (in_suburbs(road.start) && in_suburbs(road.end)) ++suburb_streets;
+        // Verda Transporto's yard road: the suburb street on z = -84 carried west into the industrial quarter.
+        else if (road.start.z == -84 && road.end.z == -84 && road.start.x == -476 && road.end.x < world::layout::freight_x1) ++freight_roads;
         else check(world::roads::turnaround_road(road.width), "a capital road that is neither street, highway nor bus turnaround");
     }
     check(grid_streets == 9 + 5 && highways == 2 && through >= 4 && suburb_streets == 14, // + the south blocks' four avenues and one street
           "grid, suburbs, the highway through and two spokes: " + std::to_string(grid_streets) + "/" + std::to_string(suburb_streets) + "/" +
           std::to_string(highways) + "/" + std::to_string(through));
+    check(freight_roads == 1, "the yard road into Verda Transporto's depot");
+
+    // Porto Luma's cargo terminal and Verda Transporto's depot.
+    {
+        check(report.cargo_terminal && report.freight_depot, "the cargo terminal and the trucking depot are built");
+        int ships = 0, cranes = 0, depots = 0, rigs = 0, stock = 0;
+        Vector3 ship{};
+        for (const auto& town : region.settlements()) {
+            for (const auto& a : town.assets) {
+                if (a.model_path.ends_with("civic/cargo_ship.glb")) { ++ships; ship = a.position; }
+                cranes += a.model_path.ends_with("civic/harbour_crane.glb");
+                depots += a.model_path.ends_with("civic/truck_depot.glb");
+            }
+            for (const auto& m : town.gameplay_markers) {
+                rigs += m.id.find("vehicle_spawn_semi_depot_") != std::string::npos;
+                stock += m.id.find("vehicle_spawn_semi_depot_cattle_") != std::string::npos;
+            }
+        }
+        check(ships == 1 && cranes == 2 && depots == 1, "a ship at the berth, two cranes, the depot");
+        check(rigs == 4 && stock == 1, "four company rigs for hire, one with the stock trailer");
+        // The ship floats: deep water under her and along the quay face; the quay stands over the sea.
+        const float under = world::terrain::TerrainHeight::sample(world::layout::cargo_quay_x1 + 9, world::layout::cargo_z);
+        const float quay = world::terrain::TerrainHeight::sample(world::layout::cargo_quay_x1 - 20, world::layout::cargo_z);
+        check(under < world::layout::sea_level - 8 && std::abs(quay - world::layout::cargo_quay_height) < .05F, "the berth is deep and the quay level");
+        check(std::abs(ship.z - world::layout::cargo_z) < 30, "the ship lies along the quay");
+        // The ramp down from the town is a drivable grade (under 16%).
+        float worst = 0;
+        for (float x = world::layout::cargo_ramp_x0; x < world::layout::cargo_ramp_x1; x += 5) {
+            const float a = world::terrain::TerrainHeight::sample(x, world::layout::cargo_z), b = world::terrain::TerrainHeight::sample(x + 5, world::layout::cargo_z);
+            worst = std::max(worst, std::abs(b - a) / 5);
+        }
+        check(worst < .16F, "the ramp's grade: " + std::to_string(worst));
+        // The depot's yard is level with the suburbs.
+        check(std::abs(world::terrain::TerrainHeight::sample(-570, -110)) < .05F, "the freight yard is level");
+    }
 
     // East Verda: the fancy suburbs are the residential house model, on level ground, facing streets.
     {

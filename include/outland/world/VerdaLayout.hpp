@@ -50,6 +50,23 @@ inline constexpr Vector3 prison_center{1290, 0, 1290};
 inline constexpr float prison_yaw = 45;
 inline constexpr float prison_flat_radius = 64;
 inline constexpr float capital_flat_radius = 180;
+// Verda City's industrial quarter (Industria Kvartalo), west of the west suburbs and south of the
+// Roka highway: level ground (the suburbs' level) for Verda Transporto's freight depot.
+inline constexpr float freight_x0 = -652, freight_x1 = -490, freight_z0 = -178, freight_z1 = -34;
+inline float freight_outside(float x, float z) {
+    return std::hypot(std::max({freight_x0 - x, x - freight_x1, 0.0F}), std::max({freight_z0 - z, z - freight_z1, 0.0F}));
+}
+// Porto Luma's cargo terminal (Kargohaveno de Porto Luma). The town stands 38 m over the sea, so a
+// ramp runs from the quay road (x 1950) straight out east down to a quay at the shore: a level
+// apron 4 m over the water with deep water dredged along its face, where the cargo ship berths.
+inline constexpr float cargo_z = -470;                        // the ramp's centre line
+inline constexpr float cargo_ramp_x0 = 1950, cargo_ramp_x1 = 2178, cargo_ramp_half = 8;
+inline constexpr float cargo_quay_x1 = 2238, cargo_quay_half = 56;    // the apron: x ramp_x1..quay_x1, z cargo_z +- half
+inline constexpr float cargo_quay_height = sea_level + 4;
+inline constexpr float cargo_berth_depth = sea_level - 12;   // the dredged berth along the quay face
+inline constexpr Vector3 cargo_loading{2214, 0, -481};      // on the quay lane, under the cranes: where rigs load
+inline constexpr Vector3 freight_depot_gate{-560, 0, -84};   // Verda Transporto's front, on the yard road
+inline constexpr Vector3 freight_boss{-556.5F, 0, -71.5F};     // the boss, out front of the office door (facing the road)
 // Verda's suburbs, west (Okcidenta Verda) and east (Orienta Verda): level ground either side of
 // downtown, |x| in [suburb_near, suburb_far], |z| <= suburb_half.
 inline constexpr float suburb_near = 150, suburb_far = 485, suburb_half = 190;

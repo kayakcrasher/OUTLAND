@@ -1,0 +1,77 @@
+# Trucking: Verda Transporto and the cargo terminal
+
+Verda has a working port and a trucking company. Ships call at **Kargohaveno de Porto Luma**, the
+cargo terminal below Porto Luma, and **Verda Transporto** runs the island's freight from its depot
+in Verda City's industrial quarter. Its own drivers are on the road all day, and anyone who isn't
+a serving police officer can sign on and drive loads for pay (Explore).
+
+Code: `world/VerdaLayout.hpp` (`cargo_*`, `freight_*`), `TerrainHeight` (the ramp, the quay and the
+berth), `dev::build_verda_towns` (`cargo_terminal()`, `freight_depot()`), `game::freight::Freight`
+(the AI rigs), `game::freight::Trucking` (the player's loads), `game::ranch::Ranches::ship_cattle`
+(the cattle quay). Models: `tools/generate_city_kit.py` (`civic/cargo_ship.glb`,
+`harbour_crane.glb`, `quay_apron.glb`, `container_stack.glb`, `cattle_gangway.glb`,
+`truck_depot.glb`). Tests: `outland_trucking_tests`, `outland_ranch_tests`, `outland_world_kit_tests`.
+
+## The cargo terminal
+Porto Luma stands 38 m above the sea, so the terminal is down at the shore:
+- **The ramp** runs straight east from the quay road (x 1950, z -470), 230 m at an even 15% grade,
+  down to the quay. The land is cut and filled to it.
+- **The quay** is a 60 x 112 m concrete apron 4 m above the water. Its seaward face is a quay wall
+  with rubber fenders, bollards and a yellow safety line. A lane runs the length of it.
+- **The berth**: the water along the quay face is dredged deep, and **Stella Maris** lies
+  alongside. She is a 96 m feeder container ship: red bottom, dark blue hull, four bays of
+  containers on deck, the white house aft with the bridge, and a funnel in Verda green.
+- **Two ship-to-shore cranes** (red and white) stand on rails at the quay edge, their booms out
+  over the ship. Stacks of 40 ft containers wait on the quay either side of the ramp's mouth.
+- **The cattle quay** (Brutkajo de Porto Luma) is at the north end: a pen behind a loading chute
+  on the lane, and a cattle gangway up the ship's side. Ranchers' cattle are shipped from here;
+  see [vakeroj.md](vakeroj.md).
+
+## Verda Transporto
+The depot is in Verda City's **industrial quarter** (Industria Kvartalo), on level ground west of
+Okcidenta Verda and south of the Roka highway. The suburb street on z = -84 runs on into its yard.
+- **The depot**: a steel-clad truck shed with roller doors and the two-storey office across its
+  front, signed **VERDA TRANSPORTO**. Dispatchers work in the office (island life). Sheds,
+  pallets, drums and a container stack stand around it.
+- **The truck park**, across the yard road, is where the company's rigs stand nose to the road:
+  - three box-trailer rigs for hire (`vehicle_spawn_semi_depot_1..3`);
+  - one stock-trailer rig for cattle (`vehicle_spawn_semi_depot_cattle_1`);
+  - the company's own drivers' three rigs (`vehicle_spawn_semi_haul_1..3`).
+- **The boss**, Tomaso Rado, stands outside the office door. His name tag reads "Verda Transporto".
+
+### The company's drivers (more trucks on the road)
+On top of the supply rig and the cattle rig (see [vakeroj.md](vakeroj.md)):
+- **The container shuttle** runs between the depot and the cranes at the cargo terminal.
+- **A second supply rig** runs the bus loop's towns, starting halfway round from the first.
+- **The Roka run** goes from the terminal to Roka, the industrial town, and back to the depot.
+
+They drive like the other rigs: kinematically along the roads, slowing for towns and corners. At
+the terminal "the crane swings a container onto the rig".
+
+## Driving for Verda Transporto
+Talk to the boss (**USE** next to him). The first time, he offers work; **USE again** to sign
+on. A serving officer is turned away ("hand in your badge first"). Gang members and civilians are
+both welcome. He gives out **one load at a time**:
+
+| Load | Pickup | Drop |
+|---|---|---|
+| IMPORT | a container off the ship at the cargo terminal | a town (Verda City, Espera, Porto Luma, Suda Haveno, Roka) |
+| EXPORT | goods at the depot | the cargo terminal, for the ship |
+| DELIVERY | goods at the depot | a town |
+| CATTLE HAUL | a ranch's cattle at its chute | the cattle quay, to be shipped |
+
+1. Take one of the company's rigs from the truck park: a **box-trailer rig**, or the
+   **stock-trailer rig** for cattle. The wrong rig, a car or on foot loads nothing; a line on
+   screen says why.
+2. Drive to the pickup (a green column of light, and a mark on the compass). Pull up within 16 m
+   and **stop**. Loading takes a few seconds. For cattle, the family drives a few head into the
+   corral when the job is given out, and they go up the chute when you stop. If none are there
+   yet, wait.
+3. Drive to the drop and stop to unload. Cattle come off into the pen at the cattle quay and go
+   aboard the ship, and the ranch is paid for them.
+4. Go back to the boss. He pays for the trip and has the next load ready.
+
+**Pay** is by the trip: 180 kr, plus 120 kr a kilometre of the run (the run from the yard to the
+pickup counts half), plus 60 kr a head for cattle. **USE** twice on the boss with a load in hand
+gives it up. The panel at the top right shows the load and what to do next. Signing on, the trip
+count and the total earned are saved beside the career (`<profile>.career.trucking`).

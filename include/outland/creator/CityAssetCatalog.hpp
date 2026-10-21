@@ -78,6 +78,24 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_smugglers_jetty", .name = "Jetty with a moored coaster and contraband crates", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/civic/smugglers_jetty.glb", .thumbnail_path = "", .footprint = {18.00F, 44.00F, 19.00F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_cargo_ship", .name = "Stella Maris - feeder container ship (moored)", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/civic/cargo_ship.glb", .thumbnail_path = "", .footprint = {16.00F, 96.00F, 32.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_quay_apron", .name = "Concrete quay apron with quay wall and crane rails", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/civic/quay_apron.glb", .thumbnail_path = "", .footprint = {60.50F, 112.00F, 14.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_harbour_crane", .name = "Ship-to-shore container crane on quay rails", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/civic/harbour_crane.glb", .thumbnail_path = "", .footprint = {58.00F, 15.00F, 42.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_container_stack", .name = "Stacked shipping containers (40 ft)", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/civic/container_stack.glb", .thumbnail_path = "", .footprint = {10.50F, 37.50F, 7.80F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_cattle_gangway", .name = "Cattle gangway up a ship's side", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/civic/cattle_gangway.glb", .thumbnail_path = "", .footprint = {18.00F, 2.60F, 4.20F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_truck_depot", .name = "Verda Transporto - truck depot with office", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/truck_depot.glb", .thumbnail_path = "", .footprint = {38.00F, 31.00F, 9.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_hospital", .name = "Hospitalo - hospital with ambulance bay", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/hospital.glb", .thumbnail_path = "", .footprint = {46.00F, 23.00F, 12.70F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

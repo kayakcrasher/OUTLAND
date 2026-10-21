@@ -3,8 +3,10 @@
 *Vakero* is Esperanto for cowboy (plural *vakeroj*), in keeping with the island's Esperanto names.
 
 The Vakeroj are Verda's ranching families. There are five ranches, one in each county, and each
-family grows crops and raises beef cattle. Two 18-wheelers work the roads: one supplies the
-towns, the other hauls cattle from the ranches to the stockyard.
+family grows crops and raises beef cattle. The ranchers ship their cattle from Porto Luma: a cattle
+truck takes them from the ranches to the cattle quay at the cargo terminal, where they go aboard
+the ship, and each ranch is paid for its own. Big rigs supply the towns too, and Verda Transporto
+(see [trucking.md](trucking.md)) runs more of its own.
 
 Code: `world/Ranches.hpp` (sites and layout, the stockyard's too), `dev::build_verda_towns` (`ranches()` lays them
 out), `game::ranch::Ranches` (families, herds, side-by-sides) and `game::freight::Freight` (the
@@ -34,6 +36,10 @@ barn (the auction ring), an office and hay, and beside them a gravel truck park 
 rigs live. The yard is never empty: it starts with fifteen head, and the oldest are sold at
 auction once it holds thirty.
 
+**Brutkajo de Porto Luma**, the cattle quay, is at the north end of the cargo terminal's quay
+(see [trucking.md](trucking.md)): a pen behind a loading chute on the quay lane, and a cattle
+gangway up the side of the ship at the berth.
+
 ## The families
 Each family has four members: the rancher rides herd in the pasture, his wife works the fields,
 the son drives the side-by-side round the farm roads (laps of the fields, with a rest in the
@@ -52,7 +58,10 @@ Each ranch runs ten head of Hereford and Angus. They graze, wander the pasture, 
 with a sway, and keep a little apart. A shot cow drops. Calves are born each morning, up to four,
 bringing the herd back up to ten. When the cattle truck is coming, three head are driven through
 the lane into the corral. When it pulls up, they go single file up the chute into the trailer.
-At the stockyard they come off down the chute into the pen.
+At the cattle quay they come off down the chute into the pen. A little later they walk single
+file across the quay and up the gangway into the ship, and they are gone: shipped. The ranch is
+paid **450 kr a head** (`Ranches::cattle_price`; a line on screen says who was paid what, and
+`RanchState::earned` keeps the total).
 
 ## The side-by-side
 `sxs` in the vehicle manifest: a two-seat UTV (like a Polaris Ranger or Can-Am Defender) with a
@@ -63,14 +72,18 @@ Taking it on the ranch angers the family.
 `semi`: a long-nose conventional tractor (Peterbilt 379/389 style) with a chrome grille and
 stacks, sleeper, fuel tanks and tandem duals. It pulls an **articulated trailer**: the trailer's
 tandem trails the fifth wheel wherever the tractor goes, including when the player drives it,
-and never folds past a right angle.
+and never folds past 80 degrees, however sharp the corner.
 - **The supply rig** hauls a 53 ft dry van (white with a green stripe) round the bus loop and
   pulls up in Espera, Porto Luma, Suda Haveno, Roka and Verda City to unload supplies.
-- **The cattle rig** hauls a polished livestock "pot" trailer. It runs the stockyard and the
+- **The cattle rig** hauls a polished livestock "pot" trailer. It runs the cattle quay and the
   five ranch gates in the order with fewest turnabouts, loads up to four head at each ranch and
-  unloads at Porto Luma's stockyard.
+  unloads them at the cattle quay to be shipped, paying each ranch for its own head. (On a map
+  without the cargo terminal it unloads at the stockyard instead.)
+- **Verda Transporto's own drivers**: a container shuttle between the depot and the cargo
+  terminal, a second supply rig on the bus loop (starting halfway round), and a run from the
+  terminal to Roka and back to the depot. See [trucking.md](trucking.md).
 
-Both drive like the buses, kinematically along the road. They slow for towns and corners, wait
+They all drive like the buses, kinematically along the road. They slow for towns and corners, wait
 behind anything in the lane, and squeeze past cars parked at the kerb. A rig that is wrecked or
 taken by the player leaves its run. Drivers sit at the wheel; the cattle hauler wears a hat.
 

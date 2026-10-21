@@ -64,6 +64,7 @@ struct RanchState {
     double provoked_until{-1e9};
     int calved_day{-1};
     int shipped{0};           // cattle sent off so far
+    int earned{0};            // kronoj paid for cattle shipped from Porto Luma
     bool calling{false};      // cattle are being brought to the corral for the truck
 };
 
@@ -73,6 +74,17 @@ struct Stockyard {
     world::ranches::Frame frame;
     std::vector<Cow> pen;
     int received{0};
+};
+
+// The cattle quay at Porto Luma's cargo terminal (world/Ranches.hpp cattle_quay_*): the ranches'
+// cattle come off the truck down the chute into the pen, wait there a while, then walk across the
+// quay and up the gangway into the ship - shipped, and their ranch paid.
+struct CattleQuay {
+    bool found{false};
+    world::ranches::Frame frame;
+    std::vector<Cow> pen;
+    float boarding{0};        // seconds until the penned cattle go aboard
+    int shipped{0};
 };
 
 struct RanchFrame {
@@ -118,6 +130,11 @@ public:
     void call_cattle(int ranch, int count);
     int load_cattle(int ranch, int max);
     void unload_cattle(int count);
+    // At the cattle quay: `count` head of `ranch`'s come off the truck and are shipped; the ranch is
+    // paid cattle_price a head. Returns what the ranch was paid.
+    static constexpr int cattle_price = 450;
+    int ship_cattle(int ranch, int count);
+    [[nodiscard]] const CattleQuay& cattle_quay() const { return quay_; }
     [[nodiscard]] int in_corral(int ranch) const;
 
     [[nodiscard]] const std::vector<RanchState>& ranches() const { return ranches_; }
@@ -142,6 +159,7 @@ private:
     std::vector<RanchState> ranches_;
     std::vector<Vakero> vakeros_;
     Stockyard stockyard_;
+    CattleQuay quay_;
     std::uint64_t rng_{0x9a3c51f7d2e4b081ULL};
     std::string message_;
     float message_time_{0};
