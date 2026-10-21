@@ -1475,6 +1475,7 @@ void Renderer::run() {
                 lan_start=lan.take_start();
                 if(lan_start) lan_screen_open=false;
             } else {
+                game::HomeScreen::set_language(&sign_renderer.font(),settings.language==game::GameSettings::Language::Esperanto);
                 selected=queued_mode!=game::GameMode::Home ? queued_mode : home_screen.update(screen_width,screen_height);
                 if(home_screen.take_lan()) {lan_screen_open=true;lan.browse();}
                 // The campaign's save slots: what each holds, and erasing one (all its files).
@@ -1493,7 +1494,8 @@ void Renderer::run() {
                         const std::string loot=game::inventory::LootSave::slot_path(map_path,i+1);
                         std::string text;
                         if(FileExists((loot+".campaign").c_str())) if(char* t=LoadFileText((loot+".campaign").c_str())) {text=t;UnloadFileText(t);}
-                        slots[static_cast<std::size_t>(i)]=game::campaign::describe(i+1,text,FileExists(loot.c_str()) || FileExists((loot+".career").c_str()));
+                        slots[static_cast<std::size_t>(i)]=game::campaign::describe(i+1,text,FileExists(loot.c_str()) || FileExists((loot+".career").c_str()),
+                                                                                     settings.language==game::GameSettings::Language::Esperanto);
                     }
                     home_screen.set_slots(slots);
                 }
@@ -2123,6 +2125,10 @@ void Renderer::run() {
         // ====================================================
 
         // Back to the home screen, saving first (false if the save failed and play goes on).
+        // English, or Esperanto (SETTINGS > Language).
+        const auto speak=[&](const char* english,const char* esperanto) {
+            return std::string(settings.language==game::GameSettings::Language::Esperanto ? esperanto : english);
+        };
         const auto go_home=[&]() {
 #ifdef OUTLAND_DEV_TOOLS
             if(creator_session.dirty() && !creator_session.save(verda_region)) return false;
@@ -2169,18 +2175,18 @@ void Renderer::run() {
                     if(!player_builds.save(builds_path,builds_error)) {saved=false;TraceLog(LOG_WARNING,"Player builds: %s",builds_error.c_str());}
                 }
                 store_settings();
-                pause_menu.set_status(saved ? "LUDO KONSERVITA" : "KONSERVADO MALSUKCESIS - "+loot_session.status());
+                pause_menu.set_status(saved ? speak("GAME SAVED","LUDO KONSERVITA") : speak("SAVE FAILED - ","KONSERVADO MALSUKCESIS - ")+loot_session.status());
             }
             if(result==game::PauseMenu::Result::Restart) {
                 // Saves like QUIT TO MENU, then straight back into the same mode, fresh. Not in a LAN match.
                 const auto mode=game_mode;
-                if(lan_match) {pause_menu.open();pause_menu.set_status("FORLASU LA RETAN LUDON POR REKOMENCI");}
-                else if(!go_home()) {pause_menu.open();pause_menu.set_status("NE EBLIS KONSERVI - "+interaction_message);}
+                if(lan_match) {pause_menu.open();pause_menu.set_status(speak("LEAVE THE LAN MATCH TO RESTART","FORLASU LA RETAN LUDON POR REKOMENCI"));}
+                else if(!go_home()) {pause_menu.open();pause_menu.set_status(speak("COULD NOT SAVE - ","NE EBLIS KONSERVI - ")+interaction_message);}
                 else queued_mode=mode;
                 continue;
             }
             if(result==game::PauseMenu::Result::QuitHome || result==game::PauseMenu::Result::QuitGame) {
-                if(!go_home()) {pause_menu.open();pause_menu.set_status("NE EBLIS KONSERVI - "+interaction_message);continue;}
+                if(!go_home()) {pause_menu.open();pause_menu.set_status(speak("COULD NOT SAVE - ","NE EBLIS KONSERVI - ")+interaction_message);continue;}
                 if(result==game::PauseMenu::Result::QuitGame) break;
                 // Finish this frame so the Home screen does not reuse the same click.
                 BeginDrawing();
@@ -2664,10 +2670,10 @@ void Renderer::run() {
                     boss_near(feet)>=0 || station_desk(feet)!=nullptr;
                 // Who you'd be talking to.
                 if(store_prompt.empty() && player_health.alive()) {
-                    if(!campaign_path.empty() && story.talking() && story.stage()!=game::campaign::Stage::Free) store_prompt="E - Continue";
+                    if(!campaign_path.empty() && story.talking() && story.stage()!=game::campaign::Stage::Free) store_prompt=story.esperanto() ? "E - Daŭrigi" : "E - Continue";
                     else if(!campaign_path.empty() && story.stage()==game::campaign::Stage::ToTruck && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.5F)
-                        store_prompt="E - Ride home with Uncle Ron";
-                    else if(!campaign_path.empty() && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F) store_prompt="E - Talk to Uncle Ron";
+                        store_prompt=story.esperanto() ? "E - Veturi hejmen kun Onklo Ron" : "E - Ride home with Uncle Ron";
+                    else if(!campaign_path.empty() && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F) store_prompt=story.esperanto() ? "E - Paroli kun Onklo Ron" : "E - Talk to Uncle Ron";
                     else if(arrestable(feet)>=0) store_prompt="E - Arrest him";
                     else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F)
                         store_prompt=!trucking.hired() ? "E - Ask the boss of Verda Transporto for work" :
@@ -3985,6 +3991,7 @@ void Renderer::run() {
                     // turns to the player when he's close, and the game saves itself now and then.
                     if(!campaign_path.empty()) {
                         campaign.played+=dt;
+                        story.set_esperanto(settings.language==game::GameSettings::Language::Esperanto);
                         story.update(dt);
                         if(story.take_teleport()) ron_home_now(true);
                         if(story.take_home_given()) {
@@ -4962,7 +4969,7 @@ void Renderer::run() {
         }
         if (touch_ui && !creator_active && !inventory_open && !build_mode.active() && !driving) {
             // On a touch screen the stick lives bottom left: the gun is one short line up top instead.
-            const char* held=weapons.available() ? TextFormat("%s  %d/%d",weapons.weapon().name,weapons.ammo().loaded,weapons.ammo().reserve) : "NO WEAPON - BAG";
+            const char* held=weapons.available() ? TextFormat("%s  %d/%d",weapons.weapon().name,weapons.ammo().loaded,weapons.ammo().reserve) : weapons.holstered() ? "UNARMED" : "NO WEAPON - BAG";
             const bool empty=weapons.available() && weapons.ammo().loaded==0 && !weapons.unlimited();
             const char* line=weapons.reload_remaining()>0 ? TextFormat("%s  RELOADING",held) : empty ? TextFormat("%s  EMPTY - LOAD",held) : held;
             DrawText(line,17,49,16,Color{0,0,0,150});
@@ -4972,7 +4979,7 @@ void Renderer::run() {
             DrawRectangle(12,screen_height-103,320,weapons.reload_remaining()>0 || (weapons.available() && weapons.ammo().loaded==0) ? 91 : 68,Fade(BLACK,.65F));
             {
                 // Long names (VR7 ROCKET LAUNCHER) shrink to stay clear of the sight label.
-                const char* held=weapons.available()?weapons.weapon().name:"NO WEAPON - OPEN BAG";
+                const char* held=weapons.available()?weapons.weapon().name:weapons.holstered() ? "UNARMED" : "NO WEAPON - OPEN BAG";
                 int size=19;
                 while(size>12 && weapons.available() && MeasureText(held,size)>170) --size;
                 DrawText(held,24,screen_height-94+(19-size)/2,size,RAYWHITE);
@@ -4983,8 +4990,9 @@ void Renderer::run() {
             if(weapons.available()) DrawText(game::combat::sight_info(sight).name,
                 200,screen_height-92,14,sight==game::combat::Sight::Iron ? GRAY : Color{235,120,110,255});
             if (weapons.unlimited()) DrawText("AMMO UNLIMITED - DEV LAB",24,screen_height-68,18,YELLOW);
-            else DrawText(TextFormat("%d / %d",weapons.ammo().loaded,weapons.ammo().reserve),
+            else if(!weapons.holstered()) DrawText(TextFormat("%d / %d",weapons.ammo().loaded,weapons.ammo().reserve),
                 24,screen_height-68,22,RAYWHITE);
+            else DrawText(TextFormat("%s: draw a gun",key_of(input::Action::NextWeapon).c_str()),24,screen_height-64,14,GRAY);
             if (weapons.reload_remaining()>0) DrawText(TextFormat("RELOADING %.1fs",weapons.reload_remaining()),
                 24,screen_height-39,16,ORANGE);
             else if(weapons.available() && weapons.ammo().loaded==0 && !weapons.unlimited()) {
@@ -5248,8 +5256,8 @@ void Renderer::run() {
                     DrawRectangle(static_cast<int>(x),static_cast<int>(y+8),4,static_cast<int>(h-16),Color{255,214,120,255});
                     DrawTextEx(font,line->speaker,{x+18,y+10},18,1,Color{255,214,120,255});
                     for(std::size_t k=0;k<lines.size();++k) DrawTextEx(font,lines[k].c_str(),{x+18,y+34+22*static_cast<float>(k)},19,1,Color{236,240,226,255});
-                    const std::string more=story.stage()==game::campaign::Stage::Free ? std::string("USE - close") :
-                        "USE - continue  ("+std::to_string(story.line_number())+"/"+std::to_string(story.lines())+")";
+                    const std::string more=story.stage()==game::campaign::Stage::Free ? std::string(story.esperanto() ? "UZI - fermi" : "USE - close") :
+                        std::string(story.esperanto() ? "UZI - daŭrigi  (" : "USE - continue  (")+std::to_string(story.line_number())+"/"+std::to_string(story.lines())+")";
                     const float mw=MeasureTextEx(font,more.c_str(),14,1).x;
                     DrawTextEx(font,more.c_str(),{x+max_w-mw-16,y+h-22},14,1,Color{170,190,150,255});
                 }

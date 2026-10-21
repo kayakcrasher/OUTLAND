@@ -107,6 +107,20 @@ int main() {
     input.fire=false;input.reload=true;gun.update(.05F,input,high,world);
     assert(gun.reload_remaining()>0);input.reload=false;input.next_weapon=true;
     gun.update(.05F,input,high,world);assert(gun.reload_remaining()==0 && gun.selected()==WeaponId::Rifle);
+    // SWITCH WEAPON goes through the guns, then to empty hands, then back to the first gun.
+    input.next_weapon=false;
+    assert(gun.select(WeaponId::Rocket) && !gun.holstered());
+    gun.update(.05F,input,high,world);   // (the switch cooldown)
+    input.next_weapon=true;gun.update(.05F,input,high,world);
+    assert(gun.holstered() && !gun.available());
+    input.next_weapon=false;input.fire=true;
+    for(int i=0;i<10;++i) {gun.update(.05F,input,high,world);assert(gun.events().shots==0);}   // nothing to fire
+    input.fire=false;input.next_weapon=true;gun.update(.05F,input,high,world);
+    assert(!gun.holstered() && gun.available() && gun.selected()==WeaponId::Pistol);
+    // Putting the gun in hand away (the bag's EQUIP on it), and drawing one again.
+    gun.holster();assert(!gun.available());
+    assert(gun.select(WeaponId::Rifle) && gun.available());
+    input.next_weapon=false;
 
     // Gravity changes position, and sprinting cannot produce a shot.
     gun.reset(false);input={};input.fire=true;input.aim=true;input.sprint=true;

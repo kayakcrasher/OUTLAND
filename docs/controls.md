@@ -41,7 +41,7 @@ pointer, and that opens the pause menu.
 | Jump (handbrake when driving) | SPACE |
 | Sprint (boost when driving) | LEFT SHIFT |
 | Crouch | C or LEFT CTRL |
-| Switch weapon | Q or the mouse wheel |
+| Switch weapon | Q or the mouse wheel: through the guns you carry, then to empty hands (UNARMED), then back to the first gun |
 | Throw a grenade | G |
 | Fire mode (auto / single) | B |
 | Change sight | X |
@@ -92,21 +92,20 @@ speeds up, back brakes. Shooting waits for the ground. Details: `docs/battle-roy
 ## Pause menu
 
 ESC, the **MENU** button, or losing the mouse pointer opens it, and the world stops while it is open.
-The menu speaks Verda's language, **Esperanto**: every label, setting and action name on these pages
-(the game's dialogue stays in English). The English names are given below in brackets.
 
-- **DAŬRIGI** (resume) continues. The click doesn't fire: a mouse button still held from a menu does nothing until it is let go.
-- **AGORDOJ** (settings) holds the rows below.
-- **STIRILOJ** (controls) is the key bindings, as above.
-- **KONSERVI LUDON** (save game) saves now ("LUDO KONSERVITA"): the bag, money, weapons, vehicles, your builds and, in the campaign, where you are in the story and on the island. The campaign also saves itself (see [campaign.md](campaign.md)).
-- **REKOMENCI** (restart) saves, then starts the mode you are in again from the beginning: a new match, or the campaign from your last save. Tap it twice ("TUŜU DENOVE POR REKOMENCI") so a stray tap never throws a match away. Not in a LAN match.
-- **AL ĈEFMENUO** (quit to menu) saves and goes back to the home screen.
-- **ELIRI EL LUDO** (quit game) saves and closes the game. It is on PCs only; a browser tab or a phone app is closed its own way.
+- **RESUME** continues. The click doesn't fire: a mouse button still held from a menu does nothing until it is let go.
+- **SETTINGS** holds the rows below.
+- **CONTROLS** is the key bindings, as above.
+- **SAVE GAME** saves now ("GAME SAVED"): the bag, money, weapons, vehicles, your builds and, in the campaign, where you are in the story and on the island. The campaign also saves itself (see [campaign.md](campaign.md)).
+- **RESTART** saves, then starts the mode you are in again from the beginning: a new match, or the campaign from your last save. Tap it twice ("TAP AGAIN TO RESTART") so a stray tap never throws a match away. Not in a LAN match.
+- **QUIT TO MENU** saves and goes back to the home screen.
+- **QUIT GAME** saves and closes the game. It is on PCs only; a browser tab or a phone app is closed its own way.
 
 ESC goes back a page, and from the first page resumes.
 
 | Setting | Values | Default |
 |---|---|---|
+| Language | ENGLISH or ESPERANTO: Verda's own language for the menus (pause, settings, controls, the home screen and the campaign's slots) and Uncle Ron's story; the island's signs and places are in Esperanto either way | ENGLISH |
 | Mouse sensitivity | 0.1–4.0: radians per pixel = 0.0012 × setting (about 0.07° per pixel at 1.0) | 1.0 |
 | Touch look sensitivity | 0.2–3.0 (half the screen's height = 90° × setting) | 1.0 |
 | Aiming sensitivity | 0.30–1.50, on top of the zoom's own slow-down while aiming | 0.80 |

@@ -30,7 +30,12 @@ void WeaponSystem::unbind_inventory() {
     reserve_ = {};
     consume_ = {};
 }
-bool WeaponSystem::available() const { return !owned_ || owned_(selected_); }
+bool WeaponSystem::available() const { return !holstered_ && (!owned_ || owned_(selected_)); }
+void WeaponSystem::holster() {
+    holstered_ = true;
+    reload_remaining_ = 0;
+    spray_ = 0;
+}
 void WeaponSystem::refresh_reserves() {
     if (reserve_)
         for (std::size_t i = 0; i < ammo_.size(); ++i)
@@ -40,6 +45,7 @@ bool WeaponSystem::select(WeaponId id) {
     if (static_cast<std::size_t>(id) >= ammo_.size() || (owned_ && !owned_(id)))
         return false;
     selected_ = id;
+    holstered_ = false;
     reload_remaining_ = 0;
     cooldown_ = std::max(cooldown_, .2F);
     return true;
@@ -66,7 +72,7 @@ int WeaponSystem::collect_ammo() {
 }
 void WeaponSystem::reset(bool unlimited) {
     unbind_inventory();
-    unlimited_=unlimited;selected_=WeaponId::Rifle;previous_fire_=false;single_={};spray_=0;since_shot_=10;
+    unlimited_=unlimited;selected_=WeaponId::Rifle;holstered_=false;previous_fire_=false;single_={};spray_=0;since_shot_=10;
     cooldown_=reload_remaining_=muzzle_flash_=hit_marker_=last_damage_=0;
     last_headshot_=false;shot_number_=impact_index_=0;random_state_=0x51f7349aU;
     events_={};bullets_={};impacts_={};
@@ -163,8 +169,11 @@ void WeaponSystem::update(float dt,const WeaponInput& input,ShotPose pose,Combat
     muzzle_flash_=std::max(0.0F,muzzle_flash_-dt);hit_marker_=std::max(0.0F,hit_marker_-dt);
     for(auto& impact:impacts_)impact.life=std::max(0.0F,impact.life-dt);
     if(input.next_weapon) {
-        for(std::size_t step=1;step<ammo_.size();++step)
-            if(select(static_cast<WeaponId>((static_cast<std::size_t>(selected_)+step)%ammo_.size())))break;
+        // The guns in order, then empty hands, then round again from the first gun.
+        bool drawn=false;
+        const std::size_t from=holstered_ ? 0 : static_cast<std::size_t>(selected_)+1;
+        for(std::size_t id=from;id<ammo_.size() && !drawn;++id) drawn=select(static_cast<WeaponId>(id));
+        if(!drawn) holster();
     }
     if(input.reload)start_reload();
     if(input.fire_mode && weapon().automatic) single_[static_cast<std::size_t>(selected_)]=!single_[static_cast<std::size_t>(selected_)];

@@ -28,9 +28,10 @@ Verda City, and several of his family are in **La Verda Mano**, the Green Hand.
    wakes up there after a hospital stay.
 4. **From there the game is the player's.** Ron stays at home. USE beside him for a word or two.
 
-All the dialogue is in English. Verda itself is Esperanto-speaking: signs, places, the shops
-and the **menus**. The pause menu, SETTINGS and CONTROLS are in Esperanto (DAŬRIGI, AGORDOJ,
-STIRILOJ, KONSERVI LUDON...).
+The dialogue is in **English** by default. Choose **ESPERANTO** in SETTINGS > Language and Uncle
+Ron speaks Esperanto ("Ĉu vi ankoraŭ memoras Esperanton? Ahaha!"). The goals, the drive's caption,
+the menus and the slot screen are in Esperanto too. Verda's signs and places are in Esperanto
+either way.
 
 USE (or tapping the USE button) shows the next line. If the game is quit during a talk, the talk
 starts again when the slot is next loaded.

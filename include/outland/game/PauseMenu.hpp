@@ -6,7 +6,7 @@
 #include <vector>
 
 // The pause menu, as in other games: ESC (or the MENU button) stops play and offers RESUME,
-// SETTINGS (look sensitivity, aiming, touch controls, sound, graphics), CONTROLS (every key and
+// SETTINGS (language, look sensitivity, aiming, touch controls, sound, graphics), CONTROLS (every key and
 // mouse button, rebindable), SAVE GAME, RESTART (tap twice: saves, then starts the mode afresh),
 // QUIT TO MENU and, on a PC, QUIT GAME.
 namespace outland::game {
@@ -17,7 +17,7 @@ public:
     enum class Result { None, Resume, SettingsChanged, Save, Restart, QuitHome, QuitGame };
     // The settings rows, top to bottom.
     enum class Row {
-        Mouse, Touch, AimSensitivity, InvertY, AimToggle, AimAssist, TouchControls, ButtonSize, Vibration, Volume, Sound, Graphics,
+        Language, Mouse, Touch, AimSensitivity, InvertY, AimToggle, AimAssist, TouchControls, ButtonSize, Vibration, Volume, Sound, Graphics,
         Count
     };
     static constexpr int row_count = static_cast<int>(Row::Count);

@@ -353,7 +353,10 @@ int main() {
     fresh_reload_weapons.request_reload();
     combat::WeaponInput cycle;cycle.next_weapon=true;
     fresh_reload_weapons.update(.1F,cycle,{{0,2,0},{0,0,-1}},combat);
-    assert(fresh_reload_weapons.selected()==combat::WeaponId::Rifle && fresh_reload_weapons.reload_remaining()>0);
+    // With one gun, SWITCH WEAPON puts it away (unarmed) and draws it again.
+    assert(fresh_reload_weapons.holstered() && !fresh_reload_weapons.available());
+    fresh_reload_weapons.update(.1F,cycle,{{0,2,0},{0,0,-1}},combat);
+    assert(fresh_reload_weapons.selected()==combat::WeaponId::Rifle && fresh_reload_weapons.available());
     assert(fresh_reload_weapons.collect_ammo()==0); // Legacy marker ammo cannot bypass the bag.
     // Malformed/truncated/duplicate source records leave the loaded snapshot untouched.
     const auto truncated = directory / "truncated.loot";

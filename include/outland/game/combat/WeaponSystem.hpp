@@ -57,6 +57,10 @@ public:
                         std::function<int(WeaponId,int)> consume);
     void unbind_inventory();
     bool select(WeaponId id);
+    // Unarmed: the gun stays in the bag. SWITCH WEAPON steps through the guns owned and then to
+    // empty hands (and from there back to the first gun); select() draws one again.
+    void holster();
+    [[nodiscard]] bool holstered() const { return holstered_; }
     bool available() const;
     bool set_loaded(WeaponId id,int rounds);
     void request_reload();
@@ -86,7 +90,7 @@ private:
     std::array<Bullet,96> bullets_{};
     std::array<BulletImpact,64> impacts_{};
     WeaponEvents events_{};
-    bool unlimited_{false}, previous_fire_{false}, last_headshot_{false};
+    bool unlimited_{false}, previous_fire_{false}, last_headshot_{false}, holstered_{false};
     float cooldown_{0}, reload_remaining_{0}, muzzle_flash_{0}, hit_marker_{0}, last_damage_{0};
     std::uint32_t random_state_{0x51f7349aU};
     unsigned int shot_number_{0}, impact_index_{0};

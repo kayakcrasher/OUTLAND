@@ -281,6 +281,11 @@ std::string LootSession::use(std::size_t index, combat::WeaponSystem &weapons, H
         changed();
         return "Used " + item->name;
     case ItemAction::Equip:
+        // The gun in hand goes back in the bag: unarmed.
+        if (weapons.available() && weapons.selected() == *item->weapon) {
+            weapons.holster();
+            return "Put away " + item->name + " - unarmed";
+        }
         if (!weapons.select(*item->weapon))
             return "Weapon unavailable";
         changed();

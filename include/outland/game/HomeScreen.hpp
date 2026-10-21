@@ -40,6 +40,9 @@ public:
     // Dev builds: pick this slot straight away when CAMPAIGN is chosen (screenshots).
     void set_auto_slot(int slot) { auto_slot_ = slot; }
 
+    // The language of the screen (SETTINGS > Language), and the font for Esperanto's letters.
+    static void set_language(const Font* font, bool esperanto);
+
     // Battle Royale opponent skill, cycled from the menu.
     [[nodiscard]] ai::BotLevel bot_level() const { return bot_level_; }
     void set_bot_level(ai::BotLevel level) { bot_level_ = level; }
