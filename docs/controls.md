@@ -92,14 +92,16 @@ speeds up, back brakes. Shooting waits for the ground. Details: `docs/battle-roy
 ## Pause menu
 
 ESC, the **MENU** button, or losing the mouse pointer opens it, and the world stops while it is open.
+The menu speaks Verda's language, **Esperanto**: every label, setting and action name on these pages
+(the game's dialogue stays in English). The English names are given below in brackets.
 
-- **RESUME** continues. The click doesn't fire: a mouse button still held from a menu does nothing until it is let go.
-- **SETTINGS** holds the rows below.
-- **CONTROLS** is the key bindings, as above.
-- **SAVE GAME** saves the bag, money, weapons, vehicles and your builds now ("GAME SAVED").
-- **RESTART** saves, then starts the mode you are in again from the beginning: a new match, or Explore from your last save. Tap it twice ("TAP AGAIN TO RESTART") so a stray tap never throws a match away. Not in a LAN match.
-- **QUIT TO MENU** saves and goes back to the home screen.
-- **QUIT GAME** saves and closes the game. It is on PCs only; a browser tab or a phone app is closed its own way.
+- **DAŬRIGI** (resume) continues. The click doesn't fire: a mouse button still held from a menu does nothing until it is let go.
+- **AGORDOJ** (settings) holds the rows below.
+- **STIRILOJ** (controls) is the key bindings, as above.
+- **KONSERVI LUDON** (save game) saves now ("LUDO KONSERVITA"): the bag, money, weapons, vehicles, your builds and, in the campaign, where you are in the story and on the island. The campaign also saves itself (see [campaign.md](campaign.md)).
+- **REKOMENCI** (restart) saves, then starts the mode you are in again from the beginning: a new match, or the campaign from your last save. Tap it twice ("TUŜU DENOVE POR REKOMENCI") so a stray tap never throws a match away. Not in a LAN match.
+- **AL ĈEFMENUO** (quit to menu) saves and goes back to the home screen.
+- **ELIRI EL LUDO** (quit game) saves and closes the game. It is on PCs only; a browser tab or a phone app is closed its own way.
 
 ESC goes back a page, and from the first page resumes.
 

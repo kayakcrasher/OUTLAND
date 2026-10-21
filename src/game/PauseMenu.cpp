@@ -2,6 +2,7 @@
 #include "outland/input/PointerEvents.hpp"
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 
 namespace outland::game {
 namespace {
@@ -25,7 +26,14 @@ void button(Rectangle r, const char* label, bool active, const Font* font, float
     while (fit > 9 && measure(font, label, fit) > r.width - 10 * s) fit -= 1;
     centred(font, label, {r.x + r.width / 2, r.y + r.height / 2}, fit, active ? Color{20, 28, 20, 255} : ink);
 }
-constexpr const char* main_labels[]{"RESUME", "SETTINGS", "CONTROLS", "SAVE GAME", "RESTART", "QUIT TO MENU", "QUIT GAME"};
+// The menus speak Verda's language: Esperanto (the game's dialogue is in English).
+constexpr const char* main_labels[]{"DAŬRIGI", "AGORDOJ", "STIRILOJ", "KONSERVI LUDON", "REKOMENCI", "AL ĈEFMENUO", "ELIRI EL LUDO"};
+// The controls page's names for the actions (input::Action order).
+constexpr const char* action_labels[]{
+    "IRI ANTAŬEN", "IRI MALANTAŬEN", "IRI MALDEKSTREN", "IRI DEKSTREN", "SALTI / MANBREMSO", "KURI / AKCELO", "KAŬRI",
+    "PAFI", "CELI TRA LA CELILO", "REŜARGI", "UZI / ENIRI VETURILON", "JETI GRENADON", "ŜANĜI ARMILON", "PAFREĜIMO", "ŜANĜI CELILON",
+    "SAKO / INVENTARO", "KAMERAA VIDO", "MAPO", "KONSTRUI", "RAPIDA SANIGO", "AVARIAJ LUMOJ", "SPRAJI MARKON", "VOKI HELPON"};
+static_assert(std::size(action_labels) == input::action_count, "an Esperanto name for every action");
 bool toggle_row(PauseMenu::Row row) {
     using R = PauseMenu::Row;
     return row == R::InvertY || row == R::AimToggle || row == R::AimAssist || row == R::TouchControls || row == R::Vibration ||
@@ -221,35 +229,35 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
     const auto p = panel(width, height, page_);
     DrawRectangleRounded(p, .04F, 8, panel_colour);
     DrawRectangleRoundedLinesEx(p, .04F, 8, 2, Fade(accent, .5F));
-    const char* titles[]{"PAUSED", "SETTINGS", "CONTROLS"};
+    const char* titles[]{"PAŬZO", "AGORDOJ", "STIRILOJ"};
     centred(font, titles[static_cast<int>(page_)], {p.x + p.width / 2, p.y + 34 * s}, 30 * s, accent);
     if (page_ == Page::Main) {
         for (int i = 0; i < (can_quit_game ? 7 : 6); ++i)
-            button(main_button(i, width, height), i == 4 && restart_armed_ > 0 ? "TAP AGAIN TO RESTART" : main_labels[i], i == 0 || (i == 4 && restart_armed_ > 0),
+            button(main_button(i, width, height), i == 4 && restart_armed_ > 0 ? "TUŜU DENOVE POR REKOMENCI" : main_labels[i], i == 0 || (i == 4 && restart_armed_ > 0),
                    font, s, 20);
-        centred(font, "ESC resumes", {p.x + p.width / 2, p.y + p.height - 22 * s}, 14 * s, dim);
+        centred(font, "ESC daŭrigas la ludon", {p.x + p.width / 2, p.y + p.height - 22 * s}, 14 * s, dim);
         return;
     }
-    button(footer_button(0, page_, width, height), "BACK", false, font, s);
-    button(footer_button(1, page_, width, height), page_ == Page::Settings ? "RESET CONTROLS" : "RESET KEYS", false, font, s);
+    button(footer_button(0, page_, width, height), "REEN", false, font, s);
+    button(footer_button(1, page_, width, height), page_ == Page::Settings ? "DEFAŬLTAJ AGORDOJ" : "DEFAŬLTAJ KLAVOJ", false, font, s);
     if (page_ == Page::Settings) {
         struct Line { Row row; const char* label; const char* hint; };
         const Line lines[]{
-            {Row::Mouse, "Mouse sensitivity", "PC: how far the view turns per mouse movement"},
-            {Row::Touch, "Touch look sensitivity", "phones: swipe on the right of the screen to look"},
-            {Row::AimSensitivity, "Aiming sensitivity", "extra slow-down while aiming down sights"},
-            {Row::InvertY, "Invert look up/down", nullptr},
-            {Row::AimToggle, "Aim (right mouse)", nullptr},
-            {Row::AimAssist, "Touch aim assist", "slows and nudges the view onto enemies"},
-            {Row::TouchControls, "On-screen controls", "AUTO: on phones and touch screens"},
-            {Row::ButtonSize, "Touch button size", nullptr},
-            {Row::Vibration, "Vibration", "phones: shots, hits, crashes and blasts"},
-            {Row::Volume, "Volume", nullptr},
-            {Row::Sound, "Sound", nullptr},
-            {Row::Graphics, "Graphics", "AUTO adapts resolution to keep play smooth"},
+            {Row::Mouse, "Musa sentemo", "komputilo: kiom la vido turniĝas laŭ la movo de la muso"},
+            {Row::Touch, "Tuŝa rigarda sentemo", "telefonoj: glitu sur la dekstra parto de la ekrano por rigardi"},
+            {Row::AimSensitivity, "Cela sentemo", "plia malrapidigo dum vi celas tra la celilo"},
+            {Row::InvertY, "Inversigi rigardon supren/malsupren", nullptr},
+            {Row::AimToggle, "Celado (dekstra musbutono)", nullptr},
+            {Row::AimAssist, "Tuŝa celhelpo", "malrapidigas kaj puŝetas la vidon al malamikoj"},
+            {Row::TouchControls, "Surekranaj stiriloj", "AŬTOMATA: sur telefonoj kaj tuŝekranoj"},
+            {Row::ButtonSize, "Grandeco de tuŝbutonoj", nullptr},
+            {Row::Vibration, "Vibrado", "telefonoj: pafoj, trafoj, kolizioj kaj eksplodoj"},
+            {Row::Volume, "Laŭteco", nullptr},
+            {Row::Sound, "Sono", nullptr},
+            {Row::Graphics, "Grafiko", "AŬTOMATA adaptas la distingivon por glata ludado"},
         };
-        const char* touch_modes[]{"AUTO", "ON", "OFF"};
-        const char* graphics_modes[]{"AUTO", "FAST", "SHARP"};
+        const char* touch_modes[]{"AŬTOMATA", "JES", "NE"};
+        const char* graphics_modes[]{"AŬTOMATA", "RAPIDA", "AKRA"};
         for (const auto& line : lines) {
             const auto r = row_button(line.row, 1, width, height);
             text(font, line.label, {p.x + 24 * s, r.y + 2 * s}, 17 * s, ink);
@@ -262,11 +270,11 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
             case Row::AimSensitivity: value = TextFormat("%.2f", settings.aim_sensitivity); break;
             case Row::ButtonSize: value = TextFormat("%d%%", static_cast<int>(std::round(settings.button_size * 100))); break;
             case Row::Volume: value = TextFormat("%d%%", static_cast<int>(std::round(settings.volume * 100))); break;
-            case Row::InvertY: on = settings.invert_y; button(r, on ? "ON" : "OFF", on, font, s); break;
-            case Row::AimToggle: on = settings.aim_toggle; button(r, on ? "TOGGLE" : "HOLD", on, font, s); break;
-            case Row::AimAssist: on = settings.aim_assist; button(r, on ? "ON" : "OFF", on, font, s); break;
-            case Row::Vibration: on = settings.vibration; button(r, on ? "ON" : "OFF", on, font, s); break;
-            case Row::Sound: on = !settings.muted; button(r, on ? "ON" : "OFF", on, font, s); break;
+            case Row::InvertY: on = settings.invert_y; button(r, on ? "JES" : "NE", on, font, s); break;
+            case Row::AimToggle: on = settings.aim_toggle; button(r, on ? "ŜALTI" : "TENI", on, font, s); break;
+            case Row::AimAssist: on = settings.aim_assist; button(r, on ? "JES" : "NE", on, font, s); break;
+            case Row::Vibration: on = settings.vibration; button(r, on ? "JES" : "NE", on, font, s); break;
+            case Row::Sound: on = !settings.muted; button(r, on ? "JES" : "NE", on, font, s); break;
             case Row::TouchControls:
                 button(r, touch_modes[static_cast<int>(settings.touch_controls)], settings.touch_controls != GameSettings::TouchControls::Off, font, s);
                 break;
@@ -288,21 +296,21 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
         const auto first = slot(a, 0, width, height);
         const float column_left = first.x - (first.width * 2 + 8 * s) * .44F / .56F;
         float size = 15 * s;
-        const char* label = input::Bindings::label(action);
+        const char* label = action_labels[a];
         while (size > 9 && measure(font, label, size) > first.x - column_left - 8 * s) size -= 1;
         text(font, label, {column_left, first.y + first.height / 2 - size / 2}, size, ink);
         for (int k = 0; k < 2; ++k) {
             const auto r = slot(a, k, width, height);
             if (capturing_ == a && capture_slot_ == k) {
                 DrawRectangleRounded(r, .25F, 6, hot);
-                centred(font, "PRESS A KEY", {r.x + r.width / 2, r.y + r.height / 2}, 13 * s, Color{30, 20, 10, 255});
+                centred(font, "PREMU KLAVON", {r.x + r.width / 2, r.y + r.height / 2}, 13 * s, Color{30, 20, 10, 255});
             } else {
                 button(r, input::Bindings::name(settings.bindings[action][static_cast<std::size_t>(k)]).c_str(), false, font, s, 14);
             }
         }
     }
-    const char* note = capturing_ >= 0 ? "Press a key or mouse button.  ESC cancels, BACKSPACE clears the slot."
-                                       : "Click a slot to change it.  The mouse looks around; ESC opens this menu.";
+    const char* note = capturing_ >= 0 ? "Premu klavon aŭ musbutonon.  ESC nuligas, BACKSPACE malplenigas la ingon."
+                                       : "Alklaku ingon por ŝanĝi ĝin.  La muso rigardas ĉirkaŭen; ESC malfermas ĉi tiun menuon.";
     centred(font, note, {p.x + p.width / 2, p.y + p.height - 82 * s}, 14 * s, dim);
 }
 

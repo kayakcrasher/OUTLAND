@@ -23,6 +23,8 @@
 #include "outland/game/ranch/Ranches.hpp"
 #include "outland/game/freight/Freight.hpp"
 #include "outland/game/freight/Trucking.hpp"
+#include "outland/game/campaign/Campaign.hpp"
+#include <ctime>
 #include "outland/world/roads/RoadGraph.hpp"
 #include "outland/game/mafia/MafioRenderer.hpp"
 #include "outland/game/services/EmergencyServices.hpp"
@@ -100,6 +102,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <array>
+#include <filesystem>
 #include <unordered_map>
 
 namespace outland::engine {
@@ -501,6 +504,10 @@ void Renderer::run() {
     float interaction_remaining = 0.0F;
 
     game::HomeScreen home_screen;
+#ifdef OUTLAND_DEV_TOOLS
+    // OUTLAND_DEV_SLOT=N: CAMPAIGN goes straight into save slot N (screenshots).
+    if(const char* slot=std::getenv("OUTLAND_DEV_SLOT")) home_screen.set_auto_slot(std::atoi(slot));
+#endif
     // LAN play (desktop and Android): the session, its lobby screen, and the other people in the match.
     net::LanSession lan;
     game::LanScreen lan_screen;
@@ -648,6 +655,19 @@ void Renderer::run() {
     struct DepotBoss { Vector3 at{}; float yaw{180}; bool placed{false}; } depot_boss;
     constexpr int depot_boss_bot=930001;
     constexpr const char* depot_boss_name="Tomaso Rado";
+    // The campaign: this save slot's story (Uncle Ron's welcome home), Uncle Ron himself (a body
+    // under his own id), his house (one of the Okcidenta homes, the player's once he hands it
+    // over), his truck, and the autosave.
+    game::campaign::CampaignState campaign;
+    game::campaign::Story story;
+    std::string campaign_path;
+    struct UncleRon { Vector3 at{}; float yaw{0}; bool placed{false}; } uncle_ron;
+    constexpr int uncle_ron_bot=940001;
+    int ron_home=-1;                 // index into homes_for_sale
+    float autosave_wait=0,autosave_note=0,slots_refresh=0;
+    constexpr float autosave_every=120;
+    // The cargo terminal's quay, where the player comes off the ship and Uncle Ron waits by his truck.
+    constexpr Vector3 arrival_spot{2230,0,-482},ron_at_port{2203,0,-462},ron_truck_at_port{2195,0,-454};
     std::string lights_car;          // the police car whose lights the player switched on ("" none)
     // Who runs Verda: every town and ranch, their holders and holds, the tags on the walls (saved
     // beside the career); the logos the tags are painted with; the underworld's news.
@@ -908,7 +928,7 @@ void Renderer::run() {
             }
         // VENDATA boards in front of the homes for sale.
         for(const auto& home:homes_for_sale) {
-            if(game::economy::owns(loot_session.economy(),home)) continue;
+            if(game::economy::owns(loot_session.economy(),home) || home.price<=0) continue;   // (Uncle Ron's is not for sale)
             game::culture::Sign sign;
             sign.kind=game::culture::SignKind::Shopfront;
             sign.place=home.id;
@@ -1060,6 +1080,117 @@ void Renderer::run() {
     game::combat::WeaponSystem weapons;
     game::combat::CombatWorld combat_world(verda_region);
     game::Health player_health{game::player_max_health};
+    // ---- The campaign's story: where Uncle Ron, his truck and the player stand, and saving it.
+    const auto floor_at=[&](Vector3 at) {
+        const float top=std::max(at.y,world::terrain::TerrainHeight::sample(at.x,at.z))+1.5F;
+        const float floor=world::physics::WorldCollision::ground_height({at.x,top,at.z},top,verda_region);
+        return Vector3{at.x,std::isfinite(floor) ? floor : world::terrain::TerrainHeight::sample(at.x,at.z),at.z};
+    };
+    const auto facing=[](Vector3 from,Vector3 to){return std::atan2(to.x-from.x,to.z-from.z)*RAD2DEG;};
+    // At Uncle Ron's: him on the front path, the player on the lawn facing him, the truck on the drive.
+    struct HouseSpots { Vector3 ron{},nephew{},truck{};float ron_yaw{0},nephew_yaw{0},truck_yaw{0}; };
+    const auto ron_house=[&](HouseSpots& out) {
+        if(ron_home<0 || ron_home>=static_cast<int>(homes_for_sale.size())) return false;
+        const auto& home=homes_for_sale[static_cast<std::size_t>(ron_home)];
+        const float a=home.yaw*DEG2RAD,front=-home.size.z*.5F;
+        const auto local=[&](float x,float z){return Vector3{home.centre.x+x*std::cos(a)+z*std::sin(a),home.centre.y,home.centre.z-x*std::sin(a)+z*std::cos(a)};};
+        out.ron=floor_at(local(0,front-2.2F));
+        out.nephew=floor_at(local(1.4F,front-5.2F));
+        out.ron_yaw=facing(out.ron,out.nephew);out.nephew_yaw=facing(out.nephew,out.ron);
+        out.truck_yaw=home.yaw+180;
+        for(const float side:{1.0F,-1.0F}) {
+            out.truck=local(side*(home.size.x*.5F+2.6F),front+2.2F);
+            bool clear=!world::physics::WorldCollision::body_blocked(floor_at(out.truck),floor_at(out.truck).y,verda_region,1.0F);
+            for(const auto& v:vehicles.vehicles()) if(v.id!=campaign.ron_truck && Vector3Distance(v.position,out.truck)<4) clear=false;
+            if(clear) break;
+        }
+        return true;
+    };
+    const auto place_ron=[&](Vector3 at,float yaw) {
+        uncle_ron={at,yaw,true};
+        if(npcs.find_bot(uncle_ron_bot)>=0) {npcs.set_bot(uncle_ron_bot,at,yaw,100,characters::NpcState::Idle);return;}
+        // A working man in everyday clothes.
+        std::string body="character_05";
+        for(std::uint64_t k=0;k<40;++k)
+            if(const auto* d=character_registry.choose(characters::CharacterPool::Civilian,9100+k*13);
+               d && d->id.find("female")==std::string::npos && d->id.find("police")==std::string::npos && d->id.find("doctor")==std::string::npos) {body=d->id;break;}
+        npcs.spawn_bot(uncle_ron_bot,body,at,yaw);
+    };
+    const auto park_ron_truck=[&](Vector3 at,float yaw) {
+        if(!campaign.ron_truck.empty() && vehicles.find(campaign.ron_truck)>=0) {
+            if(vehicles.driver() && vehicles.driver()->id==campaign.ron_truck) return;
+            vehicles.place(verda_region,campaign.ron_truck,at,yaw);vehicle_dirty=true;return;
+        }
+        std::vector<std::string> before;for(const auto& v:vehicles.vehicles()) before.push_back(v.id);
+        if(vehicles.spawn(verda_region,at,yaw,"truck"))
+            for(const auto& v:vehicles.vehicles()) if(std::find(before.begin(),before.end(),v.id)==before.end()) {campaign.ron_truck=v.id;vehicle_dirty=true;break;}
+    };
+    const auto own_ron_house=[&] {
+        if(ron_home<0 || ron_home>=static_cast<int>(homes_for_sale.size())) return;
+        auto& owned=loot_session.economy().properties;
+        const auto& id=homes_for_sale[static_cast<std::size_t>(ron_home)].id;
+        if(std::find(owned.begin(),owned.end(),id)!=owned.end()) return;
+        owned.push_back(id);loot_session.changed();
+        furnish_island();rebuild_signs();   // the furniture moves in
+    };
+    const auto ron_home_now=[&](bool move_player) {
+        HouseSpots spots;
+        if(!ron_house(spots)) return;
+        place_ron(spots.ron,spots.ron_yaw);
+        park_ron_truck(spots.truck,spots.truck_yaw);
+        if(move_player) {player.position=Vector3Add(spots.nephew,{0,1,0});player.yaw=spots.nephew_yaw*DEG2RAD;player.vertical_velocity=0;}
+    };
+    const auto place_story=[&](bool explicit_spawn,bool respawned) {
+        using game::campaign::Stage;
+        if(story.stage()==Stage::Arrival) {
+            // Off the ship onto the quay at Porto Luma; Uncle Ron waiting by his truck.
+            const Vector3 nephew=floor_at({arrival_spot.x,world::layout::cargo_quay_height,arrival_spot.z});
+            const Vector3 ron=floor_at({ron_at_port.x,world::layout::cargo_quay_height,ron_at_port.z});
+            place_ron(ron,facing(ron,nephew));
+            park_ron_truck(floor_at({ron_truck_at_port.x,world::layout::cargo_quay_height,ron_truck_at_port.z}),90);
+            if(!explicit_spawn) {player.position=Vector3Add(nephew,{0,1,0});player.yaw=facing(nephew,ron)*DEG2RAD;}
+            interaction_message="Verda. Home again, after all those years in Eastern Europe";interaction_remaining=6;
+            return;
+        }
+        if(story.stage()==Stage::Free) own_ron_house();
+        HouseSpots spots;
+        if(!ron_house(spots)) return;
+        place_ron(spots.ron,spots.ron_yaw);
+        if(story.stage()==Stage::HomeTalk) park_ron_truck(spots.truck,spots.truck_yaw);
+        else if(campaign.ron_truck.empty() || vehicles.find(campaign.ron_truck)<0) park_ron_truck(spots.truck,spots.truck_yaw);
+        if(explicit_spawn || respawned) return;
+        if(story.stage()==Stage::Free && campaign.has_position) {
+            player.position=Vector3Add(floor_at(campaign.position),{0,1,0});player.yaw=campaign.yaw*DEG2RAD;
+        } else {
+            player.position=Vector3Add(spots.nephew,{0,1,0});player.yaw=spots.nephew_yaw*DEG2RAD;
+        }
+    };
+    // This slot's place in the story and where the player stands (the inventory and the rest with
+    // `everything`; the career, territory and trucking save themselves as they change).
+    const auto save_campaign=[&](bool everything) {
+        if(campaign_path.empty()) return true;
+        campaign.stage=story.stage();
+        if(story.stage()==game::campaign::Stage::Free && player_health.alive()) {
+            const auto* car=vehicles.driver();
+            campaign.has_position=true;
+            campaign.position=car ? car->position : Vector3{player.position.x,player.position.y-1,player.position.z};
+            campaign.yaw=player.yaw*RAD2DEG;
+        }
+        campaign.saved_at=static_cast<std::int64_t>(std::time(nullptr));
+        float best=1e30F;
+        for(const auto& town:verda_region.settlements()) {
+            if(town.id.starts_with("ranch_") || town.id.starts_with("hamlet_") || town.name.empty()) continue;
+            const float d=std::hypot(town.center.x-campaign.position.x,town.center.z-campaign.position.z);
+            if(d<best) {best=d;campaign.place=town.id=="capital_verda" ? std::string("Verda City") : town.name;}
+        }
+        if(!campaign.has_position) campaign.place=story.stage()==game::campaign::Stage::Arrival ? "Porto Luma" : "Verda City";
+        const auto text=game::campaign::serialise(campaign);
+        std::error_code made;
+        std::filesystem::create_directories(std::filesystem::path(campaign_path).parent_path(),made);
+        bool ok=SaveFileText(campaign_path.c_str(),const_cast<char*>(text.c_str()));
+        if(everything) ok=(loot_session.save(weapons) || !loot_session.can_persist()) && ok;
+        return ok;
+    };
     // Armour from the bag: the best vest carried soaks part of every bullet, blast and bite.
     const auto armour_level=[&]{
         if(game_mode==game::GameMode::DevLab) return 0;
@@ -1346,6 +1477,26 @@ void Renderer::run() {
             } else {
                 selected=queued_mode!=game::GameMode::Home ? queued_mode : home_screen.update(screen_width,screen_height);
                 if(home_screen.take_lan()) {lan_screen_open=true;lan.browse();}
+                // The campaign's save slots: what each holds, and erasing one (all its files).
+                if(const int erase=home_screen.take_erase();erase>0) {
+                    const std::filesystem::path loot=game::inventory::LootSave::slot_path(map_path,erase);
+                    std::error_code ec;
+                    for(const auto& entry:std::filesystem::directory_iterator(loot.parent_path(),ec))
+                        if(entry.path().filename().string().starts_with(loot.filename().string())) std::filesystem::remove(entry.path(),ec);
+                    std::filesystem::remove(std::filesystem::path(loot).replace_extension(".builds"),ec);
+                    slots_refresh=0;
+                }
+                if(home_screen.slots_open() && (slots_refresh-=GetFrameTime())<=0) {
+                    slots_refresh=.5F;
+                    std::array<game::campaign::SlotInfo,game::HomeScreen::slot_count> slots;
+                    for(int i=0;i<game::HomeScreen::slot_count;++i) {
+                        const std::string loot=game::inventory::LootSave::slot_path(map_path,i+1);
+                        std::string text;
+                        if(FileExists((loot+".campaign").c_str())) if(char* t=LoadFileText((loot+".campaign").c_str())) {text=t;UnloadFileText(t);}
+                        slots[static_cast<std::size_t>(i)]=game::campaign::describe(i+1,text,FileExists(loot.c_str()) || FileExists((loot+".career").c_str()));
+                    }
+                    home_screen.set_slots(slots);
+                }
             }
             queued_mode=game::GameMode::Home;
             if(lan_start) {
@@ -1370,6 +1521,8 @@ void Renderer::run() {
             ) {
                 game_mode =
                     selected;
+                // The campaign plays in the save slot chosen on the home screen.
+                if(game_mode==game::GameMode::Explore && !lan_match) game::inventory::LootSave::set_campaign_slot(home_screen.slot());
 
                 bool explicit_spawn=false;
                 // A LAN match: one seed for everyone (the same towns, loot, bots, helicopters and zone).
@@ -1899,6 +2052,30 @@ void Renderer::run() {
                         interaction_message="An ambulance brought you to Hospitalo de Verda";interaction_remaining=5;
                     }
                 }
+                // The campaign: where this slot is in the story. A fresh slot starts on the quay at
+                // Porto Luma, just off the ship, with Uncle Ron waiting by his truck; a slot already
+                // under way carries on where it was saved (or at home, after a hospital stay).
+                story=game::campaign::Story{};campaign={};uncle_ron={};ron_home=-1;autosave_wait=autosave_every;autosave_note=0;
+                campaign_path.clear();
+                if(game_mode==game::GameMode::Explore && !lan_match) {
+                    const std::string loot=game::inventory::LootSave::profile_path(map_path,game_mode);
+                    campaign_path=loot+".campaign";
+                    bool known=false;
+                    if(FileExists(campaign_path.c_str())) if(char* text=LoadFileText(campaign_path.c_str())) {known=game::campaign::parse(text,campaign);UnloadFileText(text);}
+                    if(!known) {campaign={};if(FileExists(loot.c_str()) || FileExists(career_path.c_str())) campaign.stage=game::campaign::Stage::Free;}   // a save from before the story
+#ifdef OUTLAND_DEV_TOOLS
+                    // OUTLAND_DEV_STORY=port|home|skip: start the story on the quay, at Uncle Ron's, or skip it.
+                    if(const char* want=std::getenv("OUTLAND_DEV_STORY")) {
+                        const std::string w=want;
+                        campaign.stage=w=="port" ? game::campaign::Stage::Arrival : w=="home" ? game::campaign::Stage::HomeTalk : game::campaign::Stage::Free;
+                    }
+#endif
+                    story.start(campaign.stage);
+                    // Uncle Ron's house: the first house in Okcidenta Verda on the list (not for sale - it's his).
+                    for(std::size_t i=0;i<homes_for_sale.size();++i) if(homes_for_sale[i].house) {ron_home=static_cast<int>(i);break;}
+                    if(ron_home>=0) {auto& home=homes_for_sale[static_cast<std::size_t>(ron_home)];home.name="Uncle Ron's house";home.price=0;}
+                    place_story(explicit_spawn,respawn_at_hospital);
+                }
                 respawn_at_hospital=false;
                 mode_session.start(game_mode,static_cast<int>(br_bots.bots().size()),home_screen.bot_level());
                 if(lan_match) mode_session.add_participants(std::max(0,static_cast<int>(lan.roster().players.size())-1));
@@ -1953,6 +2130,7 @@ void Renderer::run() {
             if(game_mode!=game::GameMode::DevLab && !loot_session.save(weapons) && loot_session.can_persist()){
                 interaction_message=loot_session.status();interaction_remaining=3;return false;
             }
+            save_campaign(false);campaign_path.clear();
             restore_match_fleet();
             vehicles.leave_session();vehicle_audio.stop();vehicle_renderer.reset_camera();
             shop_open=inventory_open=false;
@@ -1984,24 +2162,25 @@ void Renderer::run() {
             if(result==game::PauseMenu::Result::Resume) input_system.cancel_controls();
             if(result==game::PauseMenu::Result::Save) {
                 bool saved=game_mode==game::GameMode::DevLab || loot_session.save(weapons) || !loot_session.can_persist();
+                saved=save_campaign(false) && saved;
                 if(vehicle_dirty && !vehicle_save_protected && vehicles.save_state(verda_region,vehicle_state_path,vehicle_error)) vehicle_dirty=false;
                 if(!builds_path.empty() && game::rules_for(game_mode).civilian_life) {
                     std::string builds_error;
                     if(!player_builds.save(builds_path,builds_error)) {saved=false;TraceLog(LOG_WARNING,"Player builds: %s",builds_error.c_str());}
                 }
                 store_settings();
-                pause_menu.set_status(saved ? "GAME SAVED" : "SAVE FAILED - "+loot_session.status());
+                pause_menu.set_status(saved ? "LUDO KONSERVITA" : "KONSERVADO MALSUKCESIS - "+loot_session.status());
             }
             if(result==game::PauseMenu::Result::Restart) {
                 // Saves like QUIT TO MENU, then straight back into the same mode, fresh. Not in a LAN match.
                 const auto mode=game_mode;
-                if(lan_match) {pause_menu.open();pause_menu.set_status("LEAVE THE LAN MATCH TO RESTART");}
-                else if(!go_home()) {pause_menu.open();pause_menu.set_status("COULD NOT SAVE - "+interaction_message);}
+                if(lan_match) {pause_menu.open();pause_menu.set_status("FORLASU LA RETAN LUDON POR REKOMENCI");}
+                else if(!go_home()) {pause_menu.open();pause_menu.set_status("NE EBLIS KONSERVI - "+interaction_message);}
                 else queued_mode=mode;
                 continue;
             }
             if(result==game::PauseMenu::Result::QuitHome || result==game::PauseMenu::Result::QuitGame) {
-                if(!go_home()) {pause_menu.open();pause_menu.set_status("COULD NOT SAVE - "+interaction_message);continue;}
+                if(!go_home()) {pause_menu.open();pause_menu.set_status("NE EBLIS KONSERVI - "+interaction_message);continue;}
                 if(result==game::PauseMenu::Result::QuitGame) break;
                 // Finish this frame so the Home screen does not reuse the same click.
                 BeginDrawing();
@@ -2419,7 +2598,18 @@ void Renderer::run() {
         if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && !vehicles.driver() &&
            game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
-            if(chief.placed && Vector3Distance(feet,chief.at)<2.4F) {
+            const auto ron_truck_near=[&]{
+                const int v=campaign.ron_truck.empty() ? -1 : vehicles.find(campaign.ron_truck);
+                return v>=0 && Vector3Distance(vehicles.vehicles()[static_cast<std::size_t>(v)].position,feet)<5.5F;
+            };
+            if(!campaign_path.empty() && story.talking() && story.stage()!=game::campaign::Stage::Free) {
+                story.talk();input_system.player().interact=false;   // the next line
+            } else if(!campaign_path.empty() && story.stage()==game::campaign::Stage::ToTruck &&
+                      (ron_truck_near() || (uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.5F))) {
+                story.board();input_system.player().interact=false;  // off home with Uncle Ron
+            } else if(!campaign_path.empty() && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F && story.stage()!=game::campaign::Stage::Ride) {
+                story.talk();input_system.player().interact=false;
+            } else if(chief.placed && Vector3Distance(feet,chief.at)<2.4F) {
                 bool issue=false;
                 chief_line=career.chief_talk(issue);chief_line_time=10;
                 if(issue) {
@@ -2470,10 +2660,15 @@ void Renderer::run() {
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
                 here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 ||
                     (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) ||
+                    (!campaign_path.empty() && (story.talking() || (uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F))) ||
                     boss_near(feet)>=0 || station_desk(feet)!=nullptr;
                 // Who you'd be talking to.
                 if(store_prompt.empty() && player_health.alive()) {
-                    if(arrestable(feet)>=0) store_prompt="E - Arrest him";
+                    if(!campaign_path.empty() && story.talking() && story.stage()!=game::campaign::Stage::Free) store_prompt="E - Continue";
+                    else if(!campaign_path.empty() && story.stage()==game::campaign::Stage::ToTruck && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.5F)
+                        store_prompt="E - Ride home with Uncle Ron";
+                    else if(!campaign_path.empty() && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F) store_prompt="E - Talk to Uncle Ron";
+                    else if(arrestable(feet)>=0) store_prompt="E - Arrest him";
                     else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F)
                         store_prompt=!trucking.hired() ? "E - Ask the boss of Verda Transporto for work" :
                             trucking.job().stage==game::freight::HaulStage::Report ? "E - Report in for your pay" : "E - Talk to the boss";
@@ -2616,6 +2811,8 @@ void Renderer::run() {
             home_here=nullptr;
             if(game::rules_for(game_mode).civilian_life && !vehicles.driver())
                 for(const auto& home:homes_for_sale) if(game::economy::inside(home,loot_feet)) {home_here=&home;break;}
+            // Uncle Ron's house, before he has handed it over, is just his.
+            if(home_here && home_here->price<=0 && !game::economy::owns(loot_session.economy(),*home_here)) home_here=nullptr;
             if(home_here && !(shop_open||store_open) && !poker_open && !inventory_open && !home_used) {
                 const bool owned=game::economy::owns(loot_session.economy(),*home_here);
                 if(home_here!=was_in_home) {interaction_message=owned ? "Home: "+home_here->name : home_here->name+" - for sale";interaction_remaining=3;}
@@ -3784,6 +3981,28 @@ void Renderer::run() {
                     work.camp=police_camp.line();work.camp_known=police_camp.placed();
                     // The Chief stands at his post; the range runs its drill (counting the shots fired).
                     if(chief.placed) npcs.set_bot(chief_bot,chief.at,chief.yaw,100,characters::NpcState::Idle);
+                    // The campaign: the story moves on (the drive home, the house handed over), Uncle Ron
+                    // turns to the player when he's close, and the game saves itself now and then.
+                    if(!campaign_path.empty()) {
+                        campaign.played+=dt;
+                        story.update(dt);
+                        if(story.take_teleport()) ron_home_now(true);
+                        if(story.take_home_given()) {
+                            own_ron_house();
+                            interaction_message="Uncle Ron's house is your home now - Okcidenta Verda, Verda City";interaction_remaining=6;
+                        }
+                        if(uncle_ron.placed) {
+                            const float near=Vector3Distance(feet,uncle_ron.at);
+                            const float yaw=near<7 && story.stage()!=game::campaign::Stage::Ride ? facing(uncle_ron.at,feet) : uncle_ron.yaw;
+                            npcs.set_bot(uncle_ron_bot,uncle_ron.at,yaw,100,characters::NpcState::Idle);
+                        }
+                        autosave_note=std::max(0.0F,autosave_note-dt);
+                        const bool moved_on=story.take_changed();
+                        if(moved_on || (story.stage()==game::campaign::Stage::Free && player_health.alive() && (autosave_wait-=dt)<=0)) {
+                            autosave_wait=autosave_every;
+                            if(save_campaign(true)) autosave_note=2.5F;
+                        }
+                    }
                     // Verda Transporto: the boss at his door; the load in hand (cattle called, loaded, shipped).
                     if(depot_boss.placed) {
                         npcs.set_bot(depot_boss_bot,depot_boss.at,depot_boss.yaw,100,characters::NpcState::Idle);
@@ -4998,6 +5217,55 @@ void Renderer::run() {
                     DrawTextEx(font,sub,{at.x-sw/2,at.y+2},13,1,Color{170,200,255,255});
                 }
             }
+            // Uncle Ron: his name over his head; his words in a box; the goal of the moment.
+            if(!campaign_path.empty()) {
+                if(uncle_ron.placed && Vector3Distance(uncle_ron.at,camera.position)<16) {
+                    const Vector3 over{uncle_ron.at.x,uncle_ron.at.y+2.3F,uncle_ron.at.z};
+                    if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))>0) {
+                        const Vector2 at=GetWorldToScreen(over,camera);
+                        const char* title="Uncle Ron  ·  Onklo Ron";
+                        const char* sub=Vector3Distance(uncle_ron.at,{player.position.x,player.position.y-1,player.position.z})<3.2F ? "USE to talk" : "Your uncle - born and raised in Verda City";
+                        const float tw=MeasureTextEx(font,title,16,1).x,sw=MeasureTextEx(font,sub,13,1).x,w=std::max(tw,sw);
+                        DrawRectangle(static_cast<int>(at.x-w/2-6),static_cast<int>(at.y-18),static_cast<int>(w+12),36,Fade(BLACK,.55F));
+                        DrawTextEx(font,title,{at.x-tw/2,at.y-16},16,1,Color{255,214,120,255});
+                        DrawTextEx(font,sub,{at.x-sw/2,at.y+2},13,1,Color{220,226,206,255});
+                    }
+                }
+                if(const auto* line=story.line()) {
+                    const float max_w=std::min(820.0F,screen_width-60.0F);
+                    std::vector<std::string> lines;std::string row,word;
+                    for(std::size_t i=0;i<=line->text.size();++i) {
+                        const char c=i<line->text.size() ? line->text[i] : ' ';
+                        if(c!=' ') {word+=c;continue;}
+                        const std::string trial=row.empty() ? word : row+" "+word;
+                        if(MeasureTextEx(font,trial.c_str(),19,1).x>max_w-36 && !row.empty()) {lines.push_back(row);row=word;}
+                        else row=trial;
+                        word.clear();
+                    }
+                    if(!row.empty()) lines.push_back(row);
+                    const float h=58+22*static_cast<float>(lines.size()),x=screen_width/2-max_w/2,y=screen_height*.70F-h;
+                    DrawRectangleRounded({x,y,max_w,h},.08F,8,Fade(Color{12,16,12,255},.82F));
+                    DrawRectangle(static_cast<int>(x),static_cast<int>(y+8),4,static_cast<int>(h-16),Color{255,214,120,255});
+                    DrawTextEx(font,line->speaker,{x+18,y+10},18,1,Color{255,214,120,255});
+                    for(std::size_t k=0;k<lines.size();++k) DrawTextEx(font,lines[k].c_str(),{x+18,y+34+22*static_cast<float>(k)},19,1,Color{236,240,226,255});
+                    const std::string more=story.stage()==game::campaign::Stage::Free ? std::string("USE - close") :
+                        "USE - continue  ("+std::to_string(story.line_number())+"/"+std::to_string(story.lines())+")";
+                    const float mw=MeasureTextEx(font,more.c_str(),14,1).x;
+                    DrawTextEx(font,more.c_str(),{x+max_w-mw-16,y+h-22},14,1,Color{170,190,150,255});
+                }
+                if(const auto goal=story.objective();!goal.empty() && !map_screen.is_open()) {
+                    const std::string text="> "+goal;
+                    const float gw=MeasureTextEx(font,text.c_str(),19,1).x;
+                    DrawRectangle(static_cast<int>(screen_width/2-gw/2-14),132,static_cast<int>(gw+28),32,Fade(BLACK,.55F));
+                    DrawTextEx(font,text.c_str(),{screen_width/2-gw/2,138},19,1,Color{255,214,120,255});
+                }
+                if(autosave_note>0) {
+                    const float alpha=std::clamp(autosave_note,0.0F,1.0F);
+                    const char* note="Autosaved";
+                    const float nw=MeasureTextEx(font,note,15,1).x;
+                    DrawTextEx(font,note,{screen_width-nw-18,static_cast<float>(screen_height-40)},15,1,Fade(Color{185,202,139,255},alpha));
+                }
+            }
             // The boss of Verda Transporto: his name over his head.
             if(depot_boss.placed && Vector3Distance(depot_boss.at,camera.position)<14) {
                 const Vector3 over{depot_boss.at.x,depot_boss.at.y+2.3F,depot_boss.at.z};
@@ -5538,6 +5806,8 @@ void Renderer::run() {
             }
             if(career.job().kind!=game::career::JobKind::None && flat(career.job().target)>14)
                 compass_marks.push_back({career.job().target,Glyph::Objective,career.on_duty() ? Color{90,150,255,255} : Color{255,196,70,255},career.job().title,true});
+            if(!campaign_path.empty() && !story.objective().empty() && uncle_ron.placed && flat(uncle_ron.at)>4)
+                compass_marks.push_back({uncle_ron.at,Glyph::Objective,Color{255,214,120,255},"UNCLE RON",true});
             if(trucking.hired() && trucking.job().stage!=game::freight::HaulStage::None && flat(trucking.target())>game::freight::Trucking::stop_radius)
                 compass_marks.push_back({trucking.target(),Glyph::Objective,Color{90,220,140,255},trucking.title(),true});
             if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal()) {
@@ -5750,6 +6020,16 @@ void Renderer::run() {
             const int size=22, tw=MeasureText(line,size);
             DrawRectangle(screen_width/2-tw/2-16,screen_height/2-64,tw+32,40,Fade(BLACK,.7F));
             DrawText(line,screen_width/2-tw/2,screen_height/2-55,size,RAYWHITE);
+        }
+        // The drive home with Uncle Ron: the screen goes dark, and comes back at his house.
+        if(!campaign_path.empty() && story.fade()>0) {
+            DrawRectangle(0,0,screen_width,screen_height,Fade(BLACK,story.fade()));
+            if(story.fade()>.6F) {
+                const char* caption=story.caption();
+                const Font& f=sign_renderer.font();
+                const float cw=MeasureTextEx(f,caption,26,1).x;
+                DrawTextEx(f,caption,{screen_width/2-cw/2,screen_height/2-13.0F},26,1,Fade(Color{236,240,226,255},(story.fade()-.6F)/.4F));
+            }
         }
         pause_menu.draw(settings,screen_width,screen_height,&sign_renderer.font(),can_quit_game);
 #ifdef OUTLAND_DEV_TOOLS

@@ -274,7 +274,8 @@ bool PlayerBuilds::load(const std::string& path, std::string& error) {
 }
 
 std::string PlayerBuilds::path_beside(const std::string& loot_profile) {
-    return (std::filesystem::path(loot_profile).parent_path() / "explore.builds").string();
+    // Beside its profile: explore.loot -> explore.builds, a campaign slot's explore_2.loot -> explore_2.builds.
+    return std::filesystem::path(loot_profile).replace_extension(".builds").string();
 }
 
 } // namespace outland::game::build

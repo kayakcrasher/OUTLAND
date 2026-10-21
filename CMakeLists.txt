@@ -180,6 +180,7 @@ add_library(
     src/game/ranch/Ranches.cpp
     src/game/freight/Freight.cpp
     src/game/freight/Trucking.cpp
+    src/game/campaign/Campaign.cpp
     src/game/life/LifeSimulation.cpp
     src/game/life/LifeTraffic.cpp
     src/game/zombies/ZombieEcology.cpp
@@ -750,6 +751,10 @@ if(OUTLAND_BUILD_TESTS)
     target_link_libraries(outland_lan_tests PRIVATE outland_render)
     target_compile_options(outland_lan_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_lan_tests COMMAND outland_lan_tests)
+    add_executable(outland_campaign_tests tests/unit/campaign/test_campaign.cpp src/game/campaign/Campaign.cpp)
+    target_include_directories(outland_campaign_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
+    target_compile_options(outland_campaign_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_campaign_tests COMMAND outland_campaign_tests)
     add_executable(outland_trucking_tests tests/unit/freight/test_trucking.cpp src/game/freight/Trucking.cpp)
     target_include_directories(outland_trucking_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_trucking_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

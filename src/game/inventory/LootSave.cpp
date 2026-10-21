@@ -1,4 +1,5 @@
 #include "outland/game/inventory/LootSave.hpp"
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -25,10 +26,20 @@ bool valid(const ItemRegistry &registry, const LootSnapshot &state) {
     return true;
 }
 } // namespace
+namespace {
+int active_slot = 1;
+}
+void LootSave::set_campaign_slot(int slot) { active_slot = std::clamp(slot, 1, campaign_slots); }
+int LootSave::campaign_slot() { return active_slot; }
+std::string LootSave::slot_path(const std::string &map_path, int slot) {
+    slot = std::clamp(slot, 1, campaign_slots);
+    return (std::filesystem::path(map_path).parent_path().parent_path() / "profiles" /
+            (slot == 1 ? std::string("explore.loot") : "explore_" + std::to_string(slot) + ".loot"))
+        .string();
+}
 std::string LootSave::profile_path(const std::string &map_path, GameMode mode) {
-    const auto name = mode == GameMode::ZombieSurvival ? "zombie"
-                      : mode == GameMode::BattleRoyale ? "battle_royale"
-                                                       : "explore";
+    if (mode != GameMode::ZombieSurvival && mode != GameMode::BattleRoyale) return slot_path(map_path, active_slot);
+    const auto name = mode == GameMode::ZombieSurvival ? "zombie" : "battle_royale";
     return (std::filesystem::path(map_path).parent_path().parent_path() / "profiles" /
             (std::string(name) + ".loot"))
         .string();

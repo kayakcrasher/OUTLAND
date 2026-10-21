@@ -16,7 +16,7 @@ const char* game_mode_name(
         return "ZOMBIE SURVIVAL";
 
     case GameMode::Explore:
-        return "EXPLORE";
+        return "CAMPAIGN";
 
     case GameMode::DevLab:
         return "DEV LAB";

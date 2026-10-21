@@ -23,6 +23,8 @@ int main() {
         auto inside=[&](Rectangle r){assert(r.x>=0 && r.y>=0 && r.x+r.width<=w && r.y+r.height<=h);};
         for(int i=0;i<4;++i) inside(HomeScreen::mode_button(i,w,h));
         inside(HomeScreen::difficulty_button(w,h));
+        for(int i=0;i<HomeScreen::slot_count;++i) {inside(HomeScreen::slot_button(i,w,h));inside(HomeScreen::erase_button(i,w,h));}
+        inside(HomeScreen::back_button(w,h));
         for(int i=0;i<2;++i) inside(PlayUI::result_button(i,w,h));
         for(int i=0;i<6;++i) {inside(PlayUI::shop_button(i,w,h));inside(PlayUI::shop_row(i,w,h));}
     }
