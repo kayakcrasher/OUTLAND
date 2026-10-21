@@ -25,7 +25,7 @@ void button(Rectangle r, const char* label, bool active, const Font* font, float
     while (fit > 9 && measure(font, label, fit) > r.width - 10 * s) fit -= 1;
     centred(font, label, {r.x + r.width / 2, r.y + r.height / 2}, fit, active ? Color{20, 28, 20, 255} : ink);
 }
-constexpr const char* main_labels[]{"RESUME", "SETTINGS", "CONTROLS", "SAVE GAME", "QUIT TO MENU", "QUIT GAME"};
+constexpr const char* main_labels[]{"RESUME", "SETTINGS", "CONTROLS", "SAVE GAME", "RESTART", "QUIT TO MENU", "QUIT GAME"};
 bool toggle_row(PauseMenu::Row row) {
     using R = PauseMenu::Row;
     return row == R::InvertY || row == R::AimToggle || row == R::AimAssist || row == R::TouchControls || row == R::Vibration ||
@@ -39,6 +39,7 @@ void PauseMenu::open() {
     warm_ = true;
     page_ = Page::Main;
     capturing_ = -1;
+    restart_armed_ = 0;
 }
 
 Rectangle PauseMenu::menu_button(int width, int) {
@@ -53,7 +54,7 @@ bool PauseMenu::tapped_menu_button(int width, int height, bool focused) {
 
 Rectangle PauseMenu::panel(int width, int height, Page page) {
     const float s = scale_of(width, height), w = static_cast<float>(width), h = static_cast<float>(height);
-    float pw = 420 * s, ph = 470 * s;
+    float pw = 420 * s, ph = 530 * s;
     if (page == Page::Settings) { pw = 760 * s; ph = (150 + row_count * 40) * s; }
     if (page == Page::Controls) { pw = 1120 * s; ph = (175 + rows_per_column() * 36) * s; }
     pw = std::min(pw, w - 16);
@@ -113,6 +114,7 @@ std::vector<Vector2> PauseMenu::clicks(bool focused) {
 
 PauseMenu::Result PauseMenu::update(GameSettings& settings, int width, int height, bool focused, float dt, bool can_quit_game) {
     status_time_ = std::max(0.0F, status_time_ - dt);
+    restart_armed_ = std::max(0.0F, restart_armed_ - dt);
     if (!open_) return Result::None;
     // Rebinding: the next key or mouse button (not the click that chose the slot) takes the slot.
     if (capturing_ >= 0) {
@@ -140,14 +142,19 @@ PauseMenu::Result PauseMenu::update(GameSettings& settings, int width, int heigh
     };
     for (const auto& p : clicks(focused)) {
         if (page_ == Page::Main) {
-            for (int i = 0; i < (can_quit_game ? 6 : 5); ++i) {
+            for (int i = 0; i < (can_quit_game ? 7 : 6); ++i) {
                 if (!CheckCollisionPointRec(p, main_button(i, width, height))) continue;
                 switch (i) {
                 case 0: result = Result::Resume; break;
                 case 1: page_ = Page::Settings; break;
                 case 2: page_ = Page::Controls; break;
                 case 3: result = Result::Save; break;
-                case 4: result = Result::QuitHome; break;
+                case 4:
+                    // Twice, so a stray tap never throws a match away.
+                    if (restart_armed_ > 0) result = Result::Restart;
+                    else restart_armed_ = 3;
+                    break;
+                case 5: result = Result::QuitHome; break;
                 default: result = Result::QuitGame; break;
                 }
             }
@@ -196,7 +203,8 @@ PauseMenu::Result PauseMenu::update(GameSettings& settings, int width, int heigh
             }
         }
     }
-    if (result == Result::Resume || result == Result::QuitHome || result == Result::QuitGame) close();
+    if (result == Result::Restart) restart_armed_ = 0;
+    if (result == Result::Resume || result == Result::Restart || result == Result::QuitHome || result == Result::QuitGame) close();
     return result;
 }
 
@@ -216,7 +224,9 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
     const char* titles[]{"PAUSED", "SETTINGS", "CONTROLS"};
     centred(font, titles[static_cast<int>(page_)], {p.x + p.width / 2, p.y + 34 * s}, 30 * s, accent);
     if (page_ == Page::Main) {
-        for (int i = 0; i < (can_quit_game ? 6 : 5); ++i) button(main_button(i, width, height), main_labels[i], i == 0, font, s, 20);
+        for (int i = 0; i < (can_quit_game ? 7 : 6); ++i)
+            button(main_button(i, width, height), i == 4 && restart_armed_ > 0 ? "TAP AGAIN TO RESTART" : main_labels[i], i == 0 || (i == 4 && restart_armed_ > 0),
+                   font, s, 20);
         centred(font, "ESC resumes", {p.x + p.width / 2, p.y + p.height - 22 * s}, 14 * s, dim);
         return;
     }

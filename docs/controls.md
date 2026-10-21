@@ -95,6 +95,7 @@ ESC, the **MENU** button, or losing the mouse pointer opens it, and the world st
 - **SETTINGS** holds the rows below.
 - **CONTROLS** is the key bindings, as above.
 - **SAVE GAME** saves the bag, money, weapons, vehicles and your builds now ("GAME SAVED").
+- **RESTART** saves, then starts the mode you are in again from the beginning: a new match, or Explore from your last save. Tap it twice ("TAP AGAIN TO RESTART") so a stray tap never throws a match away. Not in a LAN match.
 - **QUIT TO MENU** saves and goes back to the home screen.
 - **QUIT GAME** saves and closes the game. It is on PCs only; a browser tab or a phone app is closed its own way.
 

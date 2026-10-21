@@ -1852,6 +1852,14 @@ void Renderer::run() {
                 store_settings();
                 pause_menu.set_status(saved ? "GAME SAVED" : "SAVE FAILED - "+loot_session.status());
             }
+            if(result==game::PauseMenu::Result::Restart) {
+                // Saves like QUIT TO MENU, then straight back into the same mode, fresh. Not in a LAN match.
+                const auto mode=game_mode;
+                if(lan_match) {pause_menu.open();pause_menu.set_status("LEAVE THE LAN MATCH TO RESTART");}
+                else if(!go_home()) {pause_menu.open();pause_menu.set_status("COULD NOT SAVE - "+interaction_message);}
+                else queued_mode=mode;
+                continue;
+            }
             if(result==game::PauseMenu::Result::QuitHome || result==game::PauseMenu::Result::QuitGame) {
                 if(!go_home()) {pause_menu.open();pause_menu.set_status("COULD NOT SAVE - "+interaction_message);continue;}
                 if(result==game::PauseMenu::Result::QuitGame) break;

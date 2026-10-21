@@ -7,13 +7,14 @@
 
 // The pause menu, as in other games: ESC (or the MENU button) stops play and offers RESUME,
 // SETTINGS (look sensitivity, aiming, touch controls, sound, graphics), CONTROLS (every key and
-// mouse button, rebindable), SAVE GAME, QUIT TO MENU and, on a PC, QUIT GAME.
+// mouse button, rebindable), SAVE GAME, RESTART (tap twice: saves, then starts the mode afresh),
+// QUIT TO MENU and, on a PC, QUIT GAME.
 namespace outland::game {
 
 class PauseMenu {
 public:
     enum class Page { Main, Settings, Controls };
-    enum class Result { None, Resume, SettingsChanged, Save, QuitHome, QuitGame };
+    enum class Result { None, Resume, SettingsChanged, Save, Restart, QuitHome, QuitGame };
     // The settings rows, top to bottom.
     enum class Row {
         Mouse, Touch, AimSensitivity, InvertY, AimToggle, AimAssist, TouchControls, ButtonSize, Vibration, Volume, Sound, Graphics,
@@ -38,7 +39,7 @@ public:
 
     // Layout (screen space), shared by drawing, hit testing and tests.
     static Rectangle panel(int width, int height, Page page);
-    static Rectangle main_button(int index, int width, int height);   // 0 resume .. 5 quit game
+    static Rectangle main_button(int index, int width, int height);   // 0 resume .. 4 restart .. 6 quit game
     static Rectangle row_button(Row row, int side, int width, int height); // side 0 "-", 1 "+" (or the toggle as 1)
     static Rectangle slot(int action, int slot, int width, int height);
     static Rectangle footer_button(int index, Page page, int width, int height); // 0 back, 1 reset
@@ -50,6 +51,7 @@ private:
     int capturing_{-1}, capture_slot_{0}, capture_wait_{0};
     std::string status_;
     float status_time_{0};
+    float restart_armed_{0};   // RESTART was tapped once; a second tap within this time restarts
     std::unordered_set<int> previous_;
 };
 
