@@ -116,7 +116,6 @@ TouchLayoutEditor::Result TouchLayoutEditor::update(GameSettings& settings, int 
 
 void TouchLayoutEditor::draw(const GameSettings& settings, int width, int height, const Font* font) const {
     if (!open_) return;
-    const bool eo = settings.language == GameSettings::Language::Esperanto;
     DrawRectangle(0, 0, width, height, Color{10, 14, 12, 215});
     const auto layout = input::customised(work_);
     const auto& elements = input::touch_elements();
@@ -131,16 +130,14 @@ void TouchLayoutEditor::draw(const GameSettings& settings, int width, int height
         DrawCircleLines(static_cast<int>(c.x), static_cast<int>(c.y), r, chosen ? Color{255, 210, 120, 255} : Color{220, 230, 210, 200});
         label(font, e.label, c, std::max(10.0F, 15 * s * std::min(1.4F, r / (43 * s))), RAYWHITE);
     }
-    const char* tools_en[]{driving_ ? "AT THE WHEEL" : "ON FOOT", "SMALLER -", "BIGGER +", "RESET", "RESET ALL", "CANCEL", "DONE"};
-    const char* tools_eo[]{driving_ ? "ĈE LA STIRILO" : "PIEDE", "PLI MALGRANDA -", "PLI GRANDA +", "REMETI", "REMETI ĈIUJN", "NULIGI", "PRETA"};
+    const char* tools[]{driving_ ? "AT THE WHEEL" : "ON FOOT", "SMALLER -", "BIGGER +", "RESET", "RESET ALL", "CANCEL", "DONE"};
     for (int t = 0; t < tool_count; ++t) {
         const auto r = tool(t, width, height);
         const bool on = t == tool_count - 1 || (t == 0);
         DrawRectangleRounded(r, .25F, 6, on ? Color{185, 202, 139, 255} : Color{46, 58, 48, 255});
-        label(font, eo ? tools_eo[t] : tools_en[t], {r.x + r.width / 2, r.y + r.height / 2}, 15 * s, on ? Color{20, 28, 20, 255} : RAYWHITE);
+        label(font, tools[t], {r.x + r.width / 2, r.y + r.height / 2}, 15 * s, on ? Color{20, 28, 20, 255} : RAYWHITE);
     }
-    const char* hint = eo ? "Trenu butonon por movi ĝin; elektu ĝin kaj premu - / + por ĝia grandeco."
-                          : "Drag a button to move it; pick one and press - / + to size it.";
+    const char* hint = "Drag a button to move it; pick one and press - / + to size it.";
     label(font, hint, {static_cast<float>(width) / 2, 64 * s}, 15 * s, Color{200, 210, 190, 255});
     if (selected_ >= 0) {
         const auto& e = elements[static_cast<std::size_t>(selected_)];

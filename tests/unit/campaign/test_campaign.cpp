@@ -63,20 +63,6 @@ int main() {
     for (const auto* set : {&Story::port_lines(), &Story::home_lines()})
         for (const auto& line : *set) check(line.text.size() > 20, "a real line");
 
-    // In Esperanto (SETTINGS > Language): every line has its translation, the goals too.
-    check(Story::port_lines(true).size() == Story::port_lines().size() && Story::home_lines(true).size() == Story::home_lines().size() &&
-          Story::idle_lines(true).size() == Story::idle_lines().size(), "a translation for every line");
-    {
-        Story eo;
-        eo.set_esperanto(true);
-        eo.start(Stage::Arrival);
-        check(eo.objective() == "Trovu Onklon Ron sur la kajo", "the goal in Esperanto");
-        eo.talk();
-        eo.talk();
-        check(eo.line() && eo.line()->text.find("Ĉu vi ankoraŭ memoras Esperanton? Ahaha!") != std::string::npos &&
-              std::string(eo.line()->speaker) == "Onklo Ron", "Onklo Ron speaks Esperanto");
-    }
-
     // A talk cut short by quitting starts again from its beginning.
     Story again;
     again.start(Stage::PortTalk);

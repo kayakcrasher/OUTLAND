@@ -33,7 +33,6 @@ bool GameSettings::load(const std::string& path) {
         else if (key == "aim_assist") flag(in, read.aim_assist);
         else if (key == "vibration") flag(in, read.vibration);
         else if (key == "graphics") { int v = 0; in >> v; read.graphics = static_cast<Graphics>(std::clamp(v, 0, 2)); }
-        else if (key == "language") { int v = 0; in >> v; read.language = static_cast<Language>(std::clamp(v, 0, 1)); }
         else if (key == "touch_controls") { int v = 0; in >> v; read.touch_controls = static_cast<TouchControls>(std::clamp(v, 0, 2)); }
         else if (key == "touch") {
             std::string name; input::TouchCustom c;
@@ -67,7 +66,7 @@ bool GameSettings::save(const std::string& path) const {
            << "\naim_sensitivity " << aim_sensitivity << "\ninvert_y " << invert_y << "\naim_toggle " << aim_toggle
            << "\naim_assist " << aim_assist << "\nvibration " << vibration << "\ntouch_controls " << static_cast<int>(touch_controls)
            << "\nbutton_size " << button_size << "\nvolume " << volume << "\nmuted " << (muted ? 1 : 0)
-           << "\ngraphics " << static_cast<int>(graphics) << "\nlanguage " << static_cast<int>(language) << '\n';
+           << "\ngraphics " << static_cast<int>(graphics) << '\n';
     for (std::size_t i = 0; i < input::action_count; ++i)
         output << "bind " << input::Bindings::key(static_cast<input::Action>(i)) << ' ' << bindings.codes[i][0] << ' '
                << bindings.codes[i][1] << '\n';
@@ -80,7 +79,6 @@ void GameSettings::reset_controls() {
     fresh.volume = volume;
     fresh.muted = muted;
     fresh.graphics = graphics;
-    fresh.language = language;
     fresh.mouse_look = mouse_look;
     *this = fresh;
 }

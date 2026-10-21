@@ -60,53 +60,34 @@ bool parse(const std::string& text, CampaignState& s) {
     return staged;
 }
 
-SlotInfo describe(int slot, const std::string& campaign_text, bool any_save, bool esperanto) {
+SlotInfo describe(int slot, const std::string& campaign_text, bool any_save) {
     SlotInfo info;
-    info.title = (esperanto ? "INGO " : "SLOT ") + std::to_string(slot);
+    info.title = "SLOT " + std::to_string(slot);
     CampaignState state;
     const bool known = !campaign_text.empty() && parse(campaign_text, state);
     info.used = known || any_save;
-    if (!info.used) { info.detail = esperanto ? "Nova ludo - komencu la rakonton" : "New game - start the story"; return info; }
+    if (!info.used) { info.detail = "New game - start the story"; return info; }
     if (!state.place.empty()) info.title += "  ·  " + state.place;
     std::string detail;
     if (known) {
         const int minutes = static_cast<int>(state.played / 60);
-        const char* played = esperanto ? " min ludita" : " min played";
-        detail = state.stage != Stage::Free ? (esperanto ? "Ĵus hejme  ·  " : "Just home  ·  ") : "";
+        const char* played = " min played";
+        detail = state.stage != Stage::Free ? "Just home  ·  " : "";
         detail += minutes >= 60 ? std::to_string(minutes / 60) + " h " + (minutes % 60 < 10 ? "0" : "") + std::to_string(minutes % 60) + played
                                 : std::to_string(minutes) + played;
         if (state.saved_at > 0) {
             const std::time_t t = static_cast<std::time_t>(state.saved_at);
             char stamp[32]{};
             if (const std::tm* local = std::localtime(&t)) std::strftime(stamp, sizeof stamp, "%d %b %H:%M", local);
-            if (stamp[0]) detail += std::string(esperanto ? "  ·  konservita " : "  ·  saved ") + stamp;
+            if (stamp[0]) detail += std::string("  ·  saved ") + stamp;
         }
-    } else detail = esperanto ? "Konservita ludo" : "Saved game";
+    } else detail = "Saved game";
     info.detail = detail;
     return info;
 }
 
 // ---------------------------------------------------------------------------------- the story
-namespace {
-constexpr const char* uncle_eo = "Onklo Ron";
-}
-
-const std::vector<Line>& Story::port_lines(bool esperanto) {
-    static const std::vector<Line> eo{
-        {uncle_eo, "Jen li! Nevo! Bonvenon hejmen al Verda! Venu ĉi tien - lasu min rigardi vin."},
-        {uncle_eo, "Ĉiuj tiuj jaroj en Orienta Eŭropo... Saluton, nevo! Ĉu vi ankoraŭ memoras Esperanton? Ahaha! Ne zorgu, ĝi revenas. "
-                   "Ĉio ĉi tie estas en Esperanto - la ŝildoj, la butikoj, la radio."},
-        {uncle_eo, "Jen Porto Luma, la haveno. La ŝipoj alvenas ĉi tie - konteneroj, kaj la brutaro de la rančoj, kiu iras eksterlanden. "
-                   "Honesta laboro, se vi volas ĝin: Verda Transporto en Verda Urbo ĉiam bezonas ŝoforojn. Diru al Tomaso, ke mi sendis vin."},
-        {uncle_eo, "Verda ne estas granda. Verda Urbo en la mezo - la ĉefurbo, la Parlamento, la butikoj. Espera norde kun la bienoj, "
-                   "Suda Haveno ĉe la suda marbordo, Roka okcidente kun la fabrikoj, kaj la ringvojo ĉirkaŭ la tuta insulo."},
-        {uncle_eo, "La rančistoj - la Vakeroj - restas inter si. Ne tuŝu ilian brutaron, kaj ili ne tuŝos vin. "
-                   "Ankaŭ la Policio dungas, se vi volas uniformon. Ili prenas bonajn homojn."},
-        {uncle_eo, "Ĉu perdita? Malfermu la mapon (M). Mono aĉetas manĝaĵon, vestojn, aŭton plenan de problemoj... ahaha! "
-                   "UZI parolas kun homoj kaj malfermas pordojn - vi kutimiĝos."},
-        {uncle_eo, "Venu, mia kamioneto estas ĝuste ĉi tie. Ni iru hejmen al Verda Urbo."},
-    };
-    if (esperanto) return eo;
+const std::vector<Line>& Story::port_lines() {
     static const std::vector<Line> lines{
         {uncle, "There he is! Nevo! Welcome home to Verda! Come here - let me look at you."},
         {uncle, "All those years in Eastern Europe... Saluton, nevo! You still remember Esperanto? Ahaha! Don't worry, it comes back. "
@@ -124,20 +105,7 @@ const std::vector<Line>& Story::port_lines(bool esperanto) {
     return lines;
 }
 
-const std::vector<Line>& Story::home_lines(bool esperanto) {
-    static const std::vector<Line> eo{
-        {uncle_eo, "Jen ni estas - Okcidenta Verda, la okcidenta flanko de la urbo. Ne luksa, sed ĝi estas nia, ĝis la lasta krono."},
-        {uncle_eo, "Aŭskultu, nevo. Mi diros al vi rekte, antaŭ ol iu alia faros. Mia frato Dario - via Onklo Dario - estas la estro "
-                   "de La Verda Mano. Li nun gvidas ĉion, el tiu drinkejo en la centro. Viaj kuzoj estas kun li."},
-        {uncle_eo, "Mi ne fieras pri tio. Nia patro laboris kvardek jarojn ĉe la havenoj kaj neniam prenis tion, kio ne estis lia. "
-                   "La Verda Mano diras 'nur gangsteroj, neniam la popolo'. Eble. Tamen mi ĉeestis tro multajn entombigojn."},
-        {uncle_eo, "Mi ne diros al vi kiel vivi. Dario volos vin - familio, li diros. Apartamenton apud la drinkejo, monon, respekton. "
-                   "Ilia drinkejo estas en la centro, ĉe la angulo apud la Parlamento. Nur... pripensu, ĉu ne? Ekzistas aliaj vojoj."},
-        {uncle_eo, "Ĉi tiu domo nun estas via hejmo, tiom longe kiom vi volas. Via ĉambro estas preta. Tenu viajn aĵojn ĉi tie, "
-                   "dormu ĉi tie - kaj se vi iam vundiĝos, ĉi tie vi vekiĝos."},
-        {uncle_eo, "Bonvenon hejmen, nevo. Nun iru kaj vidu vian insulon."},
-    };
-    if (esperanto) return eo;
+const std::vector<Line>& Story::home_lines() {
     static const std::vector<Line> lines{
         {uncle, "Here we are - Okcidenta Verda, the west side of the city. Not fancy, but it's ours, every last krono."},
         {uncle, "Listen, nevo. I'll tell you straight, before somebody else does. My brother Dario - your Uncle Dario - is the head "
@@ -153,17 +121,7 @@ const std::vector<Line>& Story::home_lines(bool esperanto) {
     return lines;
 }
 
-const std::vector<Line>& Story::idle_lines(bool esperanto) {
-    static const std::vector<Line> eo{
-        {uncle_eo, "Ĉu vi bezonas ion, nevo? Estas supo sur la forno."},
-        {uncle_eo, "Verda Transporto pagas juste. Diru al Tomaso, ke mi sendis vin."},
-        {uncle_eo, "Restu for de tiu angula drinkejo en la centro. Mi petas. Pro via patrino."},
-        {uncle_eo, "Saluton! Ĉu vi vidis la ŝipon alveni ĉi-matene? Granda."},
-        {uncle_eo, "Se vi aliĝos al la Policio, almenaŭ mi dormos nokte. Ahaha!"},
-        {uncle_eo, "Dario telefonis. Li demandis pri vi. Mi diris al li, ke vi estas laca."},
-        {uncle_eo, "Ĝis revido, nevo! Ahaha!"},
-    };
-    if (esperanto) return eo;
+const std::vector<Line>& Story::idle_lines() {
     static const std::vector<Line> lines{
         {uncle, "Need anything, nevo? There's soup on the stove."},
         {uncle, "Verda Transporto pays fair. Tell Tomaso I sent you."},
@@ -198,9 +156,9 @@ int Story::lines() const {
 const Line* Story::line() const {
     if (line_ < 0) return nullptr;
     switch (stage_) {
-        case Stage::PortTalk: return &port_lines(esperanto_)[static_cast<std::size_t>(line_)];
-        case Stage::HomeTalk: return &home_lines(esperanto_)[static_cast<std::size_t>(line_)];
-        case Stage::Free: return &idle_lines(esperanto_)[static_cast<std::size_t>(line_) % idle_lines(esperanto_).size()];
+        case Stage::PortTalk: return &port_lines()[static_cast<std::size_t>(line_)];
+        case Stage::HomeTalk: return &home_lines()[static_cast<std::size_t>(line_)];
+        case Stage::Free: return &idle_lines()[static_cast<std::size_t>(line_) % idle_lines().size()];
         default: return nullptr;
     }
 }
@@ -252,14 +210,13 @@ float Story::fade() const {
 }
 
 const char* Story::caption() const {
-    if (stage_ != Stage::Ride) return "";
-    return esperanto_ ? "Onklo Ron veturigas vin hejmen al Verda Urbo..." : "Uncle Ron drives you home to Verda City...";
+    return stage_ == Stage::Ride ? "Uncle Ron drives you home to Verda City..." : "";
 }
 
 std::string Story::objective() const {
     switch (stage_) {
-        case Stage::Arrival: return esperanto_ ? "Trovu Onklon Ron sur la kajo" : "Find Uncle Ron on the quay";
-        case Stage::ToTruck: return esperanto_ ? "Eniru la kamioneton de Onklo Ron" : "Get in Uncle Ron's truck";
+        case Stage::Arrival: return "Find Uncle Ron on the quay";
+        case Stage::ToTruck: return "Get in Uncle Ron's truck";
         default: return "";
     }
 }

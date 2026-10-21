@@ -1491,7 +1491,6 @@ void Renderer::run() {
                 lan_start=lan.take_start();
                 if(lan_start) lan_screen_open=false;
             } else {
-                game::HomeScreen::set_language(&sign_renderer.font(),settings.language==game::GameSettings::Language::Esperanto);
                 selected=queued_mode!=game::GameMode::Home ? queued_mode : home_screen.update(screen_width,screen_height);
                 if(home_screen.take_lan()) {lan_screen_open=true;lan.browse();}
                 // The campaign's save slots: what each holds, and erasing one (all its files).
@@ -1510,8 +1509,7 @@ void Renderer::run() {
                         const std::string loot=game::inventory::LootSave::slot_path(map_path,i+1);
                         std::string text;
                         if(FileExists((loot+".campaign").c_str())) if(char* t=LoadFileText((loot+".campaign").c_str())) {text=t;UnloadFileText(t);}
-                        slots[static_cast<std::size_t>(i)]=game::campaign::describe(i+1,text,FileExists(loot.c_str()) || FileExists((loot+".career").c_str()),
-                                                                                     settings.language==game::GameSettings::Language::Esperanto);
+                        slots[static_cast<std::size_t>(i)]=game::campaign::describe(i+1,text,FileExists(loot.c_str()) || FileExists((loot+".career").c_str()));
                     }
                     home_screen.set_slots(slots);
                 }
@@ -2221,10 +2219,6 @@ void Renderer::run() {
         // ====================================================
 
         // Back to the home screen, saving first (false if the save failed and play goes on).
-        // English, or Esperanto (SETTINGS > Language).
-        const auto speak=[&](const char* english,const char* esperanto) {
-            return std::string(settings.language==game::GameSettings::Language::Esperanto ? esperanto : english);
-        };
         const auto go_home=[&]() {
 #ifdef OUTLAND_DEV_TOOLS
             if(creator_session.dirty() && !creator_session.save(verda_region)) return false;
@@ -2278,18 +2272,18 @@ void Renderer::run() {
                     if(!player_builds.save(builds_path,builds_error)) {saved=false;TraceLog(LOG_WARNING,"Player builds: %s",builds_error.c_str());}
                 }
                 store_settings();
-                pause_menu.set_status(saved ? speak("GAME SAVED","LUDO KONSERVITA") : speak("SAVE FAILED - ","KONSERVADO MALSUKCESIS - ")+loot_session.status());
+                pause_menu.set_status(saved ? std::string("GAME SAVED") : std::string("SAVE FAILED - ")+loot_session.status());
             }
             if(result==game::PauseMenu::Result::Restart) {
                 // Saves like QUIT TO MENU, then straight back into the same mode, fresh. Not in a LAN match.
                 const auto mode=game_mode;
-                if(lan_match) {pause_menu.open();pause_menu.set_status(speak("LEAVE THE LAN MATCH TO RESTART","FORLASU LA RETAN LUDON POR REKOMENCI"));}
-                else if(!go_home()) {pause_menu.open();pause_menu.set_status(speak("COULD NOT SAVE - ","NE EBLIS KONSERVI - ")+interaction_message);}
+                if(lan_match) {pause_menu.open();pause_menu.set_status(std::string("LEAVE THE LAN MATCH TO RESTART"));}
+                else if(!go_home()) {pause_menu.open();pause_menu.set_status(std::string("COULD NOT SAVE - ")+interaction_message);}
                 else queued_mode=mode;
                 continue;
             }
             if(result==game::PauseMenu::Result::QuitHome || result==game::PauseMenu::Result::QuitGame) {
-                if(!go_home()) {pause_menu.open();pause_menu.set_status(speak("COULD NOT SAVE - ","NE EBLIS KONSERVI - ")+interaction_message);continue;}
+                if(!go_home()) {pause_menu.open();pause_menu.set_status(std::string("COULD NOT SAVE - ")+interaction_message);continue;}
                 if(result==game::PauseMenu::Result::QuitGame) break;
                 // Finish this frame so the Home screen does not reuse the same click.
                 BeginDrawing();
@@ -2780,10 +2774,10 @@ void Renderer::run() {
                     boss_near(feet)>=0 || station_desk(feet)!=nullptr;
                 // Who you'd be talking to.
                 if(store_prompt.empty() && player_health.alive()) {
-                    if(!campaign_path.empty() && story.talking() && story.stage()!=game::campaign::Stage::Free) store_prompt=story.esperanto() ? "E - Daŭrigi" : "E - Continue";
+                    if(!campaign_path.empty() && story.talking() && story.stage()!=game::campaign::Stage::Free) store_prompt="E - Continue";
                     else if(!campaign_path.empty() && story.stage()==game::campaign::Stage::ToTruck && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.5F)
-                        store_prompt=story.esperanto() ? "E - Veturi hejmen kun Onklo Ron" : "E - Ride home with Uncle Ron";
-                    else if(!campaign_path.empty() && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F) store_prompt=story.esperanto() ? "E - Paroli kun Onklo Ron" : "E - Talk to Uncle Ron";
+                        store_prompt="E - Ride home with Uncle Ron";
+                    else if(!campaign_path.empty() && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F) store_prompt="E - Talk to Uncle Ron";
                     else if(arrestable(feet)>=0) store_prompt="E - Arrest him";
                     else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F)
                         store_prompt=!trucking.hired() ? "E - Ask the boss of Verda Transporto for work" :
@@ -4101,7 +4095,6 @@ void Renderer::run() {
                     // turns to the player when he's close, and the game saves itself now and then.
                     if(!campaign_path.empty()) {
                         campaign.played+=dt;
-                        story.set_esperanto(settings.language==game::GameSettings::Language::Esperanto);
                         story.update(dt);
                         if(story.take_teleport()) ron_home_now(true);
                         if(story.take_home_given()) {
@@ -5225,7 +5218,7 @@ void Renderer::run() {
             std::vector<game::inventory::QuestNote> quests;
             const auto metres=[&](Vector3 at){return std::hypot(at.x-player.position.x,at.z-player.position.z);};
             if(!campaign_path.empty() && !story.objective().empty())
-                quests.push_back({story.esperanto() ? "LA RAKONTO" : "THE STORY",story.objective(),
+                quests.push_back({"THE STORY",story.objective(),
                                   uncle_ron.placed ? TextFormat("%.0f m",metres(uncle_ron.at)) : "",Color{255,214,120,255}});
             if(career.state().side!=game::career::Side::Civilian) {
                 const bool cop=career.on_duty();
@@ -5396,8 +5389,8 @@ void Renderer::run() {
                     DrawRectangle(static_cast<int>(x),static_cast<int>(y+8),4,static_cast<int>(h-16),Color{255,214,120,255});
                     DrawTextEx(font,line->speaker,{x+18,y+10},18,1,Color{255,214,120,255});
                     for(std::size_t k=0;k<lines.size();++k) DrawTextEx(font,lines[k].c_str(),{x+18,y+34+22*static_cast<float>(k)},19,1,Color{236,240,226,255});
-                    const std::string more=story.stage()==game::campaign::Stage::Free ? std::string(story.esperanto() ? "UZI - fermi" : "USE - close") :
-                        std::string(story.esperanto() ? "UZI - daŭrigi  (" : "USE - continue  (")+std::to_string(story.line_number())+"/"+std::to_string(story.lines())+")";
+                    const std::string more=story.stage()==game::campaign::Stage::Free ? std::string("USE - close") :
+                        std::string("USE - continue  (")+std::to_string(story.line_number())+"/"+std::to_string(story.lines())+")";
                     const float mw=MeasureTextEx(font,more.c_str(),14,1).x;
                     DrawTextEx(font,more.c_str(),{x+max_w-mw-16,y+h-22},14,1,Color{170,190,150,255});
                 }

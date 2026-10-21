@@ -35,10 +35,8 @@ a **flat just down from the bar**: your hideout. It is a Main Street building ne
 comes furnished, it counts as one of your homes (sleep there, wake there), and it shows on the
 map.
 
-The dialogue is in **English** by default. Choose **ESPERANTO** in SETTINGS > Language and Uncle
-Ron speaks Esperanto ("Ĉu vi ankoraŭ memoras Esperanton? Ahaha!"). The goals, the drive's caption,
-the menus and the slot screen are in Esperanto too. Verda's signs and places are in Esperanto
-either way.
+The dialogue, the menus and the settings are in **English**. Verda itself is in Esperanto: its
+signs, shops and places.
 
 USE (or tapping the USE button) shows the next line. If the game is quit during a talk, the talk
 starts again when the slot is next loaded.

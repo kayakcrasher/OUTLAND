@@ -13,8 +13,7 @@
 // quay, drives him home to Verda City and gives him a home in his house in Okcidenta Verda. From
 // there the game is the player's.
 //
-// The dialogue is in English, or in Esperanto when that is the language chosen in SETTINGS
-// (set_esperanto); the island's signs and places are in Esperanto either way.
+// The dialogue is in English; the island itself (its signs and places) is in Esperanto.
 // This is the story's rules and the slot file; the game places Uncle Ron, his truck and the
 // player, shows the lines, fades the screen and saves.
 namespace outland::game::campaign {
@@ -50,7 +49,7 @@ struct SlotInfo {
 };
 // From the slot's campaign file (empty if none) and whether it has any save at all (an older
 // save without a campaign file is a game well under way).
-SlotInfo describe(int slot, const std::string& campaign_text, bool any_save, bool esperanto = false);
+SlotInfo describe(int slot, const std::string& campaign_text, bool any_save);
 
 struct Line { const char* speaker; std::string text; };
 
@@ -61,9 +60,6 @@ public:
     static constexpr float fade_in = 1.2F, hold = .6F, fade_out = 1.2F;
 
     void start(Stage stage);
-    // The language he speaks (and the goals and captions are shown in).
-    void set_esperanto(bool esperanto) { esperanto_ = esperanto; }
-    [[nodiscard]] bool esperanto() const { return esperanto_; }
     [[nodiscard]] Stage stage() const { return stage_; }
     [[nodiscard]] bool intro() const { return stage_ != Stage::Free; }
 
@@ -91,9 +87,9 @@ public:
     bool take_home_given() { const bool h = home_given_; home_given_ = false; return h; }
     bool take_changed() { const bool c = changed_; changed_ = false; return c; }
 
-    static const std::vector<Line>& port_lines(bool esperanto = false);
-    static const std::vector<Line>& home_lines(bool esperanto = false);
-    static const std::vector<Line>& idle_lines(bool esperanto = false);
+    static const std::vector<Line>& port_lines();
+    static const std::vector<Line>& home_lines();
+    static const std::vector<Line>& idle_lines();
 
 private:
     void set(Stage stage) { stage_ = stage; changed_ = true; }
@@ -101,7 +97,7 @@ private:
     int line_{-1};
     int idle_{0};
     float ride_{0};
-    bool teleport_{false}, home_given_{false}, changed_{false}, esperanto_{false};
+    bool teleport_{false}, home_given_{false}, changed_{false};
 };
 
 } // namespace outland::game::campaign

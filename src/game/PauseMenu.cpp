@@ -2,7 +2,6 @@
 #include "outland/input/PointerEvents.hpp"
 #include <algorithm>
 #include <cmath>
-#include <iterator>
 
 namespace outland::game {
 namespace {
@@ -26,7 +25,7 @@ void button(Rectangle r, const char* label, bool active, const Font* font, float
     while (fit > 9 && measure(font, label, fit) > r.width - 10 * s) fit -= 1;
     centred(font, label, {r.x + r.width / 2, r.y + r.height / 2}, fit, active ? Color{20, 28, 20, 255} : ink);
 }
-// The menus in the chosen language (SETTINGS > Language): English, or Verda's own Esperanto.
+// The menus' words.
 struct Words {
     const char* main[7];
     const char* restart_again;
@@ -35,7 +34,7 @@ struct Words {
     const char* back, *reset_settings, *reset_keys;
     const char* rows[PauseMenu::row_count][2];   // label, hint (or nullptr)
     const char* on, *off, *toggle, *hold;
-    const char* touch_modes[3], *graphics_modes[3], *languages[2];
+    const char* touch_modes[3], *graphics_modes[3];
     const char* edit;
     const char* press_key, *capture_note, *note;
 };
@@ -45,8 +44,7 @@ constexpr Words english{
     {"PAUSED", "SETTINGS", "CONTROLS"},
     "ESC resumes",
     "BACK", "RESET CONTROLS", "RESET KEYS",
-    {{"Language", "English, or Esperanto - the language of Verda"},
-     {"Mouse sensitivity", "PC: how far the view turns per mouse movement"},
+    {{"Mouse sensitivity", "PC: how far the view turns per mouse movement"},
      {"Touch look sensitivity", "phones: swipe on the right of the screen to look"},
      {"Aiming sensitivity", "extra slow-down while aiming down sights"},
      {"Invert look up/down", nullptr},
@@ -60,49 +58,15 @@ constexpr Words english{
      {"Sound", nullptr},
      {"Graphics", "AUTO adapts resolution to keep play smooth"}},
     "ON", "OFF", "TOGGLE", "HOLD",
-    {"AUTO", "ON", "OFF"}, {"AUTO", "FAST", "SHARP"}, {"ENGLISH", "ESPERANTO"},
+    {"AUTO", "ON", "OFF"}, {"AUTO", "FAST", "SHARP"},
     "EDIT",
     "PRESS A KEY",
     "Press a key or mouse button.  ESC cancels, BACKSPACE clears the slot.",
     "Click a slot to change it.  The mouse looks around; ESC opens this menu.",
 };
-constexpr Words esperanto{
-    {"DAŬRIGI", "AGORDOJ", "STIRILOJ", "KONSERVI LUDON", "REKOMENCI", "AL ĈEFMENUO", "ELIRI EL LUDO"},
-    "TUŜU DENOVE POR REKOMENCI",
-    {"PAŬZO", "AGORDOJ", "STIRILOJ"},
-    "ESC daŭrigas la ludon",
-    "REEN", "DEFAŬLTAJ AGORDOJ", "DEFAŬLTAJ KLAVOJ",
-    {{"Lingvo", "la angla, aŭ Esperanto - la lingvo de Verda"},
-     {"Musa sentemo", "komputilo: kiom la vido turniĝas laŭ la movo de la muso"},
-     {"Tuŝa rigarda sentemo", "telefonoj: glitu sur la dekstra parto de la ekrano por rigardi"},
-     {"Cela sentemo", "plia malrapidigo dum vi celas tra la celilo"},
-     {"Inversigi rigardon supren/malsupren", nullptr},
-     {"Celado (dekstra musbutono)", nullptr},
-     {"Tuŝa celhelpo", "malrapidigas kaj puŝetas la vidon al malamikoj"},
-     {"Surekranaj stiriloj", "AŬTOMATA: sur telefonoj kaj tuŝekranoj"},
-     {"Grandeco de tuŝbutonoj", nullptr},
-     {"Tuŝa aranĝo", "movu kaj regrandigu ĉiun surekranan butonon"},
-     {"Vibrado", "telefonoj: pafoj, trafoj, kolizioj kaj eksplodoj"},
-     {"Laŭteco", nullptr},
-     {"Sono", nullptr},
-     {"Grafiko", "AŬTOMATA adaptas la distingivon por glata ludado"}},
-    "JES", "NE", "ŜALTI", "TENI",
-    {"AŬTOMATA", "JES", "NE"}, {"AŬTOMATA", "RAPIDA", "AKRA"}, {"ANGLA", "ESPERANTO"},
-    "REDAKTI",
-    "PREMU KLAVON",
-    "Premu klavon aŭ musbutonon.  ESC nuligas, BACKSPACE malplenigas la ingon.",
-    "Alklaku ingon por ŝanĝi ĝin.  La muso rigardas ĉirkaŭen; ESC malfermas ĉi tiun menuon.",
-};
-const Words& words(const GameSettings& settings) { return settings.language == GameSettings::Language::Esperanto ? esperanto : english; }
-// The controls page's Esperanto names for the actions (input::Action order); English uses the bindings' own.
-constexpr const char* action_labels_eo[]{
-    "IRI ANTAŬEN", "IRI MALANTAŬEN", "IRI MALDEKSTREN", "IRI DEKSTREN", "SALTI / MANBREMSO", "KURI / AKCELO", "KAŬRI",
-    "PAFI", "CELI TRA LA CELILO", "REŜARGI", "UZI / ENIRI VETURILON", "JETI GRENADON", "ŜANĜI ARMILON", "PAFREĜIMO", "ŜANĜI CELILON",
-    "SAKO / INVENTARO", "KAMERAA VIDO", "MAPO", "KONSTRUI", "RAPIDA SANIGO", "AVARIAJ LUMOJ", "SPRAJI MARKON", "VOKI HELPON"};
-static_assert(std::size(action_labels_eo) == input::action_count, "an Esperanto name for every action");
 bool toggle_row(PauseMenu::Row row) {
     using R = PauseMenu::Row;
-    return row == R::Language || row == R::TouchLayout || row == R::InvertY || row == R::AimToggle || row == R::AimAssist || row == R::TouchControls || row == R::Vibration ||
+    return row == R::TouchLayout || row == R::InvertY || row == R::AimToggle || row == R::AimAssist || row == R::TouchControls || row == R::Vibration ||
            row == R::Sound || row == R::Graphics;
 }
 int rows_per_column() { return static_cast<int>((input::action_count + 1) / 2); }
@@ -265,10 +229,6 @@ PauseMenu::Result PauseMenu::update(GameSettings& settings, int width, int heigh
                 case Row::Vibration: settings.vibration = !settings.vibration; changed(); break;
                 case Row::Sound: settings.muted = !settings.muted; changed(); break;
                 case Row::TouchLayout: result = Result::EditTouchLayout; break;
-                case Row::Language:
-                    settings.language = settings.language == GameSettings::Language::English ? GameSettings::Language::Esperanto : GameSettings::Language::English;
-                    changed();
-                    break;
                 case Row::TouchControls:
                     settings.touch_controls = static_cast<GameSettings::TouchControls>((static_cast<int>(settings.touch_controls) + 1) % 3);
                     changed();
@@ -300,7 +260,7 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
     const auto p = panel(width, height, page_);
     DrawRectangleRounded(p, .04F, 8, panel_colour);
     DrawRectangleRoundedLinesEx(p, .04F, 8, 2, Fade(accent, .5F));
-    const auto& w = words(settings);
+    const auto& w = english;
     centred(font, w.titles[static_cast<int>(page_)], {p.x + p.width / 2, p.y + 34 * s}, 30 * s, accent);
     if (page_ == Page::Main) {
         for (int i = 0; i < (can_quit_game ? 7 : 6); ++i)
@@ -334,7 +294,6 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
             case Row::AimAssist: on = settings.aim_assist; button(r, on ? w.on : w.off, on, font, s); break;
             case Row::Vibration: on = settings.vibration; button(r, on ? w.on : w.off, on, font, s); break;
             case Row::Sound: on = !settings.muted; button(r, on ? w.on : w.off, on, font, s); break;
-            case Row::Language: button(r, w.languages[static_cast<int>(settings.language)], true, font, s); break;
             case Row::TouchLayout: button(r, w.edit, !settings.touch_layout.empty(), font, s); break;
             case Row::TouchControls:
                 button(r, touch_modes[static_cast<int>(settings.touch_controls)], settings.touch_controls != GameSettings::TouchControls::Off, font, s);
@@ -357,7 +316,7 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
         const auto first = slot(a, 0, width, height);
         const float column_left = first.x - (first.width * 2 + 8 * s) * .44F / .56F;
         float size = 15 * s;
-        const char* label = settings.language == GameSettings::Language::Esperanto ? action_labels_eo[a] : input::Bindings::label(action);
+        const char* label = input::Bindings::label(action);
         while (size > 9 && measure(font, label, size) > first.x - column_left - 8 * s) size -= 1;
         text(font, label, {column_left, first.y + first.height / 2 - size / 2}, size, ink);
         for (int k = 0; k < 2; ++k) {

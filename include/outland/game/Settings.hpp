@@ -12,8 +12,6 @@ struct GameSettings {
     // Touch buttons and swipe-to-look: AUTO shows them on phones and tablets, and once a touch
     // screen is used; OFF plays with keyboard and mouse.
     enum class TouchControls : int { Auto, On, Off };
-    // The game's language: English, or Esperanto (Verda's own) for the menus and the story's talk.
-    enum class Language : int { English, Esperanto };
 
     float look_sensitivity{1.0F};   // touch: swipe across half the screen's height turns 90 degrees at 1.0
     float mouse_sensitivity{1.0F};  // mouse: .0012 radians per pixel at 1.0
@@ -27,7 +25,6 @@ struct GameSettings {
     float volume{.8F};
     bool muted{false};
     Graphics graphics{Graphics::Auto};
-    Language language{Language::English};
     input::TouchOverrides touch_layout;   // buttons the player moved or resized (SETTINGS > Touch layout)
     input::Bindings bindings{input::Bindings::defaults()};
     bool mouse_look{false};         // at run time: the player looks with the mouse (not saved)
@@ -39,7 +36,7 @@ struct GameSettings {
     static std::string path_for(const std::string& map_path);
     bool load(const std::string& path);
     bool save(const std::string& path) const;
-    // Everything but the volume, graphics and language back to the defaults.
+    // Everything but the volume and graphics back to the defaults.
     void reset_controls();
 };
 
