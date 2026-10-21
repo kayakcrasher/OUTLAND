@@ -50,7 +50,7 @@ float Career::random() {
 bool Career::join_gang(int gang, const std::string& gang_name, std::string& why) {
     if (gang < 0) { why = "Nobody here to join"; return false; }
     if (state_.side == Side::Gang && state_.gang == gang) { why = "You are already one of them"; return false; }
-    const bool was_cop = state_.side == Side::Police;
+    if (state_.side == Side::Police) { why = "You wear the badge - hand it in at a station first"; return false; }
     state_.side = Side::Gang;
     state_.gang = gang;
     state_.respect = 0;            // a new crew: respect is earned again
@@ -59,9 +59,7 @@ bool Career::join_gang(int gang, const std::string& gang_name, std::string& why)
     state_.patrol_car.clear();
     job_ = {};
     next_offer_ = -1;
-    if (was_cop) state_.record = true;   // a cop gone bad: on file for good
-    say(was_cop ? "You turned: the badge is gone, " + gang_name + " take you in. The Policio will never have you back"
-                : "Welcome to " + gang_name + ". Respect is earned - and keep your honour: gangsters only");
+    say("Welcome to " + gang_name + ". Respect is earned - and keep your honour: gangsters only");
     return true;
 }
 
@@ -126,14 +124,47 @@ void Career::killed(int gang, bool from_vehicle) {
     }
 }
 
-void Career::arrested(int gang) {
-    if (state_.side != Side::Police || gang < 0) return;
+bool Career::arrested(int gang) {
+    if (state_.side != Side::Police || gang < 0) return false;
+    if (custody_ >= custody_max) { say("The car is full - take them to the state prison first"); return false; }
     const bool counted = (job_.kind == JobKind::Raid && gang == job_.gang) ||
                          (job_.kind == JobKind::BreakUpWar && (gang == job_.gang || gang == job_.crew));
     killed(gang, false);
     gain(1);                       // brought in alive: the Chief likes that better
-    pay_ += 60;
-    if (!counted) say("Arrested - booked at the station (+1 respect, +60 kronoj)");
+    ++custody_;
+    if (!counted) say("Arrested (+1 respect): " + std::to_string(custody_) + " in custody - drive them to the state prison");
+    return true;
+}
+
+int Career::deliver() {
+    if (state_.side != Side::Police || custody_ == 0) return 0;
+    const int n = custody_;
+    custody_ = 0;
+    const int paid = static_cast<int>(std::lround(static_cast<float>(booking_pay * n) * pay_scale()));
+    pay_ += paid;
+    gain(2.0F * static_cast<float>(n));
+    say("Booked in at the state prison: " + std::to_string(n) + (n == 1 ? " prisoner" : " prisoners") + ", +" + std::to_string(paid) + " kronoj");
+    return n;
+}
+
+float Career::jailed() {
+    custody_ = 0;
+    jailed_ = true;
+    if (job_.kind != JobKind::None && job_.kind != JobKind::Quest) { job_ = {}; next_offer_ = -1; }
+    float sentence = 60;
+    if (state_.record) sentence += 30;
+    if (state_.side == Side::Gang && !state_.honourable) sentence += 30;
+    say("ARRESTED - " + std::to_string(static_cast<int>(sentence)) + " s in Ŝtata Malliberejo, the state prison");
+    return sentence;
+}
+
+void Career::released() {
+    jailed_ = false;
+    next_offer_ = -1;
+    if (state_.side == Side::Gang) {
+        gain(3);
+        say("Released. You did your time and kept your mouth shut: +3 respect");
+    } else say("Released from the state prison");
 }
 
 void Career::crime(bool serious) {
@@ -248,6 +279,7 @@ void Career::turf_taken(int turf, const std::string& name) {
 }
 
 void Career::died() {
+    custody_ = 0;                                       // the prisoners got away
     if (state_.side == Side::Civilian) return;
     if (job_.kind == JobKind::Quest) return;            // orders stand
     if (job_.kind == JobKind::CleanUp) { say("You went down - the Chief's orders stand: their dead stay down, finish it"); return; }
@@ -429,6 +461,7 @@ void Career::update(const CareerFrame& frame) {
         }
         if (all && job_.kind == JobKind::None) return;   // nothing left to fight
     }
+    if (jailed_) return;                                 // no work inside
     if (next_offer_ < 0) next_offer_ = frame.now + (state_.jobs_done == 0 ? 4 : job_gap);
     if (job_.kind == JobKind::None) {
         if (frame.alive && frame.now >= next_offer_) offer(frame);

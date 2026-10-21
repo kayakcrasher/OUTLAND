@@ -65,13 +65,15 @@ int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegio
         const life::Place* best = nullptr;
         float best_score = 1e9F;
         const bool capital = town.id == "capital_verda";
+        const bool green_hand = gang_of_zone(world::zones::zone_at(town.center)) == 0;   // they stay put
         for (const auto& place : places) {
             if (place.settlement != static_cast<int>(s)) continue;
             float score = suitability(place);
             if (score < 0) continue;
-            // Not on the police's doorstep: well away from any station.
+            // Not on the police's doorstep: well away from any station (the Green Hand keep the
+            // places they have always had).
             for (const auto& station : places)
-                if (station.kind == life::PlaceKind::Police)
+                if (!green_hand && station.kind == life::PlaceKind::Police)
                     score += std::max(0.0F, station_clearance - flat(place.door, station.door)) * .25F;
             if (capital && place.kind != life::PlaceKind::Pub) score += 2; // the casino wants a bar
             // Fixed: the same building every game - nearest the middle of town, a hash for ties.
@@ -109,7 +111,7 @@ int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegio
             m.officer = k == 0 || (crew.casino && k < 4);
             if (k < 2) { // the door
                 m.post = Vector3Add(Vector3Add(crew.door, Vector3Scale(out, 1.4F)), Vector3Scale(side, k == 0 ? 1.8F : -1.8F));
-                m.post_radius = 3;
+                m.post_radius = k == 0 ? .8F : 3;   // the boss holds his spot by the door
                 m.yaw = facing;
             } else if (crew.casino && k < 4) { // at the poker table
                 m.post = Vector3Add(crew.table, Vector3Scale(side, k == 2 ? 1.3F : -1.3F));

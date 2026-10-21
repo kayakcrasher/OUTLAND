@@ -406,7 +406,7 @@ void downtown(Kit& kit, world::VerdaRegion& region) {
         // Parallel-parked cars on the curb lanes beside Main Street blocks: real, drivable vehicles.
         if ((kind == Zone::MainStreet || kind == Zone::Mixed) && std::abs(bx) + std::abs(bz) == 160) for (const float along : {8.0F, -18.0F}) {
             const bool along_x = std::abs(bx) == 40;
-            const float curb = pad_size * .5F + 2.2F;
+            const float curb = pad_size * .5F + 1.2F;   // tight to the kerb, clear of the traffic lane
             const Vector3 p = along_x ? Vector3{bx + (bx > 0 ? -curb : curb), ground, bz + along} : Vector3{bx + along, ground, bz + (bz > 0 ? -curb : curb)};
             world::GameplayMarker marker;
             marker.id = "vehicle_spawn_hatchback_downtown_" + std::to_string(++parked);
@@ -617,7 +617,7 @@ void roka_city(Kit& kit, world::VerdaRegion& region) {
             kit.put(urban + "Traffic lights/street_light.glb", spot(0), side == 0 ? 0.0F : side == 1 ? 270.0F : side == 2 ? 180.0F : 90.0F, false);
         }
         if (!square && bx == 0) for (const float along : {8.0F, -18.0F}) {
-            const float curb = pad_size * .5F + 2.2F;
+            const float curb = pad_size * .5F + 1.2F;   // tight to the kerb, clear of the traffic lane
             vehicle_marker(*roka, "vehicle_spawn_hatchback_roka_" + std::to_string(++parked), {c.x + along, 0, c.z + bz + (bz > 0 ? -curb : curb)}, 90);
         }
     }
@@ -1331,7 +1331,7 @@ void porto_luma_city(Kit& kit, world::VerdaRegion& region) {
         // Kerbside cars on the streets round the square.
         if (!square && (bx == 0 || bz == 0)) for (const float along : {8.0F, -18.0F}) {
             const bool along_z = bz == 0;
-            const float curb = pad_size * .5F + 2.2F;
+            const float curb = pad_size * .5F + 1.2F;   // tight to the kerb, clear of the traffic lane
             const Vector3 p = along_z ? Vector3{c.x + bx + (bx > 0 ? -curb : curb), 0, c.z + along} : Vector3{c.x + along, 0, c.z + bz + (bz > 0 ? -curb : curb)};
             vehicle_marker(*port, "vehicle_spawn_hatchback_porto_" + std::to_string(++parked), p, along_z ? 0.0F : 90.0F);
         }
@@ -1998,6 +1998,65 @@ void lay_highways(world::VerdaRegion& region) {
 }
 }
 
+// ------------------------------------------------------------------ the state prison
+// Ŝtata Malliberejo (city kit civic/state_prison.glb) on its pad south-east of the ring road,
+// gate toward the ring, and an access road from the ring to the gate (layout::prison_*).
+void state_prison(Kit& kit, world::VerdaRegion& region) {
+    const Vector3 c = world::layout::prison_center;
+    const float yaw = world::layout::prison_yaw;
+    auto* owner = settlement(region, "south_haven");
+    if (!owner) return;
+    // Nothing else on the pad.
+    for (auto& town : region.runtime_settlements())
+        kit.report.cleared += static_cast<int>(std::erase_if(town.assets, [&](const world::WorldAsset& a) {
+            return a.vehicle.definition.empty() && std::hypot(a.position.x - c.x, a.position.z - c.z) < 60; }));
+    kit.clear_area(c, 60);
+    kit.claim(c, 43, 34, yaw);
+    if (!kit.put(city + "civic/state_prison.glb", {c.x, world::terrain::TerrainHeight::sample(c.x, c.z), c.z}, yaw)) return;
+    // The access road: out from the ring road (its point at the prison's bearing) to the gate.
+    const float bearing = std::atan2(c.z, c.x), ring = 1500;
+    const Vector3 from{ring * std::cos(bearing), 0, ring * std::sin(bearing)};
+    const Vector3 gate = to_world(c, yaw, 0, 0, -34);
+    owner->roads.push_back({from, gate, 7, world::RoadType::Asphalt});
+    kit.add_roads({owner->roads.back()});
+}
+
+// ------------------------------------------------------------------ smugglers' jetties
+// Where contraband comes ashore (Explore's SMUGGLE job): a jetty on the open shore with a coaster
+// alongside (city kit civic/smugglers_jetty.glb), at the end of a gravel track down from the
+// town - from Porto Luma's quay and from Suda Haveno's south street. The deck stands 2.2 m over
+// the sea; the model's land end is its -Z.
+void smugglers_jetties(Kit& kit, world::VerdaRegion& region) {
+    struct Spot { const char* town; Vector3 start, dir; };
+    const Vector3 port = site("port_luma"), haven = site("south_haven");
+    const float edge = pitch + street * .5F + 40;
+    for (const Spot& spot : {Spot{"port_luma", {port.x + 196, 0, port.z + 40}, {1, 0, 0}},
+                             Spot{"south_haven", {haven.x + 40, 0, haven.z + edge}, {0, 0, 1}}}) {
+        auto* town = settlement(region, spot.town);
+        if (!town) continue;
+        const float deck = world::layout::sea_level + 2.2F;
+        Vector3 shore = spot.start;
+        for (float t = 0; t < 600; t += 1) {
+            const Vector3 p = Vector3Add(spot.start, Vector3Scale(spot.dir, t));
+            if (world::terrain::TerrainHeight::sample(p.x, p.z) <= deck) { shore = p; break; }
+        }
+        if (Vector3Distance(shore, spot.start) < 20) continue;
+        const float yaw = std::atan2(spot.dir.x, spot.dir.z) * RAD2DEG;
+        const Vector3 track_end = Vector3Subtract(shore, Vector3Scale(spot.dir, 3));
+        for (auto& owner : region.runtime_settlements())
+            kit.report.cleared += static_cast<int>(std::erase_if(owner.assets, [&](const world::WorldAsset& a) {
+                if (!a.vehicle.definition.empty()) return false;
+                const Vector3 d = Vector3Subtract(a.position, spot.start);
+                const float along = d.x * spot.dir.x + d.z * spot.dir.z, across = std::abs(d.x * spot.dir.z - d.z * spot.dir.x);
+                return along > 2 && along < Vector3Distance(spot.start, shore) + 30 && across < 9;
+            }));
+        town->roads.push_back({spot.start, track_end, 6, world::RoadType::Dirt});
+        kit.add_roads({town->roads.back()});
+        const Vector3 centre = Vector3Add(shore, Vector3Scale(spot.dir, 22));
+        kit.put(city + "civic/smugglers_jetty.glb", {centre.x, deck - 10, centre.z}, yaw, false);   // (the game finds the pickup from it)
+    }
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     lay_highways(region);
@@ -2024,6 +2083,9 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     government(kit, region);
     // Last of all: the Vakeroj's ranches and the stockyard (new settlements and pieces only).
     ranches(kit, region);
+    // After them (new pieces only): the state prison and the smugglers' jetties.
+    state_prison(kit, region);
+    smugglers_jetties(kit, region);
     return kit.report;
 }
 }

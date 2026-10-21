@@ -96,7 +96,7 @@ These join the hits, drive-bys and rig robberies in "the word":
 
 | Job | What | Pay | Respect |
 |---|---|---|---|
-| **SMUGGLE** | Drive to a dock to pick up contraband off a boat, then drive it home to your hideout. Someone tips off the police at the pickup: you leave with 2 stars. A delivery adds 25 hold. | 1300 | 12 |
+| **SMUGGLE** | Drive down the gravel track to a smugglers' jetty (Porto Luma's, off the end of the quay, or Suda Haveno's, south of town) and pick up the contraband off the coaster at the jetty's foot, then drive it home to your hideout. Someone tips off the police at the pickup: you leave with 2 stars. A delivery adds 25 hold. | 1300 | 12 |
 | **EXTORT** | Drive to a ranch and lean on the family. Open families pay. Fierce or allied ones fight: take out 2 of them and they pay. Either way, the ranch then counts for your gang. | 700 | 9 |
 | **TAKE TURF** | Your rivals' weakest town: kill their crew and tag their walls until it falls to you. | 1500 | 15 |
 

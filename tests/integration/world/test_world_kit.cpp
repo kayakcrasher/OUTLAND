@@ -386,9 +386,16 @@ int main() {
         if (!car || (car->vehicle.marker.find("downtown") == std::string::npos && car->vehicle.marker.find("capital") == std::string::npos)) continue;
         ++downtown_cars;
         const Vector3 start = car->position;
-        const Vector3 beside = Vector3Add(start, Vector3RotateByAxisAngle({2.2F, 0, 0}, {0, 1, 0}, car->rotation_y * DEG2RAD));
-        const int found = cars.nearest(region, beside);
-        check(found == static_cast<int>(i) && cars.enter(region, found, beside), "get into parked car " + car->vehicle.marker +
+        // From either side (one may be the kerb, by a tree or a lamp).
+        Vector3 beside{};
+        int found = -1;
+        bool entered = false;
+        for (const float side : {2.2F, -2.2F}) {
+            beside = Vector3Add(start, Vector3RotateByAxisAngle({side, 0, 0}, {0, 1, 0}, car->rotation_y * DEG2RAD));
+            found = cars.nearest(region, beside);
+            if (found == static_cast<int>(i) && cars.enter(region, found, beside)) { entered = true; break; }
+        }
+        check(entered, "get into parked car " + car->vehicle.marker +
               " (nearest: " + (found >= 0 ? cars.vehicles()[static_cast<std::size_t>(found)].id : std::string("none")) + ")");
         for (int f = 0; f < 120; ++f) { cars.begin_frame(); cars.update(.02F, {1, 0}, region, car->position); }
         check(Vector3Distance(start, car->position) > 8, "drive away: " + car->vehicle.marker + " moved " + std::to_string(Vector3Distance(start, car->position)));

@@ -3419,8 +3419,6 @@ ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit15" 9 "assets/ver
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit16" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 6 -388 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit17" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 6 -380 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit18" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.9969492 -372 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit19" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.98418617 -364 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit20" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.95914555 -356 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit21" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.92283344 -348 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit22" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.87472105 -340 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit23" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.80401802 -332 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
@@ -5802,6 +5800,9 @@ ASSET "creator_verda_kit_roof_slab_kit503" 4 "assets/verda/kit/roof_slab_3x3.glb
 ASSET "creator_verda_kit_roof_slab_kit504" 4 "assets/verda/kit/roof_slab_3x3.glb" 1318.61792 9 -842.150208 3 0.100000001 3 302.15625 255 255 255 255 80 80 80 255 1
 ASSET "creator_verda_kit_roof_slab_kit505" 4 "assets/verda/kit/roof_slab_3x3.glb" 1322.75439 9 -841.207092 3 0.100000001 3 302.15625 255 255 255 255 80 80 80 255 1
 ASSET "creator_verda_kit_roof_slab_kit506" 4 "assets/verda/kit/roof_slab_3x3.glb" 1320.2146 9 -839.610413 3 0.100000001 3 302.15625 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_state_prison_kit1" 0 "assets/verda/city/civic/state_prison.glb" 1290 6 1290 84 11.5 64 45 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_smugglers_jetty_kit1" 4 "assets/verda/city/civic/smugglers_jetty.glb" 2252 -39.7999992 -360 18 19 44 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_smugglers_jetty_kit2" 4 "assets/verda/city/civic/smugglers_jetty.glb" 340 -39.7999992 2177 18 19 44 0 255 255 255 255 80 80 80 255 1
 MARKER "creator_marker_loot_spawn_general_training" 0 4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 0.5 0.5 0.5 0 1
@@ -6651,22 +6652,22 @@ BUILDING "verda_okcidento_house_86" 0 -396 0 174 13 4 10 0 184 196 160 255 58 62
 BUILDING "verda_okcidento_house_87" 1 -420 0 174 11 7 9 0 236 232 220 255 86 96 104 255 1
 BUILDING "verda_okcidento_house_88" 1 -444 0 174 11 7 9 0 150 168 182 255 58 62 58 255 1
 MARKER "vehicle_spawn_hatchback_capital" 3 -3 0 22 3 1.79999995 5 180 1
-MARKER "vehicle_spawn_hatchback_downtown_1" 3 -112 0 -3.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_downtown_2" 3 -138 0 -3.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_downtown_3" 3 -112 0 3.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_downtown_4" 3 -138 0 3.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_downtown_5" 3 -3.79999924 0 -112 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_downtown_6" 3 -3.79999924 0 -138 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_downtown_7" 3 -3.79999924 0 128 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_downtown_8" 3 -3.79999924 0 102 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_downtown_9" 3 3.79999924 0 -112 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_downtown_10" 3 3.79999924 0 -138 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_downtown_11" 3 3.79999924 0 128 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_downtown_12" 3 3.79999924 0 102 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_downtown_13" 3 128 0 -3.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_downtown_14" 3 102 0 -3.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_downtown_15" 3 128 0 3.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_downtown_16" 3 102 0 3.79999924 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_downtown_1" 3 -112 0 -4.79999924 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_downtown_2" 3 -138 0 -4.79999924 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_downtown_3" 3 -112 0 4.79999924 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_downtown_4" 3 -138 0 4.79999924 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_downtown_5" 3 -4.79999924 0 -112 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_downtown_6" 3 -4.79999924 0 -138 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_downtown_7" 3 -4.79999924 0 128 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_downtown_8" 3 -4.79999924 0 102 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_downtown_9" 3 4.79999924 0 -112 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_downtown_10" 3 4.79999924 0 -138 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_downtown_11" 3 4.79999924 0 128 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_downtown_12" 3 4.79999924 0 102 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_downtown_13" 3 128 0 -4.79999924 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_downtown_14" 3 102 0 -4.79999924 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_downtown_15" 3 128 0 4.79999924 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_downtown_16" 3 102 0 4.79999924 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_okcidento_1" 3 -301.100006 -0 -171.199997 2 1.60000002 4.4000001 360 1
 MARKER "vehicle_spawn_hatchback_okcidento_2" 3 -246.899994 -0 -148.800003 2 1.60000002 4.4000001 180 1
 MARKER "vehicle_spawn_hatchback_okcidento_3" 3 -254.100006 -0 -148.300003 2 1.60000002 4.4000001 180 1
@@ -7212,14 +7213,15 @@ ROAD 1825 0 -240 1815.80762 0 -243.807617 7.25 2
 ROAD 1815.80762 0 -243.807617 1812 0 -253 7.25 2
 ROAD 1812 0 -253 1815.80762 0 -262.192383 7.25 2
 ROAD 1815.80762 0 -262.192383 1825 0 -266 7.25 2
-MARKER "vehicle_spawn_hatchback_porto_1" 3 1706.19995 6 -392 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_porto_2" 3 1706.19995 6 -418 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_porto_3" 3 1758 6 -443.799988 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_porto_4" 3 1732 6 -443.799988 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_porto_5" 3 1758 6 -356.200012 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_porto_6" 3 1732 6 -356.200012 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_porto_7" 3 1793.80005 6 -392 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_porto_8" 3 1793.80005 6 -418 2 1.60000002 4.4000001 0 1
+ROAD 1946 0 -360 2227 0 -360 6 0
+MARKER "vehicle_spawn_hatchback_porto_1" 3 1705.19995 6 -392 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_porto_2" 3 1705.19995 6 -418 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_porto_3" 3 1758 6 -444.799988 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_porto_4" 3 1732 6 -444.799988 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_porto_5" 3 1758 6 -355.200012 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_porto_6" 3 1732 6 -355.200012 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_porto_7" 3 1794.80005 6 -392 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_porto_8" 3 1794.80005 6 -418 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_truck_port_luma_1" 3 1936 6 -462 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_truck_port_luma_2" 3 1936 6 -338 2 1.60000002 4.4000001 180 1
 MARKER "vehicle_spawn_police_port_luma_1" 3 1877.80005 6 -405 2 1.60000002 4.4000001 180 1
@@ -7321,6 +7323,8 @@ ROAD 233 0 1720 242.192383 0 1723.80762 7.25 2
 ROAD 242.192383 0 1723.80762 246 0 1733 7.25 2
 ROAD 246 0 1733 242.192383 0 1742.19238 7.25 2
 ROAD 242.192383 0 1742.19238 233 0 1746 7.25 2
+ROAD 1060.66016 0 1060.66016 1265.95837 0 1265.95837 7 2
+ROAD 340 0 1926 340 0 2152 6 0
 MARKER "vehicle_spawn_hatchback_suda_lot_1" 3 214 6 1708 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_suda_lot_2" 3 228 6 1732 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_suda_3" 3 255.199997 6 1808 2 1.60000002 4.4000001 0 1
@@ -7426,10 +7430,10 @@ ROAD -1670 0 547 -1673.80762 0 556.192383 7.25 2
 ROAD -1673.80762 0 556.192383 -1683 0 560 7.25 2
 ROAD -1683 0 560 -1692.19238 0 556.192383 7.25 2
 ROAD -1692.19238 0 556.192383 -1696 0 547 7.25 2
-MARKER "vehicle_spawn_hatchback_roka_1" 3 -1742 14.0573664 406.200012 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_roka_2" 3 -1768 14.0573664 406.200012 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_roka_3" 3 -1742 14.0573664 493.799988 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_roka_4" 3 -1768 14.0573664 493.799988 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_roka_1" 3 -1742 14.0573664 405.200012 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_roka_2" 3 -1768 14.0573664 405.200012 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_roka_3" 3 -1742 14.0573664 494.799988 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_roka_4" 3 -1768 14.0573664 494.799988 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_truck_roka_1" 3 -1648 14.0573664 394 2 1.60000002 4.4000001 270 1
 MARKER "vehicle_spawn_truck_roka_2" 3 -1692 14.0573664 474 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_truck_roka_3" 3 -1648 14.0573664 554 2 1.60000002 4.4000001 270 1

@@ -598,6 +598,22 @@ void Renderer::run() {
     // their loot profile. A join at a hideout or a station takes a second USE within a few seconds.
     game::career::Career career;
     game::career::Backup backup;     // an officer's radio call: two officers in a squad car
+    // Ŝtata Malliberejo, the state prison (world::layout::prison_*): a point in its frame (x across,
+    // z from the gate (-) to the back), on the ground; and the time an inmate gets out (-1: free).
+    const auto prison_at=[](float x,float z) {
+        const Vector3 c=world::layout::prison_center;
+        const float a=world::layout::prison_yaw*DEG2RAD;
+        const Vector3 p{c.x+x*std::cos(a)+z*std::sin(a),0,c.z-x*std::sin(a)+z*std::cos(a)};
+        return Vector3{p.x,world::terrain::TerrainHeight::sample(p.x,p.z)+.15F,p.z};
+    };
+    const auto inside_prison=[](Vector3 p) {
+        const Vector3 c=world::layout::prison_center;
+        const float a=world::layout::prison_yaw*DEG2RAD,dx=p.x-c.x,dz=p.z-c.z;
+        const float x=dx*std::cos(a)-dz*std::sin(a),z=dx*std::sin(a)+dz*std::cos(a);
+        return std::abs(x)<40.5F && std::abs(z)<30.5F;
+    };
+    const Vector3 prison_intake=prison_at(0,-42);   // outside the gate: where officers hand prisoners over
+    double prison_until=-1;
     std::string career_path,career_saved;
     float career_save_wait=0;
     bool career_dead=false;
@@ -1673,9 +1689,19 @@ void Renderer::run() {
                         territory.add_ranch(std::string(ranch.spec->id),std::string(ranch.spec->name),ranch.frame.at(0,110),150,static_cast<int>(r),
                             std::string(ranch.spec->family),game::mafia::gang_of_zone(ranch.spec->county),session_seed);
                     }
-                    for(const auto& place:island_life.places())
-                        if(place.kind==game::life::PlaceKind::Dock && static_cast<std::size_t>(place.settlement)<verda_region.settlements().size())
-                            smuggling_docks.push_back({verda_region.settlements()[static_cast<std::size_t>(place.settlement)].name+" docks",place.door});
+                    // Contraband comes ashore at the smugglers' jetties: the load waits at the foot
+                    // of each, where the gravel track ends (the jetty's land end is its model's -Z).
+                    for(const auto& town:verda_region.settlements())
+                        for(const auto& a:town.assets) {
+                            if(!a.model_path.ends_with("smugglers_jetty.glb")) continue;
+                            const float r=a.rotation_y*DEG2RAD;
+                            const Vector3 foot{a.position.x-std::sin(r)*25,0,a.position.z-std::cos(r)*25};
+                            smuggling_docks.push_back({town.name+" jetty",{foot.x,world::terrain::TerrainHeight::sample(foot.x,foot.z),foot.z}});
+                        }
+                    if(smuggling_docks.empty())
+                        for(const auto& place:island_life.places())
+                            if(place.kind==game::life::PlaceKind::Dock && static_cast<std::size_t>(place.settlement)<verda_region.settlements().size())
+                                smuggling_docks.push_back({verda_region.settlements()[static_cast<std::size_t>(place.settlement)].name+" docks",place.door});
                     territory_path=game::inventory::LootSave::profile_path(map_path,game_mode)+".territory";
                     bool territory_loaded=false;
                     if(FileExists(territory_path.c_str())) if(char* text=LoadFileText(territory_path.c_str())) {
@@ -2091,6 +2117,12 @@ void Renderer::run() {
         const auto reachable_shop=[&](Vector3 door){return !combat_world.trace_segment(
             {player.position.x,player.position.y+.5F,player.position.z},Vector3Add(door,{0,.8F,0}),false,false).hit();};
         const auto* nearby_shop=game_mode==game::GameMode::Explore && !vehicles.driver() ? economy.nearest(shop_feet,reachable_shop) : nullptr;
+        // A shop's counter is at its door: within a step or two of it, not from the pavement - and a
+        // car within reach takes USE unless you are right at the door.
+        if(nearby_shop) {
+            const float to_door=std::hypot(nearby_shop->door.x-shop_feet.x,nearby_shop->door.z-shop_feet.z);
+            if(to_door>2.5F || (to_door>1.2F && vehicles.nearest(verda_region,shop_feet)>=0)) nearby_shop=nullptr;
+        }
         // Vestaĵejo Verda: try on what a mannequin wears, or browse everything at the counter or
         // the fitting rooms (the store sells clothes, not the supplies counter's goods).
         int store_mannequin=-1;
@@ -2145,19 +2177,108 @@ void Renderer::run() {
                 }
                 if(watched && him->health()>60) {
                     interaction_message="He won't come quietly - his crew is watching. Get him alone, or wound him first";
-                } else {
+                } else if(career.arrested(gang)) {
                     if(watched) mafio.provoke(bot,match_time);   // cuffed in front of his crew: they take it badly
                     br_bots.retire(bot);br_bots.set_hidden(bot,true);
-                    career.arrested(gang);
                     territory.killed(gang,feet,player_gang());
                     if(crew>=0 && mafio.crews()[static_cast<std::size_t>(crew)].casino && career.serving() &&
                        std::any_of(mafio.crews().begin(),mafio.crews().end(),[](const game::mafia::Crew& c){return !c.disbanded && !c.casino;}))
                         career.warned_off_capital(match_time);
-                    interaction_message="ARRESTED: one of "+name+" - cuffed and taken to the station";
+                    interaction_message="ARRESTED: one of "+name+" - cuffed. "+std::to_string(career.custody())+" in custody: take them to the state prison";
                     gun_audio.kill_confirm();
-                }
+                } else interaction_message=career.message();
                 interaction_remaining=3;
                 input_system.player().interact=false;
+            }
+        }
+        // Joining: a gang by talking to its boss (the man by the door of the hideout); the
+        // Policio at a station's front door - where a recruit signs up and an officer hands in the
+        // badge. USE twice. (A cop never joins a gang: the badge goes back first.)
+        const auto boss_near=[&](Vector3 feet) -> int {
+            if(!mafio.active() || vehicles.driver() || game_mode!=game::GameMode::Explore || career_path.empty()) return -1;
+            for(std::size_t c=0;c<mafio.crews().size();++c) {
+                const auto& crew=mafio.crews()[c];
+                if(crew.disbanded || crew.members.empty() || br_bots.hidden(crew.members.front())) continue;
+                const auto* boss=br_bots.find(crew.members.front());
+                // (Mid-conversation he can be a step or two further off.)
+                const float reach=match_time<join_offer.until && join_offer.crew==static_cast<int>(c) ? 4.5F : 2.6F;
+                if(boss && boss->alive() && std::hypot(boss->position().x-feet.x,boss->position().z-feet.z)<reach &&
+                   std::abs(boss->position().y-feet.y)<1.6F) return static_cast<int>(c);
+            }
+            return -1;
+        };
+        const auto station_desk=[&](Vector3 feet) -> const game::services::Unit* {
+            if(!services.active() || vehicles.driver() || game_mode!=game::GameMode::Explore || career_path.empty()) return nullptr;
+            for(const auto& place:island_life.places())
+                if(place.kind==game::life::PlaceKind::Police && std::hypot(place.door.x-feet.x,place.door.z-feet.z)<3.2F &&
+                   std::abs(place.door.y-feet.y)<2.0F)
+                    return services.station_near(place.door,40);
+            return nullptr;
+        };
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && !vehicles.driver() &&
+           game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            const int crew=boss_near(feet);
+            const auto* station=crew<0 ? station_desk(feet) : nullptr;
+            const bool confirming=match_time<join_offer.until && ((crew>=0 && join_offer.crew==crew) || (station && join_offer.patrol_car==station->vehicle));
+            if(crew>=0 && career.on_duty()) {
+                interaction_message="The boss won't talk to a cop - hand in your badge at a station first";
+                interaction_remaining=3;input_system.player().interact=false;
+            } else if(crew>=0 && career.in_gang(mafio.crews()[static_cast<std::size_t>(crew)].gang)) {
+                // Your own boss: USE twice to walk away from the gang.
+                if(confirming) {
+                    career.quit();mafio.set_player_gang(-1);island_ruled=false;join_offer={};
+                    interaction_message=career.state().record ? "You walked away - your record stays" : "You walked away with your honour - your record is clean";
+                } else {
+                    join_offer={crew,{},match_time+5};
+                    interaction_message="Boss: \"Leaving us?\" - USE again to walk away from "+std::string(game::mafia::gangs[static_cast<std::size_t>(mafio.crews()[static_cast<std::size_t>(crew)].gang)].name);
+                }
+                interaction_remaining=4;input_system.player().interact=false;
+            } else if(crew>=0 && !mafio.provoked(mafio.crews()[static_cast<std::size_t>(crew)].gang,match_time)) {
+                const int gang=mafio.crews()[static_cast<std::size_t>(crew)].gang;
+                const std::string name(game::mafia::gangs[static_cast<std::size_t>(gang)].name);
+                if(confirming) {
+                    std::string why;
+                    if(career.join_gang(gang,name,why)) {
+                        mafio.set_player_gang(gang);services.assign_player_car({});gun_audio.kill_confirm();interaction_message.clear();
+                        loot_session.edit_inventory().add(item_registry,"spray_paint",4);loot_session.changed();   // cans to mark your turf
+                        island_ruled=territory.rules_island(gang);
+                    }
+                    else interaction_message=why;
+                    join_offer={};
+                } else {
+                    join_offer={crew,{},match_time+5};
+                    interaction_message="Boss of "+name+": \"Want in? Gangsters only - never the people.\" USE again to join";
+                }
+                interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
+            } else if(station && career.on_duty()) {
+                // Handing in the badge.
+                if(confirming) {
+                    career.quit();services.assign_player_car({});lights_car.clear();join_offer={};
+                    if(backup.active()) backup.dismiss(br_bots,match_time);
+                } else {
+                    join_offer={-1,station->vehicle,match_time+5};
+                    interaction_message="USE again to hand in your badge";
+                }
+                interaction_remaining=4;input_system.player().interact=false;
+            } else if(station) {
+                if(career.state().record) {interaction_message="The Policio checked your record: no criminals on the force";join_offer={};}
+                else if(career.state().side==game::career::Side::Gang) {interaction_message="You still run with a gang - tell your boss you're out first";join_offer={};}
+                else if(confirming) {
+                    std::string why;
+                    if(career.join_police(station->vehicle,why)) {
+                        services.assign_player_car(station->vehicle);mafio.set_player_gang(-1);gun_audio.kill_confirm();interaction_message.clear();
+                        // Issued: a sidearm and two magazines.
+                        auto& bag=loot_session.edit_inventory();
+                        if(!bag.owns_weapon(item_registry,game::combat::WeaponId::Pistol)) bag.add(item_registry,"pistol",1);
+                        bag.add(item_registry,"pistol_ammo",30);loot_session.changed();
+                    } else interaction_message=why;
+                    join_offer={};
+                } else {
+                    join_offer={-1,station->vehicle,match_time+5};
+                    interaction_message="USE again to join the Policio de Verda - you get a patrol car and radio calls";
+                }
+                interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
             }
         }
         if(controls.interact && at_table && !inventory_open && !(shop_open||store_open) && !mode_session.terminal()) {
@@ -2206,7 +2327,7 @@ void Renderer::run() {
         if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && !vehicles.driver() &&
            game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
-            if(chief.placed && Vector3Distance(feet,chief.at)<3.2F) {
+            if(chief.placed && Vector3Distance(feet,chief.at)<2.4F) {
                 bool issue=false;
                 chief_line=career.chief_talk(issue);chief_line_time=10;
                 if(issue) {
@@ -2225,62 +2346,6 @@ void Renderer::run() {
                 else if(career.police_stage()==game::career::PoliceStage::Report) {interaction_message=std::string("Report to ")+game::career::chief_name+" at Verda City HQ first";interaction_remaining=4;}
                 else police_camp.start(police_camp.next_drill());
                 input_system.player().interact=false;
-            }
-        }
-        // Joining a gang (at its hideout's door) or the police (at a station): USE twice.
-        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && !vehicles.driver() &&
-           game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
-            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
-            const int crew=mafio.active() ? mafio.turf_at(feet,7) : -1;
-            const auto* station=crew<0 && services.active() ? services.station_near(feet,14) : nullptr;
-            const bool confirming=match_time<join_offer.until && ((crew>=0 && join_offer.crew==crew) || (station && join_offer.patrol_car==station->vehicle));
-            if(crew>=0 && mafio.crews()[static_cast<std::size_t>(crew)].disbanded) {
-                interaction_message="Nobody here now - the Policio broke this crew up";interaction_remaining=3;input_system.player().interact=false;
-            } else if(crew>=0 && career.in_gang(mafio.crews()[static_cast<std::size_t>(crew)].gang)) {
-                // Your own crew's door: USE twice to walk away from the gang.
-                if(confirming) {
-                    career.quit();mafio.set_player_gang(-1);island_ruled=false;join_offer={};
-                    interaction_message=career.state().record ? "You walked away - your record stays" : "You walked away with your honour - your record is clean";
-                } else {
-                    join_offer={crew,{},match_time+5};
-                    interaction_message="USE again to leave "+std::string(game::mafia::gangs[static_cast<std::size_t>(mafio.crews()[static_cast<std::size_t>(crew)].gang)].name);
-                }
-                interaction_remaining=4;input_system.player().interact=false;
-            } else if(crew>=0 && !mafio.provoked(mafio.crews()[static_cast<std::size_t>(crew)].gang,match_time)) {
-                const int gang=mafio.crews()[static_cast<std::size_t>(crew)].gang;
-                const std::string name(game::mafia::gangs[static_cast<std::size_t>(gang)].name);
-                if(confirming) {
-                    std::string why;
-                    if(career.join_gang(gang,name,why)) {
-                        mafio.set_player_gang(gang);services.assign_player_car({});gun_audio.kill_confirm();interaction_message.clear();
-                        loot_session.edit_inventory().add(item_registry,"spray_paint",4);loot_session.changed();   // cans to mark your turf
-                        island_ruled=territory.rules_island(gang);
-                    }
-                    else interaction_message=why;
-                    join_offer={};
-                } else {
-                    join_offer={crew,{},match_time+5};
-                    interaction_message="USE again to join "+name+" - keep your honour: fight gangsters only, never the people";
-                }
-                interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
-            } else if(station && !career.on_duty()) {
-                if(career.state().record) {interaction_message="The Policio checked your record: no criminals on the force";join_offer={};}
-                else if(career.state().side==game::career::Side::Gang) {interaction_message="You still run with a gang - leave them first (USE twice at their door)";join_offer={};}
-                else if(confirming) {
-                    std::string why;
-                    if(career.join_police(station->vehicle,why)) {
-                        services.assign_player_car(station->vehicle);mafio.set_player_gang(-1);gun_audio.kill_confirm();interaction_message.clear();
-                        // Issued: a sidearm and two magazines.
-                        auto& bag=loot_session.edit_inventory();
-                        if(!bag.owns_weapon(item_registry,game::combat::WeaponId::Pistol)) bag.add(item_registry,"pistol",1);
-                        bag.add(item_registry,"pistol_ammo",30);loot_session.changed();
-                    } else interaction_message=why;
-                    join_offer={};
-                } else {
-                    join_offer={-1,station->vehicle,match_time+5};
-                    interaction_message="USE again to join the Policio de Verda - you get a patrol car and radio calls";
-                }
-                interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
             }
         }
         // Front doors open by themselves as anyone walks up (the player, residents, bots) and swing
@@ -2308,8 +2373,16 @@ void Renderer::run() {
                 vehicles.nearest(verda_region,feet)>=0 || loot_session.world().nearest(feet,2.8F)>=0 ||
                 (game::rules_for(game_mode).civilian_life && penthouse.inside(feet)) || home_here;
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
-                here=(chief.placed && Vector3Distance(feet,chief.at)<3.2F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 ||
-                    (mafio.active() && mafio.turf_at(feet,7)>=0) || (services.active() && services.station_near(feet,14));
+                here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 ||
+                    boss_near(feet)>=0 || station_desk(feet)!=nullptr;
+                // Who you'd be talking to.
+                if(store_prompt.empty() && player_health.alive()) {
+                    if(arrestable(feet)>=0) store_prompt="E - Arrest him";
+                    else if(const int crew=boss_near(feet);crew>=0) {
+                        const std::string name(game::mafia::gangs[static_cast<std::size_t>(mafio.crews()[static_cast<std::size_t>(crew)].gang)].name);
+                        store_prompt=career.in_gang(mafio.crews()[static_cast<std::size_t>(crew)].gang) ? "E - Talk to your boss" : "E - Talk to the boss of "+name;
+                    } else if(station_desk(feet)) store_prompt=career.on_duty() ? "E - Hand in your badge" : "E - Sign up with the Policio de Verda";
+                }
             }
             use_available=here && !creator_active && player_health.alive();
         }
@@ -3359,6 +3432,41 @@ void Renderer::run() {
             }
             frame.patrol_officers=services.officers_on_foot(npcs);
             if(!vehicle_paused) justice.update(frame,island_life,npcs);
+            // Caught (one star, an officer at arm's length): off to the state prison.
+            bool busted=justice.arrested();
+#ifdef OUTLAND_DEV_TOOLS
+            // OUTLAND_DEV_JAIL=1: arrested a few seconds in (to look at the prison).
+            if(static bool jailed_once=false;!jailed_once && match_time>4 && std::getenv("OUTLAND_DEV_JAIL")) {jailed_once=true;busted=true;}
+#endif
+            if(busted && game_mode==game::GameMode::Explore && !career_path.empty() && prison_until<0 && player_health.alive()) {
+                const float sentence=career.jailed();
+                prison_until=match_time+sentence;
+                if(backup.active()) backup.dismiss(br_bots,match_time);
+                Vector3 exit{};
+                if(vehicles.driver()) vehicles.exit(verda_region,exit,true);
+                const Vector3 cell=prison_at(-15,-1);
+                player.position={cell.x,cell.y+1,cell.z};player.vertical_velocity=0;
+                player.yaw=(world::layout::prison_yaw+180)*DEG2RAD;
+                interaction_message=career.message();interaction_remaining=6;
+            }
+            if(prison_until>=0) {
+                const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+                if(!player_health.alive()) prison_until=-1;
+                else if(match_time>=prison_until) {
+                    // Out the gate, free.
+                    const Vector3 out=prison_at(0,-46);
+                    player.position={out.x,out.y+1,out.z};player.vertical_velocity=0;
+                    prison_until=-1;
+                    career.released();
+                    interaction_message=career.message();interaction_remaining=5;
+                } else if(!inside_prison(feet) || vehicles.driver()) {
+                    Vector3 exit{};
+                    if(vehicles.driver()) vehicles.exit(verda_region,exit,true);
+                    const Vector3 cell=prison_at(-15,-1);
+                    player.position={cell.x,cell.y+1,cell.z};player.vertical_velocity=0;
+                    interaction_message="Back inside, inmate - you go when your time is done";interaction_remaining=3;
+                }
+            }
             if(services.active() && !vehicle_paused) {
                 game::services::ServicesFrame call;
                 call.dt=dt;call.now=match_time;call.player=frame.player;
@@ -3679,6 +3787,10 @@ void Renderer::run() {
                     if(territory_save_wait<=0 && !territory_path.empty()) {
                         territory_save_wait=2;
                         if(const auto text=territory.serialise();text!=territory_saved && SaveFileText(territory_path.c_str(),const_cast<char*>(text.c_str()))) territory_saved=text;
+                    }
+                    // Prisoners in the back: booked in at the prison's gate from a police car.
+                    if(career.custody()>0 && work.driving_police && std::hypot(feet.x-prison_intake.x,feet.z-prison_intake.z)<25 && career.deliver()>0) {
+                        interaction_message=career.message();interaction_remaining=4;gun_audio.kill_confirm();
                     }
                     if(const int pay=career.take_pay();pay>0) {loot_session.economy().money+=pay;loot_session.changed();}
                     mafio.set_player_gang(career.state().side==game::career::Side::Gang ? career.state().gang : -1);
@@ -4722,7 +4834,8 @@ void Renderer::run() {
                 const std::string title=std::string(gang.name)+"  ·  "+crew.town+" crew";
                 const std::string sub=career.in_gang(crew.gang) ? std::string("Your crew - wait here for the word, bring the rig here") :
                     mafio.provoked(crew.gang,match_time) ? std::string("They are shooting at you - the police won't come") :
-                    !career_path.empty() ? std::string(gang.meaning)+" - USE at the door to join them" :
+                    career.on_duty() ? std::string(gang.meaning)+" - they don't talk to cops" :
+                    !career_path.empty() ? std::string(gang.meaning)+" - talk to their boss at the door to join" :
                     std::string(gang.meaning)+" - leave them be and they leave you be";
                 const float tw=MeasureTextEx(font,title.c_str(),20,1).x,sw=MeasureTextEx(font,sub.c_str(),15,1).x;
                 // Left, under the money line: clear of the compass and the touch buttons.
@@ -4881,6 +4994,15 @@ void Renderer::run() {
                 if(!task.empty()) DrawTextEx(font,task.c_str(),{x+14,y+44},15,1,Color{255,232,180,255});
                 DrawTextEx(font,status.c_str(),{x+14,y+(task.empty() ? 46.0F : 64.0F)},14,1,Color{205,212,196,255});
             }
+            // Doing time, or prisoners in the back of the car.
+            if(game_mode==game::GameMode::Explore && (prison_until>=0 || career.custody()>0)) {
+                const int left=static_cast<int>(std::ceil(std::max(0.0,prison_until-match_time)));
+                const std::string line=prison_until>=0 ? TextFormat("ŜTATA MALLIBEREJO  ·  inmate  ·  %d:%02d to go",left/60,left%60) :
+                    TextFormat("IN CUSTODY: %d  ·  drive them to the state prison in a police car",career.custody());
+                const float lw=MeasureTextEx(font,line.c_str(),18,1).x;
+                DrawRectangle(static_cast<int>(screen_width/2-lw/2-12),screen_height-292,static_cast<int>(lw+24),28,Fade(BLACK,.6F));
+                DrawTextEx(font,line.c_str(),{screen_width/2-lw/2,static_cast<float>(screen_height-287)},18,1,prison_until>=0 ? Color{230,180,90,255} : Color{150,190,255,255});
+            }
             if(career.message_time()>0) {
                 const float alpha=std::clamp(career.message_time(),0.0F,1.0F);
                 const float mw=MeasureTextEx(font,career.message().c_str(),19,1).x;
@@ -4951,7 +5073,7 @@ void Renderer::run() {
                 DrawText("W/S drive | A/D steer | SPACE handbrake | SHIFT boost | C park | H horn | E exit",
                          static_cast<int>(screen_width*.42F)+84,screen_height-26,15,YELLOW);
         }
-        else if(!creator_active && !inventory_open && vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z})>=0)DrawText("USE / E - Enter vehicle",screen_width/2-120,screen_height-100,20,YELLOW);
+        else if(!creator_active && !inventory_open && store_prompt.empty() && vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z})>=0)DrawText("USE / E - Enter vehicle",screen_width/2-120,screen_height-100,20,YELLOW);
         if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !(shop_open||store_open) && !poker_open && !inventory_open) {
             const int objective_bottom=game::PlayUI::draw_objective(mode_session,screen_width);
             if(game_mode==game::GameMode::BattleRoyale) {
@@ -5250,6 +5372,8 @@ void Renderer::run() {
                 };
                 if(services.has_hospital() && flat(services.hospital_door())<2500)
                     compass_marks.push_back({services.hospital_door(),Glyph::Hospital,Color{220,50,50,255},"HOSPITAL",false});
+                if(career.custody()>0) compass_marks.push_back({prison_intake,Glyph::Objective,Color{90,150,255,255},"PRISON",true});
+                else if(flat(prison_intake)<900) compass_marks.push_back({prison_intake,Glyph::Police,Color{170,170,176,255},"PRISON",false});
                 {
                     std::vector<Vector3> stations;
                     for(const auto& unit:services.units()) if(unit.kind==game::services::UnitKind::Police) stations.push_back(unit.home);
@@ -5422,6 +5546,7 @@ void Renderer::run() {
             }
             if(clothing_store && std::hypot(clothing_store->front.x-player.position.x,clothing_store->front.z-player.position.z)>=900)
                 view.marks.push_back({clothing_store->front,game::hud::Glyph::Shop,Color{60,200,130,255},"VESTAĴEJO",false});
+            view.marks.push_back({prison_intake,game::hud::Glyph::Police,Color{170,170,176,255},"ŜTATA MALLIBEREJO",false});
             for(int i=0;i<patrol_open && i<static_cast<int>(patrol_posts.size());++i) {   // every outpost, near or far
                 const auto& post=patrol_posts[static_cast<std::size_t>(i)];
                 if(std::hypot(post.at.x-player.position.x,post.at.z-player.position.z)>=1400)

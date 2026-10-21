@@ -16,8 +16,8 @@
 // its towns has broken no law. A member keeps a clean record while they stay HONOURABLE; one crime
 // against the people of Verda or its police (reported: assault, murder) and the honour is gone
 // and the record stays for good. The Policio never takes a player with a record, nor one still
-// running with a gang (they leave first). An officer can always go bad - join a gang, or commit
-// a crime on duty, and they are off the force for good.
+// running with a gang (they leave first), and no gang takes a cop (the badge goes back first).
+// A crime on duty puts an officer off the force for good.
 //
 // The police campaign: once serving, the Chief's orders are to rid Verda of the gangs, a town at
 // a time - every crew broken up for good. He will not have Verda City touched until every other
@@ -121,9 +121,21 @@ public:
 
     // Something the player did.
     void killed(int gang, bool from_vehicle);        // a Krimulo of `gang` (-1: not a Krimulo)
-    // An officer cuffed a Krimulo of `gang` (USE): counts as a takedown for the call, and pays a
-    // little more than a body does.
-    void arrested(int gang);
+    // An officer cuffed a Krimulo of `gang` (USE): counts as a takedown for the call and goes in
+    // the back of the car - in custody until delivered to the state prison. False (and nothing
+    // happens) when the car is full.
+    bool arrested(int gang);
+    static constexpr int custody_max = 4;
+    static constexpr int booking_pay = 120;        // kronoj a prisoner, at the prison
+    [[nodiscard]] int custody() const { return custody_; }
+    // At the prison's intake in a police car: everyone in custody booked in. Returns how many.
+    int deliver();
+    // The player was arrested (one star, caught): off to the state prison. The job in hand is off;
+    // a gang member who does his time quietly earns a little respect for it. Returns the sentence
+    // (seconds).
+    float jailed();
+    void released();
+    [[nodiscard]] bool in_prison() const { return jailed_; }
     // The crew a CLEAN UP is breaking up (-1: none): its dead stay down until the job ends.
     [[nodiscard]] int besieging() const { return state_.side == Side::Police && job_.kind == JobKind::CleanUp ? job_.crew : -1; }
     void crime(bool serious);                        // a crime someone reported (assault, murder, attacking police)
@@ -201,6 +213,8 @@ private:
     Job job_;
     double next_offer_{0};
     int pay_{0};
+    int custody_{0};
+    bool jailed_{false};             // doing time: no work till released
     bool tipoff_{false}, demanded_{false};
     bool verda_clean_{false};
     double capital_warned_{-1e9};

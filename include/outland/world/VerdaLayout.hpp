@@ -31,6 +31,12 @@ inline constexpr float sovagejo_flat_radius = 95;
 inline constexpr float hamlet_flat_radius = 72;
 inline constexpr Vector3 legacy_espera{0, 0, -70};
 inline constexpr float sea_level = -32;
+// Ŝtata Malliberejo, Verda's only state prison: alone on a level pad outside the ring road to the
+// south-east, a kilometre from the nearest town; its gate faces the ring (yaw 45: the model's
+// front, -Z, toward the island's centre), and an access road runs out to it from the ring.
+inline constexpr Vector3 prison_center{1290, 0, 1290};
+inline constexpr float prison_yaw = 45;
+inline constexpr float prison_flat_radius = 64;
 inline constexpr float capital_flat_radius = 180;
 // Verda's suburbs, west (Okcidenta Verda) and east (Orienta Verda): level ground either side of
 // downtown, |x| in [suburb_near, suburb_far], |z| <= suburb_half.

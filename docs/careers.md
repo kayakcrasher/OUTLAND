@@ -5,21 +5,30 @@ In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. E
 ## Joining
 
 - **A gang:**
-  - Walk to a crew's hideout door (any town) and press **USE**. Press it again within 5 s to confirm.
-  - The turf panel says "USE at the door to join them".
-  - You can't join while that gang is shooting at you.
+  - Talk to the crew's **boss**: the man standing by the hideout door (any town). Press **USE** beside him, and again within 5 s to confirm.
+  - The turf panel says "talk to their boss at the door to join".
+  - You can't join while that gang is shooting at you, nor while you wear the badge ("hand it in at a station first").
 - **The police:**
-  - Walk up to a police station (where its patrol car parks) and press **USE** twice.
+  - Walk up to a police station's front door and press **USE** twice (USE near its parked patrol car just gets you in the car).
+  - An officer hands the badge back the same way: USE twice at any station's front door.
   - You are sworn in as a Kadeto and issued a pistol and two magazines, then sent to the Chief (the questline below).
   - That station's patrol car becomes yours until the Interceptor replaces it. It leaves the AI dispatch and nobody reports it stolen.
 - **Honour and the record:**
   - A gang that only kills other gangsters (the crews and the ranching families) and defends its towns has broken no law. A member starts **HONOURABLE** (shown by the respect meter) and keeps a clean record.
   - One reported crime against the people of Verda or the police (assault, murder, attacking an officer) ends it: **NO HONOUR**, and a **record** for good.
   - An honourable gang's towns win back their hold twice as fast. Every rival gangster you take down on your own gang's turf counts as defending the town: +2 respect and +4 hold.
-  - **Leaving:** press USE twice at your own crew's door to walk away from the gang.
+  - **Leaving:** tell your boss you're out (USE twice beside him) to walk away from the gang.
   - The Policio turns away anyone with a record ("no criminals on the force"), and anyone still running with a gang.
-- **An officer can always go bad:** joining a gang ends the career on the force and leaves a record. So does a crime on duty: assaulting or killing a resident, or attacking an officer.
+- **No gang takes a cop:** an officer hands in the badge first. A crime on duty (assaulting or killing a resident, or attacking an officer) ends the career on the force and leaves a record.
 - Joining a different gang starts your respect again from zero.
+
+## Ŝtata Malliberejo, the state prison
+
+Verda's only prison stands alone south-east of the ring road, about a kilometre from the nearest town, on its own level ground at the end of an access road. Behind a 6 m wall with razor wire are four guard towers, a gatehouse, the intake bay, the admin block, a two-storey cell block and an exercise yard. The map always shows it.
+
+- **Officers** bring their prisoners here (above).
+- **Getting arrested:** at one star an unarmed officer who reaches you, with you not firing, makes an arrest. You do time in the prison yard: 60 s, plus 30 if you have a record and 30 more for a gang member without honour. The job in hand is off and no work comes while you're inside. Walk out of the gate early and you're put back. When your time is up you're let out at the gate.
+- **The gang life:** a gang member will do a few stints here. Doing your time quietly earns +3 respect with the crew.
 
 ## Respect and ranks
 
@@ -101,8 +110,8 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
 
 ### Arrests
 
-- Walk up to a Krimulo and press **USE** (E) to cuff him. He is taken to the station: no body, and he counts like a takedown on a RAID or GANG WAR call (and towards a CLEAN UP, since he's off the street).
-- An arrest pays +1 respect and 60 kronoj on top.
+- Walk up to a Krimulo and press **USE** (E) to cuff him: no body, and he counts like a takedown on a RAID or GANG WAR call (and towards a CLEAN UP, since he's off the street). +1 respect.
+- He goes in the back of your car: **IN CUSTODY**, up to four at a time. Drive them in a police car to the gate of **Ŝtata Malliberejo**, the state prison (the compass points the way while you have prisoners), to book them in: 120 kronoj each (more with rank) and +2 respect each. Die and they get away.
 - He comes quietly only when he's **wounded** (60 health or less) or **alone** (none of his crew within 15 m). In front of his crew he won't: "his crew is watching". Cuff a wounded man in front of them and they open fire.
 - The capital's crew before the Chief allows it costs respect, the same as shooting them.
 

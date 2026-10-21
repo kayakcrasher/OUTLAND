@@ -864,6 +864,129 @@ def patrol_outpost():
     return b
 
 
+def state_prison():
+    """Ŝtata Malliberejo, Verda's only state prison: an 84 x 64 m walled compound on its own pad.
+    A 6 m concrete wall with razor wire and a guard tower at each corner, a gatehouse with an
+    8 m vehicle gate in the front (-Z) wall and the intake bay inside it, a two-storey cell block
+    (barred windows) across the back, the admin block by the gate, and an exercise yard with a
+    basketball hoop, benches and a weights bench. Symmetric outside, so it stands on its centre."""
+    b = Builder()
+    b.material("wall", flat((168, 166, 158), 6), 3, 3)
+    b.material("inner", flat((150, 148, 140), 6), 3, 3)
+    b.material("slab", flat((128, 126, 120), 8), 4, 4)
+    b.material("yard", flat((110, 112, 108), 10), 4, 4)
+    b.material("cells", window_tile((176, 168, 150), (60, 62, 66), (34, 38, 44), .3, .75, .3), 3, FLOOR)
+    b.material("admin", window_tile((196, 190, 176), (80, 84, 90), (70, 96, 116)), BAY, FLOOR)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("steel", flat((96, 100, 106), 3), 3, 3)
+    b.material("wire", flat((150, 154, 160), 2), 1, 1)
+    b.material("orange", flat((222, 112, 30), 2), 1, 1)
+    b.material("tower", flat((140, 138, 132), 5), 3, 3)
+    b.material("glass", flat((60, 80, 96), 2), 1, 1)
+    b.material("wood", wood(), 2, 2)
+    W, D, H, T = 42.0, 32.0, 6.0, .6
+    gate = 5.0
+    b.box((-W, 0, -D - .65), (W, .12, D + .65), {'+y': "yard", '-y': "slab", '+x': "slab", '-x': "slab", '+z': "slab", '-z': "slab"})
+    # The perimeter wall, the gate in the front.
+    wall_with_openings(b, 'x', -D, (-W, W), H, T, [(-gate, gate, 0, 5.2)], "wall", "inner", -1)
+    wall_with_openings(b, 'x', D, (-W, W), H, T, [], "wall", "inner", +1)
+    wall_with_openings(b, 'z', -W, (-D + T, D - T), H, T, [], "wall", "inner", -1)
+    wall_with_openings(b, 'z', W, (-D + T, D - T), H, T, [], "wall", "inner", +1)
+    # Razor wire along the top: a rail and coils.
+    for lo, hi in (((-W, H, -D), (W, H + .5, -D + .08)), ((-W, H, D - .08), (W, H + .5, D)),
+                   ((-W, H, -D), (-W + .08, H + .5, D)), ((W - .08, H, -D), (W, H + .5, D))):
+        b.solid(lo, hi, "wire")
+    # The gatehouse: piers either side of the gate, a lintel with an orange band (the sign).
+    for x in (-gate - 2.2, gate):
+        b.solid((x, 0, -D - .6), (x + 2.2, H + 1.6, -D + 1.6), "tower")
+    b.solid((-gate - 2.2, 5.2, -D - .6), (gate + 2.2, H + 1.6, -D + 1.6), "tower")
+    b.solid((-gate, 5.6, -D - .65), (gate, 6.9, -D - .6), "orange")
+    # Guard towers at the corners: four legs, a glazed cabin, a roof.
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            cx, cz = sx * (W - 1.6), sz * (D - 1.6)
+            for lx in (-1.2, 1.0):
+                for lz in (-1.2, 1.0):
+                    b.solid((cx + lx, 0, cz + lz), (cx + lx + .25, 9, cz + lz + .25), "steel")
+            b.solid((cx - 1.6, 9, cz - 1.6), (cx + 1.6, 9.2, cz + 1.6), "tower")
+            b.solid((cx - 1.6, 9.2, cz - 1.6), (cx + 1.6, 10.2, cz + 1.6), "tower")
+            b.solid((cx - 1.5, 10.2, cz - 1.5), (cx + 1.5, 11.2, cz + 1.5), "glass")
+            b.solid((cx - 1.9, 11.2, cz - 1.9), (cx + 1.9, 11.5, cz + 1.9), "roof")
+    # The cell block across the back: two storeys, barred windows all round, a flat roof.
+    cw, c0, c1, ch = 30.0, 8.0, 26.0, 2 * FLOOR + .6
+    b.box((-cw, 0, c0), (cw, ch, c1), {'+y': "roof", '-y': "slab", '+x': "cells", '-x': "cells", '+z': "cells", '-z': "cells"}, v_origin=0)
+    b.solid((-3, 0, c0 - 1.8), (3, 3.2, c0), "inner")                     # the yard door's porch
+    b.solid((-1.2, .12, c0 - 1.85), (1.2, 2.6, c0 - 1.8), "steel")         # the door
+    # The admin block by the gate (left as you come in), and the intake bay right of it.
+    b.box((-W + T, 0, -D + T), (-14, 4.2, -D + 12), {'+y': "roof", '-y': "slab", '+x': "admin", '-x': "admin", '+z': "admin", '-z': "admin"}, v_origin=0)
+    b.solid((10, 3.6, -D + T), (24, 3.8, -D + 9), "steel")                 # the intake canopy
+    for x in (10.2, 23.6):
+        b.solid((x, 0, -D + 8.6), (x + .2, 3.6, -D + 8.8), "steel")
+    # The exercise yard: a basketball hoop, benches, a weights bench, painted court lines.
+    b.solid((-24, .12, -6), (-6, .14, -5.9), "orange")
+    b.solid((-24, .12, 4), (-6, .14, 4.1), "orange")
+    b.solid((-15.1, 0, 3.6), (-14.9, 3.4, 3.8), "steel")
+    b.solid((-15.9, 3.0, 3.2), (-14.1, 4.1, 3.3), "wire")
+    for x in (2.0, 6.0):
+        b.solid((x, 0, 2), (x + 2.6, .45, 2.5), "wood")
+    b.solid((14, 0, -2), (15, .5, .2), "steel")
+    b.solid((13.6, .9, -1.2), (15.4, .95, -1.1), "steel")
+    return b
+
+
+def smugglers_jetty():
+    """A timber jetty on the open shore - where contraband comes ashore. A 6 m wide deck on piles
+    44 m out from the beach (its land end at -Z), the piles standing from y = 0 (the sea bed) so
+    the deck is 10 m up and stands 2.2 m over the water when placed. A small coaster lies along
+    the +X side (dark hull, white wheelhouse, a mast and boom), a tender with crates on the -X
+    side, lamp posts, mooring bollards, and stacked crates and barrels at the land end."""
+    b = Builder()
+    b.material("deck", wood(), 2, 2)
+    b.material("pile", flat((84, 66, 48), 6), 1, 3)
+    b.material("hull", flat((40, 52, 64), 4), 3, 3)
+    b.material("hull_red", flat((150, 40, 32), 3), 3, 1)
+    b.material("white", flat((228, 228, 222), 2), 3, 3)
+    b.material("glass", flat((50, 70, 88), 2), 1, 1)
+    b.material("crate", flat((156, 118, 70), 8), 1, 1)
+    b.material("tarp", flat((52, 92, 60), 4), 1, 1)
+    b.material("steel", flat((96, 100, 106), 3), 1, 1)
+    b.material("barrel", flat((40, 70, 120), 4), 1, 1)
+    top, z0, z1, w = 10.0, -22.0, 22.0, 3.0
+    water = top - 2.2
+    b.box((-w, top - .25, z0), (w, top, z1), {s: "deck" for s in ('+y', '-y', '+x', '-x', '+z', '-z')})
+    for z in range(int(z0) + 1, int(z1), 4):
+        for x in (-w + .3, w - .6):
+            b.solid((x, 0, z), (x + .3, top - .25, z + .3), "pile")
+    for z in (z0 + 4, 0.0, z1 - 4):
+        for x in (-w - .1, w - .2):
+            b.solid((x, top, z), (x + .3, top + .5, z + .3), "steel")       # bollards
+    for z in (z0 + 2, z1 - 2):
+        b.solid((-w + .2, top, z), (-w + .35, top + 4, z + .15), "steel")   # lamp posts
+        b.solid((-w + .2, top + 3.8, z - .2), (-w + .8, top + 4, z + .35), "white")
+    # The coaster along the +X side.
+    hx0, hx1, hz0, hz1 = w + .4, w + 5.4, -14.0, 16.0
+    b.solid((hx0, water - 1.2, hz0), (hx1, water - .2, hz1), "hull_red")
+    b.solid((hx0, water - .2, hz0), (hx1, water + 1.8, hz1), "hull")
+    b.solid((hx0 + .6, water + 1.8, hz1 - 1.5), (hx1 - .6, water + 2.6, hz1 + 2.2), "hull")   # the bow
+    b.solid((hx0 + .8, water + 1.8, hz0 + 1.0), (hx1 - .8, water + 4.4, hz0 + 6.0), "white")  # wheelhouse
+    b.solid((hx0 + .9, water + 3.2, hz0 + .95), (hx1 - .9, water + 4.0, hz0 + 6.05), "glass")
+    b.solid((hx0 + 2.3, water + 1.8, hz0 + 9.5), (hx0 + 2.6, water + 9.0, hz0 + 9.8), "steel")  # mast
+    b.solid((hx0 + 2.4, water + 6.0, hz0 + 9.6), (hx0 + 2.5, water + 6.1, hz1 - 2.0), "steel")  # boom
+    for k in range(3):
+        z = hz0 + 9.0 + k * 4.0
+        b.solid((hx0 + .8, water + 1.8, z), (hx1 - .8, water + 3.0, z + 3.0), "tarp")      # cargo under tarps
+    # The tender on the -X side, with crates.
+    b.solid((-w - 5.4, water - .5, -6.0), (-w - 2.2, water + .6, 6.0), "white")
+    for z in (-4.0, -1.5, 1.0):
+        b.solid((-w - 4.8, water + .6, z), (-w - 2.8, water + 1.6, z + 2.0), "crate")
+    # Crates and barrels stacked at the land end.
+    for i, (x, z, h) in enumerate(((-2.4, z0 + 1.0, 1.0), (-1.2, z0 + 1.0, 2.0), (1.2, z0 + 1.2, 1.0), (-2.4, z0 + 2.4, 1.0))):
+        b.solid((x, top, z), (x + 1.1, top + h, z + 1.1), "crate")
+    for x, z in ((2.0, z0 + 3.0), (2.0, z0 + 4.2), (1.0, z0 + 3.6)):
+        b.solid((x, top, z), (x + .6, top + .9, z + .6), "barrel")
+    return b
+
+
 def hospital():
     """Hospitalo de Verda: a three-storey hospital (36 x 20 m) in white render with blue ribbon
     windows, an enterable ground-floor hall (glass entrance, reception, beds), sealed wards
@@ -1169,6 +1292,8 @@ def kit():
                 "city_" + ident, f"Main Street {color.title()} Brick {width} m, {storeys} storeys (enterable)", "Building", width, 20, storeys * FLOOR + .9)
     add("civic/police_station.glb", police_station(), "city_police_station", "Police Station (modular, enterable, carport)", "Building", 20, 12, 4.7)
     add("civic/patrol_outpost.glb", patrol_outpost(), "city_patrol_outpost", "Ŝosea Patrolo outpost (modular, enterable, carport)", "Building", 14, 6, 3.8)
+    add("civic/state_prison.glb", state_prison(), "city_state_prison", "Ŝtata Malliberejo - walled state prison, towers, cell block, yard", "Building", 84, 64, 11.5)
+    add("civic/smugglers_jetty.glb", smugglers_jetty(), "city_smugglers_jetty", "Jetty with a moored coaster and contraband crates", "BuildingPart", 18, 44, 19)
     add("civic/hospital.glb", hospital(), "city_hospital", "Hospitalo - hospital with ambulance bay", "Building", 46, 23, 12.7)
     add("civic/parliament.glb", parliament(), "city_parliament", "Registaro de Verda - domed parliament (enterable hall)", "Building", 48, 33, 29.6)
     add("civic/town_hall.glb", town_hall(), "city_town_hall", "Urbodomo - county town hall with clock tower (enterable)", "Building", 23, 17, 17.0)

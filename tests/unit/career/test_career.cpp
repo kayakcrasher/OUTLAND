@@ -224,13 +224,15 @@ int main() {
         check(wait_for(c, JobKind::Raid, now), "a raid call");
         const int gang = c.job().gang;
         c.arrested(gang);                                    // one taken alive (USE)
-        check(c.job().done == 1, "an arrest counts on a raid");
+        check(c.job().done == 1 && c.custody() == 1, "an arrest counts on a raid, and he's in custody");
         for (int k = 1; k < c.job().needed; ++k) c.killed(gang, false);
         c.update(world(now));
         check(c.state().jobs_done == 2, "raid done");
         const int paid = c.take_pay();
-        c.arrested(gang);
-        check(c.take_pay() == 60 && paid > 0, "an arrest off the job pays a little");
+        for (int k = 0; k < 5; ++k) c.arrested(gang);
+        check(c.custody() == Career::custody_max && c.take_pay() == 0 && paid > 0, "custody pays nothing till delivered; the car holds four");
+        check(c.deliver() == Career::custody_max && c.custody() == 0 && c.take_pay() >= Career::booking_pay * Career::custody_max,
+              "booked in at the prison: paid");
         // Gang war calls when there is one.
         Career d;
         d.join_police("police_2", why);
@@ -255,6 +257,18 @@ int main() {
             check(d.job().kind == JobKind::None, "and two of them stopped ends it");
         }
 
+        // Busted: the state prison. The job is off; a gang member who does his time gains respect.
+        {
+            Career g;
+            g.join_gang(1, "Montaj Lupoj", why);
+            double t = 0;
+            wait_for(g, JobKind::KillRivals, t);
+            const float before = g.state().respect;
+            const float sentence = g.jailed();
+            check(sentence >= 60 && g.job().kind == JobKind::None, "a sentence, and the job is off");
+            g.released();
+            check(g.state().respect > before, "did his time: respect");
+        }
         // A cop can always go bad: a serious crime ends it, and leaves a record.
         c.crime(false);
         check(c.on_duty(), "a minor matter is overlooked");
@@ -263,7 +277,9 @@ int main() {
         check(!c.join_police("police_1", why), "and never back");
         Career e;
         e.join_police("police_3", why);
-        check(e.join_gang(1, "Montaj Lupoj", why) && e.state().side == Side::Gang && e.state().record, "or just join a gang (a cop gone bad is on file)");
+        check(!e.join_gang(1, "Montaj Lupoj", why) && e.on_duty() && why.find("badge") != std::string::npos, "a cop can't join a gang");
+        e.quit();
+        check(e.join_gang(1, "Montaj Lupoj", why) && !e.state().record, "the badge handed in, they can");
     }
     // The police campaign: the towns first, Verda City last, then the gangs are gone.
     {

@@ -196,6 +196,7 @@ float TerrainHeight::pad_weight(
     }
     const auto c=ranches::Frame(ranches::stockyard_gate,ranches::stockyard_up).at(ranches::stockyard_pad_centre);
     pad(c.x,c.z,ranches::stockyard_pad_radius,40);
+    pad(layout::prison_center.x,layout::prison_center.z,layout::prison_flat_radius,45);
     return std::clamp(weight,0.0F,1.0F);
 }
 
@@ -331,6 +332,7 @@ float TerrainHeight::unpaved(
         for (const auto& ranch:ranches::ranches)
             level_pad(ranches::Frame(ranch.gate,ranch.up_track).at(ranches::pad_centre),ranches::pad_radius,ranches::pad_blend);
         level_pad(ranches::Frame(ranches::stockyard_gate,ranches::stockyard_up).at(ranches::stockyard_pad_centre),ranches::stockyard_pad_radius,40);
+        level_pad(layout::prison_center,layout::prison_flat_radius,45);   // the state prison
         const float shore=layout::shore_radius(world_x,world_z);
         const float blend=smooth((distance-(shore-layout::shoreline_band))/(2*layout::shoreline_band));
         if (distance>shore-layout::shoreline_band) height=height*(1-blend)+(layout::sea_level-8.0F)*blend;
