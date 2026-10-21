@@ -5684,20 +5684,6 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
         if(game_mode==game::GameMode::DevLab)dev_lab.draw_tools(screen_width,screen_height,creator_active);
 #endif
-        // The car radio's "now playing": the station, then the song (a few seconds after tuning in,
-        // getting in, or a new song). Song titles are Esperanto: drawn with the sign font.
-        if(const float shown=car_radio.note(); shown>0 && !map_screen.is_open() && !inventory_open) {
-            const Font& font=sign_renderer.font();
-            const std::string station=car_radio.note_station(),song=car_radio.note_title();
-            const float big=22,small=16;
-            const float sw=MeasureTextEx(font,station.c_str(),small,1).x,tw=MeasureTextEx(font,song.c_str(),big,1).x;
-            const float w=std::max(sw,tw)+40,top=static_cast<float>(screen_height)*.2F+14;
-            const float x=screen_width/2.0F-w/2;
-            DrawRectangleRounded({x,top,w,big+small+24},.25F,6,Fade(BLACK,.55F*shown));
-            DrawRectangle(static_cast<int>(x+10),static_cast<int>(top+10),4,static_cast<int>(big+small+4),Fade(Color{120,200,140,255},shown));
-            DrawTextEx(font,station.c_str(),{x+24,top+8},small,1,Fade(Color{200,214,196,255},shown));
-            DrawTextEx(font,song.c_str(),{x+24,top+12+small},big,1,Fade(RAYWHITE,shown));
-        }
         if(const auto* driver=vehicles.driver()) {
             game::hud::Speedometer gauge;
             gauge.speed=driver->speed;gauge.boosting=driver->boosting;gauge.handbrake=controls.crouch;
@@ -5707,6 +5693,20 @@ void Renderer::run() {
             }
             // Bottom middle, between the steering stick and the pedals.
             game::hud::draw_speedometer(gauge,{screen_width*.42F,screen_height-92.0F},66);
+            // The car radio's "now playing", small and out of the way: tucked left of the gauge for a
+            // few seconds after getting in, tuning or a new song. (Titles are Esperanto: the sign font.)
+            if(const float shown=car_radio.note(); shown>0 && !map_screen.is_open() && !inventory_open) {
+                const Font& font=sign_renderer.font();
+                const std::string station=car_radio.note_station(),song=car_radio.note_title();
+                const float right=screen_width*.42F-82,top=screen_height-110.0F;
+                const auto line=[&](const std::string& text,float y,float size,Color ink) {
+                    const float w=MeasureTextEx(font,text.c_str(),size,1).x;
+                    DrawTextEx(font,text.c_str(),{right-w+1,y+1},size,1,Fade(BLACK,.6F*shown));
+                    DrawTextEx(font,text.c_str(),{right-w,y},size,1,Fade(ink,shown));
+                };
+                line(station,top,13,Color{170,215,180,255});
+                line(song,top+16,15,Color{235,235,235,255});
+            }
             drive_hint=std::max(0.0F,drive_hint-GetFrameTime());
             if(!touch_ui && drive_hint>0)
                 DrawText("W/S drive | A/D steer | SPACE handbrake | SHIFT boost | C park | H horn | E exit",

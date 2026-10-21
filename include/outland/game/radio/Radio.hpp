@@ -47,7 +47,7 @@ public:
     [[nodiscard]] bool playing() const { return at_wheel_ && station_ >= 0; }
     [[nodiscard]] const OnAir& now() const { return now_; }
     // The "now playing" note shown after getting in, tuning or when a song starts: how visible
-    // (0..1) and its lines ("98.1 Verda Popolko  ·  Pop polka", "Dancu sur la Placo", "RADIO OFF").
+    // (0..1) and its lines ("98.1  Verda Popolko", "Dancu sur la Placo", "RADIO OFF").
     [[nodiscard]] float note() const;
     [[nodiscard]] std::string note_station() const;
     [[nodiscard]] std::string note_title() const;

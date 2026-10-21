@@ -27,8 +27,9 @@ between them:
 - The stations are live. Each one plays its ident and songs round and round, and what is on
   depends only on the clock. Tuning in drops you into whatever is playing, part-way through a
   song, and each session starts at a different point.
-- A note under the compass names the station and the song. It shows for a few seconds when you get
-  in, when you turn the dial and when a new song starts.
+- A small note beside the speedometer names the station and the song, out of the way of the
+  road. It shows for a few seconds when you get in, when you turn the dial and when a new song
+  starts.
 - The radio pauses with the game (the pause menu, the bag) and stops when you get out.
 - SETTINGS > **Car radio** sets its volume, on top of the main Volume. Mute (N) silences it too.
 

@@ -82,11 +82,11 @@ float CarRadio::note() const {
 std::string CarRadio::note_station() const {
     if (station_ < 0) return "RADIO OFF";
     const auto& st = stations[static_cast<std::size_t>(station_)];
-    return std::string(st.frequency) + "  " + st.name + "  ·  " + st.genre;
+    return std::string(st.frequency) + "  " + st.name;
 }
 
 std::string CarRadio::note_title() const {
-    if (station_ < 0) return "O or RADIO to turn it on";
+    if (station_ < 0) return "O / RADIO: on";
     return now_.song >= 0 ? title(now_) : std::string("from ") + stations[static_cast<std::size_t>(station_)].town;
 }
 
