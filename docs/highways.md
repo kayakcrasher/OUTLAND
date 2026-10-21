@@ -1,14 +1,30 @@
 # Highways
 
 Verda's towns are joined by proper divided highways (`world/Highways.hpp`). The ring road circles
-the island at 1,500 m. Four spokes leave Verda City and run to the towns:
+the island at 1,500 m. The main highway runs north–south right through Verda City, and two spokes
+leave the city east and west:
 
-| Spoke | Leaves Verda City from | Ends at |
+| Highway | From | To |
 |---|---|---|
-| north | the main avenue (0, −166) | Espera's south edge street (0, −1680) |
+| north–south | Espera's south edge street (0, −1680), straight down x = 0 through downtown | Suda Haveno's north edge street (300, 1680) |
 | east | the Orienta boulevard (476, 0) | Porto Luma's grid (1624, −440) |
-| south | the main avenue (0, 166), between the south blocks | Suda Haveno's north edge street (300, 1680) |
 | west | the Okcidenta boulevard (−476, 0) | Roka's grid (−1624, 410) |
+
+## Through downtown: the boulevard
+
+Downtown, the north–south highway is Verda City's main avenue: a planted boulevard. Every
+downtown street crosses it at grade with signals; the highway opens its median and lays a plain
+apron at each crossing.
+
+- **The median:** instead of Jersey barriers, a stone kerb and a lawn with clipped hedges and red
+  and yellow flower beds. Plane trees and double street lamps stand down it between the crossings,
+  with more trees on the verges. Collision is the same as the barrier, so cars can't cross it.
+- **The gateways:** a steel sign gantry spans the highway at each end of the grid
+  (`civic/highway_gantry.glb`).
+  - A car arriving from either direction reads a green board: BONVENON AL VERDA / CENTRO.
+  - A car leaving reads the next town: ESPERA 1,5 km to the north, SUDA HAVENO 1,6 km to the south.
+- **Parliament** faces the boulevard from the open block south of the grid, its lawn and steps
+  toward the highway.
 
 The spokes cross the ring road at grade, at four junctions. The old two-lane links have been
 replaced, along with the spurs that ran from the ring road into each hub and doubled the spokes.

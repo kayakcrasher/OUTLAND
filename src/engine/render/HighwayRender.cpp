@@ -1,5 +1,6 @@
 #include "outland/engine/render/HighwayRender.hpp"
 #include "outland/world/Highways.hpp"
+#include "outland/world/VerdaLayout.hpp"
 #include "outland/world/RegionGeometry.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <raymath.h>
@@ -172,6 +173,22 @@ void draw(const world::Road& road, const hw::RoadInfo& info, int begin, int end)
                 return Vector3{x, world::terrain::TerrainHeight::sample(x, z) + lift - .02F, z};
             };
             const float half = hw::barrier_length * .5F;
+            const Vector3 mid = point(middle);
+            if (world::layout::in_downtown(mid.x, mid.z)) {
+                // Through Verda City the median is a planted boulevard: a stone kerb, a lawn, and
+                // low clipped hedges (the barrier's collision stays the same).
+                const bool along_z = std::abs(direction.z) >= std::abs(direction.x);
+                const float run = spacing + .02F;
+                const Vector3 size = along_z ? Vector3{1.9F, .24F, run} : Vector3{run, .24F, 1.9F};
+                DrawCubeV({mid.x, mid.y + .12F, mid.z}, size, Color{176, 172, 162, 255});
+                DrawCubeV({mid.x, mid.y + .25F, mid.z}, along_z ? Vector3{1.6F, .03F, run} : Vector3{run, .03F, 1.6F}, Color{78, 128, 62, 255});
+                if (k % 3 == 1)
+                    DrawCubeV({mid.x, mid.y + .55F, mid.z}, along_z ? Vector3{1.1F, .6F, spacing * .7F} : Vector3{spacing * .7F, .6F, 1.1F}, Color{46, 96, 44, 255});
+                else if (k % 3 == 2)
+                    for (const float f : {-.3F, .3F})
+                        DrawCubeV({mid.x + (along_z ? f : 0), mid.y + .32F, mid.z + (along_z ? 0 : f)}, {.35F, .12F, .35F}, f < 0 ? Color{214, 72, 70, 255} : Color{236, 196, 60, 255});
+                continue;
+            }
             barrier(r.barrier, point(middle - half), point(middle + half));
         }
     }

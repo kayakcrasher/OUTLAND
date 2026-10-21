@@ -179,7 +179,7 @@ float TerrainHeight::pad_weight(
     const float distance = std::hypot(world_x, world_z);
     const float suburb=std::hypot(std::max({layout::suburb_near-std::abs(world_x),std::abs(world_x)-layout::suburb_far,0.0F}),
                                   std::max(std::abs(world_z)-layout::suburb_half,0.0F));
-    float weight = 1 - smooth(std::min(distance-layout::capital_flat_radius,suburb)/80.0F);
+    float weight = 1 - smooth(std::min({distance-layout::capital_flat_radius,suburb,layout::downtown_outside(world_x,world_z)})/80.0F);
     const auto pad=[&](float cx,float cz,float flat,float band) {
         const float d=std::hypot(world_x-cx,world_z-cz);
         if(d<flat+band) weight=std::max(weight,1-smooth((d-flat)/band));
@@ -291,7 +291,7 @@ float TerrainHeight::unpaved(
         // Flat central building pad (downtown and the suburbs either side), then the original countryside.
         const float suburb=std::hypot(std::max({layout::suburb_near-std::abs(world_x),std::abs(world_x)-layout::suburb_far,0.0F}),
                                       std::max(std::abs(world_z)-layout::suburb_half,0.0F));
-        height *= smooth(std::min(distance-layout::capital_flat_radius,suburb)/80.0F);
+        height *= smooth(std::min({distance-layout::capital_flat_radius,suburb,layout::downtown_outside(world_x,world_z)})/80.0F);
         // Small building pads retain hills and wilderness between towns.
         for (std::size_t i=1;i<layout::sites.size();++i) {
             const auto c=layout::sites[i].center;

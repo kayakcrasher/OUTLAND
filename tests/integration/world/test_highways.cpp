@@ -30,9 +30,16 @@ int main() {
     world::VerdaRegion region(true);
     check(creator::CreatorMapIO::load(region, std::string(OUTLAND_SOURCE_DIR) + "/maps/verda_world.map"), "load world map");
 
-    // The network: a closed ring and four spokes, each a run of short, gently turning pieces.
+    // The network: a closed ring, the north-south highway right through Verda City, and the east
+    // and west spokes; each a run of short, gently turning pieces.
     const auto& lines = hw::lines();
-    check(lines.size() == 5, "the ring and four spokes");
+    check(lines.size() == 4, "the ring, the north-south highway and two spokes");
+    {
+        bool through = false;
+        for (const auto& line : lines)
+            for (const auto& p : line.points) through |= std::abs(p.x) < .5F && std::abs(p.z) < 31;
+        check(through, "the main highway runs through downtown");
+    }
     for (const auto& line : lines) {
         const auto n = line.points.size();
         for (std::size_t i = 0; i + (line.loop ? 0 : 1) < n; ++i) {

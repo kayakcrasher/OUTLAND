@@ -934,6 +934,34 @@ def state_prison():
     return b
 
 
+def highway_gantry():
+    """An overhead sign gantry spanning the highway (25 m between the posts, over the 18.8 m paved
+    width and the verges): two galvanised lattice posts on concrete footings, a box truss across at
+    6.4 m, and a maintenance walkway with a rail. The game hangs the green direction boards on it
+    (runtime signs) at y 7.7 on both faces. Across is X; traffic passes along Z."""
+    b = Builder()
+    b.material("steel", flat((150, 156, 160), 3), 2, 2)
+    b.material("dark", flat((90, 96, 100), 3), 2, 2)
+    b.material("concrete", flat((176, 172, 164), 5), 2, 2)
+    half = 12.5
+    for x in (-half, half):
+        b.solid((x - .9, 0, -.9), (x + .9, .6, .9), "concrete")
+        for dx in (-.35, .35):
+            for dz in (-.35, .35):
+                b.solid((x + dx - .08, .6, dz - .08), (x + dx + .08, 7.6, dz + .08), "steel")
+        for y in (1.8, 3.4, 5.0):
+            b.solid((x - .43, y, -.43), (x + .43, y + .08, .43), "dark")
+    for y in (6.4, 7.5):
+        for z in (-.5, .5):
+            b.solid((-half - .43, y, z - .07), (half + .43, y + .14, z + .07), "steel")
+    for k in range(26):
+        x = -half + k * (2 * half / 25)
+        b.solid((x - .05, 6.4, -.5), (x + .05, 7.64, .5), "dark")
+    b.solid((-half, 6.3, -1.2), (half, 6.38, -.5), "dark")          # walkway
+    b.solid((-half, 6.38, -1.2), (half, 7.3, -1.14), "steel")       # rail
+    return b
+
+
 def smugglers_jetty():
     """A timber jetty on the open shore - where contraband comes ashore. A 6 m wide deck on piles
     44 m out from the beach (its land end at -Z), the piles standing from y = 0 (the sea bed) so
@@ -1293,6 +1321,7 @@ def kit():
     add("civic/police_station.glb", police_station(), "city_police_station", "Police Station (modular, enterable, carport)", "Building", 20, 12, 4.7)
     add("civic/patrol_outpost.glb", patrol_outpost(), "city_patrol_outpost", "Ŝosea Patrolo outpost (modular, enterable, carport)", "Building", 14, 6, 3.8)
     add("civic/state_prison.glb", state_prison(), "city_state_prison", "Ŝtata Malliberejo - walled state prison, towers, cell block, yard", "Building", 84, 64, 11.5)
+    add("civic/highway_gantry.glb", highway_gantry(), "city_highway_gantry", "Highway sign gantry (spans the highway)", "BuildingPart", 27, 2.4, 7.64)
     add("civic/smugglers_jetty.glb", smugglers_jetty(), "city_smugglers_jetty", "Jetty with a moored coaster and contraband crates", "BuildingPart", 18, 44, 19)
     add("civic/hospital.glb", hospital(), "city_hospital", "Hospitalo - hospital with ambulance bay", "Building", 46, 23, 12.7)
     add("civic/parliament.glb", parliament(), "city_parliament", "Registaro de Verda - domed parliament (enterable hall)", "Building", 48, 33, 29.6)
@@ -1302,6 +1331,7 @@ def kit():
     add("ground/courthouse_square_68.glb", pad(68, "park"), "city_courthouse_square_68", "Courthouse Square Park 68 m", "BuildingPart", 68, 68, 4.6)
     add("ground/parking_lot_68.glb", pad(68, "parking"), "city_parking_lot_68", "Parking Lot 68 m", "BuildingPart", 68, 68, .15)
     add("ground/intersection_12.glb", intersection(12), "city_intersection_12", "Street Intersection 12 m (crosswalks)", "Road", 12, 12, .1)
+    add("ground/intersection_16.glb", intersection(16), "city_intersection_16", "Street Intersection 16 m (crosswalks)", "Road", 16, 16, .1)
     return pieces
 
 

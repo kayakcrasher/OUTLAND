@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <raylib.h>
@@ -31,6 +32,17 @@ inline constexpr float sovagejo_flat_radius = 95;
 inline constexpr float hamlet_flat_radius = 72;
 inline constexpr Vector3 legacy_espera{0, 0, -70};
 inline constexpr float sea_level = -32;
+// Downtown Verda City's street grid (the world kit's downtown()): its outer street edges. The
+// north-south highway runs straight through it down x = 0 as a planted boulevard.
+inline constexpr float downtown_half_x = 179, downtown_half_z = 176;
+inline constexpr float downtown_south_edge = 268;   // the row of blocks south of the grid ends here
+// How far (x, z) is outside the level rectangle downtown stands on (0 inside).
+inline float downtown_outside(float x, float z) {
+    const float dx = std::max(std::abs(x) - downtown_half_x - 6, 0.0F);
+    const float dz = std::max({z - downtown_south_edge, -z - downtown_half_z - 6, 0.0F});
+    return std::hypot(dx, dz);
+}
+inline constexpr bool in_downtown(float x, float z) { return x > -downtown_half_x && x < downtown_half_x && z > -downtown_half_z - 90 && z < downtown_half_z + 90; }
 // Ŝtata Malliberejo, Verda's only state prison: alone on a level pad outside the ring road to the
 // south-east, a kilometre from the nearest town; its gate faces the ring (yaw 45: the model's
 // front, -Z, toward the island's centre), and an access road runs out to it from the ring.

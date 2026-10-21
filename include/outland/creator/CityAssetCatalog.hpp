@@ -72,6 +72,9 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_state_prison", .name = "Ŝtata Malliberejo - walled state prison, towers, cell block, yard", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/state_prison.glb", .thumbnail_path = "", .footprint = {84.00F, 64.00F, 11.50F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_highway_gantry", .name = "Highway sign gantry (spans the highway)", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/civic/highway_gantry.glb", .thumbnail_path = "", .footprint = {27.00F, 2.40F, 7.64F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_smugglers_jetty", .name = "Jetty with a moored coaster and contraband crates", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/civic/smugglers_jetty.glb", .thumbnail_path = "", .footprint = {18.00F, 44.00F, 19.00F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
@@ -98,6 +101,9 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_intersection_12", .name = "Street Intersection 12 m (crosswalks)", .category = CreatorAssetCategory::Road,
         .model_path = "assets/verda/city/ground/intersection_12.glb", .thumbnail_path = "", .footprint = {12.00F, 12.00F, 0.10F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_intersection_16", .name = "Street Intersection 16 m (crosswalks)", .category = CreatorAssetCategory::Road,
+        .model_path = "assets/verda/city/ground/intersection_16.glb", .thumbnail_path = "", .footprint = {16.00F, 16.00F, 0.10F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
 }
 }  // namespace outland::creator

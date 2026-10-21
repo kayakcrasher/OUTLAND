@@ -26,7 +26,7 @@ inline constexpr float barrier_length = 2.48F;
 inline constexpr float grade_flat = paved_half + verge + 1.2F;
 inline constexpr float grade_band = 28;
 // Wider than this, a road is a highway for traffic (lanes) and placement.
-inline constexpr float min_width = 15;
+inline constexpr float min_width = 17;   // (downtown's 16 m streets are streets)
 
 struct Line {
     std::string_view name;

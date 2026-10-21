@@ -2,6 +2,15 @@
 
 Built by `outland_build_world` (`src/dev/VerdaWorldKit.cpp`) into `maps/verda_world.map`.
 
+## Downtown Verda City
+- **Streets:** 16 m wide (`downtown()` in the world kit).
+  - Four avenues at x = ±87 and ±171, and the north–south highway down x = 0 as a planted boulevard ([highways](highways.md)).
+  - Five streets at z = 0, ±84 and ±168.
+  - Sixteen 68 m blocks; the grid reaches |x| 179, |z| 176.
+- **South row:** one more row of blocks beyond the grid. From west to east: the apartments, the office plaza, Parliament (beside the highway) and the corner-bar block where La Verda Mano keep their hideout. A street runs along their far side.
+- **Level ground:** the terrain is levelled under the whole of it (`layout::downtown_outside`).
+- **Traffic:** keeps right, 2.4 m off the centre line. Parked cars sit tight to the kerb.
+
 ## Okcidenta Verda (west suburbs)
 - Downtown's east–west streets carry on west to x = −476; cross streets at x = −330 and −476.
 - The Roka highway now leaves from the west end of a 10 m boulevard on z = 0.

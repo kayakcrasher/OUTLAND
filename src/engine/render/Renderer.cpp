@@ -16,6 +16,7 @@
 #include "outland/game/mafia/GangLogos.hpp"
 #include "outland/game/career/Career.hpp"
 #include "outland/game/career/Backup.hpp"
+#include "outland/game/law/PrisonYard.hpp"
 #include "outland/game/career/TrainingCamp.hpp"
 #include "outland/game/career/CampRenderer.hpp"
 #include "outland/game/life/WalkingMan.hpp"
@@ -614,6 +615,17 @@ void Renderer::run() {
     };
     const Vector3 prison_intake=prison_at(0,-42);   // outside the gate: where officers hand prisoners over
     double prison_until=-1;
+    game::law::PrisonYard prison_yard;   // its guards and inmates
+    // Who wears which body there: guards in the Policio's navy, gangsters, the island's law breakers.
+    const auto prison_body=[&](bool guard,bool gang,std::uint64_t seed) -> std::string {
+        if(guard) return seed%2 ? "character_18_police" : "character_21_police";
+        const auto* d=character_registry.choose(gang ? characters::CharacterPool::Hostile : characters::CharacterPool::Civilian,seed);
+        return d ? d->id : std::string("bot");
+    };
+    const auto prison_spawn=[&](const game::law::PrisonPerson& p) {
+        npcs.spawn_bot(p.bot,p.character,prison_yard.world(p),prison_yard.world_yaw(p));
+        npcs.set_bot_weapon(p.bot,p.guard ? static_cast<int>(game::combat::WeaponId::Rifle) : -1);
+    };
     std::string career_path,career_saved;
     float career_save_wait=0;
     bool career_dead=false;
@@ -859,6 +871,31 @@ void Renderer::run() {
             sign.board=Color{0,96,52,255};sign.ink=Color{255,244,214,255};
             signage.signs.push_back(std::move(sign));
         }
+        // The highway gantries at downtown's ends: a green board over each carriageway, facing the
+        // traffic under it (traffic keeps right: southbound at -x, northbound at +x).
+        for(const auto& town:verda_region.settlements())
+            for(const auto& a:town.assets) {
+                if(!a.model_path.ends_with("highway_gantry.glb")) continue;
+                const bool north=a.position.z<0;
+                const auto board=[&](float x,float yaw,const char* top,const char* bottom) {
+                    game::culture::Sign sign;
+                    sign.kind=game::culture::SignKind::Distance;
+                    sign.place=a.id;
+                    sign.position={x,a.position.y+7.75F,a.position.z+(yaw>90 ? -.62F : .62F)};
+                    sign.yaw=yaw;
+                    sign.max_width=7.2F;
+                    sign.front={{top,.62F},{bottom,.42F}};
+                    sign.board=Color{0,106,62,255};sign.ink=WHITE;
+                    signage.signs.push_back(std::move(sign));
+                };
+                if(north) {
+                    board(-5.4F,180,"BONVENON AL VERDA","CENTRO · PARLAMENTO");
+                    board(5.4F,0,"ESPERA  1,5 km","NORDO ·  RINGVOJO");
+                } else {
+                    board(5.4F,0,"BONVENON AL VERDA","CENTRO · STELA TURO");
+                    board(-5.4F,180,"SUDA HAVENO  1,6 km","SUDO ·  RINGVOJO");
+                }
+            }
         // VENDATA boards in front of the homes for sale.
         for(const auto& home:homes_for_sale) {
             if(game::economy::owns(loot_session.economy(),home)) continue;
@@ -1436,7 +1473,7 @@ void Renderer::run() {
                     loot_session.economy().money=std::max<std::int64_t>(0,loot_session.economy().money+poker.cash_out()-poker_buy_in);
                     poker_open=false;poker_buy_in=0;
                 }
-                walking_man.clear();backup.clear();
+                walking_man.clear();backup.clear();prison_yard.clear();
                 career=game::career::Career{};career_path.clear();mafio.set_player_gang(-1);services.assign_player_car({});
                 police_camp=game::career::TrainingCamp{};chief={};lights_car.clear();
                 territory.clear();territory_path.clear();smuggling_docks.clear();
@@ -1525,6 +1562,12 @@ void Renderer::run() {
                             if(v.id.starts_with("creator_vehicle_"))
                                 if(const auto* asset=vehicles.asset(verda_region,v.id);asset && asset->vehicle.definition=="police") {backup.set_car(v.id);break;}
                         if(!backup.car().empty()) bot_drivers.reserve(backup.car());
+                    }
+                    // The state prison's guards and inmates.
+                    {
+                        const Vector3 c=world::layout::prison_center;
+                        prison_yard.start({c.x,world::terrain::TerrainHeight::sample(c.x,c.z),c.z},world::layout::prison_yaw,session_seed,prison_body);
+                        for(const auto& p:prison_yard.people()) prison_spawn(p);
                     }
                     br_bots.sync_bodies(npcs,&character_registry);
                     walking_man.dress(npcs);
@@ -3789,9 +3832,17 @@ void Renderer::run() {
                         if(const auto text=territory.serialise();text!=territory_saved && SaveFileText(territory_path.c_str(),const_cast<char*>(text.c_str()))) territory_saved=text;
                     }
                     // Prisoners in the back: booked in at the prison's gate from a police car.
-                    if(career.custody()>0 && work.driving_police && std::hypot(feet.x-prison_intake.x,feet.z-prison_intake.z)<25 && career.deliver()>0) {
+                    if(const int held=career.custody();held>0 && work.driving_police && std::hypot(feet.x-prison_intake.x,feet.z-prison_intake.z)<25 && career.deliver()>0) {
                         interaction_message=career.message();interaction_remaining=4;gun_audio.kill_confirm();
+                        // Into the yard with the rest.
+                        for(int k=0;k<held;++k)
+                            if(const int id=prison_yard.admit(true,prison_body);id>=0)
+                                for(const auto& p:prison_yard.people()) if(p.bot==id) prison_spawn(p);
                     }
+                    // The prison's people go about their day.
+                    prison_yard.update(dt);
+                    for(const auto& p:prison_yard.people())
+                        npcs.set_bot(p.bot,prison_yard.world(p),prison_yard.world_yaw(p),100,prison_yard.state(p));
                     if(const int pay=career.take_pay();pay>0) {loot_session.economy().money+=pay;loot_session.changed();}
                     mafio.set_player_gang(career.state().side==game::career::Side::Gang ? career.state().gang : -1);
                     services.assign_player_car(career.on_duty() ? career.state().patrol_car : std::string());

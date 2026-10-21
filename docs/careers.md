@@ -29,6 +29,11 @@ Verda's only prison stands alone south-east of the ring road, about a kilometre 
 - **Officers** bring their prisoners here (above).
 - **Getting arrested:** at one star an unarmed officer who reaches you, with you not firing, makes an arrest. You do time in the prison yard: 60 s, plus 30 if you have a record and 30 more for a gang member without honour. The job in hand is off and no work comes while you're inside. Walk out of the gate early and you're put back. When your time is up you're let out at the gate.
 - **The gang life:** a gang member will do a few stints here. Doing your time quietly earns +3 respect with the crew.
+- **Its people:**
+  - Armed guards in navy stand in all four towers and at the gate, and two more walk the yard.
+  - The yard holds the island's law breakers and the gangsters already doing time, about a dozen to start with.
+  - Every prisoner an officer books in joins them, up to sixteen inmates.
+  - `game::law::PrisonYard`: the guards and inmates are NPC bodies; nobody there can be hurt.
 
 ## Respect and ranks
 

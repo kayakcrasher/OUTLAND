@@ -83,7 +83,8 @@ public:
         taken_.push_back(lot);
         return true;
     }
-    bool put(const std::string& path, Vector3 position, float yaw, bool ground_y = true) {
+    // `solid` false: nothing collides with it (a gantry over a road: vehicles take a model's whole bounds as solid).
+    bool put(const std::string& path, Vector3 position, float yaw, bool ground_y = true, bool solid = true) {
         const auto found = by_path_.find(path);
         if (found == by_path_.end()) {
             if (std::find(report.missing.begin(), report.missing.end(), path) == report.missing.end()) report.missing.push_back(path);
@@ -118,7 +119,7 @@ public:
         asset.size = {definition.footprint.width, definition.footprint.height, definition.footprint.depth};
         asset.rotation_y = yaw;
         asset.vehicle.home = asset.position; asset.vehicle.home_yaw = yaw;
-        asset.collision = definition.category != creator::CreatorAssetCategory::Road &&
+        asset.collision = solid && definition.category != creator::CreatorAssetCategory::Road &&
             (definition.footprint.height > .25F || definition.category == creator::CreatorAssetCategory::BuildingPart);
         if (!region_.place_world_asset(std::move(asset))) return false;
         ++report.assets;
@@ -257,21 +258,28 @@ Vector3 site(std::string_view id) {
 }
 
 // ------------------------------------------------------------------ downtown Verda
+// (pitch and street are the county towns' 80 m grid of 12 m streets.)
 constexpr float pitch = 80, street = 12, pad_size = 68, pad_top = .15F;
-constexpr float grid_edge = 2 * pitch + street * .5F; // outer street edge
+// Downtown Verda City: wide 16 m streets, and the north-south highway straight down the middle as
+// a planted boulevard (layout::downtown_*). Four columns of 68 m blocks either side of it, four rows
+// either side of the main cross street; every street crosses the highway at grade.
+constexpr float dt_street = 16;
+constexpr std::array<float, 4> dt_block_x{-129, -45, 45, 129}, dt_block_z{-126, -42, 42, 126};
+constexpr std::array<float, 5> dt_street_x{-171, -87, 0, 87, 171}, dt_street_z{-168, -84, 0, 84, 168};
+constexpr float grid_edge_x = world::layout::downtown_half_x, grid_edge_z = world::layout::downtown_half_z;
 const std::string city = "assets/verda/city/";
 
 // Clear the old capital: its procedural buildings and local streets, every asset inside the grid,
 // and reconnect the radial highways to the grid's edge instead of the old central crossing.
 void wipe_downtown(world::VerdaRegion& region) {
-    const auto inside = [](Vector3 p, float margin) { return std::abs(p.x) < grid_edge + margin && std::abs(p.z) < grid_edge + margin; };
+    const auto inside = [](Vector3 p, float margin) { return std::abs(p.x) < grid_edge_x + margin && std::abs(p.z) < grid_edge_z + margin; };
     for (auto& settlement : region.runtime_settlements()) {
         std::erase_if(settlement.assets, [&](const world::WorldAsset& a) { return a.vehicle.definition.empty() && inside(a.position, 4); });
         if (settlement.id != "capital_verda") continue;
         settlement.buildings.clear();
-        // The capital's hatchback waits in the southbound lane of the main avenue, clear of the curb.
+        // The capital's hatchback waits at the kerb of the main cross street (the avenue is the highway now).
         for (auto& marker : settlement.gameplay_markers)
-            if (marker.id == "vehicle_spawn_hatchback_capital") {marker.position = {-3, marker.position.y, 22}; marker.rotation_y = 180;}
+            if (marker.id == "vehicle_spawn_hatchback_capital") {marker.position = {-60, marker.position.y, 6.8F}; marker.rotation_y = 90;}
         std::vector<world::Road> kept;
         for (auto road : settlement.roads) {
             const bool a_in = inside(road.start, -1), b_in = inside(road.end, -1);
@@ -280,8 +288,8 @@ void wipe_downtown(world::VerdaRegion& region) {
                 // Radial highway: start where it crosses the grid edge, on the matching main street.
                 auto& near = a_in ? road.start : road.end;
                 const auto& far = a_in ? road.end : road.start;
-                if (std::abs(far.x) > std::abs(far.z)) near = {far.x > 0 ? grid_edge : -grid_edge, near.y, 0};
-                else near = {0, near.y, far.z > 0 ? grid_edge : -grid_edge};
+                if (std::abs(far.x) > std::abs(far.z)) near = {far.x > 0 ? grid_edge_x : -grid_edge_x, near.y, 0};
+                else near = {0, near.y, far.z > 0 ? grid_edge_z : -grid_edge_z};
             }
             kept.push_back(road);
         }
@@ -324,33 +332,61 @@ void main_street_row(Kit& kit, float ground, float bx, float bz, int side, std::
     }
 }
 
+// The highway's run through downtown as a boulevard: plane trees and double lamps down the planted
+// median between the crossings (the renderer draws the kerb, lawn and hedges there), and a sign
+// gantry over each end where it enters the grid (the boards are runtime signs).
+void boulevard(Kit& kit, float ground) {
+    const auto at = [&](float x, float z) { return Vector3{x, ground + .25F, z}; };
+    for (std::size_t j = 0; j + 1 < dt_street_z.size(); ++j) {
+        const float z0 = dt_street_z[j] + 20, z1 = dt_street_z[j + 1] - 20;
+        for (int k = 0; k <= 3; ++k) {
+            const float z = z0 + (z1 - z0) * static_cast<float>(k) / 3.0F;
+            if (k % 3 == 0) {
+                kit.put(urban + "Traffic lights/street_light.glb", at(0, z), 90, false);
+                kit.put(urban + "Traffic lights/street_light.glb", at(0, z), 270, false);
+            } else kit.tree(at(0, z));
+        }
+    }
+    // Lamps and trees on the verges too, the length of the run.
+    for (std::size_t j = 0; j + 1 < dt_street_z.size(); ++j)
+        for (const float side : {-1.0F, 1.0F})
+            for (const float f : {.35F, .65F})
+                kit.tree(at(side * (world::highways::paved_half + 1.0F), dt_street_z[j] + (dt_street_z[j + 1] - dt_street_z[j]) * f));
+    for (const float z : {-grid_edge_z - 14, grid_edge_z + 14})
+        kit.put(city + "civic/highway_gantry.glb", {0, world::terrain::TerrainHeight::sample(0, z), z}, 0, false, false);
+}
+
 void downtown(Kit& kit, world::VerdaRegion& region) {
     world::Settlement* capital = nullptr;
     for (auto& settlement : region.runtime_settlements()) if (settlement.id == "capital_verda") capital = &settlement;
     if (!capital) return;
     const float ground = world::terrain::TerrainHeight::sample(0, 0);
-    // Streets: five avenues and five streets, 12 m wide, plus crosswalk plates at every crossing.
-    for (int i = -2; i <= 2; ++i) {
-        const float c = i * pitch;
-        capital->roads.push_back({{c, 0, -grid_edge}, {c, 0, grid_edge}, street, world::RoadType::Asphalt});
-        capital->roads.push_back({{-grid_edge, 0, c}, {grid_edge, 0, c}, street, world::RoadType::Asphalt});
-    }
-    for (int i = -2; i <= 2; ++i) for (int j = -2; j <= 2; ++j)
-        kit.put(city + "ground/intersection_12.glb", {i * pitch, ground, j * pitch}, 0, false);
-    // Sixteen blocks: centre at (+-40, +-120). Each block is a 68 m pad (sidewalks included).
+    // Streets: four avenues and five streets, 16 m wide (the highway is the fifth avenue, x = 0),
+    // and crosswalk plates where two streets cross (the highway lays its own apron).
+    for (const float x : dt_street_x)
+        if (x != 0) capital->roads.push_back({{x, 0, -grid_edge_z}, {x, 0, grid_edge_z}, dt_street, world::RoadType::Asphalt});
+    for (const float z : dt_street_z) capital->roads.push_back({{-grid_edge_x, 0, z}, {grid_edge_x, 0, z}, dt_street, world::RoadType::Asphalt});
+    for (const float x : dt_street_x) for (const float z : dt_street_z)
+        if (x != 0) kit.put(city + "ground/intersection_16.glb", {x, ground, z}, 0, false);
+    // Sixteen blocks, each a 68 m pad (sidewalks included). Inner/outer by column and row.
     enum class Zone { Tower, Square, MainStreet, Mixed, Parking };
-    const auto zone = [](int bx, int bz) {
-        const int ax = std::abs(bx), az = std::abs(bz);
-        if (ax == 40 && az == 40) return bx < 0 && bz > 0 ? Zone::Square : Zone::Tower;
-        if (ax == 120 && az == 120) return bx * bz > 0 ? Zone::Parking : Zone::Mixed;
-        return (bx + bz) % 160 == 0 ? Zone::Mixed : Zone::MainStreet;
+    const auto zone = [](float bx, float bz) {
+        const bool ix = std::abs(bx) < 90, iz = std::abs(bz) < 90;
+        if (ix && iz) return bx < 0 && bz > 0 ? Zone::Square : Zone::Tower;
+        if (!ix && !iz) return bx * bz > 0 ? Zone::Parking : Zone::Mixed;
+        return (bx > 0) == (bz > 0) ? Zone::Mixed : Zone::MainStreet;
     };
     const auto at = [&](float x, float z) { return Vector3{x, ground + pad_top, z}; };
     const auto row = [&](float bx, float bz, int side, std::uint32_t seed) { main_street_row(kit, ground, bx, bz, side, seed); };
     int parked = 0;
-    for (const float bx : {-120.0F, -40.0F, 40.0F, 120.0F}) for (const float bz : {-120.0F, -40.0F, 40.0F, 120.0F}) {
-        const auto kind = zone(static_cast<int>(bx), static_cast<int>(bz));
-        const auto seed = static_cast<std::uint32_t>((bx + 200) * 7 + (bz + 200) * 13);
+    for (std::size_t ix = 0; ix < 4; ++ix) for (std::size_t iz = 0; iz < 4; ++iz) {
+        const float bx = dt_block_x[ix], bz = dt_block_z[iz];
+        const bool inner_x = ix == 1 || ix == 2, inner_z = iz == 1 || iz == 2;
+        const auto kind = zone(bx, bz);
+        // (Seeds from the old 80 m grid's block centres, so each block keeps its buildings.)
+        const float gx = inner_x ? (bx > 0 ? 40.0F : -40.0F) : (bx > 0 ? 120.0F : -120.0F);
+        const float gz = inner_z ? (bz > 0 ? 40.0F : -40.0F) : (bz > 0 ? 120.0F : -120.0F);
+        const auto seed = static_cast<std::uint32_t>((gx + 200) * 7 + (gz + 200) * 13);
         const char* surface = kind == Zone::Square ? "ground/courthouse_square_68.glb" : kind == Zone::Parking ? "ground/parking_lot_68.glb" : "ground/sidewalk_block_68.glb";
         kit.put(city + surface, {bx, ground, bz}, 0, false);
         // Rows face the main axes (x = 0, z = 0) first, then the outer streets.
@@ -375,13 +411,13 @@ void downtown(Kit& kit, world::VerdaRegion& region) {
                 break;
             }
             case Zone::MainStreet:
-                row(bx, bz, std::abs(bx) == 40 ? toward_x : toward_z, seed);
-                row(bx, bz, std::abs(bx) == 40 ? (toward_x + 2) % 4 : (toward_z + 2) % 4, seed + 7);
+                row(bx, bz, inner_x ? toward_x : toward_z, seed);
+                row(bx, bz, inner_x ? (toward_x + 2) % 4 : (toward_z + 2) % 4, seed + 7);
                 break;
             case Zone::Mixed:
-                row(bx, bz, std::abs(bx) == 40 || (std::abs(bz) == 120 && std::abs(bx) == 120) ? toward_x : toward_z, seed);
+                row(bx, bz, inner_x || (!inner_z && !inner_x) ? toward_x : toward_z, seed);
                 kit.put(city + "towers/" + (seed % 2 ? "brick_midrise" : "concrete_office") + ".glb",
-                    at(bx + (bx > 0 ? 12 : -12) * (std::abs(bx) == 40 ? 1.0F : 0.0F), bz + (bz > 0 ? 12 : -12) * (std::abs(bx) == 40 ? 0.0F : 1.0F)), 0, false);
+                    at(bx + (bx > 0 ? 12 : -12) * (inner_x ? 1.0F : 0.0F), bz + (bz > 0 ? 12 : -12) * (inner_x ? 0.0F : 1.0F)), 0, false);
                 break;
             case Zone::Square:
                 // Courthouse square: lawn, crossing paths and a monument; trees round the edge.
@@ -403,11 +439,12 @@ void downtown(Kit& kit, world::VerdaRegion& region) {
             if (kind != Zone::Square) for (const float along : {-16.0F, 16.0F}) kit.tree(spot(along));
             kit.put(urban + "Traffic lights/street_light.glb", spot(0), side == 0 ? 0.0F : side == 1 ? 270.0F : side == 2 ? 180.0F : 90.0F, false);
         }
-        // Parallel-parked cars on the curb lanes beside Main Street blocks: real, drivable vehicles.
-        if ((kind == Zone::MainStreet || kind == Zone::Mixed) && std::abs(bx) + std::abs(bz) == 160) for (const float along : {8.0F, -18.0F}) {
-            const bool along_x = std::abs(bx) == 40;
+        // Parallel-parked cars on the curb lanes beside Main Street blocks: real, drivable vehicles
+        // (on the street away from the highway for the blocks beside it).
+        if ((kind == Zone::MainStreet || kind == Zone::Mixed) && inner_x != inner_z) for (const float along : {8.0F, -18.0F}) {
+            const bool along_x = inner_x;
             const float curb = pad_size * .5F + 1.2F;   // tight to the kerb, clear of the traffic lane
-            const Vector3 p = along_x ? Vector3{bx + (bx > 0 ? -curb : curb), ground, bz + along} : Vector3{bx + along, ground, bz + (bz > 0 ? -curb : curb)};
+            const Vector3 p = along_x ? Vector3{bx + (bx > 0 ? curb : -curb), ground, bz + along} : Vector3{bx + along, ground, bz + (bz > 0 ? -curb : curb)};
             world::GameplayMarker marker;
             marker.id = "vehicle_spawn_hatchback_downtown_" + std::to_string(++parked);
             marker.type = world::GameplayMarkerType::VehicleSpawn;
@@ -415,16 +452,18 @@ void downtown(Kit& kit, world::VerdaRegion& region) {
             capital->gameplay_markers.push_back(marker);
         }
     }
-    // Signals at the core's nine crossings, on opposite corners.
-    for (int i = -1; i <= 1; ++i) for (int j = -1; j <= 1; ++j) {
-        const float x = i * pitch, z = j * pitch, o = street * .5F + 1.2F;
-        kit.put(urban + "Traffic lights/traffic_light.glb", at(x + o, z - o), 0, false);
-        kit.put(urban + "Traffic lights/traffic_light.glb", at(x - o, z + o), 180, false);
+    // Signals at the core's nine crossings (three of them on the highway), on opposite corners.
+    for (std::size_t i = 1; i <= 3; ++i) for (std::size_t j = 1; j <= 3; ++j) {
+        const float x = dt_street_x[i], z = dt_street_z[j];
+        const float ox = (x == 0 ? world::highways::paved_half + 1.6F : dt_street * .5F + 1.2F), oz = dt_street * .5F + 1.2F;
+        kit.put(urban + "Traffic lights/traffic_light.glb", at(x + ox, z - oz), 0, false);
+        kit.put(urban + "Traffic lights/traffic_light.glb", at(x - ox, z + oz), 180, false);
     }
-    for (const auto& [x, z, yaw] : std::initializer_list<std::tuple<float, float, float>>{{9, 46, 270}, {-9, -110, 90}, {110, -9, 0}})
+    for (const auto& [x, z, yaw] : std::initializer_list<std::tuple<float, float, float>>{{13, 50, 270}, {-13, -114, 90}, {114, -11, 0}})
         kit.put(urban + "Bus stops/busstop_two_seats.glb", at(x, z), yaw, false);
+    boulevard(kit, ground);
     // Keep the rest of the kit off downtown.
-    kit.claim({0, 0, 0}, grid_edge + 2, grid_edge + 2, 0);
+    kit.claim({0, 0, 0}, grid_edge_x + 2, grid_edge_z + 2, 0);
 }
 
 // ------------------------------------------------------------------ Verda City's south blocks
@@ -438,15 +477,16 @@ void downtown_south(Kit& kit, world::VerdaRegion& region) {
     if (!capital) return;
     const float ground = world::terrain::TerrainHeight::sample(0, 0);
     const auto at = [&](float x, float z) { return Vector3{x, ground + pad_top, z}; };
-    constexpr float row = 200, south = 240, edge = 166;
+    // One row of blocks south of the grid on the same columns, and a street along its far side
+    // that crosses the highway.
+    constexpr float row = grid_edge_z + 34, south = grid_edge_z + 68 + dt_street * .5F, edge = grid_edge_z;
     std::vector<world::Road> roads;
-    for (const float x : {-160.0F, -80.0F, 80.0F, 160.0F})
-        roads.push_back({{x, 0, edge}, {x, 0, south + street * .5F}, street, world::RoadType::Asphalt});
-    roads.push_back({{-edge, 0, south}, {-6, 0, south}, street, world::RoadType::Asphalt});
-    roads.push_back({{74, 0, south}, {edge, 0, south}, street, world::RoadType::Asphalt});
+    for (const float x : {-171.0F, -87.0F, 87.0F, 171.0F})
+        roads.push_back({{x, 0, edge}, {x, 0, south + dt_street * .5F}, dt_street, world::RoadType::Asphalt});
+    roads.push_back({{-grid_edge_x, 0, south}, {grid_edge_x, 0, south}, dt_street, world::RoadType::Asphalt});
     for (const auto& road : roads) capital->roads.push_back(road);
     kit.add_roads(roads);
-    for (const float x : {-160.0F, -80.0F, 80.0F, 160.0F}) kit.put(city + "ground/intersection_12.glb", {x, ground, south}, 0, false);
+    for (const float x : {-171.0F, -87.0F, 87.0F, 171.0F}) kit.put(city + "ground/intersection_16.glb", {x, ground, south}, 0, false);
     const auto home_marker = [&](Vector3 p, float yaw) { kit.purpose({p.x, ground + .3F, p.z}, yaw, world::BuildingPurpose::Home); };
     const auto dress = [&](float bx, float bz) {
         kit.put(city + "ground/sidewalk_block_68.glb", {bx, ground, bz}, 0, false);
@@ -461,7 +501,7 @@ void downtown_south(Kit& kit, world::VerdaRegion& region) {
     };
     // Apartments: four blocks of flats round a courtyard, every one a home.
     {
-        const float bx = -120, bz = row;
+        const float bx = dt_block_x[0], bz = row;
         dress(bx, bz);
         const char* models[]{"flat_square_brick.glb", "flat_square_concrete_alt.glb", "flat_square_concrete.glb", "flat_square_brick_alt.glb"};
         int n = 0;
@@ -477,7 +517,7 @@ void downtown_south(Kit& kit, world::VerdaRegion& region) {
     }
     // The office building: an eight-storey concrete office on a plaza with trees and benches.
     {
-        const float bx = -40, bz = row;
+        const float bx = dt_block_x[1], bz = row;
         dress(bx, bz);
         if (kit.claim(at(bx, bz - 8), 16, 12, 0)) kit.put(city + "towers/concrete_office.glb", at(bx, bz - 8), 0, false);
         for (const float dx : {-20.0F, -8.0F, 8.0F, 20.0F}) kit.tree(at(bx + dx, bz + 20));
@@ -487,7 +527,7 @@ void downtown_south(Kit& kit, world::VerdaRegion& region) {
     // The bar block: a dark-brick corner bar and Main Street shops along the north side (facing
     // downtown), two blocks of flats behind.
     {
-        const float bx = 120, bz = row;
+        const float bx = dt_block_x[3], bz = row;   // the Green Hand's corner bar is here
         dress(bx, bz);
         struct Front { const char* model; float mid, width; int storeys; };
         const Front fronts[]{{"main_street_dark_12m_2st", -24, 12, 2}, {"main_street_brown_18m_3st", -9, 18, 3},
@@ -516,7 +556,17 @@ void downtown_south(Kit& kit, world::VerdaRegion& region) {
         }
         ++kit.report.south_blocks;
     }
-    kit.claim({0, 0, row}, 166, 40, 0); // keep the rest of the kit off the new blocks
+    // Parliament on the block beside the highway, its steps and lawn facing the boulevard (bounds
+    // centre; the model's front, -Z, toward x = 0).
+    {
+        const Vector3 seat{dt_block_x[2], world::terrain::TerrainHeight::sample(dt_block_x[2], row), row};
+        if (kit.claim(seat, 28, 30, 0) && kit.put("assets/verda/city/civic/parliament.glb", seat, 90, false)) {
+            kit.purpose(to_world(seat, 90, 0, 1.85F, -8), 90, world::BuildingPurpose::Office);
+            kit.report.parliament = true;
+        }
+    }
+    // Keep the rest of the kit off the new blocks.
+    for (const float bx : {dt_block_x[0], dt_block_x[1], dt_block_x[3]}) kit.claim({bx, 0, row}, 36, 36, 0);
 }
 
 // ------------------------------------------------------------------ Roka, the industrial city
@@ -1168,7 +1218,7 @@ void vehicle_marker(world::Settlement& town, const std::string& id, Vector3 at, 
 // ranches and two-storey houses on 24 m lots with front yards, picket fences, a car on the drive -
 // backing onto each other across the blocks. A park, a strip of shops, a church and a clinic sit
 // on the boulevard. Houses are procedural buildings (cheap to draw, enterable) owned by the capital.
-constexpr float suburb_east_x = -grid_edge, suburb_mid_x = -330, suburb_west_x = -476;
+constexpr float suburb_east_x = -grid_edge_x, suburb_mid_x = -330, suburb_west_x = -476;
 
 // One detached house facing a street (`facing`: +1 the street is at larger z, -1 smaller z).
 bool suburban_house(Kit& kit, world::Settlement& capital, Vector3 at, int facing, std::uint32_t seed, int& cars) {
@@ -1219,28 +1269,28 @@ void west_suburbs(Kit& kit, world::VerdaRegion& region) {
     // The Roka highway now leaves from the boulevard's west end instead of downtown's edge.
     for (auto& road : capital->roads)
         for (auto* end : {&road.start, &road.end})
-            if (std::abs(end->x + grid_edge) < .5F && std::abs(end->z) < .5F) {
+            if (std::abs(end->x + grid_edge_x) < .5F && std::abs(end->z) < .5F) {
                 const auto& other = end == &road.start ? road.end : road.start;
                 if (other.x < suburb_west_x) {kit.forget_road(road); *end = {suburb_west_x, end->y, 0};}
             }
     // Streets: the boulevard on z = 0, the downtown streets carried west, two cross streets.
     capital->roads.push_back({{suburb_east_x, 0, 0}, {suburb_west_x, 0, 0}, 10, world::RoadType::Asphalt});
-    for (const float z : {-160.0F, -80.0F, 80.0F, 160.0F})
+    for (const float z : {-168.0F, -84.0F, 84.0F, 168.0F})
         capital->roads.push_back({{suburb_east_x, 0, z}, {suburb_west_x, 0, z}, 8, world::RoadType::Asphalt});
     for (const float x : {suburb_mid_x, suburb_west_x})
-        capital->roads.push_back({{x, 0, -160}, {x, 0, 160}, 8, world::RoadType::Asphalt});
+        capital->roads.push_back({{x, 0, -168}, {x, 0, 168}, 8, world::RoadType::Asphalt});
     kit.add_roads(capital->roads);
     // Homes on both sides of every residential street, 24 m lots, set back 14 m from the centreline.
     int cars = 0;
     std::uint32_t seed = 7000;
-    for (const float street_z : {-160.0F, -80.0F, 80.0F, 160.0F})
+    for (const float street_z : {-168.0F, -84.0F, 84.0F, 168.0F})
         for (const int facing : {1, -1}) {
             const float z = street_z - facing * 14.0F;
-            for (const auto& [from, count] : std::initializer_list<std::pair<float, int>>{{-190, 6}, {-348, 5}})
-                for (int i = 0; i < count; ++i) suburban_house(kit, *capital, {from - i * 24.0F, 0, z}, facing, ++seed, cars);
+            for (const auto& [from, count, step] : std::initializer_list<std::tuple<float, int, float>>{{-200, 6, 22}, {-348, 5, 24}})
+                for (int i = 0; i < count; ++i) suburban_house(kit, *capital, {from - static_cast<float>(i) * step, 0, z}, facing, ++seed, cars);
         }
     // Street lights at lot lines, alternating sides.
-    for (const float street_z : {-160.0F, -80.0F, 0.0F, 80.0F, 160.0F})
+    for (const float street_z : {-168.0F, -84.0F, 0.0F, 84.0F, 168.0F})
         for (int i = 0; i < 6; ++i) {
             const float x = suburb_east_x - 26 - i * 50.0F, side = i % 2 ? 1.0F : -1.0F;
             if (std::abs(x - suburb_mid_x) < 8) continue;
@@ -1362,7 +1412,7 @@ void porto_luma_city(Kit& kit, world::VerdaRegion& region) {
 // (30 m), deeper lawns and the residential house model (two storeys, front porch, garage) in four
 // paint schemes, wrought-iron front fences, two trees a lot, a car on the drive, a tree-lined
 // boulevard on the Porto Luma road with a park and a brick clubhouse.
-constexpr float east_near_x = grid_edge, east_mid_x = 330, east_far_x = 476;
+constexpr float east_near_x = grid_edge_x, east_mid_x = 330, east_far_x = 476;
 const std::string houses = "assets/verda/residential/houses/";
 
 bool fancy_house(Kit& kit, world::Settlement& capital, Vector3 at, int facing, std::uint32_t seed, int& cars) {
@@ -1406,26 +1456,26 @@ void east_suburbs(Kit& kit, world::VerdaRegion& region) {
     // The Porto Luma highway now leaves from the boulevard's east end.
     for (auto& road : capital->roads)
         for (auto* end : {&road.start, &road.end})
-            if (std::abs(end->x - grid_edge) < .5F && std::abs(end->z) < .5F) {
+            if (std::abs(end->x - grid_edge_x) < .5F && std::abs(end->z) < .5F) {
                 const auto& other = end == &road.start ? road.end : road.start;
                 if (other.x > east_far_x) {kit.forget_road(road); *end = {east_far_x, end->y, 0};}
             }
     capital->roads.push_back({{east_near_x, 0, 0}, {east_far_x, 0, 0}, 10, world::RoadType::Asphalt});
-    for (const float z : {-160.0F, -80.0F, 80.0F, 160.0F})
+    for (const float z : {-168.0F, -84.0F, 84.0F, 168.0F})
         capital->roads.push_back({{east_near_x, 0, z}, {east_far_x, 0, z}, 8, world::RoadType::Asphalt});
     for (const float x : {east_mid_x, east_far_x})
-        capital->roads.push_back({{x, 0, -160}, {x, 0, 160}, 8, world::RoadType::Asphalt});
+        capital->roads.push_back({{x, 0, -168}, {x, 0, 168}, 8, world::RoadType::Asphalt});
     kit.add_roads(capital->roads);
     int cars = 0;
     const int before = kit.report.houses;
     std::uint32_t seed = 8000;
-    for (const float street_z : {-160.0F, -80.0F, 80.0F, 160.0F})
+    for (const float street_z : {-168.0F, -84.0F, 84.0F, 168.0F})
         for (const int facing : {1, -1}) {
             const float z = street_z - facing * 21.0F;
             for (const auto& [from, count] : std::initializer_list<std::pair<float, int>>{{191, 5}, {351, 4}})
                 for (int i = 0; i < count; ++i) fancy_house(kit, *capital, {from + i * 30.0F, 0, z}, facing, ++seed, cars);
         }
-    for (const float street_z : {-160.0F, -80.0F, 80.0F, 160.0F})
+    for (const float street_z : {-168.0F, -84.0F, 84.0F, 168.0F})
         for (int i = 0; i < 6; ++i) {
             const float x = east_near_x + 26 + i * 50.0F, side = i % 2 ? 1.0F : -1.0F;
             if (std::abs(x - east_mid_x) < 8) continue;
@@ -1435,6 +1485,7 @@ void east_suburbs(Kit& kit, world::VerdaRegion& region) {
     for (float x = east_near_x + 12; x < east_far_x - 8; x += 20)
         for (const float side : {-1.0F, 1.0F}) {
             if (side > 0 && x > 340 && x < 420) continue; // clubhouse frontage
+            if (std::abs(x - east_mid_x) < 8) continue;    // the cross street
             kit.tree({x, 0, side * 8.5F});
         }
     for (float x = east_near_x + 22; x < east_far_x - 8; x += 40)
@@ -1777,7 +1828,7 @@ void government(Kit& kit, world::VerdaRegion& region) {
     // Parliament (model bounds x -24..24 with the flags at +-13.5, z -20.7 (steps) ..11): its
     // lawn (14 m) between the street and the steps.
     CivicSpot spot;
-    if (civic_lot(kit, region, parliament_site, 0, 700, 0, -4.5F, 25, 17, 21, 14, spot) && kit.put(parliament_model, spot.origin, spot.yaw)) {
+    if (!kit.report.parliament && civic_lot(kit, region, parliament_site, 0, 700, 0, -4.5F, 25, 17, 21, 14, spot) && kit.put(parliament_model, spot.origin, spot.yaw)) {
         kit.purpose(to_world(spot.origin, spot.yaw, 0, 1.85F, -8), spot.yaw, world::BuildingPurpose::Office);
         kit.report.parliament = true;
     }

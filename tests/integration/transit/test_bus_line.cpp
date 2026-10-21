@@ -97,7 +97,8 @@ int main() {
     for (std::size_t b = 0; b < called.size(); ++b) {
         std::cout << "bus " << b + 1 << ": called " << calls[b] << " times at " << called[b].size() << " stops:";
         for (const int s : called[b]) std::cout << ' ' << line.stops()[static_cast<std::size_t>(s)].town;
-        std::cout << '\n';
+        const auto& bus = line.buses()[b];
+        std::cout << "  (now at " << bus.position.x << ", " << bus.position.z << (bus.blocked ? ", blocked" : "") << ")\n";
         check(called[b].size() == line.stops().size(), "every bus calls at every stop");
     }
     std::cout << "fastest " << fastest * 3.6F << " km/h, furthest off the road " << worst_road << " m\n";

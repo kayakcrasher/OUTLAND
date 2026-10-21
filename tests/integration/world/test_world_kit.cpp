@@ -270,23 +270,25 @@ int main() {
         ++suburb_homes;
     }
     check(suburb_homes >= 80, "western suburbs: " + std::to_string(suburb_homes) + " homes");
-    int grid_streets = 0, highways = 0, suburb_streets = 0;
+    int grid_streets = 0, highways = 0, through = 0, suburb_streets = 0;
     for (const auto& road : capital->roads) {
-        const auto in_suburbs = [](Vector3 p) { return std::abs(p.x) >= 166 && std::abs(p.x) <= 476 && std::abs(p.z) <= 160; };
-        // The grid, and its south blocks (avenues on to a street at z = 240).
-        const auto grid = [](Vector3 p) { return std::abs(p.x) <= 167 && p.z >= -167 && p.z <= 247; };
+        const auto in_suburbs = [](Vector3 p) { return std::abs(p.x) >= 179 && std::abs(p.x) <= 476 && std::abs(p.z) <= 168; };
+        // The grid, and its south blocks (avenues on to a street along their far side).
+        const auto grid = [](Vector3 p) { return std::abs(p.x) <= 180 && p.z >= -177 && p.z <= 261; };
         const bool inside = grid(road.start) && grid(road.end);
         if (road.type == world::RoadType::Highway) {
             check(road.width == world::highways::width, "highways are divided highways");
-            // The spokes leave from the main avenue's ends (north and south; the south one a little
-            // east of its line, clear of the Parliament block) and the boulevards' (Roka, Porto Luma).
-            if ((std::abs(road.start.x) <= 4 && std::abs(road.start.z) == 166) || (std::abs(road.start.x) == 476 && road.start.z == 0)) ++highways;
-        } else if (inside) { ++grid_streets; check(road.width == 12 && road.type == world::RoadType::Asphalt, "grid streets are 12 m asphalt"); }
+            // The east and west spokes leave from the boulevards' ends (Roka, Porto Luma); the
+            // north-south highway runs straight through downtown down x = 0.
+            if (std::abs(road.start.x) == 476 && road.start.z == 0) ++highways;
+            if (std::abs(road.start.x) < .5F && std::abs(road.end.x) < .5F && std::abs(road.start.z) < 176 && std::abs(road.end.z) < 176) ++through;
+        } else if (inside) { ++grid_streets; check(road.width == 16 && road.type == world::RoadType::Asphalt, "grid streets are 16 m asphalt"); }
         else if (in_suburbs(road.start) && in_suburbs(road.end)) ++suburb_streets;
         else check(world::roads::turnaround_road(road.width), "a capital road that is neither street, highway nor bus turnaround");
     }
-    check(grid_streets == 10 + 6 && highways == 4 && suburb_streets == 14, // + the south blocks' four avenues and two streets
-          "grid, suburbs and four highways: " + std::to_string(grid_streets) + "/" + std::to_string(suburb_streets) + "/" + std::to_string(highways));
+    check(grid_streets == 9 + 5 && highways == 2 && through >= 4 && suburb_streets == 14, // + the south blocks' four avenues and one street
+          "grid, suburbs, the highway through and two spokes: " + std::to_string(grid_streets) + "/" + std::to_string(suburb_streets) + "/" +
+          std::to_string(highways) + "/" + std::to_string(through));
 
     // East Verda: the fancy suburbs are the residential house model, on level ground, facing streets.
     {

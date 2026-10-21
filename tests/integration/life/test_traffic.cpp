@@ -73,17 +73,18 @@ int main() {
     }
     check(graph.route({-1790, 0, 90}, {0, 0, 0}).complete, "the trailer park's lane joins the island's roads");
     // Downtown: across the grid, turning at a crossing, keeping right.
-    const auto across = graph.route({-120, 0, -86}, {86, 0, 40});
-    check(across.complete && across.length < 345, "downtown route: " + std::to_string(across.length));
+    const auto across = graph.route({-129, 0, -86}, {87, 0, 40});
+    check(across.complete && across.length < 380, "downtown route: " + std::to_string(across.length));
     bool corner = false;
-    for (const auto& p : across.points) corner = corner || (std::fmod(std::abs(p.x) + .5F, 80.0F) < 1 && std::fmod(std::abs(p.z) + .5F, 80.0F) < 1);
+    const auto on = [](float v, std::initializer_list<float> lines) { for (const float l : lines) if (std::abs(std::abs(v) - l) < 1) return true; return false; };
+    for (const auto& p : across.points) corner = corner || (on(p.x, {0, 87, 171}) && on(p.z, {0, 84, 168}));
     check(corner, "turns at a grid crossing");
     {
-        // Eastbound on a z = const street, the right-hand lane is on the +z side.
-        const auto east = graph.route({-150, 0, -80}, {-10, 0, -80});
+        // Eastbound on a z = const street, the right-hand lane is on the +z side (16 m streets: 2.4 m).
+        const auto east = graph.route({-160, 0, -84}, {-20, 0, -84});
         float yaw = 0;
         const auto mid = roads::route_point(east, east.length * .5F, &yaw);
-        check(std::abs(yaw - 90) < 1 && mid.z > -80 + 1 && mid.z < -80 + 3, "drives on the right: z " + std::to_string(mid.z));
+        check(std::abs(yaw - 90) < 1 && mid.z > -84 + 1 && mid.z < -84 + 3.5F, "drives on the right: z " + std::to_string(mid.z));
         check(std::abs(roads::route_progress(east, mid, east.length * .4F) - east.length * .5F) < 1, "progress along a route");
     }
 
@@ -174,7 +175,8 @@ int main() {
         }
     check(pick >= 0, "a long-distance commuter with a car at home");
     const auto& chosen = cars[static_cast<std::size_t>(pick)];
-    const Vector3 watcher{chosen.spot.x + 12, 0, chosen.spot.z + 12};
+    // Watching from the pavement behind the kerb (not standing in the lane).
+    const Vector3 watcher{chosen.spot.x + 12, 0, chosen.spot.z + (chosen.spot.z < 0 ? -8.0F : 8.0F)};
     const auto& state = life.cars()[static_cast<std::size_t>(pick)];
     {
         float clock = 0;

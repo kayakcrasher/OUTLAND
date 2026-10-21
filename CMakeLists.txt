@@ -183,6 +183,7 @@ add_library(
     src/game/life/LifeTraffic.cpp
     src/game/zombies/ZombieEcology.cpp
     src/game/law/Justice.cpp
+    src/game/law/PrisonYard.cpp
     src/game/culture/Esperanto.cpp
     src/game/culture/Signage.cpp
     src/game/culture/SignRenderer.cpp
