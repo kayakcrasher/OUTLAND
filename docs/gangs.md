@@ -120,7 +120,7 @@ Verda is in the balance between the law and your crew. The map (M) shows it as a
 ## The big hit
 
 Late in the gang questline, once you are a **Leŭtenanto** (70 respect) *and* your gang runs at least **75% of the island's towns**, the boss may give the order no one else gets: **THE BIG HIT**, Ĉefo Marko Forta, at Verda City HQ.
-- He can only be shot while that order stands, and taking him down is a crime: your honour is gone and you have a record.
+- He can only be shot while that order stands, and taking him down is a crime: a record, and +30 notoriety (the gang keeps your honour).
 - **The payoff:** 500 000 kronoj, flat. Your gang takes the whole island: every town (even ones the police had cleared), every crew in your colours, and every ranching family riding with you.
 - **The price:** every officer on the island comes for you.
 - **Afterwards:** the Chief stays dead for good. The Policio is leaderless and takes no more recruits.

@@ -24,6 +24,7 @@
 #include "outland/game/freight/Freight.hpp"
 #include "outland/game/freight/Trucking.hpp"
 #include "outland/game/campaign/Campaign.hpp"
+#include "outland/game/TouchLayoutEditor.hpp"
 #include <ctime>
 #include "outland/world/roads/RoadGraph.hpp"
 #include "outland/game/mafia/MafioRenderer.hpp"
@@ -504,6 +505,7 @@ void Renderer::run() {
     float interaction_remaining = 0.0F;
 
     game::HomeScreen home_screen;
+    game::TouchLayoutEditor touch_editor;   // SETTINGS > Touch layout > EDIT
 #ifdef OUTLAND_DEV_TOOLS
     // OUTLAND_DEV_SLOT=N: CAMPAIGN goes straight into save slot N (screenshots).
     if(const char* slot=std::getenv("OUTLAND_DEV_SLOT")) home_screen.set_auto_slot(std::atoi(slot));
@@ -664,6 +666,10 @@ void Renderer::run() {
     struct UncleRon { Vector3 at{}; float yaw{0}; bool placed{false}; } uncle_ron;
     constexpr int uncle_ron_bot=940001;
     int ron_home=-1;                 // index into homes_for_sale
+    // Uncle Dario, Ron's brother, heads La Verda Mano from its Verda City bar: the nephew who joins
+    // gets a flat close by (a Main Street building near the bar; index into homes_for_sale).
+    int dario_flat=-1;
+    constexpr const char* dario_name="Uncle Dario";
     float autosave_wait=0,autosave_note=0,slots_refresh=0;
     constexpr float autosave_every=120;
     // The cargo terminal's quay, where the player comes off the ship and Uncle Ron waits by his truck.
@@ -1062,6 +1068,7 @@ void Renderer::run() {
         input_system.set_look({settings.look_sensitivity,settings.mouse_sensitivity,settings.invert_y,settings.aim_toggle});
         input_system.set_bindings(settings.bindings);
         input_system.set_button_size(settings.button_size);
+        input_system.layout()=input::customised(settings.touch_layout);   // the player's own button layout
         haptics.set_enabled(settings.vibration);
         environment_audio.set_volume(settings.volume);
         if(environment_audio.muted()!=settings.muted) environment_audio.toggle_mute();
@@ -1132,6 +1139,15 @@ void Renderer::run() {
         if(std::find(owned.begin(),owned.end(),id)!=owned.end()) return;
         owned.push_back(id);loot_session.changed();
         furnish_island();rebuild_signs();   // the furniture moves in
+    };
+    const auto own_dario_flat=[&] {
+        if(dario_flat<0 || dario_flat>=static_cast<int>(homes_for_sale.size())) return false;
+        auto& owned=loot_session.economy().properties;
+        const auto& id=homes_for_sale[static_cast<std::size_t>(dario_flat)].id;
+        if(std::find(owned.begin(),owned.end(),id)!=owned.end()) return false;
+        owned.push_back(id);loot_session.changed();
+        furnish_island();rebuild_signs();
+        return true;
     };
     const auto ron_home_now=[&](bool move_player) {
         HouseSpots spots;
@@ -1896,6 +1912,56 @@ void Renderer::run() {
                             return false;
                         };
                         bool placed=false;
+                        // First choice: right behind (or beside) Verda City's police HQ, downrange
+                        // pointing away from it - recruits walk out of the back door onto the range.
+                        {
+                            Vector3 hq{},front{0,0,-1};bool found=false;float best=1e9F;
+                            for(const auto& u:services.units()) {
+                                if(u.kind!=game::services::UnitKind::Police || u.vehicle.find("capital_verda")==std::string::npos) continue;
+                                for(const auto& place:island_life.places()) {
+                                    if(place.kind!=game::life::PlaceKind::Police) continue;
+                                    const float d=Vector3Distance(place.door,u.home);
+                                    if(d<best && d<60) {best=d;hq=place.interior;front=Vector3Subtract(place.door,place.interior);found=true;}
+                                }
+                                break;
+                            }
+                            front.y=0;
+                            if(found && Vector3Length(front)>.1F) {
+                                front=Vector3Normalize(front);
+                                const float behind=std::atan2(-front.x,-front.z);
+                                const Vector3 back{std::sin(behind),0,std::cos(behind)},side{std::cos(behind),0,-std::sin(behind)};
+                                // Behind it first, then stepping out to either side (clear of the highway
+                                // and the streets), the range always pointing away from the station.
+                                std::vector<Vector2> offsets;
+                                for(float along=20;along<=150;along+=6)
+                                    for(float across=0;across<=96;across+=8)
+                                        for(const float sign:{-1.0F,1.0F}) {
+                                            if(across==0 && sign>0) continue;
+                                            offsets.push_back({sign*across,along});
+                                        }
+                                std::stable_sort(offsets.begin(),offsets.end(),[](Vector2 a,Vector2 b){
+                                    return a.y+std::abs(a.x)*.8F<b.y+std::abs(b.x)*.8F;});
+                                for(std::size_t k=0;k<offsets.size() && !placed;++k) {
+                                        const float x=hq.x+back.x*offsets[k].y+side.x*offsets[k].x,z=hq.z+back.z*offsets[k].y+side.z*offsets[k].x;
+                                        const float yaw=behind*RAD2DEG;
+                                        const Vector3 right=side,ahead=back;
+                                        float low=1e9F,high=-1e9F;bool ok=true;
+                                        for(float lx=-22;lx<=22 && ok;lx+=4)
+                                            for(float lz=-12;lz<=40 && ok;lz+=4) {
+                                                const float px=x+right.x*lx+ahead.x*lz,pz=z+right.z*lx+ahead.z*lz;
+                                                const float g=world::terrain::TerrainHeight::sample(px,pz);
+                                                if(!std::isfinite(g) || on_road(px,pz) ||
+                                                   world::physics::WorldCollision::body_blocked({px,g,pz},g,verda_region,.8F)) ok=false;
+                                                low=std::min(low,g);high=std::max(high,g);
+                                            }
+                                        if(!ok || high-low>2.0F) continue;
+                                        police_camp.place({x,world::terrain::TerrainHeight::sample(x,z),z},yaw,
+                                            [](float px,float pz){return world::terrain::TerrainHeight::sample(px,pz);});
+                                        placed=true;
+                                        TraceLog(LOG_INFO,"OUTLAND police training camp by HQ at %.0f %.0f facing %.0f (%.0f m behind, %.0f m aside)",x,z,yaw,offsets[k].y,offsets[k].x);
+                                    }
+                            }
+                        }
                         for(float radius=320;radius<=980 && !placed;radius+=45)
                             for(int k=0;k<28 && !placed;++k) {
                                 const float a=static_cast<float>(k)*2*PI/28+radius*.013F;
@@ -2076,6 +2142,36 @@ void Renderer::run() {
                     // Uncle Ron's house: the first house in Okcidenta Verda on the list (not for sale - it's his).
                     for(std::size_t i=0;i<homes_for_sale.size();++i) if(homes_for_sale[i].house) {ron_home=static_cast<int>(i);break;}
                     if(ron_home>=0) {auto& home=homes_for_sale[static_cast<std::size_t>(ron_home)];home.name="Uncle Ron's house";home.price=0;}
+                    // Uncle Dario's flat for family: the nearest Main Street building to the Green Hand's bar
+                    // that is nobody's shop, pub or listing.
+                    dario_flat=-1;
+                    if(const auto* bar=mafio.casino();bar && bar->gang==0) {
+                        const world::WorldAsset* best=nullptr;float nearest=150;
+                        for(const auto& town:verda_region.settlements()) for(const auto& asset:town.assets) {
+                            if(asset.model_path.find("/city/main_street/")==std::string::npos || asset.purpose!=world::BuildingPurpose::Auto || asset.id==bar->building) continue;
+                            const float d=std::hypot(asset.position.x-bar->door.x,asset.position.z-bar->door.z);
+                            if(d<12 || d>=nearest) continue;
+                            bool listed=false;
+                            for(const auto& home:homes_for_sale) listed|=home.building==asset.id;
+                            bool used=false;
+                            for(const auto& place:island_life.places())
+                                used|=place.building_id==asset.id && place.kind!=game::life::PlaceKind::Home;
+                            if(!listed && !used) {best=&asset;nearest=d;}
+                        }
+                        if(best) {
+                            game::economy::Listing flat;
+                            flat.building=best->id;flat.id="home_"+best->id;flat.name="Green Hand flat (Uncle Dario's)";
+                            flat.centre=best->position;flat.yaw=best->rotation_y;flat.size=best->size;flat.house=false;flat.price=0;
+                            flat.board=flat.centre;
+                            homes_for_sale.push_back(flat);
+                            dario_flat=static_cast<int>(homes_for_sale.size())-1;
+                            const auto freed=game::economy::vacate(verda_region,{flat});
+                            vacated_homes.insert(vacated_homes.end(),freed.begin(),freed.end());
+                            // A member of the family already: the keys are his.
+                            if(career.in_gang(0)) own_dario_flat();
+                            else if(game::economy::owns(loot_session.economy(),flat)) furnish_island();
+                        }
+                    }
                     place_story(explicit_spawn,respawn_at_hospital);
                 }
                 respawn_at_hospital=false;
@@ -2163,7 +2259,14 @@ void Renderer::run() {
         }
         if(pause_menu.is_open()) {
             settings.volume=environment_audio.volume();settings.muted=environment_audio.muted();
-            const auto result=pause_menu.update(settings,screen_width,screen_height,IsWindowFocused(),GetFrameTime(),can_quit_game);
+            // The touch layout editor, opened from SETTINGS, takes the screen until DONE or CANCEL.
+            if(touch_editor.is_open()) {
+                if(touch_editor.update(settings,screen_width,screen_height,IsWindowFocused())==game::TouchLayoutEditor::Result::Done) {apply_settings();store_settings();}
+                if(!touch_editor.is_open()) input_system.cancel_controls();
+            }
+            const auto result=touch_editor.is_open() ? game::PauseMenu::Result::None :
+                pause_menu.update(settings,screen_width,screen_height,IsWindowFocused(),GetFrameTime(),can_quit_game);
+            if(result==game::PauseMenu::Result::EditTouchLayout) touch_editor.open(settings);
             if(result==game::PauseMenu::Result::SettingsChanged) {apply_settings();store_settings();}
             if(result==game::PauseMenu::Result::Resume) input_system.cancel_controls();
             if(result==game::PauseMenu::Result::Save) {
@@ -2514,18 +2617,25 @@ void Renderer::run() {
             } else if(crew>=0 && !mafio.provoked(mafio.crews()[static_cast<std::size_t>(crew)].gang,match_time)) {
                 const int gang=mafio.crews()[static_cast<std::size_t>(crew)].gang;
                 const std::string name(game::mafia::gangs[static_cast<std::size_t>(gang)].name);
+                // At the Green Hand's bar in Verda City the boss is family: Uncle Dario.
+                const bool dario=!campaign_path.empty() && mafio.casino()==&mafio.crews()[static_cast<std::size_t>(crew)] && gang==0;
                 if(confirming) {
                     std::string why;
                     if(career.join_gang(gang,name,why)) {
                         mafio.set_player_gang(gang);services.assign_player_car({});gun_audio.kill_confirm();interaction_message.clear();
                         loot_session.edit_inventory().add(item_registry,"spray_paint",4);loot_session.changed();   // cans to mark your turf
                         island_ruled=territory.rules_island(gang);
+                        if(gang==0 && own_dario_flat()) {
+                            chief_line="Uncle Dario: \"Welcome to the family, nevo. Here - the keys to a flat just down from the bar. Your hideout. "
+                                       "Ron doesn't need to know everything.\"";chief_line_time=9;
+                        }
                     }
                     else interaction_message=why;
                     join_offer={};
                 } else {
                     join_offer={crew,{},match_time+5};
-                    interaction_message="Boss of "+name+": \"Want in? Gangsters only - never the people.\" USE again to join";
+                    interaction_message=dario ? std::string("Uncle Dario: \"Nevo! Ron said you were back. The Green Hand looks after its own - family first.\" USE again to join") :
+                        "Boss of "+name+": \"Want in? Gangsters only - never the people.\" USE again to join";
                 }
                 interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
             } else if(station && career.on_duty()) {
@@ -5110,7 +5220,37 @@ void Renderer::run() {
         }
 #endif
 
-        if(inventory_open)loot_ui.draw_inventory(item_registry,loot_session,weapons,screen_width,screen_height);
+        if(inventory_open) {
+            // The bag's QUESTS: everything in hand, in full (the HUD keeps to one line each).
+            std::vector<game::inventory::QuestNote> quests;
+            const auto metres=[&](Vector3 at){return std::hypot(at.x-player.position.x,at.z-player.position.z);};
+            if(!campaign_path.empty() && !story.objective().empty())
+                quests.push_back({story.esperanto() ? "LA RAKONTO" : "THE STORY",story.objective(),
+                                  uncle_ron.placed ? TextFormat("%.0f m",metres(uncle_ron.at)) : "",Color{255,214,120,255}});
+            if(career.state().side!=game::career::Side::Civilian) {
+                const bool cop=career.on_duty();
+                const Color tint=cop ? Color{110,160,255,255} : game::mafia::gangs[static_cast<std::size_t>(std::max(0,career.state().gang))].color;
+                const std::string who=cop ? std::string("POLICIO DE VERDA") : std::string(game::mafia::gangs[static_cast<std::size_t>(std::max(0,career.state().gang))].name);
+                const auto& job=career.job();
+                if(job.kind!=game::career::JobKind::None) {
+                    const int left=static_cast<int>(std::max(0.0,job.deadline-match_time));
+                    std::string status=job.kind==game::career::JobKind::Quest ? std::string() :
+                        job.kind==game::career::JobKind::RobRig ? std::string(job.taken ? "rig taken - to the hideout" : "find the rig") :
+                        std::to_string(job.done)+" of "+std::to_string(job.needed);
+                    if(job.kind!=game::career::JobKind::Quest) status+=TextFormat("  ·  %d:%02d left",left/60,left%60);
+                    status+=TextFormat("  ·  %.0f m",metres(job.target));
+                    quests.push_back({std::string(job.title)+"  ·  "+who,job.detail,status,tint});
+                } else quests.push_back({who+"  ·  "+career.rank_name(),cop ? "On patrol - a call will come over the radio." : "Waiting for the word from the boss.",
+                                         career.state().side==game::career::Side::Gang ? TextFormat("respect %d  ·  notoriety %d",static_cast<int>(career.state().respect),static_cast<int>(career.state().notoriety)) : "",tint});
+            }
+            if(trucking.hired() && trucking.job().stage!=game::freight::HaulStage::None) {
+                std::string brief=trucking.detail();
+                if(!brief.empty()) brief[0]=static_cast<char>(std::toupper(static_cast<unsigned char>(brief[0])));
+                quests.push_back({trucking.title()+"  ·  Verda Transporto",brief,TextFormat("%d kr  ·  %.0f m",trucking.job().pay,metres(trucking.target())),Color{90,220,140,255}});
+            }
+            loot_ui.set_quests(std::move(quests));
+            loot_ui.draw_inventory(item_registry,loot_session,weapons,screen_width,screen_height);
+        }
         if(!creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !mode_session.terminal()){
             const int nearby=loot_session.world().nearest(loot_feet,2.8F,reachable_pickup);
             if(nearby>=0){const auto& pickup=loot_session.world().state().pickups[static_cast<std::size_t>(nearby)];
@@ -5274,6 +5414,21 @@ void Renderer::run() {
                     DrawTextEx(font,note,{screen_width-nw-18,static_cast<float>(screen_height-40)},15,1,Fade(Color{185,202,139,255},alpha));
                 }
             }
+            // Uncle Dario at the Green Hand's bar: his name over his head.
+            if(!campaign_path.empty()) if(const auto* bar=mafio.casino();bar && bar->gang==0 && !bar->members.empty())
+                if(const auto* boss=br_bots.find(bar->members.front());boss && boss->alive() && !br_bots.hidden(bar->members.front()) &&
+                   Vector3Distance(boss->position(),camera.position)<14) {
+                    const Vector3 over{boss->position().x,boss->position().y+2.3F,boss->position().z};
+                    if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))>0) {
+                        const Vector2 at=GetWorldToScreen(over,camera);
+                        const std::string title=std::string(dario_name)+"  ·  La Verda Mano";
+                        const char* sub=career.in_gang(0) ? "Head of the Green Hand - your uncle" : "Head of the Green Hand - Ron's brother";
+                        const float tw=MeasureTextEx(font,title.c_str(),16,1).x,sw=MeasureTextEx(font,sub,13,1).x,w=std::max(tw,sw);
+                        DrawRectangle(static_cast<int>(at.x-w/2-6),static_cast<int>(at.y-18),static_cast<int>(w+12),36,Fade(BLACK,.55F));
+                        DrawTextEx(font,title.c_str(),{at.x-tw/2,at.y-16},16,1,game::mafia::gangs[0].color);
+                        DrawTextEx(font,sub,{at.x-sw/2,at.y+2},13,1,Color{220,226,206,255});
+                    }
+                }
             // The boss of Verda Transporto: his name over his head.
             if(depot_boss.placed && Vector3Distance(depot_boss.at,camera.position)<14) {
                 const Vector3 over{depot_boss.at.x,depot_boss.at.y+2.3F,depot_boss.at.z};
@@ -5290,8 +5445,10 @@ void Renderer::run() {
             // The load in hand (top right, under the buttons), and what is happening with it.
             if(trucking.hired() && trucking.job().stage!=game::freight::HaulStage::None && !map_screen.is_open()) {
                 const std::string title=trucking.title()+"  ·  Verda Transporto";
-                std::string sub=trucking.detail();
-                if(!sub.empty()) sub[0]=static_cast<char>(std::toupper(static_cast<unsigned char>(sub[0])));
+                // One line: where to now (the full brief is in the bag's QUESTS).
+                const auto stage=trucking.job().stage;
+                std::string sub=stage==game::freight::HaulStage::Pickup ? "Pick up at "+trucking.job().from_name :
+                                stage==game::freight::HaulStage::Deliver ? "Deliver to "+trucking.job().to_name : std::string("Back to the boss for your pay");
                 // Under the buttons, clear of the compass: what to do now, wrapped to fit.
                 const float max_w=std::min(420.0F,screen_width*.4F);
                 std::vector<std::string> lines;std::string line,word;
@@ -5424,7 +5581,7 @@ void Renderer::run() {
                 const auto& job=career.job();
                 std::string task,status;
                 if(job.kind!=game::career::JobKind::None) {
-                    task=std::string(job.title)+":  "+job.detail;
+                    task=std::string(job.title)+"  ·  details in the BAG";   // (the full brief is in the bag's QUESTS)
                     const int left=static_cast<int>(std::max(0.0,job.deadline-match_time));
                     const float metres=std::hypot(job.target.x-player.position.x,job.target.z-player.position.z);
                     if(job.kind==game::career::JobKind::Quest) status=TextFormat("%.0f m",metres);
@@ -5444,11 +5601,11 @@ void Renderer::run() {
                 DrawRectangle(static_cast<int>(x+14),static_cast<int>(y+29),static_cast<int>(bar*share),8,tint);
                 for(const float tick:{15.0F,40.0F,70.0F,95.0F}) DrawRectangle(static_cast<int>(x+14+bar*tick/100),static_cast<int>(y+27),1,12,Fade(WHITE,.6F));
                 DrawTextEx(font,TextFormat("RESPECT %d",static_cast<int>(career.state().respect)),{x+22+bar,y+25},15,1,RAYWHITE);
-                if(!cop) {   // honour: a gang member who has hurt nobody but gangsters
-                    const bool just=career.state().honourable;
-                    const char* badge=just ? "HONOURABLE" : "NO HONOUR";
+                if(!cop) {   // the gang's honour, and the name the island fears
+                    const int known=static_cast<int>(career.state().notoriety);
+                    const std::string badge=known>0 ? TextFormat("NOTORIETY %d",known) : std::string(career.state().honourable ? "HONOURABLE" : "NO HONOUR");
                     const float bx=x+22+bar+MeasureTextEx(font,"RESPECT 100",15,1).x+12;
-                    DrawTextEx(font,badge,{bx,y+25},15,1,just ? Color{150,235,150,255} : Color{255,110,90,255});
+                    DrawTextEx(font,badge.c_str(),{bx,y+25},15,1,known>0 ? Color{255,140,90,255} : Color{150,235,150,255});
                 }
                 if(!task.empty()) DrawTextEx(font,task.c_str(),{x+14,y+44},15,1,Color{255,232,180,255});
                 DrawTextEx(font,status.c_str(),{x+14,y+(task.empty() ? 46.0F : 64.0F)},14,1,Color{205,212,196,255});
@@ -6039,7 +6196,8 @@ void Renderer::run() {
                 DrawTextEx(f,caption,{screen_width/2-cw/2,screen_height/2-13.0F},26,1,Fade(Color{236,240,226,255},(story.fade()-.6F)/.4F));
             }
         }
-        pause_menu.draw(settings,screen_width,screen_height,&sign_renderer.font(),can_quit_game);
+        if(touch_editor.is_open()) touch_editor.draw(settings,screen_width,screen_height,&sign_renderer.font());
+        else pause_menu.draw(settings,screen_width,screen_height,&sign_renderer.font(),can_quit_game);
 #ifdef OUTLAND_DEV_TOOLS
         DrawFPS(
             screen_width - 90,

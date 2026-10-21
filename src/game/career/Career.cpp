@@ -153,7 +153,7 @@ float Career::jailed() {
     if (job_.kind != JobKind::None && job_.kind != JobKind::Quest) { job_ = {}; next_offer_ = -1; }
     float sentence = 60;
     if (state_.record) sentence += 30;
-    if (state_.side == Side::Gang && !state_.honourable) sentence += 30;
+    if (state_.side == Side::Gang) sentence += state_.notoriety * .6F;   // a known name does longer
     say("ARRESTED - " + std::to_string(static_cast<int>(sentence)) + " s in Ŝtata Malliberejo, the state prison");
     return sentence;
 }
@@ -169,12 +169,12 @@ void Career::released() {
 
 void Career::crime(bool serious) {
     if (state_.side == Side::Gang) {
-        // The people of Verda are not gangsters: the honour is gone, the record is for good.
+        // The gang doesn't mind; the island does: a record for good, and a name people fear.
         state_.record = true;
-        if (state_.honourable) {
-            state_.honourable = false;
-            say("You hurt the people of Verda: no honour now - and a record for good");
-        }
+        const float before = state_.notoriety;
+        state_.notoriety = std::min(notoriety_max, state_.notoriety + (serious ? notoriety_serious : notoriety_minor));
+        if (static_cast<int>(state_.notoriety) / 10 > static_cast<int>(before) / 10 || before == 0)
+            say("Your notoriety rises: " + std::to_string(static_cast<int>(state_.notoriety)) + " - the island knows your name");
         return;
     }
     if (state_.side != Side::Police || !serious) return;
@@ -192,7 +192,7 @@ void Career::chief_killed() {
     if (job_.kind != JobKind::HitChief) return;
     // A cop killed: a crime, whoever ordered it.
     state_.record = true;
-    state_.honourable = false;
+    state_.notoriety = std::min(notoriety_max, state_.notoriety + notoriety_hit);
     job_.done = job_.needed;
     finish(true, "");
     say(std::string(chief_name) + " is dead. Verda is yours - +" + std::to_string(hit_pay) + " kronoj");
@@ -549,9 +549,9 @@ void Career::update(const CareerFrame& frame) {
 
 std::string Career::serialise() const {
     std::ostringstream out;
-    out << "career 4 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
+    out << "career 5 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
         << (state_.record ? 1 : 0) << ' ' << state_.jobs_done << ' ' << (state_.patrol_car.empty() ? "-" : state_.patrol_car) << ' '
-        << static_cast<int>(state_.police_stage) << ' ' << (state_.honourable ? 1 : 0) << ' ' << state_.defended << ' ' << (state_.chief_dead ? 1 : 0) << '\n';
+        << static_cast<int>(state_.police_stage) << ' ' << (state_.honourable ? 1 : 0) << ' ' << state_.defended << ' ' << (state_.chief_dead ? 1 : 0) << ' ' << state_.notoriety << '\n';
     return out.str();
 }
 
@@ -560,7 +560,7 @@ bool Career::parse(const std::string& text) {
     std::string tag, car;
     int version = 0, side = 0, gang = -1, record = 0, jobs = 0;
     float respect = 0;
-    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 4 ||
+    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 5 ||
         side < 0 || side > 2 || !std::isfinite(respect))
         return false;
     // Officers from before the questline are already serving.
@@ -570,6 +570,8 @@ bool Career::parse(const std::string& text) {
     if (version >= 3 && (!(in >> honour >> defended) || defended < 0)) return false;
     int chief_dead = 0;
     if (version >= 4 && !(in >> chief_dead)) return false;
+    float notoriety = 0;
+    if (version >= 5 && (!(in >> notoriety) || !std::isfinite(notoriety))) return false;
     CareerState s;
     s.side = static_cast<Side>(side);
     s.gang = s.side == Side::Gang ? gang : -1;
@@ -578,6 +580,7 @@ bool Career::parse(const std::string& text) {
     s.honourable = honour != 0;
     s.defended = defended;
     s.chief_dead = chief_dead != 0;
+    s.notoriety = std::clamp(notoriety, 0.0F, notoriety_max);
     s.jobs_done = std::max(0, jobs);
     s.patrol_car = s.side == Side::Police && car != "-" ? car : std::string();
     s.police_stage = s.side == Side::Police ? static_cast<PoliceStage>(stage) : PoliceStage::Report;

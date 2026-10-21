@@ -127,12 +127,12 @@ const std::vector<Line>& Story::port_lines(bool esperanto) {
 const std::vector<Line>& Story::home_lines(bool esperanto) {
     static const std::vector<Line> eo{
         {uncle_eo, "Jen ni estas - Okcidenta Verda, la okcidenta flanko de la urbo. Ne luksa, sed ĝi estas nia, ĝis la lasta krono."},
-        {uncle_eo, "Aŭskultu, nevo. Mi diros al vi rekte, antaŭ ol iu alia faros. Mia frato Dario apartenas al La Verda Mano - "
-                   "la Verda Mano. Li nun estas grava viro en Verda Urbo. Viaj kuzoj estas kun li."},
+        {uncle_eo, "Aŭskultu, nevo. Mi diros al vi rekte, antaŭ ol iu alia faros. Mia frato Dario - via Onklo Dario - estas la estro "
+                   "de La Verda Mano. Li nun gvidas ĉion, el tiu drinkejo en la centro. Viaj kuzoj estas kun li."},
         {uncle_eo, "Mi ne fieras pri tio. Nia patro laboris kvardek jarojn ĉe la havenoj kaj neniam prenis tion, kio ne estis lia. "
                    "La Verda Mano diras 'nur gangsteroj, neniam la popolo'. Eble. Tamen mi ĉeestis tro multajn entombigojn."},
-        {uncle_eo, "Mi ne diros al vi kiel vivi. Ili trovos vin baldaŭ - ilia drinkejo estas en la centro, ĉe la angulo apud la Parlamento. "
-                   "Nur... pripensu, ĉu ne? Ekzistas aliaj vojoj."},
+        {uncle_eo, "Mi ne diros al vi kiel vivi. Dario volos vin - familio, li diros. Apartamenton apud la drinkejo, monon, respekton. "
+                   "Ilia drinkejo estas en la centro, ĉe la angulo apud la Parlamento. Nur... pripensu, ĉu ne? Ekzistas aliaj vojoj."},
         {uncle_eo, "Ĉi tiu domo nun estas via hejmo, tiom longe kiom vi volas. Via ĉambro estas preta. Tenu viajn aĵojn ĉi tie, "
                    "dormu ĉi tie - kaj se vi iam vundiĝos, ĉi tie vi vekiĝos."},
         {uncle_eo, "Bonvenon hejmen, nevo. Nun iru kaj vidu vian insulon."},
@@ -140,12 +140,12 @@ const std::vector<Line>& Story::home_lines(bool esperanto) {
     if (esperanto) return eo;
     static const std::vector<Line> lines{
         {uncle, "Here we are - Okcidenta Verda, the west side of the city. Not fancy, but it's ours, every last krono."},
-        {uncle, "Listen, nevo. I'll tell you straight, before somebody else does. My brother Dario runs with the Green Hand - "
-                "La Verda Mano. He's a big man in Verda City now. Your cousins run with him."},
+        {uncle, "Listen, nevo. I'll tell you straight, before somebody else does. My brother Dario - your Uncle Dario - is the head "
+                "of the Green Hand. La Verda Mano. He runs the whole thing now, from that bar downtown. Your cousins run with him."},
         {uncle, "I'm not proud of it. Our father worked the docks forty years and never took what wasn't his. The Green Hand "
                 "say 'gangsters only, never the people'. Maybe. I've still been to too many funerals."},
-        {uncle, "I won't tell you how to live. They'll find you soon enough - their bar is downtown, on the corner by Parliament. "
-                "Just... think about it, eh? There are other roads."},
+        {uncle, "I won't tell you how to live. Dario will want you - family, he'll say. A flat by the bar, money, respect. Their bar is "
+                "downtown, on the corner by Parliament. Just... think about it, eh? There are other roads."},
         {uncle, "This house is your home now, as long as you want it. Your room's made up. Keep your things here, sleep here - "
                 "and if you ever get hurt, this is where you'll wake up."},
         {uncle, "Bonvenon hejmen, nevo. Welcome home. Now go and see your island."},

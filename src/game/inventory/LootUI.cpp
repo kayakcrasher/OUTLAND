@@ -19,9 +19,12 @@ bool hit(Vector2 point, Rectangle r) {
     return point.x >= r.x && point.y >= r.y && point.x < r.x + r.width && point.y < r.y + r.height;
 }
 } // namespace
+bool LootUI::wide(int width, int height) { return static_cast<float>(width) / scale(height) >= 1000; }
 Rectangle LootUI::row_rect(std::size_t row, int width, int height) {
     const float logical_width = static_cast<float>(width) / scale(height);
-    return scaled({20, 140 + static_cast<float>(row) * 55, logical_width - 40, 49}, height);
+    // Wide screens keep the right of the bag for the quests.
+    const float rows = wide(width, height) ? logical_width * .58F - 30 : logical_width - 40;
+    return scaled({20, 140 + static_cast<float>(row) * 55, rows, 49}, height);
 }
 Rectangle LootUI::action_rect(int action, int width, int height) {
     const float logical_width = static_cast<float>(width) / scale(height);
@@ -37,6 +40,8 @@ Rectangle LootUI::action_rect(int action, int width, int height) {
         return scaled({36 + third * 2, 540, third, 48}, height);
     case 4:
         return scaled({20, 478, 100, 42}, height);
+    case 6:   // QUESTS (narrow screens), beside CLOSE
+        return scaled({logical_width - 236, 86, 110, 40}, height);
     default:
         return scaled({logical_width - 120, 478, 100, 42}, height);
     }
@@ -54,6 +59,7 @@ InventoryActions LootUI::update(const Inventory &bag, int width, int height, boo
         for (std::size_t row = 0; row < 6; ++row)
             if (page_ * 6 + row < size && hit(point, row_rect(row, width, height)))
                 selected_ = page_ * 6 + row;
+        if (!wide(width, height) && hit(point, action_rect(6, width, height))) { quests_view_ = !quests_view_; return; }
         for (int button = 0; button < 6; ++button)
             if (hit(point, action_rect(button, width, height))) {
                 if (button == 0)
@@ -124,7 +130,44 @@ void LootUI::draw_inventory(const ItemRegistry &registry, const LootSession &ses
                         weapons.available() ? weapons.weapon().name : "NO WEAPON",
                         weapons.ammo().loaded, weapons.ammo().reserve),
              20, 120, 15, GRAY);
-    for (std::size_t row = 0; row < 6; ++row) {
+    // QUESTS: beside the bag on a wide screen; on a narrow one, instead of it (the QUESTS button).
+    const bool beside = wide(width, height);
+    if (beside || quests_view_) {
+        const float qx = beside ? logical_width * .58F + 10 : 20, qw = beside ? logical_width * .42F - 30 : logical_width - 40;
+        const float qh = beside ? 380.0F : 390.0F;
+        DrawRectangle(static_cast<int>(qx), 140, static_cast<int>(qw), static_cast<int>(qh), Fade(Color{24, 30, 24, 255}, .95F));
+        DrawText("QUESTS", static_cast<int>(qx) + 12, 148, 20, Color{185, 202, 139, 255});
+        float y = 176;
+        if (quests_.empty()) DrawText("Nothing in hand. Talk to people: a boss, the Policio, Verda Transporto.", static_cast<int>(qx) + 12, static_cast<int>(y), 14, GRAY);
+        for (const auto& quest : quests_) {
+            if (y > 140 + qh - 40) break;
+            DrawRectangle(static_cast<int>(qx) + 8, static_cast<int>(y), 4, 18, quest.colour);
+            DrawText(quest.title.c_str(), static_cast<int>(qx) + 18, static_cast<int>(y), 17, quest.colour);
+            y += 22;
+            // The brief, wrapped to the panel.
+            std::string line, word;
+            const auto flush = [&] { if (!line.empty()) { DrawText(line.c_str(), static_cast<int>(qx) + 18, static_cast<int>(y), 15, RAYWHITE); y += 18; line.clear(); } };
+            for (std::size_t i = 0; i <= quest.detail.size(); ++i) {
+                const char c = i < quest.detail.size() ? quest.detail[i] : ' ';
+                if (c != ' ') { word += c; continue; }
+                const std::string trial = line.empty() ? word : line + " " + word;
+                if (MeasureText(trial.c_str(), 15) > qw - 36 && !line.empty()) { flush(); line = word; }
+                else line = trial;
+                word.clear();
+            }
+            flush();
+            if (!quest.status.empty()) { DrawText(quest.status.c_str(), static_cast<int>(qx) + 18, static_cast<int>(y), 14, GRAY); y += 18; }
+            y += 12;
+        }
+    }
+    if (!beside) {
+        const auto q = action_rect(6, width, height);
+        const float s2 = scale(height);
+        const Rectangle r{q.x / s2, q.y / s2, q.width / s2, q.height / s2};
+        DrawRectangleRec(r, quests_view_ ? Color{80, 100, 72, 255} : DARKGRAY);
+        DrawText(quests_view_ ? "BAG" : TextFormat("QUESTS %d", static_cast<int>(quests_.size())), static_cast<int>(r.x) + 9, static_cast<int>(r.y) + 12, 16, RAYWHITE);
+    }
+    for (std::size_t row = 0; row < 6 && !(quests_view_ && !beside); ++row) {
         const auto index = page_ * 6 + row;
         const auto rect = row_rect(row, static_cast<int>(logical_width), 720);
         DrawRectangleRec(rect, Fade(index == selected_ ? DARKGREEN : DARKGRAY, .9F));

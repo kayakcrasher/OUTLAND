@@ -35,6 +35,11 @@ bool GameSettings::load(const std::string& path) {
         else if (key == "graphics") { int v = 0; in >> v; read.graphics = static_cast<Graphics>(std::clamp(v, 0, 2)); }
         else if (key == "language") { int v = 0; in >> v; read.language = static_cast<Language>(std::clamp(v, 0, 1)); }
         else if (key == "touch_controls") { int v = 0; in >> v; read.touch_controls = static_cast<TouchControls>(std::clamp(v, 0, 2)); }
+        else if (key == "touch") {
+            std::string name; input::TouchCustom c;
+            if (in >> name >> c.x >> c.y >> c.scale && std::isfinite(c.x) && std::isfinite(c.y) && std::isfinite(c.scale))
+                read.touch_layout[name] = c;
+        }
         else if (key == "bind") {
             std::string name; int a = 0, b = 0;
             if (!(in >> name >> a >> b)) continue;
@@ -66,6 +71,7 @@ bool GameSettings::save(const std::string& path) const {
     for (std::size_t i = 0; i < input::action_count; ++i)
         output << "bind " << input::Bindings::key(static_cast<input::Action>(i)) << ' ' << bindings.codes[i][0] << ' '
                << bindings.codes[i][1] << '\n';
+    for (const auto& [name, c] : touch_layout) output << "touch " << name << ' ' << c.x << ' ' << c.y << ' ' << c.scale << '\n';
     return static_cast<bool>(output);
 }
 

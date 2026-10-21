@@ -1,4 +1,7 @@
 #include "outland/game/PauseMenu.hpp"
+#include "outland/game/TouchLayoutEditor.hpp"
+#include <cmath>
+#include <filesystem>
 #include <raylib.h>
 #include <iostream>
 #include <string>
@@ -65,6 +68,38 @@ int main() {
                 for (int b = 0; b < 2; ++b)
                     if ((i != j || a != b) && keys.codes[i][static_cast<std::size_t>(a)] != 0)
                         check(keys.codes[i][static_cast<std::size_t>(a)] != keys.codes[j][static_cast<std::size_t>(b)], "one action per key");
+    // The language and the player's own touch layout are kept with the settings.
+    {
+        game::GameSettings saved;
+        saved.language = game::GameSettings::Language::Esperanto;
+        saved.touch_layout["fire"] = {.7F, .5F, 1.5F};
+        saved.touch_layout["movement"] = {.2F, .7F, .8F};
+        const auto path = (std::filesystem::temp_directory_path() / "outland_settings_test.cfg").string();
+        check(saved.save(path), "settings saved");
+        game::GameSettings back;
+        check(back.load(path) && back.language == game::GameSettings::Language::Esperanto && back.touch_layout.size() == 2 &&
+              std::abs(back.touch_layout["fire"].x - .7F) < 1e-4F && std::abs(back.touch_layout["fire"].scale - 1.5F) < 1e-4F, "language and layout read back");
+        std::filesystem::remove(path);
+        // On the layout: moved and sized; the rest where they were.
+        const auto layout = input::customised(back.touch_layout);
+        const input::TouchLayout defaults;
+        check(std::abs(layout.fire.x - .7F) < 1e-4F && std::abs(layout.fire.y - .5F) < 1e-4F && std::abs(layout.fire.scale - defaults.fire.scale * 1.5F) < 1e-4F,
+              "FIRE moved and made bigger");
+        check(layout.aim.x == defaults.aim.x && layout.aim.scale == defaults.aim.scale, "AIM untouched");
+        // Off-screen and silly sizes are kept in bounds.
+        input::TouchOverrides wild{{"jump", {3.0F, -1.0F, 9.0F}}};
+        const auto tamed = input::customised(wild);
+        check(tamed.jump.x <= .98F && tamed.jump.y >= .02F && tamed.jump.scale <= defaults.jump.scale * input::custom_scale_max + 1e-4F, "kept on screen");
+        back.reset_controls();
+        check(back.touch_layout.empty() && back.language == game::GameSettings::Language::Esperanto, "RESET CONTROLS resets the layout, keeps the language");
+        // Every button has a name, and the editor's tool bar fits the screen.
+        for (const auto& e : input::touch_elements()) check(e.key && *e.key && (e.on_foot || e.driving), std::string("element ") + e.key);
+        for (const auto& size : {Vector2{1280, 720}, Vector2{800, 360}, Vector2{1920, 1080}})
+            for (int t = 0; t < game::TouchLayoutEditor::tool_count; ++t) {
+                const auto r = game::TouchLayoutEditor::tool(t, static_cast<int>(size.x), static_cast<int>(size.y));
+                check(r.x >= 0 && r.x + r.width <= size.x + .5F, "editor tool on screen");
+            }
+    }
     if (failures) return 1;
     std::cout << "[PASS] Pause menu layout on PC and phone screens; PC-style default keys\n";
 }

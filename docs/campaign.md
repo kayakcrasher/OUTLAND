@@ -28,6 +28,13 @@ Verda City, and several of his family are in **La Verda Mano**, the Green Hand.
    wakes up there after a hospital stay.
 4. **From there the game is the player's.** Ron stays at home. USE beside him for a word or two.
 
+**Uncle Dario** (Ron's brother) is the head of the Green Hand. He is the boss at La Verda Mano's
+bar in downtown Verda City, and his name shows over his head. Talk to him to join the family
+business ("The Green Hand looks after its own - family first"). Join and he gives you the keys to
+a **flat just down from the bar**: your hideout. It is a Main Street building near the bar, it
+comes furnished, it counts as one of your homes (sleep there, wake there), and it shows on the
+map.
+
 The dialogue is in **English** by default. Choose **ESPERANTO** in SETTINGS > Language and Uncle
 Ron speaks Esperanto ("Ĉu vi ankoraŭ memoras Esperanton? Ahaha!"). The goals, the drive's caption,
 the menus and the slot screen are in Esperanto too. Verda's signs and places are in Esperanto

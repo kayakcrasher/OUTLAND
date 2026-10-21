@@ -162,6 +162,7 @@ add_library(
     src/game/PlayUI.cpp
     src/game/MapScreen.cpp
     src/game/Settings.cpp
+    src/game/TouchLayoutEditor.cpp
     src/game/PauseMenu.cpp
     src/game/feel/Haptics.cpp
     src/game/transit/BusLine.cpp
@@ -235,6 +236,7 @@ add_library(
 
     src/creator/CreatorMapIO.cpp
     src/input/InputSystem.cpp
+    src/input/TouchCustom.cpp
     src/input/Bindings.cpp
         src/input/PointerEvents.cpp
     src/input/TouchHUD.cpp

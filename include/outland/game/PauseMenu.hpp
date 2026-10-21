@@ -14,10 +14,10 @@ namespace outland::game {
 class PauseMenu {
 public:
     enum class Page { Main, Settings, Controls };
-    enum class Result { None, Resume, SettingsChanged, Save, Restart, QuitHome, QuitGame };
+    enum class Result { None, Resume, SettingsChanged, Save, Restart, QuitHome, QuitGame, EditTouchLayout };
     // The settings rows, top to bottom.
     enum class Row {
-        Language, Mouse, Touch, AimSensitivity, InvertY, AimToggle, AimAssist, TouchControls, ButtonSize, Vibration, Volume, Sound, Graphics,
+        Language, Mouse, Touch, AimSensitivity, InvertY, AimToggle, AimAssist, TouchControls, ButtonSize, TouchLayout, Vibration, Volume, Sound, Graphics,
         Count
     };
     static constexpr int row_count = static_cast<int>(Row::Count);

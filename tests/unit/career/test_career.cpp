@@ -90,9 +90,13 @@ int main() {
         c.defended("Verda");
         check(c.state().defended == 1 && c.state().respect > r0 && c.state().honourable, "defending your town");
         c.crime(true);
-        check(!c.state().honourable && c.state().record && c.state().side == Side::Gang, "a crime: no honour, a record for good");
+        check(c.state().honourable && c.state().record && c.state().side == Side::Gang && c.state().notoriety == Career::notoriety_serious,
+              "a crime: the gang keeps your honour; a record, and notoriety");
+        c.crime(false);
+        check(c.state().honourable && c.state().notoriety == Career::notoriety_serious + Career::notoriety_minor, "notoriety rises");
         Career saved;
-        check(saved.parse(c.serialise()) && !saved.state().honourable && saved.state().record && saved.state().defended == 1, "honour is saved");
+        check(saved.parse(c.serialise()) && saved.state().honourable && saved.state().record && saved.state().defended == 1 &&
+              saved.state().notoriety == c.state().notoriety, "honour and notoriety are saved");
         c.quit();
         check(!c.join_police("car", why) && why.find("record") != std::string::npos, "the record shuts the police door");
     }
@@ -368,7 +372,7 @@ int main() {
         check(c.take_pay() == Career::hit_pay && c.state().chief_dead && c.job().kind == JobKind::None, "the hit pays 500 000 kronoj");
         Job done;
         check(c.take_finished(done) && done.kind == JobKind::HitChief, "the game hears the Chief is dead");
-        check(c.state().record && !c.state().honourable, "killing a cop is no gangster's quarrel");
+        check(c.state().record && c.state().honourable && c.state().notoriety >= Career::notoriety_hit, "killing the Chief: a record, and a name");
         Career back;
         check(back.parse(c.serialise()) && back.state().chief_dead, "the Chief stays dead");
         back.quit();

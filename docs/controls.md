@@ -105,6 +105,7 @@ ESC goes back a page, and from the first page resumes.
 
 | Setting | Values | Default |
 |---|---|---|
+| Touch layout | EDIT: drag each on-screen button where your thumbs want it, and make it bigger or smaller (- / +, 50–200%). There is one set for on foot and one for at the wheel. RESET puts back one button, RESET ALL every one; DONE keeps the layout (saved with the settings), CANCEL leaves it. RESET CONTROLS also resets the layout | the default layout |
 | Language | ENGLISH or ESPERANTO: Verda's own language for the menus (pause, settings, controls, the home screen and the campaign's slots) and Uncle Ron's story; the island's signs and places are in Esperanto either way | ENGLISH |
 | Mouse sensitivity | 0.1–4.0: radians per pixel = 0.0012 × setting (about 0.07° per pixel at 1.0) | 1.0 |
 | Touch look sensitivity | 0.2–3.0 (half the screen's height = 90° × setting) | 1.0 |

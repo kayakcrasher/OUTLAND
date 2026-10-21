@@ -12,10 +12,10 @@
 // raids on the Krimuloj, breaking up gang wars). Respect raises their rank and their pay; failing
 // a job, dying or betraying their own costs it.
 //
-// Honour: a gang that only kills other gangsters (Krimuloj and the ranching families) and defends
-// its towns has broken no law. A member keeps a clean record while they stay HONOURABLE; one crime
-// against the people of Verda or its police (reported: assault, murder) and the honour is gone
-// and the record stays for good. The Policio never takes a player with a record, nor one still
+// Honour and notoriety: a gang that kills other gangsters and defends its towns is HONOURABLE.
+// A gang member who hurts the people of Verda or its police (reported: assault, murder) keeps his
+// honour with the gang - but the crime goes on his record for good, and his NOTORIETY (0-100)
+// rises: the island learns his name (and a stint in prison grows with it). The Policio never takes a player with a record, nor one still
 // running with a gang (they leave first), and no gang takes a cop (the badge goes back first).
 // A crime on duty puts an officer off the force for good.
 //
@@ -97,7 +97,8 @@ struct CareerState {
     int gang{-1};
     float respect{0};
     bool record{false};            // a crime on file: the Policio will not have them
-    bool honourable{true};         // a gang member who has hurt nobody but gangsters
+    bool honourable{true};         // the gang's honour (crimes against the people no longer take it)
+    float notoriety{0};            // 0-100: how much the island fears the name (crimes, the big hit)
     int defended{0};               // raiders taken down on the gang's own turf
     bool chief_dead{false};        // the Chief was hit (for good): the Policio is leaderless
     int jobs_done{0};
@@ -138,7 +139,8 @@ public:
     [[nodiscard]] bool in_prison() const { return jailed_; }
     // The crew a CLEAN UP is breaking up (-1: none): its dead stay down until the job ends.
     [[nodiscard]] int besieging() const { return state_.side == Side::Police && job_.kind == JobKind::CleanUp ? job_.crew : -1; }
-    void crime(bool serious);                        // a crime someone reported (assault, murder, attacking police)
+    void crime(bool serious);
+    static constexpr float notoriety_max = 100, notoriety_serious = 8, notoriety_minor = 3, notoriety_hit = 30;                        // a crime someone reported (assault, murder, attacking police)
     // The Chief went down on a HitChief job.
     void chief_killed();
     static constexpr int hit_pay = 500000;              // kronoj, flat (no rank bonus)

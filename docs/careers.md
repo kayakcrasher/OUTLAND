@@ -14,8 +14,9 @@ In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. E
   - You are sworn in as a Kadeto and issued a pistol and two magazines, then sent to the Chief (the questline below).
   - That station's patrol car becomes yours until the Interceptor replaces it. It leaves the AI dispatch and nobody reports it stolen.
 - **Honour and the record:**
-  - A gang that only kills other gangsters (the crews and the ranching families) and defends its towns has broken no law. A member starts **HONOURABLE** (shown by the respect meter) and keeps a clean record.
-  - One reported crime against the people of Verda or the police (assault, murder, attacking an officer) ends it: **NO HONOUR**, and a **record** for good.
+  - A gang that kills other gangsters (the crews and the ranching families) and defends its towns is **HONOURABLE** (shown by the respect meter).
+  - Gang members *can* hurt and kill civilians and cops, and the gang won't call you dishonoured for it. But every reported crime (assault, murder, attacking an officer) goes on your **record** for good, and your **NOTORIETY** (0–100) rises: +8 for a serious crime, +3 for a minor one, +30 for the Chief. Notoriety shows on the respect meter in place of HONOURABLE.
+  - The more notorious you are, the longer you do in prison (+0.6 s a point).
   - An honourable gang's towns win back their hold twice as fast. Every rival gangster you take down on your own gang's turf counts as defending the town: +2 respect and +4 hold.
   - **Leaving:** tell your boss you're out (USE twice beside him) to walk away from the gang.
   - The Policio turns away anyone with a record ("no criminals on the force"), and anyone still running with a gang.
@@ -28,7 +29,7 @@ In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. E
 Verda's only prison stands alone south-east of the ring road, about a kilometre from the nearest town, on its own level ground at the end of an access road. Behind a 6 m wall with razor wire are four guard towers, a gatehouse, the intake bay, the admin block, a two-storey cell block and an exercise yard. The map always shows it.
 
 - **Officers** bring their prisoners here (above).
-- **Getting arrested:** at one star an unarmed officer who reaches you, with you not firing, makes an arrest. You do time in the prison yard: 60 s, plus 30 if you have a record and 30 more for a gang member without honour. The job in hand is off and no work comes while you're inside. Walk out of the gate early and you're put back. When your time is up you're let out at the gate.
+- **Getting arrested:** at one star an unarmed officer who reaches you, with you not firing, makes an arrest. You do time in the prison yard: 60 s, plus 30 if you have a record, and more the more notorious a gang member is. The job in hand is off and no work comes while you're inside. Walk out of the gate early and you're put back. When your time is up you're let out at the gate.
 - **The gang life:** a gang member will do a few stints here. Doing your time quietly earns +3 respect with the crew.
 - **Its people:**
   - Armed guards in navy stand in all four towers and at the gate, and two more walk the yard.
@@ -79,7 +80,7 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
    - He stands beside the capital's first patrol car in a navy uniform, peaked cap and gold braid. His name and "USE to talk" show over his head.
    - Press **USE** next to him and he sends you to the training camp. Nobody can shoot him.
 2. **Qualify at the training camp.**
-   - The camp is a fenced range on open, level ground 300–1000 m outside Verda City, clear of roads and buildings. Its downrange points away from the city.
+   - The camp is a fenced range on open, level ground right behind Verda City's police HQ, clear of the highway and the streets. Its downrange points away from the station. (On a map without room there, it sits on open ground 300–1000 m outside the city.)
    - It has a gravel apron, a firing line with booth dividers and a lectern, distance posts at 10, 15 and 25 m, an earth berm, a range hut and a blue-and-white flag.
    - Stand at the lectern and press **USE** to start the next drill. A 3 s countdown runs, then silhouette targets flip up one at a time and drop when hit or when their time runs out.
    - Leaving the firing line stops the drill. Real bullets hit the targets (`CombatWorld::bind_drill`).
@@ -172,7 +173,7 @@ The goal of the police questline is to get rid of the gangs. Once you serve, abo
 
 ## Saving
 
-The career is saved beside the Explore loot profile (`<profile>.career`): side, gang, respect, record, honour, towns defended, jobs done and the patrol car. The towns the Policio has cleared are saved with the territory. A job in progress is not saved; a new one comes after loading.
+The career is saved beside the Explore loot profile (`<profile>.career`): side, gang, respect, record, honour, notoriety, towns defended, jobs done and the patrol car. The towns the Policio has cleared are saved with the territory. A job in progress is not saved; a new one comes after loading.
 
 ## Dev and tests
 

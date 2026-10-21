@@ -1,5 +1,6 @@
 #pragma once
 #include "outland/input/Bindings.hpp"
+#include "outland/input/TouchCustom.hpp"
 #include <string>
 
 namespace outland::game {
@@ -27,6 +28,7 @@ struct GameSettings {
     bool muted{false};
     Graphics graphics{Graphics::Auto};
     Language language{Language::English};
+    input::TouchOverrides touch_layout;   // buttons the player moved or resized (SETTINGS > Touch layout)
     input::Bindings bindings{input::Bindings::defaults()};
     bool mouse_look{false};         // at run time: the player looks with the mouse (not saved)
 

@@ -36,6 +36,7 @@ struct Words {
     const char* rows[PauseMenu::row_count][2];   // label, hint (or nullptr)
     const char* on, *off, *toggle, *hold;
     const char* touch_modes[3], *graphics_modes[3], *languages[2];
+    const char* edit;
     const char* press_key, *capture_note, *note;
 };
 constexpr Words english{
@@ -53,12 +54,14 @@ constexpr Words english{
      {"Touch aim assist", "slows and nudges the view onto enemies"},
      {"On-screen controls", "AUTO: on phones and touch screens"},
      {"Touch button size", nullptr},
+     {"Touch layout", "move and resize each on-screen button"},
      {"Vibration", "phones: shots, hits, crashes and blasts"},
      {"Volume", nullptr},
      {"Sound", nullptr},
      {"Graphics", "AUTO adapts resolution to keep play smooth"}},
     "ON", "OFF", "TOGGLE", "HOLD",
     {"AUTO", "ON", "OFF"}, {"AUTO", "FAST", "SHARP"}, {"ENGLISH", "ESPERANTO"},
+    "EDIT",
     "PRESS A KEY",
     "Press a key or mouse button.  ESC cancels, BACKSPACE clears the slot.",
     "Click a slot to change it.  The mouse looks around; ESC opens this menu.",
@@ -78,12 +81,14 @@ constexpr Words esperanto{
      {"Tuŝa celhelpo", "malrapidigas kaj puŝetas la vidon al malamikoj"},
      {"Surekranaj stiriloj", "AŬTOMATA: sur telefonoj kaj tuŝekranoj"},
      {"Grandeco de tuŝbutonoj", nullptr},
+     {"Tuŝa aranĝo", "movu kaj regrandigu ĉiun surekranan butonon"},
      {"Vibrado", "telefonoj: pafoj, trafoj, kolizioj kaj eksplodoj"},
      {"Laŭteco", nullptr},
      {"Sono", nullptr},
      {"Grafiko", "AŬTOMATA adaptas la distingivon por glata ludado"}},
     "JES", "NE", "ŜALTI", "TENI",
     {"AŬTOMATA", "JES", "NE"}, {"AŬTOMATA", "RAPIDA", "AKRA"}, {"ANGLA", "ESPERANTO"},
+    "REDAKTI",
     "PREMU KLAVON",
     "Premu klavon aŭ musbutonon.  ESC nuligas, BACKSPACE malplenigas la ingon.",
     "Alklaku ingon por ŝanĝi ĝin.  La muso rigardas ĉirkaŭen; ESC malfermas ĉi tiun menuon.",
@@ -97,7 +102,7 @@ constexpr const char* action_labels_eo[]{
 static_assert(std::size(action_labels_eo) == input::action_count, "an Esperanto name for every action");
 bool toggle_row(PauseMenu::Row row) {
     using R = PauseMenu::Row;
-    return row == R::Language || row == R::InvertY || row == R::AimToggle || row == R::AimAssist || row == R::TouchControls || row == R::Vibration ||
+    return row == R::Language || row == R::TouchLayout || row == R::InvertY || row == R::AimToggle || row == R::AimAssist || row == R::TouchControls || row == R::Vibration ||
            row == R::Sound || row == R::Graphics;
 }
 int rows_per_column() { return static_cast<int>((input::action_count + 1) / 2); }
@@ -259,6 +264,7 @@ PauseMenu::Result PauseMenu::update(GameSettings& settings, int width, int heigh
                 case Row::AimAssist: settings.aim_assist = !settings.aim_assist; changed(); break;
                 case Row::Vibration: settings.vibration = !settings.vibration; changed(); break;
                 case Row::Sound: settings.muted = !settings.muted; changed(); break;
+                case Row::TouchLayout: result = Result::EditTouchLayout; break;
                 case Row::Language:
                     settings.language = settings.language == GameSettings::Language::English ? GameSettings::Language::Esperanto : GameSettings::Language::English;
                     changed();
@@ -329,6 +335,7 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
             case Row::Vibration: on = settings.vibration; button(r, on ? w.on : w.off, on, font, s); break;
             case Row::Sound: on = !settings.muted; button(r, on ? w.on : w.off, on, font, s); break;
             case Row::Language: button(r, w.languages[static_cast<int>(settings.language)], true, font, s); break;
+            case Row::TouchLayout: button(r, w.edit, !settings.touch_layout.empty(), font, s); break;
             case Row::TouchControls:
                 button(r, touch_modes[static_cast<int>(settings.touch_controls)], settings.touch_controls != GameSettings::TouchControls::Off, font, s);
                 break;

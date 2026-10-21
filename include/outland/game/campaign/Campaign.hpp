@@ -8,8 +8,8 @@
 //
 // The player comes home to Verda after years abroad in Eastern Europe. Born and raised in Verda
 // City, he has family in La Verda Mano (the Green Hand). His Uncle Ron - a working-class
-// Esperantist, no friend of the gangs, sad that his own brother Dario is a big man in the Green
-// Hand - picks him up at the cargo terminal in Porto Luma, tells him about the island on the
+// Esperantist, no friend of the gangs, sad that his own brother Dario leads the Green Hand - picks
+// him up at the cargo terminal in Porto Luma, tells him about the island on the
 // quay, drives him home to Verda City and gives him a home in his house in Okcidenta Verda. From
 // there the game is the player's.
 //
@@ -57,7 +57,7 @@ struct Line { const char* speaker; std::string text; };
 class Story {
 public:
     static constexpr const char* uncle = "Uncle Ron";
-    static constexpr const char* brother = "Dario";
+    static constexpr const char* brother = "Dario";   // Uncle Dario, head of La Verda Mano
     static constexpr float fade_in = 1.2F, hold = .6F, fade_out = 1.2F;
 
     void start(Stage stage);
