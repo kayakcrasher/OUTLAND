@@ -154,6 +154,31 @@ int main() {
             }
         }
         check(smuggle && extort && turf, "all three jobs come up");
+        // A town the Policio cleared is nobody's to take; a load with no hideout left to go to is off.
+        Career d;
+        d.join_gang(0, "La Verda Mano", why);
+        bool cleared_turf = false, lost_home = false;
+        for (int i = 0; i < 6000 && !(cleared_turf && lost_home); ++i) {
+            now += 1;
+            auto f = full(now);
+            f.turfs[1].cleared = true;
+            d.update(f);
+            const auto kind = d.job().kind;
+            if (kind == JobKind::TakeTurf && !cleared_turf) {
+                cleared_turf = true;
+                check(d.job().turf == 2, "a cleared town is never the one to take");
+            } else if (kind == JobKind::Smuggle && !lost_home) {
+                lost_home = true;
+                f.player = {1800, 0, -405};
+                f.driving = "van";
+                d.update(f);
+                f.crews[0].cleared = true;   // the crew's hideout broken up meanwhile
+                d.update(f);
+                check(d.job().kind == JobKind::None, "no hideout to run it to: the job is off, not stuck");
+            }
+            if (d.job().kind != JobKind::None) { now += 2000; f.now = now; d.update(f); }
+        }
+        check(cleared_turf && lost_home, "both come up");
     }
     // The police: patrols in the car, raids, calls; going bad.
     {
@@ -188,17 +213,24 @@ int main() {
         for (int stop = 0; stop < 3; ++stop) {
             f.player = c.job().target;
             f.driving = "some_other_car";
+            f.driving_police = false;
             c.update(f);
-            check(c.job().done == stop, "a patrol needs the patrol car");
-            f.driving = "interceptor_1";
+            check(c.job().done == stop, "a patrol needs a police car");
+            if (stop == 1) { f.driving = "police_7"; f.driving_police = true; }   // any police car will do
+            else f.driving = "interceptor_1";
             c.update(f);
         }
         check(c.job().kind == JobKind::None && c.state().jobs_done == 1, "patrol done");
         check(wait_for(c, JobKind::Raid, now), "a raid call");
         const int gang = c.job().gang;
-        for (int k = 0; k < c.job().needed; ++k) c.killed(gang, false);
+        c.arrested(gang);                                    // one taken alive (USE)
+        check(c.job().done == 1, "an arrest counts on a raid");
+        for (int k = 1; k < c.job().needed; ++k) c.killed(gang, false);
         c.update(world(now));
         check(c.state().jobs_done == 2, "raid done");
+        const int paid = c.take_pay();
+        c.arrested(gang);
+        check(c.take_pay() == 60 && paid > 0, "an arrest off the job pays a little");
         // Gang war calls when there is one.
         Career d;
         d.join_police("police_2", why);
@@ -212,6 +244,16 @@ int main() {
             if (d.job().kind != JobKind::None && !war_call) { w.now += 2000; d.update(w); i += 2000; }
         }
         check(war_call, "a gang war brings a call");
+        {
+            // The shooting stops before the officer gets there: the call points at a crew of theirs.
+            auto w = world(d.job().deadline - 10);
+            d.update(w);
+            check(d.job().kind == JobKind::BreakUpWar && (std::abs(d.job().target.x - 400) < 1 || std::abs(d.job().target.x + 600) < 1),
+                  "a war that's over: on to the nearest of either crew");
+            d.killed(1, false); d.killed(2, false);
+            d.update(w);
+            check(d.job().kind == JobKind::None, "and two of them stopped ends it");
+        }
 
         // A cop can always go bad: a serious crime ends it, and leaves a record.
         c.crime(false);
@@ -241,8 +283,12 @@ int main() {
         }
         check(order && c.job().crew != 0, "the Chief's orders: a town first, not Verda City");
         { bool car = false; check(c.chief_talk(car).find("start out there") != std::string::npos, "the Chief says the towns first"); }
-        // Every one of them down: the crew is broken up.
+        // Every one of them down: the crew is broken up. Their dead stay down meanwhile, and going
+        // down yourself doesn't call it off.
         const int first = c.job().crew;
+        check(c.besieging() == first, "the crew is under siege");
+        c.died();
+        check(c.job().kind == JobKind::CleanUp, "the Chief's orders stand when you go down");
         f.crews[static_cast<std::size_t>(first)].alive = 0;
         c.update(f);
         check(c.job().kind == JobKind::None && c.state().jobs_done >= 1, "a town cleaned up");

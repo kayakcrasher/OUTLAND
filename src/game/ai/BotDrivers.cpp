@@ -105,6 +105,16 @@ bool BotDrivers::dispatch(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars,
     return true;
 }
 
+void BotDrivers::cancel(int bot, BattleRoyaleBots& bots, vehicles::VehicleSystem& cars) {
+    for (auto& ride : rides_) {
+        if (!ride.active || (ride.bot != bot && std::find(ride.passengers.begin(), ride.passengers.end(), bot) == ride.passengers.end())) continue;
+        ride.active = false;
+        cars.clear_autopilot(ride.vehicle);
+        bots.set_mounted(ride.bot, false);
+        for (const int p : ride.passengers) bots.set_mounted(p, false);
+    }
+}
+
 const BotRide* BotDrivers::ride_of(int bot) const {
     for (const auto& ride : rides_)
         if (ride.active && (ride.bot == bot || std::find(ride.passengers.begin(), ride.passengers.end(), bot) != ride.passengers.end())) return &ride;

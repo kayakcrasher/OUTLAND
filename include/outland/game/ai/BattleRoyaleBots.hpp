@@ -100,6 +100,10 @@ public:
     void respawn(int bot, Vector3 feet, float yaw, std::uint64_t seed);
     // Out of the game without a fight (a crew the Policio broke up in an earlier session).
     void retire(int bot);
+    // Gone from sight: no body drawn (arrested and taken away, officers back at the station).
+    // A respawn brings them back into view.
+    void set_hidden(int bot, bool hidden);
+    [[nodiscard]] bool hidden(int bot) const;
 
     // Keep bot bodies in NpcSystem in step with the brains (spawns missing bodies).
     void sync_bodies(characters::NpcSystem& npcs, const characters::CharacterRegistry* registry) const;
@@ -127,7 +131,7 @@ private:
     std::vector<BotShot> shots_;
     std::vector<BotTracer> tracers_;
     std::vector<std::string> feed_;
-    std::vector<int> mounted_, asleep_;
+    std::vector<int> mounted_, asleep_, hidden_;
     std::vector<float> lag_;
     std::size_t frame_{0};
     BattleRoyaleEvents events_;

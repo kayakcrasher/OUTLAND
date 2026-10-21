@@ -1630,8 +1630,9 @@ void building_loot(Kit& kit, world::VerdaRegion& region) {
 }
 
 // ------------------------------------------------------------------ Policio and Hospitalo
-// A modular police station (city kit civic/police_station.glb) in every town, facing one of its
-// streets on level ground near the centre, with a patrol car in its carport (two in Verda City).
+// A modular police station (city kit civic/police_station.glb) in every town (not the small
+// trailer hamlets by the highways), facing one of its streets on level ground near the centre,
+// with a patrol car in its carport (two in Verda City).
 // Verda City also gets Hospitalo de Verda near its station: the hospital with a drive-under
 // ambulance bay and three ambulances in it.
 struct CivicSpot { Vector3 origin; float yaw; };
@@ -1708,6 +1709,7 @@ void emergency_services(Kit& kit, world::VerdaRegion& region) {
     for (const auto& id : ids) {
         auto* town = settlement(region, id);
         if (!town) continue;
+        if (id.starts_with("hamlet_")) continue;   // a few trailers by the highway: no station
         const bool capital = id == "capital_verda";
         const Vector3 centre = town->center;
         // The station: 14 x 12 m with a 6 m carport on +X (model bounds x -7..13, z -6..6).

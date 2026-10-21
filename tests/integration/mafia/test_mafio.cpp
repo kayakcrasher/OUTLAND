@@ -3,6 +3,7 @@
 // hit squads drive onto a rival gang's turf and fight it out.
 #include "outland/creator/CreatorMapIO.hpp"
 #include "outland/game/life/LifeSimulation.hpp"
+#include "outland/game/career/Backup.hpp"
 #include "outland/game/mafia/Mafio.hpp"
 #include "outland/game/vehicles/VehicleSystem.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -54,6 +55,12 @@ int main() {
         check(crew.gang == game::mafia::gang_of_zone(world::zones::zone_at(region.settlements()[static_cast<std::size_t>(crew.settlement)].center)),
               "each town's crew is its county's gang");
         check(crew.members.size() >= 3, "a crew of three or more");
+        // Well away from the police: no hideout on a station's doorstep.
+        float police = 1e9F;
+        for (const auto& place : life.places())
+            if (place.kind == game::life::PlaceKind::Police) police = std::min(police, std::hypot(place.door.x - crew.door.x, place.door.z - crew.door.z));
+        std::cout << "    " << static_cast<int>(police) << " m from the nearest police station\n";
+        check(police > 100, "the " + crew.town + " hideout is well away from the police station");
         for (const int id : crew.members) {
             const auto* bot = bots.find(id);
             check(bot && bot->alive() && Vector3Distance(bot->position(), crew.interior) < 30, "members stand at the hideout");
@@ -132,6 +139,68 @@ int main() {
     if (!back->alive()) step(95, false, {});
     check(bots.find(victim)->alive() && bots.find(victim)->health() >= 99, "respawned");
     check(Vector3Distance(bots.find(victim)->position(), mafio.members()[static_cast<std::size_t>(victim - 1)].post) < 6, "at the hideout");
+    // Under siege (the Policio's CLEAN UP): the dead stay down until it is over.
+    int casino_crew = -1;
+    for (std::size_t c = 0; c < mafio.crews().size(); ++c) if (mafio.crews()[c].casino) casino_crew = static_cast<int>(c);
+    game::mafia::MafioFrame siege;
+    siege.now = now; siege.player_feet = player;
+    mafio.besiege(casino_crew, bots, siege);
+    check(mafio.besieged() == casino_crew && bots.damage_bot(victim, 500, player, now), "besieged, and one down");
+    step(Mafio::respawn_seconds + 100, false, {});
+    check(!bots.find(victim)->alive(), "under siege, the dead stay down");
+    mafio.besiege(-1, bots, siege);
+    step(Mafio::respawn_seconds + 100, false, {});
+    check(bots.find(victim)->alive(), "the siege lifted, they come back");
+
+    // An officer's backup: two officers, out of sight until called; they come and stand by the
+    // player, fight a gang at war with the officer (not one at peace), and go home.
+    game::career::Backup backup;
+    backup.start(bots, casino->door, 77);
+    bool off_duty = backup.ids().size() == 2;
+    for (const int id : backup.ids()) off_duty = off_duty && !bots.find(id)->alive() && bots.hidden(id);
+    check(off_duty, "two officers, off duty and out of sight");
+    mafio.set_outsiders([&](int a, int b, double at) {
+        if (!backup.officer(a) && !backup.officer(b)) return false;
+        const int gang = mafio.gang_of(backup.officer(a) ? b : a);
+        return gang >= 0 && mafio.provoked(gang, at);
+    });
+    Vector3 station{};
+    for (const auto& town : region.settlements())
+        for (const auto& marker : town.gameplay_markers)
+            if (marker.id.find("vehicle_spawn_police_capital_verda_1") != std::string::npos) station = marker.position;
+    const std::string said = backup.call(player, now, station, 0, bots, drivers, cars, region);
+    std::cout << "backup: " << said << '\n';
+    bool called = backup.active();
+    for (const int id : backup.ids()) called = called && bots.find(id)->alive() && !bots.hidden(id);
+    check(called, "the call is answered: two officers on their way");
+    check(backup.call(player, now, station, 0, bots, drivers, cars, region).find("way") != std::string::npos ||
+          backup.phase() == game::career::BackupPhase::OnScene, "one squad at a time");
+    for (float t = 0; t < 200 && backup.phase() != game::career::BackupPhase::OnScene; t += .05F) {
+        game::mafia::MafioFrame frame;
+        frame.dt = .05F; frame.now = now; frame.player_feet = player; frame.player_alive = true;
+        mafio.update(frame, bots, world, drivers, cars, region);
+        cars.update(.05F, {}, region, player, false);
+        backup.update(player, now, true, false, bots, drivers, cars, region);
+        now += .05;
+    }
+    for (float t = 0; t < 10; t += .05F) {   // a moment to walk over
+        game::mafia::MafioFrame frame;
+        frame.dt = .05F; frame.now = now; frame.player_feet = player; frame.player_alive = true;
+        mafio.update(frame, bots, world, drivers, cars, region);
+        backup.update(player, now, true, false, bots, drivers, cars, region);
+        now += .05;
+    }
+    const auto* officer = bots.find(backup.ids().front());
+    std::cout << "backup on the scene " << (backup.phase() == game::career::BackupPhase::OnScene) << ", "
+              << Vector3Distance(officer->position(), player) << " m from the player\n";
+    check(backup.phase() == game::career::BackupPhase::OnScene && Vector3Distance(officer->position(), player) < 45, "backup arrives at the player's side");
+    check(!mafio.hostile(officer->id(), casino->members.front(), now), "a gang at peace is left alone");
+    mafio.provoke(casino->members.front(), now);
+    check(mafio.hostile(officer->id(), casino->members.front(), now), "a gang at war with the officer is fought");
+    mafio.forgive();
+    backup.dismiss(bots, now);
+    check(!backup.active() && bots.hidden(officer->id()) && backup.call(player, now, station, 0, bots, drivers, cars, region).find("no units") != std::string::npos,
+          "home again, and dispatch needs a while before the next");
 
     // A hit squad: a rival crew drives onto another gang's turf and they fight.
     bool sent = false;

@@ -15,6 +15,7 @@
 #include "outland/game/mafia/Territory.hpp"
 #include "outland/game/mafia/GangLogos.hpp"
 #include "outland/game/career/Career.hpp"
+#include "outland/game/career/Backup.hpp"
 #include "outland/game/career/TrainingCamp.hpp"
 #include "outland/game/career/CampRenderer.hpp"
 #include "outland/game/life/WalkingMan.hpp"
@@ -596,6 +597,7 @@ void Renderer::run() {
     // Explore: the player's life in a gang or on the police (respect, jobs, calls), saved beside
     // their loot profile. A join at a hideout or a station takes a second USE within a few seconds.
     game::career::Career career;
+    game::career::Backup backup;     // an officer's radio call: two officers in a squad car
     std::string career_path,career_saved;
     float career_save_wait=0;
     bool career_dead=false;
@@ -606,6 +608,7 @@ void Renderer::run() {
     struct PoliceChief { Vector3 at{}; float yaw{0}; bool placed{false}; float health{100}; } chief;
     constexpr int chief_bot=910001;
     constexpr const char* chief_character="character_22_police";
+    constexpr const char* police_uniform="character_17_police";   // the player's, on duty
     std::string chief_line;float chief_line_time=0;
     std::string lights_car;          // the police car whose lights the player switched on ("" none)
     // Who runs Verda: every town and ranch, their holders and holds, the tags on the walls (saved
@@ -685,7 +688,13 @@ void Renderer::run() {
     game::ranch::Ranches ranches;
     game::freight::Freight freight;
     std::vector<characters::AnimationController> ranch_seats; // drivers' idle
-    mafio.set_outsiders([&](int a,int b,double now){return walking_man.hostile_to(a,b,now) || ranches.hostile_to(a,b,now);});
+    // Outsiders: Paul Acosta, the Vakeroj, and an officer's backup (against a gang at war with the officer).
+    mafio.set_outsiders([&](int a,int b,double now){
+        if(backup.officer(a) || backup.officer(b)) {
+            const int gang=mafio.gang_of(backup.officer(a) ? b : a);
+            return gang>=0 && mafio.provoked(gang,now);
+        }
+        return walking_man.hostile_to(a,b,now) || ranches.hostile_to(a,b,now);});
     bot_drivers.reserve(std::string(game::life::WalkingMan::car_marker));
     bot_drivers.reserve("vehicle_spawn_sxs_");
     bot_drivers.reserve("vehicle_spawn_semi_");
@@ -1411,7 +1420,7 @@ void Renderer::run() {
                     loot_session.economy().money=std::max<std::int64_t>(0,loot_session.economy().money+poker.cash_out()-poker_buy_in);
                     poker_open=false;poker_buy_in=0;
                 }
-                walking_man.clear();
+                walking_man.clear();backup.clear();
                 career=game::career::Career{};career_path.clear();mafio.set_player_gang(-1);services.assign_player_car({});
                 police_camp=game::career::TrainingCamp{};chief={};lights_car.clear();
                 territory.clear();territory_path.clear();smuggling_docks.clear();
@@ -1488,6 +1497,19 @@ void Renderer::run() {
                     TraceLog(LOG_INFO,"OUTLAND ranches: %d ranches, %d Vakeroj, %d cattle rigs/supply rigs %d, %d trailer reversals",
                              static_cast<int>(ranches.ranches().size()),static_cast<int>(ranches.vakeros().size()),
                              static_cast<int>(freight.rigs().size()),freight.running() ? 1 : 0,freight.reversals());
+                    // An officer's backup: two officers in uniform, off duty until the radio calls them.
+                    {
+                        Vector3 park{};
+                        for(const auto& town:verda_region.settlements()) if(town.id=="capital_verda") park=town.center;
+                        backup.start(br_bots,park,session_seed);
+                        for(std::size_t k=0;k<backup.ids().size();++k)
+                            npcs.spawn_bot(backup.ids()[k],k==0 ? "character_18_police" : "character_21_police",park,0);
+                        // The squad car from an earlier session, if one was left about.
+                        for(const auto& v:vehicles.vehicles())
+                            if(v.id.starts_with("creator_vehicle_"))
+                                if(const auto* asset=vehicles.asset(verda_region,v.id);asset && asset->vehicle.definition=="police") {backup.set_car(v.id);break;}
+                        if(!backup.car().empty()) bot_drivers.reserve(backup.car());
+                    }
                     br_bots.sync_bodies(npcs,&character_registry);
                     walking_man.dress(npcs);
                     services.start(vehicles,verda_region,&character_registry);
@@ -1984,6 +2006,8 @@ void Renderer::run() {
                 input_system.set_police_car(police_car);touch_hud.set_police_car(police_car,police_car && lights_car==car->id);
                 const bool tagger=!car && player_gang()>=0;
                 input_system.set_tagger(tagger);touch_hud.set_tagger(tagger);
+                const bool officer=!car && career.serving() && game_mode==game::GameMode::Explore;
+                input_system.set_officer(officer);touch_hud.set_officer(officer);
                 input_system.set_usable(use_available);touch_hud.set_usable(use_available);
                 const bool can_throw=grenades.count()>0, can_heal=loot_session.can_heal(player_health);
                 input_system.set_kit(can_throw,can_heal);touch_hud.set_kit(can_throw,can_heal);
@@ -2095,6 +2119,47 @@ void Renderer::run() {
         const auto* table_crew=game_mode==game::GameMode::Explore ? mafio.casino() : nullptr;
         const bool at_table=table_crew && !vehicles.driver() && !poker_open && player_health.alive() &&
             Vector3Distance(shop_feet,table_crew->table)<2.8F && !mafio.provoked(table_crew->gang,match_time);
+        // An officer's arrest: a Krimulo within arm's reach (USE) is cuffed and taken away.
+        const auto arrestable=[&](Vector3 feet) -> int {
+            if(!career.on_duty() || !mafio.active() || vehicles.driver() || game_mode!=game::GameMode::Explore) return -1;
+            int best=-1;float nearest=2.6F;
+            for(const auto& m:mafio.members()) {
+                const auto* bot=br_bots.find(m.bot);
+                if(!bot || !bot->alive() || br_bots.mounted(m.bot) || std::abs(bot->position().y-feet.y)>1.6F) continue;
+                const float d=std::hypot(bot->position().x-feet.x,bot->position().z-feet.z);
+                if(d<nearest) {nearest=d;best=m.bot;}
+            }
+            return best;
+        };
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && player_health.alive()) {
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            if(const int bot=arrestable(feet);bot>=0) {
+                const int gang=mafio.gang_of(bot),crew=mafio.crew_of(bot);
+                const std::string name(game::mafia::gangs[static_cast<std::size_t>(std::max(0,gang))].name);
+                // He comes quietly when he's hurt, or when none of his crew is there to see it.
+                const auto* him=br_bots.find(bot);
+                bool watched=false;
+                for(const int other:crew>=0 ? mafio.crews()[static_cast<std::size_t>(crew)].members : std::vector<int>{}) {
+                    const auto* o=br_bots.find(other);
+                    watched|=other!=bot && o && o->alive() && !br_bots.hidden(other) && Vector3Distance(o->position(),him->position())<15;
+                }
+                if(watched && him->health()>60) {
+                    interaction_message="He won't come quietly - his crew is watching. Get him alone, or wound him first";
+                } else {
+                    if(watched) mafio.provoke(bot,match_time);   // cuffed in front of his crew: they take it badly
+                    br_bots.retire(bot);br_bots.set_hidden(bot,true);
+                    career.arrested(gang);
+                    territory.killed(gang,feet,player_gang());
+                    if(crew>=0 && mafio.crews()[static_cast<std::size_t>(crew)].casino && career.serving() &&
+                       std::any_of(mafio.crews().begin(),mafio.crews().end(),[](const game::mafia::Crew& c){return !c.disbanded && !c.casino;}))
+                        career.warned_off_capital(match_time);
+                    interaction_message="ARRESTED: one of "+name+" - cuffed and taken to the station";
+                    gun_audio.kill_confirm();
+                }
+                interaction_remaining=3;
+                input_system.player().interact=false;
+            }
+        }
         if(controls.interact && at_table && !inventory_open && !(shop_open||store_open) && !mode_session.terminal()) {
             const auto money=loot_session.economy().money;
             if(money<20) {interaction_message="The Green Hand's table: 20 kr to sit down";interaction_remaining=3;}
@@ -2243,7 +2308,7 @@ void Renderer::run() {
                 vehicles.nearest(verda_region,feet)>=0 || loot_session.world().nearest(feet,2.8F)>=0 ||
                 (game::rules_for(game_mode).civilian_life && penthouse.inside(feet)) || home_here;
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
-                here=(chief.placed && Vector3Distance(feet,chief.at)<3.2F) || (police_camp.placed() && police_camp.at_line(feet)) ||
+                here=(chief.placed && Vector3Distance(feet,chief.at)<3.2F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 ||
                     (mafio.active() && mafio.turf_at(feet,7)>=0) || (services.active() && services.station_near(feet,14));
             }
             use_available=here && !creator_active && player_health.alive();
@@ -2283,6 +2348,20 @@ void Renderer::run() {
             }
         }
         if(!lights_car.empty() && vehicles.find(lights_car)<0) lights_car.clear();
+        // BACKUP / Z: an officer radios the nearest station for two more.
+        if(controls.backup && career.serving() && game_mode==game::GameMode::Explore && player_health.alive() && services.active()) {
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            const game::services::Unit* station=nullptr;
+            for(const auto& u:services.units())
+                if(u.kind==game::services::UnitKind::Police && (!station || Vector3Distance(u.home,feet)<Vector3Distance(station->home,feet))) station=&u;
+            if(station) {
+                const std::string before=backup.car();
+                interaction_message=backup.call(feet,match_time,station->home,station->home_yaw,br_bots,bot_drivers,vehicles,verda_region);
+                if(backup.car()!=before && !backup.car().empty()) {bot_drivers.reserve(backup.car());vehicle_dirty=true;}
+                br_bots.sync_bodies(npcs,&character_registry);
+                interaction_remaining=4;
+            }
+        }
         // Handbrake on JUMP (Space), boost on SPRINT (Shift), parking brake on CROUCH, horn on H.
         // Throttle: W/S (move_y) or the touch pedals - BRAKE slows, then reverses.
         const float pedal_throttle=std::clamp(-controls.move_y+controls.gas-controls.brake_pedal,-1.0F,1.0F);
@@ -3450,12 +3529,32 @@ void Renderer::run() {
                     paul.line_of_sight=bot_world.environment.line_of_sight;
                     walking_man.update(paul,br_bots,bot_drivers,vehicles,verda_region);
                 }
+                // A CLEAN UP under way: that crew's dead stay down, its squads come home.
+                mafio.besiege(career_path.empty() ? -1 : career.besieging(),br_bots,frame);
                 mafio.update(frame,br_bots,bot_world,bot_drivers,vehicles,verda_region);
+                // The officer's backup: arrive, keep close, go home.
+                if(backup.active()) {
+                    if(!career.serving()) backup.dismiss(br_bots,match_time);
+                    bool fighting=false;
+                    for(const auto& m:mafio.members()) {
+                        if(fighting) break;
+                        const auto* bot=br_bots.find(m.bot);
+                        fighting=bot && bot->alive() && !br_bots.hidden(m.bot) && std::hypot(bot->position().x-feet.x,bot->position().z-feet.z)<60;
+                    }
+                    if(const auto said=backup.update(feet,match_time,player_health.alive(),fighting,br_bots,bot_drivers,vehicles,verda_region);!said.empty()) {
+                        interaction_message=said;interaction_remaining=3;
+                    }
+                }
                 // The career: what the world holds for a job, and what the player did.
                 if(!career_path.empty()) {
                     game::career::CareerFrame work;
                     work.now=match_time;work.player=feet;work.alive=player_health.alive();
-                    if(const auto* car=vehicles.driver()) work.driving=car->id;
+                    if(const auto* car=vehicles.driver()) {
+                        work.driving=car->id;
+                        const auto* asset=vehicles.asset(verda_region,car->id);
+                        work.driving_police=asset && (asset->vehicle.definition=="police" || asset->vehicle.definition=="interceptor" ||
+                                                      asset->vehicle.definition=="highway_patrol");
+                    }
                     for(const auto& g:game::mafia::gangs) work.gang_names.emplace_back(g.name);
                     for(std::size_t c=0;c<mafio.crews().size();++c) {
                         const auto& crew=mafio.crews()[c];
@@ -3472,7 +3571,7 @@ void Renderer::run() {
                         const auto& crew=mafio.crews()[static_cast<std::size_t>(war.target)];
                         work.wars.push_back({war.attackers,war.defenders,crew.door,crew.town});
                     }
-                    for(const auto& town:verda_region.settlements()) work.towns.push_back({town.name,town.center});
+                    for(const auto& town:verda_region.settlements()) if(!town.id.starts_with("ranch_")) work.towns.push_back({town.name,town.center});
                     work.chief=chief.at;work.chief_known=chief.placed;
                     work.crew_share=territory.balance(player_gang()).crime;
                     work.camp=police_camp.line();work.camp_known=police_camp.placed();
@@ -3492,7 +3591,7 @@ void Renderer::run() {
                             if(static_cast<std::size_t>(t.ranch)<ranches.ranches().size())
                                 work.ranches.push_back({t.ranch,t.name,family.name,ranches.ranches()[static_cast<std::size_t>(t.ranch)].frame.gate,
                                                         territory.controls(static_cast<int>(i),player_gang())});
-                        } else work.turfs.push_back({static_cast<int>(i),t.name,t.centre,t.owner,t.hold});
+                        } else work.turfs.push_back({static_cast<int>(i),t.name,t.centre,t.owner,t.hold,t.cleared});
                     }
                     // AI gangs push on each other's towns (a hit squad goes in); towns change hands.
                     if(const auto raid=territory.update(dt,match_time,player_gang(),player_gang()>=0 && career.state().honourable ? 2.0F : 1.0F,
@@ -4147,11 +4246,13 @@ void Renderer::run() {
             const auto& looks=wardrobe_catalogue.looks();
             const auto* look=store_open && store_ui.look()<static_cast<int>(looks.size()) ? &looks[static_cast<std::size_t>(store_ui.look())] :
                 game::wardrobe::wearing(loot_session.economy(),wardrobe_catalogue);
-            character_renderer.set_player(look ? look->character : std::string());
-            body.outfit=look ? outfit_texture(look->outfit) : 0U;
+            // On the force: the Policio's uniform, whatever is in the wardrobe.
+            const bool uniform=!store_open && game_mode==game::GameMode::Explore && career.on_duty() && character_registry.find(police_uniform);
+            character_renderer.set_player(uniform ? std::string(police_uniform) : look ? look->character : std::string());
+            body.outfit=uniform ? 0U : look ? outfit_texture(look->outfit) : 0U;
             const auto held=character_renderer.draw_player(character_feet, player.yaw, body);
             const auto* hat=store_open ? (store_ui.hat()>=0 ? &wardrobe_catalogue.hats()[static_cast<std::size_t>(store_ui.hat())] : nullptr) :
-                game::wardrobe::wearing_hat(loot_session.economy(),wardrobe_catalogue);
+                uniform ? nullptr : game::wardrobe::wearing_hat(loot_session.economy(),wardrobe_catalogue);
             if(hat && !scoped) draw_cowboy_hat(held,hat->model.c_str());
 #ifdef OUTLAND_DEV_TOOLS
             // OUTLAND_DEV_HAT=1: the player wears a Vakero hat (to check how hats sit).

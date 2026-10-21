@@ -76,6 +76,8 @@ public:
     void set_police_car(bool on) { police_car_ = on; }
     // A gang member on foot: the TAG button works.
     void set_tagger(bool on) { tagger_ = on; }
+    // An officer on duty: the BACKUP button works (in TAG's place - a gangster is never one).
+    void set_officer(bool on) { officer_ = on; }
     // Something in reach to use (a door, a car, a pickup, a counter...): the USE button works.
     void set_usable(bool on) { usable_ = on; }
     // NADE and HEAL show only with a grenade to throw / something to heal with.
@@ -91,7 +93,7 @@ private:
     TouchLayout layout_{};
 
     enum class Control {
-        None, Movement, Look, Swipe, Jump, More, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon, Grenade, Heal, Lights, Tag, Sight,
+        None, Movement, Look, Swipe, Jump, More, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon, Grenade, Heal, Lights, Tag, Backup, Sight,
         Sprint, Crouch, Inventory, Interact, Gas, BrakePedal, Handbrake, Pan
     };
     // A finger and what it works; origin is where a floating stick was put down, last where a
@@ -107,7 +109,7 @@ private:
     float button_size_{1.0F};
     Vector2 stick_center_{-1, -1}; // a floating movement stick's centre while held
     bool mouse_quarantined_{false},had_native_touch_{false};
-    bool gameplay_{true}, driving_{false}, was_driving_{false}, drive_by_{false}, police_car_{false}, tagger_{false}, usable_{false}, grenade_{true}, heal_{true};
+    bool gameplay_{true}, driving_{false}, was_driving_{false}, drive_by_{false}, police_car_{false}, tagger_{false}, officer_{false}, usable_{false}, grenade_{true}, heal_{true};
     // Aim button: a tap toggles aiming down sights, a hold aims while held.
     bool aim_toggled_{false}, aim_held_{false};
     double aim_pressed_at_{0};

@@ -46,8 +46,11 @@ A job comes a few seconds after joining, then 12 s after each one ends. A column
 |---|---|---|---|
 | **HIT** | Take out 2–3 of a rival crew (one of the closest) | 320 | 6 |
 | **DRIVE-BY** | Hit 2 of a rival crew **from a car** | 450 | 9 |
-| **ROB THE RIG** | Hijack the supply or cattle rig (`game::freight`) and drive it to your crew's hideout | 900 | 12 |
+| **ROB THE RIG** | Hijack the supply or cattle rig (`game::freight`) and drive it to your crew's hideout (15 min) | 900 | 12 |
 
+- **Jobs that can't be finished are never offered or left hanging:**
+  - TAKE TURF never targets a town the Policio has cleared, and gives 30 minutes.
+  - ROB THE RIG (15 minutes) and SMUGGLE are only offered while your gang has a hideout standing to deliver to. If the last one is broken up mid-job, the job is called off.
 - **On rival turf:** within 45 m of a rival hideout, a member gets a warning ("they know your colours"). Stay 5 s more and that gang opens fire.
 - **Your own crew:** they don't mind your gunfire near them. Only a real hit turns them.
 - Smuggling, extortion and taking turf, and the fight for the island: [gang wars](gangs.md).
@@ -79,6 +82,7 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
    - He hands over the **Interceptor**: a long, low pursuit sedan in black with white doors and roof and a gold pinstripe. It has a slim LED light bar, a push bar with flashers, a bonnet scoop and a boot spoiler.
    - It is quicker than a patrol car (top speed 60, 220 health) and becomes your patrol car. Then the calls begin.
 
+- **The uniform:** on the force you wear the Policio's navy uniform (the clothes you bought wait in the wardrobe for when you hand in the badge).
 - **Emergency lights:** at the wheel of any police car or the Interceptor, **L** (or the **LIGHTS** touch button above HAND) switches the light bar, grille flashers and siren on or off.
 - **Older saves:** officers from before the questline are already serving.
 - **Dev:** `OUTLAND_DEV_CAREER=police:training`, `police:graduated` or `police:serving` starts further along. Dev builds log where the camp, the Chief and the Interceptor are.
@@ -87,11 +91,29 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
 
 | Call | What | Pay | Respect |
 |---|---|---|---|
-| **PATROL** | Drive your patrol car to three towns in turn | 260 | 5 |
+| **PATROL** | Drive a police car to three towns in turn (15 min) | 260 | 5 |
 | **RAID** | Take down 2–3 of a gang crew at its hideout | 480 | 9 |
 | **GANG WAR** | When a hit squad is on the road: stop 2 of either side | 500 | 10 |
 
+- **Patrols** count in any police car: your own, a station's, the Interceptor or a cruiser. A town counts within 40 m of its centre (towns only, not the ranches).
+- **Gang war calls** don't go stale: once the shooting stops, the call points at the nearest crew of either gang, and it ends if there is nobody left to stop.
 - Firing your gun on duty is never reported as "shots fired".
+
+### Arrests
+
+- Walk up to a Krimulo and press **USE** (E) to cuff him. He is taken to the station: no body, and he counts like a takedown on a RAID or GANG WAR call (and towards a CLEAN UP, since he's off the street).
+- An arrest pays +1 respect and 60 kronoj on top.
+- He comes quietly only when he's **wounded** (60 health or less) or **alone** (none of his crew within 15 m). In front of his crew he won't: "his crew is watching". Cuff a wounded man in front of them and they open fire.
+- The capital's crew before the Chief allows it costs respect, the same as shooting them.
+
+### Backup
+
+- Serving officers can radio for backup: **Z**, or the **BACKUP** button on touch screens.
+- Two armed officers set off from the nearest station in a squad car with lights and siren, drive to you by road and get out at your side. If the car is stuck for 8 s, or you are too close to the station for a drive, they come running from round the corner.
+- They follow you and fight any gang at war with you. They leave a gang at peace alone, so calling them never starts a fight.
+- They stay 150 s from arrival, and longer while there is shooting near you. Then they head back to the station.
+- If they fall, or once they leave, dispatch needs 40 s before it can send the next squad. The squad car stays where they left it, for the next call.
+- Tech: `game::career::Backup`. The officers are `ai::BattleRoyaleBots` bots; the Mafio's outsider rule decides whom they fight.
 
 ## La Ŝosea Patrolo (the highway patrol)
 
@@ -112,7 +134,9 @@ The law on Verda's highways, and above all the giant ring road round the island.
 
 The goal of the police questline is to get rid of the gangs. Once you serve, about 4 calls in 10 are the Chief's own orders: **CLEAN UP** (1400 pay, 14 respect).
 
-- **What it takes:** go to a crew's hideout and take down every one of them. The crew is broken up for good.
+- **What it takes:** go to a crew's hideout and take down every one of them (arrests count). The crew is broken up for good.
+  - While the order stands the crew is **under siege**: their dead stay down (no respawns), and their hit squads are called home.
+  - Going down yourself doesn't cancel the order. Come back from the hospital and finish it.
   - Nobody comes back to it, and it sends no more hit squads.
   - The town becomes nobody's turf (blue on the gang map, a blue cross on the map).
   - It stays that way across saves.

@@ -53,7 +53,7 @@ CombatBot& BattleRoyaleBots::add_bot(Vector3 feet,combat::WeaponId weapon,BotLev
 
 void BattleRoyaleBots::clear() {
     bots_.clear();agents_.clear();sounds_.clear();own_bus_.clear();heard_up_to_=0;shots_.clear();
-    tracers_.clear();feed_.clear();events_={};elapsed_=0;mounted_.clear();asleep_.clear();lag_.clear();
+    tracers_.clear();feed_.clear();events_={};elapsed_=0;mounted_.clear();asleep_.clear();hidden_.clear();lag_.clear();
     player_kills_=0;
 }
 
@@ -172,7 +172,17 @@ bool BattleRoyaleBots::asleep(int bot) const {
     return std::find(asleep_.begin(),asleep_.end(),bot)!=asleep_.end();
 }
 
+void BattleRoyaleBots::set_hidden(int bot,bool hidden) {
+    std::erase(hidden_,bot);
+    if(hidden) hidden_.push_back(bot);
+}
+
+bool BattleRoyaleBots::hidden(int bot) const {
+    return std::find(hidden_.begin(),hidden_.end(),bot)!=hidden_.end();
+}
+
 void BattleRoyaleBots::respawn(int bot,Vector3 feet,float yaw,std::uint64_t seed) {
+    std::erase(hidden_,bot);
     for(auto& brain:bots_) {
         if(brain.id()!=bot) continue;
         brain=CombatBot(bot,brain.level(),brain.weapon(),mix(seed+static_cast<std::uint64_t>(bot)));
@@ -338,7 +348,7 @@ void BattleRoyaleBots::sync_bodies(characters::NpcSystem& npcs,const characters:
             bot.moving() ? characters::NpcState::Wander : characters::NpcState::Idle;
         npcs.set_bot(bot.id(),bot.position(),bot.yaw(),bot.health(),state);
         npcs.set_bot_weapon(bot.id(),static_cast<int>(bot.weapon()));
-        npcs.set_bot_hidden(bot.id(),mounted(bot.id()));
+        npcs.set_bot_hidden(bot.id(),mounted(bot.id()) || hidden(bot.id()));
     }
 }
 }

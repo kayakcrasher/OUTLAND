@@ -126,6 +126,16 @@ void Career::killed(int gang, bool from_vehicle) {
     }
 }
 
+void Career::arrested(int gang) {
+    if (state_.side != Side::Police || gang < 0) return;
+    const bool counted = (job_.kind == JobKind::Raid && gang == job_.gang) ||
+                         (job_.kind == JobKind::BreakUpWar && (gang == job_.gang || gang == job_.crew));
+    killed(gang, false);
+    gain(1);                       // brought in alive: the Chief likes that better
+    pay_ += 60;
+    if (!counted) say("Arrested - booked at the station (+1 respect, +60 kronoj)");
+}
+
 void Career::crime(bool serious) {
     if (state_.side == Side::Gang) {
         // The people of Verda are not gangsters: the honour is gone, the record is for good.
@@ -240,6 +250,7 @@ void Career::turf_taken(int turf, const std::string& name) {
 void Career::died() {
     if (state_.side == Side::Civilian) return;
     if (job_.kind == JobKind::Quest) return;            // orders stand
+    if (job_.kind == JobKind::CleanUp) { say("You went down - the Chief's orders stand: their dead stay down, finish it"); return; }
     if (job_.kind != JobKind::None) finish(false, "You went down - the job is off");
     else gain(-3);
 }
@@ -259,6 +270,13 @@ void Career::finish(bool success, const std::string& why) {
     }
     job_ = {};
     next_offer_ = -1;
+}
+
+const CrewSpot* Career::home_of(const CareerFrame& frame) const {
+    const CrewSpot* home = nullptr;
+    for (const auto& c : frame.crews)
+        if (c.gang == state_.gang && !c.cleared && (!home || flat(c.door, frame.player) < flat(home->door, frame.player))) home = &c;
+    return home;
 }
 
 void Career::offer(const CareerFrame& frame) {
@@ -288,15 +306,11 @@ void Career::offer(const CareerFrame& frame) {
         job.pay = hit_pay; job.respect = 30; job.deadline = frame.now + 1800;
     } else if (state_.side == Side::Gang) {
         const float roll = random();
-        const auto home = [&]() -> const CrewSpot* {
-            const CrewSpot* h = nullptr;
-            for (const auto& c : frame.crews)
-                if (c.gang == state_.gang && (!h || flat(c.door, frame.player) < flat(h->door, frame.player))) h = &c;
-            return h;
-        };
+        const auto home = [&]() { return home_of(frame); };
         // Rival towns, weakest hold first (the next one to take).
         std::vector<const TurfSpot*> rival_towns;
-        for (const auto& t : frame.turfs) if (t.owner != state_.gang && t.owner >= 0 && t.owner < 5) rival_towns.push_back(&t);
+        // (A town the Policio cleared is nobody's to take.)
+        for (const auto& t : frame.turfs) if (t.owner != state_.gang && t.owner >= 0 && t.owner < 5 && !t.cleared) rival_towns.push_back(&t);
         std::sort(rival_towns.begin(), rival_towns.end(), [&](auto* a, auto* b) {
             return a->hold + flat(a->centre, frame.player) * .02F < b->hold + flat(b->centre, frame.player) * .02F; });
         std::vector<const RanchSpot*> leanable;
@@ -321,14 +335,14 @@ void Career::offer(const CareerFrame& frame) {
             job.gang = t->owner;
             job.target = t->centre;
             job.detail = "Take " + t->name + " from the " + name_of(t->owner) + ": tag their walls, hit their crew, break their hold";
-            job.needed = 1; job.pay = 1500; job.respect = 15; job.deadline = frame.now + 1200;
-        } else if (roll < .62F && !frame.rigs.empty()) {
+            job.needed = 1; job.pay = 1500; job.respect = 15; job.deadline = frame.now + 1800;
+        } else if (roll < .62F && !frame.rigs.empty() && home()) {
             const auto& rig = frame.rigs[std::min(frame.rigs.size() - 1, static_cast<std::size_t>(random() * static_cast<float>(frame.rigs.size())))];
             job.kind = JobKind::RobRig;
             job.vehicle = rig.vehicle;
             job.target = rig.position;
             job.detail = "Hijack the " + rig.name + " and drive it to your crew's hideout";
-            job.needed = 1; job.pay = 900; job.respect = 12; job.deadline = frame.now + 480;
+            job.needed = 1; job.pay = 900; job.respect = 12; job.deadline = frame.now + 900;
         } else if (const auto* crew = pick_crew(true)) {
             const bool drive_by = roll < .8F;
             job.kind = drive_by ? JobKind::DriveBy : JobKind::KillRivals;
@@ -368,8 +382,8 @@ void Career::offer(const CareerFrame& frame) {
             if (towns.empty()) for (const auto& t : frame.towns) towns.push_back(&t);
             const auto* first = towns[std::min(towns.size() - 1, static_cast<std::size_t>(random() * static_cast<float>(towns.size())))];
             job.target = first->centre;
-            job.detail = "Patrol in your car: show the flag in " + first->name + " and two more towns";
-            job.pay = 260; job.respect = 5; job.deadline = frame.now + 600;
+            job.detail = "Patrol in a police car: show the flag in " + first->name + " and two more towns";
+            job.pay = 260; job.respect = 5; job.deadline = frame.now + 900;
         } else if (const auto* crew = pick_crew(false)) {
             job.kind = JobKind::Raid;
             job.gang = crew->gang; job.crew = crew->crew; job.target = crew->door;
@@ -426,9 +440,8 @@ void Career::update(const CareerFrame& frame) {
             const bool at_wheel = !job_.vehicle.empty() && frame.driving == job_.vehicle;
             if (at_wheel && !job_.taken) { job_.taken = true; say("ROB THE RIG: you have it - get it to the hideout"); }
             // Home: the nearest hideout of the player's own gang.
-            const CrewSpot* home = nullptr;
-            for (const auto& c : frame.crews)
-                if (c.gang == state_.gang && (!home || flat(c.door, frame.player) < flat(home->door, frame.player))) home = &c;
+            const CrewSpot* home = home_of(frame);
+            if (job_.taken && !home) { finish(false, "ROB THE RIG: your gang has no hideout left to take it to"); return; }
             if (job_.taken && home) {
                 job_.target = home->door;
                 if (at_wheel && flat(frame.player, home->door) < drop_radius) { job_.done = 1; finish(true, ""); return; }
@@ -440,7 +453,9 @@ void Career::update(const CareerFrame& frame) {
             break;
         }
         case JobKind::Patrol:
-            if (frame.driving == state_.patrol_car && !frame.driving.empty() && flat(frame.player, job_.target) < arrive_radius) {
+            // Any police car will do (the Interceptor, a station's car, one borrowed from a cruiser).
+            if ((frame.driving_police || (!frame.driving.empty() && frame.driving == state_.patrol_car)) &&
+                flat(frame.player, job_.target) < patrol_radius) {
                 ++job_.done;
                 if (job_.done >= job_.needed) break;
                 // On to another town, not the one just visited.
@@ -454,15 +469,14 @@ void Career::update(const CareerFrame& frame) {
             break;
         case JobKind::Smuggle: {
             const bool in_car = !frame.driving.empty();
-            if (!job_.taken && in_car && flat(frame.player, job_.target) < 15) {
+            if (!job_.taken && in_car && flat(frame.player, job_.target) < 25) {
                 job_.taken = true;
                 tipoff_ = true;
                 say("SMUGGLE: the load is aboard - someone tipped off the police. Get it home");
             }
             if (job_.taken) {
-                const CrewSpot* home = nullptr;
-                for (const auto& c : frame.crews)
-                    if (c.gang == state_.gang && (!home || flat(c.door, frame.player) < flat(home->door, frame.player))) home = &c;
+                const CrewSpot* home = home_of(frame);
+                if (!home) { finish(false, "SMUGGLE: your gang has no hideout left to take it to"); return; }
                 if (home) {
                     job_.target = home->door;
                     if (in_car && flat(frame.player, home->door) < drop_radius) { job_.done = 1; finish(true, ""); return; }
@@ -475,7 +489,17 @@ void Career::update(const CareerFrame& frame) {
             break;
         case JobKind::BreakUpWar: {
             const auto war = std::find_if(frame.wars.begin(), frame.wars.end(), [&](const WarSpot& w) { return w.attackers == job_.gang; });
-            if (war != frame.wars.end()) job_.target = war->where;
+            if (war != frame.wars.end()) { job_.target = war->where; break; }
+            // The shooting is over: either side's nearest crew still counts.
+            const CrewSpot* near = nullptr;
+            for (const auto& c : frame.crews)
+                if (!c.cleared && c.alive > 0 && (c.gang == job_.gang || c.gang == job_.crew) &&
+                    (!c.capital || capital_allowed(frame)) && (!near || flat(c.door, frame.player) < flat(near->door, frame.player))) near = &c;
+            if (!near) { job_.done = job_.needed; break; }   // nobody left to stop: the war is over
+            if (flat(job_.target, near->door) > 1) {
+                job_.target = near->door;
+                job_.detail = "The shooting stopped - stop " + std::to_string(job_.needed - job_.done) + " more of them at " + near->town;
+            }
             break;
         }
         case JobKind::CleanUp: {

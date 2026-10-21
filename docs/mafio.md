@@ -2,7 +2,9 @@
 
 Explore only. Verda's five counties (zonoj) each have a gang, and every town has a crew of its
 county's gang. The crew has taken over a building (a pub where there is one, else a works, a
-garage or a shop) and stands about it armed and in plain sight. Their banner, a pole and a
+garage or a shop, never the town hall) and stands about it armed and in plain sight. They keep
+well away from the police: a hideout is at least 160 m from a police station wherever the town
+has room (`Mafio::station_clearance`). Their banner, a pole and a
 striped flag in the gang's colour, flies by the door. The island map marks every hideout with a
 diamond in the gang's colour.
 

@@ -52,6 +52,8 @@ pointer, and that opens the pause menu.
 | Pause menu | ESC |
 | Spray a gang tag (Explore, gang members) | T |
 | Emergency lights (police car) | L |
+| Radio for backup (Explore, police officers) | Z (touch: BACKUP, where TAG goes) |
+| Arrest a Krimulo (Explore, police officers) | E / USE beside him |
 | Mute | N |
 
 Every action except ESC and N can be rebound on the **CONTROLS** page. Each action has two slots:

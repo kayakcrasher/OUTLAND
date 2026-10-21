@@ -12,7 +12,7 @@ namespace outland::input {
 enum class Action : std::uint8_t {
     Forward, Back, Left, Right, Jump, Sprint, Crouch,
     Fire, Aim, Reload, Interact, Grenade, NextWeapon, FireMode, Sight,
-    Inventory, View, Map, Build, Heal, Lights, Tag,
+    Inventory, View, Map, Build, Heal, Lights, Tag, Backup,
     Count
 };
 constexpr std::size_t action_count = static_cast<std::size_t>(Action::Count);

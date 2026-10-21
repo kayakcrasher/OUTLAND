@@ -25,10 +25,9 @@ float suitability(const life::Place& place) {
         case life::PlaceKind::Industrial: score = 1; break;
         case life::PlaceKind::Garage: score = 2; break;
         case life::PlaceKind::Shop: score = 3; break;
-        case life::PlaceKind::Office: score = 4; break;
         case life::PlaceKind::Dock: score = 5; break;
         case life::PlaceKind::Home: score = 8; break;
-        default: return -1; // not the church, the police station, the clinic, farms or squares
+        default: return -1; // not the church, the police station, the clinic, the town hall, farms or squares
     }
     return score + (place.mixed_home ? .5F : 0);
 }
@@ -70,6 +69,10 @@ int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegio
             if (place.settlement != static_cast<int>(s)) continue;
             float score = suitability(place);
             if (score < 0) continue;
+            // Not on the police's doorstep: well away from any station.
+            for (const auto& station : places)
+                if (station.kind == life::PlaceKind::Police)
+                    score += std::max(0.0F, station_clearance - flat(place.door, station.door)) * .25F;
             if (capital && place.kind != life::PlaceKind::Pub) score += 2; // the casino wants a bar
             // Fixed: the same building every game - nearest the middle of town, a hash for ties.
             score += flat(place.door, town.center) / 500.0F + static_cast<float>(hash(place.id, 0x7e55a) % 1000) / 40000.0F;
@@ -204,6 +207,19 @@ void Mafio::disband(int crew) {
     std::erase_if(wars_, [&](const War& w) { return w.target == crew || w.from == crew; });
 }
 
+void Mafio::besiege(int crew, ai::BattleRoyaleBots& bots, const MafioFrame& frame) {
+    if (crew == besieged_) return;
+    besieged_ = crew < 0 || static_cast<std::size_t>(crew) >= crews_.size() ? -1 : crew;
+    if (besieged_ < 0) return;
+    // Every man home to defend it: the squads out on a hit are called back.
+    for (auto& war : wars_) {
+        if (war.from != besieged_) continue;
+        for (const int id : war.squad) if (auto* m = member(id)) send_home(*m, bots, frame);
+        war.until = 0;
+    }
+    std::erase_if(wars_, [&](const War& w) { return w.from == besieged_ || w.target == besieged_; });
+}
+
 int Mafio::standing(int crew, ai::BattleRoyaleBots& bots) const {
     if (crew < 0 || static_cast<std::size_t>(crew) >= crews_.size()) return 0;
     int n = 0;
@@ -235,7 +251,7 @@ bool Mafio::send_hit_squad(int from, int target, ai::BattleRoyaleBots& bots, ai:
     if (from < 0 || target < 0 || static_cast<std::size_t>(from) >= crews_.size() || static_cast<std::size_t>(target) >= crews_.size()) return false;
     const auto& home = crews_[static_cast<std::size_t>(from)];
     const auto& victim = crews_[static_cast<std::size_t>(target)];
-    if (home.gang == victim.gang || home.disbanded || victim.disbanded) return false;
+    if (home.gang == victim.gang || home.disbanded || victim.disbanded || from == besieged_ || target == besieged_) return false;
     std::vector<int> squad;
     const std::size_t want = home.gang == 0 ? 3 : 2;
     for (const int id : home.members) {
@@ -336,6 +352,7 @@ void Mafio::update(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotW
         if (!bot) continue;
         if (!bot->alive() && !m.dead) { m.dead = true; m.respawn_at = now + respawn_seconds; }
         if (m.dead && crews_[static_cast<std::size_t>(m.crew)].disbanded) continue;   // broken up: they stay gone
+        if (m.dead && m.crew == besieged_) { m.respawn_at = std::max(m.respawn_at, now + respawn_seconds); continue; }  // under siege
         if (m.dead && now >= m.respawn_at && (flat(m.post, frame.player_feet) > 45 || now > m.respawn_at + 90)) {
             bots.respawn(m.bot, m.post, m.yaw, seed_ + static_cast<std::uint64_t>(now * 10) + i);
             if (auto* back = bots.find(m.bot)) back->set_roam_center(m.post, m.post_radius);

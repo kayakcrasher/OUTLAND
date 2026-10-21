@@ -103,10 +103,11 @@ public:
     static constexpr float provoked_seconds = 90; // a gang stays hostile this long after a provocation
     static constexpr float respawn_seconds = 75;
     static constexpr float turf_radius = 35;
+    static constexpr float station_clearance = 160; // a hideout keeps this far from a police station if the town allows
 
     // Picks a building in every town (from island life's places) for the county's gang and puts
     // its crew there, in `bots`. The buildings are fixed (the same every game, nearest the middle
-    // of town for their kind); each gang's main base is in its county's main town and holds the
+    // of town for their kind, and well away from the police station); each gang's main base is in its county's main town and holds the
     // most men. Returns the number of crews.
     int start(const std::vector<life::Place>& places, const world::VerdaRegion& region, ai::BattleRoyaleBots& bots, std::uint64_t seed);
     void clear(ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers, vehicles::VehicleSystem& cars);
@@ -124,6 +125,10 @@ public:
     // The Policio broke this crew up (game::career's campaign): its dead stay dead, it sends no
     // hit squads and nobody attacks it any more.
     void disband(int crew);
+    // The Policio is breaking `crew` up (a CLEAN UP call; -1: nobody): its dead stay down and its
+    // hit squads come home.
+    void besiege(int crew, ai::BattleRoyaleBots& bots, const MafioFrame& frame);
+    [[nodiscard]] int besieged() const { return besieged_; }
     // Members of `crew` still standing.
     [[nodiscard]] int standing(int crew, ai::BattleRoyaleBots& bots) const;
     [[nodiscard]] bool officer(int bot) const;
@@ -179,6 +184,7 @@ private:
     float message_time_{0};
     std::function<bool(int, int, double)> outsiders_;
     int player_gang_{-1};
+    int besieged_{-1};
     std::array<double, world::zones::zone_count> turf_warned_at_{-1e9, -1e9, -1e9, -1e9, -1e9};
 };
 

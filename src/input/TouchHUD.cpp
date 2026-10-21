@@ -609,6 +609,7 @@ void TouchHUD::draw(
     button(layout.inventory, "BAG", input.inventory);
     if (usable_) button(layout.interact, "USE", input.interact);
     if (tagger_) button(layout.tag, "TAG", input.tag);
+    else if (officer_) button(layout.tag, "BACKUP", input.backup);
     if (sight && more_) button(layout.sight, sight, input.sight);
     }
 

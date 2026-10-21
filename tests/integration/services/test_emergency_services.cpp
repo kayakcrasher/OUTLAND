@@ -42,16 +42,20 @@ int main() {
         check(car.vehicle.find("_police_") == std::string::npos && car.vehicle.find("_ambulance_") == std::string::npos, "residents don't drive the services' cars");
     characters::NpcSystem npcs;
 
-    // Every town has a station; the capital two patrol cars; the hospital three ambulances.
+    // Every town has a station (not the small trailer hamlets); the capital two patrol cars; the
+    // hospital three ambulances.
     int stations = 0;
+    for (const auto& owner : region.settlements())
+        for (const auto& a : owner.assets) stations += a.model_path.ends_with("civic/police_station.glb");
     for (const auto& town : region.settlements()) {
         if (town.id.starts_with("ranch_")) continue; // the Vakeroj's ranches are not towns
         bool station = false;
         for (const auto& owner : region.settlements())
             for (const auto& a : owner.assets)
-                station |= a.model_path.ends_with("civic/police_station.glb") && std::hypot(a.position.x - town.center.x, a.position.z - town.center.z) < 450;
-        stations += station ? 1 : 0;
-        check(station, "a police station in " + town.name);
+                station |= a.model_path.ends_with("civic/police_station.glb") &&
+                           std::hypot(a.position.x - town.center.x, a.position.z - town.center.z) < (town.id.starts_with("hamlet_") ? 150 : 450);
+        if (town.id.starts_with("hamlet_")) check(!station, "no police station in the trailer hamlet " + town.name);
+        else check(station, "a police station in " + town.name);
     }
     EmergencyServices services;
     const int units = services.start(cars, region, nullptr);

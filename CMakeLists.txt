@@ -194,6 +194,7 @@ add_library(
     src/game/mafia/Territory.cpp
     src/game/mafia/GangLogos.cpp
     src/game/career/Career.cpp
+    src/game/career/Backup.cpp
     src/game/career/TrainingCamp.cpp
     src/game/career/CampRenderer.cpp
     src/game/services/EmergencyServices.cpp

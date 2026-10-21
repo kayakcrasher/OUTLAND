@@ -30,6 +30,7 @@ struct PlayerInput {
     bool heal{false};        // quick heal: the best medical item in the bag
     bool lights{false};      // a police car's emergency lights and siren, on / off
     bool tag{false};         // spray the gang's tag on the wall in front
+    bool backup{false};      // an officer radios for backup
     bool sight{false};       // change the held gun's optic (iron, red dot, 2x, 4x)
     bool next_weapon{false};
     bool fire_mode{false};   // switch automatic / single shots
@@ -53,6 +54,7 @@ struct PlayerInput {
         heal = false;
         lights = false;
         tag = false;
+        backup = false;
     }
 };
 

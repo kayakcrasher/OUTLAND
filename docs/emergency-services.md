@@ -7,7 +7,8 @@ Explore's emergency services.
 - **Police station** (city kit `civic/police_station.glb`, Creator: "Police Station (modular,
   enterable, carport)"). It is one storey in white render over a navy base, with a glass
   entrance, a blue lamp, a public counter, two barred cells, a radio mast and a carport. The
-  world kit puts one in **every town**, facing a street on level ground near the centre. Island
+  world kit puts one in **every town** (not the four small trailer hamlets by the highways:
+  Ruldomaro, Vojrando, Pinejo and Sablovalo), facing a street on level ground near the centre. Island
   life staffs it as a police place, so it carries the POLICO sign and flag. A patrol car parks
   in front of each station, and Verda City has two.
 - **Hospitalo de Verda** (city kit `civic/hospital.glb`), about 55 m from Verda City's police
@@ -67,7 +68,7 @@ a gunshot.
 - `Justice::witnessed` and `JusticeFrame::patrol_officers`; `LifeSimulation::hospitalise`.
 - World kit: `emergency_services()` in `src/dev/VerdaWorldKit.cpp`.
 - Tests: `outland_emergency_services_tests` covers:
-  - a station in every town, eleven patrol cars and three ambulances;
+  - a station in every town but the trailer hamlets, seven patrol cars and three ambulances;
   - one car per star, lights and siren, the car pulling up and armed officers getting out;
   - a pursuit when the suspect drives away;
   - the cars going home;

@@ -179,6 +179,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
             if (grenade_ && hit(p, layout_.grenade, 43)) return Control::Grenade;
             if (heal_ && hit(p, layout_.heal, 43)) return Control::Heal;
             if (tagger_ && hit(p, layout_.tag, 43)) return Control::Tag;
+            if (officer_ && !tagger_ && hit(p, layout_.tag, 43)) return Control::Backup;
             if (more_ && hit(p, layout_.sight, 43)) return Control::Sight;
             if (hit(p, layout_.weapon, 43)) return Control::Weapon;
             if (hit(p, layout_.sprint, 43)) return Control::Sprint;
@@ -227,6 +228,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         case Control::Heal: player_.heal |= fresh; break;
         case Control::Lights: player_.lights |= fresh; break;
         case Control::Tag: player_.tag |= fresh; break;
+        case Control::Backup: player_.backup |= fresh; break;
         case Control::Sight: player_.sight |= fresh; if (fresh) more_until_ = seconds_now() + 4; break;
         case Control::Weapon: player_.next_weapon |= fresh; break;
         case Control::Inventory: player_.inventory |= fresh; break;
@@ -313,6 +315,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
         player_.grenade |= b.pressed(Action::Grenade, mouse_buttons);
         player_.heal |= b.pressed(Action::Heal, mouse_buttons);
         player_.tag |= b.pressed(Action::Tag, mouse_buttons);
+        player_.backup |= b.pressed(Action::Backup, mouse_buttons);
         player_.sight |= b.pressed(Action::Sight, mouse_buttons);
         player_.next_weapon |= b.pressed(Action::NextWeapon, mouse_buttons);
         player_.fire_mode |= b.pressed(Action::FireMode, mouse_buttons);

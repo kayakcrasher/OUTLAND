@@ -50,10 +50,10 @@ struct CrewSpot {                // a gang crew's hideout
 };
 struct RigSpot { std::string vehicle; Vector3 position{}; std::string name; };
 struct WarSpot { int attackers{-1}, defenders{-1}; Vector3 where{}; std::string town; };
-struct TownSpot { std::string name; Vector3 centre{}; };
+struct TownSpot { std::string name; Vector3 centre{}; };            // patrol stops (towns, not ranches)
 struct DockSpot { std::string name; Vector3 point{}; };            // where contraband comes ashore
 struct RanchSpot { int ranch{-1}; std::string name, family; Vector3 gate{}; bool yours{false}; };
-struct TurfSpot { int turf{-1}; std::string name; Vector3 centre{}; int owner{-1}; float hold{100}; };
+struct TurfSpot { int turf{-1}; std::string name; Vector3 centre{}; int owner{-1}; float hold{100}; bool cleared{false}; };
 
 // What the world holds this frame, and what the player is doing.
 struct CareerFrame {
@@ -61,6 +61,7 @@ struct CareerFrame {
     Vector3 player{};              // feet
     bool alive{true};
     std::string driving;           // vehicle id at the player's wheel ("" on foot)
+    bool driving_police{false};    // ...and it is a police car (any: a patrol car, the Interceptor, a cruiser)
     std::vector<CrewSpot> crews;
     std::vector<RigSpot> rigs;
     std::vector<WarSpot> wars;
@@ -108,7 +109,8 @@ class Career {
 public:
     static constexpr float respect_max = 100;
     static constexpr double job_gap = 12;          // seconds between one job and the next offer
-    static constexpr float arrive_radius = 25;     // a patrol point or a delivery, reached
+    static constexpr float arrive_radius = 25;     // a delivery, reached
+    static constexpr float patrol_radius = 40;     // a town on a patrol, shown the flag
     static constexpr float drop_radius = 22;       // a robbed rig delivered at the hideout
 
     // Joining. False (with why) when the door is shut.
@@ -119,6 +121,11 @@ public:
 
     // Something the player did.
     void killed(int gang, bool from_vehicle);        // a Krimulo of `gang` (-1: not a Krimulo)
+    // An officer cuffed a Krimulo of `gang` (USE): counts as a takedown for the call, and pays a
+    // little more than a body does.
+    void arrested(int gang);
+    // The crew a CLEAN UP is breaking up (-1: none): its dead stay down until the job ends.
+    [[nodiscard]] int besieging() const { return state_.side == Side::Police && job_.kind == JobKind::CleanUp ? job_.crew : -1; }
     void crime(bool serious);                        // a crime someone reported (assault, murder, attacking police)
     // The Chief went down on a HitChief job.
     void chief_killed();
@@ -184,6 +191,7 @@ public:
 
 private:
     void offer(const CareerFrame& frame);
+    [[nodiscard]] const CrewSpot* home_of(const CareerFrame& frame) const;   // the player's gang's nearest hideout still standing
     void finish(bool success, const std::string& why);
     void gain(float amount);
     void say(std::string text) { message_ = std::move(text); message_time_ = 5; }
