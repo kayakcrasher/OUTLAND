@@ -197,6 +197,7 @@ struct TouchLayout {
     TouchElementLayout brake_pedal{0.775F, 0.82F, 1.05F, 0.50F};
     TouchElementLayout handbrake{0.655F, 0.86F, 0.80F, 0.45F};
     TouchElementLayout lights{0.655F, 0.69F, 0.80F, 0.45F};   // a police car's lights, above HAND
+    TouchElementLayout radio{0.555F, 0.86F, 0.72F, 0.45F};    // the car radio's station, left of HAND
     TouchElementLayout tag{0.49F, 0.56F, 0.78F, 0.40F};       // spray a gang tag (gang members), under USE
     TouchElementLayout crouch{0.91F, 0.81F, 0.82F, 0.40F};
     TouchElementLayout inventory{0.52F, 0.22F, 0.82F, 0.40F};

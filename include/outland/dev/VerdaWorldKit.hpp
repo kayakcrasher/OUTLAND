@@ -29,6 +29,7 @@ struct WorldKitReport {
     std::vector<Vector3> ranches;     // each Vakero ranch's yard
     bool stockyard{false};
     bool cargo_terminal{false}, freight_depot{false};
+    std::vector<Vector3> radio_stations;   // Verda Popolko (Verda City), Radio Sovaĝejo, Espera Roko (doors), in that order
     int town_halls{0};
     std::vector<KitBuilding> enterable;
     std::vector<Vector3> skipped;     // centres of lots left empty because something was there

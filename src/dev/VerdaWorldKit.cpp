@@ -1693,12 +1693,12 @@ const std::string hospital_model = "assets/verda/city/civic/hospital.glb";
 
 bool civic_lot(Kit& kit, world::VerdaRegion& region, Vector3 near, float min_distance, float max_distance, float lot_x, float lot_z,
                float half_x, float half_z, float front, float apron, CivicSpot& out,
-               const std::function<bool(const CivicSpot&)>& accept = {}) {
+               const std::function<bool(const CivicSpot&)>& accept = {}, bool dirt = false) {
     struct Candidate { float score; Vector3 origin; float yaw; };
     std::vector<Candidate> candidates;
     for (const auto& town : region.settlements())
         for (const auto& road : town.roads) {
-            if (road.type == world::RoadType::Dirt) continue;
+            if (road.type == world::RoadType::Dirt && !dirt) continue;
             const float length = Vector3Distance(road.start, road.end);
             if (length < 20) continue;
             const Vector3 along = Vector3Normalize(Vector3Subtract(road.end, road.start));
@@ -2194,6 +2194,32 @@ void freight_depot(Kit& kit, world::VerdaRegion& region) {
     kit.report.freight_depot = true;
 }
 
+// ------------------------------------------------------------------ radio stations
+// Verda's three radio stations (city kit civic/radio_station_<station>.glb, game::radio): each
+// station's studio and transmitter mast in its own town, facing a street near the centre -
+// Verda Popolko in Verda City, Radio Sovaĝejo on Sovaĝejo's dirt road, Espera Roko in Espera.
+// The studio is an Office place (its staff work there; the sign names the station).
+void radio_stations(Kit& kit, world::VerdaRegion& region) {
+    struct Station { const char* style; Vector3 near; float min, max; bool dirt, porch; };
+    const auto site = [&](std::string_view id) { const auto* t = settlement(region, id); return t ? t->center : Vector3{}; };
+    const Station stations[]{
+        {"popolko", site("capital_verda"), 70, 460, false, false},
+        {"kantrio", world::layout::sovagejo_center, 0, 220, true, true},
+        {"roko", site("village_espera"), 15, 300, false, false},
+    };
+    for (const auto& st : stations) {
+        // Model bounds x -6.3..9.8 (the mast on +X), z -4.6..4.6 (-6.7 with the porch).
+        const float front = st.porch ? 6.8F : 4.7F;
+        CivicSpot spot;
+        if (!civic_lot(kit, region, st.near, st.min, st.max, 1.75F, st.porch ? -1.1F : 0, 8.4F, st.porch ? 5.9F : 4.9F, front, 3.5F, spot, {}, st.dirt))
+            continue;
+        if (!kit.put(city + "civic/radio_station_" + st.style + ".glb", spot.origin, spot.yaw)) continue;
+        const Vector3 door = to_world(spot.origin, spot.yaw, -3.9F, .35F, -3.3F);
+        kit.purpose(door, spot.yaw, world::BuildingPurpose::Office);
+        kit.report.radio_stations.push_back(door);
+    }
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     lay_highways(region);
@@ -2226,6 +2252,8 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     // After those (new pieces only): Porto Luma's cargo terminal and Verda Transporto's depot.
     cargo_terminal(kit, region);
     freight_depot(kit, region);
+    // After those (new pieces only): the radio stations.
+    radio_stations(kit, region);
     return kit.report;
 }
 }

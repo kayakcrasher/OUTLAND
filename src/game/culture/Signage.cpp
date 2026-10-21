@@ -142,6 +142,10 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
         }
         // The trucking company's office at its depot.
         if (place.kind == PlaceKind::Office && near_model("civic/truck_depot.glb")) text = {"VERDA TRANSPORTO", "KAMIONADO · ŜARĜOJ · BRUTARO"};
+        // The radio stations' studios.
+        if (place.kind == PlaceKind::Office && near_model("civic/radio_station_popolko.glb")) text = {"VERDA POPOLKO 98.1", "RADIO · POPMUZIKO KAJ POLKO"};
+        if (place.kind == PlaceKind::Office && near_model("civic/radio_station_kantrio.glb")) text = {"RADIO SOVAĜEJO 102.5", "KANTRIO · BLUGRASO"};
+        if (place.kind == PlaceKind::Office && near_model("civic/radio_station_roko.glb")) text = {"ESPERA ROKO 105.9", "RADIO · ROKMUZIKO"};
         // The clinic in the hospital building is Hospitalo de Verda.
         if (place.kind == PlaceKind::Clinic)
             for (const auto& town : towns) for (const auto& asset : town.assets)

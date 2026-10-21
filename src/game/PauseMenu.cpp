@@ -55,6 +55,7 @@ constexpr Words english{
      {"Touch layout", "move and resize each on-screen button"},
      {"Vibration", "phones: shots, hits, crashes and blasts"},
      {"Volume", nullptr},
+     {"Car radio", "music at the wheel; O or RADIO changes the station"},
      {"Sound", nullptr},
      {"Graphics", "AUTO adapts resolution to keep play smooth"}},
     "ON", "OFF", "TOGGLE", "HOLD",
@@ -223,6 +224,7 @@ PauseMenu::Result PauseMenu::update(GameSettings& settings, int width, int heigh
                 case Row::AimSensitivity: step(settings.aim_sensitivity, .05F * sign, GameSettings::min_aim, GameSettings::max_aim); break;
                 case Row::ButtonSize: step(settings.button_size, .1F * sign, GameSettings::min_buttons, GameSettings::max_buttons); break;
                 case Row::Volume: step(settings.volume, .1F * sign, 0, 1); break;
+                case Row::RadioVolume: step(settings.radio_volume, .1F * sign, 0, 1); break;
                 case Row::InvertY: settings.invert_y = !settings.invert_y; changed(); break;
                 case Row::AimToggle: settings.aim_toggle = !settings.aim_toggle; changed(); break;
                 case Row::AimAssist: settings.aim_assist = !settings.aim_assist; changed(); break;
@@ -289,6 +291,7 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
             case Row::AimSensitivity: value = TextFormat("%.2f", settings.aim_sensitivity); break;
             case Row::ButtonSize: value = TextFormat("%d%%", static_cast<int>(std::round(settings.button_size * 100))); break;
             case Row::Volume: value = TextFormat("%d%%", static_cast<int>(std::round(settings.volume * 100))); break;
+            case Row::RadioVolume: value = TextFormat("%d%%", static_cast<int>(std::round(settings.radio_volume * 100))); break;
             case Row::InvertY: on = settings.invert_y; button(r, on ? w.on : w.off, on, font, s); break;
             case Row::AimToggle: on = settings.aim_toggle; button(r, on ? w.toggle : w.hold, on, font, s); break;
             case Row::AimAssist: on = settings.aim_assist; button(r, on ? w.on : w.off, on, font, s); break;

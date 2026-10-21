@@ -24,6 +24,8 @@ struct GameSettings {
     float button_size{1.0F};        // touch buttons
     float volume{.8F};
     bool muted{false};
+    float radio_volume{.7F};        // the car radio, on top of the volume
+    int radio_station{0};           // the car radio's station (-1 off), kept for the next drive
     Graphics graphics{Graphics::Auto};
     input::TouchOverrides touch_layout;   // buttons the player moved or resized (SETTINGS > Touch layout)
     input::Bindings bindings{input::Bindings::defaults()};
@@ -36,7 +38,7 @@ struct GameSettings {
     static std::string path_for(const std::string& map_path);
     bool load(const std::string& path);
     bool save(const std::string& path) const;
-    // Everything but the volume and graphics back to the defaults.
+    // Everything but the volume, the radio and graphics back to the defaults.
     void reset_controls();
 };
 

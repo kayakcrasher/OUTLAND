@@ -1214,6 +1214,111 @@ def truck_depot():
     return b
 
 
+RADIO_STYLES = {
+    # walls, accent, mast height, porch (timber, country), dishes on the roof
+    "popolko": dict(walls=("render", (236, 228, 206)), accent=(16, 128, 70), mast=30.0, porch=False, dishes=1),
+    "kantrio": dict(walls=("wood", None), accent=(122, 74, 36), mast=24.0, porch=True, dishes=0),
+    "roko": dict(walls=("render", (54, 54, 58)), accent=(176, 30, 34), mast=36.0, porch=False, dishes=2),
+}
+
+
+def lattice_mast(b, x, z, height, width=1.4):
+    """A square lattice transmitter mast in red and white bands, a whip on top and its warning lamp."""
+    h = width / 2
+    section = 4.0
+    y = 0.0
+    k = 0
+    while y < height - 1e-3:
+        top = min(height, y + section)
+        paint = "mast_red" if k % 2 == 0 else "mast_white"
+        for sx in (-1, 1):
+            for sz in (-1, 1):
+                b.solid((x + sx * h - .06, y, z + sz * h - .06), (x + sx * h + .06, top, z + sz * h + .06), paint)
+        rung = y + 1.0
+        while rung < top - .1:
+            b.solid((x - h, rung, z - h - .03), (x + h, rung + .06, z - h + .03), paint)
+            b.solid((x - h, rung, z + h - .03), (x + h, rung + .06, z + h + .03), paint)
+            b.solid((x - h - .03, rung, z - h), (x - h + .03, rung + .06, z + h), paint)
+            b.solid((x + h - .03, rung, z - h), (x + h + .03, rung + .06, z + h), paint)
+            rung += 1.33
+        y = top
+        k += 1
+    b.solid((x - .08, height, z - .08), (x + .08, height + 4, z + .08), "steel")
+    b.solid((x - .2, height + 4, z - .2), (x + .2, height + 4.35, z + .2), "lamp_red")
+    for side in (-1, 1):   # the feeder dishes half way up
+        b.solid((x + side * (h + .1) - .05, height * .55, z - .5), (x + side * (h + .1) + .05, height * .55 + 1, z + .5), "steel")
+    b.solid((x - h - .4, 0, z - h - .4), (x + h + .4, .4, z + h + .4), "concrete")
+
+
+def radio_station(style):
+    """A radio station (modular, one storey, enterable): the studio block - a glass door, a long
+    studio window and a red ON AIR lamp at the front (-Z), the sign band in the station's colour,
+    the mixing desk and the studio wall inside - beside a lattice transmitter mast in red and
+    white. Modules per station: walls and colour, the mast's height, a timber porch (the
+    country station) and the satellite dishes on the roof. 12 x 9 m, the mast on the +X side."""
+    st = RADIO_STYLES[style]
+    b = Builder()
+    kind, colour = st["walls"]
+    if kind == "wood":
+        b.material("walls", wood(), 2, 2)
+    else:
+        b.material("walls", flat(colour, 4), 3, 3)
+    b.material("accent", flat(st["accent"], 3), 3, 1)
+    b.material("plaster", flat((214, 210, 200), 3), 3, 3)
+    b.material("floor", flat((96, 92, 88), 6), 3, 3)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("steel", flat((120, 124, 130), 3), 3, 3)
+    b.material("concrete", flat((150, 148, 142), 6), 3, 3)
+    b.material("desk", flat((34, 36, 40), 3), 1, 1)
+    b.material("panel", checker((70, 74, 80), (46, 48, 52), 6, 61), 1, 1)
+    b.material("lamp_red", flat((235, 40, 40), 0), 1, 1)
+    b.material("mast_red", flat((206, 52, 40), 2), 1, 1)
+    b.material("mast_white", flat((236, 236, 232), 2), 1, 1)
+    b.material("dish", flat((226, 228, 230), 2), 1, 1)
+    b.material("timber", wood(), 2, 2)
+    w, d, height, t, slab = 6.0, 4.5, 4.0, .25, .2
+    front = [(-4.6, -3.2, slab, 2.5), (-2.2, 4.8, 1.0, 2.6)]           # the door, the long studio window
+    back = [(-4.0, -2.0, 1.4, 2.5), (2.0, 4.0, 1.4, 2.5)]
+    sides = [(-1.5, 1.5, 1.2, 2.5)]
+    wall_with_openings(b, 'x', -d, (-w, w), height, t, front, "walls", "plaster", -1)
+    wall_with_openings(b, 'x', d, (-w, w), height, t, back, "walls", "plaster", +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), height, t, sides, "walls", "plaster", -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, sides, "walls", "plaster", +1)
+    b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
+    b.box((-w, height - .2, -d), (w, height, d), {'+y': "roof", '-y': "plaster", '+x': "accent", '-x': "accent", '+z': "accent", '-z': "accent"})
+    b.solid((-w - .05, 0, -d - .05), (w + .05, .45, d + .05), "accent")
+    b.solid((-w - .1, height - .85, -d - .15), (w + .1, height - .2, -d), "accent")     # the sign band
+    for lo, hi in (((-w, height, -d), (w, height + .4, -d + .15)), ((-w, height, d - .15), (w, height + .4, d)),
+                   ((-w, height, -d), (-w + .15, height + .4, d)), ((w - .15, height, -d), (w, height + .4, d))):
+        b.solid(lo, hi, "walls")
+    # ON AIR over the door.
+    b.solid((-4.4, 2.75, -d - .22), (-3.4, 3.05, -d), "lamp_red")
+    # Inside: the studio wall with its window, the mixing desk facing the window, speakers.
+    b.solid((-w + t, slab, .8), (-1.0, 2.8, .95), "plaster")
+    b.solid((1.0, slab, .8), (w - t, 1.0, .95), "plaster")
+    b.solid((1.0, 2.4, .8), (w - t, 2.8, .95), "plaster")
+    b.solid((-1.4, slab, -1.6), (3.6, .85, -.7), "desk")
+    b.solid((-1.3, .85, -1.0), (3.5, .95, -.75), "panel")
+    for x in (-1.2, 3.1):
+        b.solid((x, .95, -1.0), (x + .4, 1.5, -.7), "desk")
+    if st["porch"]:
+        # A timber porch along the front, on posts, with a step.
+        b.solid((-w - .3, 2.9, -d - 2.2), (w + .3, 3.05, -d), "timber")
+        for x in (-w, -1.0, 3.0, w - .2):
+            b.solid((x, slab, -d - 2.1), (x + .2, 2.9, -d - 1.9), "timber")
+        b.solid((-w - .3, 0, -d - 2.2), (w + .3, slab, -d), "timber")
+    for k in range(st["dishes"]):
+        cx, cz = -3.6 + k * 2.6, 2.4
+        b.solid((cx - .1, height, cz - .1), (cx + .1, height + .9, cz + .1), "steel")
+        b.dome("dish", cx, cz, 1.0 if k == 0 else .7, height + .9, courses=4, sides=16, rise=.35)
+    lattice_mast(b, w + 2.2, 1.5, st["mast"])
+    # The guy-line anchors and the fence round the mast's foot.
+    b.solid((w + .6, 0, -.1), (w + 3.8, .9, -.04), "steel")
+    b.solid((w + .6, 0, 3.04), (w + 3.8, .9, 3.1), "steel")
+    b.solid((w + 3.74, 0, -.1), (w + 3.8, .9, 3.1), "steel")
+    return b
+
+
 def hospital():
     """Hospitalo de Verda: a three-storey hospital (36 x 20 m) in white render with blue ribbon
     windows, an enterable ground-floor hall (glass entrance, reception, beds), sealed wards
@@ -1528,6 +1633,10 @@ def kit():
     add("civic/container_stack.glb", container_stack(), "city_container_stack", "Stacked shipping containers (40 ft)", "BuildingPart", 10.5, 37.5, 7.8)
     add("civic/cattle_gangway.glb", cattle_gangway(), "city_cattle_gangway", "Cattle gangway up a ship's side", "BuildingPart", 18, 2.6, 4.2)
     add("civic/truck_depot.glb", truck_depot(), "city_truck_depot", "Verda Transporto - truck depot with office", "Building", 38, 31, 9)
+    for style, name in (("popolko", "Verda Popolko 98.1"), ("kantrio", "Radio Sovaĝejo 102.5"), ("roko", "Espera Roko 105.9")):
+        mast = RADIO_STYLES[style]["mast"]
+        add(f"civic/radio_station_{style}.glb", radio_station(style), f"city_radio_station_{style}",
+            f"Radio station - {name} (modular studio, transmitter mast)", "Building", 18, 13.4 if RADIO_STYLES[style]["porch"] else 11.2, mast + 4.35)
     add("civic/hospital.glb", hospital(), "city_hospital", "Hospitalo - hospital with ambulance bay", "Building", 46, 23, 12.7)
     add("civic/parliament.glb", parliament(), "city_parliament", "Registaro de Verda - domed parliament (enterable hall)", "Building", 48, 33, 29.6)
     add("civic/town_hall.glb", town_hall(), "city_town_hall", "Urbodomo - county town hall with clock tower (enterable)", "Building", 23, 17, 17.0)

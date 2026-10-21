@@ -93,7 +93,7 @@ private:
     TouchLayout layout_{};
 
     enum class Control {
-        None, Movement, Look, Swipe, Jump, More, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon, Grenade, Heal, Lights, Tag, Backup, Sight,
+        None, Movement, Look, Swipe, Jump, More, View, Fire, FireLeft, FireMode, Aim, Reload, Weapon, Grenade, Heal, Lights, Radio, Tag, Backup, Sight,
         Sprint, Crouch, Inventory, Interact, Gas, BrakePedal, Handbrake, Pan
     };
     // A finger and what it works; origin is where a floating stick was put down, last where a

@@ -16,7 +16,7 @@ DEV vehicle driving, map building, controls, save compatibility and Termux steps
 
 The three player modes are one island lived three ways: [modes roadmap](docs/outland-modes-roadmap.md).
 Play any of them with friends on the same Wi-Fi: [LAN play](docs/lan-play.md).
-The campaign (three save slots, autosave): come home to Verda, where Uncle Ron meets you off the ship - [campaign](docs/campaign.md). In the campaign, join a gang or the police and earn respect: [careers](docs/careers.md). Or drive loads for Verda Transporto, to and from the cargo ships at Porto Luma: [trucking](docs/trucking.md). Gangsters fight for every town and ranch on the island: [gang wars](docs/gangs.md).
+The campaign (three save slots, autosave): come home to Verda, where Uncle Ron meets you off the ship - [campaign](docs/campaign.md). In the campaign, join a gang or the police and earn respect: [careers](docs/careers.md). Or drive loads for Verda Transporto, to and from the cargo ships at Porto Luma: [trucking](docs/trucking.md). Gangsters fight for every town and ranch on the island: [gang wars](docs/gangs.md). At the wheel, tune in to Verda's three radio stations: [radio](docs/radio.md).
 The campaign's resident simulation (homes, jobs, schedules, fear): [Verdan life handoff](docs/verda-life-handoff.md).
 Buy any look on the island at Vestaĵejo Verda, or one of fourteen homes for sale; the pubs and some homes are furnished: [clothing, homes and furniture](docs/clothing-and-furniture.md).
 Real building collision, open windows, builder previews and the dressed towns: [buildings handoff](docs/buildings-battle-royale-handoff.md).

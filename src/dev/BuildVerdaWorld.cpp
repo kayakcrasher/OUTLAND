@@ -32,5 +32,8 @@ int main(int argc, char** argv) {
     std::cout << report.ranches.size() << " Vakero ranches at";
     for (const auto& yard : report.ranches) std::cout << " (" << static_cast<int>(yard.x) << ", " << static_cast<int>(yard.z) << ")";
     std::cout << "; stockyard " << (report.stockyard ? "built" : "NOT built") << '\n';
+    std::cout << report.radio_stations.size() << " radio stations at";
+    for (const auto& door : report.radio_stations) std::cout << " (" << static_cast<int>(door.x) << ", " << static_cast<int>(door.z) << ")";
+    std::cout << '\n';
     return 0;
 }

@@ -31,6 +31,7 @@ struct PlayerInput {
     bool lights{false};      // a police car's emergency lights and siren, on / off
     bool tag{false};         // spray the gang's tag on the wall in front
     bool backup{false};      // an officer radios for backup
+    bool radio{false};       // at the wheel: the next radio station (or off)
     bool sight{false};       // change the held gun's optic (iron, red dot, 2x, 4x)
     bool next_weapon{false};
     bool fire_mode{false};   // switch automatic / single shots
@@ -55,6 +56,7 @@ struct PlayerInput {
         lights = false;
         tag = false;
         backup = false;
+        radio = false;
     }
 };
 

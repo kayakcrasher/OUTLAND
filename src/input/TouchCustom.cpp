@@ -25,6 +25,7 @@ const std::vector<TouchElementInfo>& touch_elements() {
         {"brake_pedal", "BRAKE", &TouchLayout::brake_pedal, false, true, false},
         {"handbrake", "HAND", &TouchLayout::handbrake, false, true, false},
         {"lights", "LIGHTS", &TouchLayout::lights, false, true, false},
+        {"radio", "RADIO", &TouchLayout::radio, false, true, false},
     };
     return list;
 }

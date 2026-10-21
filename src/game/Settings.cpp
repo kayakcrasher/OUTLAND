@@ -28,6 +28,8 @@ bool GameSettings::load(const std::string& path) {
         else if (key == "button_size") in >> read.button_size;
         else if (key == "volume") in >> read.volume;
         else if (key == "muted") flag(in, read.muted);
+        else if (key == "radio_volume") in >> read.radio_volume;
+        else if (key == "radio_station") in >> read.radio_station;
         else if (key == "invert_y") flag(in, read.invert_y);
         else if (key == "aim_toggle") flag(in, read.aim_toggle);
         else if (key == "aim_assist") flag(in, read.aim_assist);
@@ -46,13 +48,15 @@ bool GameSettings::load(const std::string& path) {
                 if (name == input::Bindings::key(static_cast<input::Action>(i))) read.bindings.codes[i] = {a, b};
         }
     }
-    for (float* v : {&read.look_sensitivity, &read.mouse_sensitivity, &read.aim_sensitivity, &read.button_size, &read.volume})
+    for (float* v : {&read.look_sensitivity, &read.mouse_sensitivity, &read.aim_sensitivity, &read.button_size, &read.volume, &read.radio_volume})
         if (!std::isfinite(*v)) return false;
     read.look_sensitivity = std::clamp(read.look_sensitivity, min_sensitivity, max_sensitivity);
     read.mouse_sensitivity = std::clamp(read.mouse_sensitivity, min_mouse, max_mouse);
     read.aim_sensitivity = std::clamp(read.aim_sensitivity, min_aim, max_aim);
     read.button_size = std::clamp(read.button_size, min_buttons, max_buttons);
     read.volume = std::clamp(read.volume, 0.0F, 1.0F);
+    read.radio_volume = std::clamp(read.radio_volume, 0.0F, 1.0F);
+    read.radio_station = std::clamp(read.radio_station, -1, 2);
     read.mouse_look = mouse_look;
     *this = read;
     return true;
@@ -66,6 +70,7 @@ bool GameSettings::save(const std::string& path) const {
            << "\naim_sensitivity " << aim_sensitivity << "\ninvert_y " << invert_y << "\naim_toggle " << aim_toggle
            << "\naim_assist " << aim_assist << "\nvibration " << vibration << "\ntouch_controls " << static_cast<int>(touch_controls)
            << "\nbutton_size " << button_size << "\nvolume " << volume << "\nmuted " << (muted ? 1 : 0)
+           << "\nradio_volume " << radio_volume << "\nradio_station " << radio_station
            << "\ngraphics " << static_cast<int>(graphics) << '\n';
     for (std::size_t i = 0; i < input::action_count; ++i)
         output << "bind " << input::Bindings::key(static_cast<input::Action>(i)) << ' ' << bindings.codes[i][0] << ' '
@@ -78,6 +83,8 @@ void GameSettings::reset_controls() {
     GameSettings fresh;
     fresh.volume = volume;
     fresh.muted = muted;
+    fresh.radio_volume = radio_volume;
+    fresh.radio_station = radio_station;
     fresh.graphics = graphics;
     fresh.mouse_look = mouse_look;
     *this = fresh;

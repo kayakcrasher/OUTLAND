@@ -36,6 +36,7 @@
 #include "outland/game/vehicles/VehicleSystem.hpp"
 #include "outland/game/vehicles/VehicleRenderer.hpp"
 #include "outland/game/vehicles/VehicleAudio.hpp"
+#include "outland/game/radio/RadioAudio.hpp"
 #include "outland/assets/ModelCache.hpp"
 #include "outland/engine/render/FrameTimings.hpp"
 #include "outland/engine/render/RenderScale.hpp"
@@ -1064,6 +1065,11 @@ void Renderer::run() {
     game::GameSettings settings;
     const std::string settings_path=game::GameSettings::path_for(map_path);
     settings.load(settings_path);
+    // The car radio: three live stations; the clock starts at the time of day, so each session
+    // tunes in part-way through a song.
+    game::radio::CarRadio car_radio;
+    car_radio.set_station(settings.radio_station);
+    double radio_clock=static_cast<double>(std::time(nullptr)%86400);
     const auto apply_settings=[&]() {
         input_system.set_look({settings.look_sensitivity,settings.mouse_sensitivity,settings.invert_y,settings.aim_toggle});
         input_system.set_bindings(settings.bindings);
@@ -1076,6 +1082,7 @@ void Renderer::run() {
     };
     const auto store_settings=[&]() {
         settings.volume=environment_audio.volume();settings.muted=environment_audio.muted();
+        settings.radio_station=car_radio.station();
         if(!settings.save(settings_path)) TraceLog(LOG_WARNING,"Settings could not be saved: %s",settings_path.c_str());
         platform::flush_saves();
     };
@@ -1221,6 +1228,7 @@ void Renderer::run() {
         haptics.hit_taken(amount);
     };
     game::vehicles::VehicleAudio vehicle_audio;
+    game::radio::RadioAudio radio_audio;
     vehicles.bind_occupant_damage([&](float amount){player_health.damage(amount);});
     const auto gang_name=[](int faction) -> std::string {
         return faction>=0 && faction<game::mafia::gang_count ? std::string(game::mafia::gangs[static_cast<std::size_t>(faction)].name) : std::string("?");
@@ -2228,7 +2236,7 @@ void Renderer::run() {
             }
             save_campaign(false);campaign_path.clear();
             restore_match_fleet();
-            vehicles.leave_session();vehicle_audio.stop();vehicle_renderer.reset_camera();
+            vehicles.leave_session();vehicle_audio.stop();radio_audio.stop();vehicle_renderer.reset_camera();
             shop_open=inventory_open=false;
             if(lan_match) {lan.stop();lan_play.clear(&npcs);lan_match=false;}
             game_mode=game::GameMode::Home;
@@ -2309,7 +2317,7 @@ void Renderer::run() {
                         lan_play.clear(&npcs);
                     }
                     restore_match_fleet();
-                    vehicles.leave_session();vehicle_audio.stop();vehicle_renderer.reset_camera();
+                    vehicles.leave_session();vehicle_audio.stop();radio_audio.stop();vehicle_renderer.reset_camera();
                     shop_open=inventory_open=false;input_system.cancel_controls();
                     game_mode=game::GameMode::Home;continue;
                 }
@@ -2825,6 +2833,8 @@ void Renderer::run() {
             }
         }
         if(!lights_car.empty() && vehicles.find(lights_car)<0) lights_car.clear();
+        // RADIO / O at the wheel: the next station, then off.
+        if(controls.radio && driving) {car_radio.press();store_settings();}
         // BACKUP / Z: an officer radios the nearest station for two more.
         if(controls.backup && career.serving() && game_mode==game::GameMode::Explore && player_health.alive() && services.active()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
@@ -3386,6 +3396,12 @@ void Renderer::run() {
 
         environment_audio.update(player.position, player.grounded && !driving, !driving, verda_region);
         vehicle_audio.update(vehicles,verda_region,dt,vehicle_paused || environment_audio.muted(),environment_audio.volume());
+        {
+            const bool radio_paused=vehicle_paused || pause_menu.is_open();
+            if(!radio_paused) radio_clock+=dt;
+            car_radio.update(vehicles.driver()!=nullptr && player_health.alive(),radio_clock,radio_paused ? 0.0F : dt);
+            radio_audio.update(car_radio,radio_paused,environment_audio.muted() ? 0.0F : environment_audio.volume()*settings.radio_volume);
+        }
 
         // The camera punch of each shot fades in a blink; the climb itself is in player.pitch.
         recoil_pitch *= std::exp(-dt * 14.0F);
@@ -4298,7 +4314,7 @@ void Renderer::run() {
             }
             if(!finished && mode_session.terminal()) {
                 shop_open=inventory_open=false;play_ui.opened();input_system.cancel_controls();
-                vehicle_audio.stop();
+                vehicle_audio.stop();radio_audio.stop();
             }
             if(lan_match && lan.in_match()) {
                 // Out of the match: tell the others (and who did it).
@@ -5668,6 +5684,20 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
         if(game_mode==game::GameMode::DevLab)dev_lab.draw_tools(screen_width,screen_height,creator_active);
 #endif
+        // The car radio's "now playing": the station, then the song (a few seconds after tuning in,
+        // getting in, or a new song). Song titles are Esperanto: drawn with the sign font.
+        if(const float shown=car_radio.note(); shown>0 && !map_screen.is_open() && !inventory_open) {
+            const Font& font=sign_renderer.font();
+            const std::string station=car_radio.note_station(),song=car_radio.note_title();
+            const float big=22,small=16;
+            const float sw=MeasureTextEx(font,station.c_str(),small,1).x,tw=MeasureTextEx(font,song.c_str(),big,1).x;
+            const float w=std::max(sw,tw)+40,top=static_cast<float>(screen_height)*.2F+14;
+            const float x=screen_width/2.0F-w/2;
+            DrawRectangleRounded({x,top,w,big+small+24},.25F,6,Fade(BLACK,.55F*shown));
+            DrawRectangle(static_cast<int>(x+10),static_cast<int>(top+10),4,static_cast<int>(big+small+4),Fade(Color{120,200,140,255},shown));
+            DrawTextEx(font,station.c_str(),{x+24,top+8},small,1,Fade(Color{200,214,196,255},shown));
+            DrawTextEx(font,song.c_str(),{x+24,top+12+small},big,1,Fade(RAYWHITE,shown));
+        }
         if(const auto* driver=vehicles.driver()) {
             game::hud::Speedometer gauge;
             gauge.speed=driver->speed;gauge.boosting=driver->boosting;gauge.handbrake=controls.crouch;

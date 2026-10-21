@@ -293,6 +293,23 @@ int main() {
           std::to_string(highways) + "/" + std::to_string(through));
     check(freight_roads == 1, "the yard road into Verda Transporto's depot");
 
+    // The radio stations: Verda Popolko in Verda City, Radio Sovaĝejo, Espera Roko - each studio
+    // and mast in its own town, with its door an Office place.
+    {
+        check(report.radio_stations.size() == 3, "three radio stations built");
+        const Vector3 towns[]{{0, 0, 0}, world::layout::sovagejo_center, {0, 0, -1800}};
+        const char* styles[]{"popolko", "kantrio", "roko"};
+        for (std::size_t i = 0; i < report.radio_stations.size() && i < 3; ++i) {
+            const auto door = report.radio_stations[i];
+            check(std::hypot(door.x - towns[i].x, door.z - towns[i].z) < 470, std::string("radio station in its town: ") + styles[i]);
+            int models = 0;
+            for (const auto& town : region.settlements())
+                for (const auto& a : town.assets)
+                    models += a.model_path.ends_with(std::string("civic/radio_station_") + styles[i] + ".glb") && std::hypot(a.position.x - door.x, a.position.z - door.z) < 12;
+            check(models == 1, std::string("the studio and mast stand at the door: ") + styles[i]);
+        }
+    }
+
     // Porto Luma's cargo terminal and Verda Transporto's depot.
     {
         check(report.cargo_terminal && report.freight_depot, "the cargo terminal and the trucking depot are built");

@@ -182,6 +182,8 @@ add_library(
     src/game/freight/Freight.cpp
     src/game/freight/Trucking.cpp
     src/game/campaign/Campaign.cpp
+    src/game/radio/Radio.cpp
+    src/game/radio/RadioAudio.cpp
     src/game/life/LifeSimulation.cpp
     src/game/life/LifeTraffic.cpp
     src/game/zombies/ZombieEcology.cpp
@@ -757,6 +759,11 @@ if(OUTLAND_BUILD_TESTS)
     target_include_directories(outland_campaign_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_campaign_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_campaign_tests COMMAND outland_campaign_tests)
+    add_executable(outland_radio_tests tests/unit/radio/test_radio.cpp src/game/radio/Radio.cpp)
+    target_include_directories(outland_radio_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
+    target_compile_options(outland_radio_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_radio_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_radio_tests COMMAND outland_radio_tests)
     add_executable(outland_trucking_tests tests/unit/freight/test_trucking.cpp src/game/freight/Trucking.cpp)
     target_include_directories(outland_trucking_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_trucking_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

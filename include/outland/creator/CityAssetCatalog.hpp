@@ -96,6 +96,15 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_truck_depot", .name = "Verda Transporto - truck depot with office", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/truck_depot.glb", .thumbnail_path = "", .footprint = {38.00F, 31.00F, 9.00F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_radio_station_popolko", .name = "Radio station - Verda Popolko 98.1 (modular studio, transmitter mast)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/radio_station_popolko.glb", .thumbnail_path = "", .footprint = {18.00F, 11.20F, 34.35F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_radio_station_kantrio", .name = "Radio station - Radio Sovaĝejo 102.5 (modular studio, transmitter mast)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/radio_station_kantrio.glb", .thumbnail_path = "", .footprint = {18.00F, 13.40F, 28.35F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_radio_station_roko", .name = "Radio station - Espera Roko 105.9 (modular studio, transmitter mast)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/radio_station_roko.glb", .thumbnail_path = "", .footprint = {18.00F, 11.20F, 40.35F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_hospital", .name = "Hospitalo - hospital with ambulance bay", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/hospital.glb", .thumbnail_path = "", .footprint = {46.00F, 23.00F, 12.70F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

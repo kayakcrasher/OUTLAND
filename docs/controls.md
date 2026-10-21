@@ -52,6 +52,7 @@ pointer, and that opens the pause menu.
 | Pause menu | ESC |
 | Spray a gang tag (Explore, gang members) | T |
 | Emergency lights (police car) | L |
+| Car radio: next station, then off | O (touch: RADIO, left of HAND at the wheel). See [radio](radio.md) |
 | Radio for backup (Explore, police officers) | Z (touch: BACKUP, where TAG goes) |
 | Arrest a Krimulo (Explore, police officers) | E / USE beside him |
 | Mute | N |
@@ -116,6 +117,7 @@ ESC goes back a page, and from the first page resumes.
 | Touch button size | 70–140% | 100% |
 | Vibration | on / off (phones) | on |
 | Volume, Sound | 10% steps; on / off | 80%, on |
+| Car radio | the radio's volume (on top of Volume), 10% steps | 70% |
 | Graphics | AUTO / FAST / SHARP | AUTO |
 
 - **RESET CONTROLS** restores the defaults for everything except the sound and graphics.
