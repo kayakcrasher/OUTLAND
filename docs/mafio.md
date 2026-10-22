@@ -1,10 +1,17 @@
 # La Mafio - the Krimuloj of Verda
 
 Explore only. Verda's five counties (zonoj) each have a gang, and every town has a crew of its
-county's gang. The crew has taken over a building (a pub where there is one, else a works, a
-garage or a shop, never the town hall) and stands about it armed and in plain sight. They keep
-well away from the police: a hideout is at least 160 m from a police station wherever the town
-has room (`Mafio::station_clearance`); the Green Hand keep the places they have always had.
+county's gang, armed and in plain sight about its hideout.
+
+- **The Green Hand** keep the places they have always had: the bar with the casino in Verda City
+  (a pub where there is one, else a works, a garage or a shop).
+- **The other gangs** keep out of the shops and pubs. They hole up in a plain house with the
+  gang's tag sprayed on the front wall beside the door (repainted in the new colours if the town
+  changes hands). In Espera, Porto Luma, Suda Haveno and Roka it is a detached house built for
+  them (`gang_house_<town>`, `dev::gang_houses`), at least 140 m from the police station, and
+  nobody else lives there. In the hamlets it is a trailer or cabin nobody lives in. Their
+  hideouts keep at least 160 m from a police station where the town has room
+  (`Mafio::station_clearance`).
 The boss of each crew stands by the hideout door: talk to him (USE) to join or to leave. Their banner, a pole and a
 striped flag in the gang's colour, flies by the door. The island map marks every hideout with a
 diamond in the gang's colour.

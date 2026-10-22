@@ -35,6 +35,9 @@ int main(int argc, char** argv) {
     std::cout << report.gun_shops.size() << " Armilejo gun shops at";
     for (const auto& door : report.gun_shops) std::cout << " (" << static_cast<int>(door.x) << ", " << static_cast<int>(door.z) << ")";
     std::cout << '\n';
+    std::cout << report.gang_houses.size() << " gang houses at";
+    for (const auto& house : report.gang_houses) std::cout << " (" << static_cast<int>(house.x) << ", " << static_cast<int>(house.z) << ")";
+    std::cout << '\n';
     std::cout << report.radio_stations.size() << " radio stations at";
     for (const auto& door : report.radio_stations) std::cout << " (" << static_cast<int>(door.x) << ", " << static_cast<int>(door.z) << ")";
     std::cout << '\n';

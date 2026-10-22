@@ -187,6 +187,20 @@ void Career::crime(bool serious) {
     say("A crime on duty: the Policio takes your badge. You have a record now");
 }
 
+void Career::stray_round(bool killed) {
+    if (state_.side != Side::Police) return;
+    strays_ += killed ? 2 : 1;
+    if (strays_ >= stray_limit) {
+        strays_ = 0;
+        crime(true);
+        say("Too many bystanders hurt in your gunfights: the Policio takes your badge");
+        return;
+    }
+    state_.respect = std::max(0.0F, state_.respect - (killed ? 8.0F : 3.0F));
+    say(killed ? "A bystander died in the crossfire. The Chief will hear about it: -8 respect"
+               : "A bystander was hit in the crossfire. Watch your fire: -3 respect");
+}
+
 void Career::chief_killed() {
     state_.chief_dead = true;
     if (job_.kind != JobKind::HitChief) return;
@@ -289,6 +303,7 @@ void Career::died() {
 
 void Career::finish(bool success, const std::string& why) {
     if (success) {
+        strays_ = 0;
         finished_ = job_;
         const int paid = job_.kind == JobKind::HitChief ? job_.pay : static_cast<int>(std::lround(static_cast<float>(job_.pay) * pay_scale()));
         pay_ += paid;

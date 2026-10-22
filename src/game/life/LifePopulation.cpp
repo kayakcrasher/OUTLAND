@@ -229,6 +229,7 @@ void build_places(Island& island,const world::VerdaRegion& region) {
             auto& place=island.places[i];
             const bool two_story=place.building_size.y>5.5F;
             if(place.kind==PlaceKind::Home) place.home_capacity=tenement[i-first] || place.building_id.starts_with("creator_city_main_street") ? 6 : two_story ? 8 : 4;
+            if(place.building_id.starts_with("gang_house_")) place.home_capacity=0;   // a county gang's hideout (game::mafia): nobody else lives there
             if(place.sealed) {place.job_capacity=place.building_size.x<=3.01F ? 6 : 24;continue;}
             if(place.kind==PlaceKind::Shop || place.kind==PlaceKind::Pub) {place.mixed_home=true;place.home_capacity=3;}
             place.job_capacity=place.civic_hall ? 20 : job_capacity(place.kind);

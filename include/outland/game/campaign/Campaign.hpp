@@ -77,6 +77,8 @@ public:
     // USE beside Uncle Ron: starts his talk, or the next line; in free play, a word from him.
     // Returns true when it did something.
     bool talk();
+    // The player walked away from Ron mid-word: what he was saying is left unsaid (Free only).
+    void hush();
     // USE at his truck once he is done talking on the quay: off home.
     bool board();
     void update(float dt);

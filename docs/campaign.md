@@ -39,10 +39,12 @@ he phones ("Come home...") and has his say the next time they USE beside him at 
 - **Gang** (joined Dario's Green Hand): he is very disappointed. He doesn't shout; he says he
   expected better.
 
-Between talks, his idle lines follow the player's current road too.
+Between talks, his idle lines follow the player's current road too. Walk (or drive) away while
+he is talking and the talk ends; his words don't follow the player around the island.
 
 **Prison.** The first time the player is released from prison, Ron is waiting at the gate with
-his truck. USE beside him to hear him out, then he drives the player home (the screen fades). That
+his truck. USE beside him to hear him out, then he drives the player home (the screen fades). Walk
+off and leave him waiting (150 m) and he goes home alone. That
 happens **once**: after any later sentence, nobody is at the gate.
 
 **The ultimatum.** If the player was still in the gang when Ron picked them up, he gives them an

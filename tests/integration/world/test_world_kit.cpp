@@ -358,6 +358,10 @@ int main() {
         int fancy = 0;
         for (const auto& s : region.settlements()) for (const auto& a : s.assets) {
             if (a.model_path.find("/residential/houses/house_") == std::string::npos) continue;
+            // (The county gangs' houses in the other towns are the same model; checked below.)
+            bool gang = false;
+            for (const auto& h : report.gang_houses) gang |= std::hypot(h.x - a.position.x, h.z - a.position.z) < .5F;
+            if (gang) continue;
             ++fancy;
             check(a.position.x > 166 && a.position.x < 476 && std::abs(a.position.z) < 195, "fancy houses east of downtown");
             check(std::abs(a.position.y) < .05F, "east suburbs are level");
@@ -373,6 +377,14 @@ int main() {
             check(fronts, "fancy house faces its street");
         }
         check(fancy >= 60, "east suburbs: " + std::to_string(fancy) + " houses");
+        // The county gangs' houses: one in each big town the Green Hand don't hold, its purpose
+        // marker named so island life leaves it empty and La Mafio moves in.
+        check(report.gang_houses.size() == 4, "a gang house in Espera, Porto Luma, Suda Haveno and Roka");
+        for (const char* id : {"gang_house_village_espera", "gang_house_port_luma", "gang_house_south_haven", "gang_house_west_roka"}) {
+            bool marked = false;
+            for (const auto& s : region.settlements()) for (const auto& m : s.gameplay_markers) marked |= m.id == id;
+            check(marked, std::string("marker ") + id);
+        }
         // Upstairs in every fancy house: from the top of the stairs, through each bedroom door
         // and on into the back bedroom's bathroom.
         int upstairs = 0;
@@ -400,7 +412,8 @@ int main() {
             }
             upstairs += all;
         }
-        check(upstairs == fancy, "every bedroom and bathroom upstairs: " + std::to_string(upstairs) + "/" + std::to_string(fancy));
+        const int houses = fancy + static_cast<int>(report.gang_houses.size());
+        check(upstairs == houses, "every bedroom and bathroom upstairs: " + std::to_string(upstairs) + "/" + std::to_string(houses));
     }
 
     // Porto Luma: a 4 x 4 street grid round Placo Luma, Main Street rows and harbour towers.
@@ -491,6 +504,12 @@ int main() {
         int kit_places = 0, offices = 0, docks = 0, staffed = 0;
         for (std::size_t i = 0; i < life.places().size(); ++i) {
             const auto& place = life.places()[i];
+            // (The gangs' houses: kit places too, and nobody lives there - La Mafio moves in.)
+            if (place.building_id.starts_with("gang_house_")) {
+                ++kit_places;
+                check(place.kind == game::life::PlaceKind::Home && place.home_capacity == 0, "a gang house is nobody's home: " + place.id);
+                continue;
+            }
             if (!place.building_id.starts_with("creator_marker_building_purpose_kit_")) continue;
             ++kit_places;
             offices += place.kind == game::life::PlaceKind::Office;
@@ -533,7 +552,7 @@ int main() {
                 check(!(asset.collision && std::abs(asset.position.x - dev::stadium_reserve.x) < dev::stadium_half &&
                         std::abs(asset.position.z - dev::stadium_reserve.z) < dev::stadium_half),
                       "nothing built on the stadium ground: " + asset.id);
-        check(staffed == kit_places, "people live or work in every part-built building: " + std::to_string(staffed));
+        check(staffed + static_cast<int>(report.gang_houses.size()) == kit_places, "people live or work in every part-built building: " + std::to_string(staffed));
         // Stela Turo: downtown, every floor walkable, both stair cores
         // climbable, the penthouse and the roof reachable.
         check(report.stela_turo, "Stela Turo built");
@@ -551,6 +570,18 @@ int main() {
                 check(std::abs(stand({0, top, -6}) - top) < .05F, "floor " + std::to_string(floor + 1) + " walkable");
                 const auto body = penthouse.to_world({0, top, -6});
                 check(!world::physics::WorldCollision::body_blocked(body, body.y, region, .35F), "floor " + std::to_string(floor + 1) + " open");
+            }
+            // In off the pavement through each front door: a body walks from the street into the lobby.
+            for (const float face : {-1.0F, 1.0F}) {
+                Vector3 p = penthouse.to_world({0, 0, face * 16});
+                p.y = world::physics::WorldCollision::ground_height({p.x, p.y + 1, p.z}, p.y + 1, region);
+                const Vector3 lobby = penthouse.to_world({0, .25F, face * 6});
+                for (int i = 0; i < 400 && Vector3Distance({p.x, 0, p.z}, {lobby.x, 0, lobby.z}) > .2F; ++i) {
+                    const Vector3 step = Vector3Scale(Vector3Normalize(Vector3Subtract({lobby.x, 0, lobby.z}, {p.x, 0, p.z})), .05F);
+                    p = world::physics::WorldCollision::resolve_body_movement(p, {p.x + step.x, p.y, p.z + step.z}, p.y, region, .45F);
+                    p.y = world::physics::WorldCollision::ground_height({p.x, p.y + .6F, p.z}, p.y + .6F, region);
+                }
+                check(Vector3Distance({p.x, 0, p.z}, {lobby.x, 0, lobby.z}) < .5F, face < 0 ? "Stela Turo: in at the front door" : "Stela Turo: in at the back door");
             }
             // Up each flight: every step's top is where the stairs say, then the floor above.
             for (const char core : {'L', 'R'}) {

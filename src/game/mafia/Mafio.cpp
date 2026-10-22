@@ -48,7 +48,8 @@ float Mafio::random() {
     return static_cast<float>(rng_ >> 40) / static_cast<float>(1ULL << 24);
 }
 
-int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegion& region, ai::BattleRoyaleBots& bots, std::uint64_t seed) {
+int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegion& region, ai::BattleRoyaleBots& bots, std::uint64_t seed,
+                 const std::vector<int>& lived_in, const std::vector<std::string>& not_for_gangs) {
     crews_.clear();
     members_.clear();
     wars_.clear();
@@ -66,8 +67,28 @@ int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegio
         float best_score = 1e9F;
         const bool capital = town.id == "capital_verda";
         const bool green_hand = gang_of_zone(world::zones::zone_at(town.center)) == 0;   // they stay put
-        for (const auto& place : places) {
+        // Everyone but the Green Hand: a plain house nobody lives in (any building, if the town has none).
+        // (One nobody lives in if there is one; else a family has to put up with them.)
+        bool empty_only = true;
+        const auto plain_house = [&](std::size_t i) {
+            const auto& place = places[i];
+            if (place.building_id.starts_with("gang_house_")) return true;   // built for them (dev::gang_houses)
+            if (place.kind != life::PlaceKind::Home || place.mixed_home || !place.indoor || place.sealed) return false;
+            if (empty_only && i < lived_in.size() && lived_in[i] > 0) return false;
+            return std::find(not_for_gangs.begin(), not_for_gangs.end(), place.building_id) == not_for_gangs.end();
+        };
+        bool houses = false;
+        if (!green_hand)
+            for (const bool strict : {true, false}) {
+                empty_only = strict;
+                for (std::size_t i = 0; i < places.size() && !houses; ++i)
+                    houses = places[i].settlement == static_cast<int>(s) && plain_house(i);
+                if (houses) break;
+            }
+        for (std::size_t i = 0; i < places.size(); ++i) {
+            const auto& place = places[i];
             if (place.settlement != static_cast<int>(s)) continue;
+            if (houses && !plain_house(i)) continue;
             float score = suitability(place);
             if (score < 0) continue;
             // Not on the police's doorstep: well away from any station (the Green Hand keep the
@@ -76,6 +97,8 @@ int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegio
                 if (!green_hand && station.kind == life::PlaceKind::Police)
                     score += std::max(0.0F, station_clearance - flat(place.door, station.door)) * .25F;
             if (capital && place.kind != life::PlaceKind::Pub) score += 2; // the casino wants a bar
+            if (houses && place.building_id.find("main_street") != std::string::npos) score += 45;   // a house of its own, not a row
+            if (place.building_id.starts_with("gang_house_")) score -= 1000;                            // their own house
             // Fixed: the same building every game - nearest the middle of town, a hash for ties.
             score += flat(place.door, town.center) / 500.0F + static_cast<float>(hash(place.id, 0x7e55a) % 1000) / 40000.0F;
             if (score < best_score) { best_score = score; best = &place; }
@@ -93,6 +116,17 @@ int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegio
         crew.casino = capital;
         crew.table = crew.interior;
         crew.base = world::zones::zone(world::zones::zone_at(town.center)).seat == town.id;
+        crew.house = houses;
+        if (crew.house) {
+            // The tag: on the front wall (the door stands 1.6 m out from it), beside the door.
+            Vector3 n = Vector3Subtract(crew.door, crew.interior);
+            n.y = 0;
+            n = Vector3Length(n) > .1F ? Vector3Normalize(n) : Vector3{0, 0, 1};
+            const Vector3 along{-n.z, 0, n.x};
+            crew.tag = Vector3Add(Vector3Subtract(crew.door, Vector3Scale(n, 1.6F)), Vector3Scale(along, 1.9F));
+            crew.tag.y = crew.door.y + 1.7F;
+            crew.tag_normal = n;
+        }
         const auto& gang = gangs[static_cast<std::size_t>(crew.gang)];
         int size = gang.crew;
         if (crew.gang == 0 && !capital) size = 4;          // the Green Hand's outposts are smaller

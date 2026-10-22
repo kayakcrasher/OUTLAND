@@ -16,8 +16,9 @@ namespace outland::world { class VerdaRegion; }
 namespace outland::game::vehicles { class VehicleSystem; }
 
 // La Mafio: the Krimuloj of Verda (Explore). Five gangs, one for each zono, and a crew of the
-// county's gang in every town, holed up in a building they have taken over (a pub, a works, a
-// garage or a shop), armed and in plain sight. The police are paid off: nobody calls them about
+// county's gang in every town, holed up in a building they have taken over (the Green Hand: a pub,
+// a works, a garage or a shop; the other gangs: a plain house with their tag on the wall), armed and
+// in plain sight. The police are paid off: nobody calls them about
 // the Krimuloj, and the Krimuloj answer for themselves - leave them alone and they leave you
 // alone; shoot at one and the whole gang shoots back in "self defence" until it cools off.
 //
@@ -67,6 +68,8 @@ struct Crew {
     Vector3 table{};
     bool base{false};          // the gang's main base: its county's main town (fixed, the same every game)
     bool disbanded{false};     // broken up by the Policio: nobody comes back to it
+    bool house{false};         // a plain house (every gang but the Green Hand)
+    Vector3 tag{}, tag_normal{}; // the gang's tag on the front wall, beside the door (house only)
 };
 
 struct Member {
@@ -110,7 +113,11 @@ public:
     // its crew there, in `bots`. The buildings are fixed (the same every game, nearest the middle
     // of town for their kind, and well away from the police station); each gang's main base is in its county's main town and holds the
     // most men. Returns the number of crews.
-    int start(const std::vector<life::Place>& places, const world::VerdaRegion& region, ai::BattleRoyaleBots& bots, std::uint64_t seed);
+    // The Green Hand keep the bars, works and shops they have always had; every other crew holes up
+    // in a plain house (no shop or pub under it) that nobody lives in (`lived_in`: residents per
+    // place, empty = none) and nobody can buy (`not_for_gangs`: building ids), its tag on the wall.
+    int start(const std::vector<life::Place>& places, const world::VerdaRegion& region, ai::BattleRoyaleBots& bots, std::uint64_t seed,
+              const std::vector<int>& lived_in = {}, const std::vector<std::string>& not_for_gangs = {});
     void clear(ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers, vehicles::VehicleSystem& cars);
     [[nodiscard]] bool active() const { return !crews_.empty(); }
 

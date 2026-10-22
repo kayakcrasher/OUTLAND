@@ -273,6 +273,16 @@ int main() {
             g.released();
             check(g.state().respect > before, "did his time: respect");
         }
+        // A bystander caught in a gunfight with a gang: a reprimand, not the badge - unless it
+        // keeps happening.
+        {
+            Career s;
+            s.join_police("police_2", why);
+            s.stray_round(false);
+            check(s.on_duty() && !s.state().record && s.strays() == 1, "a stray round: reprimanded, still on duty");
+            s.stray_round(true);
+            check(!s.on_duty() && s.state().record, "hurt bystanders again and again: the badge goes");
+        }
         // A cop can always go bad: a serious crime ends it, and leaves a record.
         c.crime(false);
         check(c.on_duty(), "a minor matter is overlooked");

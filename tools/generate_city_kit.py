@@ -524,6 +524,7 @@ STELA_STAIR_LANE = 1.3          # each stair core is two 1.3 m lanes (switchback
 STELA_STAIR_Z0 = -6.5           # flights run along Z from here (18 risers of 0.2 m, 0.28 m treads)
 STELA_SLAB = .25
 STELA_WALL = .35
+STELA_DOOR = 3.0     # half the lobby doorway's width (inside the gold frame)
 
 
 def stela_tier(floor):
@@ -609,15 +610,19 @@ def stela_turo():
                 for floor in range(first, end):
                     base = floor * FLOOR + slab
                     if floor == 0:
-                        # The lobby: tall doors in the middle of the front and back, shop windows elsewhere.
-                        door = abs(centre) < width * .8 and axis == 'x'
-                        openings.append((a0, a1, slab, 3.2) if door else (a0, a1, .9, 3.2))
+                        # The lobby: one wide doorway in the middle of the front and back (added
+                        # below, inside the gold frame), shop windows elsewhere.
+                        if not (abs(centre) < width * .8 and axis == 'x'):
+                            openings.append((a0, a1, .9, 3.2))
                     elif floor == first and axis == 'x' and outward < 0 and abs(centre) < width * 1.2 and first > 0:
                         openings.append((a0, a1, base, base + 2.6))   # french doors onto the terrace
                     elif floor == STELA_FLOORS - 1:
                         openings.append((a0, a1, base + .45, base + 3.05))  # the penthouse: tall windows
                     else:
                         openings.append((a0, a1, base + .85, base + 2.85))
+            if first == 0 and axis == 'x':
+                openings.append((-STELA_DOOR, STELA_DOOR, 0, 3.2))
+                openings.sort()
             wall_with_openings(b, axis, fixed, span, y1, t, openings, mat, "plaster", outward, base=y0)
             # A gold-edged bronze sill under every window, so the openings read from the street.
             for a0, a1, o0, o1 in openings:
@@ -663,9 +668,15 @@ def stela_turo():
         b.solid((-hw - .15, py + 1.1, -hd - .15), (hw + .15, py + 1.25, -hd + .25), "gold")
     # ---- the base: a dark granite plinth and a gold entrance with a sunburst
     hw0, hd0 = STELA_TIERS[0][2], STELA_TIERS[0][3]
-    for lo, hi in (((-hw0 - .1, 0, -hd0 - .1), (hw0 + .1, .9, -hd0)), ((-hw0 - .1, 0, hd0), (hw0 + .1, .9, hd0 + .1)),
+    # (broken at the doorways: walk straight in off the pavement)
+    for lo, hi in (((-hw0 - .1, 0, -hd0 - .1), (-STELA_DOOR, .9, -hd0)), ((STELA_DOOR, 0, -hd0 - .1), (hw0 + .1, .9, -hd0)),
+                   ((-hw0 - .1, 0, hd0), (-STELA_DOOR, .9, hd0 + .1)), ((STELA_DOOR, 0, hd0), (hw0 + .1, .9, hd0 + .1)),
                    ((-hw0 - .1, 0, -hd0), (-hw0, .9, hd0)), ((hw0, 0, -hd0), (hw0 + .1, .9, hd0))):
         b.solid(lo, hi, "granite")
+    # A shallow granite step up to the lobby floor in each doorway.
+    for face in (-1, 1):
+        wall = face * hd0
+        b.solid((-STELA_DOOR, 0, min(wall - face * .9, wall + face * .2)), (STELA_DOOR, slab * .5, max(wall - face * .9, wall + face * .2)), "granite")
     # The entrances, front and back alike (the model stays symmetric, so its origin is its centre).
     for face in (-1, 1):
         wall = face * hd0

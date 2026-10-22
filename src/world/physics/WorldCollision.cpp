@@ -369,6 +369,14 @@ bool WorldCollision::blocked_impl(
     const auto check = [&](const WorldAsset& asset) -> bool {
             if(asset.id==ignore_asset)return false;
             if(vehicle && light_prop(asset))return false;
+            // Paving, lots and pads (a few centimetres high) are driven over, not into.
+            if(vehicle && asset.vehicle.definition.empty() && asset.size.y<.35F)return false;
+            // Lamps and signals: a car hits the post, not the box round the arms reaching over the road.
+            if(vehicle && asset.collision && (asset.model_path.find("lamppost")!=std::string::npos ||
+               asset.model_path.find("street_light")!=std::string::npos || asset.model_path.find("traffic_light")!=std::string::npos)) {
+                const float dx=position.x-asset.position.x,dz=position.z-asset.position.z,reach=player_radius+.3F;
+                return dx*dx+dz*dz<reach*reach;
+            }
             if(!asset.vehicle.definition.empty() || (!asset.model_path.empty() && asset.collision)) {
                 if(!asset.vehicle.definition.empty() && !asset.vehicle.enabled)return false;
                 const float dx=position.x-asset.position.x,dz=position.z-asset.position.z;

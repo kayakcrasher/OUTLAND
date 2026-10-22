@@ -20,7 +20,7 @@ In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. E
   - An honourable gang's towns win back their hold twice as fast. Every rival gangster you take down on your own gang's turf counts as defending the town: +2 respect and +4 hold.
   - **Leaving:** tell your boss you're out (USE twice beside him) to walk away from the gang.
   - The Policio turns away anyone with a record ("no criminals on the force"), and anyone still running with a gang.
-- **No gang takes a cop:** an officer hands in the badge first. A crime on duty (assaulting or killing a resident, or attacking an officer) ends the career on the force and leaves a record.
+- **No gang takes a cop:** an officer hands in the badge first. A crime on duty (assaulting or killing a resident, or attacking an officer) ends the career on the force and leaves a record. A bystander hit in a gunfight with a gang (on a gang's turf, or while a gang is shooting) is a reprimand instead: -3 respect for a wound, -8 and a double mark for a death (`Career::stray_round`). Three marks before your next job is done and the badge goes after all.
 - Joining a different gang starts your respect again from zero.
 - **Trucking** is open to anyone but a serving officer, gang members included: sign on with the boss at Verda Transporto's depot and drive loads for pay by the trip. See [trucking](trucking.md).
 

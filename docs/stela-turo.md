@@ -11,8 +11,10 @@ tower stood. Model: `assets/verda/city/towers/stela_turo.glb`, written by
   15th, 21 x 17 m to the top, then a stepped crown with gold fins and a gold spire (86 m).
 - Piers run up between the windows and rise past each parapet with gold caps; bronze chevron
   spandrels between the floors; a gold-edged sill under every window; a dark granite plinth.
-- Entrances front and back: gold surrounds with a sunburst and a bronze marquee. The sign over the
-  door reads **STELA TURO - OFICEJOJ · PENTDOMO**.
+- Entrances front and back: gold surrounds with a sunburst and a bronze marquee. Each is one open
+  doorway 6 m wide inside the gold frame, the plinth broken for it and a low granite step up to
+  the lobby: walk straight in off the pavement. The sign over the door reads
+  **STELA TURO - OFICEJOJ · PENTDOMO**.
 - **Every window is open** (no glass). **Every floor is open plan** round four columns, on a
   terrazzo floor with brass strips.
 - **Two stair cores**, one at each side: switchback flights (0.2 m risers), bronze rails round

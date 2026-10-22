@@ -14,6 +14,9 @@ berth), `dev::build_verda_towns` (`cargo_terminal()`, `freight_depot()`), `game:
 
 ## The cargo terminal
 Porto Luma stands 38 m above the sea, so the terminal is down at the shore:
+- **The terminal road** runs straight east from the town's east street (x 1876, z -470), across
+  the quay road and on down the ramp: a rig turns once, off the town street, not a dog-leg along
+  the quay road.
 - **The ramp** runs straight east from the quay road (x 1950, z -470), 230 m at an even 15% grade,
   down to the quay. The land is cut and filled to it.
 - **The quay** is a 60 x 112 m concrete apron 4 m above the water. Its seaward face is a quay wall

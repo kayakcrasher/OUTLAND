@@ -129,16 +129,28 @@ public:
     void tree(Vector3 position) {
         world::WorldAsset asset;
         for (int n = 1;; ++n) { asset.id = "creator_kit_tree_" + std::to_string(n); if (ids_.insert(asset.id).second) break; }
+        // Never on a kerb a car would clip: the trunk stands clear of every carriageway (the id is
+        // spent either way, so the trees after keep theirs).
+        for (const auto& town : region_.settlements())
+            for (const auto& road : town.roads) {
+                const float dx = road.end.x - road.start.x, dz = road.end.z - road.start.z, l2 = dx * dx + dz * dz;
+                const float t = l2 > 0 ? std::clamp(((position.x - road.start.x) * dx + (position.z - road.start.z) * dz) / l2, 0.0F, 1.0F) : 0;
+                const float d = std::hypot(position.x - road.start.x - dx * t, position.z - road.start.z - dz * t);
+                if (road.type == world::RoadType::Highway && d < world::highways::median_half + .3F) continue;   // the planted median
+                if (d < road.width * .5F + .9F) return;
+            }
         asset.type = world::AssetType::Tree; asset.position = position; asset.size = {1, 7, 1}; asset.collision = true;
         if (region_.place_world_asset(std::move(asset))) ++report.assets;
     }
     // What a part-built building is for, for Explore's island life: a purpose marker just inside
     // the front door, facing out - exactly what a builder places by hand.
-    void purpose(Vector3 at, float yaw, world::BuildingPurpose purpose) {
+    // `id`: a fixed id instead of the next numbered one (a building the game looks for by name).
+    void purpose(Vector3 at, float yaw, world::BuildingPurpose purpose, const std::string& id = {}) {
         auto& settlements = region_.editable_settlements();
         if (settlements.empty()) return;
         world::GameplayMarker marker;
-        for (int n = 1;; ++n) { marker.id = "creator_marker_building_purpose_kit_" + std::to_string(n); if (ids_.insert(marker.id).second) break; }
+        if (!id.empty() && ids_.insert(id).second) marker.id = id;
+        else for (int n = 1;; ++n) { marker.id = "creator_marker_building_purpose_kit_" + std::to_string(n); if (ids_.insert(marker.id).second) break; }
         marker.type = world::GameplayMarkerType::BuildingPurpose; marker.position = at; marker.rotation_y = yaw;
         marker.size = {1.2F, 2.2F, 1.2F}; marker.purpose = purpose;
         settlements.front().gameplay_markers.push_back(std::move(marker));
@@ -1609,7 +1621,7 @@ void trailer_hamlet(Kit& kit, world::VerdaRegion& region, const world::layout::S
         if (r % 3 != 0) {
             const bool pickup = cars == 1;
             vehicle_marker(*town, std::string(pickup ? "vehicle_spawn_truck_" : "vehicle_spawn_hatchback_") + slug + "_" + std::to_string(++cars),
-                           to_world(centre, yaw, side == 0 ? 6.8F : -6.8F, 0, 3.0F), yaw + (r % 2 ? 180.0F : 0.0F));
+                           to_world(centre, yaw, side == 0 ? 6.8F : -6.8F, 0, 3.0F), yaw);   // nose to the lane: it can drive straight out
         }
         prop(kit, shacks + (r % 2 ? "Barrel.glb" : "Pallet.glb"), to_world(centre, yaw, 2.4F, 0, -9.2F), static_cast<float>(r % 360), .8F);
         if (i % 2 == side) kit.tree(to_world(centre, yaw, -1.2F, 0, -10.5F));
@@ -2119,13 +2131,17 @@ void cargo_terminal(Kit& kit, world::VerdaRegion& region) {
     auto* port = settlement(region, "port_luma");
     if (!port) return;
     const float z = L::cargo_z, quay = L::cargo_quay_height, lane = 2214;
-    // Nothing (bollards, lamps, props) on the ramp or the apron.
+    // The terminal road runs straight in from the town's east street (x = town_east), across the
+    // quay road and down the ramp: a rig turns once, not a dog-leg along the quay road.
+    const float town_east = port->center.x + 126;
+    // Nothing (bollards, lamps, props, the waterfront shed in the way) on the road, the ramp or the apron.
     for (auto& town : region.runtime_settlements())
         kit.report.cleared += static_cast<int>(std::erase_if(town.assets, [&](const world::WorldAsset& a) {
-            if (!a.vehicle.definition.empty() || a.position.x < L::cargo_ramp_x0 - 6 || a.position.x > L::cargo_quay_x1 + 80) return false;
+            if (!a.vehicle.definition.empty() || a.position.x < town_east || a.position.x > L::cargo_quay_x1 + 80) return false;
+            if (a.position.x < L::cargo_ramp_x0 - 6) return std::abs(a.position.z - z) < 10;
             return std::abs(a.position.z - z) < (a.position.x < L::cargo_ramp_x1 ? L::cargo_ramp_half + 3 : L::cargo_quay_half + 4);
         }));
-    port->roads.push_back({{1946, 0, z}, {lane, 0, z}, 10, world::RoadType::Asphalt});
+    port->roads.push_back({{town_east, 0, z}, {lane, 0, z}, 10, world::RoadType::Asphalt});
     port->roads.push_back({{lane, 0, z - L::cargo_quay_half + 4}, {lane, 0, z + L::cargo_quay_half - 4}, 10, world::RoadType::Asphalt});
     kit.add_roads(port->roads);
     kit.put(city + "civic/quay_apron.glb", {(L::cargo_ramp_x1 + L::cargo_quay_x1) * .5F, quay + .02F, z}, 0, false, false);
@@ -2239,6 +2255,39 @@ void gun_shops(Kit& kit, world::VerdaRegion& region) {
     }
 }
 
+// ------------------------------------------------------------------ the gangs' houses
+// The county gangs' hideouts in the four big towns the Green Hand don't hold (game::mafia): a plain
+// detached house (the residential house model) on a street a little out from the middle, well away
+// from the police station. Its purpose marker is named gang_house_<town>: nobody lives there
+// (game::life), and the gang's crew moves in, its tag on the front wall.
+void gang_houses(Kit& kit, world::VerdaRegion& region) {
+    static constexpr const char* schemes[]{"white", "blue", "sage", "cream"};
+    int k = 0;
+    for (const char* id : {"village_espera", "port_luma", "south_haven", "west_roka"}) {
+        const auto* town = settlement(region, id);
+        if (!town) continue;
+        std::vector<Vector3> stations;
+        for (const auto& t : region.settlements())
+            for (const auto& a : t.assets) if (a.model_path == police_model) stations.push_back(a.position);
+        const auto away = [&](const CivicSpot& spot) {
+            for (const auto& p : stations) if (std::hypot(p.x - spot.origin.x, p.z - spot.origin.z) < 140) return false;
+            return true;
+        };
+        // Model bounds x -7.21..7.21, z -10.09..10.09; the porch (local -z) faces the street.
+        CivicSpot spot;
+        if (!civic_lot(kit, region, town->center, 50, 340, 0, 0, 8.2F, 11.1F, 10.1F, 3.0F, spot, away)) continue;
+        if (!kit.put(houses + "house_" + schemes[k++ % 4] + ".glb", spot.origin, spot.yaw)) continue;
+        ++kit.report.houses;
+        // The front door (tools/extract_house.py): beside the garage, the front wall at z = -5.85.
+        constexpr float door_x = -2.41F, front = 5.85F, floor = .06F;
+        kit.report.enterable.push_back({spot.origin, spot.yaw, 13.6F, front * 2, 2, door_x, {-2.85F, 0, -2.6F}, {0, 0, 1}, 6, floor, 3.3F, {1.5F, 0, 0}});
+        kit.purpose(to_world(spot.origin, spot.yaw, door_x, floor, -front + 1.2F), spot.yaw, world::BuildingPurpose::Home,
+                    std::string("gang_house_") + id);
+        ++kit.report.buildings;
+        kit.report.gang_houses.push_back(spot.origin);
+    }
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     lay_highways(region);
@@ -2275,6 +2324,8 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     radio_stations(kit, region);
     // After those (new pieces only): Armilejo's gun shops.
     gun_shops(kit, region);
+    // After those (new pieces only): the county gangs' houses.
+    gang_houses(kit, region);
     return kit.report;
 }
 }

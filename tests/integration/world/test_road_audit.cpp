@@ -6,6 +6,8 @@
 #include "outland/world/Highways.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
 #include "outland/world/roads/RoadGraph.hpp"
+#include "outland/game/vehicles/VehicleSystem.hpp"
+#include "outland/world/physics/WorldCollision.hpp"
 #include <raymath.h>
 #include <algorithm>
 #include <cmath>
@@ -122,6 +124,50 @@ int main() {
             }
         }
     check(blocked == 0, "nothing solid on a carriageway: " + std::to_string(blocked));
+    // 4. Drivable: a car (and a pickup) set down anywhere in either lane or kerbside, facing along
+    // the road, runs into nothing - no invisible box (a lamp's arms, a parking lot's slab, a tree on
+    // the kerb).
+    std::string error;
+    game::vehicles::VehicleRegistry catalog;
+    check(catalog.load(std::string(OUTLAND_SOURCE_DIR) + "/assets/verda/vehicles/vehicle_manifest.tsv", error), error);
+    game::vehicles::VehicleSystem vehicles(catalog);
+    vehicles.set_training_structure(false);
+    int stuck = 0;
+    std::vector<Vector3> reported;
+    for (const char* id : {"hatchback", "truck"}) {
+        const auto* car = catalog.find(id);
+        if (!car) { check(false, std::string("vehicle ") + id); continue; }
+        for (const auto& road : roads) {
+            const float length = flat(road.start, road.end);
+            if (length < 8) continue;
+            const float yaw = std::atan2(road.end.x - road.start.x, road.end.z - road.start.z) * RAD2DEG;
+            const Vector3 dir{(road.end.x - road.start.x) / length, 0, (road.end.z - road.start.z) / length}, side{dir.z, 0, -dir.x};
+            const float lane = road.type == world::RoadType::Highway ? world::highways::median_half + 2.2F : road.width * .25F;
+            // ...and kerbside (a car's width in from the edge), where a stray box would catch a wing.
+            const float edge = std::max(lane, road.width * .5F - car->width * .5F - .4F);
+            for (float d = 4; d < length - 4; d += 2.5F)
+                for (const float o : {-lane, lane, -edge, edge}) {
+                    Vector3 p{road.start.x + dir.x * d + side.x * o, 0, road.start.z + dir.z * d + side.z * o};
+                    p.y = world::physics::WorldCollision::ground_height({p.x, 400, p.z}, 400, region);
+                    if (!vehicles.blocked(region, p, yaw, *car, 1)) continue;
+                    // Something solid (not just a steep pitch, which the grading answers for).
+                    bool solid = false;
+                    for (const float u : {-.5F, 0.0F, .5F}) for (const float v : {-.5F, 0.0F, .5F}) {
+                        const Vector3 q{p.x + side.x * u * car->width + dir.x * v * car->length, p.y, p.z + side.z * u * car->width + dir.z * v * car->length};
+                        solid |= world::physics::WorldCollision::vehicle_blocked(q, region, .2F);
+                    }
+                    if (!solid) continue;
+                    ++stuck;
+                    bool near = false;
+                    for (const auto& r : reported) near |= flat(r, p) < 25;
+                    if (near) continue;
+                    reported.push_back(p);
+                    std::cout << "  a " << id << " is stuck at " << p.x << "," << p.y << "," << p.z << " on a " << road.width << " m road (type "
+                              << static_cast<int>(road.type) << ", " << road.start.x << "," << road.start.z << " -> " << road.end.x << "," << road.end.z << ")\n";
+                }
+        }
+    }
+    check(stuck == 0, "a car is free to drive anywhere on the roads: " + std::to_string(stuck) + " stuck spots");
     check(islands == 0, "no island of road cut off from the rest: " + std::to_string(islands));
     std::cout << islands << " islands of road, " << gaps << " gaps, " << blocked << " obstacles\n";
     if (failures == 0) std::cout << "road audit passed\n";

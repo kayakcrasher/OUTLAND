@@ -315,6 +315,14 @@ bool Story::talk() {
     }
 }
 
+void Story::hush() {
+    if (stage_ != Stage::Free) return;
+    special_ = -1;
+    lines_.clear();
+    then_home_ = false;
+    line_ = -1;
+}
+
 bool Story::board() {
     if (stage_ != Stage::ToTruck) return false;
     set(Stage::Ride);

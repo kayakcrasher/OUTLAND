@@ -56,6 +56,11 @@ int main() {
         check(crew.gang == game::mafia::gang_of_zone(world::zones::zone_at(region.settlements()[static_cast<std::size_t>(crew.settlement)].center)),
               "each town's crew is its county's gang");
         check(crew.members.size() >= 3, "a crew of three or more");
+        // The Green Hand keep their bars and shops; the other gangs hole up in a plain house, tagged.
+        if (crew.gang != 0) {
+            check(crew.house && crew.kind == game::life::PlaceKind::Home, "a rival gang's crew in a plain house: " + crew.town);
+            check(Vector3Distance(crew.tag, crew.door) < 4 && std::abs(Vector3Length(crew.tag_normal) - 1) < .01F, "its tag on the wall by the door");
+        } else check(!crew.house, "the Green Hand keep the places they have always had");
         // Well away from the police: no hideout on a station's doorstep.
         float police = 1e9F;
         for (const auto& place : life.places())
