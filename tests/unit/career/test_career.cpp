@@ -273,15 +273,18 @@ int main() {
             g.released();
             check(g.state().respect > before, "did his time: respect");
         }
-        // A bystander caught in a gunfight with a gang: a reprimand, not the badge - unless it
-        // keeps happening.
+        // A bystander caught in a gunfight with a gang: crossfire, no crime - unless the dead pile
+        // up (murder).
         {
             Career s;
             s.join_police("police_2", why);
-            s.stray_round(false);
-            check(s.on_duty() && !s.state().record && s.strays() == 1, "a stray round: reprimanded, still on duty");
+            const float respect = s.state().respect;
+            for (int i = 0; i < 5; ++i) s.stray_round(false);
+            check(s.on_duty() && !s.state().record && s.strays() == 0 && s.state().respect == respect, "wounded in the crossfire: no crime");
+            for (int i = 1; i < Career::stray_limit; ++i) s.stray_round(true);
+            check(s.on_duty() && !s.state().record, "a death in the crossfire: still on duty");
             s.stray_round(true);
-            check(!s.on_duty() && s.state().record, "hurt bystanders again and again: the badge goes");
+            check(!s.on_duty() && s.state().record, "a trail of dead bystanders is murder: the badge goes");
         }
         // A cop can always go bad: a serious crime ends it, and leaves a record.
         c.crime(false);

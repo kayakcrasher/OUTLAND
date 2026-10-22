@@ -189,16 +189,15 @@ void Career::crime(bool serious) {
 
 void Career::stray_round(bool killed) {
     if (state_.side != Side::Police) return;
-    strays_ += killed ? 2 : 1;
-    if (strays_ >= stray_limit) {
+    if (!killed) { say("A bystander was hit in the crossfire"); return; }
+    // Crossfire is expected; a trail of dead bystanders is not: that is murder.
+    if (++strays_ >= stray_limit) {
         strays_ = 0;
         crime(true);
-        say("Too many bystanders hurt in your gunfights: the Policio takes your badge");
+        say("Too many bystanders dead by your gun: that's murder. The Policio takes your badge");
         return;
     }
-    state_.respect = std::max(0.0F, state_.respect - (killed ? 8.0F : 3.0F));
-    say(killed ? "A bystander died in the crossfire. The Chief will hear about it: -8 respect"
-               : "A bystander was hit in the crossfire. Watch your fire: -3 respect");
+    say("A bystander died in the crossfire");
 }
 
 void Career::chief_killed() {

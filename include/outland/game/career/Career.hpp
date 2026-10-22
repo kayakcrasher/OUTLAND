@@ -141,8 +141,8 @@ public:
     [[nodiscard]] int besieging() const { return state_.side == Side::Police && job_.kind == JobKind::CleanUp ? job_.crew : -1; }
     void crime(bool serious);
     static constexpr float notoriety_max = 100, notoriety_serious = 8, notoriety_minor = 3, notoriety_hit = 30;                        // a crime someone reported (assault, murder, attacking police)
-    // An officer in a gunfight with a gang hit a bystander: a reprimand and lost respect, not the
-    // badge - unless it keeps happening (`stray_limit` before a job is done) or someone died twice.
+    // An officer in a gunfight with a gang hit a bystander: crossfire, no crime. Only a trail of
+    // dead (`stray_limit` killed before the next job is done) is murder, and costs the badge.
     void stray_round(bool killed);
     static constexpr int stray_limit = 3;
     [[nodiscard]] int strays() const { return strays_; }
@@ -221,7 +221,7 @@ private:
     double next_offer_{0};
     int pay_{0};
     int custody_{0};
-    int strays_{0};                  // bystanders hit in crossfire since the last job done
+    int strays_{0};                  // bystanders killed in crossfire since the last job done
     bool jailed_{false};             // doing time: no work till released
     bool tipoff_{false}, demanded_{false};
     bool verda_clean_{false};

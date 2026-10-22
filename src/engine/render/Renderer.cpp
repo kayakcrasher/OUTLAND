@@ -4010,7 +4010,7 @@ void Renderer::run() {
                 }
             for(const auto& c:crimes) {
                 // An officer who hurts the public (or another officer) is off the force - but a
-                // bystander caught in a gunfight with a gang is a reprimand (game::career::Career::stray_round).
+                // bystander caught in a gunfight with a gang is crossfire, not a crime (game::career::Career::stray_round).
                 const bool harm=c.kind==game::law::CrimeKind::Assault || c.kind==game::law::CrimeKind::Murder;
                 if(harm && career.on_duty() && gang_business) {career.stray_round(c.kind==game::law::CrimeKind::Murder);continue;}
                 career.crime(harm || c.kind==game::law::CrimeKind::AttackOnPolice);
