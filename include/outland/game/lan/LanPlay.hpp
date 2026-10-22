@@ -3,6 +3,7 @@
 #include "outland/net/LanProtocol.hpp"
 #include <raylib.h>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -50,8 +51,9 @@ public:
     // Where each person who fired since last asked is, and with what (their gunfire, heard here).
     std::vector<std::pair<Vector3, std::uint8_t>> take_shots();
     [[nodiscard]] std::vector<ai::OtherPlayer> others() const;
-    // Names over the heads of the people in view.
-    void draw_names(const Camera3D& camera, int width, int height) const;
+    // Names over the heads of the people in view. Those `friendly` says are on the player's side
+    // show green, with how far, from any distance (through walls too).
+    void draw_names(const Camera3D& camera, int width, int height, const std::function<bool(std::uint8_t)>& friendly = {}) const;
 
     // Host: every bot and every car that moved since the last snapshot.
     net::BotSnapshot snapshot(const ai::BattleRoyaleBots& bots, const vehicles::VehicleSystem& cars, float elapsed);

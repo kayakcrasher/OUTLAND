@@ -67,16 +67,17 @@ void LanSession::stop() {
     match_ = 0;
 }
 
-void LanSession::set_lobby(std::uint8_t mode, std::uint8_t level) {
+void LanSession::set_lobby(std::uint8_t mode, std::uint8_t level, std::uint8_t sides) {
     if (role_ != Role::Host || in_match_) return;
     roster_.mode = mode;
     roster_.level = level;
+    roster_.sides = sides < sides_count ? sides : 0;
     broadcast_roster();
 }
 
 void LanSession::start_match(std::uint64_t seed) {
     if (role_ != Role::Host) return;
-    const Start start{roster_.mode, roster_.level, seed};
+    const Start start{roster_.mode, roster_.level, seed, roster_.sides};
     for (const auto& p : peers_) send_to(p.address, Msg::Start, encode(start), 0, p.slot);
     start_ = start;
     in_match_ = true;
@@ -130,7 +131,7 @@ void LanSession::poll(double now) {
         if (now >= next_beacon_) {
             next_beacon_ = now + beacon_every;
             const Beacon beacon{name_, roster_.mode, roster_.level, static_cast<std::uint8_t>(peers_.size() + 1), socket_.port(),
-                                !in_match_ && peers_.size() + 1 < max_players};
+                                !in_match_ && peers_.size() + 1 < max_players, roster_.sides};
             const auto bytes = pack({Msg::Beacon, 0, everyone, match_}, encode(beacon));
             socket_.send(Address::broadcast(discovery_port), bytes);
             if (announce_loopback) socket_.send(Address::loopback(discovery_port), bytes);

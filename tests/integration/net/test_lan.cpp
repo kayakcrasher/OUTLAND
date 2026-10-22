@@ -88,8 +88,21 @@ int main() {
           "everyone in the lobby");
     check(bee.slot() != cee.slot() && bee.slot() > 0 && cee.slot() > 0, "each client has its own slot");
     check(cee.name_of(bee.slot()) == "BEE" && bee.name_of(0) == "HOST", "names in the roster");
-    host.set_lobby(3, 2);
-    check(settle({&host, &bee, &cee}, [&] { return bee.roster().mode == 3 && cee.roster().level == 2; }), "the host's choice reaches the lobby");
+    host.set_lobby(3, 2, static_cast<std::uint8_t>(Sides::Teams));
+    check(settle({&host, &bee, &cee}, [&] { return bee.roster().mode == 3 && cee.roster().level == 2 && cee.roster().sides == 2; }),
+          "the host's choice (mode, bots, sides) reaches the lobby");
+    // Sides: everyone for themselves, one squad, or two teams (even slots against odd).
+    check(!same_side(Sides::Free, 1, 2) && same_side(Sides::Squad, 0, 5) && same_side(Sides::Teams, 0, 2) && !same_side(Sides::Teams, 1, 2),
+          "who is on whose side");
+    check(std::string(sides_name(Sides::Squad)) == "ONE SQUAD" && std::string(team_name(side_of(Sides::Teams, 3))) == "TEAM B", "the sides' names");
+    {
+        Beacon b{"H", 0, 1, 2, 4000, true, 1}, back;
+        check(decode(encode(b), back) && back.sides == 1, "a beacon carries the sides");
+        Start st{0, 1, 99, 2}, st_back;
+        check(decode(encode(st), st_back) && st_back.sides == 2 && st_back.seed == 99, "the start carries the sides");
+        Start bad{0, 1, 99, 7};
+        check(!decode(encode(bad), st_back), "no such sides");
+    }
 
     host.start_match(424242);
     const auto host_start = host.take_start();
@@ -98,8 +111,8 @@ int main() {
         if (!bee_start) bee_start = bee.take_start();
         if (!cee_start) cee_start = cee.take_start();
         return bee_start && cee_start; }), "the start reaches everyone");
-    check(host_start && bee_start && cee_start && host_start->seed == 424242 && bee_start->seed == 424242 && cee_start->mode == 3,
-          "one seed and one mode for all");
+    check(host_start && bee_start && cee_start && host_start->seed == 424242 && bee_start->seed == 424242 && cee_start->mode == 3 &&
+          cee_start->sides == 2, "one seed, one mode and one set of sides for all");
     check(host.in_match() && bee.in_match() && cee.in_match(), "everyone in the match");
 
     // Play: a state to everyone goes through the host to the other client; a hit only to its target.

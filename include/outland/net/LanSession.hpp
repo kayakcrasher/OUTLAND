@@ -52,8 +52,8 @@ public:
     // Receive and route everything waiting; beacons, pings, timeouts. Call every frame.
     void poll(double now);
 
-    // The host's lobby.
-    void set_lobby(std::uint8_t mode, std::uint8_t level);
+    // The host's lobby: the mode, the bots and who plays on whose side (net::Sides).
+    void set_lobby(std::uint8_t mode, std::uint8_t level, std::uint8_t sides = 0);
     // The host starts the match: everyone (the host too) gets it from take_start().
     void start_match(std::uint64_t seed);
     std::optional<Start> take_start() { auto s = start_; start_.reset(); return s; }

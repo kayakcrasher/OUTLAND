@@ -5,12 +5,13 @@
 #include <unordered_set>
 
 // LAN PLAY from the home screen: host a game or join one found on the network, then the lobby,
-// where the host picks the mode and the bots and starts the match for everyone.
+// where the host picks the mode, the bots and the sides (everyone for themselves, one squad, two
+// teams) and starts the match for everyone.
 namespace outland::game {
 
 class LanScreen {
 public:
-    enum class Kind { None, Back, Host, Join, CycleMode, CycleLevel, Start, Leave };
+    enum class Kind { None, Back, Host, Join, CycleMode, CycleLevel, CycleSides, Start, Leave };
     struct Action { Kind kind{Kind::None}; int index{-1}; };
     static constexpr int listed = 5;   // games shown at once
 
@@ -22,6 +23,7 @@ public:
     static Rectangle back_button(int width, int height);
     static Rectangle mode_button(int width, int height);
     static Rectangle level_button(int width, int height);
+    static Rectangle sides_button(int width, int height);
     static Rectangle start_button(int width, int height);
 
 private:

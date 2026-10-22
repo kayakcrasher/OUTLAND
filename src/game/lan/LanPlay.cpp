@@ -122,19 +122,24 @@ void LanPlay::update(float dt, characters::NpcSystem& npcs, const characters::Ch
     }
 }
 
-void LanPlay::draw_names(const Camera3D& camera, int width, int height) const {
+void LanPlay::draw_names(const Camera3D& camera, int width, int height, const std::function<bool(std::uint8_t)>& friendly) const {
     const Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
     for (const auto& r : remotes_) {
-        if (!r.known || (r.state.flags & net::StateDriving)) continue;
+        const bool ours = friendly && friendly(r.slot);
+        if (!r.known || ((r.state.flags & net::StateDriving) && !ours)) continue;
         const Vector3 head{r.shown.x, r.shown.y + 2.15F, r.shown.z};
         const Vector3 to = Vector3Subtract(head, camera.position);
         const float distance = Vector3Length(to);
-        if (distance > 180 || Vector3DotProduct(to, forward) <= 0) continue;
+        if ((distance > 180 && !ours) || Vector3DotProduct(to, forward) <= 0) continue;
         const Vector2 at = GetWorldToScreenEx(head, camera, width, height);
-        const int size = std::clamp(static_cast<int>(22 - distance * .06F), 11, 20);
-        const char* text = r.name.c_str();
+        const int size = std::clamp(static_cast<int>(22 - distance * .06F), ours ? 13 : 11, 20);
+        const std::string label = ours && distance > 25 ? r.name + "  " + std::to_string(static_cast<int>(distance)) + " m" : r.name;
+        const char* text = label.c_str();
         const int w = MeasureText(text, size);
-        const Color ink = (r.state.flags & net::StateAlive) ? Color{120, 220, 255, 235} : Color{200, 200, 200, 160};
+        const bool alive = r.state.flags & net::StateAlive;
+        const Color ink = !alive ? Color{200, 200, 200, 160} : ours ? Color{120, 235, 140, 245} : Color{120, 220, 255, 235};
+        if (ours && alive) DrawTriangle({at.x, at.y + static_cast<float>(size) + 9}, {at.x + 6, at.y + static_cast<float>(size) + 1},
+                                        {at.x - 6, at.y + static_cast<float>(size) + 1}, ink);
         DrawText(text, static_cast<int>(at.x) - w / 2 + 1, static_cast<int>(at.y) + 1, size, Fade(BLACK, .6F));
         DrawText(text, static_cast<int>(at.x) - w / 2, static_cast<int>(at.y), size, ink);
     }

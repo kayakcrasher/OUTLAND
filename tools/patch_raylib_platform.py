@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Narrow raylib 6.0 fixes: active Web contacts and correct Android ES3 context."""
+"""Narrow raylib 6.0 fixes: active Web contacts, a sharp HiDPI Web canvas and correct Android ES3 context."""
 from pathlib import Path
 import sys
 
@@ -42,8 +42,58 @@ def patch_web(root):
 
 ''' +source[end:]
     path.write_text(remove_old_release(source))
+HIDPI_MARKER='// OUTLAND: sharp on HiDPI screens'
+HIDPI_OLD='''    emscripten_set_canvas_element_size(platform.canvasId, width, height);
+
+    SetupViewport(width, height); // Reset viewport and projection matrix for new size
+
+    CORE.Window.currentFbo.width = width;
+    CORE.Window.currentFbo.height = height;
+    CORE.Window.resizedLastFrame = true;
+
+    if (IsWindowFullscreen()) return 1;
+
+    // Set current screen size
+    CORE.Window.screen.width = width;
+    CORE.Window.screen.height = height;
+
+    glfwSetWindowSize(platform.handle, CORE.Window.screen.width, CORE.Window.screen.height);
+'''
+HIDPI_NEW='''    // OUTLAND: sharp on HiDPI screens - the canvas holds devicePixelRatio (at most 2, and at most
+    // 2560x1440 pixels) times its CSS size; the game draws in CSS pixels (the screen size) and
+    // raylib scales that up to the canvas (screenScale), so the HUD keeps its size and gets sharper.
+    glfwSetWindowSize(platform.handle, width, height);
+    double ratio = EM_ASM_DOUBLE( { return window.devicePixelRatio || 1; } );
+    if (ratio > 2.0) ratio = 2.0;
+    const double budget = 2560.0*1440.0;
+    if ((double)width*(double)height*ratio*ratio > budget) ratio = sqrt(budget/((double)width*(double)height));
+    if (ratio < 1.0) ratio = 1.0;
+    const int fbWidth = (int)(width*ratio + 0.5), fbHeight = (int)(height*ratio + 0.5);
+    emscripten_set_canvas_element_size(platform.canvasId, fbWidth, fbHeight);
+
+    SetupViewport(fbWidth, fbHeight); // Reset viewport and projection matrix for new size
+
+    CORE.Window.currentFbo.width = fbWidth;
+    CORE.Window.currentFbo.height = fbHeight;
+    CORE.Window.resizedLastFrame = true;
+
+    // Set current screen size
+    CORE.Window.screen.width = width;
+    CORE.Window.screen.height = height;
+    CORE.Window.screenScale = MatrixScale((float)fbWidth/(float)width, (float)fbHeight/(float)height, 1.0f);
+
+    if (IsWindowFullscreen()) return 1;
+'''
+def patch_web_hidpi(root):
+    path=Path(root)/'src/platforms/rcore_web.c'
+    source=path.read_text()
+    if HIDPI_MARKER in source:return
+    if source.count(HIDPI_OLD)!=1:raise ValueError('Unexpected raylib web resize callback')
+    path.write_text(source.replace(HIDPI_OLD,HIDPI_NEW))
 def patch(root, platform='web'):
-    if platform.lower()=='web':return patch_web(root)
+    if platform.lower()=='web':
+        patch_web(root)
+        return patch_web_hidpi(root)
     if platform.lower()!='android':raise ValueError('Unsupported platform')
     path=Path(root)/'src/platforms/rcore_android.c'
     source=path.read_text()

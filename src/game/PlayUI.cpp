@@ -73,8 +73,9 @@ ShopAction PlayUI::shop_input(const economy::Economy& economy,const economy::Sho
 }
 int PlayUI::draw_objective(const ModeSession& session,int width) {
     constexpr int font=16,top=108,line_height=20;
-    // Explore needs no standing banner (it only cluttered the screen); the space it took closes up.
-    if(session.mode()==GameMode::Explore) return top-8;
+    // Explore and Battle Royale need no standing banner (it only cluttered the screen - "be the
+    // last survivor" goes without saying); the space it took closes up.
+    if(session.mode()==GameMode::Explore || session.mode()==GameMode::BattleRoyale) return top-8;
     std::istringstream words(session.objective());std::string word,line;std::vector<std::string> lines;
     while(words>>word) {
         const auto candidate=line.empty() ? word : line+" "+word;
@@ -90,7 +91,7 @@ int PlayUI::draw_objective(const ModeSession& session,int width) {
 }
 void PlayUI::draw_result(const ModeSession& session,int w,int h) const {
     DrawRectangle(0,0,w,h,Fade(BLACK,.87F));
-    const char* title=session.phase()==SessionPhase::Won ? "YOU WIN - LAST SURVIVOR" : "YOU DIED";
+    const char* title=session.phase()==SessionPhase::Won ? (session.squad_won() ? "YOUR SIDE WINS" : "YOU WIN - LAST SURVIVOR") : "YOU DIED";
     const int font=std::max(14,static_cast<int>(30*scale(w,h)));
     DrawText(title,w/2-MeasureText(title,font)/2,h/2-80,font,session.phase()==SessionPhase::Won ? GOLD : RED);
     if(session.mode()==GameMode::BattleRoyale) {

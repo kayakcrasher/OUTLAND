@@ -9,7 +9,7 @@
 namespace outland::net {
 
 inline constexpr std::uint32_t magic = 0x4E414C4FU;   // "OLAN"
-inline constexpr std::uint8_t version = 2;   // 2: rockets
+inline constexpr std::uint8_t version = 3;   // 2: rockets; 3: sides
 inline constexpr std::uint16_t discovery_port = 47821;
 inline constexpr int max_players = 8;
 inline constexpr std::uint8_t everyone = 255;
@@ -64,10 +64,22 @@ std::vector<std::uint8_t> pack(const Header& header, const std::vector<std::uint
 bool unpack(const std::vector<std::uint8_t>& datagram, Header& header, std::size_t& payload_at);
 
 // ---------------------------------------------------------------- lobby
-struct Beacon { std::string host; std::uint8_t mode{0}, level{1}, players{1}; std::uint16_t port{0}; bool open{true}; };
+// Who plays with whom: everyone for themselves, every person on one side (a squad against the
+// bots), or two teams (even slots against odd: the host's team and the other). People on the same
+// side can't hurt each other, see each other everywhere, and win (or lose) together.
+enum class Sides : std::uint8_t { Free = 0, Squad = 1, Teams = 2 };
+inline constexpr std::uint8_t sides_count = 3;
+inline std::uint8_t side_of(Sides sides, std::uint8_t slot) {
+    return sides == Sides::Squad ? 0 : sides == Sides::Teams ? static_cast<std::uint8_t>(slot % 2) : slot;
+}
+inline bool same_side(Sides sides, std::uint8_t a, std::uint8_t b) { return side_of(sides, a) == side_of(sides, b); }
+const char* sides_name(Sides sides);
+const char* team_name(std::uint8_t team);   // "TEAM A" (even slots), "TEAM B"
+
+struct Beacon { std::string host; std::uint8_t mode{0}, level{1}, players{1}; std::uint16_t port{0}; bool open{true}; std::uint8_t sides{0}; };
 struct RosterEntry { std::uint8_t slot{0}; std::string name; };
-struct Roster { std::uint8_t mode{0}, level{1}; std::vector<RosterEntry> players; };
-struct Start { std::uint8_t mode{0}, level{1}; std::uint64_t seed{0}; };
+struct Roster { std::uint8_t mode{0}, level{1}; std::vector<RosterEntry> players; std::uint8_t sides{0}; };
+struct Start { std::uint8_t mode{0}, level{1}; std::uint64_t seed{0}; std::uint8_t sides{0}; };
 
 // ---------------------------------------------------------------- play
 // A player as everyone else sees them, sent ~20 times a second.

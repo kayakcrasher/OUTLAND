@@ -10,8 +10,9 @@ class WebContacts(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary);(root/'src/platforms').mkdir(parents=True)
             source=root/'src/platforms/rcore_web.c'
-            source.write_text('// Emscripten: Called on touch input events\nstatic EM_BOOL EmscriptenTouchCallback(int eventType) {\n    // Register touch points count\n    // upstream replaced body\n    // Update mouse position when single touch detected\n    if (eventType == EMSCRIPTEN_EVENT_TOUCHEND)\n    {\n        // Identify the EMSCRIPTEN_EVENT_TOUCHEND\n        CORE.Input.Touch.pointCount--;\n    }\n    return 1; // The event was consumed by the callback handler\n}\n')
+            source.write_text('// Emscripten: Called on touch input events\nstatic EM_BOOL EmscriptenTouchCallback(int eventType) {\n    // Register touch points count\n    // upstream replaced body\n    // Update mouse position when single touch detected\n    if (eventType == EMSCRIPTEN_EVENT_TOUCHEND)\n    {\n        // Identify the EMSCRIPTEN_EVENT_TOUCHEND\n        CORE.Input.Touch.pointCount--;\n    }\n    return 1; // The event was consumed by the callback handler\n}\n'+patch.HIDPI_OLD)
             patch.patch(root);first=source.read_text();self.assertNotIn('// Identify the EMSCRIPTEN_EVENT_TOUCHEND',first);patch.patch(root);self.assertEqual(first,source.read_text())
+            self.assertIn(patch.HIDPI_MARKER,first);self.assertNotIn(patch.HIDPI_OLD,first)
             body=first[first.index('    // OUTLAND:'):first.index('    // Update mouse')]
             harness='''#include <assert.h>
 #define MAX_TOUCH_POINTS 8

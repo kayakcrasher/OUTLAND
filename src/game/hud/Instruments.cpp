@@ -23,7 +23,10 @@ void draw_compass(float heading, int screen_width, int top, int width) {
     const float pixels = width / span;
     const int height = 26;
     DrawRectangle(static_cast<int>(centre - half), top, width, height, Fade(BLACK, .45F));
-    BeginScissorMode(static_cast<int>(centre - half), top, width, height);
+    // The scissor is in device pixels (a HiDPI browser canvas holds more than the screen's size).
+    const float device = GetScreenWidth() > 0 ? static_cast<float>(GetRenderWidth()) / static_cast<float>(GetScreenWidth()) : 1.0F;
+    BeginScissorMode(static_cast<int>((centre - half) * device), static_cast<int>(static_cast<float>(top) * device),
+                     static_cast<int>(static_cast<float>(width) * device), static_cast<int>(static_cast<float>(height) * device));
     const int first = static_cast<int>(std::floor((heading - span / 2) / 5)) * 5;
     for (int mark = first; mark <= heading + span / 2 + 5; mark += 5) {
         const float x = centre + (static_cast<float>(mark) - heading) * pixels;

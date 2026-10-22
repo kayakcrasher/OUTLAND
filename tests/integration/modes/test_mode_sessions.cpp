@@ -62,6 +62,27 @@ int main() {
         session.start(GameMode::BattleRoyale,1,level);session.update(.25F,{3000,0,0},health,bots,false);
         assert(session.phase()==SessionPhase::Dead && session.result().placement==2);
     }
+    // LAN sides: out with a teammate still up, the side fights on; the last rival down, the side wins.
+    {
+        ai::BattleRoyaleBots bots;Health health;ModeSession side;
+        bots.add_bot({},combat::WeaponId::Rifle,ai::BotLevel::Easy,1);
+        side.start(GameMode::BattleRoyale,1,ai::BotLevel::Easy);
+        side.set_lan(1,false,1);   // one rival person, the bots mirrored, one teammate up
+        health.damage(health.maximum()+1);
+        side.update(.1F,{},health,bots,false);
+        assert(side.phase()==SessionPhase::Dead && side.squad_fighting() && !side.squad_won());
+        side.set_lan(0,false,1);side.update(.1F,{},health,bots,false);
+        assert(side.phase()==SessionPhase::Dead && side.squad_fighting());   // a bot still stands
+        assert(bots.damage_bot(bots.bots().front().id(),1000,{},0));
+        side.update(.1F,{},health,bots,false);
+        assert(side.phase()==SessionPhase::Won && side.squad_won() && side.result().placement==1);
+        // Every teammate down too: the side is out, nothing more to wait for.
+        ai::BattleRoyaleBots more;Health h2;ModeSession lost;
+        more.add_bot({},combat::WeaponId::Rifle,ai::BotLevel::Easy,1);
+        lost.start(GameMode::BattleRoyale,1,ai::BotLevel::Easy);lost.set_lan(1,false,0);
+        h2.damage(h2.maximum()+1);lost.update(.1F,{},h2,more,false);
+        assert(lost.phase()==SessionPhase::Dead && !lost.squad_fighting());
+    }
     // Explore remains open-ended even without enemies and has a sensible public spawn.
     ModeSession explore;ai::BattleRoyaleBots none;Health health;
     explore.start(GameMode::Explore,0,ai::BotLevel::Medium);

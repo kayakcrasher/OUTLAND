@@ -1175,6 +1175,14 @@ void Renderer::run() {
     game::combat::WeaponSystem weapons;
     game::combat::CombatWorld combat_world(verda_region);
     game::Health player_health{game::player_max_health};
+    // LAN sides (net::Sides, picked in the lobby): who is on the player's side, how many of each
+    // still stand, and - out of it with the side fighting on - whose shoulder the camera follows.
+    net::Sides lan_sides=net::Sides::Free;
+    const auto teammate=[&](std::uint8_t slot){return lan_match && lan_sides!=net::Sides::Free && net::same_side(lan_sides,lan.slot(),slot);};
+    const auto teammates_alive=[&]{int n=0;for(const auto& r:lan_play.remotes()) n+=r.known && (r.state.flags&net::StateAlive) && teammate(r.slot);return n;};
+    const auto side_alive=[&]{return teammates_alive()+(player_health.alive() ? 1 : 0);};
+    const auto enemies_alive=[&]{int n=0;for(const auto& r:lan_play.remotes()) n+=r.known && (r.state.flags&net::StateAlive) && !teammate(r.slot);return n;};
+    int spectate_slot=-1;
     // ---- The campaign's story: where Uncle Ron, his truck and the player stand, and saving it.
     const auto floor_at=[&](Vector3 at) {
         const float top=std::max(at.y,world::terrain::TerrainHeight::sample(at.x,at.z))+1.5F;
@@ -1370,6 +1378,8 @@ void Renderer::run() {
             return true;
         }
         if(lan_match && game::lan::LanPlay::is_remote_body(body.bot)) {
+            // Someone on the player's side: no friendly fire.
+            if(teammate(game::lan::LanPlay::slot_of(body.bot))) return false;
             // Another player: the hit is theirs to take, and their death theirs to tell.
             if(lan.in_match()) lan.send(net::Msg::Hit,net::Hit{static_cast<std::int32_t>(lan.slot()),damage,attacker,static_cast<std::uint8_t>(weapons.selected())},
                                         game::lan::LanPlay::slot_of(body.bot));
@@ -1577,10 +1587,11 @@ void Renderer::run() {
                     const auto mode=static_cast<game::GameMode>(lobby.mode);
                     const auto next=mode==game::GameMode::BattleRoyale ? game::GameMode::ZombieSurvival :
                                     mode==game::GameMode::ZombieSurvival ? game::GameMode::Explore : game::GameMode::BattleRoyale;
-                    lan.set_lobby(static_cast<std::uint8_t>(next),lobby.level);
+                    lan.set_lobby(static_cast<std::uint8_t>(next),lobby.level,lobby.sides);
                     break;
                 }
-                case Kind::CycleLevel: lan.set_lobby(lobby.mode,static_cast<std::uint8_t>((lobby.level+1)%3));break;
+                case Kind::CycleLevel: lan.set_lobby(lobby.mode,static_cast<std::uint8_t>((lobby.level+1)%3),lobby.sides);break;
+                case Kind::CycleSides: lan.set_lobby(lobby.mode,lobby.level,static_cast<std::uint8_t>((lobby.sides+1)%net::sides_count));break;
                 case Kind::Start: lan.start_match((static_cast<std::uint64_t>(std::random_device{}())<<20)+static_cast<std::uint64_t>(GetTime()*1000.0)+1);break;
                 default: break;
                 }
@@ -1612,7 +1623,7 @@ void Renderer::run() {
             }
             queued_mode=game::GameMode::Home;
             if(lan_start) {
-                lan_match=true;lan_seed=lan_start->seed;
+                lan_match=true;lan_seed=lan_start->seed;lan_sides=static_cast<net::Sides>(lan_start->sides);spectate_slot=-1;
                 home_screen.set_bot_level(static_cast<game::ai::BotLevel>(std::min<int>(lan_start->level,2)));
                 selected=static_cast<game::GameMode>(lan_start->mode);
                 if(selected!=game::GameMode::ZombieSurvival && selected!=game::GameMode::Explore) selected=game::GameMode::BattleRoyale;
@@ -2430,7 +2441,17 @@ void Renderer::run() {
         } else pause_menu.update(settings,screen_width,screen_height,false,GetFrameTime(),can_quit_game);
 
         if(mode_session.terminal()) {
-            const auto action=play_ui.result_input(screen_width,screen_height,IsWindowFocused());
+            // Out, with the side fighting on: watch them (TAB or a tap for the next); H goes home.
+            auto action=game::ResultAction::None;
+            if(mode_session.squad_fighting()) {
+                std::vector<std::uint8_t> watchable;
+                for(const auto& r:lan_play.remotes()) if(r.known && (r.state.flags&net::StateAlive) && teammate(r.slot)) watchable.push_back(r.slot);
+                const bool next=IsWindowFocused() && (IsKeyPressed(KEY_TAB) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT));
+                const auto current=std::find(watchable.begin(),watchable.end(),static_cast<std::uint8_t>(std::max(0,spectate_slot)));
+                if(!watchable.empty() && (current==watchable.end() || spectate_slot<0)) spectate_slot=watchable.front();
+                else if(next && !watchable.empty()) spectate_slot=*(current+1==watchable.end() ? watchable.begin() : current+1);
+                if(IsWindowFocused() && IsKeyPressed(KEY_H)) action=game::ResultAction::Home;
+            } else action=play_ui.result_input(screen_width,screen_height,IsWindowFocused());
             if(action!=game::ResultAction::None) {
                 if(!loot_session.save(weapons) && loot_session.can_persist()) {
                     interaction_message=loot_session.status();interaction_remaining=3;
@@ -4199,7 +4220,8 @@ void Renderer::run() {
             const float near=Vector3Distance(core,chest);
             haptics.explosion(near);
             combat_feedback.blast(std::clamp(1-near/45,0.0F,1.0F)*.6F);
-            if(!driving && near<reach && open(chest)) {
+            const bool friendly=blast_index<grenades.exploded_friendly().size() && grenades.exploded_friendly()[blast_index];
+            if(!driving && !friendly && near<reach && open(chest)) {
                 hurt_player(game::combat::Grenades::damage_at(near,rocket));
                 hurt_from=blast;hurt_directional=true;
             }
@@ -4521,7 +4543,8 @@ void Renderer::run() {
                 }
                 case net::Msg::Hit: {
                     net::Hit hit;
-                    if(net::decode(message.payload,hit) && player_health.alive() && !mode_session.terminal()) {
+                    if(net::decode(message.payload,hit) && player_health.alive() && !mode_session.terminal() &&
+                       !(hit.attacker>=0 && teammate(static_cast<std::uint8_t>(hit.attacker)))) {
                         hurt_player(hit.amount);hurt_from=hit.from;hurt_directional=true;lan_last_attacker=hit.attacker;
                     }
                     break;
@@ -4581,8 +4604,8 @@ void Renderer::run() {
                 case net::Msg::Grenade: {
                     net::Grenade grenade;
                     if(!net::decode(message.payload,grenade)) break;
-                    if(grenade.rocket) grenades.launch_rocket(grenade.origin,grenade.velocity,true);
-                    else grenades.spawn_remote(grenade.origin,grenade.velocity);
+                    if(grenade.rocket) grenades.launch_rocket(grenade.origin,grenade.velocity,true,teammate(from));
+                    else grenades.spawn_remote(grenade.origin,grenade.velocity,teammate(from));
                     break;
                 }
                 case net::Msg::Leave: {
@@ -5059,7 +5082,7 @@ void Renderer::run() {
             // Riding and falling are out of the gas's reach (the line starts out over the sea).
             const bool in_drop=dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed;
             const Vector3 zone_feet=in_drop ? Vector3{mode_session.center().x,0,mode_session.center().y} : feet;
-            if(lan_royale) mode_session.set_lan(lan_play.alive(),!bots_mirrored);
+            if(lan_royale) mode_session.set_lan(enemies_alive(),!bots_mirrored,teammates_alive());
             mode_session.update(dt,zone_feet,player_health,br_bots,vehicle_paused);
             if(game_mode==game::GameMode::BattleRoyale) {
                 br_bots.sync_bodies(npcs,&character_registry);
@@ -5255,8 +5278,10 @@ void Renderer::run() {
         // The scale follows the frame rate unless OUTLAND_RENDER_SCALE fixes it.
         render_scale.update(GetFrameTime(),last_submit_seconds);
         world_draw_stats().models=world_draw_stats().meshes=0;
-        const int scene_width=std::max(64,static_cast<int>(screen_width*render_scale.scale()));
-        const int scene_height=std::max(64,static_cast<int>(screen_height*render_scale.scale()));
+        // (In device pixels: on a HiDPI browser screen the canvas holds more pixels than the screen's
+        // CSS size the HUD is laid out in.)
+        const int scene_width=std::max(64,static_cast<int>(static_cast<float>(GetRenderWidth())*render_scale.scale()));
+        const int scene_height=std::max(64,static_cast<int>(static_cast<float>(GetRenderHeight())*render_scale.scale()));
         if(scene_target.id==0 || scene_target.texture.width!=scene_width || scene_target.texture.height!=scene_height) {
             if(scene_target.id!=0) UnloadRenderTexture(scene_target);
     static_world.invalidate();
@@ -5267,6 +5292,15 @@ void Renderer::run() {
             const Vector3 shake=combat_feedback.shake();
             camera.position=Vector3Add(camera.position,shake);camera.target=Vector3Add(camera.target,shake);
         }
+        // Out of a LAN match with the side fighting on: over a teammate's shoulder.
+        if(mode_session.squad_fighting())
+            if(const auto* who=lan_play.find(static_cast<std::uint8_t>(std::max(0,spectate_slot)));who && who->known) {
+                const float yaw=who->shown_yaw*DEG2RAD;   // their look (degrees)
+                const Vector3 back{-std::sin(yaw),0,-std::cos(yaw)};
+                const Vector3 look{who->shown.x,who->shown.y+1.6F,who->shown.z};
+                camera.position=Vector3Add(look,Vector3Add(Vector3Scale(back,5.5F),{0,1.8F,0}));
+                camera.target=look;
+            }
         // The warden's tour: the camera glides from one view of the prison to the next.
         if(prison_tour.line>=0) {
             Vector3 eye{},look{};
@@ -5984,7 +6018,7 @@ void Renderer::run() {
             }
         }
         if(lan_match) {
-            lan_play.draw_names(camera,screen_width,screen_height);
+            lan_play.draw_names(camera,screen_width,screen_height,[&](std::uint8_t slot){return teammate(slot);});
             if(game_mode!=game::GameMode::BattleRoyale) {
                 const char* people=TextFormat("LAN - %d PLAYERS",1+static_cast<int>(lan_play.remotes().size()));
                 DrawText(people,screen_width/2-MeasureText(people,18)/2,16,18,Color{120,220,255,235});
@@ -6008,12 +6042,20 @@ void Renderer::run() {
 
             if (br_bots.active() && game_mode==game::GameMode::BattleRoyale) {
                 const int alive=br_bots.alive_bots()+(player_health.alive() ? 1 : 0)+(lan_match ? lan_play.alive() : 0);
-                const char* status=TextFormat("ALIVE %d   KILLS %d   BOTS %s%s",alive,br_bots.player_kills(),game::ai::bot_level_name(br_bots.level()),
-                                              lan_match ? TextFormat("   LAN %d",1+static_cast<int>(lan_play.remotes().size())) : "");
-                DrawText(status,screen_width/2-MeasureText(status,20)/2,16,20,RAYWHITE);
+                // The match in a corner (top left, clear of the compass and the health bar): who is
+                // left and your kills - and, playing as a side, how many of your side still stand.
+                const char* status=TextFormat("ALIVE %d  ·  KILLS %d%s",alive,br_bots.player_kills(),
+                                              lan_match && lan_sides!=net::Sides::Free ? TextFormat("  ·  %s %d",lan_sides==net::Sides::Squad ? "SQUAD" : "TEAM",side_alive()) :
+                                              lan_match ? TextFormat("  ·  LAN %d",1+static_cast<int>(lan_play.remotes().size())) : "");
+                const int sw=MeasureText(status,18);
+                DrawRectangle(10,8,sw+16,26,Fade(BLACK,.45F));
+                DrawText(status,18,12,18,RAYWHITE);
+                // Kill feed down the right, under the MAP and MENU buttons, small.
                 int line=0;
-                // Kill feed under the match status, clear of the HUD labels and touch buttons.
-                for(const auto& entry:br_bots.feed()) DrawText(entry.c_str(),screen_width/2-MeasureText(entry.c_str(),16)/2,44+20*line++,16,Color{235,215,180,255});
+                for(const auto& entry:br_bots.feed()) {
+                    const int fw=MeasureText(entry.c_str(),14);
+                    DrawText(entry.c_str(),screen_width-fw-16,118+18*line++,14,Color{235,215,180,230});
+                }
             }
         }
         bool asset_drawer_open = false;
@@ -6787,7 +6829,17 @@ void Renderer::run() {
             DrawTextEx(font,store_prompt.c_str(),{screen_width/2-width/2,static_cast<float>(screen_height-129)},size,1,YELLOW);
         }
         if(shop_open && current_shop) play_ui.draw_shop(economy,*current_shop,loot_session.economy(),item_registry,loot_session.inventory(),shop_status,screen_width,screen_height);
-        if(mode_session.terminal()) play_ui.draw_result(mode_session,screen_width,screen_height);
+        // Out, with the side fighting on: follow them (the result comes when the side wins or falls).
+        if(mode_session.squad_fighting()) {
+            const auto* who=lan_play.find(static_cast<std::uint8_t>(std::max(0,spectate_slot)));
+            const std::string line=TextFormat("YOU'RE OUT  ·  YOUR %s FIGHTS ON  ·  WATCHING %s",lan_sides==net::Sides::Squad ? "SQUAD" : "TEAM",
+                                              who ? who->name.c_str() : "-");
+            const char* keys=touch_ui ? "TAP TO WATCH THE NEXT  ·  HOME / H" : "TAB: WATCH THE NEXT  ·  H: HOME";
+            const int lw=MeasureText(line.c_str(),22),kw=MeasureText(keys,16);
+            DrawRectangle(screen_width/2-lw/2-16,screen_height-128,lw+32,64,Fade(BLACK,.6F));
+            DrawText(line.c_str(),screen_width/2-lw/2,screen_height-120,22,Color{120,230,140,255});
+            DrawText(keys,screen_width/2-kw/2,screen_height-90,16,LIGHTGRAY);
+        } else if(mode_session.terminal()) play_ui.draw_result(mode_session,screen_width,screen_height);
         // Outside the circle: red at the edges of the screen, pulsing, and the way back.
         if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal() && player_health.alive()) {
             const float outside=mode_session.distance(loot_feet)-mode_session.radius();
@@ -7031,6 +7083,10 @@ void Renderer::run() {
                 const float out=std::hypot(me.x-centre.x,me.z-centre.y)-radius;
                 if(out>-15) compass_marks.push_back({{centre.x,0,centre.y},Glyph::Zone,Color{120,190,255,255},"SAFE ZONE",true});
             }
+            // The player's side (LAN): each teammate on the strip, by name.
+            for(const auto& r:lan_play.remotes())
+                if(r.known && (r.state.flags&net::StateAlive) && teammate(r.slot) && flat(r.shown)>6)
+                    compass_marks.push_back({r.shown,Glyph::Objective,Color{120,235,140,255},r.name,false});
             if(game::rules_for(game_mode).civilian_life) {
                 // The nearest of each, if close enough to matter.
                 const auto nearest=[&](Glyph glyph,Color colour,const std::string& label,float range,auto&& points) {
@@ -7141,7 +7197,7 @@ void Renderer::run() {
             if(skydiver.stage()==DiveStage::Aboard) {
                 const auto& ride=drop_fleet[static_cast<std::size_t>(drop_ride)];
                 const int jumpers=static_cast<int>(std::count_if(bot_jumps.begin(),bot_jumps.end(),[&](const auto& j){return j.helicopter==drop_ride && drop_clock<j.jump_time;}))+1;
-                centred(TextFormat("HELICOPTER %d OF %d: %s  |  %d ABOARD",drop_ride+1,static_cast<int>(drop_fleet.size()),game::aircraft::heading_name(ride.heading),jumpers),112,18,Color{255,220,120,255});
+                centred(TextFormat("HELICOPTER %d OF %d: %s  |  %d ABOARD",drop_ride+1,static_cast<int>(drop_fleet.size()),game::aircraft::heading_name(ride.heading),jumpers),140,18,Color{255,220,120,255});
                 centred(touch_ui ? "TAP JUMP TO LEAVE THE HELICOPTER" : "SPACE: JUMP   |   M: MAP (the bright line is your route)",base,24,RAYWHITE);
                 if(drop_clock<switch_window && drop_fleet.size()>1)
                     centred(TextFormat(touch_ui ? "TAP LOAD TO SWITCH HELICOPTER (%d s)" : "R: SWITCH HELICOPTER (%d s)",static_cast<int>(std::ceil(switch_window-drop_clock))),base+40,20,Color{170,220,255,255});

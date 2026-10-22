@@ -36,9 +36,13 @@ public:
     // when `on_land` says so). Without it the circles all close on the capital.
     void plan_circles(std::uint64_t seed, const std::function<bool(float x, float z)>& on_land = {});
     void update(float dt, Vector3 feet, Health&, ai::BattleRoyaleBots&, bool paused);
-    // A LAN match: how many other people are still alive (the last one standing wins), and whether
-    // the bots are run here (the host) or only mirrored (a client: the zone does not hurt them here).
-    void set_lan(int others_alive, bool run_bots) { others_alive_ = others_alive; run_bots_ = run_bots; }
+    // A LAN match: how many other people still alive are against the player (the last side standing
+    // wins), whether the bots are run here (the host) or only mirrored (a client: the zone does not
+    // hurt them here), and how many of the player's own side are still up (playing as a side).
+    void set_lan(int others_alive, bool run_bots, int team_alive = 0) { others_alive_ = others_alive; run_bots_ = run_bots; team_alive_ = team_alive; }
+    // Out, but the player's side fights on (the game can follow them); and the side won without them.
+    bool squad_fighting() const { return phase_ == SessionPhase::Dead && mode_ == GameMode::BattleRoyale && team_alive_ > 0; }
+    bool squad_won() const { return squad_won_; }
     void add_participants(int people) { result_.participants += people; }
     GameMode mode() const { return mode_; }
     SessionPhase phase() const { return phase_; }
@@ -56,7 +60,8 @@ public:
     CircleRules circle;
 private:
     GameMode mode_{GameMode::Home}; SessionPhase phase_{SessionPhase::Playing};
-    MatchResult result_{}; int others_alive_{0};
+    MatchResult result_{}; int others_alive_{0}, team_alive_{0};
+    bool squad_won_{false};
     bool run_bots_{true};
     float elapsed_{0};
     std::vector<Vector2> centers_; // centers_[k]: where phase k's circle closes

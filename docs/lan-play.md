@@ -9,6 +9,7 @@ It works on desktop and Android. The browser build has no LAN: a web page cannot
 - Everyone else sees it under **GAMES ON THIS NETWORK** and taps it to join. A lobby holds 8 people.
 - In the lobby the host picks:
   - **MODE**: Battle Royale, Zombie Survival or Explore.
+  - **SIDES**: everyone for themselves, **one squad** (every person on one side, against the bots), or **two teams** (even slots - the host's team, TEAM A - against odd, TEAM B). The lobby shows who is on which side, and the games list says it.
   - **BOTS**: easy, medium or hard.
 - The host then presses **START**. Everyone starts together with the same seed, so they get the same towns, loot, helicopter routes, bots and zone circles.
 - Your name is `LUDANTO nn`. Set `OUTLAND_LAN_NAME` to choose your own.
@@ -28,6 +29,12 @@ It works on desktop and Android. The browser build has no LAN: a web page cannot
   - Shooting a bot from a joined game sends the hit to the host. The host decides whether it was a kill and tells the shooter.
   - Bots hunt and shoot every player, not just the host.
 - **Shared loot:** taking from a pickup or dropping an item is sent to everyone. A fallen bot's kit gets the same ids in every game, so only one person can loot it.
+- **Playing as a side** (one squad or two teams):
+  - People on the same side can't hurt each other: bullets, grenades and rockets all spare them.
+  - Teammates' names show green over their heads from any distance and through walls, with how far they are, and each is on the compass by name.
+  - The HUD shows `SQUAD n` or `TEAM n`: how many of your side still stand.
+  - Your side wins when no bots and nobody from another side is left. It doesn't matter who on your side is still up.
+  - **Out, but your side fights on:** the camera follows a teammate ("YOU'RE OUT · YOUR SQUAD FIGHTS ON"). TAB or a tap watches the next one, and H goes home. If your side wins, you share it: "YOUR SIDE WINS".
 - **Zone and winning:** the zone closes on the same schedule everywhere. The last one standing wins: no bots and no other players left. ALIVE counts bots plus people, and the HUD shows `LAN n`.
 - **No pausing:** a LAN match never stops for one player's menu, bag or result screen.
 - **When the host dies:** the host's game keeps running the bots and the zone for everyone still alive.
@@ -44,7 +51,7 @@ The code is in `src/net` and `src/game/lan`.
 - **Ports:**
   - Discovery beacons go to port `47821` on the broadcast address. That port is shared (`SO_REUSEPORT`), so several games on one machine can listen.
   - Each game socket uses a port the system chooses.
-- **Messages:** every message starts with a 12-byte header: `OLAN` magic, version, type, sender slot, target slot and match id. The message types are `LanProtocol.hpp`.
+- **Messages:** every message starts with a 12-byte header: `OLAN` magic, version (3: sides), type, sender slot, target slot and match id. The message types are `LanProtocol.hpp`. The beacon, roster and start carry the sides (`net::Sides`; `side_of`, `same_side`).
 - **Timeouts:** a peer silent for 8 seconds is dropped, and the others see that player leave. If the host goes, everyone else carries on alone and their games start running their own bots.
 - **Android:** the manifest asks for `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE` and `CHANGE_WIFI_MULTICAST_STATE`. `GameActivity` holds a Wi-Fi multicast lock while the game is open, because many phones otherwise drop broadcast packets.
 

@@ -31,10 +31,11 @@ const char* mode_label(std::uint8_t mode) {
 
 Rectangle LanScreen::host_button(int w, int h) { return box(240, 200, 420, 58, w, h); }
 Rectangle LanScreen::game_button(int i, int w, int h) { return box(160, 330 + static_cast<float>(i) * 62, 580, 52, w, h); }
-Rectangle LanScreen::back_button(int w, int h) { return box(300, 650, 300, 50, w, h); }
-Rectangle LanScreen::mode_button(int w, int h) { return box(200, 450, 500, 52, w, h); }
-Rectangle LanScreen::level_button(int w, int h) { return box(200, 512, 500, 52, w, h); }
-Rectangle LanScreen::start_button(int w, int h) { return box(200, 580, 500, 56, w, h); }
+Rectangle LanScreen::back_button(int w, int h) { return box(300, 664, 300, 46, w, h); }
+Rectangle LanScreen::mode_button(int w, int h) { return box(200, 420, 500, 50, w, h); }
+Rectangle LanScreen::sides_button(int w, int h) { return box(200, 478, 500, 50, w, h); }
+Rectangle LanScreen::level_button(int w, int h) { return box(200, 536, 500, 50, w, h); }
+Rectangle LanScreen::start_button(int w, int h) { return box(200, 598, 500, 54, w, h); }
 
 LanScreen::Action LanScreen::update(int w, int h, const net::LanSession& lan) {
     std::vector<Vector2> points;
@@ -55,6 +56,7 @@ LanScreen::Action LanScreen::update(int w, int h, const net::LanSession& lan) {
             if (!lan.hosting()) continue;
             if (CheckCollisionPointRec(p, mode_button(w, h))) return {Kind::CycleMode, -1};
             if (CheckCollisionPointRec(p, level_button(w, h))) return {Kind::CycleLevel, -1};
+            if (CheckCollisionPointRec(p, sides_button(w, h))) return {Kind::CycleSides, -1};
             if (CheckCollisionPointRec(p, start_button(w, h))) return {Kind::Start, -1};
             continue;
         }
@@ -81,19 +83,30 @@ void LanScreen::draw(int w, int h, const net::LanSession& lan, const std::string
     DrawText(lan.status().c_str(), w / 2 - MeasureText(lan.status().c_str(), small) / 2, static_cast<int>(status.y), small, Color{240, 210, 120, 255});
     if (lan.active()) {
         const auto& roster = lan.roster();
-        const auto list = box(200, 200, 500, 240, w, h);
+        const auto list = box(200, 190, 500, 222, w, h);
+        const auto sides = static_cast<net::Sides>(roster.sides);
         DrawRectangleRounded(list, .06F, 8, Color{20, 26, 20, 200});
         int row = 0;
         for (const auto& p : roster.players) {
             const std::string text = (p.slot == 0 ? "HOST  " : "      ") + p.name + (p.slot == lan.slot() ? "  (you)" : "");
-            DrawText(text.c_str(), static_cast<int>(list.x + 20 * s), static_cast<int>(list.y + (14 + 28 * static_cast<float>(row++)) * s), small, RAYWHITE);
+            const int y = static_cast<int>(list.y + (12 + 26 * static_cast<float>(row++)) * s);
+            DrawText(text.c_str(), static_cast<int>(list.x + 20 * s), y, small, RAYWHITE);
+            // Who is on whose side.
+            if (sides != net::Sides::Free) {
+                const std::uint8_t team = net::side_of(sides, p.slot);
+                const char* tag = sides == net::Sides::Squad ? "SQUAD" : net::team_name(team);
+                const Color ink = sides == net::Sides::Squad || team == net::side_of(sides, lan.slot()) ? Color{120, 230, 140, 255} : Color{240, 140, 110, 255};
+                DrawText(tag, static_cast<int>(list.x + list.width - 20 * s) - MeasureText(tag, small), y, small, ink);
+            }
         }
         if (lan.hosting()) {
             button(mode_button(w, h), TextFormat("MODE: %s", mode_label(roster.mode)), s);
             button(level_button(w, h), TextFormat("BOTS: %s", ai::bot_level_name(static_cast<ai::BotLevel>(roster.level))), s);
+            button(sides_button(w, h), TextFormat("SIDES: %s", net::sides_name(sides)), s);
             button(start_button(w, h), roster.players.size() > 1 ? "START THE MATCH" : "START (ALONE FOR NOW)", s, true);
         } else {
-            const std::string waiting = std::string(mode_label(roster.mode)) + " - bots " + ai::bot_level_name(static_cast<ai::BotLevel>(roster.level));
+            const std::string waiting = std::string(mode_label(roster.mode)) + " - bots " + ai::bot_level_name(static_cast<ai::BotLevel>(roster.level)) +
+                                        " - " + net::sides_name(sides);
             const auto info = box(0, 470, 900, 30, w, h);
             DrawText(waiting.c_str(), w / 2 - MeasureText(waiting.c_str(), small) / 2, static_cast<int>(info.y), small, RAYWHITE);
             const char* hint = "Waiting for the host to start...";
@@ -108,8 +121,9 @@ void LanScreen::draw(int w, int h, const net::LanSession& lan, const std::string
     DrawText(games, w / 2 - MeasureText(games, small) / 2, static_cast<int>(found.y), small, LIGHTGRAY);
     for (int i = 0; i < std::min<int>(listed, static_cast<int>(lan.hosts().size())); ++i) {
         const auto& host = lan.hosts()[static_cast<std::size_t>(i)];
-        const std::string text = host.name + " - " + mode_label(host.beacon.mode) + " - " + std::to_string(host.beacon.players) +
-                                 (host.beacon.open ? " in lobby" : " playing");
+        const std::string text = host.name + " - " + mode_label(host.beacon.mode) +
+                                 (host.beacon.sides ? std::string(" - ") + net::sides_name(static_cast<net::Sides>(host.beacon.sides)) : std::string()) +
+                                 " - " + std::to_string(host.beacon.players) + (host.beacon.open ? " in lobby" : " playing");
         button(game_button(i, w, h), text.c_str(), s);
     }
     button(back_button(w, h), "BACK", s);

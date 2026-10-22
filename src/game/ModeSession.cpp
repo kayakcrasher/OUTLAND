@@ -7,7 +7,7 @@
 namespace outland::game {
 void ModeSession::start(GameMode mode, int bots, ai::BotLevel level) {
     mode_=mode; phase_=SessionPhase::Playing; elapsed_=0;
-    others_alive_=0; run_bots_=true;
+    others_alive_=0; team_alive_=0; run_bots_=true; squad_won_=false;
     result_={0,0,std::max(0,bots)+1,level};
     centers_.assign(circle.phases.size(),Vector2{0,0});
 }
@@ -68,17 +68,22 @@ const char* ModeSession::objective() const {
 void ModeSession::update(float dt, Vector3 feet, Health& health, ai::BattleRoyaleBots& bots, bool paused) {
     if(paused || !std::isfinite(dt) || dt<0) return;
     // A LAN host out of the match still closes the zone on the bots for the others still in it.
-    const bool host_watching=terminal() && mode_==GameMode::BattleRoyale && run_bots_ && others_alive_>0;
-    if(terminal() && !host_watching) return;
+    const bool host_watching=terminal() && mode_==GameMode::BattleRoyale && run_bots_ && others_alive_+team_alive_>0;
+    // Out, with the side still in it: they can still win it for everyone on the side.
+    const bool side_watching=phase_==SessionPhase::Dead && squad_fighting();
+    if(terminal() && !host_watching && !side_watching) return;
     if(mode_!=GameMode::BattleRoyale) {
         if(mode_!=GameMode::DevLab && !health.alive()) phase_=SessionPhase::Dead;
         return; // Explore has no victory condition.
     }
     const float step=std::min(dt,.25F);
     elapsed_+=step;
-    if(host_watching) {
-        const auto z=zone();
-        bots.apply_circle(z.center,z.radius,z.next_center,z.next_radius,z.damage*step);
+    if(terminal()) {
+        if(host_watching) {
+            const auto z=zone();
+            bots.apply_circle(z.center,z.radius,z.next_center,z.next_radius,z.damage*step);
+        }
+        if(side_watching && bots.alive_bots()==0 && others_alive_==0) {phase_=SessionPhase::Won;result_.placement=1;squad_won_=true;}
         return;
     }
     // Check every damage source before victory (including mutual final eliminations).

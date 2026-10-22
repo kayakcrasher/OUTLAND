@@ -14,6 +14,7 @@ struct Grenade {
     int bounces{0};
     bool remote{false};   // thrown by another player (LAN): it hurts us, but its hits on others are theirs to send
     bool rocket{false};   // a rocket: flies straight, goes off on whatever it hits
+    bool friendly{false}; // a teammate's (LAN, playing as a side): it does not hurt us
 };
 struct Explosion {
     Vector3 position{};
@@ -41,7 +42,7 @@ public:
     static float blast_radius_of(bool rocket) { return rocket ? rocket_blast_radius : blast_radius; }
     static float damage_at(float distance, bool rocket) { return rocket ? rocket_damage_at(distance) : damage_at(distance); }
 
-    void reset(int count) { live_.clear(); explosions_.clear(); exploded_.clear(); exploded_remote_.clear(); exploded_rocket_.clear(); count_ = count; cooldown_ = 0; }
+    void reset(int count) { live_.clear(); explosions_.clear(); exploded_.clear(); exploded_remote_.clear(); exploded_rocket_.clear(); exploded_friendly_.clear(); count_ = count; cooldown_ = 0; }
     void give(int count) { count_ += count; }
     // Grenades carried in the bag: the count follows it (a throw then takes one from the bag).
     void set_count(int count) { count_ = count < 0 ? 0 : count; }
@@ -51,9 +52,9 @@ public:
     bool throw_grenade(Vector3 from, Vector3 direction, Vector3 carried);
     void update(float dt, const GrenadeWorld& world);
     // A rocket from the launcher (or another player's, remote).
-    void launch_rocket(Vector3 origin, Vector3 velocity, bool remote = false) { live_.push_back({origin, velocity, rocket_life, 0, remote, true}); }
-    // Another player's throw, replayed here (LAN play).
-    void spawn_remote(Vector3 origin, Vector3 velocity) { live_.push_back({origin, velocity, fuse_seconds, 0, true}); }
+    void launch_rocket(Vector3 origin, Vector3 velocity, bool remote = false, bool friendly = false) { live_.push_back({origin, velocity, rocket_life, 0, remote, true, friendly}); }
+    // Another player's throw, replayed here (LAN play); a teammate's is `friendly`.
+    void spawn_remote(Vector3 origin, Vector3 velocity, bool friendly = false) { live_.push_back({origin, velocity, fuse_seconds, 0, true, false, friendly}); }
 
     [[nodiscard]] const std::vector<Grenade>& live() const { return live_; }
     [[nodiscard]] const std::vector<Explosion>& explosions() const { return explosions_; }
@@ -63,12 +64,14 @@ public:
     [[nodiscard]] const std::vector<bool>& exploded_remote() const { return exploded_remote_; }
     // For each of exploded(): a rocket (the bigger blast).
     [[nodiscard]] const std::vector<bool>& exploded_rocket() const { return exploded_rocket_; }
+    // For each of exploded(): a teammate's (it spares us).
+    [[nodiscard]] const std::vector<bool>& exploded_friendly() const { return exploded_friendly_; }
 
 private:
     std::vector<Grenade> live_;
     std::vector<Explosion> explosions_;
     std::vector<Vector3> exploded_;
-    std::vector<bool> exploded_remote_, exploded_rocket_;
+    std::vector<bool> exploded_remote_, exploded_rocket_, exploded_friendly_;
     int count_{0};
     float cooldown_{0};
 };

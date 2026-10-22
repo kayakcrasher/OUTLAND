@@ -69,12 +69,26 @@ bool unpack(const std::vector<std::uint8_t>& datagram, Header& header, std::size
     return true;
 }
 
-void write(Writer& w, const Beacon& m) { w.str(m.host); w.u8(m.mode); w.u8(m.level); w.u8(m.players); w.u16(m.port); w.u8(m.open); }
-bool read(Reader& r, Beacon& m) { m.host = r.str(); m.mode = r.u8(); m.level = r.u8(); m.players = r.u8(); m.port = r.u16(); m.open = r.u8() != 0; return r.ok(); }
+const char* sides_name(Sides sides) {
+    switch (sides) {
+        case Sides::Squad: return "ONE SQUAD";
+        case Sides::Teams: return "TWO TEAMS";
+        case Sides::Free: break;
+    }
+    return "EVERYONE FOR THEMSELVES";
+}
+const char* team_name(std::uint8_t team) { return team % 2 == 0 ? "TEAM A" : "TEAM B"; }
+
+void write(Writer& w, const Beacon& m) { w.str(m.host); w.u8(m.mode); w.u8(m.level); w.u8(m.players); w.u16(m.port); w.u8(m.open); w.u8(m.sides); }
+bool read(Reader& r, Beacon& m) {
+    m.host = r.str(); m.mode = r.u8(); m.level = r.u8(); m.players = r.u8(); m.port = r.u16(); m.open = r.u8() != 0; m.sides = r.u8();
+    return r.ok() && m.sides < sides_count;
+}
 
 void write(Writer& w, const Roster& m) {
     w.u8(m.mode); w.u8(m.level); w.u8(static_cast<std::uint8_t>(m.players.size()));
     for (const auto& p : m.players) {w.u8(p.slot); w.str(p.name);}
+    w.u8(m.sides);
 }
 bool read(Reader& r, Roster& m) {
     m.mode = r.u8(); m.level = r.u8();
@@ -82,11 +96,12 @@ bool read(Reader& r, Roster& m) {
     if (n > max_players) return false;
     m.players.resize(static_cast<std::size_t>(n));
     for (auto& p : m.players) {p.slot = r.u8(); p.name = r.str();}
-    return r.ok();
+    m.sides = r.u8();
+    return r.ok() && m.sides < sides_count;
 }
 
-void write(Writer& w, const Start& m) { w.u8(m.mode); w.u8(m.level); w.u64(m.seed); }
-bool read(Reader& r, Start& m) { m.mode = r.u8(); m.level = r.u8(); m.seed = r.u64(); return r.ok(); }
+void write(Writer& w, const Start& m) { w.u8(m.mode); w.u8(m.level); w.u64(m.seed); w.u8(m.sides); }
+bool read(Reader& r, Start& m) { m.mode = r.u8(); m.level = r.u8(); m.seed = r.u64(); m.sides = r.u8(); return r.ok() && m.sides < sides_count; }
 
 void write(Writer& w, const PlayerState& m) {
     w.f32(m.time); w.v3(m.feet); w.f32(m.yaw); w.f32(m.pitch); w.v3(m.velocity); w.f32(m.health);

@@ -34,6 +34,7 @@ bool Grenades::throw_grenade(Vector3 from, Vector3 direction, Vector3 carried) {
 void Grenades::update(float dt, const GrenadeWorld& world) {
     exploded_.clear();
     exploded_remote_.clear();
+    exploded_friendly_.clear();
     exploded_rocket_.clear();
     if (!std::isfinite(dt) || dt <= 0) return;
     dt = std::min(dt, .1F);
@@ -64,6 +65,7 @@ void Grenades::update(float dt, const GrenadeWorld& world) {
                 exploded_.push_back(g.position);
                 exploded_remote_.push_back(g.remote);
                 exploded_rocket_.push_back(true);
+                exploded_friendly_.push_back(g.friendly);
             }
             continue;
         }
@@ -94,6 +96,7 @@ void Grenades::update(float dt, const GrenadeWorld& world) {
             exploded_.push_back(g.position);
             exploded_remote_.push_back(g.remote);
             exploded_rocket_.push_back(false);
+            exploded_friendly_.push_back(g.friendly);
         }
     }
     std::erase_if(live_, [](const Grenade& g) { return g.fuse <= 0; });
