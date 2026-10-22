@@ -309,7 +309,8 @@ def harmonica(m, dur, v):
 def heavy(m, dur, palm, v):
     """A metal power chord: tighter and much more distorted than power()."""
     n = int((dur + (.04 if palm else .25)) * RATE)
-    out = sum(additive(phase(hz(x) * (1 + d), n), hz(x), SAW[:25]) for x in (m, m + 7, m + 12) for d in (-.004, .004)) / 6
+    spread = .004 + .002 * (v % 3)
+    out = sum(additive(phase(hz(x) * (1 + d), n), hz(x), SAW[:25]) for x in (m, m + 7, m + 12) for d in (-spread, spread)) / 6
     out = highpass(out * envelope(n, .002, .1 if palm else .8, .2 if palm else .75, .03, hold=dur), 90)
     out = np.tanh(out * 18)
     out = lowpass(out, 1500 if palm else 3800, 4)
@@ -317,6 +318,35 @@ def heavy(m, dur, palm, v):
     if palm:
         out = out * envelope(n, .001, .06, .15, .02, hold=dur)
     return norm(out)
+
+
+@functools.lru_cache(maxsize=None)
+def gated_snare(v):
+    """The eighties snare: a crack into a big room, cut off hard by a gate."""
+    n = int(.42 * RATE)
+    t = times(n)
+    crack = snare(v)
+    body = np.zeros(n)
+    body[:len(crack)] += crack
+    room = lowpass(bandpass(noise(n, 1900 + v), 600, 7000), 5000) * np.exp(-t * 3.5) * .7
+    gate = np.clip((.30 - t) / .02, 0, 1)
+    return norm((body + room) * gate)
+
+
+@functools.lru_cache(maxsize=None)
+def piano(m, dur, v):
+    """An upright piano a little out of tune - two strings a few cents apart, a quick decay."""
+    f, n = hz(m), int(min(dur + .7, 2.2) * RATE)
+    t = times(n)
+    out = np.zeros(n)
+    for d in (-.0035, .0035):
+        for k, a in enumerate([1, .55, .35, .22, .15, .1, .07], 1):
+            fk = f * k * (1 + .0004 * k * k) * (1 + d)
+            if fk > RATE * .45:
+                break
+            out += a * np.sin(2 * np.pi * fk * t) * np.exp(-t * (2.2 + k * .9))
+    hammer = bandpass(noise(n, 2000 + v), 1500, 6000) * np.exp(-t * 80) * .15
+    return norm((out + hammer) * np.minimum(1, t / .002) * envelope(n, .001, 1, 1, .08, hold=dur + .4))
 
 
 # Drums (variant picks one of a few hits so a beat is not a loop of one sample).
@@ -868,14 +898,14 @@ def arrange_rock(song):
                 song.add("lead", start + b, lead(m + 12 * octave, song.secs(l), int(b * 2) % 3, l >= 1 and song.rng.random() < .3), .5 if kind != "verse" else .38)
 
 
-def drums_rock(song, start, kind, i, bars, number, shuffle=False, double=False):
+def drums_rock(song, start, kind, i, bars, number, shuffle=False, double=False, gated=False):
     """A rock beat: kick on one and three, snare on two and four, eighths on the hat (triplets in a
     shuffle), a crash into each section and a fill out of it; double kick on demand."""
     for beat in range(4):
         if beat in (0, 2):
             song.add("drums", start + beat, kick(beat), 1.0)
         if beat % 2:
-            song.add("drums", start + beat, snare(beat), .9)
+            song.add("drums", start + beat, gated_snare(beat) if gated else snare(beat), .9)
         steps = (0, 2 / 3) if shuffle else (0, .5)
         for k, half in enumerate(steps):
             song.add("drums", start + beat + half, hat(beat + k, kind == "chorus" and k == 1), .13)
@@ -907,6 +937,7 @@ def arrange_synthrock(song):
         for half in (0, 2):
             chord = song.chord_at(label, i, half)
             song.add("pad", start + half, pad(song.voice(chord, song.key), song.secs(2)), .16)
+            song.add("pad", start + half, pad(song.voice(chord, song.key + 12), song.secs(2)), .1)   # the bright upper layer
             notes = song.voice(chord, song.key + 7)
             order = [0, 1, 2, 1] if (number + i) % 2 else [0, 2, 1, 2]
             for k in range(4):
@@ -915,7 +946,7 @@ def arrange_synthrock(song):
             for k in range(4):
                 song.add("bass", start + half + k * .5, synth_bass(root + (12 if k % 2 else 0), song.secs(.4), k % 2), .36)
         if not (kind == "intro" and i < 2):
-            drums_rock(song, start, kind, i, bars, number, shuffle=True)
+            drums_rock(song, start, kind, i, bars, number, shuffle=True, gated=True)
         if kind == "solo":
             for b, l, m, bend in [(b - i * 4, l, m, bend) for b, l, m, bend in lick if i * 4 <= b < i * 4 + 4]:
                 song.add("lead", start + b, lead(m, song.secs(l), int(b * 4) % 3, bend, 4.0), .42)
@@ -996,6 +1027,12 @@ def arrange_honkytonk(song):
                 for k, x in enumerate(song.voice(chord, song.key + 4)):
                     song.add("rhythm", start + beat + k * .012 / song.spb, guitar(x, song.secs(.4), k), .26)
             song.add("drums", start + beat + .5, hat(beat), .1)
+            # The honky-tonk piano: chords on the offbeat, a high fill at the end of each bar.
+            for m in song.voice(chord, song.key + 7):
+                song.add("chords", start + beat + .5, piano(m, song.secs(.4), beat % 3), .17)
+            if beat == 3:
+                for k, o in enumerate((12, 16, 19, 24)):
+                    song.add("chords", start + 3 + k * .125, piano(song.root_note(chord, song.key + 12) + o - 12, song.secs(.2), k % 3), .12)
         if kind == "intro":
             if i >= 2:
                 play(song, "lead", twang, [(0, .5, song.key + 19), (.5, .5, song.key + 16), (1, 1, song.key + 12), (2, 2, song.key + 14)], start, .4)
@@ -1057,7 +1094,28 @@ def reverb_ir(seconds):
     return ir / np.sqrt(np.sum(ir ** 2))
 
 
+def produce(song):
+    """Era and genre production on the finished buses (the music itself is untouched)."""
+    spec = song.spec
+    if spec.get("heavy") and "guitar" in song.buses:
+        # Double-tracked rhythm guitar: a second, darker pass a few milliseconds late.
+        g = song.buses["guitar"]
+        lag = int(.014 * RATE)
+        second = np.zeros_like(g)
+        second[lag:] = lowpass(g, 3000, 2)[:-lag]
+        song.buses["guitar"] = g * .8 + second * .7
+    if spec.get("pump"):
+        # The pop pump: pad, chords and bass duck on every beat and swell back.
+        beats = np.arange(song.n) / RATE / song.spb
+        frac = beats - np.floor(beats)
+        duck = 1 - .55 * np.exp(-frac * 7)
+        for bus in ("pad", "bass", "chords"):
+            if bus in song.buses:
+                song.buses[bus] = song.buses[bus] * duck
+
+
 def master(song, room):
+    produce(song)
     dry = np.zeros(song.n)
     send = np.zeros(song.n)
     for name, x in song.buses.items():
@@ -1066,6 +1124,8 @@ def master(song, room):
         send += gain * wet * x
     out = dry + .5 * signal.fftconvolve(send, reverb_ir(room))[:song.n]
     out = highpass(out, 35)
+    if song.spec.get("warm"):
+        out = lowpass(out, 6500, 2)   # a warm, old-tape top end
     # gentle compression on a 60 ms RMS level, then the level and a look-ahead peak limiter
     level = np.sqrt(np.maximum(lowpass(out ** 2, 8, 1), 1e-12))
     threshold = np.percentile(level, 70)
@@ -1109,7 +1169,7 @@ STATIONS = [
                        "B": ["IV", "I", "V7", "I", "IV", "I", "V7", "I"], "C": ["I", "I", "IV", "IV", "V7", "V7", "I", "I"]},
              "form": form(("intro", "I", 4), ("verse", "A", 8), ("verse", "A", 8), ("chorus", "B", 8), ("chorus", "B", 8),
                           ("trio", "C", 8), ("verse", "A", 8), ("chorus", "B", 8), ("chorus", "B", 8), ("outro", "I", 2))},
-            {"title": "Blua Floro", "key": 64, "tempo": 118, "seed": 113, "arrange": arrange_pop,
+            {"title": "Blua Floro", "key": 64, "tempo": 118, "seed": 113, "arrange": arrange_pop, "pump": True,
              "progs": {"I": ["I", "iii", "IV", "V"], "A": ["I", "iii", "IV", "V", "I", "iii", "ii", "V"],
                        "B": ["IV", "I", "V", "vi", "IV", "I", "ii", "V"], "C": ["vi", "iii", "IV", "I", "ii", "V", "I", "I"]},
              "form": form(("intro", "I", 4), ("verse", "A", 8), ("chorus", "B", 8), ("verse", "A", 8), ("chorus", "B", 8),
@@ -1140,7 +1200,7 @@ STATIONS = [
                        "B": ["IV", "IV", "I", "I", "V", "IV", "I", "I"], "C": ["vi", "vi", "IV", "IV", "I", "I", "V", "V"]},
              "form": form(("intro", "I", 4), ("verse", "A", 8), ("verse", "A", 8), ("chorus", "B", 8), ("verse", "A", 8),
                           ("bridge", "C", 8), ("chorus", "B", 8), ("verse", "A", 8), ("chorus", "B", 8), ("outro", "I", 2))},
-            {"title": "Malrapida Vespero", "key": 55, "tempo": 84, "seed": 131, "swing": .6, "arrange": arrange_ballad,
+            {"title": "Malrapida Vespero", "key": 55, "tempo": 84, "seed": 131, "swing": .6, "arrange": arrange_ballad, "warm": True, "room": 1.2,
              "progs": {"I": ["I", "IV", "I", "V"], "A": ["I", "I", "IV", "I", "I", "vi", "ii", "V"],
                        "B": ["IV", "V", "I", "vi", "IV", "V", "I", "I"]},
              "form": form(("intro", "I", 4), ("verse", "A", 8), ("chorus", "B", 8), ("verse", "A", 8), ("solo", "A", 8),
@@ -1278,7 +1338,7 @@ def main():
                 songs.append((spec["title"], file, song.seconds))
                 continue
             (spec.get("arrange") or st["arrange"])(song)
-            out = master(song, st["room"])
+            out = master(song, spec.get("room", st["room"]))
             encode(out, ROOT / file)
             if args.wav:
                 Path(args.wav).mkdir(parents=True, exist_ok=True)

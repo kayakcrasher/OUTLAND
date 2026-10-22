@@ -70,6 +70,10 @@ and no recordings:
 - Each song's melodies are composed from its chords and a seed: a two-bar motif, the motif again
   on the next chords, an answer, and a cadence home. The same seed gives the same song every
   time.
+- The hits get era and genre production on top: a gated-reverb snare and a bright pad layer on
+  *Vitraj Turoj*, double-tracked guitars on *Nigra Minejo*, a honky-tonk piano on *Drinkejo ĉe la
+  Vojo*, a pumping pop mix on *Blua Floro*, and a warm, roomy mix on *Malrapida Vespero*. The
+  melodies, chords and riffs are all original.
 - The mix is mastered to a common loudness and written as mono 32 kHz Ogg Vorbis files
   (`assets/audio/radio/`, about 14 MB). The tool also writes the catalogue the game reads,
   `include/outland/game/radio/RadioCatalog.hpp`.
