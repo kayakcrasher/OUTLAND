@@ -167,6 +167,11 @@ int main() {
         check(!arrested,"armed and wanted for murder: they don't come quietly");
         w.armed=false;
         for(int i=0;i<300 && !arrested;++i) {w.run(.1F,player,true,true);arrested|=w.justice.message().starts_with("BUSTED");}
+        if(!arrested) {
+            float near=1e9F;
+            for(const int id:w.justice.responders()) near=std::min(near,flat(w.life.residents()[static_cast<std::size_t>(id)].body,player));
+            std::cerr<<"wanted "<<w.justice.wanted()<<" responders "<<w.justice.responders().size()<<" nearest "<<near<<" msg "<<w.justice.message()<<'\n';
+        }
         check(arrested,"hands empty: busted");
     }
 

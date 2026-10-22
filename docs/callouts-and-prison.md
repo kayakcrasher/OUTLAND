@@ -32,7 +32,7 @@ USE skips a line. After the tour the guards take the prisoners.
 
 ## Busted (the player)
 
-You're arrested at one star when an officer reaches you and you're calm. You're also arrested at any level when you're on foot with **no gun in hand** and an officer is within 6 m (cycle weapons to UNARMED to give up).
+You're arrested at one star when an officer reaches you and you're calm. You're also arrested at any level when you're on foot with **no gun in hand** and an officer is within 9 m (cycle weapons to UNARMED to give up).
 
 1. **The ride:** "BUSTED", then black: "In the back of a Policio car - to Ŝtata Malliberejo".
 2. **Booking:** a card with your **mugshot** in front of the height chart, holding a board with your **prison number**. The number is yours for good and is saved with the career. The card also shows your affiliation, the charge, the sentence and your notoriety. USE takes you to your cell, and the sentence starts.

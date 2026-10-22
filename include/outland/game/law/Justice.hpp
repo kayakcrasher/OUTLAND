@@ -26,7 +26,7 @@ struct JusticeConfig {
     float call_min{4}, call_max{14};       // seconds before a witness gets through to the police
     float evade_base{25}, evade_per_star{12}; // unseen this long and the police give up
     float arrest_radius{2.5F}, arrest_seconds{2}, calm_seconds{3};
-    float surrender_radius{6};             // an unarmed suspect gives up to an officer this close
+    float surrender_radius{9};             // an unarmed suspect gives up to an officer this close (armed ones keep their distance)
     float investigate_seconds{60};         // responders to an anonymous report search this long
 };
 
