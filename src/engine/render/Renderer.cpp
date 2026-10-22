@@ -1093,6 +1093,7 @@ void Renderer::run() {
     apply_settings();
     // Entering a zone shows its name for a few seconds.
     int shown_zone=-1;
+    int shown_turf=-2;float turf_banner=0;   // the turf line under the compass, a few seconds on arriving
     float zone_banner=0;
 
     game::combat::WeaponSystem weapons;
@@ -3649,8 +3650,11 @@ void Renderer::run() {
         // shot leaves from outside the car's body so it never hits the player's own car.
         const bool drive_by=driving && weapons.available() && !creator_active &&
             (weapons.selected()==game::combat::WeaponId::Pistol || weapons.selected()==game::combat::WeaponId::Smg);
-        if(drive_by) {
-            const auto* car=vehicles.driver();
+        // Riding with the crew, the player shoots out of the passenger window: any gun.
+        const int ride_index=riding_now ? vehicles.find(player_crew.ride_car()) : -1;
+        const bool ride_by=ride_index>=0 && weapons.available() && !creator_active;
+        if(drive_by || ride_by) {
+            const auto* car=drive_by ? vehicles.driver() : &vehicles.vehicles()[static_cast<std::size_t>(ride_index)];
             const Vector3 seat{car->position.x,car->position.y+1.35F,car->position.z};
             const Vector3 sight_from=Vector3Add(camera.position,Vector3Scale(camera_direction,Vector3Distance(camera.position,seat)+3.0F));
             const auto past_car=combat_world.trace_segment(sight_from,Vector3Add(camera.position,Vector3Scale(camera_direction,500.0F)),true,true,true);
@@ -4772,7 +4776,7 @@ void Renderer::run() {
 
         game::combat::CombatRenderer::draw_world(weapons,combat_world);
         // A drive-by's flash at the driver's window.
-        if(drive_by && weapons.muzzle_flash()>0) {
+        if((drive_by || ride_by) && weapons.muzzle_flash()>0) {
             DrawSphere(gun_muzzle,.12F,Color{255,228,135,255});
             DrawCylinderEx(gun_muzzle,Vector3Add(gun_muzzle,Vector3Scale(gun_direction,.45F)),.09F,0,6,Color{255,169,65,255});
         }
@@ -5178,8 +5182,8 @@ void Renderer::run() {
             return name;
         };
         // Driving with a pistol or SMG: what is in the hand for a drive-by (over the speedometer).
-        if(drive_by && !creator_active && !inventory_open) {
-            const char* line=TextFormat("DRIVE-BY  %s  %d / %d   %s",weapons.weapon().name,weapons.ammo().loaded,weapons.ammo().reserve,
+        if((drive_by || ride_by) && !creator_active && !inventory_open) {
+            const char* line=TextFormat(ride_by ? "PASSENGER  %s  %d / %d   %s" : "DRIVE-BY  %s  %d / %d   %s",weapons.weapon().name,weapons.ammo().loaded,weapons.ammo().reserve,
                 touch_ui ? "" : "LMB FIRE - LOOK TO AIM");
             const int lw=MeasureText(line,18);
             DrawRectangle(12,screen_height-206,lw+24,30,Fade(BLACK,.6F));
@@ -5257,13 +5261,17 @@ void Renderer::run() {
             }
         }
         if (!creator_active) {
-            DrawText(TextFormat("HEALTH %.0f / %.0f",player_health.current(),player_health.maximum()),
-                16,16,20,player_health.alive() ? RAYWHITE : RED);
-            // The boost from food and drink: a thin amber bar under the health line while it lasts.
-            if(loot_session.boost()>0 && player_health.alive()) {
-                const float share=loot_session.boost()/game::inventory::LootSession::boost_max;
-                DrawRectangle(16,40,160,5,Fade(BLACK,.5F));
-                DrawRectangle(16,40,static_cast<int>(160*share),5,Color{240,180,60,230});
+            // Health: a slim bar over the compass's left end, out of the way of the view.
+            {
+                const float share=std::clamp(player_health.current()/std::max(1.0F,player_health.maximum()),0.0F,1.0F);
+                const int bw=140,bx=screen_width/2-232,by=12;
+                DrawRectangle(bx-2,by-2,bw+4,14,Fade(BLACK,.55F));
+                DrawRectangle(bx,by,static_cast<int>(bw*share),10,share>.5F ? Color{90,210,110,235} : share>.25F ? Color{235,190,70,235} : Color{230,70,60,240});
+                const char* hp=player_health.alive() ? TextFormat("%.0f",player_health.current()) : "DOWN";
+                DrawText(hp,bx+bw+8,by-2,14,player_health.alive() ? RAYWHITE : RED);
+                // The boost from food and drink: a thin amber line under it while it lasts.
+                if(loot_session.boost()>0 && player_health.alive())
+                    DrawRectangle(bx,by+12,static_cast<int>(bw*loot_session.boost()/game::inventory::LootSession::boost_max),3,Color{240,180,60,230});
             }
 
             if (br_bots.active() && game_mode==game::GameMode::BattleRoyale) {
@@ -5348,8 +5356,16 @@ void Renderer::run() {
                     if(job.kind!=game::career::JobKind::Quest) status+=TextFormat("  ·  %d:%02d left",left/60,left%60);
                     status+=TextFormat("  ·  %.0f m",metres(job.target));
                     quests.push_back({std::string(job.title)+"  ·  "+who,job.detail,status,tint});
-                } else quests.push_back({who+"  ·  "+career.rank_name(),cop ? "On patrol - a call will come over the radio." : "Waiting for the word from the boss.",
-                                         career.state().side==game::career::Side::Gang ? TextFormat("respect %d  ·  notoriety %d",static_cast<int>(career.state().respect),static_cast<int>(career.state().notoriety)) : "",tint});
+                }
+                // Who you are on the island: rank, respect, honour and your crew.
+                std::string standing=TextFormat("Respect %d",static_cast<int>(career.state().respect));
+                if(!cop) standing+=career.state().notoriety>0 ? TextFormat("  ·  notoriety %d",static_cast<int>(career.state().notoriety)) :
+                                   std::string(career.state().honourable ? "  ·  honourable" : "  ·  no honour");
+                const std::string with=cop ? (player_crew.partner()>=0 ? "Your partner rides with you." : "No partner - ask at a station's desk.") :
+                    TextFormat("Your crew: %d of %d - recruit your gang's men with USE.",static_cast<int>(player_crew.members().size()),game::career::Crew::max_gang);
+                quests.push_back({who+"  ·  "+career.rank_name(),
+                                  (job.kind!=game::career::JobKind::None ? std::string() : std::string(cop ? "On patrol - a call will come over the radio. " : "Waiting for the word from the boss. "))+with,
+                                  standing,tint});
             }
             if(trucking.hired() && trucking.job().stage!=game::freight::HaulStage::None) {
                 std::string brief=trucking.detail();
@@ -5441,7 +5457,7 @@ void Renderer::run() {
             const int turf=mafio.turf_at({player.position.x,player.position.y-1,player.position.z},30);
             if(turf!=banner_turf) {banner_turf=turf;banner_time=5;}
             banner_time=std::max(0.0F,banner_time-GetFrameTime());
-            if(turf>=0 && (banner_time>0 || mafio.turf_at({player.position.x,player.position.y-1,player.position.z},7)>=0)) {
+            if(turf>=0 && banner_time>0) {
                 const auto& crew=mafio.crews()[static_cast<std::size_t>(turf)];
                 const auto& gang=game::mafia::gangs[static_cast<std::size_t>(crew.gang)];
                 const std::string title=std::string(gang.name)+"  ·  "+crew.town+" crew";
@@ -5450,15 +5466,14 @@ void Renderer::run() {
                     career.on_duty() ? std::string(gang.meaning)+" - they don't talk to cops" :
                     !career_path.empty() ? std::string(gang.meaning)+" - talk to their boss at the door to join" :
                     std::string(gang.meaning)+" - leave them be and they leave you be";
-                const float tw=MeasureTextEx(font,title.c_str(),20,1).x,sw=MeasureTextEx(font,sub.c_str(),15,1).x;
-                // Left, under the money line: clear of the compass and the touch buttons.
-                const float career_room=career.state().side==game::career::Side::Civilian ? 0.0F :
-                    career.job().kind!=game::career::JobKind::None ? 96.0F : 78.0F; // under the career panel
-                const float w=std::max(tw,sw)+30,x=10,y=screen_height*.235F+career_room;
-                DrawRectangle(static_cast<int>(x),static_cast<int>(y),static_cast<int>(w),50,Fade(BLACK,.5F));
-                DrawRectangle(static_cast<int>(x),static_cast<int>(y),5,50,gang.color);
-                DrawTextEx(font,title.c_str(),{x+15,y+5},20,1,gang.color);
-                DrawTextEx(font,sub.c_str(),{x+15,y+28},15,1,Color{220,226,206,255});
+                const float tw=MeasureTextEx(font,title.c_str(),17,1).x,sw=MeasureTextEx(font,sub.c_str(),14,1).x;
+                // A few seconds under the compass on arriving, then out of the way.
+                const float alpha=std::clamp(banner_time,0.0F,1.0F);
+                const float w=std::max(tw,sw)+30,x=screen_width/2.0F-w/2,y=106;
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y),static_cast<int>(w),42,Fade(BLACK,.5F*alpha));
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y),4,42,Fade(gang.color,alpha));
+                DrawTextEx(font,title.c_str(),{x+15,y+4},17,1,Fade(gang.color,alpha));
+                DrawTextEx(font,sub.c_str(),{x+15,y+24},14,1,Fade(Color{220,226,206,255},alpha));
             }
             // The Chief: his name over his head, and what he says.
             if(chief.placed && Vector3Distance(chief.at,camera.position)<14) {
@@ -5653,7 +5668,9 @@ void Renderer::run() {
             // The turf you stand on: its holder and their hold (gang members); the underworld's news.
             if(player_gang()>=0) {
                 const int here=territory.turf_at({player.position.x,player.position.y-1,player.position.z});
-                if(here>=0) {
+                if(here!=shown_turf) {shown_turf=here;turf_banner=4;}
+                turf_banner=std::max(0.0F,turf_banner-GetFrameTime());
+                if(here>=0 && turf_banner>0) {
                     const auto& t=territory.turfs()[static_cast<std::size_t>(here)];
                     const bool held=territory.controls(here,player_gang());
                     const int holder=t.ranch>=0 ? (territory.families()[static_cast<std::size_t>(t.ranch)].gang>=0 &&
@@ -5663,7 +5680,7 @@ void Renderer::run() {
                         t.ranch>=0 ? t.name+"  ·  "+faction_name(t.owner)+(held ? "  ·  WITH YOU" : "") :
                         t.name+"  ·  "+gang_name(t.owner)+(held ? "  ·  YOURS" : "")+TextFormat("  ·  HOLD %d",static_cast<int>(t.hold));
                     const float lw=MeasureTextEx(font,line.c_str(),15,1).x;
-                    const float x=10,y=screen_height*.235F-30;
+                    const float x=screen_width/2.0F-(lw+30)/2,y=78;
                     DrawRectangle(static_cast<int>(x),static_cast<int>(y),static_cast<int>(lw+30),24,Fade(BLACK,.55F));
                     DrawRectangle(static_cast<int>(x),static_cast<int>(y),5,24,faction_color(holder));
                     if(t.ranch<0) DrawRectangle(static_cast<int>(x+5),static_cast<int>(y+21),static_cast<int>((lw+25)*t.hold/100),3,faction_color(holder));
@@ -5681,43 +5698,7 @@ void Renderer::run() {
                 const float cw=MeasureTextEx(font,crown.c_str(),18,1).x;
                 DrawTextEx(font,crown.c_str(),{screen_width/2-cw/2,58},18,1,Color{240,200,90,255});
             }
-            // The career: side and rank, the respect meter, the job in hand, and the news.
-            if(career.state().side!=game::career::Side::Civilian) {
-                const bool cop=career.on_duty();
-                const Color tint=cop ? Color{110,160,255,255} : game::mafia::gangs[static_cast<std::size_t>(std::max(0,career.state().gang))].color;
-                const std::string who=std::string(cop ? "POLICIO DE VERDA" : std::string(game::mafia::gangs[static_cast<std::size_t>(career.state().gang)].name))+"  ·  "+career.rank_name();
-                const auto& job=career.job();
-                std::string task,status;
-                if(job.kind!=game::career::JobKind::None) {
-                    task=std::string(job.title)+"  ·  details in the BAG";   // (the full brief is in the bag's QUESTS)
-                    const int left=static_cast<int>(std::max(0.0,job.deadline-match_time));
-                    const float metres=std::hypot(job.target.x-player.position.x,job.target.z-player.position.z);
-                    if(job.kind==game::career::JobKind::Quest) status=TextFormat("%.0f m",metres);
-                    else status=(job.kind==game::career::JobKind::RobRig ? std::string(job.taken ? "rig taken - to the hideout" : "find the rig") :
-                            std::to_string(job.done)+" of "+std::to_string(job.needed))+
-                        TextFormat("   ·   %d:%02d left   ·   %.0f m",left/60,left%60,metres);
-                } else status=cop ? "On patrol - waiting for a call" : "Waiting for the word";
-                const float x=10,y=screen_height*.235F;
-                const float w=std::max({340.0F,MeasureTextEx(font,task.c_str(),15,1).x+24,MeasureTextEx(font,who.c_str(),18,1).x+24});
-                const float h=task.empty() ? 70.0F : 88.0F;
-                DrawRectangle(static_cast<int>(x),static_cast<int>(y),static_cast<int>(w),static_cast<int>(h),Fade(BLACK,.55F));
-                DrawRectangle(static_cast<int>(x),static_cast<int>(y),5,static_cast<int>(h),tint);
-                DrawTextEx(font,who.c_str(),{x+14,y+5},18,1,tint);
-                // The respect meter: ticks at each rank.
-                const float bar=200,share=career.state().respect/game::career::Career::respect_max;
-                DrawRectangle(static_cast<int>(x+14),static_cast<int>(y+29),static_cast<int>(bar),8,Fade(WHITE,.15F));
-                DrawRectangle(static_cast<int>(x+14),static_cast<int>(y+29),static_cast<int>(bar*share),8,tint);
-                for(const float tick:{15.0F,40.0F,70.0F,95.0F}) DrawRectangle(static_cast<int>(x+14+bar*tick/100),static_cast<int>(y+27),1,12,Fade(WHITE,.6F));
-                DrawTextEx(font,TextFormat("RESPECT %d",static_cast<int>(career.state().respect)),{x+22+bar,y+25},15,1,RAYWHITE);
-                if(!cop) {   // the gang's honour, and the name the island fears
-                    const int known=static_cast<int>(career.state().notoriety);
-                    const std::string badge=known>0 ? TextFormat("NOTORIETY %d",known) : std::string(career.state().honourable ? "HONOURABLE" : "NO HONOUR");
-                    const float bx=x+22+bar+MeasureTextEx(font,"RESPECT 100",15,1).x+12;
-                    DrawTextEx(font,badge.c_str(),{bx,y+25},15,1,known>0 ? Color{255,140,90,255} : Color{150,235,150,255});
-                }
-                if(!task.empty()) DrawTextEx(font,task.c_str(),{x+14,y+44},15,1,Color{255,232,180,255});
-                DrawTextEx(font,status.c_str(),{x+14,y+(task.empty() ? 46.0F : 64.0F)},14,1,Color{205,212,196,255});
-            }
+            // (The career - side, rank, respect, the job in hand - is in the bag's QUESTS.)
             // Doing time, or prisoners in the back of the car.
             if(game_mode==game::GameMode::Explore && (prison_until>=0 || career.custody()>0)) {
                 const int left=static_cast<int>(std::ceil(std::max(0.0,prison_until-match_time)));

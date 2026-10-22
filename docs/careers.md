@@ -167,6 +167,11 @@ The goal of the police questline is to get rid of the gangs. Once you serve, abo
 
 ## Your crew
 
+Your side, rank, respect, honour or notoriety, and crew are in the bag's **QUESTS** section,
+beside the job in hand, so the screen stays clear. The turf you walk onto and a gang's hideout
+are named for a few seconds under the compass.
+
+
 - **Gang members** recruit up to four of their gang's own Krimuloj. Walk up to one (not the boss,
   and not the men at the casino's poker table) and USE: "Recruit him (crew 1 of 4)". He wears
   the gang's colours.
@@ -181,7 +186,8 @@ Your crew and partner:
 - Ride along when you drive off. Those within about 35 m get in and get out where you do.
 - **Drive you** if you USE at a car's passenger door (the right-hand side) while one of them is
   near. The nearest takes the wheel and drives you by road to your map waypoint, or else to the
-  job in hand. The others ride too. USE again in the passenger seat to pull over and get out. A
+  job in hand. The others ride too. USE again in the passenger seat to pull over and get out. From the passenger seat you can shoot any gun out of the
+  window (the shot leaves from outside the car, so it never hits your own ride). A
   goal less than 70 m away is walked.
 
 A fallen recruit goes back to his hideout. Recruit another, or ask the desk for a new partner.
