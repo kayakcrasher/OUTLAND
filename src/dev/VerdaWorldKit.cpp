@@ -2,6 +2,7 @@
 #include "outland/creator/CreatorAssetRegistry.hpp"
 #include "outland/world/VerdaLayout.hpp"
 #include "outland/world/Highways.hpp"
+#include "outland/world/MotorTrade.hpp"
 #include "outland/world/Ranches.hpp"
 #include "outland/world/Zones.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -1231,6 +1232,7 @@ void vehicle_marker(world::Settlement& town, const std::string& id, Vector3 at, 
 // backing onto each other across the blocks. A park, a strip of shops, a church and a clinic sit
 // on the boulevard. Houses are procedural buildings (cheap to draw, enterable) owned by the capital.
 constexpr float suburb_east_x = -grid_edge_x, suburb_mid_x = -330, suburb_west_x = -476;
+constexpr float truck_road = 14;   // the main trucking routes' width (rigs pulling 13 m trailers)
 
 // One detached house facing a street (`facing`: +1 the street is at larger z, -1 smaller z).
 bool suburban_house(Kit& kit, world::Settlement& capital, Vector3 at, int facing, std::uint32_t seed, int& cars) {
@@ -1287,17 +1289,21 @@ void west_suburbs(Kit& kit, world::VerdaRegion& region) {
             }
     // Streets: the boulevard on z = 0, the downtown streets carried west, two cross streets.
     capital->roads.push_back({{suburb_east_x, 0, 0}, {suburb_west_x, 0, 0}, 10, world::RoadType::Asphalt});
+    // z = -84 is the truckers' road (Verda Transporto's yard is at its west end, and the Roka
+    // highway leaves from the boulevard's west end): 14 m, and so is the link up to the boulevard.
     for (const float z : {-168.0F, -84.0F, 84.0F, 168.0F})
-        capital->roads.push_back({{suburb_east_x, 0, z}, {suburb_west_x, 0, z}, 8, world::RoadType::Asphalt});
-    for (const float x : {suburb_mid_x, suburb_west_x})
-        capital->roads.push_back({{x, 0, -168}, {x, 0, 168}, 8, world::RoadType::Asphalt});
+        capital->roads.push_back({{suburb_east_x, 0, z}, {suburb_west_x, 0, z}, z == -84 ? truck_road : 8.0F, world::RoadType::Asphalt});
+    capital->roads.push_back({{suburb_mid_x, 0, -168}, {suburb_mid_x, 0, 168}, 8, world::RoadType::Asphalt});
+    capital->roads.push_back({{suburb_west_x, 0, -168}, {suburb_west_x, 0, -84}, 8, world::RoadType::Asphalt});
+    capital->roads.push_back({{suburb_west_x, 0, -84}, {suburb_west_x, 0, 0}, truck_road, world::RoadType::Asphalt});
+    capital->roads.push_back({{suburb_west_x, 0, 0}, {suburb_west_x, 0, 168}, 8, world::RoadType::Asphalt});
     kit.add_roads(capital->roads);
     // Homes on both sides of every residential street, 24 m lots, set back 14 m from the centreline.
     int cars = 0;
     std::uint32_t seed = 7000;
     for (const float street_z : {-168.0F, -84.0F, 84.0F, 168.0F})
         for (const int facing : {1, -1}) {
-            const float z = street_z - facing * 14.0F;
+            const float z = street_z - facing * (street_z == -84 ? 17.0F : 14.0F);   // (set back further on the truckers' road)
             for (const auto& [from, count, step] : std::initializer_list<std::tuple<float, int, float>>{{-200, 6, 22}, {-348, 5, 24}})
                 for (int i = 0; i < count; ++i) suburban_house(kit, *capital, {from - static_cast<float>(i) * step, 0, z}, facing, ++seed, cars);
         }
@@ -1307,7 +1313,7 @@ void west_suburbs(Kit& kit, world::VerdaRegion& region) {
         for (int i = 0; i < 6; ++i) {
             constexpr float lights[]{-196, -240, -284, -344, -392, -440};
             const float x = lights[i], side = i % 2 ? 1.0F : -1.0F;
-            kit.put(urban + "Traffic lights/street_light.glb", {x, 0, street_z + side * (street_z == 0 ? 6.4F : 5.4F)}, side > 0 ? 0.0F : 180.0F);
+            kit.put(urban + "Traffic lights/street_light.glb", {x, 0, street_z + side * (street_z == 0 ? 6.4F : street_z == -84 ? truck_road * .5F + 1.4F : 5.4F)}, side > 0 ? 0.0F : 180.0F);
         }
     // On the boulevard: the park (north-east), shops (south-east), a church and a clinic (west).
     for (int i = 0; i < 5; ++i) for (int j = 0; j < 3; ++j) {
@@ -2141,8 +2147,9 @@ void cargo_terminal(Kit& kit, world::VerdaRegion& region) {
             if (a.position.x < L::cargo_ramp_x0 - 6) return std::abs(a.position.z - z) < 10;
             return std::abs(a.position.z - z) < (a.position.x < L::cargo_ramp_x1 ? L::cargo_ramp_half + 3 : L::cargo_quay_half + 4);
         }));
-    port->roads.push_back({{town_east, 0, z}, {lane, 0, z}, 10, world::RoadType::Asphalt});
-    port->roads.push_back({{lane, 0, z - L::cargo_quay_half + 4}, {lane, 0, z + L::cargo_quay_half - 4}, 10, world::RoadType::Asphalt});
+    port->roads.push_back({{town_east, 0, z}, {L::cargo_ramp_x0, 0, z}, truck_road, world::RoadType::Asphalt});
+    port->roads.push_back({{L::cargo_ramp_x0, 0, z}, {lane, 0, z}, 13, world::RoadType::Asphalt});   // (between the ramp's walls)
+    port->roads.push_back({{lane, 0, z - L::cargo_quay_half + 4}, {lane, 0, z + L::cargo_quay_half - 4}, truck_road, world::RoadType::Asphalt});
     kit.add_roads(port->roads);
     kit.put(city + "civic/quay_apron.glb", {(L::cargo_ramp_x1 + L::cargo_quay_x1) * .5F, quay + .02F, z}, 0, false, false);
     // The ship at the berth, her quay side 1.2 m off the quay face; the keel 5 m under the sea.
@@ -2152,7 +2159,7 @@ void cargo_terminal(Kit& kit, world::VerdaRegion& region) {
     // Containers waiting on the quay, either side of the ramp's mouth (the cattle pen north).
     kit.put(city + "civic/container_stack.glb", {lane - 23, quay, z - 33}, 0, false);
     kit.put(city + "civic/container_stack.glb", {lane - 36, quay, z - 33}, 0, false);
-    kit.put(city + "civic/container_stack.glb", {lane - 36, quay, z + 24}, 180, false);
+    kit.put(city + "civic/container_stack.glb", {lane - 36, quay, z + 27}, 180, false);   // (clear of the 12 m lane down the ramp)
     // The cattle quay.
     const rr::Frame f(rr::cattle_quay_gate, rr::cattle_quay_up);
     fence_box(kit, f, rr::cattle_quay_pen, 9700, {{0, rr::cattle_quay_chute.x - 2, rr::cattle_quay_chute.x + 2}, {3, 10, 14}});
@@ -2182,7 +2189,7 @@ void freight_depot(Kit& kit, world::VerdaRegion& region) {
         kit.report.cleared += static_cast<int>(std::erase_if(town.assets, [&](const world::WorldAsset& a) {
             return a.vehicle.definition.empty() && a.position.x > L::freight_x0 && a.position.x < L::freight_x1 - 10 &&
                    a.position.z > L::freight_z0 && a.position.z < L::freight_z1; }));
-    capital->roads.push_back({{suburb_west_x, 0, road_z}, {L::freight_x0 + 14, 0, road_z}, 12, world::RoadType::Asphalt});
+    capital->roads.push_back({{suburb_west_x, 0, road_z}, {L::freight_x0 + 14, 0, road_z}, truck_road, world::RoadType::Asphalt});
     kit.add_roads({capital->roads.back()});
     const float ground = world::terrain::TerrainHeight::sample(-560, -54);
     if (!kit.put(city + "civic/truck_depot.glb", {-560, ground, -52}, 0, false)) return;
@@ -2198,7 +2205,7 @@ void freight_depot(Kit& kit, world::VerdaRegion& region) {
         kit.put(shacks + (i % 2 ? "Pallet.glb" : "Barrel.glb"), {-582 - static_cast<float>(i % 3) * 1.6F, 0, -48 + static_cast<float>(i / 3) * 1.6F}, static_cast<float>(r % 360));
     }
     for (int i = 0; i < 4; ++i)
-        kit.put(urban + "Traffic lights/street_light.glb", {-500 - i * 40.0F, 0, road_z - 7}, 0);
+        kit.put(urban + "Traffic lights/street_light.glb", {-500 - i * 40.0F, 0, road_z - truck_road * .5F - 1.4F}, 0);
     // The truck park: noses to the road.
     int n = 0;
     for (const float x : {-512.0F, -526.0F, -540.0F})
@@ -2288,6 +2295,175 @@ void gang_houses(Kit& kit, world::VerdaRegion& region) {
     }
 }
 
+// ------------------------------------------------------------------ the motor trade
+// Marnafto (the island's oil company: its rigs out at sea, its filling stations on the roads),
+// the Meĥanikejo workshops and Aŭtovendejo Verda's car lot (world/MotorTrade.hpp). Each building
+// faces a street with room in front to drive in; the stations and the lot keep clear of downtown
+// (and of the stadium ground, which is claimed).
+void motor_trade(Kit& kit, world::VerdaRegion& region) {
+    namespace M = world::motor;
+    const auto town_at = [&](const char* id) { const auto* t = settlement(region, id); return t ? t->center : Vector3{}; };
+    const auto clear_of_downtown = [](const CivicSpot& s) { return !world::layout::in_downtown(s.origin.x, s.origin.z); };
+    // Filling stations: model bounds x -12..12, z -11..11; the forecourt fronts the road.
+    const auto station = [&](Vector3 near, float min_d, float max_d, const std::function<bool(const CivicSpot&)>& accept) {
+        CivicSpot spot;
+        if (!civic_lot(kit, region, near, min_d, max_d, 0, 0, 12.4F, 11.4F, 11.2F, 3.5F, spot, accept)) return;
+        if (!kit.put(M::gas_model, spot.origin, spot.yaw)) return;
+        kit.purpose(to_world(spot.origin, spot.yaw, 0, .15F, 6.2F), spot.yaw, world::BuildingPurpose::Shop);   // the kiosk shop
+        kit.report.gas_stations.push_back(spot.origin);
+    };
+    // Verda City: one by Verda Transporto's yard (the truckers' road out west), one out east on
+    // the Porto Luma road.
+    station(world::layout::freight_depot_gate, 20, 220, clear_of_downtown);
+    station({476, 0, 0}, 0, 200, clear_of_downtown);
+    for (const char* id : {"village_espera", "port_luma", "south_haven", "west_roka"})
+        station(town_at(id), 30, 300, {});
+    // One on the ring road (off its shoulder: drive straight on), on the first level ground going
+    // round from between Suda Haveno and Sablovalo.
+    for (const float degrees : {110.0F, 120.0F, 100.0F, 135.0F, 150.0F, 200.0F, 250.0F, 300.0F, 330.0F, 20.0F}) {
+        const auto before = kit.report.gas_stations.size();
+        const float a = degrees * DEG2RAD;
+        station({1500 * std::cos(a), 0, 1500 * std::sin(a)}, 0, 120, [](const CivicSpot&) { return true; });
+        if (kit.report.gas_stations.size() > before) break;
+    }
+    // Meĥanikejo: model bounds x -9..9, z -6.2..6; room in front to drive into the bays.
+    const auto workshop = [&](Vector3 near, float min_d, float max_d, const std::function<bool(const CivicSpot&)>& accept) {
+        CivicSpot spot;
+        if (!civic_lot(kit, region, near, min_d, max_d, 0, 0, 9.4F, 6.6F, 6.4F, 6.0F, spot, accept)) return;
+        if (!kit.put(M::mechanic_model, spot.origin, spot.yaw)) return;
+        kit.purpose(to_world(spot.origin, spot.yaw, 6.6F, .1F, -4.8F), spot.yaw, world::BuildingPurpose::Garage);   // the office
+        kit.report.mechanics.push_back(spot.origin);
+    };
+    // Aŭtovendejo Verda: model bounds x -18..18, z -13.6..13; the lot's front on the street.
+    {
+        CivicSpot spot;
+        if (civic_lot(kit, region, {0, 0, 0}, 200, 620, 0, 0, 18.4F, 13.9F, 13.8F, 3.5F, spot, clear_of_downtown) &&
+            kit.put(M::car_lot_model, spot.origin, spot.yaw)) {
+            kit.purpose(to_world(spot.origin, spot.yaw, 12.8F, .12F, 7.2F), spot.yaw, world::BuildingPurpose::Office);   // the sales office
+            kit.report.car_lot = true;
+            kit.report.car_lot_at = spot.origin;
+            // The cars on show, noses to the street: one of each the lot sells.
+            auto* capital = settlement(region, "capital_verda");
+            static constexpr std::array<const char*, 5> stock{"hatchback", "sxs", "sedan", "truck", "green_hand_gt"};
+            for (std::size_t i = 0; i < stock.size() && capital; ++i)
+                vehicle_marker(*capital, std::string("vehicle_spawn_") + stock[i] + "_forsale_" + std::to_string(i + 1),
+                               to_world(spot.origin, spot.yaw, M::car_lot_spots[i], 0, M::car_lot_rows[0]), spot.yaw + 180);
+            // The workshop next to it.
+            workshop(spot.origin, 30, 260, clear_of_downtown);
+        }
+    }
+    for (const char* id : {"village_espera", "port_luma", "south_haven", "west_roka"})
+        workshop(town_at(id), 30, 320, {});
+    // Platformoj Marnafto: three rigs out at sea, off the north-east, east and south coasts.
+    for (const float degrees : {-60.0F, 10.0F, 75.0F}) {
+        // Out past the shore (the first deep water on that bearing), 300 m further.
+        const float a = degrees * DEG2RAD;
+        float r = 1700;
+        while (r < 3600 && world::terrain::TerrainHeight::sample(r * std::cos(a), r * std::sin(a)) > world::layout::sea_level - 6) r += 20;
+        if (r >= 3600) continue;
+        r += 300;
+        const Vector3 at{r * std::cos(a), world::layout::sea_level, r * std::sin(a)};
+        if (kit.put(M::oil_rig_model, at, degrees + 30, false, false)) kit.report.oil_rigs.push_back(at);
+    }
+}
+
+// ------------------------------------------------------------------ freight yards
+// Verda Transporto's drops in the big towns (game::freight's deliveries): just off the highway,
+// before it narrows into town, a 16 m road out to a 14 m loop round a gravel yard - pull in, go
+// round, unload, head back out the way you came; no squeezing a trailer through the town's
+// streets. A shed and containers stand beyond the loop; the shed's purpose marker is named
+// freight_yard_<town> (the game delivers there).
+void freight_yards(Kit& kit, world::VerdaRegion& region) {
+    constexpr float ring = 24, lane = 14, stem = 28;
+    for (const char* id : {"village_espera", "port_luma", "south_haven", "west_roka"}) {
+        auto* town = settlement(region, id);
+        if (!town) continue;
+        // The highway's end at this town (its point nearest the centre), and the way back out.
+        const world::Road* in = nullptr;
+        world::Settlement* owner = nullptr;
+        Vector3 end{};
+        float best = 400;
+        for (auto& t : region.runtime_settlements())
+            for (const auto& road : t.roads) {
+                if (road.type != world::RoadType::Highway) continue;
+                for (const Vector3 p : {road.start, road.end})
+                    if (const float d = std::hypot(p.x - town->center.x, p.z - town->center.z); d < best) { best = d; end = p; in = &road; owner = &t; }
+            }
+        if (!in || !owner) continue;
+        // Walk back along the highway, past where it narrows, to a stretch with room beside it.
+        bool built = false;
+        for (const float back : {210.0F, 250.0F, 290.0F, 330.0F, 380.0F})
+            for (const float side : {1.0F, -1.0F}) {
+                if (built) break;
+                // The highway point `back` metres from the end, following the chain of pieces.
+                Vector3 at = end, heading{};
+                float left = back;
+                const world::Road* piece = in;
+                Vector3 from = end;
+                for (int guard = 0; guard < 64 && piece && left > 0; ++guard) {
+                    const Vector3 to = std::hypot(piece->start.x - from.x, piece->start.z - from.z) < .5F ? piece->end : piece->start;
+                    const float l = std::hypot(to.x - from.x, to.z - from.z);
+                    heading = Vector3Normalize({to.x - from.x, 0, to.z - from.z});
+                    if (l >= left) { at = {from.x + heading.x * left, 0, from.z + heading.z * left}; left = 0; break; }
+                    left -= l; from = to; at = to;
+                    const world::Road* next = nullptr;
+                    for (const auto& t : region.settlements())
+                        for (const auto& road : t.roads)
+                            if (road.type == world::RoadType::Highway && &road != piece &&
+                                (std::hypot(road.start.x - to.x, road.start.z - to.z) < .75F || std::hypot(road.end.x - to.x, road.end.z - to.z) < .75F)) next = &road;
+                    piece = next;
+                }
+                if (left > 0) continue;
+                const Vector3 out{-heading.z * side, 0, heading.x * side};
+                const Vector3 junction = at;   // on the highway's centre line: a side road joining it (a median opening)
+                const Vector3 stem_end{junction.x + out.x * (world::highways::paved_half + stem), 0, junction.z + out.z * (world::highways::paved_half + stem)};
+                const Vector3 centre{stem_end.x + out.x * ring, 0, stem_end.z + out.z * ring};
+                // Dry, not too steep, and nothing in the way.
+                float lo = 1e9F, hi = -1e9F;
+                for (int k = 0; k < 12; ++k) {
+                    const float a = static_cast<float>(k) * PI / 6;
+                    const float h = world::terrain::TerrainHeight::sample(centre.x + std::cos(a) * ring, centre.z + std::sin(a) * ring);
+                    lo = std::min(lo, h); hi = std::max(hi, h);
+                }
+                if (lo < world::layout::sea_level + 2 || hi - lo > 7) continue;
+                bool open = true;
+                for (const auto& t : region.settlements()) {
+                    for (const auto& asset : t.assets)
+                        if (std::hypot(asset.position.x - centre.x, asset.position.z - centre.z) < ring + lane + 12 ||
+                            std::hypot(asset.position.x - (junction.x + stem_end.x) * .5F, asset.position.z - (junction.z + stem_end.z) * .5F) < stem * .5F + 6)
+                            open = false;
+                    for (const auto& road : t.roads) {
+                        if (road.type == world::RoadType::Highway) continue;
+                        for (const Vector3 p : {road.start, road.end, Vector3{(road.start.x + road.end.x) * .5F, 0, (road.start.z + road.end.z) * .5F}})
+                            if (std::hypot(p.x - centre.x, p.z - centre.z) < ring + lane + 10) open = false;
+                    }
+                }
+                if (!open || !kit.claim(centre, ring + lane * .5F + 2, ring + lane * .5F + 2, std::atan2(out.x, out.z) * RAD2DEG)) continue;
+                owner->roads.push_back({junction, stem_end, 16, world::RoadType::Asphalt});
+                for (int k = 0; k < 12; ++k) {
+                    const auto corner = [&](int i) {
+                        const float a = std::atan2(-out.z, -out.x) + static_cast<float>(i) * PI / 6;   // corner 0 on the stem
+                        return Vector3{centre.x + std::cos(a) * ring, 0, centre.z + std::sin(a) * ring};
+                    };
+                    owner->roads.push_back({corner(k), corner(k + 1), lane, world::RoadType::Asphalt});
+                }
+                kit.add_roads(std::vector<world::Road>(owner->roads.end() - 13, owner->roads.end()));
+                // Beyond the loop: the shed (its door to the yard) and the containers.
+                const float yaw = std::atan2(-out.x, -out.z) * RAD2DEG;   // facing back toward the highway
+                const Vector3 shed{centre.x + out.x * (ring + lane + 4), 0, centre.z + out.z * (ring + lane + 4)};
+                kit.put(shacks + std::string("Large Shed A.glb"), shed, yaw + 90);
+                kit.purpose({shed.x - out.x * 4, world::terrain::TerrainHeight::sample(shed.x, shed.z) + .1F, shed.z - out.z * 4}, yaw,
+                            world::BuildingPurpose::Industrial, std::string("freight_yard_") + id);
+                const Vector3 across{-out.z, 0, out.x};
+                for (const float s : {-14.0F, 14.0F})
+                    kit.put(city + "civic/container_stack.glb", {shed.x + across.x * s, world::terrain::TerrainHeight::sample(shed.x + across.x * s, shed.z + across.z * s),
+                                                                  shed.z + across.z * s}, yaw + 90, false);
+                kit.report.freight_yards.push_back(centre);
+                built = true;
+            }
+    }
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     lay_highways(region);
@@ -2326,6 +2502,10 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     gun_shops(kit, region);
     // After those (new pieces only): the county gangs' houses.
     gang_houses(kit, region);
+    // After those (new pieces only): Marnafto's stations and rigs, the workshops, the car lot.
+    motor_trade(kit, region);
+    // After those (new pieces only): Verda Transporto's freight yards off the highways.
+    freight_yards(kit, region);
     return kit.report;
 }
 }

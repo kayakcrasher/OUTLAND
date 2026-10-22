@@ -28,6 +28,13 @@ struct VehiclePlacementState {
     float health{100}, engine{100}, fuel{1};
     std::array<float,4> tires{{100,100,100,100}};
     bool enabled{true}, destroyed{false};
+    // A mechanic's work (game::autos): the fitted parts (paint, engine, tyres, bumper; paint -1
+    // factory, tyres 1 factory) and what they do - multipliers on power, top speed, wheel size,
+    // crash damage and grip, degrees more climbing - and the colour.
+    std::array<int,4> mods{{-1,0,1,0}};
+    float power{1}, top{1}, wheel{1}, armour{1}, grip{1}, slope{0};
+    bool painted{false};
+    Color paint{255,255,255,255};
 };
 struct WorldAsset {
     std::string id;

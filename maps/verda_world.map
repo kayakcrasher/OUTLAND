@@ -2352,95 +2352,95 @@ ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_r
 ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit27" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -436.987488 -0 -162.600006 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit28" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -434.662506 -0 -162.600006 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit22" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -451.299988 -0 -162.399994 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit23" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -193.699997 0 -90.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit29" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -212.662506 0 -89.4000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit30" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -214.987503 0 -89.4000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit31" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -217.3125 0 -89.4000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit32" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -219.637497 0 -89.4000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit29" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -224.362503 0 -89.4000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit30" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -226.6875 0 -89.4000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit31" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -229.012497 0 -89.4000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit32" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -231.337494 0 -89.4000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit24" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -214.699997 0 -89.5999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit25" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -237.699997 0 -90.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_kit_tree_419" 6 "" -262 0 -89.3000031 1 7 1 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit33" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -256.662506 0 -89.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit34" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -258.987488 0 -89.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit35" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -261.3125 0 -89.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit36" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -263.637482 0 -89.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit33" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -268.362518 0 -89.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit34" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -270.6875 -0 -89.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit35" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -273.012512 -0 -89.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit36" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -275.337494 -0 -89.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit26" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -272.299988 -0 -90.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_kit_tree_420" 6 "" -284 0 -89.3000031 1 7 1 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit27" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -294.299988 -0 -90.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit28" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -317.299988 -0 -89.5999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit29" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -355.299988 -0 -89.5999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_kit_tree_423" 6 "" -368 0 -89.3000031 1 7 1 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit37" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -362.662506 -0 -89.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit38" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -364.987488 -0 -89.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit39" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -367.3125 -0 -89.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit40" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -369.637482 -0 -89.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit37" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -374.362518 -0 -89.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit38" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -376.6875 -0 -89.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit39" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -379.012512 -0 -89.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit40" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -381.337494 -0 -89.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit30" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -378.299988 -0 -90.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_kit_tree_424" 6 "" -400 0 -89.3000031 1 7 1 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit41" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -386.662506 -0 -89.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit42" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -388.987488 -0 -89.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit43" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -391.3125 -0 -89.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit44" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -393.637482 -0 -89.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit41" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -398.362518 -0 -89.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit42" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -400.6875 -0 -89.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit43" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -403.012512 -0 -89.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit44" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -405.337494 -0 -89.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit31" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -389.700012 -0 -90.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_kit_tree_425" 6 "" -424 0 -89.3000031 1 7 1 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit32" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -413.700012 -0 -90.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit33" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -436.700012 -0 -89.5999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit34" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -192.699997 0 -78.4000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_kit_tree_427" 6 "" -218 0 -78.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit35" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -228.300003 0 -77.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit36" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -251.300003 0 -78.4000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_kit_tree_428" 6 "" -270 0 -78.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit45" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -275.337494 -0 -78.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit46" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -273.012512 0 -78.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit47" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -270.6875 0 -78.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit48" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -268.362518 0 -78.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit45" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -263.637482 0 -78.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit46" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -261.3125 0 -78.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit47" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -258.987488 0 -78.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit48" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -256.662506 0 -78.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit37" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -259.700012 0 -77.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit38" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -294.299988 -0 -77.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_kit_tree_429" 6 "" -314 0 -78.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit39" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -303.700012 -0 -77.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit49" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -357.337494 -0 -78.5999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit50" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -355.012512 -0 -78.5999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit51" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -352.6875 -0 -78.5999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit52" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -350.362518 -0 -78.5999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit49" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -345.637482 -0 -78.5999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit50" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -343.3125 -0 -78.5999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit51" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -340.987488 -0 -78.5999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit52" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -338.662506 -0 -78.5999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit40" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -355.299988 -0 -78.4000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_kit_tree_431" 6 "" -368 0 -78.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit41" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -378.299988 -0 -77.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_kit_tree_432" 6 "" -392 0 -78.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit53" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -405.337494 -0 -78.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit54" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -403.012512 -0 -78.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit55" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -400.6875 -0 -78.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_wood_fence_kit56" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -398.362518 -0 -78.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit53" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -393.637482 -0 -78.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit54" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -391.3125 -0 -78.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit55" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -388.987488 -0 -78.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit56" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -386.662506 -0 -78.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit42" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -402.299988 -0 -77.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_kit_tree_433" 6 "" -424 0 -78.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit43" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -413.700012 -0 -77.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit44" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -436.700012 -0 -78.4000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit23" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -193.699997 0 -93.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit29" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -212.662506 0 -92.4000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit30" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -214.987503 0 -92.4000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit31" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -217.3125 0 -92.4000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit32" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -219.637497 0 -92.4000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit29" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -224.362503 0 -92.4000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit30" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -226.6875 0 -92.4000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit31" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -229.012497 0 -92.4000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit32" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -231.337494 0 -92.4000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit24" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -214.699997 0 -92.5999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit25" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -237.699997 0 -93.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_419" 6 "" -262 0 -92.3000031 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit33" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -256.662506 0 -92.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit34" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -258.987488 0 -92.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit35" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -261.3125 0 -92.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit36" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -263.637482 0 -92.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit33" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -268.362518 -0 -92.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit34" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -270.6875 -0 -92.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit35" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -273.012512 -0 -92.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit36" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -275.337494 -0 -92.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit26" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -272.299988 -0 -93.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_420" 6 "" -284 0 -92.3000031 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit27" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -294.299988 -0 -93.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit28" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -317.299988 -0 -92.5999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit29" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -355.299988 -0 -92.5999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_423" 6 "" -368 0 -92.3000031 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit37" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -362.662506 -0 -92.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit38" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -364.987488 -0 -92.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit39" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -367.3125 -0 -92.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit40" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -369.637482 -0 -92.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit37" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -374.362518 -0 -92.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit38" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -376.6875 -0 -92.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit39" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -379.012512 -0 -92.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit40" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -381.337494 -0 -92.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit30" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -378.299988 -0 -93.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_424" 6 "" -400 0 -92.3000031 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit41" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -386.662506 -0 -92.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit42" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -388.987488 -0 -92.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit43" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -391.3125 -0 -92.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit44" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -393.637482 -0 -92.9000015 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit41" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -398.362518 -0 -92.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit42" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -400.6875 -0 -92.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit43" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -403.012512 -0 -92.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit44" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -405.337494 -0 -92.9000015 2.38942003 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit31" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -389.700012 -0 -93.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_425" 6 "" -424 0 -92.3000031 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit32" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -413.700012 -0 -93.0999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit33" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -436.700012 -0 -92.5999985 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit34" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -192.699997 0 -75.4000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_427" 6 "" -218 0 -75.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit35" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -228.300003 0 -74.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit36" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -251.300003 0 -75.4000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_428" 6 "" -270 0 -75.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit45" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -275.337494 -0 -75.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit46" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -273.012512 0 -75.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit47" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -270.6875 0 -75.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit48" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -268.362518 0 -75.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit45" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -263.637482 0 -75.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit46" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -261.3125 0 -75.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit47" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -258.987488 0 -75.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit48" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -256.662506 0 -75.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit37" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -259.700012 0 -74.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit38" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -294.299988 -0 -74.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_429" 6 "" -314 0 -75.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit39" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -303.700012 -0 -74.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit49" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -357.337494 -0 -75.5999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit50" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -355.012512 -0 -75.5999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit51" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -352.6875 -0 -75.5999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit52" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -350.362518 -0 -75.5999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit49" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -345.637482 -0 -75.5999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit50" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -343.3125 -0 -75.5999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit51" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -340.987488 -0 -75.5999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit52" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -338.662506 -0 -75.5999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit40" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -355.299988 -0 -75.4000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_431" 6 "" -368 0 -75.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit41" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -378.299988 -0 -74.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_432" 6 "" -392 0 -75.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit53" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -405.337494 -0 -75.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit54" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -403.012512 -0 -75.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit55" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -400.6875 -0 -75.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_wood_fence_kit56" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -398.362518 -0 -75.0999985 2.38803196 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit53" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -393.637482 -0 -75.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit54" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -391.3125 -0 -75.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit55" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -388.987488 -0 -75.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_walls_fences_white_picket_fence_white_picket_fence_closed_right_kit56" 4 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_right.glb" -386.662506 -0 -75.0999985 2.38942003 1.36558402 0.261319011 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit42" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -402.299988 -0 -74.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_433" 6 "" -424 0 -75.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit43" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -413.700012 -0 -74.9000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit44" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -436.700012 -0 -75.4000015 0.905834973 1.34886396 0.779404998 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_litter_trashcan_trash_can_alt1_kit45" 9 "assets/verda/urban/Litter/TrashCan/trash_can_alt1.glb" -192.699997 0 78.4000015 0.905834973 1.34886396 0.779404998 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_435" 6 "" -218 0 78.6999969 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_wood_fence_kit57" 9 "assets/verda/urban/Walls & Fences/white_picket_fence/white_picket_fence_closed_left.glb" -212.662506 0 78.0999985 2.38803196 1.36558402 0.261319011 -180 255 255 255 255 80 80 80 255 1
@@ -2632,12 +2632,12 @@ ASSET "creator_urban_traffic_lights_street_light_kit209" 9 "assets/verda/urban/T
 ASSET "creator_urban_traffic_lights_street_light_kit210" 9 "assets/verda/urban/Traffic lights/street_light.glb" -344 -0 -162.600006 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit211" 9 "assets/verda/urban/Traffic lights/street_light.glb" -392 -0 -173.399994 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit212" 9 "assets/verda/urban/Traffic lights/street_light.glb" -440 -0 -162.600006 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit213" 9 "assets/verda/urban/Traffic lights/street_light.glb" -196 0 -89.4000015 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit214" 9 "assets/verda/urban/Traffic lights/street_light.glb" -240 0 -78.5999985 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit215" 9 "assets/verda/urban/Traffic lights/street_light.glb" -284 -0 -89.4000015 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit216" 9 "assets/verda/urban/Traffic lights/street_light.glb" -344 -0 -78.5999985 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit217" 9 "assets/verda/urban/Traffic lights/street_light.glb" -392 -0 -89.4000015 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit218" 9 "assets/verda/urban/Traffic lights/street_light.glb" -440 -0 -78.5999985 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit213" 9 "assets/verda/urban/Traffic lights/street_light.glb" -196 0 -92.4000015 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit214" 9 "assets/verda/urban/Traffic lights/street_light.glb" -240 0 -75.5999985 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit215" 9 "assets/verda/urban/Traffic lights/street_light.glb" -284 -0 -92.4000015 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit216" 9 "assets/verda/urban/Traffic lights/street_light.glb" -344 -0 -75.5999985 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit217" 9 "assets/verda/urban/Traffic lights/street_light.glb" -392 -0 -92.4000015 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit218" 9 "assets/verda/urban/Traffic lights/street_light.glb" -440 -0 -75.5999985 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit219" 9 "assets/verda/urban/Traffic lights/street_light.glb" -196 0 -6.4000001 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit220" 9 "assets/verda/urban/Traffic lights/street_light.glb" -240 -0 6.4000001 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit221" 9 "assets/verda/urban/Traffic lights/street_light.glb" -284 -0 -6.4000001 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
@@ -5795,7 +5795,7 @@ ASSET "creator_city_harbour_crane_kit1" 4 "assets/verda/city/civic/harbour_crane
 ASSET "creator_city_harbour_crane_kit2" 4 "assets/verda/city/civic/harbour_crane.glb" 2240 -28 -470 58 42 15 0 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_container_stack_kit1" 4 "assets/verda/city/civic/container_stack.glb" 2190.92993 -28 -503 10.5 7.80000019 37.5 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit2" 4 "assets/verda/city/civic/container_stack.glb" 2177.92993 -28 -503 10.5 7.80000019 37.5 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_container_stack_kit3" 4 "assets/verda/city/civic/container_stack.glb" 2178.07007 -28 -446 10.5 7.80000019 37.5 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_container_stack_kit3" 4 "assets/verda/city/civic/container_stack.glb" 2178.07007 -28 -443 10.5 7.80000019 37.5 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_ranch_fence_8m_kit230" 9 "assets/verda/ranch/fence_8m.glb" 2201 -28 -424 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_ranch_fence_8m_kit231" 9 "assets/verda/ranch/fence_8m.glb" 2201 -28 -436 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_ranch_fence_8m_kit232" 9 "assets/verda/ranch/fence_8m.glb" 2185 -28 -423.333344 8.10000038 1.45000005 0.200000003 90 255 255 255 255 80 80 80 255 1
@@ -5838,10 +5838,10 @@ ASSET "creator_industrial_barrel_kit56" 9 "assets/verda/industrial/shacks/Barrel
 ASSET "creator_industrial_pallet_kit53" 9 "assets/verda/industrial/shacks/Pallet.glb" -582 -0 -46.4000015 0.899999976 0.100000001 1.20000005 113 255 255 255 255 80 80 80 255 0
 ASSET "creator_industrial_barrel_kit57" 9 "assets/verda/industrial/shacks/Barrel.glb" -583.599976 -0 -46.4000015 0.800000012 0.899999976 0.692799985 91 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_pallet_kit54" 9 "assets/verda/industrial/shacks/Pallet.glb" -585.200012 -0 -46.4000015 0.899999976 0.100000001 1.20000005 17 255 255 255 255 80 80 80 255 0
-ASSET "creator_urban_traffic_lights_street_light_kit285" 9 "assets/verda/urban/Traffic lights/street_light.glb" -500 -0 -91 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit286" 9 "assets/verda/urban/Traffic lights/street_light.glb" -540 -0 -91 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit287" 9 "assets/verda/urban/Traffic lights/street_light.glb" -580 0 -91 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit288" 9 "assets/verda/urban/Traffic lights/street_light.glb" -620 -0 -91 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit285" 9 "assets/verda/urban/Traffic lights/street_light.glb" -500 -0 -92.4000015 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit286" 9 "assets/verda/urban/Traffic lights/street_light.glb" -540 -0 -92.4000015 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit287" 9 "assets/verda/urban/Traffic lights/street_light.glb" -580 0 -92.4000015 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit288" 9 "assets/verda/urban/Traffic lights/street_light.glb" -620 -0 -92.4000015 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_radio_station_popolko_kit1" 0 "assets/verda/city/civic/radio_station_popolko.glb" -187.11499 0 19.8500004 18 34.3499985 11.1999998 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_radio_station_kantrio_kit1" 0 "assets/verda/city/civic/radio_station_kantrio.glb" -1778.2749 12.8098049 206.25 18 28.3500004 13.3999996 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_radio_station_roko_kit1" 0 "assets/verda/city/civic/radio_station_roko.glb" -134.11499 6 -1802.15002 18 40.3499985 11.1999998 -90 255 255 255 255 80 80 80 255 1
@@ -5854,6 +5854,34 @@ ASSET "creator_house_white_kit23" 0 "assets/verda/residential/houses/house_white
 ASSET "creator_house_blue_kit21" 0 "assets/verda/residential/houses/house_blue.glb" 1762 6 -539.099976 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_house_sage_kit15" 0 "assets/verda/residential/houses/house_sage.glb" 160.899994 6 1812 14.4200001 9.02999973 20.1700001 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_house_cream_kit17" 0 "assets/verda/residential/houses/house_cream.glb" -1610.90002 14.0573664 470 14.4200001 9.02999973 20.1700001 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gas_station_kit1" 0 "assets/verda/city/civic/gas_station.glb" -598 0 -62.2999992 24 6.19999981 22 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gas_station_kit2" 0 "assets/verda/city/civic/gas_station.glb" 457.299988 0 26 24 6.19999981 22 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gas_station_kit3" 0 "assets/verda/city/civic/gas_station.glb" -140.699997 6 -1780 24 6.19999981 22 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gas_station_kit4" 0 "assets/verda/city/civic/gas_station.glb" 1770 6 -259.299988 24 6.19999981 22 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gas_station_kit5" 0 "assets/verda/city/civic/gas_station.glb" 280 6 1940.69995 24 6.19999981 22 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gas_station_kit6" 0 "assets/verda/city/civic/gas_station.glb" -1609.30005 14.0573664 510 24 6.19999981 22 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gas_station_kit7" 0 "assets/verda/city/civic/gas_station.glb" -712.982117 4.4842186 1346.83545 24 6.19999981 22 -28.7500038 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_car_lot_kit1" 0 "assets/verda/city/civic/car_lot.glb" -195.990005 0 -126 36 6.4000001 26.6200008 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_mechanic_shop_kit1" 0 "assets/verda/city/civic/mechanic_shop.glb" -229 0 -17.3249989 18.1000004 5 12.1499996 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_mechanic_shop_kit2" 0 "assets/verda/city/civic/mechanic_shop.glb" -21.7249966 6 -1662 18.1000004 5 12.1499996 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_mechanic_shop_kit3" 0 "assets/verda/city/civic/mechanic_shop.glb" 1746 6 -261.675018 18.1000004 5 12.1499996 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_mechanic_shop_kit4" 0 "assets/verda/city/civic/mechanic_shop.glb" 161.675003 6 1780 18.1000004 5 12.1499996 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_mechanic_shop_kit5" 0 "assets/verda/city/civic/mechanic_shop.glb" -1730 14.0573664 311.675018 18.1000004 5 12.1499996 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_oil_rig_kit1" 4 "assets/verda/city/civic/oil_rig.glb" 1325.02026 -46 -2306.50269 59.5 79.1999969 30.6000004 -30 255 255 255 255 80 80 80 255 0
+ASSET "creator_city_oil_rig_kit2" 4 "assets/verda/city/civic/oil_rig.glb" 2693.96851 -46 479.492035 59.5 79.1999969 30.6000004 40 255 255 255 255 80 80 80 255 0
+ASSET "creator_city_oil_rig_kit3" 4 "assets/verda/city/civic/oil_rig.glb" 679.594177 -46 2536.27954 59.5 79.1999969 30.6000004 105 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_large_shed_a_kit10" 4 "assets/verda/industrial/shacks/Large Shed A.glb" -103.399994 -1.19234073 -1430 8.80000019 6.20100021 14.3219995 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_container_stack_kit5" 4 "assets/verda/city/civic/container_stack.glb" -103.329994 -0.210299879 -1416 10.5 7.80000019 37.5 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_container_stack_kit6" 4 "assets/verda/city/civic/container_stack.glb" -103.329994 -1.75828695 -1444 10.5 7.80000019 37.5 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_large_shed_a_kit11" 4 "assets/verda/industrial/shacks/Large Shed A.glb" 1353.65051 0.0586862862 -450.134644 8.80000019 6.20100021 14.3219995 110.323143 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_container_stack_kit7" 4 "assets/verda/city/civic/container_stack.glb" 1340.54626 0.581763983 -445.206604 10.5 7.80000019 37.5 110.323143 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_container_stack_kit8" 4 "assets/verda/city/civic/container_stack.glb" 1366.80334 -0.136583447 -454.931396 10.5 7.80000019 37.5 110.323143 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_large_shed_a_kit12" 4 "assets/verda/industrial/shacks/Large Shed A.glb" 342.796509 -2.40234494 1375.10632 8.80000019 6.20100021 14.3219995 11.6336517 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_container_stack_kit9" 4 "assets/verda/city/civic/container_stack.glb" 339.904785 -4.51012945 1361.40808 10.5 7.80000019 37.5 11.6336517 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_container_stack_kit10" 4 "assets/verda/city/civic/container_stack.glb" 345.551086 -0.983053446 1388.83289 10.5 7.80000019 37.5 11.6336517 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_large_shed_a_kit13" 4 "assets/verda/industrial/shacks/Large Shed A.glb" -1356.66199 5.47932434 451.494873 8.80000019 6.20100021 14.3219995 -76.3527832 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_container_stack_kit11" 4 "assets/verda/city/civic/container_stack.glb" -1343.07373 7.49380493 448.123657 10.5 7.80000019 37.5 -76.3527832 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_container_stack_kit12" 4 "assets/verda/city/civic/container_stack.glb" -1370.2832 3.47131681 454.730042 10.5 7.80000019 37.5 -76.3527832 255 255 255 255 80 80 80 255 1
 MARKER "creator_marker_loot_spawn_general_training" 0 4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 0.5 0.5 0.5 0 1
@@ -6138,6 +6166,23 @@ MARKER "gang_house_village_espera" 4 17.5900002 6.05999994 -1665.55005 1.2000000
 MARKER "gang_house_port_luma" 4 1764.41003 6.05999994 -534.449951 1.20000005 2.20000005 1.20000005 180 1
 MARKER "gang_house_south_haven" 4 165.549988 6.05999994 1809.58997 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "gang_house_west_roka" 4 -1615.55005 14.1173668 472.410004 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_185" 4 -598 0.150000006 -56.0999985 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_186" 4 451.099976 0.150000006 26 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_187" 4 -146.899994 6.1500001 -1780 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_188" 4 1770 6.1500001 -253.099991 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_189" 4 280 6.1500001 1946.8999 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_190" 4 -1603.1001 14.207366 510 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_191" 4 -715.964233 4.63421869 1352.27112 1.20000005 2.20000005 1.20000005 -28.7500038 1
+MARKER "creator_marker_building_purpose_kit_192" 4 -203.5 0.119999997 -113.199997 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_193" 4 -235.600006 0.100000001 -12.5999994 1.20000005 2.20000005 1.20000005 -180 1
+MARKER "creator_marker_building_purpose_kit_194" 4 -16.9999962 6.0999999 -1655.40002 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_195" 4 1752.59998 6.0999999 -266.399994 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_196" 4 166.400009 6.0999999 1786.59998 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_197" 4 -1736.59998 14.1573668 316.399994 1.20000005 2.20000005 1.20000005 180 1
+MARKER "freight_yard_village_espera" 4 -99.3999939 -1.09234071 -1430 1.20000005 2.20000005 1.20000005 90 1
+MARKER "freight_yard_port_luma" 4 1355.03979 0.15868628 -446.383636 1.20000005 2.20000005 1.20000005 20.3231449 1
+MARKER "freight_yard_south_haven" 4 338.878693 -2.30234504 1375.91296 1.20000005 2.20000005 1.20000005 -78.3663483 1
+MARKER "freight_yard_west_roka" 4 -1357.60571 5.57932425 447.607819 1.20000005 2.20000005 1.20000005 -166.352783 1
 PURPOSE "creator_marker_building_purpose_kit_1" 1
 PURPOSE "creator_marker_building_purpose_kit_2" 1
 PURPOSE "creator_marker_building_purpose_kit_3" 1
@@ -6326,6 +6371,23 @@ PURPOSE "gang_house_village_espera" 1
 PURPOSE "gang_house_port_luma" 1
 PURPOSE "gang_house_south_haven" 1
 PURPOSE "gang_house_west_roka" 1
+PURPOSE "creator_marker_building_purpose_kit_185" 2
+PURPOSE "creator_marker_building_purpose_kit_186" 2
+PURPOSE "creator_marker_building_purpose_kit_187" 2
+PURPOSE "creator_marker_building_purpose_kit_188" 2
+PURPOSE "creator_marker_building_purpose_kit_189" 2
+PURPOSE "creator_marker_building_purpose_kit_190" 2
+PURPOSE "creator_marker_building_purpose_kit_191" 2
+PURPOSE "creator_marker_building_purpose_kit_192" 7
+PURPOSE "creator_marker_building_purpose_kit_193" 8
+PURPOSE "creator_marker_building_purpose_kit_194" 8
+PURPOSE "creator_marker_building_purpose_kit_195" 8
+PURPOSE "creator_marker_building_purpose_kit_196" 8
+PURPOSE "creator_marker_building_purpose_kit_197" 8
+PURPOSE "freight_yard_village_espera" 9
+PURPOSE "freight_yard_port_luma" 9
+PURPOSE "freight_yard_south_haven" 9
+PURPOSE "freight_yard_west_roka" 9
 SETTLEMENT "capital_verda" "Verda" 0 0 0 0 384 0 0
 ROAD 0 0 -1680 0 0 -1621.12915 18.7999992 3
 ROAD 0 0 -1621.12915 0 0 -1562.2583 18.7999992 3
@@ -6622,11 +6684,13 @@ ROAD 171 0 176 171 0 260 16 2
 ROAD -179 0 252 179 0 252 16 2
 ROAD -179 0 0 -476 0 0 10 2
 ROAD -179 0 -168 -476 0 -168 8 2
-ROAD -179 0 -84 -476 0 -84 8 2
+ROAD -179 0 -84 -476 0 -84 14 2
 ROAD -179 0 84 -476 0 84 8 2
 ROAD -179 0 168 -476 0 168 8 2
 ROAD -330 0 -168 -330 0 168 8 2
-ROAD -476 0 -168 -476 0 168 8 2
+ROAD -476 0 -168 -476 0 -84 8 2
+ROAD -476 0 -84 -476 0 0 14 2
+ROAD -476 0 0 -476 0 168 8 2
 ROAD 179 0 0 476 0 0 10 2
 ROAD 179 0 -168 476 0 -168 8 2
 ROAD 179 0 -84 476 0 -84 8 2
@@ -6634,7 +6698,59 @@ ROAD 179 0 84 476 0 84 8 2
 ROAD 179 0 168 476 0 168 8 2
 ROAD 330 0 -168 330 0 168 8 2
 ROAD 476 0 -168 476 0 168 8 2
-ROAD -476 0 -84 -638 0 -84 12 2
+ROAD -476 0 -84 -638 0 -84 14 2
+ROAD 0 0 -1430 -37.3999977 0 -1430 16 2
+ROAD -37.3999939 0 -1430 -40.615387 0 -1418 14 2
+ROAD -40.615387 0 -1418 -49.3999939 0 -1409.21533 14 2
+ROAD -49.3999939 0 -1409.21533 -61.3999939 0 -1406 14 2
+ROAD -61.3999939 0 -1406 -73.3999939 0 -1409.21533 14 2
+ROAD -73.3999939 0 -1409.21533 -82.1846085 0 -1418 14 2
+ROAD -82.1846085 0 -1418 -85.3999939 0 -1430 14 2
+ROAD -85.3999939 0 -1430 -82.1846008 0 -1442 14 2
+ROAD -82.1846008 0 -1442 -73.3999939 0 -1450.78467 14 2
+ROAD -73.3999939 0 -1450.78467 -61.3999939 0 -1454 14 2
+ROAD -61.3999939 0 -1454 -49.3999863 0 -1450.78455 14 2
+ROAD -49.3999863 0 -1450.78455 -40.6153793 0 -1442 14 2
+ROAD -40.6153793 0 -1442 -37.3999939 0 -1430 14 2
+ROAD 1389.56274 0 -353.171417 1376.57324 0 -388.243225 16 2
+ROAD 1376.57324 0 -388.243225 1364.20349 0 -387.090698 14 2
+ROAD 1364.20349 0 -387.090698 1352.91467 0 -392.277435 14 2
+ROAD 1352.91467 0 -392.277435 1345.73169 0 -402.413666 14 2
+ROAD 1345.73169 0 -402.413666 1344.5791 0 -414.783386 14 2
+ROAD 1344.5791 0 -414.783386 1349.76587 0 -426.072174 14 2
+ROAD 1349.76587 0 -426.072174 1359.9021 0 -433.255188 14 2
+ROAD 1359.9021 0 -433.255188 1372.27185 0 -434.407715 14 2
+ROAD 1372.27185 0 -434.407715 1383.56067 0 -429.220978 14 2
+ROAD 1383.56067 0 -429.220978 1390.74365 0 -419.084747 14 2
+ROAD 1390.74365 0 -419.084747 1391.89624 0 -406.714996 14 2
+ROAD 1391.89624 0 -406.714996 1386.70947 0 -395.426239 14 2
+ROAD 1386.70947 0 -395.426239 1376.57324 0 -388.243225 14 2
+ROAD 241.520676 0 1395.9574 278.152374 0 1388.41553 16 2
+ROAD 278.152374 0 1388.41553 278.881866 0 1376.01355 14 2
+ROAD 278.881866 0 1376.01355 285.714569 0 1365.63806 14 2
+ROAD 285.714569 0 1365.63806 296.819672 0 1360.06885 14 2
+ROAD 296.819672 0 1360.06885 309.221527 0 1360.79834 14 2
+ROAD 309.221527 0 1360.79834 319.597137 0 1367.6311 14 2
+ROAD 319.597137 0 1367.6311 325.16629 0 1378.73608 14 2
+ROAD 325.16629 0 1378.73608 324.436798 0 1391.13806 14 2
+ROAD 324.436798 0 1391.13806 317.604095 0 1401.51355 14 2
+ROAD 317.604095 0 1401.51355 306.499023 0 1407.08276 14 2
+ROAD 306.499023 0 1407.08276 294.097107 0 1406.35327 14 2
+ROAD 294.097107 0 1406.35327 283.721558 0 1399.52063 14 2
+ROAD 283.721558 0 1399.52063 278.152374 0 1388.41553 14 2
+ROAD -1381.05835 0 351.01416 -1372.23413 0 387.358246 16 2
+ROAD -1372.23413 0 387.358246 -1359.81433 0 387.65155 14 2
+ROAD -1359.81433 0 387.65155 -1349.20508 0 394.115479 14 2
+ROAD -1349.20508 0 394.115479 -1343.24915 0 405.018036 14 2
+ROAD -1343.24915 0 405.018036 -1343.54248 0 417.437897 14 2
+ROAD -1343.54248 0 417.437897 -1350.00635 0 428.04715 14 2
+ROAD -1350.00635 0 428.04715 -1360.90894 0 434.003082 14 2
+ROAD -1360.90894 0 434.003082 -1373.32874 0 433.709778 14 2
+ROAD -1373.32874 0 433.709778 -1383.93799 0 427.24585 14 2
+ROAD -1383.93799 0 427.24585 -1389.89392 0 416.343292 14 2
+ROAD -1389.89392 0 416.343292 -1389.60059 0 403.923431 14 2
+ROAD -1389.60059 0 403.923431 -1383.13672 0 393.314178 14 2
+ROAD -1383.13672 0 393.314178 -1372.23413 0 387.358246 14 2
 BUILDING "verda_okcidento_house_1" 1 -200 0 -182 11 7 9 180 232 206 196 255 58 62 58 255 1
 BUILDING "verda_okcidento_house_2" 1 -222 0 -182 11 7 9 180 150 168 182 255 58 62 58 255 1
 BUILDING "verda_okcidento_house_3" 0 -244 0 -182 13 4 10 180 236 232 220 255 128 66 52 255 1
@@ -6657,28 +6773,28 @@ BUILDING "verda_okcidento_house_19" 1 -372 0 -154 11 7 9 0 236 232 220 255 58 62
 BUILDING "verda_okcidento_house_20" 0 -396 0 -154 13 4 10 0 214 196 172 255 104 78 60 255 1
 BUILDING "verda_okcidento_house_21" 1 -420 0 -154 11 7 9 0 226 214 170 255 128 66 52 255 1
 BUILDING "verda_okcidento_house_22" 0 -444 0 -154 13 4 10 0 236 232 220 255 72 74 78 255 1
-BUILDING "verda_okcidento_house_23" 1 -200 0 -98 11 7 9 180 196 198 196 255 128 66 52 255 1
-BUILDING "verda_okcidento_house_24" 0 -222 0 -98 13 4 10 180 176 198 214 255 104 78 60 255 1
-BUILDING "verda_okcidento_house_25" 1 -244 0 -98 11 7 9 180 236 232 220 255 128 66 52 255 1
-BUILDING "verda_okcidento_house_26" 1 -266 0 -98 11 7 9 180 232 206 196 255 128 66 52 255 1
-BUILDING "verda_okcidento_house_27" 1 -288 0 -98 11 7 9 180 232 206 196 255 72 74 78 255 1
-BUILDING "verda_okcidento_house_28" 0 -310 0 -98 13 4 10 180 176 198 214 255 128 66 52 255 1
-BUILDING "verda_okcidento_house_29" 0 -348 0 -98 13 4 10 180 184 196 160 255 58 62 58 255 1
-BUILDING "verda_okcidento_house_30" 1 -372 0 -98 11 7 9 180 232 206 196 255 58 62 58 255 1
-BUILDING "verda_okcidento_house_31" 1 -396 0 -98 11 7 9 180 196 198 196 255 58 62 58 255 1
-BUILDING "verda_okcidento_house_32" 1 -420 0 -98 11 7 9 180 226 214 170 255 128 66 52 255 1
-BUILDING "verda_okcidento_house_33" 0 -444 0 -98 13 4 10 180 150 168 182 255 86 96 104 255 1
-BUILDING "verda_okcidento_house_34" 0 -200 0 -70 13 4 10 0 150 168 182 255 86 96 104 255 1
-BUILDING "verda_okcidento_house_35" 1 -222 0 -70 11 7 9 0 150 168 182 255 58 62 58 255 1
-BUILDING "verda_okcidento_house_36" 0 -244 0 -70 13 4 10 0 232 206 196 255 86 96 104 255 1
-BUILDING "verda_okcidento_house_37" 1 -266 0 -70 11 7 9 0 226 214 170 255 86 96 104 255 1
-BUILDING "verda_okcidento_house_38" 1 -288 0 -70 11 7 9 0 176 198 214 255 128 66 52 255 1
-BUILDING "verda_okcidento_house_39" 1 -310 0 -70 11 7 9 0 232 206 196 255 58 62 58 255 1
-BUILDING "verda_okcidento_house_40" 0 -348 0 -70 13 4 10 0 226 214 170 255 58 62 58 255 1
-BUILDING "verda_okcidento_house_41" 1 -372 0 -70 11 7 9 0 236 232 220 255 104 78 60 255 1
-BUILDING "verda_okcidento_house_42" 1 -396 0 -70 11 7 9 0 184 196 160 255 128 66 52 255 1
-BUILDING "verda_okcidento_house_43" 1 -420 0 -70 11 7 9 0 214 196 172 255 86 96 104 255 1
-BUILDING "verda_okcidento_house_44" 0 -444 0 -70 13 4 10 0 184 196 160 255 86 96 104 255 1
+BUILDING "verda_okcidento_house_23" 1 -200 0 -101 11 7 9 180 196 198 196 255 128 66 52 255 1
+BUILDING "verda_okcidento_house_24" 0 -222 0 -101 13 4 10 180 176 198 214 255 104 78 60 255 1
+BUILDING "verda_okcidento_house_25" 1 -244 0 -101 11 7 9 180 236 232 220 255 128 66 52 255 1
+BUILDING "verda_okcidento_house_26" 1 -266 0 -101 11 7 9 180 232 206 196 255 128 66 52 255 1
+BUILDING "verda_okcidento_house_27" 1 -288 0 -101 11 7 9 180 232 206 196 255 72 74 78 255 1
+BUILDING "verda_okcidento_house_28" 0 -310 0 -101 13 4 10 180 176 198 214 255 128 66 52 255 1
+BUILDING "verda_okcidento_house_29" 0 -348 0 -101 13 4 10 180 184 196 160 255 58 62 58 255 1
+BUILDING "verda_okcidento_house_30" 1 -372 0 -101 11 7 9 180 232 206 196 255 58 62 58 255 1
+BUILDING "verda_okcidento_house_31" 1 -396 0 -101 11 7 9 180 196 198 196 255 58 62 58 255 1
+BUILDING "verda_okcidento_house_32" 1 -420 0 -101 11 7 9 180 226 214 170 255 128 66 52 255 1
+BUILDING "verda_okcidento_house_33" 0 -444 0 -101 13 4 10 180 150 168 182 255 86 96 104 255 1
+BUILDING "verda_okcidento_house_34" 0 -200 0 -67 13 4 10 0 150 168 182 255 86 96 104 255 1
+BUILDING "verda_okcidento_house_35" 1 -222 0 -67 11 7 9 0 150 168 182 255 58 62 58 255 1
+BUILDING "verda_okcidento_house_36" 0 -244 0 -67 13 4 10 0 232 206 196 255 86 96 104 255 1
+BUILDING "verda_okcidento_house_37" 1 -266 0 -67 11 7 9 0 226 214 170 255 86 96 104 255 1
+BUILDING "verda_okcidento_house_38" 1 -288 0 -67 11 7 9 0 176 198 214 255 128 66 52 255 1
+BUILDING "verda_okcidento_house_39" 1 -310 0 -67 11 7 9 0 232 206 196 255 58 62 58 255 1
+BUILDING "verda_okcidento_house_40" 0 -348 0 -67 13 4 10 0 226 214 170 255 58 62 58 255 1
+BUILDING "verda_okcidento_house_41" 1 -372 0 -67 11 7 9 0 236 232 220 255 104 78 60 255 1
+BUILDING "verda_okcidento_house_42" 1 -396 0 -67 11 7 9 0 184 196 160 255 128 66 52 255 1
+BUILDING "verda_okcidento_house_43" 1 -420 0 -67 11 7 9 0 214 196 172 255 86 96 104 255 1
+BUILDING "verda_okcidento_house_44" 0 -444 0 -67 13 4 10 0 184 196 160 255 86 96 104 255 1
 BUILDING "verda_okcidento_house_45" 0 -200 0 70 13 4 10 180 232 206 196 255 104 78 60 255 1
 BUILDING "verda_okcidento_house_46" 1 -222 0 70 11 7 9 180 150 168 182 255 128 66 52 255 1
 BUILDING "verda_okcidento_house_47" 0 -244 0 70 13 4 10 180 226 214 170 255 86 96 104 255 1
@@ -6747,11 +6863,11 @@ MARKER "vehicle_spawn_hatchback_okcidento_4" 3 -317.899994 -0 -156.300003 2 1.60
 MARKER "vehicle_spawn_hatchback_okcidento_5" 3 -355.899994 -0 -156.300003 2 1.60000002 4.4000001 180 1
 MARKER "vehicle_spawn_hatchback_okcidento_6" 3 -387.100006 -0 -156.800003 2 1.60000002 4.4000001 180 1
 MARKER "vehicle_spawn_hatchback_okcidento_7" 3 -412.100006 -0 -156.300003 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_hatchback_okcidento_8" 3 -236.100006 0 -95.6999969 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_9" 3 -273.899994 -0 -95.6999969 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_10" 3 -295.899994 -0 -95.6999969 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_11" 3 -435.100006 -0 -95.1999969 2 1.60000002 4.4000001 360 1
-MARKER "vehicle_spawn_hatchback_okcidento_12" 3 -356.899994 -0 -72.8000031 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_hatchback_okcidento_8" 3 -236.100006 0 -98.6999969 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_9" 3 -273.899994 -0 -98.6999969 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_10" 3 -295.899994 -0 -98.6999969 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_11" 3 -435.100006 -0 -98.1999969 2 1.60000002 4.4000001 360 1
+MARKER "vehicle_spawn_hatchback_okcidento_12" 3 -356.899994 -0 -69.8000031 2 1.60000002 4.4000001 180 1
 MARKER "vehicle_spawn_hatchback_okcidento_13" 3 -274.899994 -0 72.8000031 2 1.60000002 4.4000001 360 1
 MARKER "vehicle_spawn_hatchback_okcidento_14" 3 -280.100006 -0 72.3000031 2 1.60000002 4.4000001 360 1
 MARKER "vehicle_spawn_hatchback_okcidento_15" 3 -318.899994 -0 72.8000031 2 1.60000002 4.4000001 360 1
@@ -7097,28 +7213,28 @@ MARKER "loot_spawn_general_bldg_571" 0 -372 -0 -154 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_medical_bldg_572" 0 -396 -0 -154 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_573" 0 -420 -0 -154 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_medical_bldg_574" 0 -444 -0 -154 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_weapons_bldg_575" 0 -200 0 -98 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_bldg_576" 0 -222 0 -98 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_bldg_577" 0 -244 0 -98 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_weapons_bldg_578" 0 -266 -0 -98 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_medical_bldg_579" 0 -288 -0 -98 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_bldg_580" 0 -310 -0 -98 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_weapons_bldg_581" 0 -348 -0 -98 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_weapons_bldg_582" 0 -372 -0 -98 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_weapons_bldg_583" 0 -396 -0 -98 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_bldg_584" 0 -420 -0 -98 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_weapons_bldg_585" 0 -444 -0 -98 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_weapons_bldg_586" 0 -200 0 -70 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_bldg_587" 0 -222 0 -70 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_bldg_588" 0 -244 0 -70 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_weapons_bldg_589" 0 -266 0 -70 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_bldg_590" 0 -288 -0 -70 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_bldg_591" 0 -310 -0 -70 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_bldg_592" 0 -348 -0 -70 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_medical_bldg_593" 0 -372 -0 -70 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_bldg_594" 0 -396 -0 -70 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_bldg_595" 0 -420 -0 -70 0.5 0.5 0.5 0 1
-MARKER "loot_spawn_general_bldg_596" 0 -444 -0 -70 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_weapons_bldg_575" 0 -200 0 -101 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_bldg_576" 0 -222 0 -101 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_bldg_577" 0 -244 0 -101 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_weapons_bldg_578" 0 -266 -0 -101 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_medical_bldg_579" 0 -288 -0 -101 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_bldg_580" 0 -310 -0 -101 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_weapons_bldg_581" 0 -348 -0 -101 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_weapons_bldg_582" 0 -372 -0 -101 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_weapons_bldg_583" 0 -396 -0 -101 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_bldg_584" 0 -420 -0 -101 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_weapons_bldg_585" 0 -444 -0 -101 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_weapons_bldg_586" 0 -200 0 -67 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_bldg_587" 0 -222 0 -67 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_bldg_588" 0 -244 0 -67 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_weapons_bldg_589" 0 -266 0 -67 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_bldg_590" 0 -288 -0 -67 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_bldg_591" 0 -310 -0 -67 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_bldg_592" 0 -348 -0 -67 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_medical_bldg_593" 0 -372 -0 -67 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_bldg_594" 0 -396 -0 -67 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_bldg_595" 0 -420 -0 -67 0.5 0.5 0.5 0 1
+MARKER "loot_spawn_general_bldg_596" 0 -444 -0 -67 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_597" 0 -200 0 70 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_bldg_598" 0 -222 0 70 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_bldg_599" 0 -244 0 70 0.5 0.5 0.5 0 1
@@ -7183,6 +7299,11 @@ MARKER "vehicle_spawn_semi_depot_cattle_1" 3 -554 -0 -100 2 1.60000002 4.4000001
 MARKER "vehicle_spawn_semi_haul_1" 3 -580 -0 -100 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_semi_haul_2" 3 -594 -0 -100 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_semi_haul_3" 3 -608 -0 -100 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_hatchback_forsale_1" 3 -190.300003 -0 -140 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_sxs_forsale_2" 3 -190.300003 -0 -134 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_sedan_forsale_3" 3 -190.300003 0 -128 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_truck_forsale_4" 3 -190.300003 0 -122 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_green_hand_gt_forsale_5" 3 -190.300003 0 -116 2 1.60000002 4.4000001 90 1
 PURPOSE "verda_okcidento_house_1" 1
 PURPOSE "verda_okcidento_house_2" 1
 PURPOSE "verda_okcidento_house_3" 1
@@ -7293,8 +7414,9 @@ ROAD 1815.80762 0 -243.807617 1812 0 -253 7.25 2
 ROAD 1812 0 -253 1815.80762 0 -262.192383 7.25 2
 ROAD 1815.80762 0 -262.192383 1825 0 -266 7.25 2
 ROAD 1946 0 -360 2227 0 -360 6 0
-ROAD 1876 0 -470 2214 0 -470 10 2
-ROAD 2214 0 -522 2214 0 -418 10 2
+ROAD 1876 0 -470 1950 0 -470 14 2
+ROAD 1950 0 -470 2214 0 -470 13 2
+ROAD 2214 0 -522 2214 0 -418 14 2
 MARKER "vehicle_spawn_hatchback_porto_1" 3 1705.19995 6 -392 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_porto_2" 3 1705.19995 6 -418 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_porto_3" 3 1758 6 -444.799988 2 1.60000002 4.4000001 90 1

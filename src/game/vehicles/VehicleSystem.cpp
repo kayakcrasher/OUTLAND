@@ -105,6 +105,7 @@ bool VehicleSystem::spawn(world::VerdaRegion &region, Vector3 near, float yaw,
                 std::min_element(sites.begin(), sites.end(), [&](const auto &x, const auto &y) {
                     return distance(x.center, p) < distance(y.center, p);
                 });
+            last_spawned_ = a.id;
             closest->assets.push_back(a);
             reconcile(region);
             return true;
@@ -309,7 +310,7 @@ int VehicleSystem::nearest(const world::VerdaRegion &r, Vector3 p, float radius)
     float best = radius * radius;
     for (std::size_t i = 0; i < vehicles_.size(); ++i) {
         const auto *a = asset(r, vehicles_[i].id);
-        if (!a || !a->vehicle.enabled || a->vehicle.destroyed || parts_donor(a->vehicle.marker) ||
+        if (!a || !a->vehicle.enabled || a->vehicle.destroyed || parts_donor(a->vehicle.marker) || for_sale(a->vehicle.marker) ||
             kinematic_.contains(vehicles_[i].id))
             continue;
         // Distance to the car body: standing at a door or bumper counts, not only near its centre.
@@ -491,9 +492,10 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         // Battle-royale handling: strong pull off the line that tapers toward top speed, a boost,
         // air drag, and a car whose momentum carries it sideways until the tyres bite.
         v.boosting = controls.boost && throttle > .1F && a->vehicle.fuel > 0;
-        const float top = d->top_speed * performance * (v.boosting ? 1.12F : 1.0F);
+        // A mechanic's work (game::autos): a bigger engine pulls harder and runs faster.
+        const float top = d->top_speed * performance * a->vehicle.top * (v.boosting ? 1.12F : 1.0F);
         const float pull = std::max(.2F, 1 - .75F * (v.speed / std::max(1.0F, top)) * (v.speed / std::max(1.0F, top)));
-        float acceleration = throttle * d->acceleration * performance * (throttle > 0 ? pull : 1.0F) * (v.boosting ? 1.45F : 1.0F);
+        float acceleration = throttle * d->acceleration * performance * a->vehicle.power * (throttle > 0 ? pull : 1.0F) * (v.boosting ? 1.45F : 1.0F);
         if (a->vehicle.fuel <= 0)
             acceleration = 0;
         if (opposing)
@@ -514,7 +516,7 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         // Turning leaves the old direction of travel behind as sideways slip; grip bleeds it off
         // (barely, with the handbrake on), which is a drift.
         v.slip -= v.speed * std::sin(yaw_delta * DEG2RAD);
-        const float grip = controls.brake ? 1.2F : 8.0F * (.5F + .5F * tire);
+        const float grip = (controls.brake ? 1.2F : 8.0F * (.5F + .5F * tire)) * a->vehicle.grip;
         v.slip *= std::exp(-grip * dt);
         if (std::abs(v.slip) < .01F) v.slip = 0;
         const float travel = std::sqrt(v.speed * v.speed + v.slip * v.slip);
@@ -522,13 +524,17 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
             std::clamp(static_cast<int>(std::ceil(travel * dt / .4F)), 1, 12);
         // A car that already overlaps something (placed on a pole, or a world edit landed on it)
         // gets one body length to drive clear of it; otherwise every move would be refused.
-        if (v.escape <= 0 && std::abs(v.speed) > .001F && blocked(r, a->position, a->rotation_y, *d, scale, a->id))
+        // Bigger tyres climb steeper ground (smaller ones a little less).
+        VehicleDefinition tuned;
+        const VehicleDefinition* shape = d;
+        if (a->vehicle.slope != 0) { tuned = *d; tuned.max_slope += a->vehicle.slope; shape = &tuned; }
+        if (v.escape <= 0 && std::abs(v.speed) > .001F && blocked(r, a->position, a->rotation_y, *shape, scale, a->id))
             v.escape = d->length * scale + .5F;
         for (int step = 0; step < steps; ++step) {
             auto p = world_point({v.slip * dt / steps, 0, v.speed * dt / steps}, a->position, yaw);
             p.y = world::terrain::TerrainHeight::sample(p.x, p.z);
             if (v.escape > 0) v.escape -= travel * dt / steps;
-            else if (blocked(r, p, yaw, *d, scale, a->id)) {
+            else if (blocked(r, p, yaw, *shape, scale, a->id)) {
                 // The player's crashes hurt the car in proportion to the impact - nudges and
                 // parking bumps (under 32 km/h) do not, and no single crash takes more than a
                 // quarter of it - and a really hard one (over 58 km/h) hurts the driver. Cars
@@ -537,7 +543,8 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
                 // The car rebounds a little rather than staying pinned against what it hit.
                 const float impact = travel;
                 if (driving) {
-                    a->vehicle.health = std::max(0.0F, a->vehicle.health - std::min(25.0F, std::max(0.0F, impact - 9) * 1.2F));
+                    // (A push bar or a bull bar takes some of it.)
+                    a->vehicle.health = std::max(0.0F, a->vehicle.health - std::min(25.0F, std::max(0.0F, impact - 9) * 1.2F) * a->vehicle.armour);
                     if (impact > 16 && occupant_damage_) occupant_damage_((impact - 16) * 2);
                 }
                 v.speed = -v.speed * .15F;
@@ -554,7 +561,7 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         v.position = a->position;
         v.yaw = a->rotation_y;
         v.wheel_angle = std::remainder(
-            v.wheel_angle + v.speed * dt / (d->wheel_radius * scale) * RAD2DEG, 360.0F);
+            v.wheel_angle + v.speed * dt / (d->wheel_radius * a->vehicle.wheel * scale) * RAD2DEG, 360.0F);
         const auto front = world_point({0, 0, d->front_z}, a->position, v.yaw, scale),
                    rear = world_point({0, 0, d->rear_z}, a->position, v.yaw, scale);
         const auto left = world_point({-d->track * .5F, 0, 0}, a->position, v.yaw, scale),

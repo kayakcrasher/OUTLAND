@@ -10,8 +10,8 @@ namespace outland::world::highways {
 namespace {
 constexpr float join = .75F;         // ends this close are the same point
 constexpr float side_join = paved_half + 3;
-constexpr float taper = 90;          // the last stretch into a town narrows over this far
-constexpr float town_half = 7.5F;    // to a little wider than the town's 12 m street
+constexpr float taper = 150;         // the last stretch into a town narrows over this far (an easy blend)
+constexpr float town_half = 6.6F;    // to just wider than the town's 12 m street
 constexpr float town_apron = 45;     // plain asphalt (no lane lines, no barrier) over the end of it
 constexpr float crossover_every = 420, crossover_half = 11;   // median openings along the open road
 

@@ -12,6 +12,21 @@ berth), `dev::build_verda_towns` (`cargo_terminal()`, `freight_depot()`), `game:
 `harbour_crane.glb`, `quay_apron.glb`, `container_stack.glb`, `cattle_gangway.glb`,
 `truck_depot.glb`). Tests: `outland_trucking_tests`, `outland_ranch_tests`, `outland_world_kit_tests`.
 
+## The truckers' roads
+- **Wider routes.** The trucking company's main routes are 14 m wide: the yard road from
+  Verda Transporto's depot along z = -84 into downtown, the link from it up to the boulevard
+  where the Roka highway leaves, and the terminal road into the cargo terminal. The terminal road
+  narrows to 13 m between the ramp's walls. The homes on the z = -84 road stand 3 m further back.
+- **Freight yards.** Espera, Porto Luma, Suda Haveno and Roka each have one of Verda
+  Transporto's yards just off the highway, before it narrows into town. A 16 m road leads in from
+  the highway (with a median opening) to a 14 m loop round a gravel yard: drive in, go round, stop
+  to unload, and head back out the way you came. A shed and containers stand beyond the loop.
+  Deliveries to those towns are dropped there, not in the town's streets
+  (`dev::freight_yards`, marker `freight_yard_<town>`).
+- **The camera.** Driving a rig (or a bus) the camera looks from over the cab, a little ahead of
+  its middle. With a trailer hitched it rides further back and higher, over the trailer, so the
+  road ahead stays in view (`VehicleRenderer::set_trailer`).
+
 ## The cargo terminal
 Porto Luma stands 38 m above the sea, so the terminal is down at the shore:
 - **The terminal road** runs straight east from the town's east street (x 1876, z -470), across

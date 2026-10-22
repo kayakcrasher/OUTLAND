@@ -144,6 +144,10 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
         if (place.kind == PlaceKind::Office && near_model("civic/truck_depot.glb")) text = {"VERDA TRANSPORTO", "KAMIONADO · ŜARĜOJ · BRUTARO"};
         // Armilejo, the gun shop chain.
         if (place.kind == PlaceKind::Shop && near_model("civic/gun_shop.glb")) text = {"ARMILEJO", "PAFILOJ · MUNICIO · KIRASOJ"};
+        // The motor trade: Marnafto's kiosks, the workshops' offices, the car lot's sales office.
+        if (place.kind == PlaceKind::Shop && near_model("civic/gas_station.glb")) text = {"MARNAFTO", "BENZINO · DIZELO · MANĜAĴOJ"};
+        if (place.kind == PlaceKind::Garage && near_model("civic/mechanic_shop.glb")) text = {"MEĤANIKEJO", "RIPAROJ · MOTOROJ · PNEŬOJ · FARBO"};
+        if (place.kind == PlaceKind::Office && near_model("civic/car_lot.glb")) text = {"AŬTOVENDEJO VERDA", "NOVAJ KAJ UZITAJ AŬTOJ"};
         // The radio stations' studios.
         if (place.kind == PlaceKind::Office && near_model("civic/radio_station_popolko.glb")) text = {"VERDA POPOLKO 98.1", "RADIO · POPMUZIKO KAJ POLKO"};
         if (place.kind == PlaceKind::Office && near_model("civic/radio_station_kantrio.glb")) text = {"RADIO SOVAĜEJO 102.5", "KANTRIO · BLUGRASO"};

@@ -118,7 +118,7 @@ int main() {
         for (std::size_t r = 0; r < region.settlements()[s].roads.size(); ++r) {
             const auto* info = network.info(s, r);
             if (!info) continue;
-            check(info->start_half >= 7 && info->end_half >= 7 && info->start_half <= hw::paved_half + .01F && info->end_half <= hw::paved_half + .01F, "paved half-widths in range");
+            check(info->start_half >= 6.5F && info->end_half >= 6.5F && info->start_half <= hw::paved_half + .01F && info->end_half <= hw::paved_half + .01F, "paved half-widths in range");
         }
     check(!network.barrier_hit({0, 0, -175}, 1.0F) && !network.barrier_hit({0, 0, -1670}, 1.0F), "no barrier where the north spoke meets the towns");
     for (const auto& ranch : world::ranches::ranches) {

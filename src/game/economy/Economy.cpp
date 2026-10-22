@@ -14,6 +14,8 @@ bool valid_state(const EconomyState& s) {
     if(s.properties.size()>64) return false;
     for(const auto& p:s.properties) if(p.empty() || !inventory::valid_text(p) || !owned.insert(p).second) return false;
     std::set<std::string> clothes;
+    if(s.cars.size()>16) return false;
+    for(const auto& c:s.cars) if(c.empty() || c.size()>200 || !inventory::valid_text(c)) return false;
     if(s.wardrobe.size()>256) return false;
     for(const auto& c:s.wardrobe) if(c.empty() || c.size()>100 || !inventory::valid_text(c) || !clothes.insert(c).second) return false;
     for(const auto* on:{&s.wearing,&s.hat}) if(!on->empty() && (on->size()>100 || !inventory::valid_text(*on) || !clothes.contains(*on))) return false;

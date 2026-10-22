@@ -371,6 +371,19 @@ bool WorldCollision::blocked_impl(
             if(vehicle && light_prop(asset))return false;
             // Paving, lots and pads (a few centimetres high) are driven over, not into.
             if(vehicle && asset.vehicle.definition.empty() && asset.size.y<.35F)return false;
+            // Buildings you drive into (a filling station's canopy, a workshop's bays, the car lot):
+            // a car meets their real shape - columns, pumps, walls - not their bounding box.
+            if(vehicle && asset.collision && (asset.model_path.ends_with("civic/gas_station.glb") ||
+               asset.model_path.ends_with("civic/mechanic_shop.glb") || asset.model_path.ends_with("civic/car_lot.glb"))) {
+                const auto* mesh=MeshCollisionLibrary::get(asset.model_path);
+                if(!mesh) return false;
+                const float dx=position.x-asset.position.x,dz=position.z-asset.position.z,yaw=asset.rotation_y*DEG2RAD;
+                const Vector3 local{dx*std::cos(yaw)-dz*std::sin(yaw),0,dx*std::sin(yaw)+dz*std::cos(yaw)};
+                const float base=position.y-asset.position.y;
+                for(const float height:{.55F,1.1F,1.6F})
+                    if(mesh->sphere_blocked({local.x,base+height,local.z},std::max(.15F,player_radius)))return true;
+                return false;
+            }
             // Lamps and signals: a car hits the post, not the box round the arms reaching over the road.
             if(vehicle && asset.collision && (asset.model_path.find("lamppost")!=std::string::npos ||
                asset.model_path.find("street_light")!=std::string::npos || asset.model_path.find("traffic_light")!=std::string::npos)) {

@@ -209,6 +209,8 @@ add_library(
     src/game/interiors/Furnishing.cpp
     src/game/wardrobe/Wardrobe.cpp
     src/game/wardrobe/StoreUI.cpp
+    src/game/autos/Autos.cpp
+    src/game/autos/AutoMenu.cpp
     src/game/economy/Homes.cpp
     src/game/mafia/MafioRenderer.cpp
     src/game/casino/Poker.cpp
@@ -234,6 +236,7 @@ add_library(
     src/world/assets/VerdanProps.cpp
     src/world/terrain/TerrainHeight.cpp
     src/world/Highways.cpp
+    src/world/MotorTrade.cpp
     src/world/terrain/TerrainChunk.cpp
     src/world/terrain/TerrainWorld.cpp
 
@@ -765,6 +768,10 @@ if(OUTLAND_BUILD_TESTS)
     target_include_directories(outland_campaign_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_campaign_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_campaign_tests COMMAND outland_campaign_tests)
+    add_executable(outland_autos_tests tests/unit/autos/test_autos.cpp src/game/autos/Autos.cpp)
+    target_include_directories(outland_autos_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
+    target_compile_options(outland_autos_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_autos_tests COMMAND outland_autos_tests)
     add_executable(outland_radio_tests tests/unit/radio/test_radio.cpp src/game/radio/Radio.cpp)
     target_include_directories(outland_radio_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_radio_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

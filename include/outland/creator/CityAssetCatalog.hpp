@@ -108,6 +108,18 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_radio_station_roko", .name = "Radio station - Espera Roko 105.9 (modular studio, transmitter mast)", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/radio_station_roko.glb", .thumbnail_path = "", .footprint = {18.00F, 11.20F, 40.35F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_gas_station", .name = "Marnafto - filling station (modular, drive-in canopy, kiosk shop)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/gas_station.glb", .thumbnail_path = "", .footprint = {24.00F, 22.00F, 6.20F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_mechanic_shop", .name = "Meĥanikejo - mechanic's workshop (modular, two drive-in bays, office)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/mechanic_shop.glb", .thumbnail_path = "", .footprint = {18.10F, 12.15F, 5.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_car_lot", .name = "Aŭtovendejo Verda - car lot with sales office and bunting", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/car_lot.glb", .thumbnail_path = "", .footprint = {36.00F, 26.62F, 6.40F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_oil_rig", .name = "Platformo Marnafto - offshore oil rig", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/civic/oil_rig.glb", .thumbnail_path = "", .footprint = {59.50F, 30.60F, 79.20F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_hospital", .name = "Hospitalo - hospital with ambulance bay", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/hospital.glb", .thumbnail_path = "", .footprint = {46.00F, 23.00F, 12.70F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

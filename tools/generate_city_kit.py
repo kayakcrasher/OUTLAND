@@ -30,6 +30,12 @@ CATALOG = ROOT / "include" / "outland" / "creator" / "CityAssetCatalog.hpp"
 FLOOR = 3.6          # storey height
 BAY = 3.0            # facade bay width
 TEX = 64
+GAS_ISLANDS = (-3.5, 3.5)       # gas_station(): the pump islands' x
+GAS_PUMPS_Z = (-5.0, -3.0)      # ...and each pump's z on them
+MECH_BAYS = (-5.0, 1.0)         # mechanic_shop(): the bays' x (door centres)
+MECH_DOOR = 4.6                 # ...and the door openings' width
+CAR_LOT_ROWS = (-6.0, 3.0)      # car_lot(): the display rows' z
+CAR_LOT_SPOTS_X = (-14.0, -8.0, -2.0, 4.0, 10.0)
 
 
 # ---------------------------------------------------------------- textures
@@ -1393,6 +1399,236 @@ def gun_shop():
     return b
 
 
+# ---------------------------------------------------------------- the motor trade
+# Marnafto (the island's oil company: its rigs out at sea, its stations on the roads), the
+# Meĥanikejo workshops and Aŭtovendejo Verda's car lot. Keep the layout numbers in step with
+# include/outland/world/MotorTrade.hpp (the game finds the pumps, bays and display spots by them).
+MARNAFTO_BLUE, MARNAFTO_ORANGE = (18, 54, 112), (238, 122, 26)
+
+
+def marnafto_logo(seed=211):
+    """Marnafto's board: an orange drop on deep blue over a white rig on the sea line."""
+    c = Canvas(color=MARNAFTO_BLUE, seed=seed)
+    for y in range(TEX):
+        for x in range(TEX):
+            dx, dy = x - 32, y - 26
+            # The drop: a circle with a point on top.
+            if dx * dx + (dy - 4) * (dy - 4) < 15 * 15 or (dy < 0 and abs(dx) < (dy + 22) * .7 and dy > -22):
+                c.px[y * TEX + x] = MARNAFTO_ORANGE
+    c.rect(0, 52, TEX, 54, (240, 240, 236))             # the sea line
+    c.rect(26, 40, 38, 44, (240, 240, 236))             # the rig: deck, legs, derrick
+    for x in (27, 36):
+        c.rect(x, 44, x + 2, 52, (240, 240, 236))
+    c.rect(31, 32, 33, 40, (240, 240, 236))
+    return c
+
+
+def gas_station():
+    """A Marnafto filling station (modular, front faces -Z): a concrete forecourt, a canopy on four
+    columns over two pump islands (two pumps each), the kiosk shop at the back (glass front,
+    counter, shelves; enterable), a price pylon with the drop-and-rig logo. 24 x 22 m. Cars drive
+    under the canopy and pull up beside the pumps."""
+    b = Builder()
+    b.material("concrete", flat((176, 174, 166), 6), 3, 3)
+    b.material("white", flat((236, 236, 232), 3), 3, 3)
+    b.material("blue", flat(MARNAFTO_BLUE, 3), 3, 1)
+    b.material("orange", flat(MARNAFTO_ORANGE, 3), 3, 1)
+    b.material("logo", marnafto_logo(), 2.4, 2.4)
+    b.material("steel", flat((150, 154, 160), 3), 2, 2)
+    b.material("dark", flat((40, 42, 46), 3), 1, 1)
+    b.material("glass", flat((70, 104, 124), 2), 1, 1)
+    b.material("plaster", flat((214, 212, 204), 3), 3, 3)
+    b.material("floor", checker((214, 214, 206), (180, 180, 172)), 2, 2)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("goods", stripes((200, 60, 40), (60, 120, 180), 6, 213), 1, 1)
+    b.material("hose", flat((24, 24, 26), 2), 1, 1)
+    # The forecourt.
+    b.box((-12, 0, -11), (12, .06, 5), {'+y': "concrete", '-z': "concrete", '+x': "concrete", '-x': "concrete"})
+    # The canopy: x -8..8, z -9..1, its underside 5 m up, a blue fascia with an orange stripe.
+    b.box((-8, 5.0, -9), (8, 5.9, 1), {'-y': "white", '+y': "roof", '-z': "blue", '+z': "blue", '+x': "blue", '-x': "blue"})
+    for z0, z1, side in ((-9.02, -9.0, '-z'), (1.0, 1.02, '+z')):
+        b.box((-8, 5.3, z0), (8, 5.5, z1), {side: "orange"})
+    for x in (-6.5, 6.5):
+        for z in (-7.5, -.5):
+            b.solid((x - .25, .06, z - .25), (x + .25, 5.0, z + .25), "white")
+    # The pump islands (x = +-3.5, z -6..-2), two pumps each.
+    for x in GAS_ISLANDS:
+        b.solid((x - .6, .06, -6.2), (x + .6, .22, -1.8), "concrete")
+        for z in GAS_PUMPS_Z:
+            b.solid((x - .35, .22, z - .25), (x + .35, 1.75, z + .25), "white")
+            b.box((x - .36, 1.2, z - .26), (x + .36, 1.7, z + .26), {'+x': "blue", '-x': "blue", '+z': "blue", '-z': "blue"})
+            b.box((x - .37, 1.75, z - .27), (x + .37, 1.95, z + .27), {s: "orange" for s in ('+x', '-x', '+z', '-z', '+y')})
+            for sx in (-1, 1):
+                b.solid((x + sx * .36, .7, z - .05), (x + sx * .42, 1.3, z + .05), "hose")
+        b.solid((x - .15, .22, -1.95), (x + .15, 1.0, -1.85), "steel")      # bollard
+    # The kiosk shop: x -6..6, z 5..11, a glass front with a door in the middle.
+    w0, w1, z0, z1, h, t, slab = -6.0, 6.0, 5.0, 11.0, 3.6, .25, .15
+    front = [(-1.0, 1.0, slab, 2.4), (-5.4, -1.6, .9, 2.6), (1.6, 5.4, .9, 2.6)]
+    wall_with_openings(b, 'x', z0, (w0, w1), h, t, front, "white", "plaster", -1)
+    wall_with_openings(b, 'x', z1, (w0, w1), h, t, [], "white", "plaster", +1)
+    wall_with_openings(b, 'z', w0, (z0 + t, z1 - t), h, t, [], "white", "plaster", -1)
+    wall_with_openings(b, 'z', w1, (z0 + t, z1 - t), h, t, [], "white", "plaster", +1)
+    b.box((w0 + t, 0, z0 + t), (w1 - t, slab, z1 - t), {'+y': "floor", '-y': "plaster"})
+    b.box((w0, h - .2, z0), (w1, h, z1), {'+y': "roof", '-y': "plaster", '+x': "white", '-x': "white", '+z': "white", '-z': "white"})
+    b.box((w0 - .05, h - .8, z0 - .12), (w1 + .05, h, z0), {'-z': "blue"})
+    for x0, x1 in ((-5.4, -1.6), (1.6, 5.4)):
+        b.solid((x0, .9, z0 + .1), (x1, 2.6, z0 + .13), "glass")
+    b.solid((2.0, slab, 8.6), (5.4, 1.0, 9.4), "white")                     # the counter
+    b.solid((2.0, 1.0, 8.6), (5.4, 1.05, 9.4), "dark")
+    for x in (-4.6, -2.2):
+        b.solid((x, slab, 6.4), (x + 1.4, 1.7, 9.6), "goods")                # shelves
+    # The price pylon at the front corner: a pole and the board with the logo.
+    px, pz = 10.6, -9.6
+    b.solid((px - .2, .06, pz - .2), (px + .2, 3.2, pz + .2), "steel")
+    b.box((px - 1.3, 3.2, pz - .25), (px + 1.3, 6.2, pz + .25), {'-z': "logo", '+z': "logo", '+x': "blue", '-x': "blue", '+y': "blue", '-y': "blue"})
+    b.box((px - 1.3, 2.6, pz - .26), (px + 1.3, 3.2, pz + .26), {'-z': "orange", '+z': "orange"})
+    return b
+
+
+def mechanic_shop():
+    """A Meĥanikejo (modular workshop, front faces -Z): two drive-in bays behind wide door
+    openings (x -5 and +1), lifts, benches and tyre stacks, an office on the +X side with its own
+    door, a red sign band. 18 x 12 m, 5 m high. Drive in and the mechanic comes over."""
+    b = Builder()
+    b.material("render", flat((198, 190, 172), 4), 3, 3)
+    b.material("red", flat((172, 32, 30), 3), 3, 1)
+    b.material("plaster", flat((190, 188, 182), 3), 3, 3)
+    b.material("floor", flat((110, 110, 106), 8), 3, 3)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("steel", flat((126, 130, 136), 3), 2, 2)
+    b.material("yellow", stripes((222, 182, 30), (30, 30, 30), 6, 217), 1, 1)
+    b.material("tyre", flat((28, 28, 30), 2), 1, 1)
+    b.material("wood", wood(), 2, 2)
+    b.material("drum", flat((40, 90, 150), 3), 1, 1)
+    w, d, h, t, slab = 9.0, 6.0, 5.0, .3, .1
+    doors = [(c - MECH_DOOR / 2, c + MECH_DOOR / 2, 0, 4.0) for c in MECH_BAYS]
+    front = doors + [(6.0, 7.2, slab, 2.4), (7.6, 8.6, 1.0, 2.4)]           # the office door and window
+    wall_with_openings(b, 'x', -d, (-w, w), h, t, front, "render", "plaster", -1)
+    wall_with_openings(b, 'x', d, (-w, w), h, t, [(-2.0, 0, 1.2, 2.6)], "render", "plaster", +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), h, t, [(-1.0, 1.0, 1.4, 2.6)], "render", "plaster", -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), h, t, [], "render", "plaster", +1)
+    # The office partition (x = 4.5) with a door into the workshop.
+    wall_with_openings(b, 'z', 4.5, (-d + t, d - t), 3.2, .15, [(1.5, 2.5, slab, 2.3)], "plaster", "plaster", -1)
+    b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
+    b.box((-w, h - .25, -d), (w, h, d), {'+y': "roof", '-y': "plaster", '+x': "render", '-x': "render", '+z': "render", '-z': "render"})
+    b.box((-w - .05, 4.1, -d - .15), (w + .05, 4.9, -d), {'-z': "red", '-y': "red", '+x': "red", '-x': "red"})
+    # Yellow-and-black edges on the door jambs; a lift in each bay (two posts and arms).
+    for lo, hi in [((c - MECH_DOOR / 2 - .12, 0, -d - .05), (c - MECH_DOOR / 2, 4.0, -d + t)) for c in MECH_BAYS] + \
+                  [((c + MECH_DOOR / 2, 0, -d - .05), (c + MECH_DOOR / 2 + .12, 4.0, -d + t)) for c in MECH_BAYS]:
+        b.solid(lo, hi, "yellow")
+    for c in MECH_BAYS:
+        for sx in (-1, 1):
+            b.solid((c + sx * 2.1 - .15, slab, -.3), (c + sx * 2.1 + .15, 3.4, .3), "steel")
+            b.solid((c + sx * 2.1 - .1, .5, -1.4), (c + sx * 1.3, .6, 1.4), "steel")
+    # Benches and tool boards on the back wall, tyre stacks, oil drums.
+    for x0 in (-8.4, -2.4):
+        b.solid((x0, slab, d - t - .8), (x0 + 3.0, .95, d - t - .05), "wood")
+        b.solid((x0, 1.4, d - t - .06), (x0 + 3.0, 2.4, d - t - .02), "steel")
+    for k in range(4):
+        x = -8.4 + (k % 2) * .9
+        z = -4.6 + (k // 2) * .9
+        for level in range(3):
+            b.solid((x - .35, slab + level * .26, z - .35), (x + .35, slab + level * .26 + .24, z + .35), "tyre")
+    for k in range(3):
+        b.solid((3.2 - k * .7, slab, 4.6), (3.8 - k * .7, 1.0, 5.2), "drum")
+    # The office: a desk and a counter.
+    b.solid((6.2, slab, 2.5), (8.2, .8, 3.5), "wood")
+    b.solid((5.0, slab, -3.0), (5.6, 1.0, 1.0), "wood")
+    return b
+
+
+def car_lot():
+    """Aŭtovendejo Verda (front faces -Z): a paved lot (36 x 26 m) with white bay lines, two
+    rows of display bays, a glass sales office at the back on +X (desk, chairs; enterable),
+    bunting on poles round the edge, and a tall sign. The cars on show are the game's own."""
+    b = Builder()
+    b.material("asphalt", flat((62, 64, 66), 6), 3, 3)
+    b.material("line", flat((236, 236, 232), 2), 1, 1)
+    b.material("white", flat((236, 236, 232), 3), 3, 3)
+    b.material("plaster", flat((212, 212, 206), 3), 3, 3)
+    b.material("glass", flat((76, 112, 136), 2), 1, 1)
+    b.material("floor", checker((220, 220, 214), (190, 190, 184)), 2, 2)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("green", flat((22, 118, 64), 3), 3, 1)
+    b.material("steel", flat((150, 154, 160), 3), 2, 2)
+    b.material("flag_a", flat((220, 40, 40), 2), 1, 1)
+    b.material("flag_b", flat((240, 200, 40), 2), 1, 1)
+    b.material("flag_c", flat((30, 110, 200), 2), 1, 1)
+    b.material("wood", wood(), 2, 2)
+    hx, hz = 18.0, 13.0
+    b.box((-hx, 0, -hz), (hx, .06, hz), {'+y': "asphalt", '-z': "asphalt", '+z': "asphalt", '+x': "asphalt", '-x': "asphalt"})
+    # Bay lines between the display spots (rows at z = -6 and z = 3, cars 6 m apart).
+    for z in CAR_LOT_ROWS:
+        for x in [CAR_LOT_SPOTS_X[0] - 3] + [sx + 3 for sx in CAR_LOT_SPOTS_X]:
+            b.solid((x - .06, .06, z - 2.6), (x + .06, .07, z + 2.6), "line")
+    # The sales office: x 9..16, z 6..11.
+    x0, x1, z0, z1, h, t, slab = 9.0, 16.0, 6.0, 11.0, 3.4, .2, .12
+    wall_with_openings(b, 'x', z0, (x0, x1), h, t, [(9.6, 11.6, .8, 2.7), (12.2, 13.4, slab, 2.4), (14.0, 15.6, .8, 2.7)], "white", "plaster", -1)
+    wall_with_openings(b, 'x', z1, (x0, x1), h, t, [], "white", "plaster", +1)
+    wall_with_openings(b, 'z', x0, (z0 + t, z1 - t), h, t, [(7.0, 10.0, .8, 2.7)], "white", "plaster", -1)
+    wall_with_openings(b, 'z', x1, (z0 + t, z1 - t), h, t, [], "white", "plaster", +1)
+    b.box((x0 + t, 0, z0 + t), (x1 - t, slab, z1 - t), {'+y': "floor", '-y': "plaster"})
+    b.box((x0 - .4, h - .2, z0 - .8), (x1 + .4, h, z1 + .4), {'+y': "roof", '-y': "plaster", '+x': "green", '-x': "green", '+z': "green", '-z': "green"})
+    for xa, xb in ((9.6, 11.6), (14.0, 15.6)):
+        b.solid((xa, .8, z0 + .08), (xb, 2.7, z0 + .1), "glass")
+    b.solid((12.4, slab, 8.4), (14.8, .8, 9.2), "wood")                      # the salesman's desk
+    # Bunting: poles round the front and sides, strings of pennants between them.
+    poles = [(-hx + .4, -hz + .4), (-6.0, -hz + .4), (6.0, -hz + .4), (hx - .4, -hz + .4), (hx - .4, 0.0), (-hx + .4, 0.0), (-hx + .4, hz - .4)]
+    for x, z in poles:
+        b.solid((x - .08, .06, z - .08), (x + .08, 5.0, z + .08), "steel")
+    for (xa, za), (xb, zb) in zip(poles, poles[1:]):
+        n = max(2, int(math.hypot(xb - xa, zb - za) / .8))
+        for k in range(n):
+            u = (k + .5) / n
+            x, z = xa + (xb - xa) * u, za + (zb - za) * u
+            y = 4.8 - .9 * math.sin(math.pi * u)
+            b.solid((x - .14, y - .4, z - .14), (x + .14, y, z + .14), ("flag_a", "flag_b", "flag_c")[k % 3])
+    # The sign: two posts and a green board by the entrance.
+    for x in (-17.2, -14.8):
+        b.solid((x - .12, .06, -hz - .6), (x + .12, 6.0, -hz - .36), "steel")
+    b.solid((-17.6, 4.2, -hz - .62), (-14.4, 6.4, -hz - .34), "green")
+    return b
+
+
+def oil_rig():
+    """One of Marnafto's offshore rigs (Platformoj Marnafto): four legs out of the sea to a two-deck
+    platform 30 x 30 m, a derrick, accommodation block, helideck, crane and flare boom, in the
+    company's blue and orange. The model's y = 0 is the sea's surface; the legs go 14 m under."""
+    b = Builder()
+    b.material("steel", flat((120, 124, 130), 4), 2, 2)
+    b.material("yellow", flat((222, 182, 30), 3), 2, 2)
+    b.material("blue", flat(MARNAFTO_BLUE, 3), 3, 3)
+    b.material("orange", flat(MARNAFTO_ORANGE, 3), 3, 3)
+    b.material("white", flat((228, 228, 224), 3), 3, 3)
+    b.material("deck", flat((70, 72, 74), 6), 3, 3)
+    b.material("flame", flat((255, 170, 40), 0), 1, 1)
+    for x in (-12, 12):
+        for z in (-12, 12):
+            b.ring("yellow", x, z, 1.6, 1.6, -14, 18, 12)
+    for y in (18.0, 24.0):
+        b.box((-15, y, -15), (15, y + 1.2, 15), {'+y': "deck", '-y': "steel", '+x': "steel", '-x': "steel", '+z': "steel", '-z': "steel"})
+    for x in (-15, 15):
+        for z in (-15, 15):
+            b.solid((x - .3, 19.2, z - .3), (x + .3, 24, z + .3), "steel")
+    # The derrick: a tapering lattice tower (four corner posts and rungs).
+    for k in range(10):
+        y0, y1 = 25.2 + k * 4, 25.2 + (k + 1) * 4
+        r0, r1 = 3.2 - k * .26, 3.2 - (k + 1) * .26
+        for sx in (-1, 1):
+            for sz in (-1, 1):
+                b.solid((4 + sx * r1 - .18, y0, -4 + sz * r1 - .18), (4 + sx * r1 + .18, y1, -4 + sz * r1 + .18), "white")
+        b.solid((4 - r1, y1 - .2, -4 - r1), (4 + r1, y1, -4 - r1 + .3), "orange")
+    # Accommodation block, helideck on top.
+    b.box((-14, 25.2, 4), (-2, 33, 14), {s: "blue" for s in ('+x', '-x', '+z', '-z')} | {'+y': "deck"})
+    b.box((-15, 33, 2), (-1, 33.4, 15), {'+y': "orange", '-y': "steel", '+x': "white", '-x': "white", '+z': "white", '-z': "white"})
+    # The crane and the flare boom (with its flame) out over the sea.
+    b.solid((10, 25.2, 8), (12, 32, 10), "yellow")
+    b.solid((10.5, 31, 9), (24, 31.8, 9.8), "yellow")
+    b.solid((-15, 26, -12), (-34, 27, -11), "steel")
+    b.solid((-35.5, 25.5, -12.8), (-33, 30, -10.2), "flame")
+    return b
+
+
 def hospital():
     """Hospitalo de Verda: a three-storey hospital (36 x 20 m) in white render with blue ribbon
     windows, an enterable ground-floor hall (glass entrance, reception, beds), sealed wards
@@ -1712,6 +1948,10 @@ def kit():
         mast = RADIO_STYLES[style]["mast"]
         add(f"civic/radio_station_{style}.glb", radio_station(style), f"city_radio_station_{style}",
             f"Radio station - {name} (modular studio, transmitter mast)", "Building", 18, 13.4 if RADIO_STYLES[style]["porch"] else 11.2, mast + 4.35)
+    add("civic/gas_station.glb", gas_station(), "city_gas_station", "Marnafto - filling station (modular, drive-in canopy, kiosk shop)", "Building", 24, 22, 6.2)
+    add("civic/mechanic_shop.glb", mechanic_shop(), "city_mechanic_shop", "Meĥanikejo - mechanic's workshop (modular, two drive-in bays, office)", "Building", 18.1, 12.15, 5.0)
+    add("civic/car_lot.glb", car_lot(), "city_car_lot", "Aŭtovendejo Verda - car lot with sales office and bunting", "Building", 36, 26.62, 6.4)
+    add("civic/oil_rig.glb", oil_rig(), "city_oil_rig", "Platformo Marnafto - offshore oil rig", "BuildingPart", 59.5, 30.6, 79.2)
     add("civic/hospital.glb", hospital(), "city_hospital", "Hospitalo - hospital with ambulance bay", "Building", 46, 23, 12.7)
     add("civic/parliament.glb", parliament(), "city_parliament", "Registaro de Verda - domed parliament (enterable hall)", "Building", 48, 33, 29.6)
     add("civic/town_hall.glb", town_hall(), "city_town_hall", "Urbodomo - county town hall with clock tower (enterable)", "Building", 23, 17, 17.0)

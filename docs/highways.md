@@ -54,9 +54,10 @@ drawn by `engine/render/HighwayRender` and recorded into static meshes like the 
 `HighwayNetwork` finds the junctions in the map's roads:
 - **Highway crossings** (ring × spoke). A plain asphalt apron: no lane lines and no barrier for
   `paved_half / sin(angle) + 8` m either way along both roads.
-- **Ends** (a spoke running into a town's streets). The last 90 m tapers smoothly from the full
-  18.8 m down to 15 m, a little wider than the town's 12 m street. The barrier stops where the
-  taper begins, and the last 45 m is plain asphalt with no lane lines.
+- **Ends** (a spoke running into a town's streets). The last 150 m tapers smoothly from the full
+  18.8 m down to 13.2 m, just wider than the town's 12 m street, so the highway blends into the
+  street instead of stepping down. The barrier stops where the taper begins, and the last 45 m
+  is plain asphalt with no lane lines.
 - **Crossovers.** Out on the open road the median opens for 22 m every 420 m, so cars can turn
   across.
 - **Side roads** (farm tracks, hamlet spurs, streets) that join or cross a highway. The median

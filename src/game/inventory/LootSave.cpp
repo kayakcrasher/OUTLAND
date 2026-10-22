@@ -89,6 +89,8 @@ bool LootSave::save(const ItemRegistry &registry, const LootSnapshot &state,
         out << "PROPERTY " << std::quoted(property) << '\n';
     for(const auto& clothes : state.economy.wardrobe)
         out << "WARDROBE " << std::quoted(clothes) << '\n';
+    for(const auto& car : state.economy.cars)
+        out << "CAR " << std::quoted(car) << '\n';
     if(!state.economy.wearing.empty() || !state.economy.hat.empty())
         out << "WEARING " << std::quoted(state.economy.wearing) << ' ' << std::quoted(state.economy.hat) << '\n';
     out << "END\n";
@@ -194,6 +196,10 @@ bool LootSave::load(const ItemRegistry &registry, LootSnapshot &destination,
             std::string clothes;
             if(version!=2 || parsed.economy.wardrobe.size()>=256 || !(input >> std::quoted(clothes))) return fail();
             parsed.economy.wardrobe.push_back(std::move(clothes));
+        } else if (token == "CAR") {
+            std::string car;
+            if(version!=2 || parsed.economy.cars.size()>=16 || !(input >> std::quoted(car))) return fail();
+            parsed.economy.cars.push_back(std::move(car));
         } else if (token == "WEARING") {
             if(version!=2 || !(input >> std::quoted(parsed.economy.wearing) >> std::quoted(parsed.economy.hat))) return fail();
         } else if (token == "END") {

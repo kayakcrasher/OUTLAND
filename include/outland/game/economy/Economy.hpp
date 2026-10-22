@@ -12,6 +12,7 @@ struct EconomyState {
     std::vector<std::string> properties; // homes the player owns (economy::Penthouse::property_id)
     std::vector<std::string> wardrobe;   // looks and hats bought at Vestaĵejo Verda (game::wardrobe ids)
     std::string wearing, hat;            // what the player has on; empty: their own clothes, no hat
+    std::vector<std::string> cars;       // cars the player bought (game::autos::OwnedCar, serialised)
 };
 bool valid_state(const EconomyState&);
 struct Offer { std::string id, kind, item; int buy{0}, sell{0}, stock{0}; };

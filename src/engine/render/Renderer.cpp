@@ -89,6 +89,9 @@
 #include "outland/game/services/HighwayPatrol.hpp"
 #include "outland/game/interiors/Furnishing.hpp"
 #include "outland/game/wardrobe/StoreUI.hpp"
+#include "outland/game/autos/Autos.hpp"
+#include "outland/game/autos/AutoMenu.hpp"
+#include "outland/world/MotorTrade.hpp"
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/game/zombies/ZombieEcology.hpp"
 #include "outland/game/LanScreen.hpp"
@@ -716,6 +719,16 @@ void Renderer::run() {
     float drive_hint=0;                       // the driving keys, shown for a while after getting in
     bool store_open=false;
     std::string store_status,store_prompt;
+    // The motor trade (game::autos): Marnafto's pumps, the Meĥanikejo bays, the car lot's desk.
+    game::autos::AutoMenu motor_menu;
+    enum class MotorScreen{None,Pump,Workshop,Paint,Engine,Tires,Bumper,Dealer};
+    MotorScreen motor_screen=MotorScreen::None;
+    std::vector<world::motor::Site> motor_sites;
+    int motor_site=-1,motor_served=-1;   // the site in use; one whose menu was closed (not again till the car leaves it)
+    std::string motor_car;               // the car being served
+    std::vector<game::autos::OwnedCar> owned_cars;   // the cars the player bought (this session's ids)
+    bool owned_ready=false;
+    float owned_sync=0;
     characters::AnimationController mannequin_pose;
     mannequin_pose.advance(characters::AnimationAction::Idle,0);
     std::array<bool,game::mafia::family_count> ranch_alarm{};
@@ -1243,6 +1256,12 @@ void Renderer::run() {
     game::vehicles::VehicleAudio vehicle_audio;
     game::radio::RadioAudio radio_audio;
     vehicles.bind_occupant_damage([&](float amount){player_health.damage(amount);});
+    // The tank: about 25 km of driving in Explore (a bigger engine drinks more); Marnafto fills it.
+    vehicles.bind_fuel([&](const std::string& id,float metres) {
+        if(game_mode!=game::GameMode::Explore) return 0.0F;
+        const auto* a=vehicles.asset(verda_region,id);
+        return metres/25000.0F*(a ? std::max(1.0F,a->vehicle.power) : 1.0F);
+    });
     const auto gang_name=[](int faction) -> std::string {
         return faction>=0 && faction<game::mafia::gang_count ? std::string(game::mafia::gangs[static_cast<std::size_t>(faction)].name) : std::string("?");
     };
@@ -1633,8 +1652,11 @@ void Renderer::run() {
                 // The homes for sale stand empty (Explore); other modes get the buildings back as they were.
                 game::economy::restore_purposes(verda_region,vacated_homes);
                 vacated_homes.clear();homes_for_sale.clear();home_here=was_in_home=nullptr;
+                motor_sites.clear();motor_menu.close();motor_screen=MotorScreen::None;motor_site=motor_served=-1;motor_car.clear();
+                owned_cars.clear();owned_ready=false;
                 if(game::rules_for(game_mode).civilian_life) {
                     homes_for_sale=game::economy::plan_homes(verda_region);
+                    motor_sites=world::motor::sites(verda_region);
                     vacated_homes=game::economy::vacate(verda_region,homes_for_sale);
                     TraceLog(LOG_INFO,"OUTLAND homes for sale: %d",static_cast<int>(homes_for_sale.size()));
                     for(const auto& home:homes_for_sale)
@@ -1906,8 +1928,11 @@ void Renderer::run() {
                             else haul_world.terminal=false;
                             for(const auto& town:verda_region.settlements()) {
                                 if(town.id.starts_with("ranch_") || town.id.starts_with("hamlet_") || town.id.find("bovbazaro")!=std::string::npos) continue;
-                                // Verda City's drop: Main Street west of the boulevard (its centre is the highway).
-                                const Vector3 at=town.id=="capital_verda" ? Vector3{-87,0,-42} : town.center;
+                                // Verda City's drop: Main Street west of the boulevard (its centre is the highway);
+                                // the big towns': Verda Transporto's freight yard off the highway (dev::freight_yards).
+                                Vector3 at=town.id=="capital_verda" ? Vector3{-87,0,-42} : town.center;
+                                for(const auto& t:verda_region.settlements()) for(const auto& m:t.gameplay_markers)
+                                    if(m.id=="freight_yard_"+town.id) at=m.position;
                                 haul_world.towns.push_back({town.name,graph.nearest(at).point,-1});
                             }
                             for(std::size_t i=0;i<ranches.ranches().size();++i) {
@@ -2279,6 +2304,7 @@ void Renderer::run() {
                 if(escape && inventory_open) {inventory_open=false;input_system.cancel_controls();}
                 else if(escape && shop_open) {shop_open=false;input_system.cancel_controls();}
                 else if(escape && store_open) {store_open=false;input_system.cancel_controls();}
+                else if(escape && motor_menu.is_open()) {}   // (its own ESC: back, or leave)
                 else if(escape && build_mode.active()) {}
                 else if(escape || lost_mouse || menu_tapped) {pause_menu.open();input_system.cancel_controls();}
             }
@@ -2393,7 +2419,7 @@ void Renderer::run() {
         if(game_mode==game::GameMode::DevLab && !creator_active)reserved=[&](Vector2 point){return CheckCollisionPointRec(point,audio_button)||dev_lab.owns_point(point,screen_width,screen_height);};
 #endif
         // The map is modal like the bag; MAP / M opens it during play.
-        if(!map_screen.is_open() && !pause_menu.is_open() && game_mode!=game::GameMode::DevLab && !(shop_open||store_open) && !poker_open && !inventory_open && !mode_session.terminal() &&
+        if(!map_screen.is_open() && !pause_menu.is_open() && game_mode!=game::GameMode::DevLab && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !inventory_open && !mode_session.terminal() &&
            (map_screen.tapped_map_button(screen_width,screen_height,IsWindowFocused()) || (IsWindowFocused() && settings.bindings.pressed(input::Action::Map,mouse_captured)))) {
             map_screen.open();input_system.cancel_controls();
         }
@@ -2470,7 +2496,7 @@ void Renderer::run() {
             dev_ui=game_mode==game::GameMode::DevLab && (dev_lab.tools_open() || creator_active);
 #endif
             const bool want=!touch_ui && IsWindowFocused() && !pause_menu.is_open() && !map_screen.is_open() && !inventory_open &&
-                !(shop_open||store_open) && !poker_open && !mode_session.terminal() && !dev_ui;
+                !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !mode_session.terminal() && !dev_ui;
             input::PointerEvents::capture_mouse(want);
             mouse_wanted=want;
             build_mode.set_mouse_aim(mouse_captured);
@@ -2492,7 +2518,7 @@ void Renderer::run() {
         {
             // BUILD (K): lay roads, homes and bus stops in Explore, on foot.
             const bool can_build=game::rules_for(game_mode).civilian_life && !vehicles.driver() && !map_screen.is_open() &&
-                !inventory_open && !(shop_open||store_open) && !poker_open && !mode_session.terminal() && player_health.alive();
+                !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !mode_session.terminal() && player_health.alive();
             build_mode.tick(dt);
             bool toggled_now=false;
             if(can_build && build_mode.toggled(screen_width,screen_height,IsWindowFocused())) {
@@ -2569,7 +2595,7 @@ void Renderer::run() {
             }
             return best;
         };
-        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && player_health.alive()) {
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
             if(const int bot=arrestable(feet);bot>=0) {
                 const int gang=mafio.gang_of(bot),crew=mafio.crew_of(bot);
@@ -2634,7 +2660,7 @@ void Renderer::run() {
                     return services.station_near(place.door,40);
             return nullptr;
         };
-        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && !vehicles.driver() &&
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && !vehicles.driver() &&
            game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
             const int crew=boss_near(feet);
@@ -2722,7 +2748,7 @@ void Renderer::run() {
                 interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
             }
         }
-        if(controls.interact && at_table && !inventory_open && !(shop_open||store_open) && !mode_session.terminal()) {
+        if(controls.interact && at_table && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !mode_session.terminal()) {
             const auto money=loot_session.economy().money;
             if(money<20) {interaction_message="The Green Hand's table: 20 kr to sit down";interaction_remaining=3;}
             else {
@@ -2748,7 +2774,7 @@ void Renderer::run() {
                 poker_open=false;input_system.cancel_controls();
             }
         }
-        if(controls.interact && (store_mannequin>=0 || at_store_counter) && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && !mode_session.terminal()) {
+        if(controls.interact && (store_mannequin>=0 || at_store_counter) && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && !mode_session.terminal()) {
             const auto& state=loot_session.economy();
             int look=store_mannequin>=0 ? store_mannequin+1 : 0;
             if(store_mannequin<0) if(const auto* on=game::wardrobe::wearing(state,wardrobe_catalogue))
@@ -2760,12 +2786,12 @@ void Renderer::run() {
             store_open=true;store_status.clear();player.third_person=true;
             input_system.cancel_controls();
         }
-        else if(controls.interact && nearby_shop && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && !mode_session.terminal()) {
+        else if(controls.interact && nearby_shop && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && !mode_session.terminal()) {
             current_shop=nearby_shop;shop_open=true;shop_status="Select supplies, equipment or furniture. BUY / SELL transfers one item.";
             play_ui.opened();input_system.cancel_controls();
         }
         // The Chief (talk), and the training camp's stand (start the next drill).
-        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table && !vehicles.driver() &&
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && !vehicles.driver() &&
            game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
             const auto ron_truck_near=[&]{
@@ -2857,7 +2883,210 @@ void Renderer::run() {
             }
             use_available=here && !creator_active && player_health.alive();
         }
-        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table) {
+        // ====================================================
+        // THE MOTOR TRADE (game::autos): Marnafto's pumps, the Meĥanikejo bays, the car lot
+        // ====================================================
+        if(game_mode==game::GameMode::Explore && game::rules_for(game_mode).civilian_life && !creator_active) {
+            using game::autos::MenuRow;
+            namespace autos=game::autos;
+            auto& wallet=loot_session.economy();
+            const auto kr=[](int n){return std::to_string(n)+" kr";};
+            // The cars the player bought: back where they were left, as they were fitted.
+            const auto store_owned=[&]() {
+                wallet.cars.clear();
+                for(const auto& c:owned_cars) wallet.cars.push_back(autos::serialise(c));
+            };
+            const auto spawn_owned=[&](autos::OwnedCar& c) {
+                if(!vehicles.spawn(verda_region,c.at,c.yaw,c.definition)) return false;
+                c.vehicle=vehicles.last_spawned();
+                vehicles.place(verda_region,c.vehicle,c.at,c.yaw);
+                if(auto* a=vehicles.asset(verda_region,c.vehicle)) {
+                    autos::apply(c.mods,a->vehicle);
+                    a->vehicle.fuel=c.fuel;
+                    a->vehicle.marker="owned_"+c.vehicle;   // nobody else's (island life leaves it be)
+                }
+                vehicle_dirty=true;
+                return true;
+            };
+            if(!owned_ready && player_health.alive()) {
+                owned_ready=true;
+                for(const auto& text:wallet.cars) {
+                    autos::OwnedCar c;
+                    if(autos::parse(text,c) && spawn_owned(c)) owned_cars.push_back(c);
+                }
+#ifdef OUTLAND_DEV_TOOLS
+                // OUTLAND_DEV_MONEY=N: that much in the wallet; OUTLAND_DEV_DRIVE=hatchback: at the wheel of one.
+                if(const char* cash=std::getenv("OUTLAND_DEV_MONEY")) wallet.money=std::max<long long>(0,std::atoll(cash));
+                if(const char* type=std::getenv("OUTLAND_DEV_DRIVE")) {
+                    const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+                    if(vehicles.spawn(verda_region,feet,player.yaw*RAD2DEG,type)) {
+                        const auto id=vehicles.last_spawned();
+                        vehicles.place(verda_region,id,feet,player.yaw*RAD2DEG);
+                        const int index=vehicles.find(id);
+                        if(index>=0) vehicles.enter(verda_region,index,feet);
+                    }
+                }
+#endif
+            }
+            if((owned_sync-=dt)<=0 && !owned_cars.empty()) {
+                owned_sync=3;
+                for(auto& c:owned_cars)
+                    if(const auto* a=vehicles.asset(verda_region,c.vehicle)) {c.at=a->position;c.yaw=a->rotation_y;c.fuel=a->vehicle.fuel;c.mods=autos::mods_of(a->vehicle);}
+                store_owned();
+            }
+            const auto served=[&]()->world::WorldAsset*{return motor_car.empty() ? nullptr : vehicles.asset(verda_region,motor_car);};
+            const auto open_motor=[&](MotorScreen screen,int selected) {
+                std::vector<MenuRow> rows;
+                std::string title,subtitle,back="BACK";
+                const auto* car=served();
+                const auto mods=car ? autos::mods_of(car->vehicle) : autos::Mods{};
+                const auto part_rows=[&](const auto& parts,int fitted) {
+                    for(std::size_t i=0;i<parts.size();++i) {
+                        const bool on=static_cast<int>(i)==fitted;
+                        rows.push_back({parts[i].name,parts[i].detail,on ? "Fitted" : parts[i].price>0 ? kr(parts[i].price) : "Free",!on,on});
+                    }
+                };
+                switch(screen) {
+                case MotorScreen::Pump: {
+                    title="MARNAFTO";subtitle="Nafto el niaj propraj platformoj";back="LEAVE";
+                    const int cost=car ? autos::fill_cost(car->vehicle.fuel) : 0;
+                    rows.push_back({"Fill up",TextFormat("%d%% in the tank",car ? static_cast<int>(car->vehicle.fuel*100+.5F) : 0),cost>0 ? kr(cost) : "Full",cost>0});
+                    break;
+                }
+                case MotorScreen::Workshop: {
+                    title="MEĤANIKEJO";subtitle="What can we do for you?";back="LEAVE";
+                    const int repair=car ? autos::repair_cost(car->vehicle) : 0;
+                    rows.push_back({"Paint",mods.paint>=0 ? autos::paints[static_cast<std::size_t>(mods.paint)].name : "Factory colour",""});
+                    rows.push_back({"Engine",autos::engines[static_cast<std::size_t>(mods.engine)].name,""});
+                    rows.push_back({"Tyres",autos::tires[static_cast<std::size_t>(mods.tires)].name,""});
+                    rows.push_back({"Front bumper",autos::bumpers[static_cast<std::size_t>(mods.bumper)].name,""});
+                    rows.push_back({"Repair",repair>0 ? "body, engine and tyres" : "nothing to fix",repair>0 ? kr(repair) : "",repair>0});
+                    break;
+                }
+                case MotorScreen::Paint:
+                    title="FARBO";subtitle="A new colour, sprayed while you wait";
+                    rows.push_back({"Factory colour","as it left the works",mods.paint<0 ? "Fitted" : "Free",mods.paint>=0,mods.paint<0});
+                    for(std::size_t i=0;i<autos::paints.size();++i) {
+                        const bool on=static_cast<int>(i)==mods.paint;
+                        rows.push_back({autos::paints[i].name,"",on ? "Fitted" : kr(autos::paints[i].price),!on,on});
+                    }
+                    break;
+                case MotorScreen::Engine: title="MOTORO";subtitle="More power";part_rows(autos::engines,mods.engine);break;
+                case MotorScreen::Tires: title="PNEŬOJ";subtitle="Bigger or smaller wheels";part_rows(autos::tires,mods.tires);break;
+                case MotorScreen::Bumper: title="BUFROJ";subtitle="Something on the front";part_rows(autos::bumpers,mods.bumper);break;
+                case MotorScreen::Dealer:
+                    title="AŬTOVENDEJO VERDA";subtitle="Drive it home today";back="LEAVE";
+                    for(const auto& sale:autos::dealer) rows.push_back({sale.name,sale.detail,kr(sale.price),true});
+                    break;
+                default: return;
+                }
+                motor_screen=screen;
+                motor_menu.set_font(sign_renderer.font());
+                motor_menu.open(title,subtitle,std::move(rows),back,selected);
+            };
+            const auto leave_motor=[&]() {
+                motor_menu.close();motor_screen=MotorScreen::None;motor_served=motor_site;motor_car.clear();
+                input_system.cancel_controls();
+            };
+            // Pull up at a pump or into a workshop bay (and stop): the attendant or the mechanic comes over.
+            const auto* driven=vehicles.driver();
+            if(!motor_menu.is_open() && player_health.alive()) {
+                for(std::size_t i=0;i<motor_sites.size();++i) {
+                    const auto& site=motor_sites[i];
+                    const bool there=driven && Vector3Distance(site.origin,driven->position)<40 &&
+                        ((site.kind==world::motor::Kind::Gas && world::motor::at_pump(site,driven->position)) ||
+                         (site.kind==world::motor::Kind::Mechanic && world::motor::bay_at(site,driven->position)>=0));
+                    if(static_cast<int>(i)==motor_served) {if(!there) motor_served=-1;continue;}
+                    if(!there || std::abs(driven->speed)>.6F) continue;
+                    motor_site=static_cast<int>(i);motor_car=driven->id;
+                    open_motor(site.kind==world::motor::Kind::Gas ? MotorScreen::Pump : MotorScreen::Workshop,0);
+                    break;
+                }
+            }
+            // The car lot: at the salesman's desk, on foot.
+            int at_desk=-1;
+            if(!driven && !motor_menu.is_open())
+                for(std::size_t i=0;i<motor_sites.size();++i)
+                    if(motor_sites[i].kind==world::motor::Kind::CarLot &&
+                       Vector3Distance(motor_sites[i].to_world(world::motor::car_lot_desk),{player.position.x,player.position.y-1,player.position.z})<2.4F)
+                        at_desk=static_cast<int>(i);
+            if(at_desk>=0) {
+                use_available=true;
+                if(store_prompt.empty()) store_prompt="E - Buy a car (Aŭtovendejo Verda)";
+                if(controls.interact && !inventory_open && !(shop_open||store_open) && !poker_open) {
+                    input_system.player().interact=false;
+                    motor_site=at_desk;motor_car.clear();
+                    open_motor(MotorScreen::Dealer,0);
+                }
+            }
+            if(motor_menu.is_open()) {
+                const auto act=motor_menu.input(screen_width,screen_height,IsWindowFocused());
+                auto* car=served();
+                const auto pay=[&](int price) {
+                    if(wallet.money<price) {motor_menu.set_status("Not enough kronoj");return false;}
+                    wallet.money-=price;loot_session.changed();return true;
+                };
+                const auto fit=[&](autos::Mods m,int price,const char* done) {
+                    if(!car || !pay(price)) return;
+                    autos::apply(m,car->vehicle);vehicle_dirty=true;
+                    for(auto& c:owned_cars) if(c.vehicle==car->id) c.mods=m;
+                    store_owned();
+                    motor_menu.set_status(done);
+                };
+                const int chosen=act.chosen;
+                const auto mods=car ? autos::mods_of(car->vehicle) : autos::Mods{};
+                if(act.back) {
+                    if(motor_screen==MotorScreen::Paint || motor_screen==MotorScreen::Engine || motor_screen==MotorScreen::Tires || motor_screen==MotorScreen::Bumper)
+                        open_motor(MotorScreen::Workshop,motor_screen==MotorScreen::Paint ? 0 : motor_screen==MotorScreen::Engine ? 1 : motor_screen==MotorScreen::Tires ? 2 : 3);
+                    else leave_motor();
+                } else if(chosen>=0 && (car || motor_screen==MotorScreen::Dealer)) {
+                    switch(motor_screen) {
+                    case MotorScreen::Pump: {
+                        const float before=car->vehicle.fuel;
+                        const auto money=wallet.money;
+                        car->vehicle.fuel=autos::fill(before,wallet.money);
+                        loot_session.changed();vehicle_dirty=true;
+                        motor_menu.set_status(car->vehicle.fuel>before ? TextFormat("Filled up: %lld kr. Thank you for choosing Marnafto",static_cast<long long>(money-wallet.money)) : "Not enough kronoj");
+                        open_motor(MotorScreen::Pump,0);
+                        break;
+                    }
+                    case MotorScreen::Workshop:
+                        if(chosen<4) {open_motor(chosen==0 ? MotorScreen::Paint : chosen==1 ? MotorScreen::Engine : chosen==2 ? MotorScreen::Tires : MotorScreen::Bumper,0);break;}
+                        if(pay(autos::repair_cost(car->vehicle))) {autos::repair(car->vehicle);vehicle_dirty=true;motor_menu.set_status("Good as new");}
+                        open_motor(MotorScreen::Workshop,4);
+                        break;
+                    case MotorScreen::Paint: {
+                        auto m=mods;m.paint=chosen-1;
+                        fit(m,chosen==0 ? 0 : autos::paints[static_cast<std::size_t>(chosen-1)].price,chosen==0 ? "Back to the factory colour" : "A fresh coat of paint");
+                        open_motor(MotorScreen::Paint,chosen);
+                        break;
+                    }
+                    case MotorScreen::Engine: {auto m=mods;m.engine=chosen;fit(m,autos::engines[static_cast<std::size_t>(chosen)].price,"The new engine is in");open_motor(MotorScreen::Engine,chosen);break;}
+                    case MotorScreen::Tires: {auto m=mods;m.tires=chosen;fit(m,autos::tires[static_cast<std::size_t>(chosen)].price,"New tyres on");open_motor(MotorScreen::Tires,chosen);break;}
+                    case MotorScreen::Bumper: {auto m=mods;m.bumper=chosen;fit(m,autos::bumpers[static_cast<std::size_t>(chosen)].price,"Bolted on");open_motor(MotorScreen::Bumper,chosen);break;}
+                    case MotorScreen::Dealer: {
+                        const auto& sale=autos::dealer[static_cast<std::size_t>(chosen)];
+                        if(owned_cars.size()>=autos::max_owned) {motor_menu.set_status("That's enough cars for anyone");break;}
+                        if(motor_site<0 || motor_site>=static_cast<int>(motor_sites.size()) || wallet.money<sale.price) {motor_menu.set_status("Not enough kronoj");break;}
+                        const auto& lot=motor_sites[static_cast<std::size_t>(motor_site)];
+                        autos::OwnedCar c;
+                        c.definition=sale.definition;
+                        c.at=lot.to_world(world::motor::car_lot_delivery);
+                        c.at.y=world::terrain::TerrainHeight::sample(c.at.x,c.at.z);
+                        c.yaw=lot.yaw+180;
+                        if(!spawn_owned(c)) {motor_menu.set_status("Come back in a minute - the lot is full");break;}
+                        pay(sale.price);
+                        owned_cars.push_back(c);store_owned();
+                        leave_motor();
+                        interaction_message=std::string("Your new ")+sale.name+" is waiting by the lot's exit. It's yours: it'll be where you leave it";interaction_remaining=6;
+                        break;
+                    }
+                    default: break;
+                    }
+                }
+            }
+        }
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table) {
             Vector3 exit{};
             if(bus_ride>=0) {
                 // On the bus: off at a stop, toward the shelter.
@@ -2971,7 +3200,7 @@ void Renderer::run() {
         const float pedal_throttle=std::clamp(-controls.move_y+controls.gas-controls.brake_pedal,-1.0F,1.0F);
         game::vehicles::VehicleInput driving_input{pedal_throttle,-controls.move_x,controls.brake,controls.crouch,IsKeyDown(KEY_H),controls.sprint};
         // In a LAN match the world goes on for everyone, whatever menu this player has open.
-        const bool vehicle_paused=lan_match ? creator_active : creator_active||inventory_open||shop_open||store_open||poker_open||mode_session.terminal()||!IsWindowFocused()
+        const bool vehicle_paused=lan_match ? creator_active : creator_active||inventory_open||shop_open||store_open||motor_menu.is_open()||poker_open||mode_session.terminal()||!IsWindowFocused()
 #ifdef OUTLAND_DEV_TOOLS
             || (game_mode==game::GameMode::DevLab && dev_lab.tools_open())
 #endif
@@ -3025,7 +3254,7 @@ void Renderer::run() {
             if(controls.next_weapon)loot_session.changed();
             // The penthouse: buy it (anywhere on its floor), or sleep in its bed once it is yours.
             bool home_used=false;
-            if(game::rules_for(game_mode).civilian_life && penthouse.inside(loot_feet) && !(shop_open||store_open) && !poker_open && !inventory_open) {
+            if(game::rules_for(game_mode).civilian_life && penthouse.inside(loot_feet) && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !inventory_open) {
                 const bool owned=game::economy::Penthouse::owned(loot_session.economy());
                 if(!was_in_penthouse) {interaction_message=owned ? "Home: the Stela Turo penthouse" : "Stela Turo penthouse - for sale";interaction_remaining=3;}
                 if(controls.interact && loot_session.world().nearest(loot_feet,2.8F,reachable_pickup)<0) {
@@ -3050,7 +3279,7 @@ void Renderer::run() {
                 for(const auto& home:homes_for_sale) if(game::economy::inside(home,loot_feet)) {home_here=&home;break;}
             // Uncle Ron's house, before he has handed it over, is just his.
             if(home_here && home_here->price<=0 && !game::economy::owns(loot_session.economy(),*home_here)) home_here=nullptr;
-            if(home_here && !(shop_open||store_open) && !poker_open && !inventory_open && !home_used) {
+            if(home_here && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !inventory_open && !home_used) {
                 const bool owned=game::economy::owns(loot_session.economy(),*home_here);
                 if(home_here!=was_in_home) {interaction_message=owned ? "Home: "+home_here->name : home_here->name+" - for sale";interaction_remaining=3;}
                 if(controls.interact && loot_session.world().nearest(loot_feet,2.8F,reachable_pickup)<0) {
@@ -3076,7 +3305,7 @@ void Renderer::run() {
                 }
             }
             was_in_home=home_here;
-            if(controls.interact && !home_used && !(shop_open||store_open) && !poker_open && !at_table && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){
+            if(controls.interact && !home_used && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){
                 interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;
                 if(interaction_message.starts_with("Picked up")) gun_audio.pickup();
             }
@@ -3151,7 +3380,7 @@ void Renderer::run() {
                         [&](game::combat::WeaponId id){return loot_session.inventory().owns_weapon(item_registry,id);},sights_owned);
                 sight_seen[i]=held_now;
             }
-            if(controls.sight && !driving && !inventory_open && !(shop_open||store_open)) sight_mounts.cycle(weapons.selected(),sights_owned);
+            if(controls.sight && !driving && !inventory_open && !(shop_open||store_open||motor_menu.is_open())) sight_mounts.cycle(weapons.selected(),sights_owned);
         }
         const auto sight=weapons.available() ? sight_mounts.mounted(weapons.selected()) : game::combat::Sight::Iron;
         const float sight_fov=weapons.available() ? game::combat::sight_fov(weapons.selected(),sight) : 70.0F;
@@ -3637,6 +3866,14 @@ void Renderer::run() {
                 bus_ride=-1;vehicle_renderer.reset_camera();
             }
         }
+        {
+            // A rig's trailer: the camera rides over it.
+            float trailer=0;
+            if(const auto* v=vehicles.driver())
+                for(const auto& t:freight.trailers())
+                    if(t.vehicle==v->id) trailer=Vector3Distance({t.centre.x,0,t.centre.z},{v->position.x,0,v->position.z})*1.6F;
+            vehicle_renderer.set_trailer(trailer);
+        }
         if(vehicles.driver())vehicle_renderer.camera(camera,vehicles,verda_region,dt,vehicle_orbit,vehicle_pitch,combat_world);
         else if(bus_ride>=0) vehicle_renderer.camera(camera,vehicles,verda_region,dt,vehicle_orbit,vehicle_pitch,combat_world,bus_line.buses()[static_cast<std::size_t>(bus_ride)].vehicle);
         else if(riding_now) vehicle_renderer.camera(camera,vehicles,verda_region,dt,vehicle_orbit,vehicle_pitch,combat_world,player_crew.ride_car());
@@ -3828,13 +4065,13 @@ void Renderer::run() {
         const bool bag_grenades=game_mode!=game::GameMode::DevLab;
         if(bag_grenades) grenades.set_count(loot_session.inventory().count("frag_grenade"));
         // Quick heal (H / HEAL): the medical item that best covers the damage; boost heals slowly.
-        if(controls.heal && !creator_active && !(shop_open||store_open) && !poker_open && player_health.alive() && !mode_session.terminal() &&
+        if(controls.heal && !creator_active && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && player_health.alive() && !mode_session.terminal() &&
            game_mode!=game::GameMode::DevLab) {
             if(const auto said=loot_session.quick_heal(weapons,player_health); !said.empty()) {interaction_message=said;interaction_remaining=2.5F;}
         }
         if(!mode_session.terminal() && !vehicle_paused) loot_session.tick(dt,player_health);
         if(auto picked=loot_session.take_auto_message(); !picked.empty()) {interaction_message=picked;interaction_remaining=1.6F;}
-        if(controls.grenade && !driving && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && player_health.alive() && !mode_session.terminal()) {
+        if(controls.grenade && !driving && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && player_health.alive() && !mode_session.terminal()) {
             const Vector3 carried=dt>0 ? Vector3Scale(Vector3Subtract(player.position,position_before_move),1.0F/dt) : Vector3{};
             if(grenades.throw_grenade(head_position,look_direction,carried)) {
                 gun_audio.grenade_pin();
@@ -5480,7 +5717,7 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
         asset_drawer_open = game_mode == game::GameMode::DevLab && creator_touch_ui.inventory_open();
 #endif
-        if (touch_ui && !inventory_open && !(shop_open||store_open) && !poker_open && !mode_session.terminal() && !asset_drawer_open && !pause_menu.is_open()) touch_hud.draw(
+        if (touch_ui && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !mode_session.terminal() && !asset_drawer_open && !pause_menu.is_open()) touch_hud.draw(
             controls,
             input_system.drawn_layout(screen_width,screen_height),
             screen_width,
@@ -5567,7 +5804,7 @@ void Renderer::run() {
             loot_ui.set_quests(std::move(quests));
             loot_ui.draw_inventory(item_registry,loot_session,weapons,screen_width,screen_height);
         }
-        if(!creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !mode_session.terminal()){
+        if(!creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !mode_session.terminal()){
             const int nearby=loot_session.world().nearest(loot_feet,2.8F,reachable_pickup);
             if(nearby>=0){const auto& pickup=loot_session.world().state().pickups[static_cast<std::size_t>(nearby)];
                 const auto* item=item_registry.find(pickup.item);
@@ -5580,7 +5817,7 @@ void Renderer::run() {
             }
         }
         // La Mafio: gang tags over Krimuloj near by, whose turf this is, the news, the poker table.
-        if(mafio.active() && !poker_open && !inventory_open && !(shop_open||store_open)) {
+        if(mafio.active() && !poker_open && !inventory_open && !(shop_open||store_open||motor_menu.is_open())) {
             const Font& font=sign_renderer.font();
             std::vector<Vector2> tagged; // one tag per spot on screen: a crew standing together shares one
             for(const auto& body:npcs.actors()) {
@@ -5678,6 +5915,23 @@ void Renderer::run() {
                     DrawRectangle(static_cast<int>(at.x-w/2-6),static_cast<int>(at.y-18),static_cast<int>(w+12),36,Fade(BLACK,.55F));
                     DrawTextEx(font,title.c_str(),{at.x-tw/2,at.y-16},16,1,Color{212,170,60,255});
                     DrawTextEx(font,sub,{at.x-sw/2,at.y+2},13,1,Color{170,200,255,255});
+                }
+            }
+            // Aŭtovendejo Verda: a price on every car on show.
+            for(const auto& site:motor_sites) {
+                if(site.kind!=world::motor::Kind::CarLot || Vector3Distance(site.origin,camera.position)>60) continue;
+                for(std::size_t i=0;i<game::autos::dealer.size() && i<world::motor::car_lot_spots.size();++i) {
+                    const Vector3 over=site.to_world({world::motor::car_lot_spots[i],2.4F,world::motor::car_lot_rows[0]});
+                    if(Vector3Distance(over,camera.position)>16 ||
+                       Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))<=0) continue;
+                    const Vector2 at=GetWorldToScreen(over,camera);
+                    const auto& sale=game::autos::dealer[i];
+                    const char* name=sale.name;
+                    const char* price=TextFormat("%d kr  ·  at the desk",sale.price);
+                    const float tw=MeasureTextEx(font,name,15,1).x,pw=MeasureTextEx(font,price,13,1).x,w=std::max(tw,pw);
+                    DrawRectangle(static_cast<int>(at.x-w/2-6),static_cast<int>(at.y-18),static_cast<int>(w+12),36,Fade(BLACK,.55F));
+                    DrawTextEx(font,name,{at.x-tw/2,at.y-16},15,1,WHITE);
+                    DrawTextEx(font,price,{at.x-pw/2,at.y+2},13,1,GOLD);
                 }
             }
             // Uncle Ron: his name over his head; his words in a box; the goal of the moment.
@@ -5940,7 +6194,7 @@ void Renderer::run() {
             const auto map_button=game::MapScreen::map_button(screen_width,screen_height);
             DrawRectangleRec(map_button,Fade(BLACK,.60F));
             DrawText("MAP · M",static_cast<int>(map_button.x)+14,53,14,RAYWHITE);
-            if(game::rules_for(game_mode).civilian_life && !map_screen.is_open() && !inventory_open && !(shop_open||store_open))
+            if(game::rules_for(game_mode).civilian_life && !map_screen.is_open() && !inventory_open && !(shop_open||store_open||motor_menu.is_open()))
                 build_mode.draw_hud(player_builds,screen_width,screen_height);
             // Entering a zone: its name, what it means, and what it is like.
             const int here=static_cast<int>(world::zones::zone_at(player.position));
@@ -5995,7 +6249,7 @@ void Renderer::run() {
                          static_cast<int>(screen_width*.42F)+84,screen_height-26,15,YELLOW);
         }
         else if(!creator_active && !inventory_open && store_prompt.empty() && vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z})>=0)DrawText("USE / E - Enter vehicle",screen_width/2-120,screen_height-100,20,YELLOW);
-        if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !(shop_open||store_open) && !poker_open && !inventory_open) {
+        if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !inventory_open) {
             const int objective_bottom=game::PlayUI::draw_objective(mode_session,screen_width);
             if(game_mode==game::GameMode::BattleRoyale) {
                 // The zone: its phase, the countdown, and how far the next circle is.
@@ -6046,6 +6300,7 @@ void Renderer::run() {
             }
         }
         if(store_open) store_ui.draw(wardrobe_catalogue,loot_session.economy(),mafio.player_gang()==0,store_status,screen_width,screen_height);
+        if(motor_menu.is_open()) motor_menu.draw(static_cast<long long>(loot_session.economy().money),screen_width,screen_height);
         else if(!store_prompt.empty() && !inventory_open && !(shop_open||poker_open)) {
             const Font& font=sign_renderer.font();
             const float size=20,width=MeasureTextEx(font,store_prompt.c_str(),size,1).x;
@@ -6303,6 +6558,13 @@ void Renderer::run() {
                     std::vector<Vector3> stations;
                     for(const auto& unit:services.units()) if(unit.kind==game::services::UnitKind::Police) stations.push_back(unit.home);
                     nearest(Glyph::Police,Color{70,130,255,255},"POLICE",career.on_duty() ? 2500.0F : 700.0F,stations);
+                }
+                {   // Marnafto: the nearest filling station - from far off when the tank runs low.
+                    std::vector<Vector3> pumps;
+                    for(const auto& site:motor_sites) if(site.kind==world::motor::Kind::Gas) pumps.push_back(site.origin);
+                    float range=500;
+                    if(const auto* v=vehicles.driver()) if(const auto* a=vehicles.asset(verda_region,v->id);a && a->vehicle.fuel<.3F) range=4000;
+                    nearest(Glyph::Shop,Color{238,122,26,255},"MARNAFTO",range,pumps);
                 }
                 {   // Armilejo: the nearest gun shop, from further off.
                     std::vector<Vector3> doors;

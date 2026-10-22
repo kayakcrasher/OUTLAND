@@ -189,7 +189,10 @@ int main() {
         for (const auto& s : region.settlements()) { if (s.id == "west_roka") roka = &s; if (s.id == "ferarbaro_sovagejo") sovagejo = &s; }
         check(roka && sovagejo, "Roka and Sovaĝejo");
         int grid = 0;
-        for (const auto& road : roka->roads) grid += road.type == world::RoadType::Asphalt && road.width >= 12;
+        // (In town: the freight yard out on the highway is not the grid.)
+        for (const auto& road : roka->roads)
+            grid += road.type == world::RoadType::Asphalt && road.width >= 12 &&
+                    std::hypot(road.start.x - roka->center.x, road.start.z - roka->center.z) < 200 && std::hypot(road.end.x - roka->center.x, road.end.z - roka->center.z) < 200;
         check(grid == 8, "Roka's street grid: " + std::to_string(grid));
         for (const auto& s : region.settlements()) for (const auto& road : s.roads)
             for (const auto& end : {road.start, road.end}) check(std::hypot(end.x - roka->center.x, end.z - roka->center.z) > 1, "no road ends in the middle of the square");
@@ -255,14 +258,15 @@ int main() {
     for (const auto& house : capital->buildings) {
         check(house.position.x < -170 && house.position.x > -476 && std::abs(house.position.z) < 190, "old capital houses wiped");
         check(house.purpose == world::BuildingPurpose::Home && house.enterable, "suburban homes are enterable homes");
-        // Every home fronts a street: 14 m in front of its centre is a street centreline (within 2 m).
+        // Every home fronts a street: 14 m in front of its centre is a street centreline (within 2 m;
+        // 3 m further back on the truckers' 14 m road).
         const float a = house.rotation_y * DEG2RAD;
         const Vector3 front{house.position.x - std::sin(a) * 14, 0, house.position.z - std::cos(a) * 14};
         bool fronts = false;
         for (const auto& road : capital->roads) {
             const auto ab = Vector3Subtract(road.end, road.start), ap = Vector3Subtract(front, road.start);
             const float t = std::clamp((ab.x * ap.x + ab.z * ap.z) / (ab.x * ab.x + ab.z * ab.z), 0.0F, 1.0F);
-            fronts |= std::hypot(road.start.x + ab.x * t - front.x, road.start.z + ab.z * t - front.z) < 2;
+            fronts |= std::hypot(road.start.x + ab.x * t - front.x, road.start.z + ab.z * t - front.z) < (road.width > 13 ? 3.5F : 2.0F);
         }
         check(fronts, "home faces its street");
         // Level ground: the suburbs are on the capital's building pad.
@@ -286,9 +290,11 @@ int main() {
         else if (in_suburbs(road.start) && in_suburbs(road.end)) ++suburb_streets;
         // Verda Transporto's yard road: the suburb street on z = -84 carried west into the industrial quarter.
         else if (road.start.z == -84 && road.end.z == -84 && road.start.x == -476 && road.end.x < world::layout::freight_x1) ++freight_roads;
+        // Verda Transporto's freight yards off the spokes (a 16 m road in, a 14 m loop), far out of town.
+        else if (std::hypot(road.start.x, road.start.z) > 1000 && (road.width == 16 || road.width == 14)) continue;
         else check(world::roads::turnaround_road(road.width), "a capital road that is neither street, highway nor bus turnaround");
     }
-    check(grid_streets == 9 + 5 && highways == 2 && through >= 4 && suburb_streets == 14, // + the south blocks' four avenues and one street
+    check(grid_streets == 9 + 5 && highways == 2 && through >= 4 && suburb_streets == 16, // + the south blocks' four avenues and one street; the west street in three (the truckers' link)
           "grid, suburbs, the highway through and two spokes: " + std::to_string(grid_streets) + "/" + std::to_string(suburb_streets) + "/" +
           std::to_string(highways) + "/" + std::to_string(through));
     check(freight_roads == 1, "the yard road into Verda Transporto's depot");
@@ -510,7 +516,8 @@ int main() {
                 check(place.kind == game::life::PlaceKind::Home && place.home_capacity == 0, "a gang house is nobody's home: " + place.id);
                 continue;
             }
-            if (!place.building_id.starts_with("creator_marker_building_purpose_kit_")) continue;
+            // (Verda Transporto's freight yards: named kit places, staffed like the rest.)
+            if (!place.building_id.starts_with("creator_marker_building_purpose_kit_") && !place.building_id.starts_with("freight_yard_")) continue;
             ++kit_places;
             offices += place.kind == game::life::PlaceKind::Office;
             docks += place.kind == game::life::PlaceKind::Dock;

@@ -1,4 +1,5 @@
 #include "outland/game/vehicles/VehicleSystem.hpp"
+#include "outland/game/autos/Autos.hpp"
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -20,7 +21,7 @@ bool VehicleSystem::save_state(const world::VerdaRegion &region, const std::stri
         error = "Vehicle state is not writable";
         return false;
     }
-    out << std::setprecision(9) << "OUTLAND_VEHICLES 1\n";
+    out << std::setprecision(9) << "OUTLAND_VEHICLES 2\n";
     for (const auto &v : vehicles_)
         if (const auto *a = asset(region, v.id)) {
             const auto &p = a->vehicle;
@@ -31,6 +32,9 @@ bool VehicleSystem::save_state(const world::VerdaRegion &region, const std::stri
                 << ' ' << p.engine << ' ' << p.fuel << ' ' << p.enabled << ' ' << p.destroyed;
             for (float tire : p.tires)
                 out << ' ' << tire;
+            // Version 2: a mechanic's work (game::autos).
+            for (int mod : p.mods)
+                out << ' ' << mod;
             out << '\n';
         }
     out << "END\n";
@@ -53,7 +57,7 @@ bool VehicleSystem::load_state(world::VerdaRegion &region, const std::string &pa
     std::ifstream in(path);
     std::string magic;
     int version = 0;
-    if (!(in >> magic >> version) || magic != "OUTLAND_VEHICLES" || version != 1) {
+    if (!(in >> magic >> version) || magic != "OUTLAND_VEHICLES" || (version != 1 && version != 2)) {
         error = "Invalid vehicle state header";
         return false;
     }
@@ -87,6 +91,14 @@ bool VehicleSystem::load_state(world::VerdaRegion &region, const std::string &pa
                 error = "Invalid tire state";
                 return false;
             }
+        if (version >= 2) {
+            autos::Mods mods;
+            if (!(in >> mods.paint >> mods.engine >> mods.tires >> mods.bumper) || !autos::valid(mods)) {
+                error = "Invalid vehicle mods";
+                return false;
+            }
+            autos::apply(mods, p);
+        }
         const float values[]{p.home.x,     p.home.y, p.home.z,     p.home_yaw,   a.size.x,
                              a.size.y,     a.size.z, a.position.x, a.position.y, a.position.z,
                              a.rotation_y, p.health, p.engine,     p.fuel};

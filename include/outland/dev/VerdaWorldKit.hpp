@@ -32,6 +32,12 @@ struct WorldKitReport {
     std::vector<Vector3> radio_stations;   // Verda Popolko (Verda City), Radio Sovaĝejo, Espera Roko (doors), in that order
     std::vector<Vector3> gun_shops;        // Armilejo's shops (doors): one in each of the five main cities
     std::vector<Vector3> gang_houses;      // the county gangs' houses (centres): Espera, Porto Luma, Suda Haveno, Roka
+    // The motor trade (world/MotorTrade.hpp): Marnafto's stations (2 in Verda City, 1 in each big
+    // town, 1 on the ring road), the Meĥanikejo workshops, the car lot, the offshore rigs (origins).
+    std::vector<Vector3> gas_stations, mechanics, oil_rigs;
+    bool car_lot{false};
+    std::vector<Vector3> freight_yards;    // Verda Transporto's drops off the highways (yard centres)
+    Vector3 car_lot_at{};
     int town_halls{0};
     std::vector<KitBuilding> enterable;
     std::vector<Vector3> skipped;     // centres of lots left empty because something was there

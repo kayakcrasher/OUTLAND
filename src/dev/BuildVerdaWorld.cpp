@@ -35,6 +35,15 @@ int main(int argc, char** argv) {
     std::cout << report.gun_shops.size() << " Armilejo gun shops at";
     for (const auto& door : report.gun_shops) std::cout << " (" << static_cast<int>(door.x) << ", " << static_cast<int>(door.z) << ")";
     std::cout << '\n';
+    std::cout << report.gas_stations.size() << " Marnafto stations, " << report.mechanics.size() << " workshops, car lot "
+              << (report.car_lot ? "at (" + std::to_string(static_cast<int>(report.car_lot_at.x)) + ", " + std::to_string(static_cast<int>(report.car_lot_at.z)) + ")" : std::string("missing"))
+              << ", " << report.oil_rigs.size() << " oil rigs\n";
+    for (const auto& r : report.oil_rigs) std::cout << "  rig (" << static_cast<int>(r.x) << ", " << static_cast<int>(r.z) << ")\n";
+    for (const auto& g : report.gas_stations) std::cout << "  station (" << static_cast<int>(g.x) << ", " << static_cast<int>(g.z) << ")\n";
+    for (const auto& g : report.mechanics) std::cout << "  workshop (" << static_cast<int>(g.x) << ", " << static_cast<int>(g.z) << ")\n";
+    std::cout << report.freight_yards.size() << " freight yards at";
+    for (const auto& y : report.freight_yards) std::cout << " (" << static_cast<int>(y.x) << ", " << static_cast<int>(y.z) << ")";
+    std::cout << '\n';
     std::cout << report.gang_houses.size() << " gang houses at";
     for (const auto& house : report.gang_houses) std::cout << " (" << static_cast<int>(house.x) << ", " << static_cast<int>(house.z) << ")";
     std::cout << '\n';

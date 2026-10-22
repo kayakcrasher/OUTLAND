@@ -77,7 +77,7 @@ int main() {
     }
     int sxs = 0, semis = 0;
     for (const auto& car : cars.vehicles()) {
-        sxs += car.id.find("vehicle_spawn_sxs_") != std::string::npos;
+        sxs += car.id.find("vehicle_spawn_sxs_") != std::string::npos && car.id.find("_forsale_") == std::string::npos;   // (not the car lot's)
         semis += car.id.find("vehicle_spawn_semi_") != std::string::npos;
     }
     // The stockyard's two, and Verda Transporto's: four for hire and three of its own drivers'.

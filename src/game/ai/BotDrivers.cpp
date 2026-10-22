@@ -13,7 +13,7 @@ namespace outland::game::ai {
 namespace {
 float flat(Vector3 a, Vector3 b) { return std::hypot(a.x - b.x, a.z - b.z); }
 bool usable(const vehicles::VehicleSystem& cars, const world::VerdaRegion& region, const vehicles::VehicleRuntime& car) {
-    if (car.id.find("_donor_") != std::string::npos || car.id.find("bus") != std::string::npos || cars.kinematic(car.id)) return false;
+    if (car.id.find("_donor_") != std::string::npos || car.id.find("_forsale_") != std::string::npos || car.id.find("bus") != std::string::npos || cars.kinematic(car.id)) return false;
     if (car.id.find("_police_") != std::string::npos || car.id.find("_ambulance_") != std::string::npos) return false; // the services' own
     if (cars.autopiloted(car.id) || (cars.driver() && cars.driver()->id == car.id)) return false; // taken already
     const auto* asset = cars.asset(region, car.id);

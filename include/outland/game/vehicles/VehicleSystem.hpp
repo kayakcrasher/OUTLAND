@@ -30,6 +30,9 @@ struct VehicleEvents {
 // Backcountry yards keep dead cars as parts donors (marker ids "vehicle_spawn_<type>_donor_..."):
 // they never run and sit on blocks where their wheels were.
 inline bool parts_donor(const std::string& marker) { return marker.find("_donor_") != std::string::npos; }
+// Cars on show at Aŭtovendejo Verda's lot (marker ids "vehicle_spawn_<type>_forsale_..."): nobody
+// drives them off; buying one gets a car of your own.
+inline bool for_sale(const std::string& marker) { return marker.find("_forsale_") != std::string::npos; }
 class VehicleSystem {
   public:
     // Runtime vehicles at most (parked, driven and spawned together).
@@ -40,6 +43,8 @@ class VehicleSystem {
     bool reconcile(world::VerdaRegion &region);
     bool spawn(world::VerdaRegion &region, Vector3 near, float yaw,
                std::string_view definition = "hatchback");
+    // The id of the vehicle the last successful spawn() made.
+    [[nodiscard]] const std::string &last_spawned() const { return last_spawned_; }
     // Nearest usable vehicle whose body (not just its centre) is within `radius` of the player.
     int nearest(const world::VerdaRegion &region, Vector3 player, float radius = 2) const;
     void set_training_structure(bool solid) { training_structure_ = solid; }
@@ -112,6 +117,7 @@ class VehicleSystem {
     std::function<void(float)> occupant_damage_;
     std::function<float(const std::string &, float)> fuel_hook_;
     unsigned spawn_counter_{0};
+    std::string last_spawned_;
     world::VerdaRegion *owner_{nullptr};
     std::unordered_map<std::string, world::WorldAsset *> assets_;
     std::unordered_map<std::string, VehicleInput> autopilot_;
