@@ -6,13 +6,13 @@ antibiotics	Antibiotics	medical	assets/verda/survival/runtime/Antibiotics.glb	4	
 antiseptic	Antiseptic	medical	assets/verda/survival/runtime/Antiseptic.glb	4	0.14	heal	30		0		0	0
 bandage	Bandage	medical	assets/verda/survival/runtime/band.glb	8	0.1	heal	15		0		1	0
 pistol_ammo	9mm rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	60	0.16	ammo	0	pistol	0		60	0
-rifle_ammo	Rifle rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	60	0.16	ammo	0	rifle	0		120	0
+rifle_ammo	Rifle rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	60	0.16	ammo	0	rifle	0		0	0
 pistol	V9 pistol	weapon		1	0.2	equip	0	pistol	0		1	12
-hunting_rifle	Hunting rifle	weapon	assets/verda/survival/runtime/hunting_rifle.glb	1	1.12	equip	0	rifle	0		1	30
+hunting_rifle	Hunting rifle	weapon	assets/verda/survival/runtime/hunting_rifle.glb	1	1.12	equip	0	rifle	0		0	0
 smg_ammo	.45 rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	50	0.16	ammo	0	smg	0		0	0
 shotgun_shells	12-gauge shells	ammo	assets/verda/survival/runtime/Ammunition.glb	25	0.16	ammo	0	shotgun	0		0	0
 sniper_ammo	7.62 rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	20	0.16	ammo	0	sniper	0		0	0
-frag_grenade	Frag grenade	utility	assets/verda/combat/frag_grenade.glb	6	0.11	none	0		0		2	0
+frag_grenade	Frag grenade	utility	assets/verda/combat/frag_grenade.glb	6	0.11	none	0		0		0	0
 red_dot_sight	Red dot sight	utility	assets/verda/combat/red_dot_sight.glb	3	0.06	none	0		0		0	0
 scope_2x	2x scope	utility	assets/verda/combat/scope_2x.glb	3	0.15	none	0		0		0	0
 scope_4x	4x scope	utility	assets/verda/combat/scope_4x.glb	3	0.18	none	0		0		0	0

@@ -96,6 +96,9 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_truck_depot", .name = "Verda Transporto - truck depot with office", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/truck_depot.glb", .thumbnail_path = "", .footprint = {38.00F, 31.00F, 9.00F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_gun_shop", .name = "Armilejo - gun shop (modular, enterable)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/gun_shop.glb", .thumbnail_path = "", .footprint = {12.20F, 9.20F, 4.40F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_radio_station_popolko", .name = "Radio station - Verda Popolko 98.1 (modular studio, transmitter mast)", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/radio_station_popolko.glb", .thumbnail_path = "", .footprint = {18.00F, 11.20F, 34.35F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

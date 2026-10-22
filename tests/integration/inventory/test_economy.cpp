@@ -60,6 +60,17 @@ int main() {
         assert(economy.trade(wallet,nades,items,*general,grenade,2,false).starts_with("Bought"));
         assert(nades.count("frag_grenade")==2 && wallet.money==state.money-grenade.buy*2);
     }
+    {   // Armilejo, the gun shops, sell every gun in the game, ammunition for each, grenades and vests.
+        for(const auto& item:items.items()) {
+            if(item.category!=inventory::ItemCategory::Weapon) continue;
+            const bool sold=std::any_of(economy.offers().begin(),economy.offers().end(),[&](const auto& o){return o.kind=="guns" && o.item==item.id;});
+            assert(sold);
+            if(const auto* ammo=items.ammo_for(item))
+                assert(std::any_of(economy.offers().begin(),economy.offers().end(),[&](const auto& o){return o.kind=="guns" && o.item==ammo->id;}));
+        }
+        for(const char* extra:{"frag_grenade","vest_light","vest_heavy"})
+            assert(std::any_of(economy.offers().begin(),economy.offers().end(),[&](const auto& o){return o.kind=="guns" && o.item==extra;}));
+    }
     {   // Red dots and scopes are sold at general stores; a 4x costs more than a red dot.
         auto wallet=state;inventory::Inventory optics;
         const auto& dot=offer("general_red_dot_sight");const auto& four=offer("general_scope_4x");
@@ -101,11 +112,11 @@ int main() {
     assert(economy.stock(restored.economy(),*general,water)==water.stock-1);
     // Loaded magazines cannot be sold away or converted into free money.
     const auto cash=restored.economy().money;
-    assert(!restored.trade(economy,*general,offer("general_hunting_rifle"),1,true,restored_weapons).starts_with("Sold"));
-    assert(restored.economy().money==cash && restored.inventory().count("hunting_rifle")==1);
-    restored_weapons.set_loaded(combat::WeaponId::Rifle,0);
-    assert(restored.trade(economy,*general,offer("general_hunting_rifle"),1,true,restored_weapons).starts_with("Sold"));
-    assert(restored_weapons.selected()==combat::WeaponId::Pistol && restored_weapons.available());
+    assert(!restored.trade(economy,*general,offer("general_pistol"),1,true,restored_weapons).starts_with("Sold"));
+    assert(restored.economy().money==cash && restored.inventory().count("pistol")==1);
+    restored_weapons.set_loaded(combat::WeaponId::Pistol,0);
+    assert(restored.trade(economy,*general,offer("general_pistol"),1,true,restored_weapons).starts_with("Sold"));
+    assert(!restored_weapons.available());
     restored.economy().money=1000;
     assert(restored.trade(economy,*general,offer("general_hunting_rifle"),1,false,restored_weapons).starts_with("Bought"));
     assert(restored_weapons.selected()==combat::WeaponId::Rifle && restored_weapons.ammo().loaded==0);

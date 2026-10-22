@@ -53,6 +53,29 @@ It's a full vehicle type (`bus` in `vehicle_manifest.tsv`): 12.3 m long, 2.55 m 
 - **Leaving the line:** a wrecked bus leaves the line. A running bus can't be entered.
 - **Other modes:** in Battle Royale and Zombie Survival the buses wait at Verda's depot on the north highway, where anyone can drive one.
 
+## Riders
+
+The buses carry people:
+
+- **Waiting:** islanders turn up at every stop over time, about 1.4 a minute (twice that at a
+  town stop). The first few stand in a queue by the shelter. Once 14 are waiting, newcomers walk
+  instead.
+- **Boarding:** when a bus pulls in, everyone whose stop it is gets off first, then the queue
+  gets on, each heading for another stop on the line.
+- **Capacity:** a bus holds 40 people, a 12 m single-decker's 32 seats plus a few standing.
+  When it is full, the rest wait for the next bus.
+- **On board:** riders sit two by two down the aisle and can be seen through the windows (up to
+  20 drawn per bus, when the bus is near).
+
+## Riding the bus
+
+In Explore and the campaign, the player can ride too:
+
+- Walk up to a bus standing at a stop and press USE. The fare is 4 kr. A full bus has no room.
+- The camera follows the bus. A line at the bottom shows the next stop and how many are aboard.
+- Press USE when the bus is at a stop to get off, on the shelter's side. You can't get off while
+  it is moving, or shoot from the bus.
+
 ## Tests
 
 - **`outland_bus_line_tests`** runs the line for 40 simulated minutes and checks:
@@ -63,6 +86,9 @@ It's a full vehicle type (`bus` in `vehicle_manifest.tsv`): 12.3 m long, 2.55 m 
   - buses keep to the road (within 2.5 m on tight corners) and the speed limit;
   - a bus stops short of a person in its lane and goes on when they move;
   - running buses can't be entered, and a wreck leaves the line;
-  - stopping the line parks the buses at the depot.
+  - stopping the line parks the buses at the depot;
+  - islanders queue, board and get off at their own stops, a bus never holds more than 40, and
+    long queues walk;
+  - the player gets on at a stop, can't get off while it moves, and gets off at the next stop.
 - **`outland_signage_tests`:** every stop is signed, with a named Linio 1 sign in every town.
 - **`outland_skeletal_gait_tests`:** the seated driver pose.

@@ -79,8 +79,14 @@ int main() {
     std::vector<std::set<int>> called(line.buses().size());
     std::vector<int> calls(line.buses().size(), 0);
     float worst_road = 0, fastest = 0;
+    int most_aboard = 0, boarded = 0, left = 0, longest_queue = 0;
     for (float t = 0; t < 2400; t += .1F) {
         line.update(.1F, region, vehicles, far_away, nullptr);
+        for (std::size_t b = 0; b < line.buses().size(); ++b) {
+            most_aboard = std::max(most_aboard, line.aboard(static_cast<int>(b)));
+            if (line.buses()[b].dwell > line.config().dwell - .15F) { boarded += line.buses()[b].got_on; left += line.buses()[b].got_off; }
+        }
+        for (const auto& stop : line.stops()) longest_queue = std::max(longest_queue, stop.waiting);
         for (std::size_t b = 0; b < line.buses().size(); ++b) {
             const auto& bus = line.buses()[b];
             fastest = std::max(fastest, bus.speed);
@@ -102,6 +108,27 @@ int main() {
         check(called[b].size() == line.stops().size(), "every bus calls at every stop");
     }
     std::cout << "fastest " << fastest * 3.6F << " km/h, furthest off the road " << worst_road << " m\n";
+    // People ride it: they wait at the stops, get on, get off at their own stop, and a bus never
+    // carries more than it can hold.
+    std::cout << "riders: " << boarded << " got on, " << left << " got off, at most " << most_aboard << " aboard, longest queue " << longest_queue << '\n';
+    check(boarded > 20 && left > 20, "islanders ride the bus, on and off");
+    check(most_aboard <= line.config().capacity && longest_queue <= line.config().crowd_max, "never over capacity; long queues walk");
+    for (const auto& bus : line.buses())
+        for (const auto& r : bus.riders) check(r.alight >= 0 && r.alight < static_cast<int>(line.stops().size()) && !r.character.empty(), "each rider has a stop and a face");
+    // The player: on at a stop, not while it moves, off at the next stop.
+    {
+        int at = -1;
+        for (int i = 0; i < 6000 && at < 0; ++i) {
+            line.update(.1F, region, vehicles, far_away, nullptr);
+            for (std::size_t b = 0; b < line.buses().size(); ++b) if (line.buses()[b].dwell > 1) at = static_cast<int>(b);
+        }
+        check(at >= 0 && line.board(at) && line.buses()[static_cast<std::size_t>(at)].player, "the player gets on at a stop");
+        for (int i = 0; i < 6000 && line.buses()[static_cast<std::size_t>(at)].dwell > 0; ++i) line.update(.1F, region, vehicles, far_away, nullptr);
+        for (int i = 0; i < 100; ++i) line.update(.1F, region, vehicles, far_away, nullptr);
+        check(!line.alight(at), "not off while it is moving");
+        for (int i = 0; i < 9000 && line.buses()[static_cast<std::size_t>(at)].dwell <= 0; ++i) line.update(.1F, region, vehicles, far_away, nullptr);
+        check(line.alight(at) && !line.buses()[static_cast<std::size_t>(at)].player, "off at the next stop");
+    }
     check(fastest <= line.config().cruise + .01F, "within the speed limit");
     // The middle of a 12 m bus cuts inside a tight corner by a couple of metres, as real ones do.
     check(worst_road < 2.5F, "keeps to the road");

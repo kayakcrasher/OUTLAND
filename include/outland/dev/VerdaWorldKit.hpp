@@ -30,6 +30,7 @@ struct WorldKitReport {
     bool stockyard{false};
     bool cargo_terminal{false}, freight_depot{false};
     std::vector<Vector3> radio_stations;   // Verda Popolko (Verda City), Radio Sovaĝejo, Espera Roko (doors), in that order
+    std::vector<Vector3> gun_shops;        // Armilejo's shops (doors): one in each of the five main cities
     int town_halls{0};
     std::vector<KitBuilding> enterable;
     std::vector<Vector3> skipped;     // centres of lots left empty because something was there

@@ -614,6 +614,8 @@ void Renderer::run() {
     game::career::Backup backup;     // an officer's radio call: two officers in a squad car
     game::career::Crew player_crew;  // the player's own: up to four gang recruits, or a partner on the force
     bool riding_now=false;           // in the passenger seat while the crew drives
+    int bus_ride=-1;                 // the bus the player rides (game::transit::BusLine), -1 on foot
+    characters::AnimationController bus_rider_pose;   // the people sitting on the buses
     // Ŝtata Malliberejo, the state prison (world::layout::prison_*): a point in its frame (x across,
     // z from the gate (-) to the back), on the ground; and the time an inmate gets out (-1: free).
     const auto prison_at=[](float x,float z) {
@@ -2840,7 +2842,27 @@ void Renderer::run() {
         }
         if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table) {
             Vector3 exit{};
-            if(riding_now) {
+            if(bus_ride>=0) {
+                // On the bus: off at a stop, toward the shelter.
+                if(bus_line.alight(bus_ride)) {
+                    const auto& bus=bus_line.buses()[static_cast<std::size_t>(bus_ride)];
+                    Vector3 kerb=bus.position;
+                    float nearest=1e9F;
+                    for(const auto& stop:bus_line.stops())
+                        if(const float d=Vector3Distance(stop.kerb,bus.position);d<nearest) {nearest=d;kerb=stop.shelter;}
+                    Vector3 out=Vector3Subtract(kerb,bus.position);out.y=0;
+                    out=Vector3Length(out)>.1F ? Vector3Normalize(out) : Vector3{1,0,0};
+                    Vector3 at=Vector3Add(bus.position,Vector3Scale(out,3.0F));
+                    at.y=world::physics::WorldCollision::ground_height({at.x,bus.position.y+2,at.z},bus.position.y+2,verda_region);
+                    if(!std::isfinite(at.y)) at.y=world::terrain::TerrainHeight::sample(at.x,at.z);
+                    player.position=Vector3Add(at,{0,1,0});player.vertical_velocity=0;
+                    bus_ride=-1;vehicle_renderer.reset_camera();
+                    interaction_message="Off the bus";
+                } else {
+                    const auto& bus=bus_line.buses()[static_cast<std::size_t>(bus_ride)];
+                    interaction_message="Get off at the next stop: "+bus_line.stops()[static_cast<std::size_t>(bus.next_stop)].town;
+                }
+            } else if(riding_now) {
                 // USE in the passenger seat: "Pull over here."
                 player_crew.end_ride(br_bots,bot_drivers,vehicles,verda_region);
                 interaction_message="Your crew pulls over";
@@ -2849,9 +2871,22 @@ void Renderer::run() {
                 else interaction_message="Stop and leave space beside the vehicle to exit";
             }else {
                 const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
-                const int vehicle=vehicles.nearest(verda_region,feet);
+                int vehicle=vehicles.nearest(verda_region,feet);
                 // Residents' cars: a moving one can't be boarded; taking one is a crime.
                 const std::string id=vehicle>=0 ? vehicles.vehicles()[static_cast<std::size_t>(vehicle)].id : std::string();
+                // At a bus standing at its stop: on board, for the fare.
+                if(const int b=bus_line.running() && game::rules_for(game_mode).civilian_life ? bus_line.bus_at_stop(feet,9) : -1;b>=0) {
+                    constexpr int fare=4;
+                    if(loot_session.economy().money<fare) interaction_message="The fare is 4 kr";
+                    else if(!bus_line.board(b)) interaction_message="The bus is full - wait for the next one";
+                    else {
+                        loot_session.economy().money-=fare;loot_session.changed();
+                        bus_ride=b;input_system.cancel_controls();vehicle_orbit=vehicle_pitch=0;vehicle_renderer.reset_camera();
+                        interaction_message="On the bus - 4 kr. USE at a stop to get off";
+                    }
+                    interaction_remaining=3;
+                    vehicle=-1;
+                }
                 // At the passenger door with the crew about: one of them drives you - to the map's
                 // waypoint, or else the job in hand.
                 bool passenger=false;
@@ -3564,7 +3599,29 @@ void Renderer::run() {
                 if(player_health.alive()) {interaction_message="Here we are";interaction_remaining=3;}
             }
         } else if(!player_crew.ride_car().empty()) player_crew.end_ride(br_bots,bot_drivers,vehicles,verda_region);
+        // On the bus: a seat halfway down, the camera behind the bus; off if it leaves the line.
+        if(bus_ride>=0) {
+            const bool ok=bus_ride<static_cast<int>(bus_line.buses().size()) && bus_line.buses()[static_cast<std::size_t>(bus_ride)].running &&
+                          bus_line.buses()[static_cast<std::size_t>(bus_ride)].player && player_health.alive();
+            if(ok) {
+                const auto& bus=bus_line.buses()[static_cast<std::size_t>(bus_ride)];
+                const float a=bus.yaw*DEG2RAD;
+                player.position={bus.position.x-std::cos(a)*.6F-std::sin(a)*1.0F,bus.position.y+1.3F,bus.position.z+std::sin(a)*.6F-std::cos(a)*1.0F};
+                player.vertical_velocity=0;
+            } else {
+                if(bus_ride<static_cast<int>(bus_line.buses().size())) {
+                    const auto& bus=bus_line.buses()[static_cast<std::size_t>(bus_ride)];
+                    bus_line.alight(bus_ride);
+                    const float a=bus.yaw*DEG2RAD;
+                    Vector3 at{bus.position.x-std::cos(a)*3.0F,0,bus.position.z+std::sin(a)*3.0F};
+                    at.y=world::terrain::TerrainHeight::sample(at.x,at.z);
+                    player.position=Vector3Add(at,{0,1,0});
+                }
+                bus_ride=-1;vehicle_renderer.reset_camera();
+            }
+        }
         if(vehicles.driver())vehicle_renderer.camera(camera,vehicles,verda_region,dt,vehicle_orbit,vehicle_pitch,combat_world);
+        else if(bus_ride>=0) vehicle_renderer.camera(camera,vehicles,verda_region,dt,vehicle_orbit,vehicle_pitch,combat_world,bus_line.buses()[static_cast<std::size_t>(bus_ride)].vehicle);
         else if(riding_now) vehicle_renderer.camera(camera,vehicles,verda_region,dt,vehicle_orbit,vehicle_pitch,combat_world,player_crew.ride_car());
         const Vector3 camera_direction=Vector3Normalize(Vector3Subtract(camera.target,camera.position));
 
@@ -3708,7 +3765,7 @@ void Renderer::run() {
         }
         if (!controls.fire) trigger_ready=true;
         game::combat::WeaponInput weapon_input;
-        weapon_input.fire=controls.fire && trigger_ready && (!driving || drive_by) && !creator_active && !inventory_open;
+        weapon_input.fire=controls.fire && trigger_ready && (!driving || drive_by) && bus_ride<0 && !creator_active && !inventory_open;
         weapon_input.aim=controls.aim;
         weapon_input.reload=controls.reload;
         weapon_input.next_weapon=controls.next_weapon;
@@ -4665,6 +4722,40 @@ void Renderer::run() {
             characters::BodyPose sitting;sitting.seated=true;
             character_renderer.draw(bus.driver,{seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y,1,&bus_drivers[i],sitting);
         }
+        // The people on the buses (seated, two by two down the aisle) and those waiting at the stops.
+        if(bus_line.running()) {
+            bus_rider_pose.advance(characters::AnimationAction::Idle,dt,0);
+            for(const auto& bus:bus_line.buses()) {
+                if(!bus.running || Vector3DistanceSqr(bus.position,camera.position)>70*70) continue;
+                const auto* asset=vehicles.asset(verda_region,bus.vehicle);
+                const auto* type=asset ? vehicles.definition(*asset) : nullptr;
+                if(!asset || !type) continue;
+                const float scale=asset->size.x/type->width;
+                characters::BodyPose sitting;sitting.seated=true;
+                for(std::size_t k=0;k<bus.riders.size() && k<20;++k) {
+                    if(bus.riders[k].character.empty()) continue;
+                    const int row=static_cast<int>(k/2);
+                    const Vector3 local{k%2 ? -.62F : .62F,type->seat.y,type->seat.z-1.6F-static_cast<float>(row)*.95F};
+                    const auto seat=game::vehicles::VehicleSystem::world_point(local,asset->position,asset->rotation_y,scale);
+                    character_renderer.draw(bus.riders[k].character,{seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y,1,&bus_rider_pose,sitting);
+                }
+            }
+            for(const auto& stop:bus_line.stops()) {
+                if(stop.crowd.empty() || Vector3DistanceSqr(stop.shelter,camera.position)>70*70) continue;
+                Vector3 to_road=Vector3Subtract(stop.kerb,stop.shelter);to_road.y=0;
+                const float length=Vector3Length(to_road);
+                to_road=length>.1F ? Vector3Scale(to_road,1/length) : Vector3{0,0,1};
+                const Vector3 along{-to_road.z,0,to_road.x};
+                const float facing=std::atan2(to_road.x,to_road.z)*RAD2DEG;
+                for(std::size_t k=0;k<stop.crowd.size() && k<8;++k) {
+                    const float side=(static_cast<float>(k)-3.5F)*.9F;
+                    Vector3 at=Vector3Add(Vector3Add(stop.shelter,Vector3Scale(to_road,1.6F+.3F*static_cast<float>(k%2))),Vector3Scale(along,side));
+                    at.y=world::terrain::TerrainHeight::sample(at.x,at.z);
+                    at.y=std::max(at.y,world::physics::WorldCollision::ground_height({at.x,at.y+1.5F,at.z},at.y+1.5F,verda_region));
+                    character_renderer.draw(stop.crowd[k],at,facing+static_cast<float>((k*37)%30)-15,1,&bus_rider_pose,characters::BodyPose{});
+                }
+            }
+        }
         // Drivers at the wheel of the side-by-sides and the big rigs (Vakeroj in their hats).
         {
             std::vector<std::pair<std::string,std::pair<std::string,bool>>> seated;
@@ -4913,7 +5004,7 @@ void Renderer::run() {
                 game::aircraft::draw_parachute(get_world_asset_model("assets/verda/aircraft/parachute.glb",character_registry),
                     Vector3Add(player.position,{0,.55F,0}),skydiver.heading(),open,skydiver.swing(),skydiver.bank());
         }
-        if (player.third_person && !driving && !riding_now && !scoped && !ads_view && !(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed)) {
+        if (player.third_person && !driving && !riding_now && bus_ride<0 && !scoped && !ads_view && !(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed)) {
 
             const Vector3 character_feet{player.position.x,player.position.y-1.0F,player.position.z};
 
@@ -5727,6 +5818,16 @@ void Renderer::run() {
                 DrawText(line,screen_width/2-MeasureText(line,18)/2,screen_height-170,18,Color{120,230,150,255});
             }
         }
+        if(bus_ride>=0 && bus_ride<static_cast<int>(bus_line.buses().size()) && !map_screen.is_open()) {
+            const auto& bus=bus_line.buses()[static_cast<std::size_t>(bus_ride)];
+            const std::string line=std::string(bus.dwell>0 ? "LINIO 1  ·  at " : "LINIO 1  ·  next stop: ")+
+                bus_line.stops()[static_cast<std::size_t>(bus.next_stop)].town+TextFormat("  ·  %d aboard  ·  ",bus_line.aboard(bus_ride))+
+                (bus.dwell>0 ? "USE to get off here" : "USE at a stop to get off");
+            const Font& font=sign_renderer.font();
+            const float lw=MeasureTextEx(font,line.c_str(),16,1).x;
+            DrawRectangle(static_cast<int>(screen_width/2-lw/2-12),screen_height-160,static_cast<int>(lw+24),26,Fade(BLACK,.55F));
+            DrawTextEx(font,line.c_str(),{screen_width/2-lw/2,static_cast<float>(screen_height-155)},16,1,Color{150,220,255,255});
+        }
         if (interaction_remaining > 0)
             DrawText(interaction_message.c_str(), screen_width / 2 - MeasureText(interaction_message.c_str(),18)/2, screen_height-205, 18, RAYWHITE);
 
@@ -6101,6 +6202,11 @@ void Renderer::run() {
                     std::vector<Vector3> stations;
                     for(const auto& unit:services.units()) if(unit.kind==game::services::UnitKind::Police) stations.push_back(unit.home);
                     nearest(Glyph::Police,Color{70,130,255,255},"POLICE",career.on_duty() ? 2500.0F : 700.0F,stations);
+                }
+                {   // Armilejo: the nearest gun shop, from further off.
+                    std::vector<Vector3> doors;
+                    for(const auto& shop:economy.shops()) if(shop.kind=="guns") doors.push_back(shop.door);
+                    nearest(Glyph::Shop,Color{196,160,70,255},"ARMILEJO",900.0F,doors);
                 }
                 for(const char* kind:{"general","medical","hardware","pub"}) {
                     std::vector<Vector3> doors;

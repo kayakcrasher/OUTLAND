@@ -40,7 +40,9 @@ int main() {
     std::string error;
     assert(registry.load(items.string(), tables.string(), error));
     assert(registry.items().size() == 84);
-    assert(registry.find("frag_grenade") && registry.find("frag_grenade")->starting_quantity == 2);
+    // A new game starts with just the pistol (and food, water, a bandage): no rifle, no grenades.
+    assert(registry.find("frag_grenade") && registry.find("frag_grenade")->starting_quantity == 0);
+    assert(registry.find("hunting_rifle")->starting_quantity == 0 && registry.find("pistol")->starting_quantity == 1);
     for (const char *optic : {"red_dot_sight", "scope_2x", "scope_4x"})
         assert(registry.find(optic) && registry.find(optic)->starting_quantity == 0);
     // Rarity tiers: the best finds glow purple, everyday supplies are common.
@@ -182,8 +184,9 @@ int main() {
     LootSession session(registry);
     const auto profile_map = (directory / "maps/verda_creator.map").string();
     session.start(GameMode::Explore, profile_map, weapons);
-    assert(session.inventory().owns_weapon(registry, combat::WeaponId::Rifle) &&
-           session.inventory().count("rifle_ammo") == 120);
+    assert(session.inventory().owns_weapon(registry, combat::WeaponId::Pistol) &&
+           !session.inventory().owns_weapon(registry, combat::WeaponId::Rifle) && session.inventory().count("rifle_ammo") == 0 &&
+           weapons.selected() == combat::WeaponId::Pistol);
     // Auto pickup: walking over ammo for a gun you carry picks it up; what you dropped stays put.
     {
         const Vector3 here{500, outland::world::terrain::TerrainHeight::sample(500, 500) + .06F, 500}; // clear of the loot markers
@@ -197,7 +200,8 @@ int main() {
                            [](const auto& p) { return p.id == "drop_999"; }));
         std::erase_if(session.edit_world().edit().pickups, [](const auto& p) { return p.id == "drop_999"; });
     }
-    assert(weapons.ammo(combat::WeaponId::Rifle).loaded == 30 && weapons.ammo().reserve == 120);
+    assert(weapons.ammo(combat::WeaponId::Pistol).loaded == registry.find("pistol")->starting_loaded &&
+           weapons.selected() == combat::WeaponId::Pistol);
     Health health;
     float food = 0, water = 0;
     session.consumed = [&](float f, float w) {
@@ -225,6 +229,7 @@ int main() {
     assert(session.quick_heal(weapons, health) == "Used Antiseptic" && session.inventory().count("antibiotics") == 1);
     health.damage(60);
     assert(session.quick_heal(weapons, health) == "Used Antibiotics" && session.inventory().count("antibiotics") == 0);
+    weapons.holster();   // (a new game starts with the pistol in hand)
     assert(session.use(slot(session.inventory(), "pistol_ammo"), weapons, health) ==
            "Equip a compatible weapon first");
     assert(
@@ -240,7 +245,7 @@ int main() {
     const int magazine = combat::definition(combat::WeaponId::Pistol).magazine;
     assert(weapons.ammo().loaded == magazine &&
            session.inventory().count("pistol_ammo") == ammo_before - (magazine - 2) &&
-           session.inventory().count("rifle_ammo") == 120);
+           session.inventory().count("rifle_ammo") == 0);
     // Dropped firearm carries its actual magazine. No phantom ammo or duplicate ownership.
     session.drop(slot(session.inventory(), "pistol"), false, ground(2, 8), weapons);
     assert(!session.inventory().owns_weapon(registry, combat::WeaponId::Pistol) &&
@@ -340,6 +345,8 @@ int main() {
     LootSession saved_reload(registry);
     const auto reload_map = (directory / "reload/maps/verda_creator.map").string();
     saved_reload.start(GameMode::Explore, reload_map, saved_reload_weapons);
+    // (A new game starts with only the pistol: this one has bought a rifle too.)
+    assert(saved_reload.edit_inventory().add(registry, "hunting_rifle", 1) == 1 && saved_reload_weapons.select(combat::WeaponId::Rifle));
     saved_reload_weapons.set_loaded(combat::WeaponId::Rifle, 1);
     saved_reload_weapons.request_reload();
     assert(saved_reload.save(saved_reload_weapons));
@@ -347,7 +354,7 @@ int main() {
     LootSession fresh_reload(registry);
     fresh_reload.start(GameMode::Explore, reload_map, fresh_reload_weapons);
     assert(fresh_reload_weapons.ammo().loaded == 1 &&
-           fresh_reload.inventory().count("rifle_ammo") == 120 &&
+           fresh_reload.inventory().count("rifle_ammo") == 0 &&
            fresh_reload_weapons.reload_remaining() == 0);
     fresh_reload.drop(slot(fresh_reload.inventory(),"pistol"),false,ground(),fresh_reload_weapons);
     fresh_reload_weapons.request_reload();
@@ -404,11 +411,11 @@ int main() {
     duplicate_sources.world.sources.push_back(duplicate_sources.world.sources.front());
     assert(!LootSave::save(registry, duplicate_sources, spent_after.path(), error));
     // Picking up an extra gun never overwrites an owned gun's loaded rounds.
-    const auto rifle_loaded = spent_after_weapons.ammo(combat::WeaponId::Rifle).loaded;
-    assert(spent_after.edit_world().drop(registry, "hunting_rifle", 1, ground(), 0));
+    const auto rifle_loaded = spent_after_weapons.ammo(combat::WeaponId::Pistol).loaded;
+    assert(spent_after.edit_world().drop(registry, "pistol", 1, ground(), 0));
     assert(spent_after.interact(ground(), spent_after_weapons) ==
            "You already carry this weapon type");
-    assert(spent_after_weapons.ammo(combat::WeaponId::Rifle).loaded == rifle_loaded &&
+    assert(spent_after_weapons.ammo(combat::WeaponId::Pistol).loaded == rifle_loaded &&
            spent_after.world().state().pickups.size() == 1);
     assert(!fs::exists(profile_map)); // Inventory never writes the authored world map.
     fs::remove_all(directory);

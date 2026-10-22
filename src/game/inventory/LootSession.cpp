@@ -87,6 +87,14 @@ void LootSession::start(GameMode mode, const std::string &map, combat::WeaponSys
                            [this](auto id) { return ammo_count(id); },
                            [this](auto id, int count) { return take_ammo(id, count); });
     if (mode == GameMode::BattleRoyale) weapons.select(combat::WeaponId::Pistol);
+    // In hand: the selected gun if it is in the bag, else the first gun that is (a new game starts
+    // with just the pistol).
+    else if (!inventory_.owns_weapon(registry_, weapons.selected()))
+        for (std::size_t i = 0; i < combat::weapon_count; ++i)
+            if (inventory_.owns_weapon(registry_, static_cast<combat::WeaponId>(i))) {
+                weapons.select(static_cast<combat::WeaponId>(i));
+                break;
+            }
 }
 void LootSession::update(float dt, const world::VerdaRegion &region, Vector3 player,
                          combat::WeaponSystem &weapons) {

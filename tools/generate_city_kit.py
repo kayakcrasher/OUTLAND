@@ -1319,6 +1319,69 @@ def radio_station(style):
     return b
 
 
+def gun_shop():
+    """Armilejo, Verda's gun shop chain (modular, one storey, enterable): olive render over a
+    dark plinth, a brass sign band, a glass door and two barred display windows at the front
+    (-Z); inside, the long counter with its glass case, rifles racked on the back wall, shelves
+    of ammunition along one side and a stand of vests. 12 x 9 m."""
+    b = Builder()
+    b.material("render", flat((92, 104, 78), 4), 3, 3)
+    b.material("plinth", flat((40, 42, 38), 4), 3, 1)
+    b.material("brass", flat((196, 160, 70), 3), 3, 1)
+    b.material("plaster", flat((206, 202, 190), 3), 3, 3)
+    b.material("floor", flat((70, 66, 60), 6), 3, 3)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("steel", flat((60, 62, 66), 3), 2, 2)
+    b.material("glass", flat((70, 100, 120), 2), 1, 1)
+    b.material("wood", wood(), 2, 2)
+    b.material("gun", flat((30, 30, 32), 2), 1, 1)
+    b.material("stock", flat((110, 70, 40), 3), 1, 1)
+    b.material("ammo", stripes((150, 120, 50), (60, 90, 50), 4, 81), 1, 1)
+    b.material("vest", flat((70, 80, 60), 4), 1, 1)
+    w, d, height, t, slab = 6.0, 4.5, 4.0, .25, .2
+    front = [(-1.0, 1.0, slab, 2.5), (-5.2, -2.0, .9, 2.5), (2.0, 5.2, .9, 2.5)]   # door, two display windows
+    wall_with_openings(b, 'x', -d, (-w, w), height, t, front, "render", "plaster", -1)
+    wall_with_openings(b, 'x', d, (-w, w), height, t, [], "render", "plaster", +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), height, t, [], "render", "plaster", -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, [(-.5, .5, slab, 2.3)], "render", "plaster", +1)   # the back door
+    b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
+    b.box((-w, height - .2, -d), (w, height, d), {'+y': "roof", '-y': "plaster", '+x': "plinth", '-x': "plinth", '+z': "plinth", '-z': "plinth"})
+    b.solid((-w - .05, 0, -d - .05), (w + .05, .5, d + .05), "plinth")
+    b.solid((-w - .1, height - .9, -d - .15), (w + .1, height - .2, -d), "brass")           # the sign band
+    for lo, hi in (((-w, height, -d), (w, height + .4, -d + .15)), ((-w, height, d - .15), (w, height + .4, d)),
+                   ((-w, height, -d), (-w + .15, height + .4, d)), ((w - .15, height, -d), (w, height + .4, d))):
+        b.solid(lo, hi, "render")
+    # Bars over the display windows, and a rifle or two on show behind each.
+    for x0, x1 in ((-5.2, -2.0), (2.0, 5.2)):
+        x = x0 + .2
+        while x < x1:
+            b.solid((x, .9, -d - .08), (x + .05, 2.5, -d - .03), "steel")
+            x += .35
+        b.solid((x0 + .3, 1.3, -d + .35), (x1 - .3, 1.36, -d + .45), "gun")
+        b.solid((x0 + .3, 1.27, -d + .35), (x0 + 1.0, 1.4, -d + .45), "stock")
+    # The counter with its glass case, the till.
+    b.solid((-4.5, slab, .3), (3.5, 1.0, 1.0), "wood")
+    b.solid((-4.4, 1.0, .35), (3.4, 1.05, .95), "glass")
+    b.solid((2.6, 1.05, .5), (3.1, 1.3, .8), "steel")
+    # Rifles racked on the back wall: barrels and stocks in rows.
+    for row, y in enumerate((1.5, 2.0, 2.5)):
+        for k in range(8):
+            x = -4.8 + k * 1.2 + (row % 2) * .3
+            b.solid((x, y, d - t - .12), (x + .9, y + .06, d - t - .05), "gun")
+            b.solid((x, y - .04, d - t - .12), (x + .3, y + .1, d - t - .05), "stock")
+    # Ammunition on shelves down the left wall; vests on a stand at the right.
+    for y in (.6, 1.2, 1.8):
+        b.solid((-w + t, y, -2.5), (-w + t + .45, y + .05, 2.5), "wood")
+        for k in range(10):
+            z = -2.3 + k * .48
+            b.solid((-w + t + .05, y + .05, z), (-w + t + .4, y + .3, z + .3), "ammo")
+    for k in range(3):
+        z = -2.0 + k * 1.1
+        b.solid((w - t - .5, slab, z), (w - t - .45, 1.7, z + .05), "steel")
+        b.solid((w - t - .75, 1.0, z - .25), (w - t - .2, 1.6, z + .3), "vest")
+    return b
+
+
 def hospital():
     """Hospitalo de Verda: a three-storey hospital (36 x 20 m) in white render with blue ribbon
     windows, an enterable ground-floor hall (glass entrance, reception, beds), sealed wards
@@ -1633,6 +1696,7 @@ def kit():
     add("civic/container_stack.glb", container_stack(), "city_container_stack", "Stacked shipping containers (40 ft)", "BuildingPart", 10.5, 37.5, 7.8)
     add("civic/cattle_gangway.glb", cattle_gangway(), "city_cattle_gangway", "Cattle gangway up a ship's side", "BuildingPart", 18, 2.6, 4.2)
     add("civic/truck_depot.glb", truck_depot(), "city_truck_depot", "Verda Transporto - truck depot with office", "Building", 38, 31, 9)
+    add("civic/gun_shop.glb", gun_shop(), "city_gun_shop", "Armilejo - gun shop (modular, enterable)", "Building", 12.2, 9.2, 4.4)
     for style, name in (("popolko", "Verda Popolko 98.1"), ("kantrio", "Radio Sovaĝejo 102.5"), ("roko", "Espera Roko 105.9")):
         mast = RADIO_STYLES[style]["mast"]
         add(f"civic/radio_station_{style}.glb", radio_station(style), f"city_radio_station_{style}",

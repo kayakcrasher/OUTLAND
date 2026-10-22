@@ -293,6 +293,15 @@ int main() {
           std::to_string(highways) + "/" + std::to_string(through));
     check(freight_roads == 1, "the yard road into Verda Transporto's depot");
 
+    // Armilejo: a gun shop in each of the five main cities, a Shop place at its door.
+    {
+        check(report.gun_shops.size() == 5, "five Armilejo gun shops: " + std::to_string(report.gun_shops.size()));
+        int models = 0;
+        for (const auto& town : region.settlements())
+            for (const auto& a : town.assets) models += a.model_path.ends_with("civic/gun_shop.glb");
+        check(models == 5, "five gun shop buildings");
+    }
+
     // The radio stations: Verda Popolko in Verda City, Radio Sovaĝejo, Espera Roko - each studio
     // and mast in its own town, with its door an Office place.
     {

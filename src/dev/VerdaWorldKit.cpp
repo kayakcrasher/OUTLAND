@@ -2220,6 +2220,25 @@ void radio_stations(Kit& kit, world::VerdaRegion& region) {
     }
 }
 
+// ------------------------------------------------------------------ gun shops
+// Armilejo, Verda's gun shop chain (city kit civic/gun_shop.glb, game::economy's "guns" shops):
+// a shop facing a paved street near the middle of each of the five main cities - Verda City,
+// Espera, Porto Luma, Suda Haveno and Roka. Each is a Shop place; the sign names the chain.
+void gun_shops(Kit& kit, world::VerdaRegion& region) {
+    for (const char* id : {"capital_verda", "village_espera", "port_luma", "south_haven", "west_roka"}) {
+        const auto* town = settlement(region, id);
+        if (!town) continue;
+        const bool capital = std::string_view(id) == "capital_verda";
+        // Model bounds x -6.1..6.1, z -4.7..4.6.
+        CivicSpot spot;
+        if (!civic_lot(kit, region, town->center, capital ? 40 : 15, capital ? 380 : 260, 0, 0, 6.6F, 5.1F, 4.7F, 3.5F, spot)) continue;
+        if (!kit.put(city + "civic/gun_shop.glb", spot.origin, spot.yaw)) continue;
+        const Vector3 door = to_world(spot.origin, spot.yaw, 0, .35F, -3.3F);
+        kit.purpose(door, spot.yaw, world::BuildingPurpose::Shop);
+        kit.report.gun_shops.push_back(door);
+    }
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     lay_highways(region);
@@ -2254,6 +2273,8 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     freight_depot(kit, region);
     // After those (new pieces only): the radio stations.
     radio_stations(kit, region);
+    // After those (new pieces only): Armilejo's gun shops.
+    gun_shops(kit, region);
     return kit.report;
 }
 }

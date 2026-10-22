@@ -2,6 +2,7 @@
 #include "outland/world/roads/RoadGraph.hpp"
 #include <raylib.h>
 #include <cstdint>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,16 @@ struct BusStop {
     Vector3 shelter{};
     Vector3 kerb{};      // where the bus pulls up (on the road)
     float at{0};         // metres along the loop
+    // Islanders waiting for the bus (they turn up over time) and the faces of the first few.
+    int waiting{0};
+    float arriving{0};
+    std::vector<std::string> crowd;
+};
+
+// Someone on the bus: who (a character) and the stop they get off at.
+struct Rider {
+    std::string character;
+    int alight{0};
 };
 
 struct Bus {
@@ -36,6 +47,9 @@ struct Bus {
     bool blocked{false};
     Vector3 position{};
     float yaw{0};
+    std::vector<Rider> riders;
+    bool player{false};      // the player is aboard (a seat like anyone's)
+    int got_off{0}, got_on{0}; // at the last stop
 };
 
 struct BusLineConfig {
@@ -45,6 +59,10 @@ struct BusLineConfig {
     float accel{1.2F}, brake{2.6F};
     float dwell{12};         // seconds at each stop
     float front_axle{3.5F}, rear_axle{-3.0F}; // metres from the bus's centre
+    // A 12 m single-decker on an island route: 32 seats and room for a few standing.
+    int capacity{40};
+    float arrivals{1.4F};    // islanders turning up at a stop each minute (town stops twice that)
+    int crowd_max{14};       // more than this give up and walk
 };
 
 class BusLine {
@@ -61,6 +79,14 @@ public:
     void update(float dt, world::VerdaRegion& region, vehicles::VehicleSystem& vehicles, Vector3 player,
                 const characters::NpcSystem* npcs);
 
+    // The player gets on the bus that is standing at a stop (false: none there, or it is full),
+    // and off it at the stop it stands at (false while it is moving).
+    bool board(int bus);
+    bool alight(int bus);
+    // The bus standing at a stop within `reach` of `at` (-1: none).
+    int bus_at_stop(Vector3 at, float reach) const;
+    [[nodiscard]] int aboard(int bus) const;   // people on it, the player included
+
     const std::vector<BusStop>& stops() const { return stops_; }
     const std::vector<Bus>& buses() const { return buses_; }
     const world::roads::Route& loop() const { return loop_; }
@@ -69,6 +95,8 @@ public:
 
 private:
     void pose(Bus& bus, Vector3& centre, float& yaw, float& steering) const;
+    void call_at(Bus& bus, int stop);
+    std::string face();
     float wrap(float distance) const;
     BusLineConfig config_{};
     std::vector<BusStop> stops_;
@@ -76,6 +104,8 @@ private:
     world::roads::Route loop_;
     bool running_{false};
     int turnarounds_{0};
+    std::vector<std::string> faces_;   // civilians who ride the bus
+    std::mt19937 rng_{7};
 };
 
 }

@@ -5888,6 +5888,11 @@ ASSET "creator_urban_traffic_lights_street_light_kit288" 9 "assets/verda/urban/T
 ASSET "creator_city_radio_station_popolko_kit1" 0 "assets/verda/city/civic/radio_station_popolko.glb" -187.11499 0 19.8500004 18 34.3499985 11.1999998 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_radio_station_kantrio_kit1" 0 "assets/verda/city/civic/radio_station_kantrio.glb" -1778.2749 12.8098049 206.25 18 28.3500004 13.3999996 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_radio_station_roko_kit1" 0 "assets/verda/city/civic/radio_station_roko.glb" -134.11499 6 -1802.15002 18 40.3499985 11.1999998 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gun_shop_kit1" 0 "assets/verda/city/civic/gun_shop.glb" 187.149994 0 18 12.1999998 4.4000001 9.19999981 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gun_shop_kit2" 0 "assets/verda/city/civic/gun_shop.glb" 12 6 -1934.1499 12.1999998 4.4000001 9.19999981 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gun_shop_kit3" 0 "assets/verda/city/civic/gun_shop.glb" 1754 6 -534.150024 12.1999998 4.4000001 9.19999981 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gun_shop_kit4" 0 "assets/verda/city/civic/gun_shop.glb" 165.850006 6 1796 12.1999998 4.4000001 9.19999981 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gun_shop_kit5" 0 "assets/verda/city/civic/gun_shop.glb" -1746 14.0573664 315.849976 12.1999998 4.4000001 9.19999981 180 255 255 255 255 80 80 80 255 1
 MARKER "creator_marker_loot_spawn_general_training" 0 4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 0.5 0.5 0.5 0 1
@@ -6163,6 +6168,11 @@ MARKER "creator_marker_building_purpose_kit_176" 4 -560 -0 -66.5 1.20000005 2.20
 MARKER "creator_marker_building_purpose_kit_177" 4 -183.899994 0.349999994 14.1000004 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_178" 4 -1780.5 13.1598053 211.899994 1.20000005 2.20000005 1.20000005 90 1
 MARKER "creator_marker_building_purpose_kit_179" 4 -130.899994 6.3499999 -1807.90002 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_180" 4 183.899994 0.349999994 18 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_181" 4 12 6.3499999 -1930.8999 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_182" 4 1754 6.3499999 -530.900024 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_183" 4 169.100006 6.3499999 1796 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_184" 4 -1746 14.4073668 319.099976 1.20000005 2.20000005 1.20000005 180 1
 PURPOSE "creator_marker_building_purpose_kit_1" 1
 PURPOSE "creator_marker_building_purpose_kit_2" 1
 PURPOSE "creator_marker_building_purpose_kit_3" 1
@@ -6342,6 +6352,11 @@ PURPOSE "creator_marker_building_purpose_kit_176" 7
 PURPOSE "creator_marker_building_purpose_kit_177" 7
 PURPOSE "creator_marker_building_purpose_kit_178" 7
 PURPOSE "creator_marker_building_purpose_kit_179" 7
+PURPOSE "creator_marker_building_purpose_kit_180" 2
+PURPOSE "creator_marker_building_purpose_kit_181" 2
+PURPOSE "creator_marker_building_purpose_kit_182" 2
+PURPOSE "creator_marker_building_purpose_kit_183" 2
+PURPOSE "creator_marker_building_purpose_kit_184" 2
 SETTLEMENT "capital_verda" "Verda" 0 0 0 0 384 0 0
 ROAD 0 0 -1680 0 0 -1621.12915 18.7999992 3
 ROAD 0 0 -1621.12915 0 0 -1562.2583 18.7999992 3

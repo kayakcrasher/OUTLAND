@@ -29,7 +29,7 @@ bool Economy::load(const inventory::ItemRegistry& items, const std::string& path
         if(!std::getline(row,o.id,'\t') || !std::getline(row,o.kind,'\t') || !std::getline(row,o.item,'\t') ||
            !(row>>o.buy>>o.sell>>o.stock) || (row>>extra) || !items.find(o.item) || !ids.insert(o.id).second ||
            o.id.empty() || o.id.size()>100 || !inventory::valid_text(o.id) ||
-           (o.kind!="general" && o.kind!="medical" && o.kind!="hardware" && o.kind!="furniture" && o.kind!="pub") ||
+           (o.kind!="general" && o.kind!="medical" && o.kind!="hardware" && o.kind!="furniture" && o.kind!="pub" && o.kind!="guns") ||
            o.buy<1 || o.buy>1000000 || o.sell<0 || o.sell>o.buy/2 || o.stock<1 || o.stock>99999 || parsed.size()>=1024) {
             error="Invalid shop offer: "+o.id;return false;
         }
@@ -45,7 +45,8 @@ void Economy::build(const std::vector<life::Place>& places) {
         std::string kind;
         switch(place.kind) {
         case life::PlaceKind::Shop:
-            kind=place.building_id.find("furniture")!=std::string::npos ? "furniture" :
+            kind=place.building_id.find("gun_shop")!=std::string::npos ? "guns" :
+                place.building_id.find("furniture")!=std::string::npos ? "furniture" :
                 place.building_id.find("hardware")!=std::string::npos ? "hardware" : "general";
             break;
         case life::PlaceKind::Clinic: kind="medical";break;
@@ -54,7 +55,7 @@ void Economy::build(const std::vector<life::Place>& places) {
         default:continue;
         }
         if(shops_.size()>=256) break;
-        shops_.push_back({place.id,kind+" store",kind,place.door});
+        shops_.push_back({place.id,kind=="guns" ? std::string("Armilejo") : kind+" store",kind,place.door});
     }
 }
 const Shop* Economy::nearest(Vector3 feet, const std::function<bool(Vector3)>& reachable) const {

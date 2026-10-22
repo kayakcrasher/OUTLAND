@@ -129,6 +129,16 @@ bool BusLine::build(const world::VerdaRegion& region, const vehicles::VehicleSys
     loop_.length = walked;
     loop_.complete = true;
     stops_ = std::move(served);
+    // Faces for the people who ride the bus.
+    faces_.clear();
+    rng_.seed(static_cast<std::uint32_t>(seed * 2654435761U + 11));
+    if (characters)
+        for (int k = 0; k < 24; ++k)
+            if (const auto* person = characters->choose(characters::CharacterPool::Civilian, seed * 31 + static_cast<std::uint64_t>(k) * 7727 + 3))
+                if (std::find(faces_.begin(), faces_.end(), person->id) == faces_.end()) faces_.push_back(person->id);
+    // A few already waiting at every stop.
+    for (auto& stop : stops_)
+        for (int k = 0, n = 1 + static_cast<int>(rng_() % 5); k < n; ++k) {++stop.waiting; stop.crowd.push_back(face());}
     // The buses, each with a driver.
     for (const auto& v : vehicles.vehicles()) {
         if (v.id.find("vehicle_spawn_bus_") == std::string::npos) continue;
@@ -138,10 +148,65 @@ bool BusLine::build(const world::VerdaRegion& region, const vehicles::VehicleSys
             const auto* person = characters->choose(characters::CharacterPool::Civilian, seed * 7919 + buses_.size() * 104729 + 17);
             if (person) bus.driver = person->id;
         }
+        // Already under way with people aboard.
+        for (int k = 0, n = 6 + static_cast<int>(rng_() % 14); k < n; ++k)
+            bus.riders.push_back({face(), static_cast<int>(rng_() % stops_.size())});
         buses_.push_back(std::move(bus));
     }
     std::sort(buses_.begin(), buses_.end(), [](const Bus& a, const Bus& b) {return a.vehicle < b.vehicle;});
     return !buses_.empty();
+}
+
+std::string BusLine::face() {
+    return faces_.empty() ? std::string() : faces_[rng_() % faces_.size()];
+}
+
+int BusLine::aboard(int bus) const {
+    if (bus < 0 || bus >= static_cast<int>(buses_.size())) return 0;
+    const auto& b = buses_[static_cast<std::size_t>(bus)];
+    return static_cast<int>(b.riders.size()) + (b.player ? 1 : 0);
+}
+
+void BusLine::call_at(Bus& bus, int stop) {
+    // Off first: everyone whose stop this is. Then on, as many as there is room for, each for
+    // another stop on the line.
+    auto& here = stops_[static_cast<std::size_t>(stop)];
+    const auto before = bus.riders.size();
+    std::erase_if(bus.riders, [&](const Rider& r) { return r.alight == stop; });
+    bus.got_off = static_cast<int>(before - bus.riders.size());
+    bus.got_on = 0;
+    const int room = config_.capacity - static_cast<int>(bus.riders.size()) - (bus.player ? 1 : 0);
+    const int boarding = std::max(0, std::min(room, here.waiting));
+    for (int k = 0; k < boarding; ++k) {
+        int to = static_cast<int>(rng_() % stops_.size());
+        if (to == stop) to = (to + 1) % static_cast<int>(stops_.size());
+        bus.riders.push_back({here.crowd.empty() ? face() : here.crowd.back(), to});
+        if (!here.crowd.empty()) here.crowd.pop_back();
+    }
+    here.waiting -= boarding;
+    bus.got_on = boarding;
+}
+
+bool BusLine::board(int bus) {
+    if (bus < 0 || bus >= static_cast<int>(buses_.size())) return false;
+    auto& b = buses_[static_cast<std::size_t>(bus)];
+    if (!b.running || b.dwell <= 0 || b.player || aboard(bus) >= config_.capacity) return false;
+    b.player = true;
+    return true;
+}
+
+bool BusLine::alight(int bus) {
+    if (bus < 0 || bus >= static_cast<int>(buses_.size())) return false;
+    auto& b = buses_[static_cast<std::size_t>(bus)];
+    if (!b.player || (b.running && b.dwell <= 0)) return false;
+    b.player = false;
+    return true;
+}
+
+int BusLine::bus_at_stop(Vector3 at, float reach) const {
+    for (std::size_t i = 0; i < buses_.size(); ++i)
+        if (buses_[i].running && buses_[i].dwell > 0 && flat(buses_[i].position, at) < reach) return static_cast<int>(i);
+    return -1;
 }
 
 void BusLine::pose(Bus& bus, Vector3& centre, float& yaw, float& steering) const {
@@ -185,6 +250,20 @@ void BusLine::update(float dt, world::VerdaRegion& region, vehicles::VehicleSyst
                      const characters::NpcSystem* npcs) {
     if (!running_ || !std::isfinite(dt) || dt <= 0) return;
     dt = std::min(dt, .1F);
+    // Islanders turn up at the stops (twice as many in town), until the queue is long enough
+    // that newcomers walk instead.
+    for (auto& stop : stops_) {
+        float rate = config_.arrivals / 60;
+        for (const auto& town : region.settlements())
+            if (town.name == stop.town && flat(town.center, stop.shelter) < 400) { rate *= 2; break; }
+        stop.arriving += dt * rate;
+        while (stop.arriving >= 1) {
+            stop.arriving -= 1;
+            if (stop.waiting >= config_.crowd_max) continue;
+            ++stop.waiting;
+            if (stop.crowd.size() < 8) stop.crowd.push_back(face());
+        }
+    }
     const auto* taken = vehicles.driver();
     for (auto& bus : buses_) {
         if (!bus.running) continue;
@@ -238,6 +317,7 @@ void BusLine::update(float dt, world::VerdaRegion& region, vehicles::VehicleSyst
             if (bus.dwell <= 0) bus.next_stop = (bus.next_stop + 1) % static_cast<int>(stops_.size());
         } else if (to_stop < .6F && bus.speed < .4F) {
             bus.dwell = config_.dwell;
+            call_at(bus, bus.next_stop);
         }
         // Throttle and brakes; harder braking when something is close.
         if (bus.speed < limit) bus.speed = std::min(limit, bus.speed + config_.accel * dt);
