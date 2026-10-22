@@ -595,8 +595,8 @@ void roka_city(Kit& kit, world::VerdaRegion& region) {
         roka->roads.push_back({{c.x + o, 0, c.z - edge}, {c.x + o, 0, c.z + edge}, street, world::RoadType::Asphalt});
         roka->roads.push_back({{c.x - edge, 0, c.z + o}, {c.x + edge, 0, c.z + o}, street, world::RoadType::Asphalt});
     }
-    // The works road west from the grid.
-    roka->roads.push_back({{c.x - edge, 0, c.z}, {c.x - 196, 0, c.z}, 10, world::RoadType::Asphalt});
+    // The works road west from the grid (from the west street's centre line, so it joins it).
+    roka->roads.push_back({{c.x - 120, 0, c.z}, {c.x - 196, 0, c.z}, 10, world::RoadType::Asphalt});
     kit.add_roads(roka->roads);
     kit.add_roads(capital->roads);
     for (const float i : {-120.0F, -40.0F, 40.0F, 120.0F}) for (const float j : {-120.0F, -40.0F, 40.0F, 120.0F})

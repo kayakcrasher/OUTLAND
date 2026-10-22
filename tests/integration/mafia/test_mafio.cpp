@@ -4,6 +4,7 @@
 #include "outland/creator/CreatorMapIO.hpp"
 #include "outland/game/life/LifeSimulation.hpp"
 #include "outland/game/career/Backup.hpp"
+#include "outland/game/career/Crew.hpp"
 #include "outland/game/mafia/Mafio.hpp"
 #include "outland/game/vehicles/VehicleSystem.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -201,6 +202,94 @@ int main() {
     backup.dismiss(bots, now);
     check(!backup.active() && bots.hidden(officer->id()) && backup.call(player, now, station, 0, bots, drivers, cars, region).find("no units") != std::string::npos,
           "home again, and dispatch needs a while before the next");
+
+    // The player's own crew: a gang member recruits his gang's foot soldiers (never the boss), up
+    // to four; they follow the player, fight whoever turns on the player, and one of them drives
+    // the player across the island. An officer gets a partner instead.
+    {
+        const int own = casino->gang;
+        mafio.set_player_gang(own);
+        game::career::Crew crew;
+        crew.start(bots, casino->door, 91);
+        check(!mafio.recruitable(casino->members.front(), bots), "the boss can't be recruited");
+        std::vector<int> soldiers;
+        for (const auto& c : mafio.crews()) {
+            if (c.gang != own) continue;
+            for (const int id : c.members) if (mafio.recruitable(id, bots)) soldiers.push_back(id);
+        }
+        check(soldiers.size() >= 4, "foot soldiers to recruit: " + std::to_string(soldiers.size()));
+        int joined = 0;
+        for (const int id : soldiers) if (crew.recruit(id)) { mafio.lend(id, true, bots, player); ++joined; }
+        check(joined == game::career::Crew::max_gang && crew.size() == 4 && !crew.recruit(casino->members.back()), "four join the crew, no more");
+        check(!mafio.recruitable(crew.members().front(), bots), "a recruit is taken");
+        // He follows: the player walks off; the crew keeps up (catching up when left far behind).
+        const Vector3 walk = Vector3Add(casino->door, {0, 0, 160});
+        std::string said;
+        for (float t = 0; t < 8; t += .05F) {
+            game::mafia::MafioFrame frame;
+            frame.dt = .05F; frame.now = now; frame.player_feet = walk; frame.player_alive = true;
+            mafio.update(frame, bots, world, drivers, cars, region);
+            game::career::Crew::Frame cf; cf.player = walk; cf.alive = true;
+            crew.update(cf, bots, region, said);
+            now += .05;
+        }
+        float worst = 0;
+        for (const int id : crew.members()) worst = std::max(worst, std::hypot(bots.find(id)->position().x - walk.x, bots.find(id)->position().z - walk.z));
+        std::cout << "crew: furthest " << worst << " m from the player\n";
+        check(worst < 40, "the crew keeps up with the player");
+        // A rival gang turns on the player: the crew fights them; the player's own gang never.
+        int rival = -1;
+        for (const auto& c : mafio.crews()) if (c.gang != own) { rival = c.members.front(); break; }
+        check(!mafio.hostile(crew.members().front(), rival, now), "at peace with the rival gang");
+        mafio.provoke(rival, now);
+        check(mafio.hostile(crew.members().front(), rival, now), "the crew fights a gang that turned on the player");
+        mafio.forgive();
+        // The player at a car's passenger door: the nearest recruit drives to a goal far off.
+        int car_index = -1;
+        float nearest = 1e9F;
+        for (std::size_t i = 0; i < cars.vehicles().size(); ++i) {
+            const auto& v = cars.vehicles()[i];
+            const auto* asset = cars.asset(region, v.id);
+            if (!asset || asset->vehicle.definition != "hatchback" || drivers.driver_of(v.id) >= 0) continue;
+            const float d = std::hypot(v.position.x - walk.x, v.position.z - walk.z);
+            if (d < nearest) { nearest = d; car_index = static_cast<int>(i); }
+        }
+        check(car_index >= 0, "a car to ride in");
+        if (car_index >= 0) {
+            const auto car = cars.vehicles()[static_cast<std::size_t>(car_index)];
+            for (const int id : crew.members()) bots.find(id)->set_position(Vector3Add(car.position, {3, 0, 0}));
+            const Vector3 goal = Vector3Add(car.position, {0, 0, -400});
+            const int driver = crew.ride(car.id, car.position, goal, bots, drivers, cars, region);
+            check(driver >= 0 && crew.riding(drivers), "a recruit takes the wheel");
+            const Vector3 start = car.position;
+            for (float t = 0; t < 120 && crew.riding(drivers); t += .05F) {
+                const auto here = cars.vehicles()[static_cast<std::size_t>(cars.find(car.id))].position;
+                game::mafia::MafioFrame frame;
+                frame.dt = .05F; frame.now = now; frame.player_feet = here; frame.player_alive = true; frame.player_in_vehicle = true;
+                mafio.update(frame, bots, world, drivers, cars, region);
+                cars.update(.05F, {}, region, here, false);
+                game::career::Crew::Frame cf; cf.player = here; cf.alive = true; cf.riding = true;
+                crew.update(cf, bots, region, said);
+                now += .05;
+            }
+            const auto end = cars.vehicles()[static_cast<std::size_t>(cars.find(car.id))].position;
+            std::cout << "ride: " << std::hypot(end.x - start.x, end.z - start.z) << " m driven, " << std::hypot(end.x - goal.x, end.z - goal.z)
+                      << " m from the goal, still riding " << crew.riding(drivers) << '\n';
+            check(std::hypot(end.x - start.x, end.z - start.z) > 100, "the crew drives the player off");
+            crew.end_ride(bots, drivers, cars, region);
+            check(!crew.riding(drivers) && crew.ride_car().empty(), "out of the car");
+        }
+        // Out of the gang: everyone goes home.
+        for (const int id : crew.dismiss(bots)) mafio.lend(id, false, bots, player);
+        check(crew.size() == 0 && mafio.recruitable(soldiers.front(), bots), "dismissed, back with the gang");
+        mafio.set_player_gang(-1);
+        // An officer's partner from the desk.
+        check(crew.assign_partner(Vector3Add(casino->door, {2, 0, 0}), 0, bots, now) && crew.partner() >= 0 && bots.find(crew.partner())->alive(),
+              "the desk gives the officer a partner");
+        check(!crew.assign_partner(casino->door, 0, bots, now), "one partner");
+        crew.dismiss_partner(bots);
+        check(crew.partner() < 0 && bots.hidden(crew.partner_bot()), "the partner goes off duty with the badge");
+    }
 
     // A hit squad: a rival crew drives onto another gang's turf and they fight.
     bool sent = false;

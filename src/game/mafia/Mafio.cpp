@@ -243,6 +243,8 @@ bool Mafio::hostile(int a, int b, double now) const {
         return provoked(gang_of(a == ai::BattleRoyaleBots::player_id ? b : a), now);
     const int ga = gang_of(a), gb = gang_of(b);
     if (ga < 0 || gb < 0 || ga == gb) return false;
+    // The player's own crew fights whoever has turned on the player.
+    if ((lent(a) && provoked(gb, now)) || (lent(b) && provoked(ga, now))) return true;
     for (const auto& war : wars_)
         if (war.until > now && ((war.attackers == ga && war.defenders == gb) || (war.attackers == gb && war.defenders == ga))) return true;
     return false;
@@ -260,7 +262,8 @@ bool Mafio::send_hit_squad(int from, int target, ai::BattleRoyaleBots& bots, ai:
         const auto* bot = bots.find(id);
         const bool busy = std::any_of(wars_.begin(), wars_.end(), [&](const War& w) {
             return std::find(w.squad.begin(), w.squad.end(), id) != w.squad.end(); });
-        if (bot && bot->alive() && !bots.mounted(id) && !busy) squad.push_back(id);
+        const auto* m = member(id);
+        if (bot && bot->alive() && !bots.mounted(id) && !busy && !(m && m->lent)) squad.push_back(id);
         if (squad.size() >= want) break;
     }
     if (squad.size() < 2) return false;
@@ -311,6 +314,38 @@ void Mafio::send_home(Member& m, ai::BattleRoyaleBots& bots, const MafioFrame& f
     bot->set_roam_center(m.post, m.post_radius);
 }
 
+bool Mafio::recruitable(int bot, ai::BattleRoyaleBots& bots) const {
+    const Member* m = nullptr;
+    for (const auto& x : members_) if (x.bot == bot) m = &x;
+    if (!m || m->lent || m->dead || player_gang_ < 0) return false;
+    const auto& crew = crews_[static_cast<std::size_t>(m->crew)];
+    // Not the boss, nor the men at the casino's poker table.
+    const auto at = std::find(crew.members.begin(), crew.members.end(), bot) - crew.members.begin();
+    if (at == 0 || (crew.casino && (at == 2 || at == 3))) return false;
+    if (crew.gang != player_gang_ || crew.disbanded || bots.hidden(bot) || bots.mounted(bot)) return false;
+    for (const auto& war : wars_) if (std::find(war.squad.begin(), war.squad.end(), bot) != war.squad.end()) return false;
+    const auto* b = bots.find(bot);
+    return b && b->alive();
+}
+
+void Mafio::lend(int bot, bool lent, ai::BattleRoyaleBots& bots, Vector3 player_feet) {
+    for (auto& m : members_) {
+        if (m.bot != bot) continue;
+        m.lent = lent;
+        if (!lent) {
+            MafioFrame frame;
+            frame.player_feet = player_feet;
+            send_home(m, bots, frame);
+        }
+        return;
+    }
+}
+
+bool Mafio::lent(int bot) const {
+    for (const auto& m : members_) if (m.bot == bot) return m.lent;
+    return false;
+}
+
 void Mafio::update(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotWorld world, ai::BotDrivers& drivers,
                    vehicles::VehicleSystem& cars, world::VerdaRegion& region) {
     if (crews_.empty() || !std::isfinite(frame.dt) || frame.dt <= 0) return;
@@ -352,7 +387,7 @@ void Mafio::update(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotW
         auto& m = members_[i];
         auto* bot = bots.find(m.bot);
         if (!bot) continue;
-        if (!bot->alive() && !m.dead) { m.dead = true; m.respawn_at = now + respawn_seconds; }
+        if (!bot->alive() && !m.dead) { m.dead = true; m.lent = false; m.respawn_at = now + respawn_seconds; }
         if (m.dead && crews_[static_cast<std::size_t>(m.crew)].disbanded) continue;   // broken up: they stay gone
         if (m.dead && m.crew == besieged_) { m.respawn_at = std::max(m.respawn_at, now + respawn_seconds); continue; }  // under siege
         if (m.dead && now >= m.respawn_at && (flat(m.post, frame.player_feet) > 45 || now > m.respawn_at + 90)) {
@@ -394,6 +429,7 @@ void Mafio::update(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotW
     for (auto& m : members_) {
         auto* bot = bots.find(m.bot);
         if (!bot) continue;
+        if (m.lent) continue;   // with the player (game::career::Crew keeps him awake)
         bool awake = flat(m.post, frame.player_feet) < wake_radius || flat(bot->position(), frame.player_feet) < wake_radius || bots.mounted(m.bot);
         for (const auto& war : wars_)
             if (war.target == m.crew || std::find(war.squad.begin(), war.squad.end(), m.bot) != war.squad.end()) awake = true;

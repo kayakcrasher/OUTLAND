@@ -55,6 +55,8 @@ pointer, and that opens the pause menu.
 | Car radio: next station, then off | O (touch: RADIO, left of HAND at the wheel). See [radio](radio.md) |
 | Radio for backup (Explore, police officers) | Z (touch: BACKUP, where TAG goes) |
 | Arrest a Krimulo (Explore, police officers) | E / USE beside him |
+| Recruit a gang member / ask for a partner (Explore) | E / USE beside one of your gang's Krimuloj / at a station's desk. See [careers](careers.md#your-crew) |
+| Ride as a passenger (your crew drives) | E / USE at a car's passenger (right) door with your crew near; USE again to get out |
 | Mute | N |
 
 Every action except ESC and N can be rebound on the **CONTROLS** page. Each action has two slots:

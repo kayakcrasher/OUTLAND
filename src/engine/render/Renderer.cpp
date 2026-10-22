@@ -37,6 +37,7 @@
 #include "outland/game/vehicles/VehicleRenderer.hpp"
 #include "outland/game/vehicles/VehicleAudio.hpp"
 #include "outland/game/radio/RadioAudio.hpp"
+#include "outland/game/career/Crew.hpp"
 #include "outland/assets/ModelCache.hpp"
 #include "outland/engine/render/FrameTimings.hpp"
 #include "outland/engine/render/RenderScale.hpp"
@@ -611,6 +612,8 @@ void Renderer::run() {
     // their loot profile. A join at a hideout or a station takes a second USE within a few seconds.
     game::career::Career career;
     game::career::Backup backup;     // an officer's radio call: two officers in a squad car
+    game::career::Crew player_crew;  // the player's own: up to four gang recruits, or a partner on the force
+    bool riding_now=false;           // in the passenger seat while the crew drives
     // Ŝtata Malliberejo, the state prison (world::layout::prison_*): a point in its frame (x across,
     // z from the gate (-) to the back), on the ground; and the time an inmate gets out (-1: free).
     const auto prison_at=[](float x,float z) {
@@ -755,8 +758,9 @@ void Renderer::run() {
     std::vector<characters::AnimationController> ranch_seats; // drivers' idle
     // Outsiders: Paul Acosta, the Vakeroj, and an officer's backup (against a gang at war with the officer).
     mafio.set_outsiders([&](int a,int b,double now){
-        if(backup.officer(a) || backup.officer(b)) {
-            const int gang=mafio.gang_of(backup.officer(a) ? b : a);
+        const auto officer=[&](int id){return backup.officer(id) || (player_crew.partner()>=0 && id==player_crew.partner());};
+        if(officer(a) || officer(b)) {
+            const int gang=mafio.gang_of(officer(a) ? b : a);
             return gang>=0 && mafio.provoked(gang,now);
         }
         return walking_man.hostile_to(a,b,now) || ranches.hostile_to(a,b,now);});
@@ -1660,7 +1664,7 @@ void Renderer::run() {
                     loot_session.economy().money=std::max<std::int64_t>(0,loot_session.economy().money+poker.cash_out()-poker_buy_in);
                     poker_open=false;poker_buy_in=0;
                 }
-                walking_man.clear();backup.clear();prison_yard.clear();
+                walking_man.clear();backup.clear();player_crew.clear();prison_yard.clear();
                 trucking=game::freight::Trucking{};trucking_path.clear();depot_boss={};haul_world={};
                 career=game::career::Career{};career_path.clear();mafio.set_player_gang(-1);services.assign_player_car({});
                 police_camp=game::career::TrainingCamp{};chief={};lights_car.clear();
@@ -1750,6 +1754,9 @@ void Renderer::run() {
                             if(v.id.starts_with("creator_vehicle_"))
                                 if(const auto* asset=vehicles.asset(verda_region,v.id);asset && asset->vehicle.definition=="police") {backup.set_car(v.id);break;}
                         if(!backup.car().empty()) bot_drivers.reserve(backup.car());
+                        // The partner a desk can give an officer.
+                        player_crew.start(br_bots,park,session_seed);
+                        npcs.spawn_bot(player_crew.partner_bot(),"character_21_police",park,0);
                     }
                     // The state prison's guards and inmates.
                     {
@@ -2589,6 +2596,19 @@ void Renderer::run() {
             }
             return -1;
         };
+        // A foot soldier of the player's own gang within reach: he can join the player's crew.
+        const auto recruit_near=[&](Vector3 feet) -> int {
+            if(!mafio.active() || vehicles.driver() || game_mode!=game::GameMode::Explore || career_path.empty() ||
+               career.state().side!=game::career::Side::Gang) return -1;
+            int best=-1;float nearest=3.0F;
+            for(const auto& m:mafio.members()) {
+                if(player_crew.member(m.bot) || !mafio.recruitable(m.bot,br_bots)) continue;
+                const auto* bot=br_bots.find(m.bot);
+                const float d=std::hypot(bot->position().x-feet.x,bot->position().z-feet.z);
+                if(d<nearest && std::abs(bot->position().y-feet.y)<2.2F) {nearest=d;best=m.bot;}
+            }
+            return best;
+        };
         const auto station_desk=[&](Vector3 feet) -> const game::services::Unit* {
             if(!services.active() || vehicles.driver() || game_mode!=game::GameMode::Explore || career_path.empty()) return nullptr;
             for(const auto& place:island_life.places())
@@ -2603,12 +2623,26 @@ void Renderer::run() {
             const int crew=boss_near(feet);
             const auto* station=crew<0 ? station_desk(feet) : nullptr;
             const bool confirming=match_time<join_offer.until && ((crew>=0 && join_offer.crew==crew) || (station && join_offer.patrol_car==station->vehicle));
-            if(crew>=0 && career.on_duty()) {
+            const int recruit=crew<0 && !station ? recruit_near(feet) : -1;
+            if(recruit>=0) {
+                if(player_crew.recruit(recruit)) {
+                    mafio.lend(recruit,true,br_bots,feet);
+                    interaction_message=TextFormat("He's with you - your crew: %d of %d",static_cast<int>(player_crew.members().size()),game::career::Crew::max_gang);
+                } else interaction_message=TextFormat("Your crew is full (%d)",game::career::Crew::max_gang);
+                interaction_remaining=3;input_system.player().interact=false;
+            } else if(station && career.on_duty() && player_crew.partner()<0 && !confirming) {
+                // The desk pairs the officer up.
+                const Vector3 at=Vector3Add(feet,{std::cos(player.yaw)*1.2F,0,-std::sin(player.yaw)*1.2F});
+                if(player_crew.assign_partner(at,player.yaw*RAD2DEG+180,br_bots,match_time))
+                    interaction_message="Desk sergeant: \"Officer Novak rides with you from now on.\" (USE again here to hand in your badge)";
+                interaction_remaining=4;input_system.player().interact=false;
+            } else if(crew>=0 && career.on_duty()) {
                 interaction_message="The boss won't talk to a cop - hand in your badge at a station first";
                 interaction_remaining=3;input_system.player().interact=false;
             } else if(crew>=0 && career.in_gang(mafio.crews()[static_cast<std::size_t>(crew)].gang)) {
                 // Your own boss: USE twice to walk away from the gang.
                 if(confirming) {
+                    for(const int id:player_crew.dismiss(br_bots)) mafio.lend(id,false,br_bots,feet);
                     career.quit();mafio.set_player_gang(-1);island_ruled=false;join_offer={};
                     interaction_message=career.state().record ? "You walked away - your record stays" : "You walked away with your honour - your record is clean";
                 } else {
@@ -2645,6 +2679,7 @@ void Renderer::run() {
                 if(confirming) {
                     career.quit();services.assign_player_car({});lights_car.clear();join_offer={};
                     if(backup.active()) backup.dismiss(br_bots,match_time);
+                    player_crew.dismiss_partner(br_bots);
                 } else {
                     join_offer={-1,station->vehicle,match_time+5};
                     interaction_message="USE again to hand in your badge";
@@ -2779,7 +2814,7 @@ void Renderer::run() {
                 here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 ||
                     (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) ||
                     (!campaign_path.empty() && (story.talking() || (uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F))) ||
-                    boss_near(feet)>=0 || station_desk(feet)!=nullptr;
+                    boss_near(feet)>=0 || station_desk(feet)!=nullptr || recruit_near(feet)>=0;
                 // Who you'd be talking to.
                 if(store_prompt.empty() && player_health.alive()) {
                     if(!campaign_path.empty() && story.talking() && story.stage()!=game::campaign::Stage::Free) store_prompt="E - Continue";
@@ -2790,17 +2825,25 @@ void Renderer::run() {
                     else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F)
                         store_prompt=!trucking.hired() ? "E - Ask the boss of Verda Transporto for work" :
                             trucking.job().stage==game::freight::HaulStage::Report ? "E - Report in for your pay" : "E - Talk to the boss";
+                    else if(recruit_near(feet)>=0)
+                        store_prompt=static_cast<int>(player_crew.members().size())<game::career::Crew::max_gang ?
+                            TextFormat("E - Recruit him (crew %d of %d)",static_cast<int>(player_crew.members().size())+1,game::career::Crew::max_gang) : "Your crew is full";
                     else if(const int crew=boss_near(feet);crew>=0) {
                         const std::string name(game::mafia::gangs[static_cast<std::size_t>(mafio.crews()[static_cast<std::size_t>(crew)].gang)].name);
                         store_prompt=career.in_gang(mafio.crews()[static_cast<std::size_t>(crew)].gang) ? "E - Talk to your boss" : "E - Talk to the boss of "+name;
-                    } else if(station_desk(feet)) store_prompt=career.on_duty() ? "E - Hand in your badge" : "E - Sign up with the Policio de Verda";
+                    } else if(station_desk(feet)) store_prompt=!career.on_duty() ? "E - Sign up with the Policio de Verda" :
+                        player_crew.partner()<0 ? "E - Ask the desk for a partner" : "E - Hand in your badge";
                 }
             }
             use_available=here && !creator_active && player_health.alive();
         }
         if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open) && !poker_open && !at_table) {
             Vector3 exit{};
-            if(vehicles.driver()){
+            if(riding_now) {
+                // USE in the passenger seat: "Pull over here."
+                player_crew.end_ride(br_bots,bot_drivers,vehicles,verda_region);
+                interaction_message="Your crew pulls over";
+            } else if(vehicles.driver()){
                 if(vehicles.exit(verda_region,exit)){player.position=Vector3Add(exit,{0,1,0});player.vertical_velocity=0;vehicle_renderer.reset_camera();interaction_message="Exited vehicle";}
                 else interaction_message="Stop and leave space beside the vehicle to exit";
             }else {
@@ -2808,7 +2851,28 @@ void Renderer::run() {
                 const int vehicle=vehicles.nearest(verda_region,feet);
                 // Residents' cars: a moving one can't be boarded; taking one is a crime.
                 const std::string id=vehicle>=0 ? vehicles.vehicles()[static_cast<std::size_t>(vehicle)].id : std::string();
-                if(vehicle>=0 && island_life.car_moving(id) && std::abs(vehicles.vehicles()[static_cast<std::size_t>(vehicle)].speed)>3) interaction_message="It's moving";
+                // At the passenger door with the crew about: one of them drives you - to the map's
+                // waypoint, or else the job in hand.
+                bool passenger=false;
+                if(vehicle>=0 && player_crew.size()>0 && game_mode==game::GameMode::Explore) {
+                    const auto& car=vehicles.vehicles()[static_cast<std::size_t>(vehicle)];
+                    const float a=car.yaw*DEG2RAD;
+                    passenger=(feet.x-car.position.x)*-std::cos(a)+(feet.z-car.position.z)*std::sin(a)>.4F;
+                }
+                if(passenger) {
+                    const auto& car=vehicles.vehicles()[static_cast<std::size_t>(vehicle)];
+                    std::optional<Vector3> goal=map_screen.pin();
+                    if(!goal && !career_path.empty() && career.job().kind!=game::career::JobKind::None) goal=career.job().target;
+                    if(!goal) interaction_message="Set a waypoint on the map (M) or take a job - your crew will drive you there";
+                    else if(island_life.car_moving(id) && std::abs(car.speed)>3) interaction_message="It's moving";
+                    else if(std::hypot(goal->x-car.position.x,goal->z-car.position.z)<70) interaction_message="That's just round the corner - walk it";
+                    else if(const int driver=player_crew.ride(id,car.position,*goal,br_bots,bot_drivers,vehicles,verda_region);driver>=0) {
+                        if(game::rules_for(game_mode).civilian_life) island_life.take_car(id);
+                        input_system.cancel_controls();vehicle_orbit=vehicle_pitch=0;vehicle_renderer.reset_camera();
+                        interaction_message=driver==player_crew.partner() ? "Your partner drives - USE to get out" : "Your crew drives - USE to get out";
+                    } else interaction_message="Your crew can't find a road from here";
+                }
+                else if(vehicle>=0 && island_life.car_moving(id) && std::abs(vehicles.vehicles()[static_cast<std::size_t>(vehicle)].speed)>3) interaction_message="It's moving";
                 else if(vehicle>=0 && vehicles.enter(verda_region,vehicle,feet)){
                     vehicle_orbit=vehicle_pitch=0;input_system.cancel_controls();drive_hint=8;
                     interaction_message=touch_ui ? "Steer left, GAS and BRAKE right; USE gets out" : "";
@@ -3479,7 +3543,28 @@ void Renderer::run() {
 
         if (game_mode == game::GameMode::DevLab && IsKeyPressed(KEY_T)) combat_world.reset_targets();
         combat_world.update(dt,game_mode == game::GameMode::DevLab);
+        // Riding with the crew: in the passenger seat, the camera behind the car; out at the end.
+        riding_now=false;
+        if(const int ride=player_crew.ride_car().empty() ? -1 : vehicles.find(player_crew.ride_car());ride>=0) {
+            const auto car=vehicles.vehicles()[static_cast<std::size_t>(ride)];
+            const float a=car.yaw*DEG2RAD;
+            const Vector3 passenger_side{-std::cos(a),0,std::sin(a)};
+            if(player_crew.riding(bot_drivers) && player_health.alive()) {
+                riding_now=true;
+                player.position={car.position.x+passenger_side.x*.45F,car.position.y+1.2F,car.position.z+passenger_side.z*.45F};
+                player.vertical_velocity=0;
+            } else {
+                Vector3 out{car.position.x+passenger_side.x*2.4F,0,car.position.z+passenger_side.z*2.4F};
+                out.y=world::physics::WorldCollision::ground_height({out.x,car.position.y+2,out.z},car.position.y+2,verda_region);
+                if(!std::isfinite(out.y)) out.y=world::terrain::TerrainHeight::sample(out.x,out.z);
+                player.position=Vector3Add(out,{0,1,0});player.vertical_velocity=0;
+                player_crew.end_ride(br_bots,bot_drivers,vehicles,verda_region);
+                vehicle_renderer.reset_camera();
+                if(player_health.alive()) {interaction_message="Here we are";interaction_remaining=3;}
+            }
+        } else if(!player_crew.ride_car().empty()) player_crew.end_ride(br_bots,bot_drivers,vehicles,verda_region);
         if(vehicles.driver())vehicle_renderer.camera(camera,vehicles,verda_region,dt,vehicle_orbit,vehicle_pitch,combat_world);
+        else if(riding_now) vehicle_renderer.camera(camera,vehicles,verda_region,dt,vehicle_orbit,vehicle_pitch,combat_world,player_crew.ride_car());
         const Vector3 camera_direction=Vector3Normalize(Vector3Subtract(camera.target,camera.position));
 
 #ifdef OUTLAND_DEV_TOOLS
@@ -4062,6 +4147,20 @@ void Renderer::run() {
                 // A CLEAN UP under way: that crew's dead stay down, its squads come home.
                 mafio.besiege(career_path.empty() ? -1 : career.besieging(),br_bots,frame);
                 mafio.update(frame,br_bots,bot_world,bot_drivers,vehicles,verda_region);
+                // The player's own crew: keep up, ride along, come along for the ride.
+                {
+                    if(!career.on_duty() && player_crew.partner()>=0) player_crew.dismiss_partner(br_bots);
+                    if(career.state().side!=game::career::Side::Gang && !player_crew.members().empty())
+                        for(const int id:player_crew.dismiss(br_bots)) mafio.lend(id,false,br_bots,feet);
+                    game::career::Crew::Frame cf;
+                    cf.player=feet;cf.alive=player_health.alive();cf.riding=player_crew.riding(bot_drivers);
+                    if(const auto* car=vehicles.driver()) {cf.driving=car->id;cf.car=car->position;cf.car_yaw=car->yaw;}
+                    std::string said;
+                    for(const int id:player_crew.update(cf,br_bots,verda_region,said)) mafio.lend(id,false,br_bots,feet);
+                    if(!said.empty()) {interaction_message=said;interaction_remaining=3;}
+                    if(!player_health.alive() && player_crew.size()>0)
+                        for(const int id:player_crew.dismiss(br_bots)) mafio.lend(id,false,br_bots,feet);
+                }
                 // The officer's backup: arrive, keep close, go home.
                 if(backup.active()) {
                     if(!career.serving()) backup.dismiss(br_bots,match_time);
@@ -4810,7 +4909,7 @@ void Renderer::run() {
                 game::aircraft::draw_parachute(get_world_asset_model("assets/verda/aircraft/parachute.glb",character_registry),
                     Vector3Add(player.position,{0,.55F,0}),skydiver.heading(),open,skydiver.swing(),skydiver.bank());
         }
-        if (player.third_person && !driving && !scoped && !ads_view && !(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed)) {
+        if (player.third_person && !driving && !riding_now && !scoped && !ads_view && !(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed)) {
 
             const Vector3 character_feet{player.position.x,player.position.y-1.0F,player.position.z};
 

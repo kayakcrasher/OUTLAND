@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verda's radio: nine original instrumental songs and three station idents, made from scratch.
+"""Verda's radio: fourteen original instrumental songs and three station idents, made from scratch.
 
 Every note is synthesised here - additive oscillators for reeds, brass, bowed and electric
 instruments, Karplus-Strong strings for the banjo, guitars, mandolin and bass, noise for the drums -
@@ -262,6 +262,63 @@ def bass(m, dur, v):
     return norm(np.tanh(out * 1.5))
 
 
+@functools.lru_cache(maxsize=None)
+def synth_lead(m, dur, v):
+    """An eighties synth lead: a detuned saw and a square, a little vibrato."""
+    f, n = hz(m), int((dur + .12) * RATE)
+    out = (additive(phase(f * 1.003, n, vibrato=.005, rate=5.5, delay=.25), f, SAW[:24]) * .6 +
+           additive(phase(f * .997, n, vibrato=.005, rate=5.5, delay=.25), f, [1, 0, 1 / 3, 0, 1 / 5, 0, 1 / 7, 0, 1 / 9]) * .6)
+    return norm(lowpass(out, 3200) * envelope(n, .01, .3, .75, .1, hold=dur))
+
+
+@functools.lru_cache(maxsize=None)
+def synth_bass(m, dur, v):
+    f, n = hz(m), int((dur + .04) * RATE)
+    ph = phase(f, n)
+    out = lowpass(additive(ph, f, SAW[:20]), 700, 2) * .7 + np.sin(ph) * .5
+    return norm(out * envelope(n, .003, .15, .6, .03, hold=dur))
+
+
+@functools.lru_cache(maxsize=None)
+def clean(m, dur, v):
+    """A clean electric guitar through a chorus: two strings a hair apart."""
+    n = int((dur + .6) * RATE)
+    f = hz(m)
+    out = ks(f, n, 1.4, .75, 1600 + v) + ks(f * 1.004, n, 1.4, .75, 1650 + v) * .7
+    return norm(peak(highpass(out, 150), 2200, 3, 1) * envelope(n, .001, 1, 1, .1, hold=dur + .4))
+
+
+@functools.lru_cache(maxsize=None)
+def nylon(m, dur, v):
+    n = int(min(dur + .9, 2.6) * RATE)
+    out = ks(hz(m), n, 1.8, .42, 1700 + v)
+    return norm(peak(highpass(out, 90), 260, 4, .9) * envelope(n, .002, 1, 1, .12))
+
+
+@functools.lru_cache(maxsize=None)
+def harmonica(m, dur, v):
+    """A reed harp: a bright reed with a bend into some notes and a breath under it."""
+    f, n = hz(m), int((dur + .08) * RATE)
+    slide = hz(m - 1) if v == 1 and dur > .4 else None
+    out = additive(phase(f, n, vibrato=.008, rate=5, delay=.2, slide_from=slide, slide=.12), f, [1, .6, .5, .35, .3, .2, .15, .1])
+    out = out + lowpass(noise(n, 1800 + v), 3000) * .05
+    return norm(bandpass(out, 350, 4200) * envelope(n, .03, .2, .85, .06, hold=dur))
+
+
+@functools.lru_cache(maxsize=None)
+def heavy(m, dur, palm, v):
+    """A metal power chord: tighter and much more distorted than power()."""
+    n = int((dur + (.04 if palm else .25)) * RATE)
+    out = sum(additive(phase(hz(x) * (1 + d), n), hz(x), SAW[:25]) for x in (m, m + 7, m + 12) for d in (-.004, .004)) / 6
+    out = highpass(out * envelope(n, .002, .1 if palm else .8, .2 if palm else .75, .03, hold=dur), 90)
+    out = np.tanh(out * 18)
+    out = lowpass(out, 1500 if palm else 3800, 4)
+    out = peak(peak(out, 700, -5, .8), 110, 5 if palm else 2, 1)
+    if palm:
+        out = out * envelope(n, .001, .06, .15, .02, hold=dur)
+    return norm(out)
+
+
 # Drums (variant picks one of a few hits so a beat is not a loop of one sample).
 @functools.lru_cache(maxsize=None)
 def kick(v):
@@ -438,6 +495,8 @@ VOCAB = {
     "country": [[1, .5, .5, 2], [1.5, .5, 1, 1], [2, 1, 1], [.5, .5, 1, 1, 1], [1, 1, 1.5, -.5]],
     "rock": [[.5, .5, 1, 1, 1], [1, .5, .5, 2], [.75, .75, .5, 2], [2, .5, .5, 1], [1.5, .5, 1.5, -.5]],
     "anthem": [[2, 1, 1], [1, 1, 2], [1.5, .5, 2], [3, 1], [.5, .5, 1, 2]],
+    "ballad": [[2, 2], [1, 1, 2], [3, 1], [1.5, .5, 1, 1], [2, 1, -1]],
+    "metal": [[1, 1, 1, 1], [.5, .5, 1, 2], [2, 1, 1], [1, .5, .5, 2]],
 }
 CADENCE = [[2, -2], [3, -1], [1, 1, 2], [4]]
 
@@ -729,6 +788,7 @@ def drum_fill(song, start):
 
 def arrange_rock(song):
     spec = song.spec
+    chord_fn = heavy if spec.get("heavy") else power
     style = "anthem" if spec.get("anthem") else "rock"
     tunes = {label: compose(song, label, VOCAB[style], song.key + 7, song.key + 26) for label in spec["progs"]}
     riff = parse_riff(spec["riff"])
@@ -739,7 +799,7 @@ def arrange_rock(song):
             if i == 0:
                 for b, l, o, palm in riff:
                     if b < 4:
-                        song.add("guitar", start + b, power(song.key - 12 + o, song.secs(l), palm, 0), .5)
+                        song.add("guitar", start + b, chord_fn(song.key - 12 + o, song.secs(l), palm, 0), .5)
                         song.add("bass", start + b, bass(low + o % 12, song.secs(l), 0), .6)
                 for beat in range(4):
                     song.add("drums", start + beat, kick(beat), .8)
@@ -747,14 +807,14 @@ def arrange_rock(song):
                     if beat % 2:
                         song.add("drums", start + beat, snare(beat), .7)
             elif i == 1:
-                song.add("guitar", start, power(song.key - 12, song.secs(4), False, 1), .6)
+                song.add("guitar", start, chord_fn(song.key - 12, song.secs(4), False, 1), .6)
                 song.add("bass", start, bass(low, song.secs(4), 0), .7)
                 song.add("drums", start, crash(0), .55)
                 song.add("drums", start, kick(0), .9)
                 for k in range(16):
                     song.add("drums", start + k * .25, tom((180, 150, 120, 95)[k // 4], k) if k % 2 else snare(k), .3 + .03 * k)
             else:
-                song.add("guitar", start, power(song.key - 12, song.secs(3), False, 2), .65)
+                song.add("guitar", start, chord_fn(song.key - 12, song.secs(3), False, 2), .65)
                 song.add("bass", start, bass(low, song.secs(3), 1), .75)
                 song.add("drums", start, crash(1), .6)
                 song.add("drums", start, kick(1), 1.0)
@@ -763,7 +823,7 @@ def arrange_rock(song):
         if riffing:
             for b, l, o, palm in riff:
                 if i % 2 * 4 <= b < i % 2 * 4 + 4:
-                    song.add("guitar", start + b - i % 2 * 4, power(song.key - 12 + o, song.secs(l), palm, int(b) % 3), .5)
+                    song.add("guitar", start + b - i % 2 * 4, chord_fn(song.key - 12 + o, song.secs(l), palm, int(b) % 3), .5)
                     song.add("bass", start + b - i % 2 * 4, bass(low + o % 12, song.secs(l), int(b) % 2), .33)
         else:
             chorus = kind in ("chorus", "bridge")
@@ -774,17 +834,20 @@ def arrange_rock(song):
             if chorus:
                 for b, l in ((0, 1.5), (1.5, .5), (2, 1), (3, .5), (3.5, .5)):
                     chord = song.chord_at(label, i, b)
-                    song.add("guitar", start + b, power(song.root_note(chord, max(38, song.key - 12)), song.secs(l), False, int(b * 2) % 3), .5)
+                    song.add("guitar", start + b, chord_fn(song.root_note(chord, max(38, song.key - 12)), song.secs(l), False, int(b * 2) % 3), .5)
             else:
                 for b in [x * .5 for x in range(8)]:
                     chord = song.chord_at(label, i, b)
-                    song.add("guitar", start + b, power(song.root_note(chord, max(38, song.key - 12)), song.secs(.45), True, int(b * 2) % 3), .55 if b % 1 == 0 else .45)
+                    song.add("guitar", start + b, chord_fn(song.root_note(chord, max(38, song.key - 12)), song.secs(.45), True, int(b * 2) % 3), .55 if b % 1 == 0 else .45)
         if not (kind == "intro" and i < 2):
             for beat in range(4):
                 if beat in (0, 2):
                     song.add("drums", start + beat, kick(beat), 1.0)
                 if beat == 2:
                     song.add("drums", start + 2.5, kick(1), .75)
+                if spec.get("heavy") and kind in ("chorus", "solo"):
+                    for q in (.25, .5, .75):
+                        song.add("drums", start + beat + q, kick(int(q * 4)), .5)
                 if beat % 2:
                     song.add("drums", start + beat, snare(beat), .95)
                 open_ = kind in ("chorus", "solo", "bridge")
@@ -803,6 +866,179 @@ def arrange_rock(song):
             octave = 0 if kind != "verse" else -1
             for b, l, m in tune:
                 song.add("lead", start + b, lead(m + 12 * octave, song.secs(l), int(b * 2) % 3, l >= 1 and song.rng.random() < .3), .5 if kind != "verse" else .38)
+
+
+def drums_rock(song, start, kind, i, bars, number, shuffle=False, double=False):
+    """A rock beat: kick on one and three, snare on two and four, eighths on the hat (triplets in a
+    shuffle), a crash into each section and a fill out of it; double kick on demand."""
+    for beat in range(4):
+        if beat in (0, 2):
+            song.add("drums", start + beat, kick(beat), 1.0)
+        if beat % 2:
+            song.add("drums", start + beat, snare(beat), .9)
+        steps = (0, 2 / 3) if shuffle else (0, .5)
+        for k, half in enumerate(steps):
+            song.add("drums", start + beat + half, hat(beat + k, kind == "chorus" and k == 1), .13)
+        if double:
+            for q in (.25, .5, .75):
+                song.add("drums", start + beat + q, kick(int(q * 4)), .55)
+    if i == 0 and kind not in ("intro",):
+        song.add("drums", start, crash(number % 3), .5)
+    if i == bars - 1:
+        drum_fill(song, start)
+
+
+def arrange_synthrock(song):
+    """Eighties synth-rock with a shuffle: a pad, a chorused clean guitar picking the chords,
+    pumping synth bass, a synth lead on the tune and a guitar break."""
+    tunes = {label: compose(song, label, VOCAB["anthem"], song.key + 7, song.key + 24) for label in song.spec["progs"]}
+    lick = solo(song, "A", song.key + 7, song.key + 26, minor=False)
+    for kind, label, i, bars, start, number in each_bar(song):
+        if kind == "outro":
+            if i == 0:
+                chord = song.chord_at("I", 0, 0)
+                song.add("pad", start, pad(song.voice(chord, song.key), song.secs(6)), .3)
+                song.add("bass", start, synth_bass(song.root_note(chord, song.key - 24), song.secs(4), 0), .4)
+                song.add("drums", start, crash(0), .5)
+                song.add("drums", start, kick(0), .9)
+                for k, m in enumerate(song.voice(chord, song.key + 7)):
+                    song.add("guitar", start + k * .5, clean(m, song.secs(3), k), .3)
+            continue
+        for half in (0, 2):
+            chord = song.chord_at(label, i, half)
+            song.add("pad", start + half, pad(song.voice(chord, song.key), song.secs(2)), .16)
+            notes = song.voice(chord, song.key + 7)
+            order = [0, 1, 2, 1] if (number + i) % 2 else [0, 2, 1, 2]
+            for k in range(4):
+                song.add("guitar", start + half + k * .5, clean(notes[order[k]] + (12 if k == 3 else 0), song.secs(.5), k), .5)
+            root = song.root_note(chord, song.key - 24 if song.key - 24 >= 33 else song.key - 12)
+            for k in range(4):
+                song.add("bass", start + half + k * .5, synth_bass(root + (12 if k % 2 else 0), song.secs(.4), k % 2), .36)
+        if not (kind == "intro" and i < 2):
+            drums_rock(song, start, kind, i, bars, number, shuffle=True)
+        if kind == "solo":
+            for b, l, m, bend in [(b - i * 4, l, m, bend) for b, l, m, bend in lick if i * 4 <= b < i * 4 + 4]:
+                song.add("lead", start + b, lead(m, song.secs(l), int(b * 4) % 3, bend, 4.0), .42)
+        elif kind in ("verse", "chorus", "bridge"):
+            tune = [(b - i * 4, l, m) for b, l, m in tunes[label] if i * 4 <= b < i * 4 + 4]
+            play(song, "lead", synth_lead, tune, start, .45 if kind != "verse" else .38)
+            if kind == "chorus":
+                play(song, "lead", clean, tune, start, .18, octave=-1)
+
+
+def arrange_pop(song):
+    """Pop on the polka station: four on the floor, claps, an octave-pumping synth bass, the
+    accordion on the verse tune and a synth lead with the glockenspiel on the chorus."""
+    tunes = {label: compose(song, label, VOCAB["pop"], song.key + 5, song.key + 22) for label in song.spec["progs"]}
+    for kind, label, i, bars, start, number in each_bar(song):
+        if kind == "outro":
+            if i == 0:
+                chord = song.chord_at("I", 0, 0)
+                song.add("pad", start, pad(song.voice(chord, song.key), song.secs(5)), .3)
+                song.add("lead", start, glock(song.key + 24, 1.0, 0), .3)
+                song.add("drums", start, crash(0), .45)
+                song.add("drums", start, kick(0), .9)
+                song.add("bass", start, synth_bass(song.root_note(chord, song.key - 24), song.secs(3), 0), .4)
+            continue
+        for beat in range(4):
+            chord = song.chord_at(label, i, beat)
+            root = song.root_note(chord, song.key - 24 if song.key - 24 >= 33 else song.key - 12)
+            if kind != "intro" or i >= 2:
+                song.add("drums", start + beat, kick(beat), .9)
+                song.add("drums", start + beat + .5, hat(beat, beat % 2 == 1), .12)
+                if beat % 2:
+                    song.add("drums", start + beat, clap(beat), .55)
+            for half in (0, .5):
+                song.add("bass", start + beat + half, synth_bass(root + (12 if half else 0), song.secs(.4), int(half * 2)), .34)
+            song.add("chords", start + beat + .5, accordion(song.voice(chord, song.key + 3)[0], song.secs(.2), beat % 3), .14)
+        chord = song.chord_at(label, i, 0)
+        song.add("pad", start, pad(song.voice(chord, song.key), song.secs(4)), .2 if kind == "chorus" else .12)
+        if i == 0 and kind in ("chorus", "bridge"):
+            song.add("drums", start, crash(number % 3), .4)
+        if kind == "intro":
+            continue
+        tune = [(b - i * 4, l, m) for b, l, m in tunes[label] if i * 4 <= b < i * 4 + 4]
+        if kind == "chorus":
+            play(song, "lead", synth_lead, tune, start, .42)
+            play(song, "lead", glock, tune, start, .2, octave=1)
+        elif kind == "bridge":
+            play(song, "lead", clarinet, tune, start, .5)
+        else:
+            play(song, "lead", accordion, tune, start, .48)
+
+
+def arrange_honkytonk(song):
+    """A honky-tonk shuffle: walking bass, a boom-chuck acoustic, snare on the backbeat, the twang
+    guitar on the verses, the steel on the choruses and the fiddle on the bridge."""
+    tunes = {label: compose(song, label, VOCAB["country"], song.key + 5, song.key + 22) for label in song.spec["progs"]}
+    for kind, label, i, bars, start, number in each_bar(song):
+        if kind == "outro":
+            if i == 0:
+                for b, l, o in [(0, .5, 12), (.5, .5, 9), (1, .5, 7), (1.5, .5, 4), (2, 2, 0)]:
+                    song.add("lead", start + b, twang(song.key + o + 12, song.secs(l), 1), .5)
+                chord = parse_chord("I")
+                song.add("bass", start + 2, bass(song.root_note(chord, song.key - 24), song.secs(2), 0), .3)
+                for k, m in enumerate(song.voice(chord, song.key + 4)):
+                    song.add("rhythm", start + 2 + k * .012 / song.spb, guitar(m, song.secs(2.5), k), .3)
+                song.add("pad", start + 2, steel(song.key + 16, song.secs(3), 0), .3)
+                song.add("drums", start + 2, crash(1), .35)
+            continue
+        low = song.key - 24 if song.key - 24 >= 36 else song.key - 12
+        for beat in range(4):
+            chord = song.chord_at(label, i, beat)
+            root = song.root_note(chord, low)
+            walk = [0, chord[1][1], 7, 9][beat]
+            song.add("bass", start + beat, bass(root + walk, song.secs(.8), beat % 2), .26)
+            if beat % 2 == 0:
+                song.add("drums", start + beat, kick(beat), .7)
+            else:
+                song.add("drums", start + beat, snare(beat, True), .5)
+                for k, x in enumerate(song.voice(chord, song.key + 4)):
+                    song.add("rhythm", start + beat + k * .012 / song.spb, guitar(x, song.secs(.4), k), .26)
+            song.add("drums", start + beat + .5, hat(beat), .1)
+        if kind == "intro":
+            if i >= 2:
+                play(song, "lead", twang, [(0, .5, song.key + 19), (.5, .5, song.key + 16), (1, 1, song.key + 12), (2, 2, song.key + 14)], start, .4)
+            continue
+        tune = [(b - i * 4, l, m) for b, l, m in tunes[label] if i * 4 <= b < i * 4 + 4]
+        inst = {"verse": twang, "chorus": steel}.get(kind, fiddle)
+        play(song, "lead", inst, tune, start, .6)
+
+
+def arrange_ballad(song):
+    """A laid-back country ballad: a fingerpicked nylon guitar, upright bass, brushes, the harp
+    on the verses and a nylon guitar break."""
+    tunes = {label: compose(song, label, VOCAB["ballad"], song.key + 7, song.key + 24) for label in song.spec["progs"]}
+    for kind, label, i, bars, start, number in each_bar(song):
+        if kind == "outro":
+            if i == 0:
+                chord = parse_chord("I")
+                for k, m in enumerate(song.voice(chord, song.key + 4) + (song.key + 24,)):
+                    song.add("rhythm", start + k * .25, nylon(m, song.secs(4), k), .32)
+                song.add("bass", start, upright(song.root_note(chord, song.key - 24 if song.key - 24 >= 36 else song.key - 12), song.secs(3), 0), .5)
+                song.add("lead", start + 1, harmonica(song.key + 24, song.secs(3), 1), .4)
+            continue
+        low = song.key - 24 if song.key - 24 >= 36 else song.key - 12
+        for half in (0, 2):
+            chord = song.chord_at(label, i, half)
+            root = song.root_note(chord, low)
+            song.add("bass", start + half, upright(root if half == 0 else root + 7 if root + 7 < low + 12 else root - 5, song.secs(1.8), half), .45)
+            notes = song.voice(chord, song.key + 7)
+            picks = [(0, root + 12), (.5, notes[1]), (1, notes[2]), (1.5, notes[1])]
+            for b, m in picks:
+                song.add("rhythm", start + half + b, nylon(m, song.secs(.9), int(b * 2)), .28 if b == 0 else .22)
+            if kind != "intro":
+                song.add("drums", start + half + 1, brush(half), .35)
+        if kind == "intro":
+            continue
+        tune = [(b - i * 4, l, m) for b, l, m in tunes[label] if i * 4 <= b < i * 4 + 4]
+        if kind == "solo":
+            play(song, "lead", nylon, tune, start, .55, octave=1)
+        elif kind == "chorus":
+            play(song, "lead", harmonica, tune, start, .5)
+            play(song, "lead", nylon, tune, start, .22)
+        else:
+            play(song, "lead", harmonica, tune, start, .45)
 
 
 # ----------------------------------------------------------------------------------- mastering
@@ -873,6 +1109,11 @@ STATIONS = [
                        "B": ["IV", "I", "V7", "I", "IV", "I", "V7", "I"], "C": ["I", "I", "IV", "IV", "V7", "V7", "I", "I"]},
              "form": form(("intro", "I", 4), ("verse", "A", 8), ("verse", "A", 8), ("chorus", "B", 8), ("chorus", "B", 8),
                           ("trio", "C", 8), ("verse", "A", 8), ("chorus", "B", 8), ("chorus", "B", 8), ("outro", "I", 2))},
+            {"title": "Blua Floro", "key": 64, "tempo": 118, "seed": 113, "arrange": arrange_pop,
+             "progs": {"I": ["I", "iii", "IV", "V"], "A": ["I", "iii", "IV", "V", "I", "iii", "ii", "V"],
+                       "B": ["IV", "I", "V", "vi", "IV", "I", "ii", "V"], "C": ["vi", "iii", "IV", "I", "ii", "V", "I", "I"]},
+             "form": form(("intro", "I", 4), ("verse", "A", 8), ("chorus", "B", 8), ("verse", "A", 8), ("chorus", "B", 8),
+                          ("bridge", "C", 8), ("chorus", "B", 8), ("chorus", "B", 8), ("outro", "I", 2))},
         ],
     },
     {
@@ -894,6 +1135,16 @@ STATIONS = [
                        "B": ["IV", "IV", "I", "I", "bVII", "bVII", "I", "V"]},
              "form": form(("intro", "I", 4), ("fiddle", "A", 8), ("fiddle", "A", 8), ("mandolin", "B", 8), ("banjo", "A", 8),
                           ("fiddle", "B", 8), ("banjo", "B", 8), ("fiddle", "A", 8), ("fiddle_high", "A", 8), ("outro", "I", 2))},
+            {"title": "Drinkejo ĉe la Vojo", "key": 64, "tempo": 132, "seed": 127, "swing": .62, "arrange": arrange_honkytonk,
+             "progs": {"I": ["I", "I", "V", "I"], "A": ["I", "I", "IV", "I", "I", "I", "V", "V"],
+                       "B": ["IV", "IV", "I", "I", "V", "IV", "I", "I"], "C": ["vi", "vi", "IV", "IV", "I", "I", "V", "V"]},
+             "form": form(("intro", "I", 4), ("verse", "A", 8), ("verse", "A", 8), ("chorus", "B", 8), ("verse", "A", 8),
+                          ("bridge", "C", 8), ("chorus", "B", 8), ("verse", "A", 8), ("chorus", "B", 8), ("outro", "I", 2))},
+            {"title": "Malrapida Vespero", "key": 55, "tempo": 84, "seed": 131, "swing": .6, "arrange": arrange_ballad,
+             "progs": {"I": ["I", "IV", "I", "V"], "A": ["I", "I", "IV", "I", "I", "vi", "ii", "V"],
+                       "B": ["IV", "V", "I", "vi", "IV", "V", "I", "I"]},
+             "form": form(("intro", "I", 4), ("verse", "A", 8), ("chorus", "B", 8), ("verse", "A", 8), ("solo", "A", 8),
+                          ("chorus", "B", 8), ("outro", "I", 2))},
         ],
     },
     {
@@ -916,6 +1167,17 @@ STATIONS = [
              "riff": "0m 0m 3 5 0m 0m 10 - | 0m 0m 3 5 7 - 5 -",
              "progs": {"I": ["I", "I", "I", "I"], "A": ["I", "I", "bVII", "IV", "I", "I", "bVII", "IV"],
                        "B": ["IV", "IV", "I", "I", "bVII", "bVII", "V", "V"]},
+             "form": form(("intro", "I", 4), ("verse", "A", 8), ("chorus", "B", 8), ("riff", "I", 4), ("verse", "A", 8),
+                          ("chorus", "B", 8), ("solo", "A", 8), ("riff", "I", 4), ("chorus", "B", 8), ("chorus", "B", 8), ("outro", "I", 3))},
+            {"title": "Vitraj Turoj", "key": 62, "tempo": 110, "seed": 139, "swing": .66, "arrange": arrange_synthrock,
+             "progs": {"I": ["I", "IV", "I", "IV"], "A": ["I", "I", "IV", "vi", "I", "I", "IV", "V"],
+                       "B": ["vi", "IV", "V", "I", "vi", "IV", "ii", "V"]},
+             "form": form(("intro", "I", 4), ("verse", "A", 8), ("chorus", "B", 8), ("verse", "A", 8), ("chorus", "B", 8),
+                          ("solo", "A", 8), ("chorus", "B", 8), ("chorus", "B", 8), ("outro", "I", 2))},
+            {"title": "Nigra Minejo", "key": 52, "tempo": 116, "seed": 149, "scale": "minor", "heavy": True,
+             "riff": "0m 0m 0m 0m 1m 0m 0m 0m | 0m 0m 3 - 5 - 0m 1m",
+             "progs": {"I": ["i", "i", "i", "i"], "A": ["i", "i", "bVI", "bVII", "i", "i", "iv", "v"],
+                       "B": ["bVI", "bVII", "i", "i", "bVI", "bVII", "iv", "V"]},
              "form": form(("intro", "I", 4), ("verse", "A", 8), ("chorus", "B", 8), ("riff", "I", 4), ("verse", "A", 8),
                           ("chorus", "B", 8), ("solo", "A", 8), ("riff", "I", 4), ("chorus", "B", 8), ("chorus", "B", 8), ("outro", "I", 3))},
         ],
@@ -977,23 +1239,26 @@ def catalog(entries):
         "#pragma once",
         "// Generated by tools/generate_radio_music.py - do not edit.",
         "#include <array>",
+        "#include <span>",
         "namespace outland::game::radio {",
         "",
         "struct SongEntry { const char* title; const char* file; float seconds; };",
         "struct StationEntry {",
         "    const char* key; const char* name; const char* frequency; const char* genre; const char* town;",
         "    const char* ident; float ident_seconds;",
-        "    std::array<SongEntry, 3> songs;",
+        "    std::span<const SongEntry> songs;   // the playlist, in order",
         "};",
         "",
-        "inline constexpr std::array<StationEntry, 3> stations{{",
     ]
     for st, ident_seconds, songs in entries:
-        lines.append(f'    {{"{st["key"]}", "{cpp(st["name"])}", "{st["frequency"]}", "{cpp(st["genre"])}", "{cpp(st["town"])}",')
-        lines.append(f'     "assets/audio/radio/{st["key"]}_ident.ogg", {ident_seconds:.3f}F, {{{{')
+        lines.append(f"inline constexpr std::array<SongEntry, {len(songs)}> {st['key']}_songs{{{{")
         for title, file, seconds in songs:
-            lines.append(f'        {{"{cpp(title)}", "{file}", {seconds:.3f}F}},')
-        lines.append("    }}},")
+            lines.append(f'    {{"{cpp(title)}", "{file}", {seconds:.3f}F}},')
+        lines.append("}};")
+    lines += ["", "inline constexpr std::array<StationEntry, 3> stations{{"]
+    for st, ident_seconds, songs in entries:
+        lines.append(f'    {{"{st["key"]}", "{cpp(st["name"])}", "{st["frequency"]}", "{cpp(st["genre"])}", "{cpp(st["town"])}",')
+        lines.append(f'     "assets/audio/radio/{st["key"]}_ident.ogg", {ident_seconds:.3f}F, {st["key"]}_songs}},')
     lines += ["}};", "", "} // namespace outland::game::radio", ""]
     return "\n".join(lines)
 

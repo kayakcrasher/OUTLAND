@@ -165,6 +165,29 @@ The goal of the police questline is to get rid of the gangs. Once you serve, abo
 - **The end:** when the last crew is gone, **VERDA IS CLEAN** and he makes you Komisaro.
 - This is the law's side of Verda's yin and yang (see [gang wars](gangs.md#yin-and-yang)): every town you clean up makes the island safer. On the other side, a gang Leŭtenanto whose gang runs at least 75% of the island may be ordered to kill the Chief (THE BIG HIT). If that happens, the Policio is left without a head and takes no more recruits.
 
+## Your crew
+
+- **Gang members** recruit up to four of their gang's own Krimuloj. Walk up to one (not the boss,
+  and not the men at the casino's poker table) and USE: "Recruit him (crew 1 of 4)". He wears
+  the gang's colours.
+- **Officers** get a partner at any police station's front desk. On duty with no partner, USE at
+  the desk: "Ask the desk for a partner". USE there again to hand in the badge, as before.
+
+Your crew and partner:
+
+- Follow you on foot. If they fall far behind, they catch up out of sight.
+- Fight beside you. Gang members fight any gang that has turned on you; your partner fights any
+  gang at war with you, as backup does.
+- Ride along when you drive off. Those within about 35 m get in and get out where you do.
+- **Drive you** if you USE at a car's passenger door (the right-hand side) while one of them is
+  near. The nearest takes the wheel and drives you by road to your map waypoint, or else to the
+  job in hand. The others ride too. USE again in the passenger seat to pull over and get out. A
+  goal less than 70 m away is walked.
+
+A fallen recruit goes back to his hideout. Recruit another, or ask the desk for a new partner.
+Leaving the gang or handing in the badge sends the crew home, and so does dying. The crew is not
+saved: recruit again after loading a game.
+
 ## Drive-bys
 
 - Anyone at the wheel with a **pistol or SMG** can shoot out of the driver's window: look to aim, LMB to fire, or the left **FIRE** button on touch screens.

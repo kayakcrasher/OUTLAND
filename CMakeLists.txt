@@ -200,6 +200,7 @@ add_library(
     src/game/mafia/Territory.cpp
     src/game/mafia/GangLogos.cpp
     src/game/career/Career.cpp
+    src/game/career/Crew.cpp
     src/game/career/Backup.cpp
     src/game/career/TrainingCamp.cpp
     src/game/career/CampRenderer.cpp
@@ -721,6 +722,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_bot_driver_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_bot_driver_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_bot_driver_tests COMMAND outland_bot_driver_tests)
+    add_executable(outland_road_audit_tests tests/integration/world/test_road_audit.cpp)
+    target_link_libraries(outland_road_audit_tests PRIVATE outland_render)
+    target_compile_options(outland_road_audit_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_road_audit_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_road_audit_tests COMMAND outland_road_audit_tests)
     add_executable(outland_mafio_tests tests/integration/mafia/test_mafio.cpp)
     target_link_libraries(outland_mafio_tests PRIVATE outland_render)
     target_compile_options(outland_mafio_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

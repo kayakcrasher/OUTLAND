@@ -6,7 +6,7 @@
 //   98.1  Verda Popolko   (Verda City)  pop polka
 //   102.5 Radio Sovaĝejo  (Sovaĝejo)    country and bluegrass
 //   105.9 Espera Roko     (Espera)      rock
-// - three instrumental songs each (tools/generate_radio_music.py), with the station's ident
+// - four or five instrumental songs each (tools/generate_radio_music.py), with the station's ident
 // between them. The stations are live: each plays ident, song, ident, song... round and round,
 // and what is on depends only on the clock, so tuning in drops you into whatever is playing.
 // The player hears the radio at the wheel; O (or the RADIO button) changes the station, and after
@@ -24,7 +24,7 @@ struct OnAir {
     const char* file{""};
 };
 
-// One round of a station: three idents and three songs, in seconds.
+// One round of a station: its songs, each after the ident, in seconds.
 float loop_seconds(int station);
 OnAir on_air(int station, double clock);
 // "Dancu sur la Placo", or the station's name for an ident.

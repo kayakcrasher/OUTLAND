@@ -76,6 +76,7 @@ struct Member {
     bool dead{false};
     double respawn_at{0};
     bool officer{false};       // the crew's boss and the men at the casino table (dressed sharp)
+    bool lent{false};          // in the player's own crew (game::career::Crew): follows the player, not the post
 };
 
 struct War {
@@ -146,6 +147,12 @@ public:
                         vehicles::VehicleSystem& cars, world::VerdaRegion& region, double now);
 
     [[nodiscard]] int gang_of(int bot) const;   // -1 if not a Krimulo
+    // A member of the player's gang may join the player's crew (not a boss, the men at the casino's
+    // poker table, a hit squad, or the dead). lend() hands him over (true) or back (false: he
+    // goes back to his post).
+    [[nodiscard]] bool recruitable(int bot, ai::BattleRoyaleBots& bots) const;
+    void lend(int bot, bool lent, ai::BattleRoyaleBots& bots, Vector3 player_feet);
+    [[nodiscard]] bool lent(int bot) const;
     [[nodiscard]] int crew_of(int bot) const;
     [[nodiscard]] const std::vector<Crew>& crews() const { return crews_; }
     [[nodiscard]] const std::vector<Member>& members() const { return members_; }

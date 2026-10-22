@@ -30,12 +30,15 @@ int main() {
             titles.insert(song.title);
         }
     }
-    check(titles.size() == 9, "nine different songs");
+    check(titles.size() == 14, "fourteen different songs");
+    check(stations[0].songs.size() == 4 && stations[1].songs.size() == 5 && stations[2].songs.size() == 5, "the playlists: 4 pop polka, 5 country, 5 rock");
 
     // On air: ident, song 1, ident, song 2, ident, song 3, round again - by the clock alone.
     const auto& pop = stations[0];
     const float loop = loop_seconds(0);
-    check(std::abs(loop - (3 * pop.ident_seconds + pop.songs[0].seconds + pop.songs[1].seconds + pop.songs[2].seconds)) < .01F, "a round is the songs and idents");
+    float round = 0;
+    for (const auto& song : pop.songs) round += pop.ident_seconds + song.seconds;
+    check(std::abs(loop - round) < .01F, "a round is the songs and idents");
     auto on = on_air(0, 1.0);
     check(on.song == -1 && std::abs(on.offset - 1) < 1e-3F && std::string(on.file) == pop.ident, "the ident first");
     on = on_air(0, pop.ident_seconds + 10);

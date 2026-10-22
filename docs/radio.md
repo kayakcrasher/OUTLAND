@@ -9,13 +9,18 @@ you hear them in any car you drive.
 | **Radio Sovaĝejo** | 102.5 | Sovaĝejo | Country and bluegrass: fiddle, banjo rolls, mandolin, upright bass, steel guitar |
 | **Espera Roko** | 105.9 | Espera | Rock: distorted guitar riffs, bass, drums, guitar solos |
 
-Each station has three instrumental songs, with the station's ident (a few seconds of its sound)
-between them:
+Each station plays four or five instrumental songs, with the station's ident (a few seconds of
+its sound) between them. Every song is an original composition:
 
-- Verda Popolko: *Dancu sur la Placo*, *Somera Akordiono*, *Verda Koro*
+- Verda Popolko: *Dancu sur la Placo*, *Somera Akordiono*, *Verda Koro*, and the hit *Blua Floro*
+  (upbeat pop: four on the floor, synth bass, accordion verses, a synth and glockenspiel chorus).
 - Radio Sovaĝejo: *Ferarbara Kuro* (a bluegrass breakdown), *Polvo sur la Vojo* (a country
-  two-step), *Monta Violono*
-- Espera Roko: *Espera Nokto*, *Fajro sur la Ringo*, *Ŝtorma Bordo*
+  two-step), *Monta Violono*, and two hits: *Drinkejo ĉe la Vojo* (a honky-tonk shuffle with
+  walking bass, twang guitar and steel) and *Malrapida Vespero* (a laid-back ballad on
+  fingerpicked nylon guitar and harmonica).
+- Espera Roko: *Espera Nokto*, *Fajro sur la Ringo*, *Ŝtorma Bordo*, and two hits: *Vitraj Turoj*
+  (eighties synth-rock with a shuffle, chorused guitar and a synth lead) and *Nigra Minejo* (heavy
+  metal: chugging palm-muted riffs, double kick, a guitar solo).
 
 ## In the car
 
@@ -66,7 +71,7 @@ and no recordings:
   on the next chords, an answer, and a cadence home. The same seed gives the same song every
   time.
 - The mix is mastered to a common loudness and written as mono 32 kHz Ogg Vorbis files
-  (`assets/audio/radio/`, about 9 MB). The tool also writes the catalogue the game reads,
+  (`assets/audio/radio/`, about 14 MB). The tool also writes the catalogue the game reads,
   `include/outland/game/radio/RadioCatalog.hpp`.
 
 To regenerate the music (needs numpy, scipy and ffmpeg with libvorbis):

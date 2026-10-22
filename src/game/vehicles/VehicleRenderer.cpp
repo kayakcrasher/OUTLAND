@@ -65,8 +65,10 @@ void VehicleRenderer::draw(const VehicleSystem &system, const world::VerdaRegion
 }
 void VehicleRenderer::camera(Camera3D &camera, const VehicleSystem &system,
                              const world::VerdaRegion &region, float dt, float orbit, float pitch,
-                             const combat::CombatWorld &collision) {
+                             const combat::CombatWorld &collision, std::string_view follow) {
     const auto *v = system.driver();
+    if (!v && !follow.empty())
+        if (const int i = system.find(follow); i >= 0) v = &system.vehicles()[static_cast<std::size_t>(i)];
     const auto *a = v ? system.asset(region, v->id) : nullptr;
     const auto *d = a ? system.definition(*a) : nullptr;
     if (!v || !a || !d) {

@@ -6,7 +6,8 @@ class VehicleRenderer {
   public:
     void draw(const VehicleSystem &system, const world::VerdaRegion &region, Vector3 camera);
     void camera(Camera3D &camera, const VehicleSystem &system, const world::VerdaRegion &region,
-                float dt, float orbit, float pitch, const combat::CombatWorld &collision);
+                float dt, float orbit, float pitch, const combat::CombatWorld &collision,
+                std::string_view follow = {});   // `follow`: a car the player rides in (not drives)
     void reset_camera() { following_ = false; }
 
   private:
