@@ -18,6 +18,9 @@ struct BodyPose {
     // bent back. `hang` 0..1: under a canopy, hands up on the toggles, legs dangling. The whole
     // body tilts forward `body_pitch` radians about the hips and rolls `body_roll` (banking).
     float skydive{0}, hang{0}, body_pitch{0}, body_roll{0};
+    // Arrests: `hands_up` 0..1 raises both hands beside the head (a suspect giving up); `cuffed`
+    // 0..1 puts the hands together behind the back.
+    float hands_up{0}, cuffed{0};
     // Clothes: a texture drawn in place of the body's own (0 keeps its own) - same UV layout.
     unsigned int outfit{0};
 };

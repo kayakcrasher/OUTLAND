@@ -38,6 +38,7 @@
 #include "outland/game/vehicles/VehicleAudio.hpp"
 #include "outland/game/radio/RadioAudio.hpp"
 #include "outland/game/career/Crew.hpp"
+#include "outland/game/career/Callouts.hpp"
 #include "outland/assets/ModelCache.hpp"
 #include "outland/engine/render/FrameTimings.hpp"
 #include "outland/engine/render/RenderScale.hpp"
@@ -646,6 +647,45 @@ void Renderer::run() {
         npcs.spawn_bot(p.bot,p.character,prison_yard.world(p),prison_yard.world_yaw(p));
         npcs.set_bot_weapon(p.bot,p.guard ? static_cast<int>(game::combat::WeaponId::Rifle) : -1);
     };
+    // Where the player sleeps inside: a cell on the block's back row, or (after a shanking) the SHU.
+    const auto prison_cell=[&](bool shu) {
+        using namespace world::layout;
+        return shu ? prison_at(prison_shu_mid-1.6F,22.4F) : prison_at(prison_cell_x0+5*prison_cell_w-1.9F,22.6F);
+    };
+    const auto prison_bunk=[&](bool shu) {
+        using namespace world::layout;
+        return shu ? prison_at(prison_shu_mid-.7F,23.5F) : prison_at(prison_cell_x0+5*prison_cell_w-.6F,23.6F);
+    };
+    // Crime calls for an officer (game::career::Callouts): the places they happen, the call in hand.
+    game::career::Callouts callouts;
+    std::vector<game::career::CallScene> call_scenes;
+    // Busted: the ride in (a fade), the booking photo and prison number, then a word from a guard
+    // (and, for a gang member, the gang's word on a snitch in the yard). A shanking ends in the SHU.
+    struct Booking { int stage{-1}; float t{0}; float sentence{0}; } booking;
+    struct Mugshot { RenderTexture2D target{}; ~Mugshot() { if(target.id) UnloadRenderTexture(target); } } mugshot;
+    std::vector<game::campaign::Line> inside_lines;
+    std::size_t inside_line=0;
+    bool in_shu=false;
+    float sleep_fade=-1;          // sleeping off the sentence: the screen goes dark, then out the gate
+    // An officer's first drop-off: the warden shows them round (a camera tour, a line at a time).
+    struct PrisonTour { int line{-1}; float t{0}; Vector3 eye{}, look{}; } prison_tour;
+    static const std::array<const char*,5> tour_lines{{
+        "So you're the officer bringing me guests. Welcome to Ŝtata Malliberejo - the only prison on Verda.",
+        "Drop-offs come in the front: drive your police car up to the gate and stop. My guards take them out of the back.",
+        "They're booked in at intake - a photo, a number, a bunk. You're paid for each one: 120 kronoj, more as you rise.",
+        "In there: the yard, the day room and twelve cells. Trouble-makers go to the SHU at the far end - solitary.",
+        "Bring them in alive and the Chief hears about it. Now - let's see who you've got."}};
+    // Where the tour's camera stands for each line (the prison's frame, height over the ground) and what it looks at.
+    const auto tour_shot=[&](int line,Vector3& eye,Vector3& look) {
+        const auto at=[&](float x,float z,float up){Vector3 p=prison_at(x,z);p.y+=up;return p;};
+        switch(line) {
+            case 0: eye=at(-75,-85,46);look=at(0,0,0);break;
+            case 1: eye=at(-16,-58,7);look=at(0,-33,2.5F);break;
+            case 2: eye=at(-2,-22,9);look=at(17,-27,1);break;
+            case 3: eye=at(-34,-16,15);look=at(4,14,2.5F);break;
+            default: eye=at(0,-70,12);look=at(0,-40,1);break;
+        }
+    };
     std::string career_path,career_saved;
     float career_save_wait=0;
     bool career_dead=false;
@@ -889,9 +929,15 @@ void Renderer::run() {
     sign_renderer.load(GetApplicationDirectory());
     // La Verda Mano's clothes (tools/generate_gang_outfits.py), worn on Character_05's body: the
     // foot soldiers' white shirt with the green hand, the officers' charcoal suit and green tie.
+    // Every other gang in its own colours (gang_<n>_soldato/kapo): easy to pick out on the street.
     struct Outfits {
         Texture2D soldato{}, kapo{};
-        ~Outfits() { if(soldato.id) UnloadTexture(soldato); if(kapo.id) UnloadTexture(kapo); }
+        std::array<Texture2D,5> gang_soldato{},gang_kapo{};
+        ~Outfits() {
+            if(soldato.id) UnloadTexture(soldato);
+            if(kapo.id) UnloadTexture(kapo);
+            for(auto* set:{&gang_soldato,&gang_kapo}) for(auto& t:*set) if(t.id) UnloadTexture(t);
+        }
     } outfits;
     constexpr const char* outfit_body="character_05";
     {
@@ -903,7 +949,17 @@ void Renderer::run() {
         };
         outfits.soldato=load_outfit("assets/verda/characters/outfits/verda_mano_soldato.png");
         outfits.kapo=load_outfit("assets/verda/characters/outfits/verda_mano_kapo.png");
+        for(int g=1;g<5;++g) {
+            outfits.gang_soldato[static_cast<std::size_t>(g)]=load_outfit(TextFormat("assets/verda/characters/outfits/gang_%d_soldato.png",g));
+            outfits.gang_kapo[static_cast<std::size_t>(g)]=load_outfit(TextFormat("assets/verda/characters/outfits/gang_%d_kapo.png",g));
+        }
     }
+    // A gang member's clothes (by gang and rank).
+    const auto gang_outfit=[&](int gang,bool officer)->unsigned int {
+        if(gang==0) return officer ? outfits.kapo.id : outfits.soldato.id;
+        if(gang<1 || gang>4) return 0U;
+        return officer ? outfits.gang_kapo[static_cast<std::size_t>(gang)].id : outfits.gang_soldato[static_cast<std::size_t>(gang)].id;
+    };
     const auto outfit_texture=[&](const std::string& outfit)->unsigned int {
         if(outfit=="verda_mano_soldato") return outfits.soldato.id;
         if(outfit=="verda_mano_kapo") return outfits.kapo.id;
@@ -1701,6 +1757,7 @@ void Renderer::run() {
                 police_camp=game::career::TrainingCamp{};chief={};lights_car.clear();
                 territory.clear();territory_path.clear();smuggling_docks.clear();
                 mafio.clear(br_bots,bot_drivers,vehicles);
+                callouts.reset();booking={};inside_lines.clear();inside_line=0;in_shu=false;sleep_fade=-1;prison_tour={};
                 services.clear(vehicles,npcs);
                 bot_drivers.clear(br_bots,vehicles);bots_looted.clear();
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
@@ -1762,15 +1819,36 @@ void Renderer::run() {
                     for(const auto& crew:mafio.crews()) TraceLog(LOG_INFO,"OUTLAND crew %s at %s: door %.1f %.1f yaw %.0f",
                         std::string(game::mafia::gangs[static_cast<std::size_t>(crew.gang)].name).c_str(),crew.town.c_str(),crew.door.x,crew.door.z,crew.yaw);
 #endif
+                    // Where crimes happen for the Policio's calls: shops and pubs (robberies) and houses (drive-bys).
+                    call_scenes.clear();callouts.reset();
+                    {
+                        int homes=0;
+                        for(const auto& place:island_life.places()) {
+                            const bool shop=place.kind==game::life::PlaceKind::Shop || place.kind==game::life::PlaceKind::Pub;
+                            const bool house=place.kind==game::life::PlaceKind::Home && !place.mixed_home && place.indoor;
+                            if((!shop && !house) || (house && homes++%3!=0)) continue;
+                            if(place.settlement<0 || static_cast<std::size_t>(place.settlement)>=verda_region.settlements().size()) continue;
+                            const auto& town=verda_region.settlements()[static_cast<std::size_t>(place.settlement)];
+                            if(town.id.starts_with("ranch_")) continue;
+                            Vector3 out=Vector3Subtract(place.door,place.interior);out.y=0;
+                            if(Vector3Length(out)<.1F) continue;
+                            game::career::CallScene scene;
+                            scene.door=place.door;scene.out=Vector3Normalize(out);scene.shop=shop;
+                            scene.town=town.name.empty() ? town.id : town.name;
+                            scene.place=place.kind==game::life::PlaceKind::Pub ? "the pub" : "the shop";
+                            for(const auto& s:economy.shops()) if(Vector3Distance(s.door,place.door)<6) scene.place="the "+s.name;
+                            call_scenes.push_back(std::move(scene));
+                        }
+                    }
                     if(const auto* casino=mafio.casino();casino &&
                        walking_man.start(island_life.places(),verda_region,casino->door,casino->table,br_bots,vehicles,session_seed,island_life.clock())) {
                         // His own face, not a gang member's.
                         const Vector3 at=walking_man.position(br_bots);
                         npcs.spawn_bot(walking_man.bot(),game::life::WalkingMan::character,at,0);
                     }
-                    // La Verda Mano wear their own clothes (the body the outfits fit).
+                    // Every gang wears its own colours (on the body the outfits fit).
                     if(character_registry.find(outfit_body))
-                        for(const auto& crew:mafio.crews()) if(crew.gang==0)
+                        for(const auto& crew:mafio.crews())
                             for(const int id:crew.members) if(const auto* bot=br_bots.find(id))
                                 npcs.spawn_bot(id,outfit_body,bot->position(),bot->yaw());
                     // The Vakeroj on their ranches (each in their own clothes and hat), then the big rigs.
@@ -2590,6 +2668,7 @@ void Renderer::run() {
             for(const auto& m:mafio.members()) {
                 const auto* bot=br_bots.find(m.bot);
                 if(!bot || !bot->alive() || br_bots.mounted(m.bot) || std::abs(bot->position().y-feet.y)>1.6F) continue;
+                if(m.held || callouts.escorting(m.bot) || mafio.heist_of(m.bot)) continue;   // the call's suspects give up first
                 const float d=std::hypot(bot->position().x-feet.x,bot->position().z-feet.z);
                 if(d<nearest) {nearest=d;best=m.bot;}
             }
@@ -2597,7 +2676,13 @@ void Renderer::run() {
         };
         if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
-            if(const int bot=arrestable(feet);bot>=0) {
+            if(const int hands_up=career.on_duty() && !vehicles.driver() ? callouts.to_cuff(feet,mafio,br_bots) : -1;hands_up>=0) {
+                // A suspect with his hands up: cuffed, he walks with the officer to the car.
+                callouts.cuff(hands_up,mafio.gang_of(hands_up),mafio,br_bots);
+                interaction_message="CUFFED - he walks with you. Get in your police car with him close by";
+                interaction_remaining=4;gun_audio.kill_confirm();
+                input_system.player().interact=false;
+            } else if(const int bot=arrestable(feet);bot>=0) {
                 const int gang=mafio.gang_of(bot),crew=mafio.crew_of(bot);
                 const std::string name(game::mafia::gangs[static_cast<std::size_t>(std::max(0,gang))].name);
                 // He comes quietly when he's hurt, or when none of his crew is there to see it.
@@ -2609,16 +2694,19 @@ void Renderer::run() {
                 }
                 if(watched && him->health()>60) {
                     interaction_message="He won't come quietly - his crew is watching. Get him alone, or wound him first";
-                } else if(career.arrested(gang)) {
+                } else if(career.custody()+static_cast<int>(callouts.escorts().size())>=game::career::Career::custody_max) {
+                    interaction_message="The car is full - take them to the state prison first";
+                } else {
+                    // Cuffed: he walks with the officer, and gets in the back of the police car.
                     if(watched) mafio.provoke(bot,match_time);   // cuffed in front of his crew: they take it badly
-                    br_bots.retire(bot);br_bots.set_hidden(bot,true);
+                    callouts.cuff(bot,gang,mafio,br_bots);
                     territory.killed(gang,feet,player_gang());
                     if(crew>=0 && mafio.crews()[static_cast<std::size_t>(crew)].casino && career.serving() &&
                        std::any_of(mafio.crews().begin(),mafio.crews().end(),[](const game::mafia::Crew& c){return !c.disbanded && !c.casino;}))
                         career.warned_off_capital(match_time);
-                    interaction_message="ARRESTED: one of "+name+" - cuffed. "+std::to_string(career.custody())+" in custody: take them to the state prison";
+                    interaction_message="CUFFED: one of "+name+" - walk him to your police car";
                     gun_audio.kill_confirm();
-                } else interaction_message=career.message();
+                }
                 interaction_remaining=3;
                 input_system.player().interact=false;
             }
@@ -2857,16 +2945,19 @@ void Renderer::run() {
                 vehicles.nearest(verda_region,feet)>=0 || loot_session.world().nearest(feet,2.8F)>=0 ||
                 (game::rules_for(game_mode).civilian_life && penthouse.inside(feet)) || home_here;
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
-                here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 ||
+                here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 || (career.on_duty() && callouts.to_cuff(feet,mafio,br_bots)>=0) ||
                     (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) ||
                     (!campaign_path.empty() && (story.talking() || (uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F))) ||
-                    boss_near(feet)>=0 || station_desk(feet)!=nullptr || recruit_near(feet)>=0;
+                    boss_near(feet)>=0 || station_desk(feet)!=nullptr || recruit_near(feet)>=0 ||
+                    booking.stage==2 || inside_line<inside_lines.size() ||
+                    (prison_until>=0 && (Vector3Distance(feet,prison_bunk(in_shu))<2.2F || prison_yard.snitch()>=0));
                 // Who you'd be talking to.
                 if(store_prompt.empty() && player_health.alive()) {
                     if(!campaign_path.empty() && story.talking() && story.stage()!=game::campaign::Stage::Free) store_prompt="E - Continue";
                     else if(!campaign_path.empty() && story.stage()==game::campaign::Stage::ToTruck && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.5F)
                         store_prompt="E - Ride home with Uncle Ron";
                     else if(!campaign_path.empty() && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F) store_prompt="E - Talk to Uncle Ron";
+                    else if(career.on_duty() && !vehicles.driver() && callouts.to_cuff(feet,mafio,br_bots)>=0) store_prompt="E - Cuff him (hands up)";
                     else if(arrestable(feet)>=0) store_prompt="E - Arrest him";
                     else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F)
                         store_prompt=!trucking.hired() ? "E - Ask the boss of Verda Transporto for work" :
@@ -3305,7 +3396,8 @@ void Renderer::run() {
                 }
             }
             was_in_home=home_here;
-            if(controls.interact && !home_used && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0){
+            if(controls.interact && !home_used && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0 &&
+               prison_until<0 && booking.stage<0){
                 interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;
                 if(interaction_message.starts_with("Picked up")) gun_audio.pickup();
             }
@@ -4228,6 +4320,7 @@ void Renderer::run() {
             frame.dt=vehicle_paused ? 0.0F : dt;frame.now=match_time;
             frame.player={player.position.x,player.position.y-1.0F,player.position.z};
             frame.player_alive=player_health.alive();frame.player_fired=weapons.events().shots>0;
+            frame.player_armed=weapons.available();frame.player_driving=vehicles.driver()!=nullptr;
             frame.daylight=last_daylight;
             frame.line_of_sight=[&](Vector3 a,Vector3 b){return !combat_world.trace_segment(a,b,false,false,true).hit();};
             // The Krimuloj paid the police off: shooting on their turf, or in a fight with a gang, is
@@ -4261,18 +4354,55 @@ void Renderer::run() {
             bool busted=justice.arrested();
 #ifdef OUTLAND_DEV_TOOLS
             // OUTLAND_DEV_JAIL=1: arrested a few seconds in (to look at the prison).
-            if(static bool jailed_once=false;!jailed_once && match_time>4 && std::getenv("OUTLAND_DEV_JAIL")) {jailed_once=true;busted=true;}
+            if(static bool jailed_once=false;!jailed_once && match_time>4 && std::getenv("OUTLAND_DEV_JAIL") && *std::getenv("OUTLAND_DEV_JAIL")) {jailed_once=true;busted=true;}
 #endif
-            if(busted && game_mode==game::GameMode::Explore && !career_path.empty() && prison_until<0 && player_health.alive()) {
-                const float sentence=career.jailed();
-                prison_until=match_time+sentence;
+            if(busted && game_mode==game::GameMode::Explore && !career_path.empty() && prison_until<0 && booking.stage<0 && player_health.alive()) {
+                // Busted: cuffed, into the back of a police car, and off to the state prison (a fade),
+                // then the booking photo. The sentence starts once the photo is taken.
+                booking={0,0,career.jailed()};
                 if(backup.active()) backup.dismiss(br_bots,match_time);
                 Vector3 exit{};
                 if(vehicles.driver()) vehicles.exit(verda_region,exit,true);
-                const Vector3 cell=prison_at(-15,-1);
-                player.position={cell.x,cell.y+1,cell.z};player.vertical_velocity=0;
-                player.yaw=(world::layout::prison_yaw+180)*DEG2RAD;
-                interaction_message=career.message();interaction_remaining=6;
+                weapons.holster();
+                in_shu=false;inside_lines.clear();inside_line=0;
+                interaction_message="BUSTED - cuffed and in the back of a Policio car";interaction_remaining=3;
+            }
+            if(booking.stage>=0 && booking.stage<4) {
+                booking.t+=dt;
+                if(booking.stage==0 && booking.t>=1.4F) {
+                    // Black: the ride to Ŝtata Malliberejo. Into the cell.
+                    const Vector3 cell=prison_cell(false);
+                    player.position={cell.x,cell.y+1,cell.z};player.vertical_velocity=0;
+                    player.yaw=(world::layout::prison_yaw+90)*DEG2RAD;
+                    booking.stage=1;booking.t=0;
+                } else if(booking.stage==1 && booking.t>=2.8F) {booking.stage=2;booking.t=0;}
+                else if(booking.stage==2 && booking.t>=1.2F && (controls.interact || IsMouseButtonPressed(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER))) {
+                    // The photo is taken: the sentence starts, and a guard has a word for the new inmate.
+                    input_system.player().interact=false;
+                    prison_until=match_time+booking.sentence;
+                    booking.stage=-1;
+                    inside_lines.clear();inside_line=0;
+                    using game::campaign::Line;
+                    if(!career.state().inside_told) {
+                        inside_lines.push_back(Line{"Guard","Welcome to Ŝtata Malliberejo. That's your cell. Your bunk's on the right."});
+                        inside_lines.push_back(Line{"Guard","Two ways to do your time. Lie down on the bunk (USE) and sleep it off - you wake up at the gate."});
+                        inside_lines.push_back(Line{"Guard","Or walk the block and the yard till your number's up. The gate's watched. Behave."});
+                        inside_lines.push_back(Line{"Guard","Start trouble and you go to the SHU - solitary. Nothing in there but a bunk and the walls."});
+                        career.inside_told();
+                    }
+                    if(career.state().side==game::career::Side::Gang) {
+                        if(prison_yard.mark_snitch()>=0) {
+                            const std::string gang(game::mafia::gangs[static_cast<std::size_t>(std::max(0,career.state().gang))].name);
+                            inside_lines.push_back(Line{"A cellmate","Word from "+gang+": there's a snitch in the yard - he talked to the Policio. He's marked."});
+                            inside_lines.push_back(Line{"A cellmate","You've got a shank in your sock. Put in work for the gang (USE on him) - or keep your head down. Your call."});
+                        }
+                    }
+                }
+                if(booking.stage>=0) {player.vertical_velocity=0;input_system.cancel_controls();}
+            }
+            // The guard's word, and the gang's: USE for the next line.
+            if(inside_line<inside_lines.size() && booking.stage<0 && controls.interact) {
+                ++inside_line;input_system.player().interact=false;
             }
             if(prison_until>=0) {
                 const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
@@ -4300,12 +4430,61 @@ void Renderer::run() {
                             interaction_message="Nobody at the gate this time. Uncle Ron said he wouldn't come again";interaction_remaining=5;
                         }
                     }
-                } else if(!inside_prison(feet) || vehicles.driver()) {
+                } else if(booking.stage!=4 && (!inside_prison(feet) || vehicles.driver() || (in_shu && Vector3Distance(feet,prison_cell(true))>3.4F))) {
                     Vector3 exit{};
                     if(vehicles.driver()) vehicles.exit(verda_region,exit,true);
-                    const Vector3 cell=prison_at(-15,-1);
+                    const Vector3 cell=prison_cell(in_shu);
                     player.position={cell.x,cell.y+1,cell.z};player.vertical_velocity=0;
                     interaction_message="Back inside, inmate - you go when your time is done";interaction_remaining=3;
+                } else if(inside_line>=inside_lines.size() && sleep_fade<0 && controls.interact) {
+                    // The bunk: sleep off the sentence. The snitch: a shank, and the SHU.
+                    const int snitch=prison_yard.snitch();
+                    const auto* mark=snitch>=0 ? prison_yard.find(snitch) : nullptr;
+                    if(Vector3Distance(feet,prison_bunk(in_shu))<2.2F) {
+                        sleep_fade=0;input_system.player().interact=false;
+                    } else if(mark && career.state().side==game::career::Side::Gang && !in_shu &&
+                              Vector3Distance(feet,prison_yard.world(*mark))<2.6F) {
+                        input_system.player().interact=false;
+                        npcs.set_bot(snitch,prison_yard.world(*mark),prison_yard.world_yaw(*mark),0,characters::NpcState::Dead);
+                        prison_yard.remove(snitch);
+                        gun_audio.kill_confirm();
+                        career.shanked_snitch();
+                        interaction_message=career.message();interaction_remaining=6;
+                        // The guards drag the player off to the SHU (a fade), a little more time on top.
+                        in_shu=true;prison_until+=30;
+                        booking={0,0,0};booking.stage=4;
+                    }
+                }
+#ifdef OUTLAND_DEV_TOOLS
+                // OUTLAND_DEV_SHANK=1: once the talk is done, beside the snitch (to look at the shanking and the SHU).
+                if(const char* dev=std::getenv("OUTLAND_DEV_SHANK");dev && *dev && inside_line>=inside_lines.size() && !in_shu)
+                    if(static bool moved=false;!moved) if(const auto* mark=prison_yard.snitch()>=0 ? prison_yard.find(prison_yard.snitch()) : nullptr) {
+                        const Vector3 w=prison_yard.world(*mark);
+                        player.position={w.x+1.2F,w.y+1.2F,w.z};player.vertical_velocity=0;player.yaw=-PI/2;moved=true;
+                    }
+#endif
+                if(sleep_fade>=0) {
+                    sleep_fade+=dt;
+                    input_system.cancel_controls();
+                    if(sleep_fade>=2.2F) {prison_until=match_time;sleep_fade=-1;}   // woken at the gate
+                }
+                weapons.holster();   // no guns inside
+                // The snitch stops to see what the new man wants.
+                if(const int snitch=prison_yard.snitch();snitch>=0 && career.state().side==game::career::Side::Gang)
+                    if(const auto* mark=prison_yard.find(snitch);mark && Vector3Distance(feet,prison_yard.world(*mark))<6) prison_yard.pause(snitch,2);
+            }
+            if(prison_until<0) {in_shu=false;sleep_fade=-1;}
+            // Dragged to the SHU: a short fade, then the solitary cell.
+            if(booking.stage==4) {
+                booking.t+=dt;
+                input_system.cancel_controls();
+                if(booking.t>=1.3F) {
+                    const Vector3 cell=prison_cell(true);
+                    player.position={cell.x,cell.y+1,cell.z};player.vertical_velocity=0;
+                    player.yaw=world::layout::prison_yaw*DEG2RAD;
+                    booking.stage=-1;
+                    inside_lines.assign({game::campaign::Line{"Guard","The SHU. Nobody comes, nobody goes. Lie down on that bunk (USE) and sleep out your time."}});
+                    inside_line=0;
                 }
             }
             if(services.active() && !vehicle_paused) {
@@ -4459,6 +4638,11 @@ void Renderer::run() {
                 frame.player_weapon=weapons.selected();
                 frame.player_in_vehicle=driving;
                 frame.aim_origin=gun_muzzle;frame.aim_direction=gun_direction;
+                if(const auto* car=vehicles.driver()) {
+                    const auto* a=vehicles.asset(verda_region,car->id);
+                    frame.player_police_car=a && (a->vehicle.definition=="police" || a->vehicle.definition=="interceptor" || a->vehicle.definition=="highway_patrol");
+                    frame.player_lights=frame.player_police_car && lights_car==car->id;
+                }
                 if(!player_health.alive()) mafio.forgive();
                 const double bots_t0=GetTime();
                 if(ranches.active()) {
@@ -4668,6 +4852,91 @@ void Renderer::run() {
                     if(!player_health.alive() && !career_dead) {career.died();career_dead=true;}
                     if(player_health.alive()) career_dead=false;
                     mafio.set_calm(territory.balance(player_gang()).law);   // a safer Verda has fewer gang wars
+                    // Crime calls: now and then the dispatcher puts out a robbery or a drive-by instead
+                    // of the next job; the call follows its suspects; the cuffed walk with the officer.
+                    {
+                        game::career::Callouts::Frame call;
+                        call.dt=dt;call.now=match_time;call.officer=feet;call.yaw=player.yaw;call.alive=player_health.alive();
+                        if(work.driving_police) if(const auto* car=vehicles.driver()) {call.police_car=car->id;call.car=car->position;}
+                        if(career.due_call(match_time) && (career.state().callouts==0 || GetRandomValue(0,99)<65))
+                            callouts.dispatch(call,call_scenes,career,mafio,br_bots,vehicles,verda_region,static_cast<std::uint64_t>(GetRandomValue(1,1<<30)));
+                        std::string said;
+                        callouts.update(call,career,mafio,br_bots,vehicles,verda_region,said);
+                        if(!said.empty()) {interaction_message=said;interaction_remaining=4;}
+#ifdef OUTLAND_DEV_TOOLS
+                        // OUTLAND_DEV_HEIST=1: skip the chase - the officer and the car beside the scene,
+                        // the getaway car gone (the suspects stop where they are), then up close to one who gave up.
+                        if(const char* dev=std::getenv("OUTLAND_DEV_HEIST");dev && *dev && callouts.active()) {
+                            static int step=0;static double since=0;static std::string mine;
+                            for(const auto& h:mafio.heists()) {
+                                if(h.car!=callouts.car()) continue;
+                                if(step==0 && h.stage==game::mafia::HeistStage::Waiting && match_time>10) {
+                                    const int v=vehicles.find(h.car);
+                                    const Vector3 kerb=v>=0 ? vehicles.vehicles()[static_cast<std::size_t>(v)].position : h.scene;
+                                    const float kerb_yaw=v>=0 ? vehicles.vehicles()[static_cast<std::size_t>(v)].yaw : 0;
+                                    Vector3 out=Vector3Subtract(kerb,h.scene);
+                                    out.y=0;out=Vector3Length(out)>.1F ? Vector3Normalize(out) : Vector3{0,0,1};
+                                    if(const auto* car=vehicles.driver()) mine=car->id;
+                                    Vector3 exit{};
+                                    if(!mine.empty()) vehicles.exit(verda_region,exit,true);
+                                    vehicles.remove(verda_region,h.car);
+                                    const Vector3 stand=Vector3Add(h.scene,Vector3Scale(out,3));
+                                    if(!mine.empty()) vehicles.place(verda_region,mine,kerb,kerb_yaw);
+                                    player.position={stand.x,stand.y+1.2F,stand.z};player.vertical_velocity=0;
+                                    player.yaw=std::atan2(-out.x,-out.z);
+                                    step=1;since=match_time;vehicle_dirty=true;
+                                    TraceLog(LOG_INFO,"OUTLAND dev heist: at the scene %.1f %.1f",stand.x,stand.z);
+                                } else if(step==1 && !h.surrendered.empty() && match_time-since>3) {
+                                    if(const auto* bot=br_bots.find(h.surrendered.front())) {
+                                        const Vector3 b=bot->position();
+                                        Vector3 to=Vector3Subtract(Vector3{player.position.x,b.y,player.position.z},b);to.y=0;
+                                        to=Vector3Length(to)>.1F ? Vector3Normalize(to) : Vector3{0,0,1};
+                                        player.position={b.x+to.x*2,b.y+1.2F,b.z+to.z*2};
+                                        player.yaw=std::atan2(-to.x,-to.z);
+                                        TraceLog(LOG_INFO,"OUTLAND dev heist: beside a suspect with his hands up");
+                                    }
+                                    step=2;
+                                }
+                                if(step>=1) TraceLog(LOG_DEBUG,"heist stage %d surrendered %d running %d",static_cast<int>(h.stage),static_cast<int>(h.surrendered.size()),static_cast<int>(h.running.size()));
+                            }
+                            // ...then back in the car with the cuffed (they climb in), and off to the prison.
+                            if(step==2 && !callouts.escorts().empty()) {step=3;since=match_time;}
+                            if(step==3 && match_time-since>5 && !vehicles.driver()) {
+                                if(const int v=vehicles.find(mine);v>=0) {
+                                    const Vector3 at=vehicles.vehicles()[static_cast<std::size_t>(v)].position;
+                                    vehicles.enter(verda_region,v,at);vehicle_dirty=true;
+                                    TraceLog(LOG_INFO,"OUTLAND dev heist: in the car, %d in custody",career.custody());
+                                }
+                                step=4;since=match_time;
+                            }
+                        }
+                        if(const char* dev=std::getenv("OUTLAND_DEV_HEIST");dev && *dev) {
+                            static int leg=0;static double since=0;
+                            if(leg==0 && career.custody()>0 && vehicles.driver()) {leg=1;since=match_time;}
+                            // (A car can't be moved with someone at the wheel: out, move it, back in.)
+                            const auto move_car=[&](Vector3 to) {
+                                const std::string id=vehicles.driver()->id;
+                                Vector3 exit{};
+                                vehicles.exit(verda_region,exit,true);
+                                vehicles.place(verda_region,id,to,world::layout::prison_yaw);
+                                if(const int v=vehicles.find(id);v>=0) vehicles.enter(verda_region,v,vehicles.vehicles()[static_cast<std::size_t>(v)].position);
+                                vehicle_dirty=true;
+                            };
+                            if(leg==1 && match_time-since>3) {
+                                move_car(prison_at(0,-150));leg=2;
+                                TraceLog(LOG_INFO,"OUTLAND dev heist: on the prison road");
+                            }
+                            if(leg==2 && prison_tour.line<0 && career.state().prison_toured && vehicles.driver()) {
+                                move_car(prison_at(0,-44));leg=3;
+                                TraceLog(LOG_INFO,"OUTLAND dev heist: at the gate");
+                            }
+                        }
+#endif
+                        if(callouts.take_partner_wanted() && player_crew.partner()<0) {
+                            const Vector3 at=Vector3Add(feet,{std::cos(player.yaw)*1.6F,0,-std::sin(player.yaw)*1.6F});   // at the officer's side
+                            if(player_crew.assign_partner(at,player.yaw*RAD2DEG+180,br_bots,match_time)) vehicle_dirty=true;
+                        }
+                    }
                     career.update(work);
 #ifdef OUTLAND_DEV_TOOLS
                     if(static game::career::JobKind logged=game::career::JobKind::None;career.job().kind!=logged) {
@@ -4731,8 +5000,23 @@ void Renderer::run() {
                         territory_save_wait=2;
                         if(const auto text=territory.serialise();text!=territory_saved && SaveFileText(territory_path.c_str(),const_cast<char*>(text.c_str()))) territory_saved=text;
                     }
+                    // An officer's first drop-off: the warden shows them round before the guards take the prisoners.
+                    if(prison_tour.line<0 && !career.state().prison_toured && career.custody()>0 && work.driving_police &&
+                       std::hypot(feet.x-prison_intake.x,feet.z-prison_intake.z)<200) {
+                        prison_tour.line=0;prison_tour.t=0;
+                        tour_shot(0,prison_tour.eye,prison_tour.look);
+                        prison_tour.eye=camera.position;prison_tour.look=camera.target;   // swing over from where the player looks
+                    }
+                    if(prison_tour.line>=0) {
+                        prison_tour.t+=dt;
+                        input_system.cancel_controls();
+                        if(prison_tour.t>7.5F || (prison_tour.t>1 && (IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ENTER) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)))) {
+                            prison_tour.t=0;
+                            if(++prison_tour.line>=static_cast<int>(tour_lines.size())) {prison_tour.line=-1;career.prison_toured();}
+                        }
+                    }
                     // Prisoners in the back: booked in at the prison's gate from a police car.
-                    if(const int held=career.custody();held>0 && work.driving_police && std::hypot(feet.x-prison_intake.x,feet.z-prison_intake.z)<25 && career.deliver()>0) {
+                    if(const int held=career.custody();held>0 && prison_tour.line<0 && work.driving_police && std::hypot(feet.x-prison_intake.x,feet.z-prison_intake.z)<25 && career.deliver()>0) {
                         interaction_message=career.message();interaction_remaining=4;gun_audio.kill_confirm();
                         // Into the yard with the rest.
                         for(int k=0;k<held;++k)
@@ -4757,6 +5041,12 @@ void Renderer::run() {
                     }
                 }
                 br_bots.sync_bodies(npcs,&character_registry);
+                // The cuffed walk behind the officer, unarmed; a suspect with his hands up has dropped his gun.
+                for(const auto& e:callouts.escorts()) if(const auto* bot=br_bots.find(e.bot)) {
+                    npcs.set_bot(e.bot,bot->position(),bot->yaw(),bot->health(),e.walking ? characters::NpcState::Wander : characters::NpcState::Idle);
+                    npcs.set_bot_weapon(e.bot,-1);
+                }
+                for(const auto& h:mafio.heists()) for(const int id:h.surrendered) if(!callouts.escorting(id)) npcs.set_bot_weapon(id,-1);
                 walking_man.dress(npcs);
                 world_draw_stats().bots=world_draw_stats().bots*.9+(GetTime()-bots_t0)*1000*.1;
                 hurt_player(br_bots.events().player_damage);
@@ -4976,6 +5266,14 @@ void Renderer::run() {
         if(!driving) {
             const Vector3 shake=combat_feedback.shake();
             camera.position=Vector3Add(camera.position,shake);camera.target=Vector3Add(camera.target,shake);
+        }
+        // The warden's tour: the camera glides from one view of the prison to the next.
+        if(prison_tour.line>=0) {
+            Vector3 eye{},look{};
+            tour_shot(prison_tour.line,eye,look);
+            const float k=1-std::exp(-dt*1.6F);
+            prison_tour.eye=Vector3Lerp(prison_tour.eye,eye,k);prison_tour.look=Vector3Lerp(prison_tour.look,look,k);
+            camera.position=prison_tour.eye;camera.target=prison_tour.look;
         }
         BeginTextureMode(scene_target);
 
@@ -5285,9 +5583,14 @@ void Renderer::run() {
         }
         character_renderer.draw_npcs(npcs, camera.position, &view,
             [&](const characters::NpcInstance& actor,characters::BodyPose& body) {
-                // The Green Hand in their colours: officers sharp, soldiers in the white shirt.
-                if(actor.bot>=0 && actor.character_id==outfit_body && mafio.active() && mafio.gang_of(actor.bot)==0)
-                    body.outfit=mafio.officer(actor.bot) ? outfits.kapo.id : outfits.soldato.id;
+                // Every gang in its colours: officers sharp, soldiers in the gang's shirt (the Green Hand's white).
+                if(actor.bot>=0 && actor.character_id==outfit_body && mafio.active())
+                    if(const int gang=mafio.gang_of(actor.bot);gang>=0) body.outfit=gang_outfit(gang,mafio.officer(actor.bot));
+                // Arrests: hands up, or cuffed behind the back.
+                if(actor.bot>=0 && mafio.active()) {
+                    if(callouts.escorting(actor.bot)) {body.cuffed=1;return;}
+                    if(mafio.surrendered(actor.bot)) {body.hands_up=1;return;}
+                }
                 const int weapon=actor.weapon>=0 ? actor.weapon : actor.armed ? 0 : -1;
                 if(weapon<0 || weapon>=static_cast<int>(game::combat::weapon_count)) return;
                 const auto id=static_cast<game::combat::WeaponId>(weapon);
@@ -5986,17 +6289,70 @@ void Renderer::run() {
             // Uncle Dario at the Green Hand's bar: his name over his head.
             if(!campaign_path.empty()) if(const auto* bar=mafio.casino();bar && bar->gang==0 && !bar->members.empty())
                 if(const auto* boss=br_bots.find(bar->members.front());boss && boss->alive() && !br_bots.hidden(bar->members.front()) &&
-                   Vector3Distance(boss->position(),camera.position)<14) {
+                   Vector3Distance(boss->position(),camera.position)<34) {
                     const Vector3 over{boss->position().x,boss->position().y+2.3F,boss->position().z};
                     if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))>0) {
                         const Vector2 at=GetWorldToScreen(over,camera);
                         const std::string title=std::string(dario_name)+"  ·  La Verda Mano";
-                        const char* sub=career.in_gang(0) ? "Head of the Green Hand - your uncle" : "Head of the Green Hand - Ron's brother";
+                        const bool close=std::hypot(boss->position().x-player.position.x,boss->position().z-player.position.z)<3.2F;
+                        const char* sub=career.in_gang(0) ? (close ? "Your uncle - USE to talk" : "Head of the Green Hand - your uncle") :
+                                        close && !career.on_duty() ? "USE to talk - he'll want you in" : "Head of the Green Hand - Ron's brother";
                         const float tw=MeasureTextEx(font,title.c_str(),16,1).x,sw=MeasureTextEx(font,sub,13,1).x,w=std::max(tw,sw);
                         DrawRectangle(static_cast<int>(at.x-w/2-6),static_cast<int>(at.y-18),static_cast<int>(w+12),36,Fade(BLACK,.55F));
                         DrawTextEx(font,title.c_str(),{at.x-tw/2,at.y-16},16,1,game::mafia::gangs[0].color);
                         DrawTextEx(font,sub,{at.x-sw/2,at.y+2},13,1,Color{220,226,206,255});
                     }
+                }
+            // The call: the getaway car's plate, the suspects with their hands up, the cuffed; inside, the snitch.
+            {
+                const auto tag=[&](Vector3 over,const std::string& title,const std::string& sub,Color tint,float range) {
+                    if(Vector3Distance(over,camera.position)>range) return;
+                    if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))<=0) return;
+                    const Vector2 at=GetWorldToScreen(over,camera);
+                    const float tw=MeasureTextEx(font,title.c_str(),15,1).x,sw=sub.empty() ? 0 : MeasureTextEx(font,sub.c_str(),12,1).x,w=std::max(tw,sw);
+                    DrawRectangle(static_cast<int>(at.x-w/2-6),static_cast<int>(at.y-18),static_cast<int>(w+12),sub.empty() ? 22 : 34,Fade(BLACK,.6F));
+                    DrawTextEx(font,title.c_str(),{at.x-tw/2,at.y-16},15,1,tint);
+                    if(!sub.empty()) DrawTextEx(font,sub.c_str(),{at.x-sw/2,at.y+1},12,1,Color{226,226,220,255});
+                };
+                if(callouts.active())
+                    if(const int v=vehicles.find(callouts.car());v>=0) {
+                        const auto& car=vehicles.vehicles()[static_cast<std::size_t>(v)];
+                        tag({car.position.x,car.position.y+2.4F,car.position.z},"SUSPECT VEHICLE  ·  "+callouts.plate(),callouts.look(),Color{255,90,80,255},140);
+                    }
+                for(const auto& h:mafio.heists())
+                    for(const int id:h.squad) {
+                        const auto* bot=br_bots.find(id);
+                        if(!bot || !bot->alive() || br_bots.mounted(id) || callouts.escorting(id)) continue;
+                        const Vector3 over{bot->position().x,bot->position().y+2.25F,bot->position().z};
+                        if(std::find(h.surrendered.begin(),h.surrendered.end(),id)!=h.surrendered.end())
+                            tag(over,"HANDS UP",Vector3Distance(bot->position(),{player.position.x,player.position.y-1,player.position.z})<game::career::Callouts::cuff_reach ? "USE to cuff him" : "walk up to cuff him",Color{255,214,120,255},40);
+                        else if(career.on_duty()) tag(over,std::find(h.running.begin(),h.running.end(),id)!=h.running.end() ? "SUSPECT - RUNNING" : "SUSPECT","",Color{255,90,80,255},80);
+                    }
+                for(const auto& e:callouts.escorts())
+                    if(const auto* bot=br_bots.find(e.bot)) tag({bot->position().x,bot->position().y+2.25F,bot->position().z},"CUFFED","",Color{150,190,255,255},30);
+                if(prison_until>=0 && !in_shu && career.state().side==game::career::Side::Gang)
+                    if(const auto* mark=prison_yard.snitch()>=0 ? prison_yard.find(prison_yard.snitch()) : nullptr) {
+                        const Vector3 w=prison_yard.world(*mark);
+                        tag({w.x,w.y+2.25F,w.z},"SNITCH","he talked to the Policio",Color{255,90,80,255},45);
+                    }
+            }
+            // Every other crew's boss, by his door: who to talk to about joining.
+            if(game_mode==game::GameMode::Explore && !career_path.empty())
+                for(const auto& crew:mafio.crews()) {
+                    if(crew.disbanded || crew.members.empty() || (!campaign_path.empty() && &crew==mafio.casino() && crew.gang==0)) continue;
+                    const auto* boss=br_bots.find(crew.members.front());
+                    if(!boss || !boss->alive() || br_bots.hidden(crew.members.front()) || Vector3Distance(boss->position(),camera.position)>20) continue;
+                    const Vector3 over{boss->position().x,boss->position().y+2.3F,boss->position().z};
+                    if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))<=0) continue;
+                    const Vector2 at=GetWorldToScreen(over,camera);
+                    const auto& gang=game::mafia::gangs[static_cast<std::size_t>(crew.gang)];
+                    const std::string title="BOSS  ·  "+std::string(gang.name);
+                    const bool close=std::hypot(boss->position().x-player.position.x,boss->position().z-player.position.z)<3.2F;
+                    const char* sub=career.in_gang(crew.gang) ? "Your boss" : career.on_duty() ? "Won't talk to a cop" : close ? "USE to talk - join the gang" : "Talk to him to join";
+                    const float tw=MeasureTextEx(font,title.c_str(),15,1).x,sw=MeasureTextEx(font,sub,12,1).x,w=std::max(tw,sw);
+                    DrawRectangle(static_cast<int>(at.x-w/2-6),static_cast<int>(at.y-18),static_cast<int>(w+12),34,Fade(BLACK,.55F));
+                    DrawTextEx(font,title.c_str(),{at.x-tw/2,at.y-16},15,1,gang.color);
+                    DrawTextEx(font,sub,{at.x-sw/2,at.y+1},12,1,Color{220,226,206,255});
                 }
             // The boss of Verda Transporto: his name over his head.
             if(depot_boss.placed && Vector3Distance(depot_boss.at,camera.position)<14) {
@@ -6148,11 +6504,134 @@ void Renderer::run() {
             // Doing time, or prisoners in the back of the car.
             if(game_mode==game::GameMode::Explore && (prison_until>=0 || career.custody()>0)) {
                 const int left=static_cast<int>(std::ceil(std::max(0.0,prison_until-match_time)));
-                const std::string line=prison_until>=0 ? TextFormat("ŜTATA MALLIBEREJO  ·  inmate  ·  %d:%02d to go",left/60,left%60) :
+                const std::string line=prison_until>=0 ? TextFormat("ŜTATA MALLIBEREJO  ·  inmate No. %05d%s  ·  %d:%02d to go",career.inmate_number(),in_shu ? "  ·  SHU" : "",left/60,left%60) :
                     TextFormat("IN CUSTODY: %d  ·  drive them to the state prison in a police car",career.custody());
                 const float lw=MeasureTextEx(font,line.c_str(),18,1).x;
                 DrawRectangle(static_cast<int>(screen_width/2-lw/2-12),screen_height-292,static_cast<int>(lw+24),28,Fade(BLACK,.6F));
                 DrawTextEx(font,line.c_str(),{screen_width/2-lw/2,static_cast<float>(screen_height-287)},18,1,prison_until>=0 ? Color{230,180,90,255} : Color{150,190,255,255});
+            }
+            // A line of talk in a box (the partner, a guard, the warden): who, what, and how to go on.
+            const auto speech_box=[&](const std::string& speaker,const std::string& text,Color accent,const std::string& footer) {
+                const float max_w=std::min(820.0F,screen_width-60.0F);
+                std::vector<std::string> rows;std::string row,word;
+                for(std::size_t i=0;i<=text.size();++i) {
+                    const char c=i<text.size() ? text[i] : ' ';
+                    if(c!=' ') {word+=c;continue;}
+                    const std::string trial=row.empty() ? word : row+" "+word;
+                    if(MeasureTextEx(font,trial.c_str(),19,1).x>max_w-36 && !row.empty()) {rows.push_back(row);row=word;}
+                    else row=trial;
+                    word.clear();
+                }
+                if(!row.empty()) rows.push_back(row);
+                const float h=58+22*static_cast<float>(rows.size()),x=screen_width/2-max_w/2,y=screen_height*.70F-h;
+                DrawRectangleRounded({x,y,max_w,h},.08F,8,Fade(Color{10,14,20,255},.84F));
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y+8),4,static_cast<int>(h-16),accent);
+                DrawTextEx(font,speaker.c_str(),{x+18,y+10},18,1,accent);
+                for(std::size_t k=0;k<rows.size();++k) DrawTextEx(font,rows[k].c_str(),{x+18,y+34+22*static_cast<float>(k)},19,1,Color{236,240,226,255});
+                if(!footer.empty()) {
+                    const float fw=MeasureTextEx(font,footer.c_str(),14,1).x;
+                    DrawTextEx(font,footer.c_str(),{x+max_w-fw-16,y+h-22},14,1,Color{170,180,190,255});
+                }
+            };
+            if(game_mode==game::GameMode::Explore) {
+                // The partner talks the officer through the first call.
+                if(const auto* line=callouts.line();line && booking.stage<0 && prison_tour.line<0)
+                    speech_box(line->speaker,line->text,Color{120,170,255,255},"");
+                // The warden's tour.
+                if(prison_tour.line>=0)
+                    speech_box("Warden Brana  ·  Ŝtata Malliberejo",tour_lines[static_cast<std::size_t>(prison_tour.line)],Color{230,180,90,255},
+                               TextFormat("USE - next  (%d/%d)",prison_tour.line+1,static_cast<int>(tour_lines.size())));
+                // A guard's word inside, and the gang's.
+                if(inside_line<inside_lines.size() && booking.stage<0)
+                    speech_box(inside_lines[inside_line].speaker,inside_lines[inside_line].text,Color{230,180,90,255},
+                               TextFormat("USE - continue  (%d/%d)",static_cast<int>(inside_line)+1,static_cast<int>(inside_lines.size())));
+                // Inside: the bunk, and the snitch.
+                if(prison_until>=0 && booking.stage<0 && inside_line>=inside_lines.size() && sleep_fade<0) {
+                    const Vector3 me{player.position.x,player.position.y-1,player.position.z};
+                    const char* prompt=nullptr;
+                    if(Vector3Distance(me,prison_bunk(in_shu))<2.2F) prompt="E - Lie down and sleep: do your time";
+                    else if(const auto* mark=prison_yard.snitch()>=0 ? prison_yard.find(prison_yard.snitch()) : nullptr;
+                            mark && career.state().side==game::career::Side::Gang && !in_shu && Vector3Distance(me,prison_yard.world(*mark))<2.6F)
+                        prompt="E - Shank the snitch";
+                    if(prompt) {
+                        const float pw=MeasureTextEx(font,prompt,20,1).x;
+                        DrawRectangle(static_cast<int>(screen_width/2-pw/2-12),screen_height-250,static_cast<int>(pw+24),32,Fade(BLACK,.6F));
+                        DrawTextEx(font,prompt,{screen_width/2-pw/2,static_cast<float>(screen_height-245)},20,1,Color{255,214,120,255});
+                    }
+                }
+                // Busted: the ride in (black), the booking photo; sleeping; dragged to the SHU.
+                const auto black=[&](float alpha,const char* caption) {
+                    DrawRectangle(0,0,screen_width,screen_height,Fade(BLACK,std::clamp(alpha,0.0F,1.0F)));
+                    if(caption && alpha>.6F) {
+                        const float cw=MeasureTextEx(font,caption,24,1).x;
+                        DrawTextEx(font,caption,{screen_width/2-cw/2,screen_height/2.0F-12},24,1,Fade(Color{230,226,214,255},std::clamp((alpha-.6F)*2.5F,0.0F,1.0F)));
+                    }
+                };
+                if(booking.stage==0) black(booking.t/1.4F,"BUSTED");
+                if(booking.stage==1) black(1,"In the back of a Policio car - to Ŝtata Malliberejo");
+                if(booking.stage==4) black(booking.t/1.0F,"The guards drag you off to the SHU");
+                if(sleep_fade>=0) black(sleep_fade/1.6F,"You sleep off the rest of your sentence...");
+                if(booking.stage==2) {
+                    // The booking photo: the player's face against the height chart, a board with the number.
+                    if(booking.t<=dt+1e-4F || mugshot.target.id==0) {
+                        if(mugshot.target.id==0) mugshot.target=LoadRenderTexture(512,512);
+                        const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+                        const Vector3 ahead{std::sin(player.yaw),0,std::cos(player.yaw)};   // the way the body faces
+                        Camera3D shot{};
+                        shot.target={feet.x,feet.y+1.58F,feet.z};
+                        shot.position=Vector3Add(shot.target,Vector3Scale(ahead,1.05F));
+                        shot.up={0,1,0};shot.fovy=32;shot.projection=CAMERA_PERSPECTIVE;
+                        BeginTextureMode(mugshot.target);
+                        ClearBackground(Color{196,198,192,255});
+                        for(int k=0;k<12;++k) {
+                            const int y=40+k*38;
+                            DrawRectangle(0,y,512,2,Color{120,124,126,255});
+                            DrawText(TextFormat("%d",200-k*10),10,y-18,16,Color{80,84,88,255});
+                        }
+                        BeginMode3D(shot);
+                        const auto* look=game::wardrobe::wearing(loot_session.economy(),wardrobe_catalogue);
+                        character_renderer.set_player(look ? look->character : std::string());
+                        characters::BodyPose pose;
+                        pose.outfit=look ? outfit_texture(look->outfit) : 0U;
+                        character_renderer.draw_player(feet,player.yaw,pose);
+                        EndMode3D();
+                        DrawRectangle(96,400,320,86,Color{22,24,26,255});
+                        DrawRectangleLines(96,400,320,86,Color{200,200,196,255});
+                        const char* board="ŜTATA MALLIBEREJO";
+                        DrawTextEx(font,board,{256-MeasureTextEx(font,board,20,1).x/2,410},20,1,WHITE);
+                        const char* number=TextFormat("No. %05d",career.inmate_number());
+                        DrawTextEx(font,number,{256-MeasureTextEx(font,number,30,1).x/2,440},30,1,Color{255,214,120,255});
+                        EndTextureMode();
+                    }
+                    DrawRectangle(0,0,screen_width,screen_height,Fade(BLACK,.82F));
+                    const float s=std::min(screen_width/1000.0F,screen_height/560.0F);
+                    const float cw=920*s,ch=470*s,cx=screen_width/2-cw/2,cy=screen_height/2-ch/2;
+                    DrawRectangleRounded({cx,cy,cw,ch},.03F,8,Color{232,228,214,255});
+                    DrawRectangle(static_cast<int>(cx),static_cast<int>(cy),static_cast<int>(cw),static_cast<int>(54*s),Color{40,46,60,255});
+                    DrawTextEx(font,"POLICIO DE VERDA  ·  BOOKING",{cx+20*s,cy+14*s},26*s,1,WHITE);
+                    const Rectangle photo{cx+24*s,cy+74*s,370*s,370*s};
+                    DrawTexturePro(mugshot.target.texture,{0,0,512,-512},photo,{0,0},0,WHITE);
+                    DrawRectangleLinesEx(photo,2,Color{40,46,60,255});
+                    const float tx=cx+420*s;float ty=cy+84*s;
+                    const auto row=[&](const char* label,const std::string& value,Color tint) {
+                        DrawTextEx(font,label,{tx,ty},17*s,1,Color{90,96,104,255});
+                        DrawTextEx(font,value.c_str(),{tx,ty+20*s},25*s,1,tint);
+                        ty+=58*s;
+                    };
+                    const Color ink{30,32,36,255};
+                    row("INMATE No.",TextFormat("%05d",career.inmate_number()),Color{160,40,30,255});
+                    const auto& st=career.state();
+                    row("AFFILIATION",st.side==game::career::Side::Gang ? std::string(game::mafia::gangs[static_cast<std::size_t>(std::max(0,st.gang))].name) :
+                        std::string("none known"),ink);
+                    row("CHARGE",justice.reports()>0 ? std::string("Wanted - taken in by the Policio") : std::string("Resisting arrest"),ink);
+                    const int sentence=static_cast<int>(booking.sentence);
+                    row("SENTENCE",TextFormat("%d min %02d s  ·  Ŝtata Malliberejo",sentence/60,sentence%60),ink);
+                    row("NOTORIETY",TextFormat("%d / 100",static_cast<int>(st.notoriety)),ink);
+                    if(booking.t>1.2F) {
+                        const char* go="USE - to your cell";
+                        DrawTextEx(font,go,{cx+cw-MeasureTextEx(font,go,18*s,1).x-20*s,cy+ch-34*s},18*s,1,Color{40,46,60,255});
+                    }
+                }
             }
             if(career.message_time()>0) {
                 const float alpha=std::clamp(career.message_time(),0.0F,1.0F);
@@ -6533,6 +7012,15 @@ void Renderer::run() {
                 compass_marks.push_back({career.job().target,Glyph::Objective,career.on_duty() ? Color{90,150,255,255} : Color{255,196,70,255},career.job().title,true});
             if(!campaign_path.empty() && !story.objective().empty() && uncle_ron.placed && flat(uncle_ron.at)>4)
                 compass_marks.push_back({uncle_ron.at,Glyph::Objective,Color{255,214,120,255},"UNCLE RON",true});
+            // Uncle Dario at the Green Hand's bar: on the strip for a nephew with no road yet (close by for anyone else outside the law).
+            if(!campaign_path.empty() && !story.intro() && career.state().side==game::career::Side::Civilian)
+                if(const auto* bar=mafio.casino();bar && bar->gang==0 && !bar->disbanded && !bar->members.empty()) {
+                    const auto* boss=br_bots.find(bar->members.front());
+                    const Vector3 at=boss && boss->alive() ? boss->position() : bar->door;
+                    const bool lead=!trucking.hired() && !mafio.provoked(0,match_time);
+                    if(flat(at)>3.5F && (lead || flat(at)<300))
+                        compass_marks.push_back({at,Glyph::Hideout,game::mafia::gangs[0].color,"UNCLE DARIO",lead});
+                }
             if(trucking.hired() && trucking.job().stage!=game::freight::HaulStage::None && flat(trucking.target())>game::freight::Trucking::stop_radius)
                 compass_marks.push_back({trucking.target(),Glyph::Objective,Color{90,220,140,255},trucking.title(),true});
             if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal()) {
@@ -6552,7 +7040,13 @@ void Renderer::run() {
                 };
                 if(services.has_hospital() && flat(services.hospital_door())<2500)
                     compass_marks.push_back({services.hospital_door(),Glyph::Hospital,Color{220,50,50,255},"HOSPITAL",false});
+                if(prison_until>=0) {
+                    if(const auto* mark=prison_yard.snitch()>=0 && career.state().side==game::career::Side::Gang && !in_shu ? prison_yard.find(prison_yard.snitch()) : nullptr)
+                        compass_marks.push_back({prison_yard.world(*mark),Glyph::Objective,Color{255,90,80,255},"SNITCH",true});
+                    compass_marks.push_back({prison_bunk(in_shu),Glyph::Home,Color{230,180,90,255},"BUNK",false});
+                }
                 if(career.custody()>0) compass_marks.push_back({prison_intake,Glyph::Objective,Color{90,150,255,255},"PRISON",true});
+                else if(!callouts.escorts().empty()) compass_marks.push_back({prison_intake,Glyph::Police,Color{90,150,255,255},"PRISON",false});
                 else if(flat(prison_intake)<900) compass_marks.push_back({prison_intake,Glyph::Police,Color{170,170,176,255},"PRISON",false});
                 {
                     std::vector<Vector3> stations;

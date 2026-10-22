@@ -257,6 +257,10 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
                 // Spread out to the sides in freefall; up to the toggles under a canopy.
                 if(skydive>0) hang_to=Vector3Normalize(Vector3Lerp(hang_to,Vector3Normalize(Vector3Add(Vector3Scale(lateral,side*.92F),Vector3Scale(up,.38F))),skydive));
                 if(hang>0) hang_to=Vector3Normalize(Vector3Lerp(hang_to,Vector3Normalize(Vector3Add(Vector3Scale(lateral,side*.32F),Vector3Scale(up,.95F))),hang));
+                // Hands up: both arms straight up, a little apart. Cuffed: in close to the body.
+                const float hands_up=dying ? 0 : std::clamp(body.hands_up,0.0F,1.0F),cuffed=dying ? 0 : std::clamp(body.cuffed,0.0F,1.0F);
+                if(hands_up>0) hang_to=Vector3Normalize(Vector3Lerp(hang_to,Vector3Normalize(Vector3Add(Vector3Scale(lateral,side*.42F),Vector3Scale(up,.9F))),hands_up));
+                if(cuffed>0) hang_to=Vector3Normalize(Vector3Lerp(hang_to,Vector3Normalize(Vector3Add(Vector3Scale(up,-1),Vector3Scale(lateral,side*.05F))),cuffed));
                 if(Vector3LengthSqr(direction)>.00001F)out.rotation=QuaternionMultiply(QuaternionFromVector3ToVector3(Vector3Normalize(direction),hang_to),out.rotation);
             }
         }
@@ -291,6 +295,16 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
             // In the air the arms hold their spread (or the toggles) instead of swinging.
             if(airborne && (left_upper || right_upper)) angle*=1-std::max(skydive,hang);
             if(airborne && (left_lower || right_lower)) angle=angle*(1-std::max(skydive,hang))+.35F*skydive+.25F*hang;
+            // Hands up: the arms held straight (no swing). Cuffed: the arms back, wrists together.
+            if(!dying && body.hands_up>0) {
+                const float h=std::clamp(body.hands_up,0.0F,1.0F);
+                if(left_upper || right_upper || left_lower || right_lower) angle*=1-h;
+            }
+            if(!dying && body.cuffed>0) {
+                const float c=std::clamp(body.cuffed,0.0F,1.0F);
+                if(left_upper || right_upper) angle=angle*(1-c)-.45F*c;
+                if(left_lower || right_lower) angle=angle*(1-c)+.7F*c;
+            }
         }
         if(angle!=0)out.rotation=QuaternionNormalize(QuaternionMultiply(QuaternionFromAxisAngle(lateral,angle*forward_sign),out.rotation));
         // Hips sway with the stride and the chest counters it; a rifle stance turns the chest.

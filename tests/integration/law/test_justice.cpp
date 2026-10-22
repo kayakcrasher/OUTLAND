@@ -21,9 +21,10 @@ struct World {
     characters::NpcSystem npcs;
     game::law::Justice justice;
     double now=0;
+    bool armed=true;
     World() {life.build(region,nullptr);life.reset(npcs);life.configure({});}
     game::law::JusticeFrame frame(Vector3 player,bool see=true,float daylight=1) {
-        game::law::JusticeFrame f;f.dt=.1F;f.now=now;f.player=player;f.daylight=daylight;
+        game::law::JusticeFrame f;f.dt=.1F;f.now=now;f.player=player;f.daylight=daylight;f.player_armed=armed;
         f.line_of_sight=[see](Vector3,Vector3){return see;};
         return f;
     }
@@ -144,8 +145,29 @@ int main() {
         w.justice.update(f,w.life,w.npcs);
         check(w.justice.wanted()==1,"an officer saw the shot: one star");
         bool arrested=false;
-        for(int i=0;i<300 && !arrested;++i) {w.run(.1F,player,true,true);arrested|=w.justice.message().starts_with("ARRESTED");}
+        for(int i=0;i<300 && !arrested;++i) {w.run(.1F,player,true,true);arrested|=w.justice.message().starts_with("BUSTED");}
         check(arrested && w.justice.wanted()==0,"arrested once the officer reaches a calm player");
+    }
+
+    // ---- Wanted for murder, but no gun in hand: the police take you in, not down ----
+    {
+        World w;
+        const game::life::Resident* officer=nullptr;
+        for(const auto& r:w.life.residents()) if(r.occupation==game::life::Occupation::PoliceOfficer && !w.life.indoors(r)) {officer=&r;break;}
+        check(officer!=nullptr,"an officer outdoors");
+        const auto player=Vector3Add(w.life.position(*officer),{5,0,0});
+        w.run(1,player,true,true);
+        auto f=w.frame(player);
+        w.justice.crime(CrimeKind::Murder,player,-1,f,w.life);
+        w.justice.update(f,w.life,w.npcs);
+        check(w.justice.wanted()==3,"murder, seen by an officer: three stars");
+        // Armed: three stars is no arrest.
+        bool arrested=false;
+        for(int i=0;i<60 && !arrested;++i) {w.run(.1F,player,true,true);arrested|=w.justice.message().starts_with("BUSTED");}
+        check(!arrested,"armed and wanted for murder: they don't come quietly");
+        w.armed=false;
+        for(int i=0;i<300 && !arrested;++i) {w.run(.1F,player,true,true);arrested|=w.justice.message().starts_with("BUSTED");}
+        check(arrested,"hands empty: busted");
     }
 
     // ---- Armed officers shoot on sight; officers never flee gunfire ----

@@ -29,8 +29,8 @@ In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. E
 Verda's only prison stands alone south-east of the ring road, about a kilometre from the nearest town, on its own level ground at the end of an access road. Behind a 6 m wall with razor wire are four guard towers, a gatehouse, the intake bay, the admin block, a two-storey cell block and an exercise yard. The map always shows it.
 
 - **Officers** bring their prisoners here (above).
-- **Getting arrested:** at one star an unarmed officer who reaches you, with you not firing, makes an arrest. You do time in the prison yard: 60 s, plus 30 if you have a record, and more the more notorious a gang member is. The job in hand is off and no work comes while you're inside. Walk out of the gate early and you're put back. When your time is up you're let out at the gate.
-- **The gang life:** a gang member will do a few stints here. Doing your time quietly earns +3 respect with the crew.
+- **Getting arrested:** at one star an unarmed officer who reaches you, with you not firing, makes an arrest. At any level, on foot with **no gun in hand** (cycle to UNARMED), you give up to an officer within 6 m. You do time here: 60 s, plus 30 if you have a record, and more the more notorious a gang member is. The job in hand is off and no work comes while you're inside. Walk out of the gate early and you're put back. When your time is up you're let out at the gate. See [callouts and prison](callouts-and-prison.md) for the booking photo, the cell, the snitch and the SHU.
+- **The gang life:** a gang member will do a few stints here. Doing your time quietly earns +3 respect with the crew; shanking the snitch earns +8 and a trip to the SHU.
 - **Its people:**
   - Armed guards in navy stand in all four towers and at the gate, and two more walk the yard.
   - The yard holds the island's law breakers and the gangsters already doing time, about a dozen to start with.
@@ -110,6 +110,9 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
 | **PATROL** | Drive a police car to three towns in turn (15 min) | 260 | 5 |
 | **RAID** | Take down 2–3 of a gang crew at its hideout | 480 | 9 |
 | **GANG WAR** | When a hit squad is on the road: stop 2 of either side | 500 | 10 |
+| **ROBBERY** / **DRIVE-BY** | A crime in progress: two gang members and their getaway car (colour, model, plate on the radio). Stop them, cuff them, bring them in | 650 / 600 | 10 |
+
+- **Callouts** (ROBBERY, DRIVE-BY) come up instead of the next job about two times in three; the very first call is always one, and comes with a partner, Officer Novak, who talks you through it. See [callouts and prison](callouts-and-prison.md).
 
 - **Patrols** count in any police car: your own, a station's, the Interceptor or a cruiser. A town counts within 40 m of its centre (towns only, not the ranches).
 - **Gang war calls** don't go stale: once the shooting stops, the call points at the nearest crew of either gang, and it ends if there is nobody left to stop.
@@ -117,8 +120,9 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
 
 ### Arrests
 
-- Walk up to a Krimulo and press **USE** (E) to cuff him: no body, and he counts like a takedown on a RAID or GANG WAR call (and towards a CLEAN UP, since he's off the street). +1 respect.
-- He goes in the back of your car: **IN CUSTODY**, up to four at a time. Drive them in a police car to the gate of **Ŝtata Malliberejo**, the state prison (the compass points the way while you have prisoners), to book them in: 120 kronoj each (more with rank) and +2 respect each. Die and they get away.
+- Walk up to a Krimulo and press **USE** (E) to cuff him. A suspect with his **hands up** is cuffed at once.
+- Cuffed, he **walks with you** (hands behind his back). Get in a police car with him within 14 m and he climbs into the back: **IN CUSTODY**, up to four at a time. Then he counts like a takedown on a RAID or GANG WAR call (and towards a CLEAN UP), +1 respect. Leave him 170 m behind and he slips away.
+- Drive them in a police car to the gate of **Ŝtata Malliberejo**, the state prison (the compass points the way while you have prisoners), to book them in: 120 kronoj each (more with rank) and +2 respect each. Your first drop-off comes with the warden's tour. Die and they get away.
 - He comes quietly only when he's **wounded** (60 health or less) or **alone** (none of his crew within 15 m). In front of his crew he won't: "his crew is watching". Cuff a wounded man in front of them and they open fire.
 - The capital's crew before the Chief allows it costs respect, the same as shooting them.
 

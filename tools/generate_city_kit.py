@@ -881,6 +881,16 @@ def patrol_outpost():
     return b
 
 
+# Ŝtata Malliberejo's cell block (local metres; the game's prison frame matches: x across, z from
+# the gate to the back): the yard door is +-PRISON_YARD_DOOR in x at z 8, twelve cells from
+# PRISON_CELL_X0 in steps of PRISON_CELL_W with barred fronts at z PRISON_CELL_FRONT, and the SHU's
+# two cells (doors at z PRISON_SHU_FRONT) east of the last one.
+PRISON_YARD_DOOR = 1.2
+PRISON_CELL_X0, PRISON_CELL_W, PRISON_CELLS = -29.6, 4.0, 12
+PRISON_CELL_FRONT = 20.0
+PRISON_SHU_FRONT = 17.0
+
+
 def state_prison():
     """Ŝtata Malliberejo, Verda's only state prison: an 84 x 64 m walled compound on its own pad.
     A 6 m concrete wall with razor wire and a guard tower at each corner, a gatehouse with an
@@ -929,11 +939,72 @@ def state_prison():
             b.solid((cx - 1.6, 9.2, cz - 1.6), (cx + 1.6, 10.2, cz + 1.6), "tower")
             b.solid((cx - 1.5, 10.2, cz - 1.5), (cx + 1.5, 11.2, cz + 1.5), "glass")
             b.solid((cx - 1.9, 11.2, cz - 1.9), (cx + 1.9, 11.5, cz + 1.9), "roof")
-    # The cell block across the back: two storeys, barred windows all round, a flat roof.
+    # The cell block across the back: two storeys, barred windows all round, a flat roof. The
+    # ground floor is open inside (PRISON_* below): a day room behind the yard door, a row of
+    # twelve cells along the back wall (open barred fronts, a bunk and a toilet each) and, walled
+    # off at the east end, the SHU - two solitary cells behind solid steel doors.
     cw, c0, c1, ch = 30.0, 8.0, 26.0, 2 * FLOOR + .6
-    b.box((-cw, 0, c0), (cw, ch, c1), {'+y': "roof", '-y': "slab", '+x': "cells", '-x': "cells", '+z': "cells", '-z': "cells"}, v_origin=0)
-    b.solid((-3, 0, c0 - 1.8), (3, 3.2, c0), "inner")                     # the yard door's porch
-    b.solid((-1.2, .12, c0 - 1.85), (1.2, 2.6, c0 - 1.8), "steel")         # the door
+    wt, inside = .4, FLOOR
+    b.material("floor", flat((132, 130, 124), 6), 3, 3)
+    b.material("paint", flat((196, 192, 176), 5), 3, 3)
+    b.material("mattress", flat((214, 210, 196), 3), 1, 1)
+    b.material("porcelain", flat((236, 236, 232), 2), 1, 1)
+    b.material("shu", flat((150, 70, 52), 3), 1, 1)
+    door0, door1 = -PRISON_YARD_DOOR, PRISON_YARD_DOOR
+    wall_with_openings(b, 'x', c0, (-cw, cw), inside, wt, [(door0, door1, 0, 2.6)], "cells", "paint", -1)
+    wall_with_openings(b, 'x', c1, (-cw, cw), inside, wt, [], "cells", "paint", +1)
+    wall_with_openings(b, 'z', -cw, (c0 + wt, c1 - wt), inside, wt, [], "cells", "paint", -1)
+    wall_with_openings(b, 'z', cw, (c0 + wt, c1 - wt), inside, wt, [], "cells", "paint", +1)
+    b.box((-cw, inside, c0), (cw, ch, c1), {'+y': "roof", '-y': "paint", '+x': "cells", '-x': "cells", '+z': "cells", '-z': "cells"}, v_origin=0)
+    b.solid((-cw + wt, .12, c0 + wt), (cw - wt, .16, c1 - wt), "floor")
+    b.solid((-3, 2.9, c0 - 1.8), (3, 3.2, c0), "inner")                   # the yard door's porch roof
+    for x in (-3, 2.7):
+        b.solid((x, 0, c0 - 1.8), (x + .3, 2.9, c0 - 1.5), "inner")
+    # The cells: partitions, barred fronts with an open doorway, a bunk, a toilet.
+    z0, z1 = PRISON_CELL_FRONT, c1 - wt
+    for k in range(PRISON_CELLS + 1):
+        x = PRISON_CELL_X0 + k * PRISON_CELL_W
+        b.solid((x - .1, 0, z0), (x + .1, inside, z1), "paint")
+    for k in range(PRISON_CELLS):
+        x0 = PRISON_CELL_X0 + k * PRISON_CELL_W
+        x1 = x0 + PRISON_CELL_W
+        gap0, gap1 = x0 + .25, x0 + 1.35                                    # the doorway (left, from the day room)
+        b.solid((x0, 2.4, z0 - .06), (x1, inside, z0 + .06), "paint")       # above the bars
+        b.solid((x0, 2.3, z0 - .05), (x1, 2.4, z0 + .05), "steel")          # the rail
+        bx = gap1 + .12
+        while bx < x1 - .12:
+            b.solid((bx - .03, 0, z0 - .03), (bx + .03, 2.3, z0 + .03), "steel")
+            bx += .3
+        for px in (gap0, gap1):
+            b.solid((px - .05, 0, z0 - .05), (px + .05, 2.3, z0 + .05), "steel")
+        # The bunk along the right wall, the toilet in the back left corner, a shelf.
+        b.solid((x1 - 1.05, .14, z1 - 3.9), (x1 - .15, .5, z1 - .15), "steel")
+        b.solid((x1 - 1.0, .5, z1 - 3.85), (x1 - .2, .64, z1 - .2), "mattress")
+        b.solid((x0 + .25, .14, z1 - .75), (x0 + .75, .55, z1 - .15), "porcelain")
+        b.solid((x0 + .2, 1.5, z1 - .35), (x0 + 1.2, 1.56, z1 - .1), "wood")
+    # The SHU, walled off at the east end: a guard's passage and two cells behind steel doors.
+    sx0 = PRISON_CELL_X0 + PRISON_CELLS * PRISON_CELL_W
+    b.solid((sx0 - .1, 0, c0 + wt), (sx0 + .1, inside, c1 - wt), "paint")
+    b.solid((sx0 + .1, 2.2, c0 + wt), (cw - wt, 2.5, c0 + wt + .1), "shu")    # a red band: SHU
+    shu_mid = (sx0 + cw - wt) / 2
+    b.solid((shu_mid - .1, 0, PRISON_SHU_FRONT), (shu_mid + .1, inside, c1 - wt), "paint")
+    for a0, a1 in ((sx0 + .1, shu_mid - .1), (shu_mid + .1, cw - wt)):
+        dmid = (a0 + a1) / 2
+        b.solid((a0, 0, PRISON_SHU_FRONT - .1), (dmid - .55, inside, PRISON_SHU_FRONT + .1), "paint")
+        b.solid((dmid + .55, 0, PRISON_SHU_FRONT - .1), (a1, inside, PRISON_SHU_FRONT + .1), "paint")
+        b.solid((dmid - .55, 2.2, PRISON_SHU_FRONT - .1), (dmid + .55, inside, PRISON_SHU_FRONT + .1), "paint")
+        b.solid((dmid - .55, 0, PRISON_SHU_FRONT - .08), (dmid + .55, 2.2, PRISON_SHU_FRONT + .08), "steel")   # the door, shut
+        b.solid((dmid - .25, 1.5, PRISON_SHU_FRONT - .12), (dmid + .25, 1.62, PRISON_SHU_FRONT - .08), "shu")  # the slot
+        b.solid((a1 - 1.0, .14, z1 - 3.6), (a1 - .15, .45, z1 - .15), "inner")                          # a concrete bunk
+        b.solid((a1 - .95, .45, z1 - 3.55), (a1 - .2, .55, z1 - .2), "mattress")
+        b.solid((a0 + .2, .14, z1 - .7), (a0 + .7, .5, z1 - .15), "steel")
+    # The day room: steel tables with fixed stools, and the guard's desk by the door.
+    for tx in (-18.0, -10.0, 6.0, 14.0):
+        b.solid((tx - 1.2, .7, 12.4), (tx + 1.2, .78, 13.8), "steel")
+        b.solid((tx - .1, .14, 13.0), (tx + .1, .7, 13.2), "steel")
+        for sz in (11.6, 14.6):
+            b.solid((tx - .3, .14, sz - .2), (tx + .3, .45, sz + .2), "steel")
+    b.solid((3.0, .14, c0 + 1.0), (5.2, .9, c0 + 1.8), "wood")                # the guard's desk
     # The admin block by the gate (left as you come in), and the intake bay right of it.
     b.box((-W + T, 0, -D + T), (-14, 4.2, -D + 12), {'+y': "roof", '-y': "slab", '+x': "admin", '-x': "admin", '+z': "admin", '-z': "admin"}, v_origin=0)
     b.solid((10, 3.6, -D + T), (24, 3.8, -D + 9), "steel")                 # the intake canopy

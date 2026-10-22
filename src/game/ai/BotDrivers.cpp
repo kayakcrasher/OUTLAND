@@ -115,6 +115,12 @@ void BotDrivers::cancel(int bot, BattleRoyaleBots& bots, vehicles::VehicleSystem
     }
 }
 
+void BotDrivers::halt(int bot, BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region) {
+    for (auto& ride : rides_)
+        if (ride.active && (ride.bot == bot || std::find(ride.passengers.begin(), ride.passengers.end(), bot) != ride.passengers.end()))
+            dismount(ride, bots, cars, region);
+}
+
 const BotRide* BotDrivers::ride_of(int bot) const {
     for (const auto& ride : rides_)
         if (ride.active && (ride.bot == bot || std::find(ride.passengers.begin(), ride.passengers.end(), bot) != ride.passengers.end())) return &ride;

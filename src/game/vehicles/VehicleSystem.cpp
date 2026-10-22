@@ -112,6 +112,19 @@ bool VehicleSystem::spawn(world::VerdaRegion &region, Vector3 near, float yaw,
         }
     return false;
 }
+bool VehicleSystem::remove(world::VerdaRegion &region, std::string_view id) {
+    if (!id.starts_with("creator_vehicle_") || (driver() && driver()->id == id)) return false;
+    bool gone = false;
+    for (auto &s : region.runtime_settlements()) {
+        const auto before = s.assets.size();
+        std::erase_if(s.assets, [&](const auto &a) { return a.id == id; });
+        gone |= s.assets.size() != before;
+    }
+    autopilot_.erase(std::string(id));
+    kinematic_.erase(std::string(id));
+    if (gone) reconcile(region);
+    return gone;
+}
 int VehicleSystem::find(std::string_view id) const {
     for (std::size_t i = 0; i < vehicles_.size(); ++i)
         if (vehicles_[i].id == id)

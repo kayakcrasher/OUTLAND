@@ -53,6 +53,7 @@ int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegio
     crews_.clear();
     members_.clear();
     wars_.clear();
+    heists_.clear();
     provoked_until_.fill(-1e9);
     next_war_ = 0;
     seed_ = seed;
@@ -179,6 +180,7 @@ void Mafio::clear(ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers, vehicles:
     crews_.clear();
     members_.clear();
     wars_.clear();
+    heists_.clear();
 }
 
 Member* Mafio::member(int bot) {
@@ -273,8 +275,12 @@ bool Mafio::hostile(int a, int b, double now) const {
     if (a == b) return false;
     const auto outsider = [&](int id) { return id != ai::BattleRoyaleBots::player_id && gang_of(id) < 0; };
     if (outsider(a) || outsider(b)) return outsiders_ && outsiders_(a, b, now);
-    if (a == ai::BattleRoyaleBots::player_id || b == ai::BattleRoyaleBots::player_id)
-        return provoked(gang_of(a == ai::BattleRoyaleBots::player_id ? b : a), now);
+    if (a == ai::BattleRoyaleBots::player_id || b == ai::BattleRoyaleBots::player_id) {
+        const int other = a == ai::BattleRoyaleBots::player_id ? b : a;
+        if (held(other)) return false;
+        return provoked(gang_of(other), now);
+    }
+    if (held(a) || held(b)) return false;
     const int ga = gang_of(a), gb = gang_of(b);
     if (ga < 0 || gb < 0 || ga == gb) return false;
     // The player's own crew fights whoever has turned on the player.
@@ -297,7 +303,7 @@ bool Mafio::send_hit_squad(int from, int target, ai::BattleRoyaleBots& bots, ai:
         const bool busy = std::any_of(wars_.begin(), wars_.end(), [&](const War& w) {
             return std::find(w.squad.begin(), w.squad.end(), id) != w.squad.end(); });
         const auto* m = member(id);
-        if (bot && bot->alive() && !bots.mounted(id) && !busy && !(m && m->lent)) squad.push_back(id);
+        if (bot && bot->alive() && !bots.mounted(id) && !busy && !(m && (m->lent || m->held)) && !heist_of(id)) squad.push_back(id);
         if (squad.size() >= want) break;
     }
     if (squad.size() < 2) return false;
@@ -358,6 +364,7 @@ bool Mafio::recruitable(int bot, ai::BattleRoyaleBots& bots) const {
     if (at == 0 || (crew.casino && (at == 2 || at == 3))) return false;
     if (crew.gang != player_gang_ || crew.disbanded || bots.hidden(bot) || bots.mounted(bot)) return false;
     for (const auto& war : wars_) if (std::find(war.squad.begin(), war.squad.end(), bot) != war.squad.end()) return false;
+    if (heist_of(bot) || m->held) return false;
     const auto* b = bots.find(bot);
     return b && b->alive();
 }
@@ -421,7 +428,7 @@ void Mafio::update(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotW
         auto& m = members_[i];
         auto* bot = bots.find(m.bot);
         if (!bot) continue;
-        if (!bot->alive() && !m.dead) { m.dead = true; m.lent = false; m.respawn_at = now + respawn_seconds; }
+        if (!bot->alive() && !m.dead) { m.dead = true; m.lent = false; m.held = false; m.respawn_at = now + respawn_seconds; }
         if (m.dead && crews_[static_cast<std::size_t>(m.crew)].disbanded) continue;   // broken up: they stay gone
         if (m.dead && m.crew == besieged_) { m.respawn_at = std::max(m.respawn_at, now + respawn_seconds); continue; }  // under siege
         if (m.dead && now >= m.respawn_at && (flat(m.post, frame.player_feet) > 45 || now > m.respawn_at + 90)) {
@@ -459,14 +466,19 @@ void Mafio::update(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotW
         if (wars_.size() < 2) plan_war(frame, bots, drivers, cars, region);
     }
 
+    run_heists(frame, bots, drivers, cars, region);
+
     // Crews far from the player sleep (in place, at their posts) unless they are at war.
     for (auto& m : members_) {
         auto* bot = bots.find(m.bot);
         if (!bot) continue;
         if (m.lent) continue;   // with the player (game::career::Crew keeps him awake)
+        if (m.held) { bots.set_asleep(m.bot, true); continue; }   // hands up or cuffed: the game has him
         bool awake = flat(m.post, frame.player_feet) < wake_radius || flat(bot->position(), frame.player_feet) < wake_radius || bots.mounted(m.bot);
         for (const auto& war : wars_)
             if (war.target == m.crew || std::find(war.squad.begin(), war.squad.end(), m.bot) != war.squad.end()) awake = true;
+        for (const auto& heist : heists_)
+            if (heist.stage != HeistStage::Over && std::find(heist.squad.begin(), heist.squad.end(), m.bot) != heist.squad.end()) awake = true;
         if (!awake && !bots.asleep(m.bot) && bot->alive() && flat(bot->position(), m.post) > 30) {
             bot->set_position(m.post);
             bot->set_yaw(m.yaw);
@@ -487,6 +499,175 @@ void Mafio::update(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotW
     bf.player_in_vehicle = frame.player_in_vehicle;
     drivers.update(frame.dt, bots, cars, region, frame.player_feet, frame.player_alive, 0, world.environment.line_of_sight);
     bots.update(bf, world);
+}
+
+const Heist* Mafio::heist_of(int bot) const {
+    for (const auto& h : heists_)
+        if (h.stage != HeistStage::Over && std::find(h.squad.begin(), h.squad.end(), bot) != h.squad.end()) return &h;
+    return nullptr;
+}
+
+bool Mafio::surrendered(int bot) const {
+    const auto* h = heist_of(bot);
+    return h && std::find(h->surrendered.begin(), h->surrendered.end(), bot) != h->surrendered.end();
+}
+
+void Mafio::hold(int bot, bool held, ai::BattleRoyaleBots& bots) {
+    if (auto* m = member(bot)) {
+        m->held = held;
+        bots.set_asleep(bot, held);
+        if (!held) if (auto* b = bots.find(bot)) b->set_roam_center(b->position(), 3);
+    }
+}
+
+bool Mafio::held(int bot) const {
+    if (bot >= 1 && static_cast<std::size_t>(bot) <= members_.size() && members_[static_cast<std::size_t>(bot - 1)].bot == bot)
+        return members_[static_cast<std::size_t>(bot - 1)].held;
+    for (const auto& m : members_) if (m.bot == bot) return m.held;
+    return false;
+}
+
+void Mafio::settle(int bot) {
+    for (auto& h : heists_) {
+        if (h.stage == HeistStage::Over) continue;
+        std::erase(h.squad, bot);
+        std::erase(h.running, bot);
+        std::erase(h.surrendered, bot);
+        if (h.squad.empty()) h.stage = HeistStage::Over;
+    }
+}
+
+bool Mafio::stage_heist(HeistKind kind, int crew, Vector3 scene, const std::string& car, ai::BattleRoyaleBots& bots, double now) {
+    if (crew < 0 || static_cast<std::size_t>(crew) >= crews_.size() || car.empty()) return false;
+    const auto& home = crews_[static_cast<std::size_t>(crew)];
+    if (home.disbanded) return false;
+    std::vector<int> squad;
+    for (std::size_t k = 1; k < home.members.size() && squad.size() < 2; ++k) {   // never the boss
+        const int id = home.members[k];
+        const auto* bot = bots.find(id);
+        const auto* m = member(id);
+        const bool busy = std::any_of(wars_.begin(), wars_.end(), [&](const War& w) {
+            return std::find(w.squad.begin(), w.squad.end(), id) != w.squad.end(); });
+        if (bot && bot->alive() && !bots.mounted(id) && !busy && m && !m->lent && !m->held && !bots.hidden(id) && !heist_of(id) &&
+            !(home.casino && (k == 2 || k == 3))) squad.push_back(id);
+    }
+    if (squad.size() < 2) return false;
+    Heist h;
+    h.kind = kind;
+    h.crew = crew;
+    h.gang = home.gang;
+    h.squad = squad;
+    h.car = car;
+    h.scene = scene;
+    h.started = now;
+    // They are at the scene already (it happened before the call came in), by the car.
+    for (std::size_t k = 0; k < squad.size(); ++k) {
+        auto* bot = bots.find(squad[k]);
+        const Vector3 at{scene.x + (k == 0 ? 1.4F : -1.4F), scene.y, scene.z + .8F};
+        bot->set_position(at);
+        bot->set_roam_center(at, 2.5F);
+        bots.set_asleep(squad[k], false);
+    }
+    heists_.push_back(std::move(h));
+    return true;
+}
+
+void Mafio::run_heists(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers,
+                       vehicles::VehicleSystem& cars, world::VerdaRegion& region) {
+    const double now = frame.now;
+    for (auto& h : heists_) {
+        if (h.stage == HeistStage::Over) continue;
+        // The dead and the vanished are out of it.
+        std::erase_if(h.squad, [&](int id) { const auto* b = bots.find(id); return !b || !b->alive(); });
+        std::erase_if(h.running, [&](int id) { return std::find(h.squad.begin(), h.squad.end(), id) == h.squad.end(); });
+        std::erase_if(h.surrendered, [&](int id) { return std::find(h.squad.begin(), h.squad.end(), id) == h.squad.end(); });
+        if (h.squad.empty()) { h.stage = HeistStage::Over; continue; }
+        const auto& home = crews_[static_cast<std::size_t>(h.crew)];
+        const int v = cars.find(h.car);
+        const Vector3 lead = bots.find(h.squad.front())->position();
+        switch (h.stage) {
+            case HeistStage::Waiting: {
+                const bool seen = frame.player_alive && flat(frame.player_feet, lead) < flee_radius;
+                if (!seen && now - h.started < heist_wait) break;
+                // Run for it: into the car and home.
+                std::vector<int> aboard;
+                for (const int id : h.squad) if (!held(id)) aboard.push_back(id);
+                if (!aboard.empty() && v >= 0 && drivers.dispatch(bots, cars, region, aboard, lead, home.door, 40, h.car)) {
+                    h.stage = HeistStage::Fleeing;
+                    if (seen) say(std::string(gangs[static_cast<std::size_t>(h.gang)].name) + " suspects are running for their car");
+                } else h.stage = HeistStage::Stopped;
+                if (!seen) { h.escaped = true; h.stage = HeistStage::Over; }   // nobody came: they slipped away
+                break;
+            }
+            case HeistStage::Fleeing: {
+                const auto* ride = drivers.ride_of(h.squad.front());
+                if (!ride) {
+                    // Out of the car: home free, or stopped on the way.
+                    if (flat(lead, home.door) < 45) {
+                        h.escaped = true;
+                        h.stage = HeistStage::Over;
+                        for (const int id : h.squad) if (auto* m = member(id)) send_home(*m, bots, frame);
+                        say("The suspects made it back to their hideout");
+                    } else h.stage = HeistStage::Stopped;
+                    break;
+                }
+                // A police car on their bumper, lights on: they pull over.
+                if (v >= 0 && frame.player_police_car && frame.player_lights &&
+                    flat(frame.player_feet, cars.vehicles()[static_cast<std::size_t>(v)].position) < tail_distance) h.tailed += frame.dt;
+                if (h.tailed >= tail_seconds) {
+                    drivers.halt(h.squad.front(), bots, cars, region);
+                    h.stage = HeistStage::Stopped;
+                    say("The suspects pulled over");
+                }
+                break;
+            }
+            case HeistStage::Stopped:
+                for (const int id : h.squad) {
+                    auto* bot = bots.find(id);
+                    if (held(id)) continue;
+                    const bool decided = std::find(h.settled.begin(), h.settled.end(), id) != h.settled.end();
+                    const float near = flat(frame.player_feet, bot->position());
+                    if (!decided && frame.player_alive && near < face_off) {
+                        h.settled.push_back(id);
+                        // Pulled over, alone, or hurt: hands up. Otherwise mostly hands up; some run.
+                        const bool give_up = h.tailed >= tail_seconds ? random() < .85F : bot->health() < 70 || h.squad.size() < 2 || random() < .65F;
+                        if (give_up) { h.surrendered.push_back(id); hold(id, true, bots); }
+                        else { h.running.push_back(id); say("A suspect is running for it - catch him"); }
+                    }
+                    // A runner heads away from the officer; caught, or hurt, he gives up.
+                    if (std::find(h.running.begin(), h.running.end(), id) != h.running.end()) {
+                        if ((frame.player_alive && near < caught) || bot->health() < 70) {
+                            std::erase(h.running, id);
+                            h.surrendered.push_back(id);
+                            hold(id, true, bots);
+                        } else if (!provoked(h.gang, now)) {
+                            Vector3 away{bot->position().x - frame.player_feet.x, 0, bot->position().z - frame.player_feet.z};
+                            away = Vector3Length(away) > .1F ? Vector3Normalize(away) : Vector3{1, 0, 0};
+                            bot->set_roam_center(Vector3Add(bot->position(), Vector3Scale(away, 30)), 3);
+                        }
+                    }
+                }
+                break;
+            case HeistStage::Over: break;
+        }
+    }
+    for (auto& h : heists_) if (h.stage == HeistStage::Over && h.ended < 0) h.ended = now;
+    std::erase_if(heists_, [&](const Heist& h) { return h.ended >= 0 && now - h.ended > 10; });
+}
+
+void Mafio::end_heists(ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers, vehicles::VehicleSystem& cars) {
+    for (auto& h : heists_) {
+        for (const int id : h.squad) {
+            if (drivers.ride_of(id)) drivers.cancel(id, bots, cars);
+            if (held(id)) hold(id, false, bots);
+            if (auto* m = member(id); m && !m->dead) {
+                MafioFrame frame;
+                frame.player_feet = {1e6F, 0, 1e6F};
+                send_home(*m, bots, frame);
+            }
+        }
+    }
+    heists_.clear();
 }
 
 } // namespace outland::game::mafia

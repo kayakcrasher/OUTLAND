@@ -26,6 +26,7 @@ struct JusticeConfig {
     float call_min{4}, call_max{14};       // seconds before a witness gets through to the police
     float evade_base{25}, evade_per_star{12}; // unseen this long and the police give up
     float arrest_radius{2.5F}, arrest_seconds{2}, calm_seconds{3};
+    float surrender_radius{6};             // an unarmed suspect gives up to an officer this close
     float investigate_seconds{60};         // responders to an anonymous report search this long
 };
 
@@ -43,6 +44,8 @@ struct JusticeFrame {
     Vector3 player{};          // feet
     bool player_alive{true};
     bool player_fired{false};
+    bool player_armed{true};   // a gun in hand (an unarmed suspect with the police on him gives up)
+    bool player_driving{false};
     float daylight{1};         // 0 night .. 1 day (world::sky); darkness shortens sight
     std::function<bool(Vector3, Vector3)> line_of_sight; // eye to eye, true if clear
     // Officers out of the patrol cars (game::services), feet: they see and arrest like the rest.

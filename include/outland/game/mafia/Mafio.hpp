@@ -80,6 +80,28 @@ struct Member {
     double respawn_at{0};
     bool officer{false};       // the crew's boss and the men at the casino table (dressed sharp)
     bool lent{false};          // in the player's own crew (game::career::Crew): follows the player, not the post
+    bool held{false};          // hands up or cuffed: stands where the game puts him, asleep
+};
+
+// A crime the Policio is called to (game::career's callouts): two of a crew with a getaway car.
+// They are at the scene (a robbery at a shop, a drive-by at a house) until an officer comes
+// near, then run for the hideout in the car. Stopped - the car wrecked or stuck, or pulled over
+// by a police car on their bumper with the lights on - they get out: most put their hands up, the
+// rest run for it on foot (and give up once caught or hurt; shoot at them and the gang shoots
+// back). An officer cuffs the ones who gave up.
+enum class HeistKind : std::uint8_t { Robbery, DriveBy };
+enum class HeistStage : std::uint8_t { Waiting, Fleeing, Stopped, Over };
+struct Heist {
+    HeistKind kind{HeistKind::Robbery};
+    HeistStage stage{HeistStage::Waiting};
+    int crew{-1}, gang{-1};
+    std::vector<int> squad;        // the suspects
+    std::string car;               // the getaway car (vehicle id)
+    Vector3 scene{};
+    double started{0}, ended{-1};
+    float tailed{0};               // seconds a police car has sat on their bumper with its lights on
+    bool escaped{false};           // they made it home
+    std::vector<int> running, surrendered, settled;    // settled: decided (run or give up) once stopped
 };
 
 struct War {
@@ -98,6 +120,7 @@ struct MafioFrame {
     bool player_alive{true}, player_in_vehicle{false};
     bool player_fired{false};
     combat::WeaponId player_weapon{combat::WeaponId::Rifle};
+    bool player_police_car{false}, player_lights{false};   // at the wheel of a police car, its lights on
     Vector3 aim_origin{}, aim_direction{0, 0, 1}; // where the player's shots went
 };
 
@@ -153,6 +176,26 @@ public:
     bool send_hit_squad(int from, int target, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers,
                         vehicles::VehicleSystem& cars, world::VerdaRegion& region, double now);
 
+    // Callouts: two of `crew` (not the boss) at `scene` with the getaway car `car` (parked there
+    // by the game). False when the crew can't spare two.
+    static constexpr float flee_radius = 110;      // an officer this close and they run
+    static constexpr double heist_wait = 420;      // nobody came: they drive off home unseen
+    static constexpr float face_off = 20;          // stopped, an officer this close: hands up or run
+    static constexpr float caught = 3.5F;          // a runner the officer gets this close to gives up
+    static constexpr float tail_distance = 16;     // a police car this close behind, lights on...
+    static constexpr float tail_seconds = 6;       // ...this long, and they pull over
+    bool stage_heist(HeistKind kind, int crew, Vector3 scene, const std::string& car, ai::BattleRoyaleBots& bots, double now);
+    [[nodiscard]] const std::vector<Heist>& heists() const { return heists_; }
+    [[nodiscard]] const Heist* heist_of(int bot) const;
+    // A suspect with his hands up (an officer can cuff him).
+    [[nodiscard]] bool surrendered(int bot) const;
+    // The game holds him (hands up, cuffed, walked to the car): asleep, where the game puts him.
+    void hold(int bot, bool held, ai::BattleRoyaleBots& bots);
+    [[nodiscard]] bool held(int bot) const;
+    // A suspect is out of the heist (cuffed, in the car, dead): the heist ends with the last one.
+    void settle(int bot);
+    void end_heists(ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers, vehicles::VehicleSystem& cars);
+
     [[nodiscard]] int gang_of(int bot) const;   // -1 if not a Krimulo
     // A member of the player's gang may join the player's crew (not a boss, the men at the casino's
     // poker table, a hit squad, or the dead). lend() hands him over (true) or back (false: he
@@ -187,6 +230,9 @@ private:
     void plan_war(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers,
                   vehicles::VehicleSystem& cars, world::VerdaRegion& region);
     void send_home(Member& m, ai::BattleRoyaleBots& bots, const MafioFrame& frame);
+    void run_heists(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers,
+                    vehicles::VehicleSystem& cars, world::VerdaRegion& region);
+    std::vector<Heist> heists_;
 
     std::vector<Crew> crews_;
     std::vector<Member> members_;

@@ -21,6 +21,7 @@ Vector3 PrisonYard::yard_spot() {
 
 void PrisonYard::start(Vector3 centre, float yaw, std::uint64_t seed, const Chooser& choose) {
     people_.clear();
+    snitch_ = -1;
     centre_ = centre;
     yaw_ = yaw;
     seed_ = seed;
@@ -42,6 +43,7 @@ void PrisonYard::start(Vector3 centre, float yaw, std::uint64_t seed, const Choo
         for (const float sz : {-1.0F, 1.0F})
             guard({sx * 40.2F, tower_floor, sz * 30.2F}, std::atan2(-sx, -sz) * RAD2DEG);
     for (const float sx : {-1.0F, 1.0F}) guard({sx * 3.6F, 0, -36.5F}, 180);
+    guard({4.1F, 0, 10.4F}, 180);   // the desk inside the cell block's door
     for (const float z : {-12.0F, 0.0F}) {
         auto* p = guard({-30, 0, z}, 90);
         p->patrol_a = {-32, 0, z};
@@ -65,6 +67,36 @@ int PrisonYard::admit(bool gang, const Chooser& choose) {
     p.wait = random() * 4;
     people_.push_back(std::move(p));
     return people_.back().bot;
+}
+
+int PrisonYard::mark_snitch() {
+    if (snitch_ >= 0 && find(snitch_)) return snitch_;
+    snitch_ = -1;
+    std::vector<int> pool;
+    for (const auto& p : people_) if (!p.guard && !p.gang) pool.push_back(p.bot);
+    if (pool.empty()) for (const auto& p : people_) if (!p.guard) pool.push_back(p.bot);
+    if (!pool.empty()) snitch_ = pool[static_cast<std::size_t>(random() * static_cast<float>(pool.size())) % pool.size()];
+    return snitch_;
+}
+
+void PrisonYard::pause(int bot, float seconds) {
+    for (auto& p : people_)
+        if (p.bot == bot && !p.guard) {
+            p.walking = false;
+            p.wait = std::max(p.wait, seconds);
+        }
+}
+
+bool PrisonYard::remove(int bot) {
+    const auto before = people_.size();
+    std::erase_if(people_, [&](const PrisonPerson& p) { return p.bot == bot && !p.guard; });
+    if (bot == snitch_) snitch_ = -1;
+    return people_.size() != before;
+}
+
+const PrisonPerson* PrisonYard::find(int bot) const {
+    for (const auto& p : people_) if (p.bot == bot) return &p;
+    return nullptr;
 }
 
 int PrisonYard::inmates() const {

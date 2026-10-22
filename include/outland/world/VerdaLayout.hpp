@@ -49,6 +49,13 @@ inline constexpr bool in_downtown(float x, float z) { return x > -downtown_half_
 inline constexpr Vector3 prison_center{1290, 0, 1290};
 inline constexpr float prison_yaw = 45;
 inline constexpr float prison_flat_radius = 64;
+// Inside its cell block (tools/generate_city_kit.py PRISON_*), in the prison's frame (x across, z
+// from the gate to the back): twelve cells along the back wall, a barred front at z 20, and the
+// SHU's two solitary cells (steel doors at z 17) east of the last one.
+inline constexpr float prison_cell_x0 = -29.6F, prison_cell_w = 4, prison_cell_front = 20, prison_cell_back = 25.6F;
+inline constexpr int prison_cells = 12;
+inline constexpr float prison_shu_x0 = prison_cell_x0 + prison_cells * prison_cell_w, prison_shu_front = 17;
+inline constexpr float prison_shu_mid = (prison_shu_x0 + 29.6F) * .5F;
 inline constexpr float capital_flat_radius = 180;
 // Verda City's industrial quarter (Industria Kvartalo), west of the west suburbs and south of the
 // Roka highway: level ground (the suburbs' level) for Verda Transporto's freight depot.

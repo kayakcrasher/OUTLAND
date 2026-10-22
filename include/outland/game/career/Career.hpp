@@ -33,7 +33,7 @@
 namespace outland::game::career {
 
 enum class Side : std::uint8_t { Civilian, Gang, Police };
-enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, Raid, BreakUpWar, Quest, Smuggle, Extort, TakeTurf, CleanUp, HitChief };
+enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, Raid, BreakUpWar, Quest, Smuggle, Extort, TakeTurf, CleanUp, HitChief, Callout };
 // A recruit's road onto the force: report to the Chief at Verda City HQ, qualify at the training
 // camp's range, report back for the badge and the Interceptor, then serve (calls).
 enum class PoliceStage : std::uint8_t { Report, Training, Graduated, Serving };
@@ -104,6 +104,10 @@ struct CareerState {
     int jobs_done{0};
     std::string patrol_car;        // the officer's car (vehicle id)
     PoliceStage police_stage{PoliceStage::Report};
+    int callouts{0};               // crime calls answered (the first comes with a partner and a lesson)
+    bool prison_toured{false};     // the warden showed the officer how the prison works
+    int inmate{0};                 // the player's prison number, once booked (0: never)
+    bool inside_told{false};       // a guard told the new inmate how it works inside
 };
 
 class Career {
@@ -131,6 +135,26 @@ public:
     [[nodiscard]] int custody() const { return custody_; }
     // At the prison's intake in a police car: everyone in custody booked in. Returns how many.
     int deliver();
+    // A crime in progress (game::mafia's heists), the call put out by the game: a serving officer
+    // with nothing on takes it. `needed` suspects to stop (cuffed and in the car, or down).
+    bool callout(Job call);
+    // A serving officer with nothing on, due the next call (the game may put out a callout instead).
+    [[nodiscard]] bool due_call(double now) const {
+        return serving() && !jailed_ && job_.kind == JobKind::None && next_offer_ >= 0 && now >= next_offer_;
+    }
+    // A suspect stopped: cuffed and in the car (`alive`), or down.
+    void suspect_down(bool alive);
+    void callout_failed(const std::string& why);
+    // The call's waypoint moves with the suspects.
+    void track(Vector3 target) { if (job_.kind == JobKind::Callout) job_.target = target; }
+    // The officer's first look round the state prison (the warden's tour), once.
+    void prison_toured() { state_.prison_toured = true; }
+    // Inside: a guard has told the new inmate the ropes (once).
+    void inside_told() { state_.inside_told = true; }
+    // Inside: the player shanked a snitch for the gang (off to the SHU).
+    void shanked_snitch();
+    // The player's prison number (given at the first booking, kept for good).
+    [[nodiscard]] int inmate_number() const { return state_.inmate; }
     // The player was arrested (one star, caught): off to the state prison. The job in hand is off;
     // a gang member who does his time quietly earns a little respect for it. Returns the sentence
     // (seconds).

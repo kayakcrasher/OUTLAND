@@ -56,7 +56,7 @@ Officers are residents with the `PoliceOfficer` occupation. They have homes and 
 - Officers never flee. When shot, armed officers chase and unarmed officers stand their ground.
 
 **Ending it:**
-- **Arrest** (1 star only): an officer is within 2.5 m of you for 2 seconds while you haven't fired for 3 seconds. You're let off with a warning and the stars clear.
+- **Arrest** (1 star): an officer is within 2.5 m of you for 2 seconds while you haven't fired for 3 seconds. At any level, on foot with no gun in hand, an officer within 6 m for 2 seconds is enough: you give up. Either way it's "BUSTED": the stars clear and (in Explore) you're booked into the state prison ([callouts and prison](callouts-and-prison.md)).
 - **Escape**: stay unseen for 25 s + 12 s per star (37 s at 1 star, 73 s at 4 stars). The message is "You lost the police".
 - **Investigation**: an anonymous "shots fired" report sends one officer to look around for 60 s.
 - **Death**: if you die, the police stand down.

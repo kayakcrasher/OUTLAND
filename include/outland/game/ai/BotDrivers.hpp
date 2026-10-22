@@ -48,6 +48,8 @@ public:
     // `vehicle` set: that car only (even a reserved one).
     bool dispatch(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
                   const std::vector<int>& crew, Vector3 from, Vector3 goal, float reach = 160, std::string_view vehicle = {});
+    // Ends the ride carrying `bot` and puts everyone out beside the car (a pull-over).
+    void halt(int bot, BattleRoyaleBots& bots, vehicles::VehicleSystem& cars, world::VerdaRegion& region);
     // Ends the ride carrying `bot` where it is: everyone aboard is off it (not placed anywhere).
     void cancel(int bot, BattleRoyaleBots& bots, vehicles::VehicleSystem& cars);
     // Cars nobody else takes (Paul Acosta's): ids containing `marker`.

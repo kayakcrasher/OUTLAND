@@ -10,6 +10,14 @@ worn on that body by the Green Hand's crews (the game swaps the texture in when 
                           with lapels over a white shirt and a green tie, a small green hand
                           on the lapel and a green pocket square.
 
+and every other gang's colours, so the Policio can tell them apart at a glance:
+
+  gang_<n>_soldato.png    the foot soldiers of gang n (1 Montaj Lupoj, 2 La Ora Ankro, 3 Marĉaj
+                          Ranoj, 4 Feraj Hundoj): the shirt in the gang's colour, a dark band
+                          across the shoulders, front and back.
+  gang_<n>_kapo.png       their bosses: the charcoal jacket with the tie and pocket square in
+                          the gang's colour.
+
 On this texture the shirt's front panel lies on its side (its collar toward +x) and the back
 panel upside down (its collar toward +y); the drawing is turned to match.
 
@@ -97,7 +105,7 @@ def soldato(base):
     return image
 
 
-def kapo(base):
+def kapo(base, tie=GREEN, knot=GREEN_DARK, pin=True):
     image = base.copy()
     recolour(image, shirt_mask(base), (40, 42, 48), .35)
     # The front, drawn upright then turned onto the panel: the shirt's V between the lapels,
@@ -108,20 +116,54 @@ def kapo(base):
     d.polygon([(cx - 26, 0), (cx + 26, 0), (cx, 92)], fill=(244, 244, 240, 255))               # the shirt
     d.polygon([(cx - 26, 0), (cx - 34, 0), (cx - 4, 104), (cx, 92)], fill=(26, 27, 32, 255))     # lapel edges
     d.polygon([(cx + 26, 0), (cx + 34, 0), (cx + 4, 104), (cx, 92)], fill=(26, 27, 32, 255))
-    d.polygon([(cx - 6, 4), (cx + 6, 4), (cx + 4, 14), (cx - 4, 14)], fill=GREEN_DARK)          # the knot
-    d.polygon([(cx - 4, 14), (cx + 4, 14), (cx + 8, 78), (cx, 90), (cx - 8, 78)], fill=GREEN)     # the tie
-    d.polygon([(cx + 34, 40), (cx + 58, 40), (cx + 58, 47), (cx + 34, 47)], fill=GREEN)          # pocket square
-    art.alpha_composite(hand(18, GREEN, (12, 12, 12, 255)), (cx - 44, 14))                       # lapel pin
+    d.polygon([(cx - 6, 4), (cx + 6, 4), (cx + 4, 14), (cx - 4, 14)], fill=knot)                # the knot
+    d.polygon([(cx - 4, 14), (cx + 4, 14), (cx + 8, 78), (cx, 90), (cx - 8, 78)], fill=tie)       # the tie
+    d.polygon([(cx + 34, 40), (cx + 58, 40), (cx + 58, 47), (cx + 34, 47)], fill=tie)            # pocket square
+    if pin:
+        art.alpha_composite(hand(18, GREEN, (12, 12, 12, 255)), (cx - 44, 14))                   # lapel pin
     for y in (104, 124, 144):                                                                     # jacket buttons
         d.ellipse([cx - 3, y - 3, cx + 3, y + 3], fill=(12, 12, 14, 255))
     stamp(image, art, (FRONT[0] - 5, FRONT[1]), -90)
     return image
 
 
+# The other gangs' colours (game::mafia::gangs), by gang index.
+GANG_COLOURS = {1: (168, 176, 190), 2: (240, 196, 64), 3: (64, 178, 190), 4: (200, 86, 52)}
+
+
+def shade(colour, k):
+    return tuple(max(0, min(255, int(c * k))) for c in colour[:3]) + (255,)
+
+
+def colours_shirt(colour):
+    def make(base):
+        image = base.copy()
+        mask = shirt_mask(base)
+        recolour(image, mask, colour, .5)
+        # A dark band across the shoulders, front and back: on the front panel the collar is
+        # toward +x, on the back panel toward +y.
+        band = shade(colour, .38)
+        px, m = image.load(), mask.load()
+        w, h = image.size
+        for y in range(h):
+            for x in range(w):
+                if not m[x, y]:
+                    continue
+                front = x < 256 and y < 256
+                if (front and 150 <= x <= 172) or (not front and x >= 256 and 348 <= y <= 372):
+                    px[x, y] = band
+        return image
+    return make
+
+
 def build():
     base = Image.open(SOURCE).convert("RGBA")
     out = {}
-    for name, make in (("verda_mano_soldato.png", soldato), ("verda_mano_kapo.png", kapo)):
+    makers = [("verda_mano_soldato.png", soldato), ("verda_mano_kapo.png", kapo)]
+    for gang, colour in GANG_COLOURS.items():
+        makers.append((f"gang_{gang}_soldato.png", colours_shirt(colour)))
+        makers.append((f"gang_{gang}_kapo.png", lambda b, c=colour: kapo(b, shade(c, 1), shade(c, .6), pin=False)))
+    for name, make in makers:
         buffer = io.BytesIO()
         make(base).save(buffer, "PNG", optimize=True)
         out[OUT / name] = buffer.getvalue()

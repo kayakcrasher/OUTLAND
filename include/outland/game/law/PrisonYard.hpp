@@ -42,6 +42,16 @@ public:
     int admit(bool gang, const Chooser& choose);
     void update(float dt);
 
+    // The snitch (a law breaker who talked to the Policio): someone a jailed gang member can put
+    // in work on. Picks one from the yard (his bot id), or -1 when there's nobody.
+    int mark_snitch();
+    [[nodiscard]] int snitch() const { return snitch_; }
+    // Stops someone where they stand for `seconds` (they turn to whoever is there).
+    void pause(int bot, float seconds);
+    // Out of the yard for good (the snitch, shanked).
+    bool remove(int bot);
+    [[nodiscard]] const PrisonPerson* find(int bot) const;
+
     [[nodiscard]] const std::vector<PrisonPerson>& people() const { return people_; }
     [[nodiscard]] int inmates() const;
     // A person's place in the world (feet; y from the ground at the prison's centre) and heading.
@@ -61,6 +71,7 @@ private:
     float yaw_{0};
     std::uint64_t rng_{1}, seed_{0};
     int next_bot_{first_bot};
+    int snitch_{-1};
 };
 
 } // namespace outland::game::law

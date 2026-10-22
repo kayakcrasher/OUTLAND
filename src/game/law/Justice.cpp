@@ -187,19 +187,22 @@ void Justice::update(const JusticeFrame& frame, life::LifeSimulation& life, char
     }
     for (const int id : responders_) npcs.arm_resident(id, wanted_ >= 2);
 
-    // One star: an officer at arm's length and a calm player is an arrest.
-    if (wanted_ == 1) {
+    // One star: an officer at arm's length and a calm player is an arrest. At any level, a player
+    // on foot with no gun in hand gives up the same way.
+    if (wanted_ == 1 || (wanted_ > 1 && !frame.player_armed && !frame.player_driving)) {
         bool close = false;
+        // Hands empty, the police close: they don't need to touch you to take you in.
+        const float reach = frame.player_armed || frame.player_driving ? config_.arrest_radius : config_.surrender_radius;
         for (const int id : responders_) {
             const auto& r = residents[static_cast<std::size_t>(id)];
-            close |= r.physical && flat(r.body, frame.player) <= config_.arrest_radius;
+            close |= r.physical && flat(r.body, frame.player) <= reach;
         }
-        for (const Vector3 officer_feet : frame.patrol_officers) close |= flat(officer_feet, frame.player) <= config_.arrest_radius;
+        for (const Vector3 officer_feet : frame.patrol_officers) close |= flat(officer_feet, frame.player) <= reach;
         if (close && frame.now - last_fired_ >= config_.calm_seconds) arrest_clock_ += frame.dt;
         else arrest_clock_ = 0;
         if (arrest_clock_ >= config_.arrest_seconds) {
             arrested_ = true;
-            stand_down(life, npcs, "ARRESTED - let off with a warning");
+            stand_down(life, npcs, "BUSTED - cuffed and in the back of a police car");
             return;
         }
     }

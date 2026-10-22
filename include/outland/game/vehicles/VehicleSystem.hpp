@@ -43,6 +43,8 @@ class VehicleSystem {
     bool reconcile(world::VerdaRegion &region);
     bool spawn(world::VerdaRegion &region, Vector3 near, float yaw,
                std::string_view definition = "hatchback");
+    // Takes a spawned vehicle off the island (a getaway car towed). False if it is driven or not one.
+    bool remove(world::VerdaRegion &region, std::string_view id);
     // The id of the vehicle the last successful spawn() made.
     [[nodiscard]] const std::string &last_spawned() const { return last_spawned_; }
     // Nearest usable vehicle whose body (not just its centre) is within `radius` of the player.
