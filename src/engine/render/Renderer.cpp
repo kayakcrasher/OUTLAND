@@ -669,6 +669,8 @@ void Renderer::run() {
     game::campaign::CampaignState campaign;
     game::campaign::Story story;
     std::string campaign_path;
+    // What Uncle Ron has to say next time the player talks to him (his reaction to the road they took).
+    std::vector<game::campaign::Line> ron_pending;
     struct UncleRon { Vector3 at{}; float yaw{0}; bool placed{false}; } uncle_ron;
     constexpr int uncle_ron_bot=940001;
     int ron_home=-1;                 // index into homes_for_sale
@@ -1147,6 +1149,7 @@ void Renderer::run() {
             for(const auto& v:vehicles.vehicles()) if(std::find(before.begin(),before.end(),v.id)==before.end()) {campaign.ron_truck=v.id;vehicle_dirty=true;break;}
     };
     const auto own_ron_house=[&] {
+        if(campaign.kicked_out) return;   // he showed the player the door
         if(ron_home<0 || ron_home>=static_cast<int>(homes_for_sale.size())) return;
         auto& owned=loot_session.economy().properties;
         const auto& id=homes_for_sale[static_cast<std::size_t>(ron_home)].id;
@@ -2758,13 +2761,16 @@ void Renderer::run() {
                 const int v=campaign.ron_truck.empty() ? -1 : vehicles.find(campaign.ron_truck);
                 return v>=0 && Vector3Distance(vehicles.vehicles()[static_cast<std::size_t>(v)].position,feet)<5.5F;
             };
-            if(!campaign_path.empty() && story.talking() && story.stage()!=game::campaign::Stage::Free) {
+            if(!campaign_path.empty() && story.talking() && (story.stage()!=game::campaign::Stage::Free || story.saying())) {
                 story.talk();input_system.player().interact=false;   // the next line
             } else if(!campaign_path.empty() && story.stage()==game::campaign::Stage::ToTruck &&
                       (ron_truck_near() || (uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.5F))) {
                 story.board();input_system.player().interact=false;  // off home with Uncle Ron
             } else if(!campaign_path.empty() && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F && story.stage()!=game::campaign::Stage::Ride) {
-                story.talk();input_system.player().interact=false;
+                // He has something to say about the road the player took; otherwise a word.
+                if(!ron_pending.empty() && story.say(ron_pending)) ron_pending.clear();
+                else story.talk();
+                input_system.player().interact=false;
             } else if(chief.placed && Vector3Distance(feet,chief.at)<2.4F) {
                 bool issue=false;
                 chief_line=career.chief_talk(issue);chief_line_time=10;
@@ -4027,6 +4033,21 @@ void Renderer::run() {
                     prison_until=-1;
                     career.released();
                     interaction_message=career.message();interaction_remaining=5;
+                    // The campaign: Uncle Ron comes for the player - the first time, and only then.
+                    if(!campaign_path.empty() && story.stage()==game::campaign::Stage::Free && !campaign.kicked_out) {
+                        if(!campaign.picked_up) {
+                            campaign.picked_up=true;
+                            const bool gang=career.state().side==game::career::Side::Gang;
+                            const Vector3 ron=floor_at(prison_at(2.2F,-48));
+                            place_ron(ron,facing(ron,out));
+                            park_ron_truck(floor_at(prison_at(-4,-52)),world::layout::prison_yaw+90);
+                            story.say(game::campaign::Story::pickup_lines(gang),true);
+                            if(gang) {campaign.ultimatum=true;campaign.ultimatum_left=game::campaign::Story::ultimatum_seconds;}
+                            interaction_message="Uncle Ron is waiting at the gate";interaction_remaining=4;
+                        } else {
+                            interaction_message="Nobody at the gate this time. Uncle Ron said he wouldn't come again";interaction_remaining=5;
+                        }
+                    }
                 } else if(!inside_prison(feet) || vehicles.driver()) {
                     Vector3 exit{};
                     if(vehicles.driver()) vehicles.exit(verda_region,exit,true);
@@ -4271,6 +4292,48 @@ void Renderer::run() {
                     // turns to the player when he's close, and the game saves itself now and then.
                     if(!campaign_path.empty()) {
                         campaign.played+=dt;
+                        // Uncle Ron and the road the player takes.
+                        if(story.stage()==game::campaign::Stage::Free) {
+                            using game::campaign::Path;
+                            const Path path=career.on_duty() ? Path::Cop : career.state().side==game::career::Side::Gang ? Path::Gang :
+                                            trucking.hired() ? Path::Trucker : Path::None;
+                            const auto react=[&](bool& heard,Path p,const char* phone) {
+                                if(path!=p || heard) return;
+                                heard=true;
+                                const auto& lines=game::campaign::Story::reaction_lines(p);
+                                ron_pending.assign(lines.begin(),lines.end());
+                                chief_line=std::string("Uncle Ron (phone): ")+phone;chief_line_time=7;
+                            };
+                            react(campaign.heard_trucker,Path::Trucker,"\"Verda Transporto? Come home - I want to hear everything!\"");
+                            react(campaign.heard_cop,Path::Cop,"\"THE POLICIO?! Come home this minute, I have to see you!\"");
+                            react(campaign.heard_gang,Path::Gang,"\"...Dario called. Come home. We need to talk.\"");
+                            // The ultimatum: out of the gang in time, or out of his house.
+                            if(campaign.ultimatum && !campaign.kicked_out) {
+                                if(path!=Path::Gang) {
+                                    campaign.ultimatum=false;
+                                    chief_line="Uncle Ron (phone): \"You left them? ...Thank you, nevo. Thank you.\"";chief_line_time=7;
+                                } else if((campaign.ultimatum_left-=dt)<=0) {
+                                    campaign.ultimatum=false;campaign.kicked_out=true;
+                                    if(ron_home>=0 && ron_home<static_cast<int>(homes_for_sale.size())) {
+                                        auto& owned=loot_session.economy().properties;
+                                        std::erase(owned,homes_for_sale[static_cast<std::size_t>(ron_home)].id);
+                                        loot_session.changed();furnish_island();rebuild_signs();
+                                    }
+                                    const auto& lines=game::campaign::Story::kicked_out_lines();
+                                    ron_pending.assign(lines.begin(),lines.end());
+                                    chief_line="Uncle Ron (phone): \"I warned you. Don't come home.\"";chief_line_time=8;
+                                }
+                            }
+                            // Shown the door, then out of the gang for good: he takes the player back.
+                            if(campaign.kicked_out && path!=Path::Gang) {
+                                campaign.kicked_out=false;
+                                own_ron_house();
+                                const auto& lines=game::campaign::Story::welcome_back_lines();
+                                ron_pending.assign(lines.begin(),lines.end());
+                                chief_line="Uncle Ron (phone): \"You're out of it? Come home, nevo.\"";chief_line_time=7;
+                            }
+                            story.set_mood(path,campaign.kicked_out);
+                        }
                         story.update(dt);
                         if(story.take_teleport()) ron_home_now(true);
                         if(story.take_home_given()) {

@@ -27,6 +27,9 @@ enum class Stage : std::uint8_t {
     Free,       // the game is the player's
 };
 
+// The road the player takes, as Uncle Ron sees it.
+enum class Path : std::uint8_t { None, Trucker, Cop, Gang };
+
 // What a slot holds besides the inventory, career and the rest (beside its profile: ".campaign").
 struct CampaignState {
     Stage stage{Stage::Arrival};
@@ -37,6 +40,12 @@ struct CampaignState {
     std::int64_t saved_at{0};         // unix time
     std::string place;                // the nearest town when saved
     std::string ron_truck;            // Uncle Ron's pickup (vehicle id)
+    // Uncle Ron and the player's choices.
+    bool heard_trucker{false}, heard_cop{false}, heard_gang{false};   // he has had his say about each
+    bool picked_up{false};            // he came for the player at the prison gate (once only)
+    bool ultimatum{false};            // "leave the gang, or leave my house"
+    float ultimatum_left{0};          // seconds of play before he means it
+    bool kicked_out{false};           // he meant it: the house is no longer the player's
 };
 std::string serialise(const CampaignState& state);
 bool parse(const std::string& text, CampaignState& state);
@@ -55,6 +64,8 @@ struct Line { const char* speaker; std::string text; };
 
 class Story {
 public:
+    // How long the ultimatum gives the player to leave the gang (seconds of play).
+    static constexpr float ultimatum_seconds = 1200;
     static constexpr const char* uncle = "Uncle Ron";
     static constexpr const char* brother = "Dario";   // Uncle Dario, head of La Verda Mano
     static constexpr float fade_in = 1.2F, hold = .6F, fade_out = 1.2F;
@@ -71,7 +82,7 @@ public:
     void update(float dt);
 
     // The line on screen ("" when none), whose it is, and where in the talk it is.
-    [[nodiscard]] bool talking() const { return line_ >= 0; }
+    [[nodiscard]] bool talking() const { return line_ >= 0 || special_ >= 0; }
     [[nodiscard]] const Line* line() const;
     [[nodiscard]] int line_number() const { return line_ + 1; }
     [[nodiscard]] int lines() const;
@@ -90,11 +101,35 @@ public:
     static const std::vector<Line>& port_lines();
     static const std::vector<Line>& home_lines();
     static const std::vector<Line>& idle_lines();
+    // A word in free play, as the player's road stands (and whether he showed them the door).
+    static const std::vector<Line>& idle_lines(Path path, bool kicked_out);
+    // His say on a road the player has just taken (once each).
+    static const std::vector<Line>& reaction_lines(Path path);
+    // At the prison gate (the one time he comes): the ultimatum if the player runs with a gang.
+    static const std::vector<Line>& pickup_lines(bool gang);
+    // The ultimatum ran out; and the player who left the gang after all.
+    static const std::vector<Line>& kicked_out_lines();
+    static const std::vector<Line>& welcome_back_lines();
+
+    // A talk out of turn (in free play): the lines play one by one with USE. Returns false while
+    // the story's own talk is on.
+    bool say(const std::vector<Line>& lines, bool then_drive_home = false);
+    [[nodiscard]] bool saying() const { return special_ >= 0; }
+    // Uncle Ron drives the player home (a fade, as on the first day): from the prison gate.
+    void drive_home();
+    [[nodiscard]] bool driving_home() const { return homeward_; }
+    // The road the player is on and whether he showed them the door: his words in free play.
+    void set_mood(Path path, bool kicked_out) { path_ = path; kicked_out_ = kicked_out; }
 
 private:
     void set(Stage stage) { stage_ = stage; changed_ = true; }
     Stage stage_{Stage::Arrival};
     int line_{-1};
+    std::vector<Line> lines_;          // the talk out of turn
+    int special_{-1};
+    bool then_home_{false}, homeward_{false};
+    Path path_{Path::None};
+    bool kicked_out_{false};
     int idle_{0};
     float ride_{0};
     bool teleport_{false}, home_given_{false}, changed_{false};

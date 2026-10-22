@@ -28,6 +28,33 @@ Verda City, and several of his family are in **La Verda Mano**, the Green Hand.
    wakes up there after a hospital stay.
 4. **From there the game is the player's.** Ron stays at home. USE beside him for a word or two.
 
+### Uncle Ron and the road you take
+Ron keeps an eye on what the player makes of themselves. The first time the player takes a road,
+he phones ("Come home...") and has his say the next time they USE beside him at home:
+
+- **Trucker** (hired by Verda Transporto): he is happy. Honest work, good money, and he wants
+  to hear about every run.
+- **Cop** (sworn in at a Policio station): he is over the moon. He always wanted someone in the
+  family on the right side of the law.
+- **Gang** (joined Dario's Green Hand): he is very disappointed. He doesn't shout; he says he
+  expected better.
+
+Between talks, his idle lines follow the player's current road too.
+
+**Prison.** The first time the player is released from prison, Ron is waiting at the gate with
+his truck. USE beside him to hear him out, then he drives the player home (the screen fades). That
+happens **once**: after any later sentence, nobody is at the gate.
+
+**The ultimatum.** If the player was still in the gang when Ron picked them up, he gives them an
+ultimatum: leave the gang within 20 minutes of play, or move out. Leaving in time ends it (he
+phones to say thank you). If the player is still in the gang when time runs out, he wants them
+out of his house. Uncle Ron's house is no longer the player's home: they can't sleep there or wake
+up there. If the player later leaves the gang, Ron phones and takes them back, and the house is
+theirs again.
+
+This state is saved in the slot: what Ron has already reacted to, the prison pickup, the
+ultimatum and the time left on it, and whether he showed the player the door.
+
 **Uncle Dario** (Ron's brother) is the head of the Green Hand. He is the boss at La Verda Mano's
 bar in downtown Verda City, and his name shows over his head. Talk to him to join the family
 business ("The Green Hand looks after its own - family first"). Join and he gives you the keys to

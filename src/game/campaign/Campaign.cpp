@@ -30,6 +30,8 @@ std::string serialise(const CampaignState& s) {
     out << "saved=" << static_cast<long long>(s.saved_at) << "\n";
     if (!s.place.empty()) out << "place=" << s.place << "\n";
     if (!s.ron_truck.empty()) out << "ron_truck=" << s.ron_truck << "\n";
+    out << "heard=" << s.heard_trucker << s.heard_cop << s.heard_gang << "\n";
+    out << "ron=" << s.picked_up << s.ultimatum << s.kicked_out << "," << static_cast<long long>(s.ultimatum_left) << "\n";
     return out.str();
 }
 
@@ -56,6 +58,13 @@ bool parse(const std::string& text, CampaignState& s) {
         else if (key == "saved") s.saved_at = std::max<long long>(0, std::atoll(value.c_str()));
         else if (key == "place") s.place = value;
         else if (key == "ron_truck") s.ron_truck = value;
+        else if (key == "heard" && value.size() >= 3) {
+            s.heard_trucker = value[0] == '1'; s.heard_cop = value[1] == '1'; s.heard_gang = value[2] == '1';
+        } else if (key == "ron" && value.size() >= 3) {
+            s.picked_up = value[0] == '1'; s.ultimatum = value[1] == '1'; s.kicked_out = value[2] == '1';
+            if (const auto comma = value.find(','); comma != std::string::npos)
+                s.ultimatum_left = static_cast<float>(std::clamp(std::atof(value.c_str() + comma + 1), 0.0, 3600.0));
+        }
     }
     return staged;
 }
@@ -134,6 +143,112 @@ const std::vector<Line>& Story::idle_lines() {
     return lines;
 }
 
+const std::vector<Line>& Story::idle_lines(Path path, bool kicked_out) {
+    static const std::vector<Line> trucker{
+        {uncle, "There's my trucker! Verda Transporto - honest work, honest money. Your grandfather would be proud."},
+        {uncle, "How's the road, nevo? Mind the ring road in the rain - those big rigs slide."},
+        {uncle, "Tomaso says you're a good driver. I told him: it runs in the family. Ahaha!"},
+        {uncle, "Soup on the stove, and a cold one in the fridge for my working man."},
+    };
+    static const std::vector<Line> cop{
+        {uncle, "Officer! Ahaha! I still can't believe it. My nephew, in the Policio!"},
+        {uncle, "I told the whole street. Mrs Kovač cried. I nearly did too."},
+        {uncle, "Be careful out there, eh? Come home safe. That's all I ask."},
+        {uncle, "A cop in the family. Maybe Verda has a chance after all."},
+    };
+    static const std::vector<Line> gang{
+        {uncle, "...You're home. Hm."},
+        {uncle, "I hear things, nevo. People talk. I hope they're wrong about you."},
+        {uncle, "Dario got to you, didn't he. Just like he got to everyone else."},
+        {uncle, "There's soup. I'm not hungry."},
+    };
+    static const std::vector<Line> out{
+        {uncle, "You made your choice, nevo. This isn't your home any more."},
+        {uncle, "When you're done with them - really done - the door is open. Not before."},
+    };
+    if (kicked_out) return out;
+    switch (path) {
+        case Path::Trucker: return trucker;
+        case Path::Cop: return cop;
+        case Path::Gang: return gang;
+        default: return idle_lines();
+    }
+}
+
+const std::vector<Line>& Story::reaction_lines(Path path) {
+    static const std::vector<Line> trucker{
+        {uncle, "Verda Transporto? You took a job with Tomaso? Ahaha! Come here!"},
+        {uncle, "Honest work, nevo. Real work. Loads off the ships, cattle to the port - that's how this island eats."},
+        {uncle, "I'm happy for you. Truly. Now go and earn your keep!"},
+    };
+    static const std::vector<Line> cop{
+        {uncle, "The Policio?! YOU? A badge? Ahaha! Let me look at you - the uniform!"},
+        {uncle, "My nephew, an officer of the Policio de Verda. Wait till I tell the whole street. Wait till I tell your mother!"},
+        {uncle, "Do you know what this means to me? After everything with Dario... one of us on the right side."},
+        {uncle, "I'm so proud, nevo. So proud. Be careful. And go and clean up this island."},
+    };
+    static const std::vector<Line> gang{
+        {uncle, "So it's true. You went to Dario. The Green Hand."},
+        {uncle, "I asked you one thing, nevo. One thing. Think about it, I said. There are other roads."},
+        {uncle, "I've buried friends because of men like them. And now my own blood wears their colours."},
+        {uncle, "You can still sleep here. For now. But I won't pretend I'm not ashamed."},
+    };
+    static const std::vector<Line> none{};
+    switch (path) {
+        case Path::Trucker: return trucker;
+        case Path::Cop: return cop;
+        case Path::Gang: return gang;
+        default: return none;
+    }
+}
+
+const std::vector<Line>& Story::pickup_lines(bool gang) {
+    static const std::vector<Line> with_gang{
+        {uncle, "Get in the truck. ...No. First, listen to me."},
+        {uncle, "I drove past those walls every week for twenty years thinking: never anyone of mine. And here I am."},
+        {uncle, "This is the only time I come, nevo. The only time. Next time you walk home."},
+        {uncle, "And this is how it is: you leave the Green Hand, or you leave my house. I won't have it under my roof."},
+        {uncle, "You've got a little time to choose. Choose right. Now get in."},
+    };
+    static const std::vector<Line> without{
+        {uncle, "Get in the truck. ...You look terrible."},
+        {uncle, "I don't know what you did and I don't want to know. But this is the only time I come for you, nevo."},
+        {uncle, "Next time, you walk home. Now get in. There's soup."},
+    };
+    return gang ? with_gang : without;
+}
+
+const std::vector<Line>& Story::kicked_out_lines() {
+    static const std::vector<Line> lines{
+        {uncle, "I warned you. You're still with them."},
+        {uncle, "Get your things. This isn't your home any more. Go to Dario - he'll find you a bed."},
+        {uncle, "If you ever leave them for good, come back. Until then... don't."},
+    };
+    return lines;
+}
+
+const std::vector<Line>& Story::welcome_back_lines() {
+    static const std::vector<Line> lines{
+        {uncle, "You're out? Really out? ...Come here, nevo."},
+        {uncle, "Your room's as you left it. I couldn't bring myself to touch it."},
+        {uncle, "Welcome home. Again. Ahaha! Let's not do that a third time, eh?"},
+    };
+    return lines;
+}
+
+bool Story::say(const std::vector<Line>& lines, bool then_drive_home) {
+    if (lines.empty() || line_ >= 0 || stage_ != Stage::Free) return false;
+    lines_ = lines;
+    special_ = 0;
+    then_home_ = then_drive_home;
+    return true;
+}
+
+void Story::drive_home() {
+    homeward_ = true;
+    ride_ = 0;
+}
+
 void Story::start(Stage stage) {
     // A talk or the drive that was cut off by a quit starts again at its beginning.
     if (stage == Stage::PortTalk || stage == Stage::ToTruck) stage = Stage::Arrival;
@@ -141,10 +256,14 @@ void Story::start(Stage stage) {
     stage_ = stage;
     line_ = stage == Stage::HomeTalk ? 0 : -1;
     ride_ = 0;
+    special_ = -1;
+    lines_.clear();
+    then_home_ = homeward_ = false;
     teleport_ = home_given_ = changed_ = false;
 }
 
 int Story::lines() const {
+    if (special_ >= 0) return static_cast<int>(lines_.size());
     switch (stage_) {
         case Stage::PortTalk: return static_cast<int>(port_lines().size());
         case Stage::HomeTalk: return static_cast<int>(home_lines().size());
@@ -154,16 +273,28 @@ int Story::lines() const {
 }
 
 const Line* Story::line() const {
+    if (special_ >= 0 && special_ < static_cast<int>(lines_.size())) return &lines_[static_cast<std::size_t>(special_)];
     if (line_ < 0) return nullptr;
     switch (stage_) {
         case Stage::PortTalk: return &port_lines()[static_cast<std::size_t>(line_)];
         case Stage::HomeTalk: return &home_lines()[static_cast<std::size_t>(line_)];
-        case Stage::Free: return &idle_lines()[static_cast<std::size_t>(line_) % idle_lines().size()];
+        case Stage::Free: {
+            const auto& words = idle_lines(path_, kicked_out_);
+            return &words[static_cast<std::size_t>(line_) % words.size()];
+        }
         default: return nullptr;
     }
 }
 
 bool Story::talk() {
+    if (special_ >= 0) {
+        if (++special_ >= static_cast<int>(lines_.size())) {
+            special_ = -1;
+            lines_.clear();
+            if (then_home_) { then_home_ = false; drive_home(); }
+        }
+        return true;
+    }
     switch (stage_) {
         case Stage::Arrival:
             set(Stage::PortTalk);
@@ -177,7 +308,7 @@ bool Story::talk() {
             return true;
         case Stage::Free:
             if (line_ >= 0) { line_ = -1; return true; }
-            line_ = idle_++ % static_cast<int>(idle_lines().size());
+            line_ = idle_++ % static_cast<int>(idle_lines(path_, kicked_out_).size());
             return true;
         default:
             return false;
@@ -192,6 +323,13 @@ bool Story::board() {
 }
 
 void Story::update(float dt) {
+    if (homeward_ && dt > 0) {
+        const float before = ride_;
+        ride_ += std::min(dt, .25F);
+        if (before < fade_in && ride_ >= fade_in) teleport_ = true;
+        if (ride_ >= fade_in + hold + fade_out) homeward_ = false;
+        return;
+    }
     if (stage_ != Stage::Ride || !(dt > 0)) return;
     const float before = ride_;
     ride_ += std::min(dt, .25F);
@@ -203,14 +341,15 @@ void Story::update(float dt) {
 }
 
 float Story::fade() const {
-    if (stage_ != Stage::Ride) return 0;
+    if (stage_ != Stage::Ride && !homeward_) return 0;
     if (ride_ < fade_in) return ride_ / fade_in;
     if (ride_ < fade_in + hold) return 1;
     return std::max(0.0F, 1 - (ride_ - fade_in - hold) / fade_out);
 }
 
 const char* Story::caption() const {
-    return stage_ == Stage::Ride ? "Uncle Ron drives you home to Verda City..." : "";
+    return homeward_ ? "Uncle Ron drives you home. Neither of you says much..." :
+           stage_ == Stage::Ride ? "Uncle Ron drives you home to Verda City..." : "";
 }
 
 std::string Story::objective() const {
