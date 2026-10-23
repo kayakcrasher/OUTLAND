@@ -78,6 +78,9 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_smugglers_jetty", .name = "Jetty with a moored coaster and contraband crates", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/civic/smugglers_jetty.glb", .thumbnail_path = "", .footprint = {18.00F, 44.00F, 19.00F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_fishers_jetty", .name = "Fishers' jetty with trawlers, fish boxes and a fish stall (deck level with a quay)", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/civic/fishers_jetty.glb", .thumbnail_path = "", .footprint = {18.00F, 56.00F, 19.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_cargo_ship", .name = "Stella Maris - feeder container ship (moored)", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/civic/cargo_ship.glb", .thumbnail_path = "", .footprint = {16.00F, 96.00F, 32.00F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

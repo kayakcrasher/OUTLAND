@@ -5,8 +5,8 @@ cargo terminal below Porto Luma, and **Verda Transporto** runs the island's frei
 in Verda City's industrial quarter. Its own drivers are on the road all day, and anyone who isn't
 a serving police officer can sign on and drive loads for pay (Explore).
 
-Code: `world/VerdaLayout.hpp` (`cargo_*`, `freight_*`), `TerrainHeight` (the ramp, the quay and the
-berth), `dev::build_verda_towns` (`cargo_terminal()`, `freight_depot()`), `game::freight::Freight`
+Code: `world/VerdaLayout.hpp` (`cargo_*`, `fish_z`, `quay_*`, `freight_*`), `TerrainHeight` (the
+ramps, the quay and the berth), `dev::build_verda_towns` (`cargo_terminal()`, `freight_depot()`), `game::freight::Freight`
 (the AI rigs), `game::freight::Trucking` (the player's loads), `game::ranch::Ranches::ship_cattle`
 (the cattle quay). Models: `tools/generate_city_kit.py` (`civic/cargo_ship.glb`,
 `harbour_crane.glb`, `quay_apron.glb`, `container_stack.glb`, `cattle_gangway.glb`,
@@ -45,6 +45,22 @@ Porto Luma stands 38 m above the sea, so the terminal is down at the shore:
   on the lane, and a cattle gangway up the ship's side. Ranchers' cattle are shipped from here;
   see [vakeroj.md](vakeroj.md).
 
+### Two docks, one loop
+The cargo end is where the island gets its supplies. The same quay runs on south, level, to the
+**fishers' quay** (Fiŝista Kajo), which is the locals' end:
+- **The fishers' jetty** stands off the quay face at z = -360. Its deck is level with the quay, so
+  you can walk or drive straight on. Two trawlers lie alongside and a third at its end, with a
+  rowing boat, fish boxes, nets, lobster pots and a fish stall at the land end
+  (`civic/fishers_jetty.glb`). The smugglers land here too, after dark (see [gangs.md](gangs.md)).
+- **A paved parking area** behind the jetty, for the locals.
+- **The fishers' ramp** climbs from the quay at z = -360 back up to the quay road, on the street
+  that runs into the town at Porto Luma's z + 40.
+- **The lane** runs the whole length of the quay and joins the two ramps.
+
+So the docks are a loop: down the terminal ramp, along the quay under the cranes, past the fishers'
+jetty and up the fishers' ramp, or the other way round. A rig never has to turn round on the quay.
+The quay road between the two ramps is 14 m wide, like the other trucking routes.
+
 ## Verda Transporto
 The depot is in Verda City's **industrial quarter** (Industria Kvartalo), on level ground west of
 Okcidenta Verda and south of the Roka highway. The suburb street on z = -84 runs on into its yard.
@@ -78,9 +94,11 @@ both welcome. He gives out **one load at a time**:
 | DELIVERY | goods at the depot | a town |
 | CATTLE HAUL | a ranch's cattle at its chute | the cattle quay, to be shipped |
 
-1. Take one of the company's rigs from the truck park: a **box-trailer rig**, or the
-   **stock-trailer rig** for cattle. The wrong rig, a car or on foot loads nothing; a line on
-   screen says why.
+1. Take a rig: a **box-trailer rig**, or the **stock-trailer rig** for cattle. The ones for hire
+   stand in the truck park, but any of the island's big rigs will do, since they all wear the
+   company's colours. That includes the company drivers' rigs beside them (`semi_haul`), the
+   supply rig (`semi_freight`) and the cattle rig (`semi_cattle`). Taking one off its run ends
+   the run. The wrong trailer, a car or on foot loads nothing; a line on screen says why.
 2. Drive to the pickup (a green column of light, and a mark on the compass). Pull up within 16 m
    and **stop**. Loading takes a few seconds. For cattle, the family drives a few head into the
    corral when the job is given out, and they go up the chute when you stop. If none are there

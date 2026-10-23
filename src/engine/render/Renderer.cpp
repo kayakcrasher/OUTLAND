@@ -2154,11 +2154,12 @@ void Renderer::run() {
                         territory.add_ranch(std::string(ranch.spec->id),std::string(ranch.spec->name),ranch.frame.at(0,110),150,static_cast<int>(r),
                             std::string(ranch.spec->family),game::mafia::gang_of_zone(ranch.spec->county),session_seed);
                     }
-                    // Contraband comes ashore at the smugglers' jetties: the load waits at the foot
-                    // of each, where the gravel track ends (the jetty's land end is its model's -Z).
+                    // Contraband comes ashore at the smugglers' jetties, and at Porto Luma's fishers'
+                    // jetty after dark: the load waits at the foot of each, where the track or the
+                    // quay meets it (the jetty's land end is its model's -Z).
                     for(const auto& town:verda_region.settlements())
                         for(const auto& a:town.assets) {
-                            if(!a.model_path.ends_with("smugglers_jetty.glb")) continue;
+                            if(!a.model_path.ends_with("smugglers_jetty.glb") && !a.model_path.ends_with("fishers_jetty.glb")) continue;
                             const float r=a.rotation_y*DEG2RAD;
                             const Vector3 foot{a.position.x-std::sin(r)*25,0,a.position.z-std::cos(r)*25};
                             smuggling_docks.push_back({town.name+" jetty",{foot.x,world::terrain::TerrainHeight::sample(foot.x,foot.z),foot.z}});

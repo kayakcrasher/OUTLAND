@@ -1356,8 +1356,8 @@ void porto_luma_city(Kit& kit, world::VerdaRegion& region) {
     }
     // The quay road along the waterfront.
     port->roads.push_back({{c.x + edge, 0, c.z - 40}, {c.x + 196, 0, c.z - 40}, 9, world::RoadType::Asphalt});
-    port->roads.push_back({{c.x + edge, 0, c.z + 40}, {c.x + 196, 0, c.z + 40}, 9, world::RoadType::Asphalt});
-    port->roads.push_back({{c.x + 196, 0, c.z - 110}, {c.x + 196, 0, c.z + 110}, 9, world::RoadType::Asphalt});
+    port->roads.push_back({{c.x + edge, 0, c.z + 40}, {c.x + 196, 0, c.z + 40}, truck_road, world::RoadType::Asphalt});   // (on down the fishers' ramp)
+    port->roads.push_back({{c.x + 196, 0, c.z - 110}, {c.x + 196, 0, c.z + 110}, truck_road, world::RoadType::Asphalt}); // (between the quay's ramps)
     kit.add_roads(port->roads);
     kit.add_roads(capital->roads);
     for (const float i : {-120.0F, -40.0F, 40.0F, 120.0F}) for (const float j : {-120.0F, -40.0F, 40.0F, 120.0F})
@@ -1417,13 +1417,13 @@ void porto_luma_city(Kit& kit, world::VerdaRegion& region) {
         if (kit.claim({c.x + 160, 0, c.z + z}, 7.2F, 4.4F, 0)) kit.put(shacks + std::string(name) + ".glb", {c.x + 160, 0, c.z + z}, 90);
     modular_building(kit, {c.x + 158, 0, c.z - 118}, 0, 8, 4, "stuco", 2, 9101, world::BuildingPurpose::Office); // harbour office
     modular_building(kit, {c.x + 158, 0, c.z + 118}, 180, 4, 4, "brick", 1, 9102, world::BuildingPurpose::Dock);
-    for (int i = 0; i < 28; ++i) kit.put(urban + "Cones & Barriers/Bollards/square_bollard.glb", {c.x + 204, 0, c.z - 108 + i * 8.0F}, 0);
+    for (int i = 0; i < 28; ++i) kit.put(urban + "Cones & Barriers/Bollards/square_bollard.glb", {c.x + 206, 0, c.z - 108 + i * 8.0F}, 0);
     for (int i = 0; i < 18; ++i) {
         const auto r = hash(9200U + static_cast<std::uint32_t>(i));
         const Vector3 p{c.x + 140 + static_cast<float>(r % 40), 0, c.z + (i % 2 ? 50.0F : -50.0F) + static_cast<float>((r / 41) % 14) - 7};
         prop(kit, shacks + (i % 3 ? "Pallet.glb" : "Barrel.glb"), p, static_cast<float>(r % 360), 1);
     }
-    for (int i = -4; i <= 4; ++i) kit.put(urban + "Traffic lights/street_light_clean.glb", {c.x + 201, 0, c.z + i * 25.0F}, 90);
+    for (int i = -4; i <= 4; ++i) kit.put(urban + "Traffic lights/street_light_clean.glb", {c.x + 204.5F, 0, c.z + i * 25.0F}, 90);
     port->survivors = std::max(port->survivors, 60);
 }
 // ------------------------------------------------------------------ East Verda (Orienta Verda)
@@ -2093,15 +2093,15 @@ void state_prison(Kit& kit, world::VerdaRegion& region) {
 
 // ------------------------------------------------------------------ smugglers' jetties
 // Where contraband comes ashore (Explore's SMUGGLE job): a jetty on the open shore with a coaster
-// alongside (city kit civic/smugglers_jetty.glb), at the end of a gravel track down from the
-// town - from Porto Luma's quay and from Suda Haveno's south street. The deck stands 2.2 m over
+// alongside (city kit civic/smugglers_jetty.glb), at the end of a gravel track down from Suda
+// Haveno's south street. (At Porto Luma they land at the fishers' jetty: cargo_terminal.) The deck stands 2.2 m over
 // the sea; the model's land end is its -Z.
 void smugglers_jetties(Kit& kit, world::VerdaRegion& region) {
     struct Spot { const char* town; Vector3 start, dir; };
     const Vector3 port = site("port_luma"), haven = site("south_haven");
     const float edge = pitch + street * .5F + 40;
-    for (const Spot& spot : {Spot{"port_luma", {port.x + 196, 0, port.z + 40}, {1, 0, 0}},
-                             Spot{"south_haven", {haven.x + 40, 0, haven.z + edge}, {0, 0, 1}}}) {
+    (void)port;   // (Porto Luma's is the fishers' jetty on the quay now: cargo_terminal)
+    for (const Spot& spot : {Spot{"south_haven", {haven.x + 40, 0, haven.z + edge}, {0, 0, 1}}}) {
         auto* town = settlement(region, spot.town);
         if (!town) continue;
         const float deck = world::layout::sea_level + 2.2F;
@@ -2127,31 +2127,53 @@ void smugglers_jetties(Kit& kit, world::VerdaRegion& region) {
     }
 }
 
-// ------------------------------------------------------------------ Porto Luma's cargo terminal
+// ------------------------------------------------------------------ Porto Luma's quay
 // Kargohaveno de Porto Luma (layout::cargo_*): a ramp from the quay road down to the quay at the
 // shore, a lane along it, two ship-to-shore cranes on the quay edge over Stella Maris (a feeder
-// container ship at the berth), stacks of containers either side of the ramp's mouth, and the
-// cattle quay (world/Ranches.hpp): a pen behind a loading chute, and the gangway up the ship's side.
+// container ship at the berth - she brings the island its supplies), stacks of containers either
+// side of the ramp's mouth, and the cattle quay (world/Ranches.hpp): a pen behind a loading chute,
+// and the gangway up the ship's side. The quay runs on south to the fishers' quay (layout::fish_z,
+// quay_z1): the locals' end, the fishers' jetty off its face with the trawlers alongside and a
+// parking area behind; a second ramp climbs from there back to the quay road. The lane joins the
+// two ramps, so the quay is a loop: down one ramp, along the quay, up the other.
 void cargo_terminal(Kit& kit, world::VerdaRegion& region) {
     namespace L = world::layout;
     auto* port = settlement(region, "port_luma");
     if (!port) return;
-    const float z = L::cargo_z, quay = L::cargo_quay_height, lane = 2214;
+    const float z = L::cargo_z, quay = L::cargo_quay_height, lane = L::quay_lane_x;
     // The terminal road runs straight in from the town's east street (x = town_east), across the
     // quay road and down the ramp: a rig turns once, not a dog-leg along the quay road.
     const float town_east = port->center.x + 126;
-    // Nothing (bollards, lamps, props, the waterfront shed in the way) on the road, the ramp or the apron.
+    // Nothing (bollards, lamps, props, the waterfront shed in the way) on the roads, the ramps or the
+    // quay (the water off the cargo end too, where the ship lies).
     for (auto& town : region.runtime_settlements())
         kit.report.cleared += static_cast<int>(std::erase_if(town.assets, [&](const world::WorldAsset& a) {
-            if (!a.vehicle.definition.empty() || a.position.x < town_east || a.position.x > L::cargo_quay_x1 + 80) return false;
-            if (a.position.x < L::cargo_ramp_x0 - 6) return std::abs(a.position.z - z) < 10;
-            return std::abs(a.position.z - z) < (a.position.x < L::cargo_ramp_x1 ? L::cargo_ramp_half + 3 : L::cargo_quay_half + 4);
+            const float x = a.position.x;
+            if (!a.vehicle.definition.empty() || x < town_east || x > L::cargo_quay_x1 + 80) return false;
+            if (x < L::cargo_ramp_x0 - 6) return std::abs(a.position.z - z) < 10;
+            for (const float ramp : {z, L::fish_z})
+                if (x < L::cargo_ramp_x1 && std::abs(a.position.z - ramp) < L::cargo_ramp_half + 3) return true;
+            if (x < L::cargo_ramp_x1) return false;
+            return std::abs(a.position.z - z) < L::cargo_quay_half + 4 ||
+                   (x < L::cargo_quay_x1 + 2 && a.position.z > L::quay_z0 - 4 && a.position.z < L::quay_z1 + 4);
         }));
     port->roads.push_back({{town_east, 0, z}, {L::cargo_ramp_x0, 0, z}, truck_road, world::RoadType::Asphalt});
     port->roads.push_back({{L::cargo_ramp_x0, 0, z}, {lane, 0, z}, 13, world::RoadType::Asphalt});   // (between the ramp's walls)
-    port->roads.push_back({{lane, 0, z - L::cargo_quay_half + 4}, {lane, 0, z + L::cargo_quay_half - 4}, truck_road, world::RoadType::Asphalt});
+    // The fishers' ramp, from the quay road down to the south end of the quay; the lane joins them.
+    port->roads.push_back({{port->center.x + 196, 0, L::fish_z}, {lane, 0, L::fish_z}, 13, world::RoadType::Asphalt});
+    port->roads.push_back({{lane, 0, z - L::cargo_quay_half + 4}, {lane, 0, L::fish_z}, truck_road, world::RoadType::Asphalt});
     kit.add_roads(port->roads);
     kit.put(city + "civic/quay_apron.glb", {(L::cargo_ramp_x1 + L::cargo_quay_x1) * .5F, quay + .02F, z}, 0, false, false);
+    // The fishers' quay: paved (a parking area behind the jetty, for the locals), the jetty off its
+    // face with the trawlers alongside.
+    const float fish_mid = (L::cargo_z + L::cargo_quay_half + L::quay_z1) * .5F;
+    kit.put(city + "ground/parking_lot_68.glb", {L::cargo_quay_x1 - 34, quay + .01F, fish_mid}, 0, false, false);
+    kit.put(city + "civic/fishers_jetty.glb", {L::fishers_jetty.x + 22, quay - 10, L::fishers_jetty.z}, 90, false, false);
+    for (int i = 0; i < 4; ++i) {
+        const auto r = hash(9300U + static_cast<std::uint32_t>(i));
+        prop(kit, shacks + (i % 2 ? "Pallet.glb" : "Barrel.glb"), {L::cargo_quay_x1 - 6 - static_cast<float>(r % 5), quay, L::fish_z - 30 - i * 6.0F},
+             static_cast<float>(r % 360), 1);
+    }
     // The ship at the berth, her quay side 1.2 m off the quay face; the keel 5 m under the sea.
     if (!kit.put(city + "civic/cargo_ship.glb", {L::cargo_quay_x1 + 9.2F, L::sea_level - 5, z}, 0, false, false)) return;
     for (const float cz : {z - 22, z})
@@ -2166,11 +2188,11 @@ void cargo_terminal(Kit& kit, world::VerdaRegion& region) {
     kit.put(ranch_dir + "loading_chute.glb", f.at(rr::cattle_quay_chute.x, rr::cattle_quay_chute.y + 2.2F), f.yaw() + 180);
     kit.put(ranch_dir + "water_trough.glb", f.at(-6, 22), f.yaw());
     kit.put(city + "civic/cattle_gangway.glb", {rr::cattle_gangway_foot.x, quay, rr::cattle_gangway_foot.y}, 0, false, false);
-    // Lamps and bollards along the quay edge.
-    for (int i = -2; i <= 2; ++i)
-        kit.put(urban + "Traffic lights/street_light_clean.glb", {L::cargo_quay_x1 - 2, quay, z + i * 25.0F}, 90, false);
-    for (int i = 0; i < 13; ++i)
-        kit.put(urban + "Cones & Barriers/Bollards/square_bollard.glb", {L::cargo_quay_x1 - .6F, quay, z - 48 + i * 8.0F}, 0, false);
+    // Lamps and bollards along the quay edge, end to end (clear of the jetty's foot).
+    for (float lz = z - 50; lz < L::quay_z1 - 2; lz += 25)
+        if (std::abs(lz - L::fish_z) > 6) kit.put(urban + "Traffic lights/street_light_clean.glb", {L::cargo_quay_x1 - 2, quay, lz}, 90, false);
+    for (float bz = z - 48; bz < L::quay_z1 - 2; bz += 8)
+        if (std::abs(bz - L::fish_z) > 5) kit.put(urban + "Cones & Barriers/Bollards/square_bollard.glb", {L::cargo_quay_x1 - .6F, quay, bz}, 0, false);
     kit.report.cargo_terminal = true;
 }
 

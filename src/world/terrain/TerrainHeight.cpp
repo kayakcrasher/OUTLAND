@@ -338,27 +338,29 @@ float TerrainHeight::unpaved(
         const float shore=layout::shore_radius(world_x,world_z);
         const float blend=smooth((distance-(shore-layout::shoreline_band))/(2*layout::shoreline_band));
         if (distance>shore-layout::shoreline_band) height=height*(1-blend)+(layout::sea_level-8.0F)*blend;
-        // Porto Luma's cargo terminal: the ramp down from the town, the quay apron at the shore and
-        // the dredged berth along its face (layout::cargo_*).
-        const float dz=std::abs(world_z-layout::cargo_z);
-        if (world_x>layout::cargo_ramp_x0 && world_x<layout::cargo_quay_x1+90 && dz<layout::cargo_quay_half+40) {
+        // Porto Luma's quay: the cargo terminal's apron and the fishers' quay south of it, one level
+        // quay at the shore; the ramps down from the town to each end; the dredged berth along the
+        // cargo end's face (layout::cargo_*, fish_z, quay_*).
+        if (world_x>layout::cargo_ramp_x0 && world_x<layout::cargo_quay_x1+90 && world_z>layout::quay_z0-40 && world_z<layout::quay_z1+40) {
             const auto port=layout::sites[2].center;
             const float top=std::max(6.0F,large_hills(port.x,port.z)+rolling_ground(port.x,port.z)+small_variation(port.x,port.z));
+            const float dz=std::abs(world_z-layout::cargo_z);
             if (world_x<=layout::cargo_quay_x1) {
-                const float d=std::hypot(std::max(layout::cargo_ramp_x1-world_x,0.0F),std::max(dz-layout::cargo_quay_half,0.0F));
+                const float d=std::hypot(std::max(layout::cargo_ramp_x1-world_x,0.0F),std::max({layout::quay_z0-world_z,world_z-layout::quay_z1,0.0F}));
                 const float w=1-smooth(d/25.0F);
                 height=height+(layout::cargo_quay_height-height)*w;
-            } else {
+            } else if (dz<layout::cargo_quay_half+40) {
                 const float w=(1-smooth((world_x-layout::cargo_quay_x1-45)/40.0F))*(1-smooth((dz-layout::cargo_quay_half-10)/25.0F));
                 height=std::min(height,height+(layout::cargo_berth_depth-height)*w);
             }
-            // (The ramp last: its grade stays even right down to the apron.)
-            if (world_x<layout::cargo_ramp_x1) {
-                const float t=(world_x-layout::cargo_ramp_x0)/(layout::cargo_ramp_x1-layout::cargo_ramp_x0);
-                const float ramp=top+(layout::cargo_quay_height-top)*t;
-                const float w=1-smooth((dz-layout::cargo_ramp_half)/22.0F);
-                height=height+(ramp-height)*w;
-            }
+            // (The ramps last: their grade stays even right down to the quay.)
+            if (world_x<layout::cargo_ramp_x1)
+                for (const float ramp_z : {layout::cargo_z, layout::fish_z}) {
+                    const float t=(world_x-layout::cargo_ramp_x0)/(layout::cargo_ramp_x1-layout::cargo_ramp_x0);
+                    const float ramp=top+(layout::cargo_quay_height-top)*t;
+                    const float w=1-smooth((std::abs(world_z-ramp_z)-layout::cargo_ramp_half)/22.0F);
+                    height=height+(ramp-height)*w;
+                }
         }
     }
     return height;

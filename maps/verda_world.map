@@ -3403,29 +3403,29 @@ ASSET "creator_verda_kit_roof_slab_kit323" 4 "assets/verda/kit/roof_slab_3x3.glb
 ASSET "creator_verda_kit_roof_slab_kit324" 4 "assets/verda/kit/roof_slab_3x3.glb" 1903.5 9 -280.5 3 0.100000001 3 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_verda_kit_roof_slab_kit325" 4 "assets/verda/kit/roof_slab_3x3.glb" 1903.5 9 -283.5 3 0.100000001 3 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_verda_kit_roof_slab_kit326" 4 "assets/verda/kit/roof_slab_3x3.glb" 1903.5 9 -286.5 3 0.100000001 3 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit1" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 3.65993214 -508 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit2" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 4.04776859 -500 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit3" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 4.72899055 -492 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit4" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.29697132 -484 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit8" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.59295702 -452 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit9" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.89717865 -444 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit10" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.98494005 -436 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit11" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.99720716 -428 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit12" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 6 -420 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit13" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 6 -412 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit14" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 6 -404 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit15" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 6 -396 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit16" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 6 -388 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit17" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 6 -380 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit18" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.9969492 -372 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit21" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.92283344 -348 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit22" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.87472105 -340 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit23" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.80401802 -332 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit24" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.68589211 -324 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit25" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.4895606 -316 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit26" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 5.19506645 -308 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit27" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 4.80608606 -300 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit28" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1954 4.34773684 -292 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit1" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 3.4888382 -508 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit2" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 3.85456347 -500 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit3" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 4.50474834 -492 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit4" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.02057552 -484 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit8" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.37353659 -452 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit9" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.79776239 -444 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit10" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.94096041 -436 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit11" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.9705596 -428 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit12" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.98641825 -420 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit13" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.99369717 -412 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit14" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.99626112 -404 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit15" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.99617672 -396 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit16" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.97266054 -388 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit17" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.60530376 -380 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit18" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.18060684 -372 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit21" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.17141199 -348 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit22" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.50506258 -340 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit23" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.711658 -332 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit24" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.58659983 -324 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit25" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.36093378 -316 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit26" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 5.03441525 -308 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit27" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 4.61644459 -300 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit28" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 1956 4.13593674 -292 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit34" 9 "assets/verda/industrial/shacks/Barrel.glb" 1910 6 -451 0.800000012 0.899999976 0.692799985 340 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_pallet_kit35" 9 "assets/verda/industrial/shacks/Pallet.glb" 1899 6 -454 0.899999976 0.100000001 1.20000005 49 255 255 255 255 80 80 80 255 0
 ASSET "creator_industrial_barrel_kit35" 9 "assets/verda/industrial/shacks/Barrel.glb" 1927 6 -345 0.800000012 0.899999976 0.692799985 317 255 255 255 255 80 80 80 255 1
@@ -3434,18 +3434,16 @@ ASSET "creator_industrial_pallet_kit37" 9 "assets/verda/industrial/shacks/Pallet
 ASSET "creator_industrial_barrel_kit36" 9 "assets/verda/industrial/shacks/Barrel.glb" 1909 6 -456 0.800000012 0.899999976 0.692799985 19 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_pallet_kit38" 9 "assets/verda/industrial/shacks/Pallet.glb" 1916 6 -344 0.899999976 0.100000001 1.20000005 346 255 255 255 255 80 80 80 255 0
 ASSET "creator_industrial_pallet_kit39" 9 "assets/verda/industrial/shacks/Pallet.glb" 1914 6 -455 0.899999976 0.100000001 1.20000005 184 255 255 255 255 80 80 80 255 0
-ASSET "creator_industrial_pallet_kit40" 9 "assets/verda/industrial/shacks/Pallet.glb" 1911 6 -351 0.899999976 0.100000001 1.20000005 261 255 255 255 255 80 80 80 255 0
 ASSET "creator_industrial_barrel_kit37" 9 "assets/verda/industrial/shacks/Barrel.glb" 1890 6 -449 0.800000012 0.899999976 0.692799985 40 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit41" 9 "assets/verda/industrial/shacks/Pallet.glb" 1892 6 -349 0.899999976 0.100000001 1.20000005 322 255 255 255 255 80 80 80 255 0
-ASSET "creator_industrial_pallet_kit42" 9 "assets/verda/industrial/shacks/Pallet.glb" 1900 6 -449 0.899999976 0.100000001 1.20000005 330 255 255 255 255 80 80 80 255 0
-ASSET "creator_urban_traffic_lights_street_light_clean_kit1" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1951 4.32922173 -500 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_clean_kit3" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1951 5.91812944 -450 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_clean_kit4" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1951 6 -425 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_clean_kit5" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1951 6 -400 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_clean_kit6" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1951 6 -375 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_clean_kit7" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1951 5.98735762 -350 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_clean_kit8" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1951 5.82125473 -325 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_clean_kit9" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1951 5.07086086 -300 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit40" 9 "assets/verda/industrial/shacks/Pallet.glb" 1892 6 -349 0.899999976 0.100000001 1.20000005 322 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit41" 9 "assets/verda/industrial/shacks/Pallet.glb" 1900 6 -449 0.899999976 0.100000001 1.20000005 330 255 255 255 255 80 80 80 255 0
+ASSET "creator_urban_traffic_lights_street_light_clean_kit1" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1954.5 3.99979877 -500 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit3" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1954.5 5.6248641 -450 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit4" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1954.5 5.99644327 -425 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit5" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1954.5 6 -400 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit6" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1954.5 5.48860168 -375 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit8" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1954.5 5.68172741 -325 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit9" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 1954.5 4.75955677 -300 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_house_white_kit1" 0 "assets/verda/residential/houses/house_white.glb" 191 0 -189 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_560" 6 "" 179.589996 0 -180.910004 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_561" 6 "" 202.809998 0 -196.089996 1 7 1 0 255 255 255 255 80 80 80 255 1
@@ -4129,19 +4127,19 @@ ASSET "creator_residential_trailer_04_kit3" 0 "assets/verda/residential/trailers
 ASSET "creator_industrial_barrel_kit38" 9 "assets/verda/industrial/shacks/Barrel.glb" 957.878235 16.2185574 -1019.56177 0.800000012 0.899999976 0.692799985 225 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_734" 6 "" 954.351135 0 -1021.0484 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_residential_trailer_02_kit2" 0 "assets/verda/residential/trailers/trailer_02.glb" 969 16.2185574 -1010.5 6.3499999 5.8499999 15.1099997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit43" 9 "assets/verda/industrial/shacks/Pallet.glb" 971.400024 16.2185574 -1019.70001 0.899999976 0.100000001 1.20000005 40 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit42" 9 "assets/verda/industrial/shacks/Pallet.glb" 971.400024 16.2185574 -1019.70001 0.899999976 0.100000001 1.20000005 40 255 255 255 255 80 80 80 255 0
 ASSET "creator_residential_trailer_02_kit3" 0 "assets/verda/residential/trailers/trailer_02.glb" 983 16.2185574 -1010.5 6.3499999 5.8499999 15.1099997 2 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit39" 9 "assets/verda/industrial/shacks/Barrel.glb" 985.077515 16.2185574 -1019.77814 0.800000012 0.899999976 0.692799985 103 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_735" 6 "" 981.434265 0 -1020.95172 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_residential_trailer_01_kit2" 0 "assets/verda/residential/trailers/trailer_01.glb" 997 16.2185574 -1010.5 6.21000004 5.69999981 15.1099997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit40" 9 "assets/verda/industrial/shacks/Barrel.glb" 999.400024 16.2185574 -1019.70001 0.800000012 0.899999976 0.692799985 111 255 255 255 255 80 80 80 255 1
 ASSET "creator_residential_trailer_06_kit2" 0 "assets/verda/residential/trailers/trailer_06.glb" 955 16.2185574 -983.5 5.67000008 5.17000008 15.0299997 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit44" 9 "assets/verda/industrial/shacks/Pallet.glb" 952.599976 16.2185574 -974.299988 0.899999976 0.100000001 1.20000005 180 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit43" 9 "assets/verda/industrial/shacks/Pallet.glb" 952.599976 16.2185574 -974.299988 0.899999976 0.100000001 1.20000005 180 255 255 255 255 80 80 80 255 0
 ASSET "creator_residential_trailer_06_kit3" 0 "assets/verda/residential/trailers/trailer_06.glb" 969 16.2185574 -983.5 5.67000008 5.17000008 15.0299997 182 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit41" 9 "assets/verda/industrial/shacks/Barrel.glb" 966.922485 16.2185574 -974.221863 0.800000012 0.899999976 0.692799985 69 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_736" 6 "" 970.565735 0 -973.048279 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_residential_trailer_02_kit4" 0 "assets/verda/residential/trailers/trailer_02.glb" 983 16.2185574 -983.5 6.3499999 5.8499999 15.1099997 178 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit45" 9 "assets/verda/industrial/shacks/Pallet.glb" 980.280396 16.2185574 -974.389343 0.899999976 0.100000001 1.20000005 224 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit44" 9 "assets/verda/industrial/shacks/Pallet.glb" 980.280396 16.2185574 -974.389343 0.899999976 0.100000001 1.20000005 224 255 255 255 255 80 80 80 255 0
 ASSET "creator_residential_trailer_02_kit5" 0 "assets/verda/residential/trailers/trailer_02.glb" 997 16.2185574 -983.5 6.3499999 5.8499999 15.1099997 177 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit42" 9 "assets/verda/industrial/shacks/Barrel.glb" 994.121765 16.2185574 -974.438232 0.800000012 0.899999976 0.692799985 77 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_737" 6 "" 997.648865 0 -972.951599 1 7 1 0 255 255 255 255 80 80 80 255 1
@@ -4349,12 +4347,12 @@ ASSET "creator_residential_trailer_06_kit4" 0 "assets/verda/residential/trailers
 ASSET "creator_industrial_barrel_kit45" 9 "assets/verda/industrial/shacks/Barrel.glb" 1289.22192 6 -227.077469 0.800000012 0.899999976 0.692799985 287 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_739" 6 "" 1288.04822 0 -223.434296 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_residential_trailer_04_kit5" 0 "assets/verda/residential/trailers/trailer_04.glb" 1325.5 6 -197 6.46000004 5.6500001 15.25 270 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit46" 9 "assets/verda/industrial/shacks/Pallet.glb" 1334.69995 6 -194.600006 0.899999976 0.100000001 1.20000005 298 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit45" 9 "assets/verda/industrial/shacks/Pallet.glb" 1334.69995 6 -194.600006 0.899999976 0.100000001 1.20000005 298 255 255 255 255 80 80 80 255 0
 ASSET "creator_residential_trailer_05_kit4" 0 "assets/verda/residential/trailers/trailer_05.glb" 1325.5 6 -211 5.51000023 5.71999979 15.1099997 268 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit47" 9 "assets/verda/industrial/shacks/Pallet.glb" 1334.6106 6 -208.28038 0.899999976 0.100000001 1.20000005 170 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit46" 9 "assets/verda/industrial/shacks/Pallet.glb" 1334.6106 6 -208.28038 0.899999976 0.100000001 1.20000005 170 255 255 255 255 80 80 80 255 0
 ASSET "creator_kit_tree_740" 6 "" 1336.03552 0 -211.832809 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_residential_trailer_06_kit5" 0 "assets/verda/residential/trailers/trailer_06.glb" 1325.5 6 -225 5.67000008 5.17000008 15.0299997 269 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit48" 9 "assets/verda/industrial/shacks/Pallet.glb" 1334.65674 6 -222.439804 0.899999976 0.100000001 1.20000005 108 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit47" 9 "assets/verda/industrial/shacks/Pallet.glb" 1334.65674 6 -222.439804 0.899999976 0.100000001 1.20000005 108 255 255 255 255 80 80 80 255 0
 ASSET "creator_urban_building_parts_stuco_wall_window_1_kit52" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" 1301 6.0999999 -275 0.00999999978 3 3 360 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_building_parts_stuco_wall_window_2_kit76" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 1289 6.0999999 -275 0.00999999978 3 3 360 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_building_parts_stuco_wall_window_2_kit77" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 1301 6.0999999 -272 0.00999999978 3 3 360 255 255 255 255 80 80 80 255 1
@@ -4554,14 +4552,14 @@ ASSET "creator_residential_trailer_04_kit6" 0 "assets/verda/residential/trailers
 ASSET "creator_industrial_barrel_kit46" 9 "assets/verda/industrial/shacks/Barrel.glb" -987.812988 6 -976.915222 0.800000012 0.899999976 0.692799985 315 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_741" 6 "" -988.922791 0 -973.252136 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_residential_trailer_02_kit6" 0 "assets/verda/residential/trailers/trailer_02.glb" -978.5 6 -989 6.3499999 5.8499999 15.1099997 91 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit49" 9 "assets/verda/industrial/shacks/Pallet.glb" -987.740479 6 -991.239075 0.899999976 0.100000001 1.20000005 118 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit48" 9 "assets/verda/industrial/shacks/Pallet.glb" -987.740479 6 -991.239075 0.899999976 0.100000001 1.20000005 118 255 255 255 255 80 80 80 255 0
 ASSET "creator_residential_trailer_02_kit7" 0 "assets/verda/residential/trailers/trailer_02.glb" -978.5 6 -1003 6.3499999 5.8499999 15.1099997 88 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit47" 9 "assets/verda/industrial/shacks/Barrel.glb" -987.610657 6 -1005.7196 0.800000012 0.899999976 0.692799985 49 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_742" 6 "" -989.035461 0 -1002.16718 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_residential_trailer_05_kit5" 0 "assets/verda/residential/trailers/trailer_05.glb" -951.5 6 -975 5.51000023 5.71999979 15.1099997 269 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit48" 9 "assets/verda/industrial/shacks/Barrel.glb" -942.343262 6 -972.439758 0.800000012 0.899999976 0.692799985 359 255 255 255 255 80 80 80 255 1
 ASSET "creator_residential_trailer_05_kit6" 0 "assets/verda/residential/trailers/trailer_05.glb" -951.5 6 -989 5.51000023 5.71999979 15.1099997 270 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit50" 9 "assets/verda/industrial/shacks/Pallet.glb" -942.299988 6 -986.599976 0.899999976 0.100000001 1.20000005 170 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit49" 9 "assets/verda/industrial/shacks/Pallet.glb" -942.299988 6 -986.599976 0.899999976 0.100000001 1.20000005 170 255 255 255 255 80 80 80 255 0
 ASSET "creator_kit_tree_743" 6 "" -941 0 -990.200012 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_residential_trailer_03_kit5" 0 "assets/verda/residential/trailers/trailer_03.glb" -951.5 6 -1003 6.36000013 5.63999987 15.1199999 267 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit49" 9 "assets/verda/industrial/shacks/Barrel.glb" -942.438232 6 -1000.12177 0.800000012 0.899999976 0.692799985 81 255 255 255 255 80 80 80 255 1
@@ -4761,7 +4759,7 @@ ASSET "creator_industrial_chainlink_fence_kit637" 4 "assets/verda/industrial/sha
 ASSET "creator_industrial_chainlink_fence_kit638" 4 "assets/verda/industrial/shacks/Chainlink Fence.glb" -942.5 6 -1061 2.46079993 2.5 0.119999997 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_chainlink_fence_kit639" 4 "assets/verda/industrial/shacks/Chainlink Fence.glb" -940.166687 6 -1061 2.46079993 2.5 0.119999997 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_residential_trailer_01_kit4" 0 "assets/verda/residential/trailers/trailer_01.glb" -895.5 7.28794098 1035 6.21000004 5.69999981 15.1099997 -87 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit51" 9 "assets/verda/industrial/shacks/Pallet.glb" -886.187012 7.28794098 1036.91528 0.899999976 0.100000001 1.20000005 60 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_pallet_kit50" 9 "assets/verda/industrial/shacks/Pallet.glb" -886.187012 7.28794098 1036.91528 0.899999976 0.100000001 1.20000005 60 255 255 255 255 80 80 80 255 0
 ASSET "creator_kit_tree_744" 6 "" -885.077209 0 1033.25208 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_residential_trailer_03_kit6" 0 "assets/verda/residential/trailers/trailer_03.glb" -895.5 7.28794098 1049 6.36000013 5.63999987 15.1199999 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit50" 9 "assets/verda/industrial/shacks/Barrel.glb" -886.299988 7.28794098 1051.40002 0.800000012 0.899999976 0.692799985 95 255 255 255 255 80 80 80 255 1
@@ -5006,7 +5004,7 @@ ASSET "creator_city_police_station_kit5" 0 "assets/verda/city/civic/police_stati
 ASSET "creator_city_police_station_kit6" 0 "assets/verda/city/civic/police_station.glb" -1812.94995 14.0573664 313.575012 20 4.69999981 12 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_hospital_kit1" 0 "assets/verda/city/civic/hospital.glb" 35.9000015 -0.381446123 -191.600006 46 12.6999998 23 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_town_hall_kit1" 0 "assets/verda/city/civic/town_hall.glb" 139.725006 6 -1796.42505 23 17 17 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_town_hall_kit2" 0 "assets/verda/city/civic/town_hall.glb" 1610.27502 6 -395.575012 23 17 17 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_town_hall_kit2" 0 "assets/verda/city/civic/town_hall.glb" 1745.57495 6 -539.724976 23 17 17 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_town_hall_kit3" 0 "assets/verda/city/civic/town_hall.glb" 439.725006 6 1795.57495 23 17 17 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_town_hall_kit4" 0 "assets/verda/city/civic/town_hall.glb" -1610.27502 14.0573664 445.575012 23 17 17 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_building_parts_stuco_wall_window_2_kit94" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" -83 6.0999999 -535.5 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
@@ -5787,9 +5785,14 @@ ASSET "creator_verda_kit_roof_slab_kit504" 4 "assets/verda/kit/roof_slab_3x3.glb
 ASSET "creator_verda_kit_roof_slab_kit505" 4 "assets/verda/kit/roof_slab_3x3.glb" 1322.75439 9 -841.207092 3 0.100000001 3 302.15625 255 255 255 255 80 80 80 255 1
 ASSET "creator_verda_kit_roof_slab_kit506" 4 "assets/verda/kit/roof_slab_3x3.glb" 1320.2146 9 -839.610413 3 0.100000001 3 302.15625 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_state_prison_kit1" 0 "assets/verda/city/civic/state_prison.glb" 1290 6 1290 84 11.5 64 45 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_smugglers_jetty_kit1" 4 "assets/verda/city/civic/smugglers_jetty.glb" 2252 -39.7999992 -360 18 19 44 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_smugglers_jetty_kit2" 4 "assets/verda/city/civic/smugglers_jetty.glb" 340 -39.7999992 2177 18 19 44 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_smugglers_jetty_kit1" 4 "assets/verda/city/civic/smugglers_jetty.glb" 340 -39.7999992 2177 18 19 44 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_quay_apron_kit1" 4 "assets/verda/city/civic/quay_apron.glb" 2208.25 -41.9799995 -470 60.5 14 112 0 255 255 255 255 80 80 80 255 0
+ASSET "creator_city_parking_lot_68_kit9" 4 "assets/verda/city/ground/parking_lot_68.glb" 2204 -27.9899998 -378 68 0.150000006 68 0 255 255 255 255 80 80 80 255 0
+ASSET "creator_city_fishers_jetty_kit1" 4 "assets/verda/city/civic/fishers_jetty.glb" 2260 -38 -360 18 19 56 90 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_barrel_kit55" 9 "assets/verda/industrial/shacks/Barrel.glb" 2229 -28 -390 0.800000012 0.899999976 0.692799985 143 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit51" 9 "assets/verda/industrial/shacks/Pallet.glb" 2230 -28 -396 0.899999976 0.100000001 1.20000005 357 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_barrel_kit56" 9 "assets/verda/industrial/shacks/Barrel.glb" 2230 -28 -402 0.800000012 0.899999976 0.692799985 247 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit52" 9 "assets/verda/industrial/shacks/Pallet.glb" 2232 -28 -408 0.899999976 0.100000001 1.20000005 220 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_cargo_ship_kit1" 4 "assets/verda/city/civic/cargo_ship.glb" 2247.18506 -37 -469.98999 16 32 96 0 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_harbour_crane_kit1" 4 "assets/verda/city/civic/harbour_crane.glb" 2240 -28 -492 58 42 15 0 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_harbour_crane_kit2" 4 "assets/verda/city/civic/harbour_crane.glb" 2240 -28 -470 58 42 15 0 255 255 255 255 80 80 80 255 0
@@ -5812,6 +5815,9 @@ ASSET "creator_urban_traffic_lights_street_light_clean_kit35" 9 "assets/verda/ur
 ASSET "creator_urban_traffic_lights_street_light_clean_kit36" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 2236 -28 -470 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_clean_kit37" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 2236 -28 -445 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_clean_kit38" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 2236 -28 -420 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit39" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 2236 -28 -395 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit40" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 2236 -28 -370 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_clean_kit41" 9 "assets/verda/urban/Traffic lights/street_light_clean.glb" 2236 -28 -345 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit29" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -518 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit30" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -510 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit31" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -502 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
@@ -5825,19 +5831,27 @@ ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit38" 9 "assets/ver
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit39" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -438 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit40" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -430 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit41" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -422 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit42" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -414 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit43" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -406 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit44" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -398 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit45" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -390 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit46" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -382 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit47" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -374 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit48" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -366 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit49" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -350 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_truck_depot_kit1" 0 "assets/verda/city/civic/truck_depot.glb" -560 0 -56.4500008 38 9 31 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_parking_lot_68_kit9" 4 "assets/verda/city/ground/parking_lot_68.glb" -524 0 -126 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_parking_lot_68_kit10" 4 "assets/verda/city/ground/parking_lot_68.glb" -592 0 -126 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_parking_lot_68_kit10" 4 "assets/verda/city/ground/parking_lot_68.glb" -524 0 -126 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_parking_lot_68_kit11" 4 "assets/verda/city/ground/parking_lot_68.glb" -592 0 -126 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_large_shed_a_kit9" 4 "assets/verda/industrial/shacks/Large Shed A.glb" -622 -0 -52 8.80000019 6.20100021 14.3219995 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_large_shed_b_kit8" 4 "assets/verda/industrial/shacks/Large Shed B.glb" -638 -0 -52 8.80000019 5.50099993 14.3219995 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_large_shed_b_kit9" 4 "assets/verda/industrial/shacks/Large Shed B.glb" -508 -0 -52 8.80000019 5.50099993 14.3219995 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit4" 4 "assets/verda/city/civic/container_stack.glb" -640.070007 0 -128 10.5 7.80000019 37.5 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_barrel_kit55" 9 "assets/verda/industrial/shacks/Barrel.glb" -582 -0 -48 0.800000012 0.899999976 0.692799985 342 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit52" 9 "assets/verda/industrial/shacks/Pallet.glb" -583.599976 -0 -48 0.899999976 0.100000001 1.20000005 287 255 255 255 255 80 80 80 255 0
-ASSET "creator_industrial_barrel_kit56" 9 "assets/verda/industrial/shacks/Barrel.glb" -585.200012 -0 -48 0.800000012 0.899999976 0.692799985 353 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit53" 9 "assets/verda/industrial/shacks/Pallet.glb" -582 -0 -46.4000015 0.899999976 0.100000001 1.20000005 113 255 255 255 255 80 80 80 255 0
-ASSET "creator_industrial_barrel_kit57" 9 "assets/verda/industrial/shacks/Barrel.glb" -583.599976 -0 -46.4000015 0.800000012 0.899999976 0.692799985 91 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_pallet_kit54" 9 "assets/verda/industrial/shacks/Pallet.glb" -585.200012 -0 -46.4000015 0.899999976 0.100000001 1.20000005 17 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_barrel_kit57" 9 "assets/verda/industrial/shacks/Barrel.glb" -582 -0 -48 0.800000012 0.899999976 0.692799985 342 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit53" 9 "assets/verda/industrial/shacks/Pallet.glb" -583.599976 -0 -48 0.899999976 0.100000001 1.20000005 287 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_barrel_kit58" 9 "assets/verda/industrial/shacks/Barrel.glb" -585.200012 -0 -48 0.800000012 0.899999976 0.692799985 353 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit54" 9 "assets/verda/industrial/shacks/Pallet.glb" -582 -0 -46.4000015 0.899999976 0.100000001 1.20000005 113 255 255 255 255 80 80 80 255 0
+ASSET "creator_industrial_barrel_kit59" 9 "assets/verda/industrial/shacks/Barrel.glb" -583.599976 -0 -46.4000015 0.800000012 0.899999976 0.692799985 91 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit55" 9 "assets/verda/industrial/shacks/Pallet.glb" -585.200012 -0 -46.4000015 0.899999976 0.100000001 1.20000005 17 255 255 255 255 80 80 80 255 0
 ASSET "creator_urban_traffic_lights_street_light_kit285" 9 "assets/verda/urban/Traffic lights/street_light.glb" -500 -0 -92.4000015 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit286" 9 "assets/verda/urban/Traffic lights/street_light.glb" -540 -0 -92.4000015 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit287" 9 "assets/verda/urban/Traffic lights/street_light.glb" -580 0 -92.4000015 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
@@ -5847,24 +5861,24 @@ ASSET "creator_city_radio_station_kantrio_kit1" 0 "assets/verda/city/civic/radio
 ASSET "creator_city_radio_station_roko_kit1" 0 "assets/verda/city/civic/radio_station_roko.glb" -134.11499 6 -1802.15002 18 40.3499985 11.1999998 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gun_shop_kit1" 0 "assets/verda/city/civic/gun_shop.glb" 187.149994 0 18 12.1999998 4.4000001 9.19999981 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gun_shop_kit2" 0 "assets/verda/city/civic/gun_shop.glb" 12 6 -1934.1499 12.1999998 4.4000001 9.19999981 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_gun_shop_kit3" 0 "assets/verda/city/civic/gun_shop.glb" 1746 6 -534.150024 12.1999998 4.4000001 9.19999981 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gun_shop_kit3" 0 "assets/verda/city/civic/gun_shop.glb" 1615.8501 6 -396 12.1999998 4.4000001 9.19999981 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gun_shop_kit4" 0 "assets/verda/city/civic/gun_shop.glb" 165.850006 6 1796 12.1999998 4.4000001 9.19999981 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gun_shop_kit5" 0 "assets/verda/city/civic/gun_shop.glb" -1746 14.0573664 315.849976 12.1999998 4.4000001 9.19999981 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_house_white_kit23" 0 "assets/verda/residential/houses/house_white.glb" 20 6 -1660.90002 14.4200001 9.02999973 20.1700001 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_house_blue_kit21" 0 "assets/verda/residential/houses/house_blue.glb" 1762 6 -539.099976 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit21" 0 "assets/verda/residential/houses/house_blue.glb" 1762 6 -260.899994 14.4200001 9.02999973 20.1700001 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_house_sage_kit15" 0 "assets/verda/residential/houses/house_sage.glb" 160.899994 6 1812 14.4200001 9.02999973 20.1700001 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_house_cream_kit17" 0 "assets/verda/residential/houses/house_cream.glb" -1610.90002 14.0573664 470 14.4200001 9.02999973 20.1700001 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit1" 0 "assets/verda/city/civic/gas_station.glb" -598 0 -62.2999992 24 6.19999981 22 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit2" 0 "assets/verda/city/civic/gas_station.glb" 457.299988 0 26 24 6.19999981 22 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit3" 0 "assets/verda/city/civic/gas_station.glb" -140.699997 6 -1780 24 6.19999981 22 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_gas_station_kit4" 0 "assets/verda/city/civic/gas_station.glb" 1770 6 -259.299988 24 6.19999981 22 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gas_station_kit4" 0 "assets/verda/city/civic/gas_station.glb" 1770 6 -540.700012 24 6.19999981 22 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit5" 0 "assets/verda/city/civic/gas_station.glb" 280 6 1940.69995 24 6.19999981 22 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit6" 0 "assets/verda/city/civic/gas_station.glb" -1609.30005 14.0573664 510 24 6.19999981 22 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit7" 0 "assets/verda/city/civic/gas_station.glb" -712.982117 4.4842186 1346.83545 24 6.19999981 22 -28.7500038 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_car_lot_kit1" 0 "assets/verda/city/civic/car_lot.glb" -195.990005 0 -126 36 6.4000001 26.6200008 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_mechanic_shop_kit1" 0 "assets/verda/city/civic/mechanic_shop.glb" -229 0 -17.3249989 18.1000004 5 12.1499996 -180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_mechanic_shop_kit2" 0 "assets/verda/city/civic/mechanic_shop.glb" -21.7249966 6 -1662 18.1000004 5 12.1499996 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_mechanic_shop_kit3" 0 "assets/verda/city/civic/mechanic_shop.glb" 1746 6 -261.675018 18.1000004 5 12.1499996 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_mechanic_shop_kit3" 0 "assets/verda/city/civic/mechanic_shop.glb" 1738 6 -261.675018 18.1000004 5 12.1499996 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_mechanic_shop_kit4" 0 "assets/verda/city/civic/mechanic_shop.glb" 161.675003 6 1780 18.1000004 5 12.1499996 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_mechanic_shop_kit5" 0 "assets/verda/city/civic/mechanic_shop.glb" -1730 14.0573664 311.675018 18.1000004 5 12.1499996 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_oil_rig_kit1" 4 "assets/verda/city/civic/oil_rig.glb" 1325.02026 -46 -2306.50269 59.5 79.1999969 30.6000004 -30 255 255 255 255 80 80 80 255 0
@@ -6138,7 +6152,7 @@ MARKER "loot_spawn_general_bldg_439" 0 100.224998 6.3499999 -1803 0.5 0.5 0.5 0 
 MARKER "loot_spawn_medical_bldg_440" 0 100.800003 6.3499999 -1788 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_bldg_441" 0 100.800003 6.3499999 -1776 0.5 0.5 0.5 0 1
 MARKER "creator_marker_building_purpose_kit_160" 4 137.5 6.94999981 -1796 1.20000005 2.20000005 1.20000005 90 1
-MARKER "creator_marker_building_purpose_kit_161" 4 1612.5 6.94999981 -396 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_161" 4 1746 6.94999981 -537.5 1.20000005 2.20000005 1.20000005 180 1
 MARKER "creator_marker_building_purpose_kit_162" 4 437.5 6.94999981 1796 1.20000005 2.20000005 1.20000005 90 1
 MARKER "creator_marker_building_purpose_kit_163" 4 -1612.5 15.0073662 446 1.20000005 2.20000005 1.20000005 90 1
 MARKER "creator_marker_building_purpose_kit_164" 4 -22 0.400000006 -28 1.20000005 2.20000005 1.20000005 270 1
@@ -6159,24 +6173,24 @@ MARKER "creator_marker_building_purpose_kit_178" 4 -1780.5 13.1598053 211.899994
 MARKER "creator_marker_building_purpose_kit_179" 4 -130.899994 6.3499999 -1807.90002 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_180" 4 183.899994 0.349999994 18 1.20000005 2.20000005 1.20000005 90 1
 MARKER "creator_marker_building_purpose_kit_181" 4 12 6.3499999 -1930.8999 1.20000005 2.20000005 1.20000005 180 1
-MARKER "creator_marker_building_purpose_kit_182" 4 1746 6.3499999 -530.900024 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_182" 4 1619.1001 6.3499999 -396 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_183" 4 169.100006 6.3499999 1796 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_184" 4 -1746 14.4073668 319.099976 1.20000005 2.20000005 1.20000005 180 1
 MARKER "gang_house_village_espera" 4 17.5900002 6.05999994 -1665.55005 1.20000005 2.20000005 1.20000005 -0 1
-MARKER "gang_house_port_luma" 4 1764.41003 6.05999994 -534.449951 1.20000005 2.20000005 1.20000005 180 1
+MARKER "gang_house_port_luma" 4 1759.58997 6.05999994 -265.549988 1.20000005 2.20000005 1.20000005 -0 1
 MARKER "gang_house_south_haven" 4 165.549988 6.05999994 1809.58997 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "gang_house_west_roka" 4 -1615.55005 14.1173668 472.410004 1.20000005 2.20000005 1.20000005 90 1
 MARKER "creator_marker_building_purpose_kit_185" 4 -598 0.150000006 -56.0999985 1.20000005 2.20000005 1.20000005 0 1
 MARKER "creator_marker_building_purpose_kit_186" 4 451.099976 0.150000006 26 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_187" 4 -146.899994 6.1500001 -1780 1.20000005 2.20000005 1.20000005 -90 1
-MARKER "creator_marker_building_purpose_kit_188" 4 1770 6.1500001 -253.099991 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_188" 4 1770 6.1500001 -546.900024 1.20000005 2.20000005 1.20000005 180 1
 MARKER "creator_marker_building_purpose_kit_189" 4 280 6.1500001 1946.8999 1.20000005 2.20000005 1.20000005 -0 1
 MARKER "creator_marker_building_purpose_kit_190" 4 -1603.1001 14.207366 510 1.20000005 2.20000005 1.20000005 90 1
 MARKER "creator_marker_building_purpose_kit_191" 4 -715.964233 4.63421869 1352.27112 1.20000005 2.20000005 1.20000005 -28.7500038 1
 MARKER "creator_marker_building_purpose_kit_192" 4 -203.5 0.119999997 -113.199997 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_193" 4 -235.600006 0.100000001 -12.5999994 1.20000005 2.20000005 1.20000005 -180 1
 MARKER "creator_marker_building_purpose_kit_194" 4 -16.9999962 6.0999999 -1655.40002 1.20000005 2.20000005 1.20000005 -90 1
-MARKER "creator_marker_building_purpose_kit_195" 4 1752.59998 6.0999999 -266.399994 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_195" 4 1744.59998 6.0999999 -266.399994 1.20000005 2.20000005 1.20000005 -0 1
 MARKER "creator_marker_building_purpose_kit_196" 4 166.400009 6.0999999 1786.59998 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_197" 4 -1736.59998 14.1573668 316.399994 1.20000005 2.20000005 1.20000005 180 1
 MARKER "freight_yard_village_espera" 4 -99.3999939 -1.09234071 -1430 1.20000005 2.20000005 1.20000005 90 1
@@ -7402,8 +7416,8 @@ ROAD 1624 0 -360 1876 0 -360 12 2
 ROAD 1870 0 -526 1870 0 -274 12 2
 ROAD 1624 0 -280 1876 0 -280 12 2
 ROAD 1876 0 -440 1946 0 -440 9 2
-ROAD 1876 0 -360 1946 0 -360 9 2
-ROAD 1946 0 -510 1946 0 -290 9 2
+ROAD 1876 0 -360 1946 0 -360 14 2
+ROAD 1946 0 -510 1946 0 -290 14 2
 ROAD 1825 0 -280 1825 0 -266 7.25 2
 ROAD 1825 0 -266 1834.19238 0 -262.192383 7.25 2
 ROAD 1834.19238 0 -262.192383 1838 0 -253 7.25 2
@@ -7413,10 +7427,10 @@ ROAD 1825 0 -240 1815.80762 0 -243.807617 7.25 2
 ROAD 1815.80762 0 -243.807617 1812 0 -253 7.25 2
 ROAD 1812 0 -253 1815.80762 0 -262.192383 7.25 2
 ROAD 1815.80762 0 -262.192383 1825 0 -266 7.25 2
-ROAD 1946 0 -360 2227 0 -360 6 0
 ROAD 1876 0 -470 1950 0 -470 14 2
 ROAD 1950 0 -470 2214 0 -470 13 2
-ROAD 2214 0 -522 2214 0 -418 14 2
+ROAD 1946 0 -360 2214 0 -360 13 2
+ROAD 2214 0 -522 2214 0 -360 14 2
 MARKER "vehicle_spawn_hatchback_porto_1" 3 1705.19995 6 -392 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_porto_2" 3 1705.19995 6 -418 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_porto_3" 3 1758 6 -444.799988 2 1.60000002 4.4000001 90 1

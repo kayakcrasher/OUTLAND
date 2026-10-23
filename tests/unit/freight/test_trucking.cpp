@@ -41,6 +41,13 @@ int main() {
         t.talk(true, now + 1, world);
         check(!t.hired(), "...not even asked twice");
     }
+    // Every big rig on the island counts (they all wear the company's colours): the yard's rigs
+    // for hire, the company drivers', the supply rig; the stock trailers for cattle.
+    for (const char* box : {"vehicle_spawn_semi_depot_2", "vehicle_spawn_semi_haul_1", "capital/vehicle_spawn_semi_haul_3", "vehicle_spawn_semi_freight_1"})
+        check(Trucking::company_rig(box) && !Trucking::stock_rig(box), std::string("a box-trailer rig: ") + box);
+    for (const char* stock : {"vehicle_spawn_semi_depot_cattle_1", "vehicle_spawn_semi_cattle_1"})
+        check(Trucking::stock_rig(stock), std::string("a stock-trailer rig: ") + stock);
+    check(!Trucking::company_rig("vehicle_spawn_truck_capital") && !Trucking::company_rig("vehicle_spawn_hatchback_capital"), "a truck or a car isn't a rig");
     Trucking t;
     t.seed(7);
     t.talk(false, now, world);

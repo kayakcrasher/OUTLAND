@@ -72,6 +72,14 @@ inline constexpr float cargo_quay_x1 = 2238, cargo_quay_half = 56;    // the apr
 inline constexpr float cargo_quay_height = sea_level + 4;
 inline constexpr float cargo_berth_depth = sea_level - 12;   // the dredged berth along the quay face
 inline constexpr Vector3 cargo_loading{2214, 0, -481};      // on the quay lane, under the cranes: where rigs load
+// The fishers' quay (Fiŝista Kajo): the same quay runs on south from the cargo apron to the street
+// at z = fish_z, where a second ramp climbs back to the quay road - down one ramp, along the quay
+// lane and up the other, a rig never has to turn round. The fishers' jetty stands off the quay face
+// there (the locals' boats; the cargo terminal's end is for the ship that supplies the island).
+inline constexpr float fish_z = -360;                         // the second ramp's centre line (Porto Luma's z + 40 street)
+inline constexpr float quay_z0 = cargo_z - cargo_quay_half, quay_z1 = fish_z + 18;   // the whole quay, end to end
+inline constexpr float quay_lane_x = 2214;                    // the lane along the quay, under the cranes
+inline constexpr Vector3 fishers_jetty{cargo_quay_x1, 0, fish_z};   // the jetty's land end, at the quay face
 inline constexpr Vector3 freight_depot_gate{-560, 0, -84};   // Verda Transporto's front, on the yard road
 inline constexpr Vector3 freight_boss{-556.5F, 0, -71.5F};     // the boss, out front of the office door (facing the road)
 // Verda's suburbs, west (Okcidenta Verda) and east (Orienta Verda): level ground either side of

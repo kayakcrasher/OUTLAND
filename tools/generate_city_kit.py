@@ -1103,6 +1103,86 @@ def smugglers_jetty():
     return b
 
 
+
+def fishing_boat(b, x0, z0, water, length=13.0, beam=4.2, hull="hull_blue"):
+    """A small trawler moored along z, its port side at x0 (lying +X of it), stern at z0: a hull
+    with a red boot-top, a wheelhouse forward, a gantry and net drum aft, outrigger poles raised
+    and fish boxes on deck."""
+    x1, z1 = x0 + beam, z0 + length
+    deck = water + 1.3
+    b.solid((x0, water - .9, z0), (x1, water - .1, z1), "hull_red")
+    b.solid((x0, water - .1, z0), (x1, deck, z1), hull)
+    b.solid((x0 + .5, deck, z1 - 1.0), (x1 - .5, deck + .7, z1 + 1.2), hull)                 # the bow
+    b.solid((x0 + .6, deck, z1 - 5.0), (x1 - .6, deck + 2.4, z1 - 2.0), "white")             # wheelhouse
+    b.solid((x0 + .7, deck + 1.5, z1 - 5.05), (x1 - .7, deck + 2.1, z1 - 1.95), "glass")
+    b.solid((x0 + .5, deck + 2.4, z1 - 5.2), (x1 - .5, deck + 2.55, z1 - 1.8), "hull_red")    # wheelhouse roof
+    mid = (x0 + x1) * .5
+    b.solid((mid - .1, deck + 2.5, z1 - 3.6), (mid + .1, deck + 6.5, z1 - 3.4), "steel")     # mast
+    for x in (x0 + .3, x1 - .5):                                                              # the gantry aft
+        b.solid((x, deck, z0 + .6), (x + .2, deck + 3.4, z0 + .8), "steel")
+    b.solid((x0 + .3, deck + 3.2, z0 + .6), (x1 - .3, deck + 3.4, z0 + .8), "steel")
+    b.solid((x0 + 1.0, deck, z0 + 2.0), (x1 - 1.0, deck + 1.0, z0 + 3.4), "net")              # net drum
+    for side in (-1, 1):                                                                       # outriggers, raised
+        x = x0 - .1 if side < 0 else x1 - .1
+        b.solid((x, deck + 2.4, z1 - 6.0), (x + .2, deck + 7.5, z1 - 5.8), "steel")
+    for k in range(3):                                                                         # fish boxes
+        b.solid((x0 + .7 + k * .9, deck, z0 + 4.2), (x0 + 1.5 + k * .9, deck + .4, z0 + 5.0), "fishbox")
+
+
+def fishers_jetty():
+    """Porto Luma's fishers' jetty (Fiŝista Kajo): the timber jetty of smugglers_jetty, its deck
+    level with the quay (4 m over the water) so a cart or a car rolls straight on from the quay,
+    44 m out from the quay face (its land end at -Z; the piles from y = 0, the deck 10 m up). Two
+    trawlers lie along the +X side and a third at the end, a rowing boat on the -X side, fish
+    boxes, nets and lobster pots on the deck, a fish stall at the land end - where the locals buy.
+    (The smugglers land here too, after dark.)"""
+    b = Builder()
+    b.material("deck", wood(), 2, 2)
+    b.material("pile", flat((84, 66, 48), 6), 1, 3)
+    b.material("hull_blue", flat((44, 84, 132), 4), 3, 3)
+    b.material("hull_green", flat((48, 104, 72), 4), 3, 3)
+    b.material("hull_red", flat((150, 40, 32), 3), 3, 1)
+    b.material("white", flat((228, 228, 222), 2), 3, 3)
+    b.material("glass", flat((50, 70, 88), 2), 1, 1)
+    b.material("steel", flat((96, 100, 106), 3), 1, 1)
+    b.material("net", flat((70, 96, 88), 10), 1, 1)
+    b.material("fishbox", flat((214, 110, 40), 4), 1, 1)
+    b.material("crate", flat((156, 118, 70), 8), 1, 1)
+    b.material("awning", stripes((40, 92, 150), (230, 230, 226), 6, 77), 1, 1)
+    top, z0, z1, w = 10.0, -22.0, 22.0, 3.0
+    water = top - 4.0
+    b.box((-w, top - .25, z0), (w, top, z1), {s: "deck" for s in ('+y', '-y', '+x', '-x', '+z', '-z')})
+    for z in range(int(z0) + 1, int(z1), 4):
+        for x in (-w + .3, w - .6):
+            b.solid((x, 0, z), (x + .3, top - .25, z + .3), "pile")
+    for z in (z0 + 6, 0.0, z1 - 4):
+        for x in (-w - .1, w - .2):
+            b.solid((x, top, z), (x + .3, top + .5, z + .3), "steel")       # bollards
+    for z in (z0 + 2, z1 - 2):
+        b.solid((-w + .2, top, z), (-w + .35, top + 4, z + .15), "steel")   # lamp posts
+        b.solid((-w + .2, top + 3.8, z - .2), (-w + .8, top + 4, z + .35), "white")
+    # Trawlers along +X, and one across the end.
+    fishing_boat(b, w + .4, -16.0, water, 13.0, 4.2, "hull_blue")
+    fishing_boat(b, w + .4, 0.0, water, 12.0, 4.0, "hull_green")
+    fishing_boat(b, -2.4, z1 + .4, water, 11.0, 4.0, "hull_blue")
+    # A rowing boat on the -X side.
+    b.solid((-w - 3.0, water - .3, -4.0), (-w - 1.2, water + .5, 1.0), "white")
+    # On the deck: fish boxes, nets, lobster pots.
+    for i, (x, z) in enumerate(((1.2, -8.0), (1.2, -7.0), (2.0, -7.5), (1.6, 6.0), (1.6, 7.0))):
+        b.solid((x, top, z), (x + .8, top + .35 + .35 * (i % 2), z + .8), "fishbox")
+    b.solid((-2.6, top, 2.0), (-1.0, top + .5, 5.0), "net")
+    for z in (10.0, 11.0, 12.0):
+        b.solid((-2.6, top, z), (-1.9, top + .6, z + .7), "net")             # lobster pots
+    # The fish stall at the land end: a counter under a striped awning.
+    b.solid((-2.6, top, z0 + 1.0), (2.6, top + 1.0, z0 + 2.0), "crate")
+    for x in (-2.6, 2.4):
+        b.solid((x, top, z0 + .4), (x + .2, top + 2.6, z0 + .6), "steel")
+        b.solid((x, top, z0 + 2.6), (x + .2, top + 2.3, z0 + 2.8), "steel")
+    b.solid((-2.8, top + 2.3, z0 + .2), (2.8, top + 2.6, z0 + 3.0), "awning")
+    for x in (-2.0, -.6, .8):
+        b.solid((x, top + 1.0, z0 + 1.1), (x + 1.0, top + 1.25, z0 + 1.9), "fishbox")
+    return b
+
 CONTAINER_COLOURS = ((176, 52, 40), (40, 92, 150), (40, 120, 76), (210, 150, 40), (120, 124, 130), (150, 70, 40), (60, 60, 66))
 
 
@@ -2008,6 +2088,7 @@ def kit():
     add("civic/state_prison.glb", state_prison(), "city_state_prison", "Ŝtata Malliberejo - walled state prison, towers, cell block, yard", "Building", 84, 64, 11.5)
     add("civic/highway_gantry.glb", highway_gantry(), "city_highway_gantry", "Highway sign gantry (spans the highway)", "BuildingPart", 27, 2.4, 7.64)
     add("civic/smugglers_jetty.glb", smugglers_jetty(), "city_smugglers_jetty", "Jetty with a moored coaster and contraband crates", "BuildingPart", 18, 44, 19)
+    add("civic/fishers_jetty.glb", fishers_jetty(), "city_fishers_jetty", "Fishers' jetty with trawlers, fish boxes and a fish stall (deck level with a quay)", "BuildingPart", 18, 56, 19)
     add("civic/cargo_ship.glb", cargo_ship(), "city_cargo_ship", "Stella Maris - feeder container ship (moored)", "BuildingPart", 16, 96, 32)
     add("civic/quay_apron.glb", quay_apron(), "city_quay_apron", "Concrete quay apron with quay wall and crane rails", "BuildingPart", 60.5, 112, 14)
     add("civic/harbour_crane.glb", harbour_crane(), "city_harbour_crane", "Ship-to-shore container crane on quay rails", "BuildingPart", 58, 15, 42)

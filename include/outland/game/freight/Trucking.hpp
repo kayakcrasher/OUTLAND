@@ -74,8 +74,11 @@ public:
     // back with cattle_loaded / nothing).
     TruckEvent update(const TruckFrame& frame);
     void cattle_loaded(int head);
-    // A rig of the company's that can carry this load (box trailer, or the stock trailer for cattle).
-    [[nodiscard]] static bool company_rig(const std::string& vehicle) { return vehicle.find("semi_depot") != std::string::npos; }
+    // A rig of the company's that can carry this load (box trailer, or the stock trailer for cattle):
+    // the yard's rigs for hire (semi_depot), and any of the island's other big rigs the player takes
+    // over - the company drivers' (semi_haul), the supply and cattle rigs (semi_freight, semi_cattle).
+    // They all wear the same colours, so all of them count.
+    [[nodiscard]] static bool company_rig(const std::string& vehicle) { return vehicle.find("vehicle_spawn_semi_") != std::string::npos; }
     [[nodiscard]] static bool stock_rig(const std::string& vehicle) { return company_rig(vehicle) && vehicle.find("cattle") != std::string::npos; }
     [[nodiscard]] bool right_rig(const std::string& vehicle) const {
         return company_rig(vehicle) && (job_.kind == HaulKind::Cattle) == stock_rig(vehicle);
