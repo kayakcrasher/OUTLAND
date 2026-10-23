@@ -105,12 +105,12 @@ bool read(Reader& r, Start& m) { m.mode = r.u8(); m.level = r.u8(); m.seed = r.u
 
 void write(Writer& w, const PlayerState& m) {
     w.f32(m.time); w.v3(m.feet); w.f32(m.yaw); w.f32(m.pitch); w.v3(m.velocity); w.f32(m.health);
-    w.u8(m.weapon); w.u8(m.flags); w.u8(m.dive); w.u16(static_cast<std::uint16_t>(m.vehicle));
+    w.u8(m.weapon); w.u8(m.flags); w.u8(m.dive); w.u8(m.status); w.u8(m.reviving); w.u8(m.revive); w.u16(static_cast<std::uint16_t>(m.vehicle));
     if (m.vehicle >= 0) {w.v3(m.car); w.f32(m.car_yaw); w.f32(m.car_speed);}
 }
 bool read(Reader& r, PlayerState& m) {
     m.time = r.f32(); m.feet = r.v3(); m.yaw = r.f32(); m.pitch = r.f32(); m.velocity = r.v3(); m.health = r.f32();
-    m.weapon = r.u8(); m.flags = r.u8(); m.dive = r.u8(); m.vehicle = static_cast<std::int16_t>(r.u16());
+    m.weapon = r.u8(); m.flags = r.u8(); m.dive = r.u8(); m.status = r.u8(); m.reviving = r.u8(); m.revive = r.u8(); m.vehicle = static_cast<std::int16_t>(r.u16());
     if (m.vehicle >= 0) {m.car = r.v3(); m.car_yaw = r.f32(); m.car_speed = r.f32();}
     return r.ok();
 }

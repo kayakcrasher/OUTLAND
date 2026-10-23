@@ -21,6 +21,9 @@ struct BodyPose {
     // Arrests: `hands_up` 0..1 raises both hands beside the head (a suspect giving up); `cuffed`
     // 0..1 puts the hands together behind the back.
     float hands_up{0}, cuffed{0};
+    // Knocked down (squad play) 0..1: on the knees, slumped forward, hands down on the ground;
+    // crawling, the knees shuffle.
+    float downed{0};
     // Clothes: a texture drawn in place of the body's own (0 keeps its own) - same UV layout.
     unsigned int outfit{0};
 };

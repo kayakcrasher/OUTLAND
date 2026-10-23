@@ -73,7 +73,7 @@ std::vector<ai::OtherPlayer> LanPlay::others() const {
         if (!r.known) continue;
         // In the air (the drop) nobody can be shot at yet.
         const bool flying = (r.state.flags & net::StateDropping) != 0;
-        out.push_back({body_base + r.slot, r.shown, r.state.velocity, (r.state.flags & net::StateAlive) && !flying,
+        out.push_back({body_base + r.slot, r.shown, r.state.velocity, (r.state.flags & net::StateAlive) && !(r.state.status & net::StatusDowned) && !flying,
                        (r.state.flags & net::StateDriving) != 0});
     }
     return out;

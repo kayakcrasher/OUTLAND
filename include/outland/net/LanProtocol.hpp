@@ -9,7 +9,7 @@
 namespace outland::net {
 
 inline constexpr std::uint32_t magic = 0x4E414C4FU;   // "OLAN"
-inline constexpr std::uint8_t version = 3;   // 2: rockets; 3: sides
+inline constexpr std::uint8_t version = 4;   // 2: rockets; 3: sides; 4: squad revive
 inline constexpr std::uint16_t discovery_port = 47821;
 inline constexpr int max_players = 8;
 inline constexpr std::uint8_t everyone = 255;
@@ -92,12 +92,16 @@ struct PlayerState {
     std::uint8_t weapon{0};
     std::uint8_t flags{0};        // see State* below
     std::uint8_t dive{0};         // aircraft::DiveStage while dropping
+    std::uint8_t status{0};       // see Status* below
+    std::uint8_t reviving{255};   // the downed teammate (slot) this player is picking up (255: nobody)
+    std::uint8_t revive{0};       // down: how far a teammate has got picking them up (0..255)
     std::int16_t vehicle{-1};     // index in VehicleSystem::vehicles() when driving
     Vector3 car{};
     float car_yaw{0}, car_speed{0};
 };
 inline constexpr std::uint8_t StateAlive = 1, StateFiring = 2, StateAiming = 4, StateCrouch = 8, StateDriving = 16,
                                StateGrounded = 32, StateCanopy = 64, StateDropping = 128;
+inline constexpr std::uint8_t StatusDowned = 1;   // knocked down (squad play): alive, crawling, bleeding out
 struct Hit { std::int32_t attacker{0}; float amount{0}; Vector3 from{}; std::uint8_t weapon{0}; }; // attacker: slot, or -bot id
 struct Died { std::int32_t killer{-1}; };        // the sender died; killer as in Hit (or -1: the zone, a fall...)
 struct Taken { std::string pickup; std::uint16_t remaining{0}; };

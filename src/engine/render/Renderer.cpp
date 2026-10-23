@@ -97,6 +97,7 @@
 #include "outland/game/zombies/ZombieEcology.hpp"
 #include "outland/game/LanScreen.hpp"
 #include "outland/game/lan/LanPlay.hpp"
+#include "outland/game/lan/SquadRevive.hpp"
 #include "outland/net/LanSession.hpp"
 #include <random>
 #include <raylib.h>
@@ -1183,6 +1184,12 @@ void Renderer::run() {
     const auto side_alive=[&]{return teammates_alive()+(player_health.alive() ? 1 : 0);};
     const auto enemies_alive=[&]{int n=0;for(const auto& r:lan_play.remotes()) n+=r.known && (r.state.flags&net::StateAlive) && !teammate(r.slot);return n;};
     int spectate_slot=-1;
+    // Squad revive: knocked down while a teammate stands; a teammate picks you up (game::lan::SquadRevive).
+    game::lan::SquadRevive squad_revive;
+    bool was_downed=false;
+    const auto squad_play=[&]{return lan_match && lan_sides!=net::Sides::Free && game_mode==game::GameMode::BattleRoyale;};
+    const auto down=[](const game::lan::Remote& r){return (r.state.status&net::StatusDowned)!=0;};
+    const auto teammates_standing=[&]{int n=0;for(const auto& r:lan_play.remotes()) n+=r.known && (r.state.flags&net::StateAlive) && !down(r) && teammate(r.slot);return n;};
     // ---- The campaign's story: where Uncle Ron, his truck and the player stand, and saving it.
     const auto floor_at=[&](Vector3 at) {
         const float top=std::max(at.y,world::terrain::TerrainHeight::sample(at.x,at.z))+1.5F;
@@ -1623,7 +1630,7 @@ void Renderer::run() {
             }
             queued_mode=game::GameMode::Home;
             if(lan_start) {
-                lan_match=true;lan_seed=lan_start->seed;lan_sides=static_cast<net::Sides>(lan_start->sides);spectate_slot=-1;
+                lan_match=true;lan_seed=lan_start->seed;lan_sides=static_cast<net::Sides>(lan_start->sides);spectate_slot=-1;squad_revive.reset();was_downed=false;
                 home_screen.set_bot_level(static_cast<game::ai::BotLevel>(std::min<int>(lan_start->level,2)));
                 selected=static_cast<game::GameMode>(lan_start->mode);
                 if(selected!=game::GameMode::ZombieSurvival && selected!=game::GameMode::Explore) selected=game::GameMode::BattleRoyale;
@@ -1708,6 +1715,7 @@ void Renderer::run() {
                 }
                 npcs.reset_session();
                 lan_play.clear();lan_state_wait=lan_snapshot_wait=0;lan_last_attacker=-1;lan_death_sent=lan_host_lost=false;
+                squad_revive.reset();was_downed=false;player_health.set_downable(false);
                 loot_session.drop_prefix=lan_match ? "drop_s"+std::to_string(lan.slot())+"_" : std::string{};
                 build_mode.set_active(false);bus_dwell_seen.clear();
                 if(game::rules_for(game_mode).civilian_life) {
@@ -2613,6 +2621,24 @@ void Renderer::run() {
             held={};
             held.look_dx=dx;held.look_dy=dy;held.look_x=lx;held.look_y=ly;
         }
+        if(player_health.downed()) {
+            // Down: crawl and look round, nothing else.
+            auto& held=input_system.player();
+            held.fire=held.aim=held.jump=held.sprint=held.reload=held.grenade=held.heal=held.tag=held.sight=false;
+            held.next_weapon=held.fire_mode=held.interact=held.backup=held.inventory=held.toggle_view=false;
+            held.crouch=true;
+        }
+        if(squad_play() && player_health.alive() && !player_health.downed() && !vehicles.driver() && !mode_session.terminal()) {
+            // USE beside a downed teammate: kneel and pick them up (USE again stops).
+            auto& held=input_system.player();
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            const auto near=game::lan::SquadRevive::downed_near(feet,lan_play.remotes(),teammate);
+            if(held.interact && (near!=game::lan::SquadRevive::nobody || squad_revive.helping()!=game::lan::SquadRevive::nobody)) {
+                held.interact=false;
+                if(squad_revive.helping()!=game::lan::SquadRevive::nobody) squad_revive.stop_helping();
+                else squad_revive.help(near);
+            }
+        }
         const input::PlayerInput& controls = input_system.player();
         {
             // BUILD (K): lay roads, homes and bus stops in Explore, on foot.
@@ -2993,7 +3019,15 @@ void Renderer::run() {
                         player_crew.partner()<0 ? "E - Ask the desk for a partner" : "E - Hand in your badge";
                 }
             }
-            use_available=here && !creator_active && player_health.alive();
+            if(squad_play() && player_health.alive() && !player_health.downed() && !vehicles.driver()) {
+                const auto near=game::lan::SquadRevive::downed_near(feet,lan_play.remotes(),teammate);
+                if(squad_revive.helping()!=game::lan::SquadRevive::nobody) {here=true;store_prompt=touch_ui ? "USE - Stop" : "E - Stop";}
+                else if(near!=game::lan::SquadRevive::nobody) {
+                    here=true;
+                    if(const auto* who=lan_play.find(near)) store_prompt=std::string(touch_ui ? "USE - Pick up " : "E - Pick up ")+who->name;
+                }
+            }
+            use_available=here && !creator_active && player_health.alive() && !player_health.downed();
         }
         // ====================================================
         // THE MOTOR TRADE (game::autos): Marnafto's pumps, the Meĥanikejo bays, the car lot
@@ -3587,7 +3621,7 @@ void Renderer::run() {
         creator_flying=creator_active && creator_controller.state().flying;
 #endif
         const Vector3 position_before_move=player.position;
-        const float speed = creator_flying ? 12.0F:controls.crouch ? walk_speed * 0.45F : controls.aim ? walk_speed * 0.55F :
+        const float speed = creator_flying ? 12.0F:player_health.downed() ? walk_speed * game::lan::SquadRevive::crawl : controls.crouch ? walk_speed * 0.45F : controls.aim ? walk_speed * 0.55F :
                             controls.sprint ? sprint_speed : walk_speed;
 
         Vector3 movement =
@@ -4631,7 +4665,7 @@ void Renderer::run() {
                 game::ai::BattleRoyaleFrame frame;
                 frame.dt=dt;frame.now=match_time;frame.player_feet=feet;
                 frame.player_velocity=dt>0 ? Vector3Scale(Vector3Subtract(feet,last_player_feet),1.0F/dt) : Vector3{};
-                frame.player_alive=player_health.alive();
+                frame.player_alive=player_health.alive() && !player_health.downed();
                 frame.player_fired=weapons.events().shots>0;
                 frame.player_weapon=weapons.selected();
                 frame.player_in_vehicle=driving;
@@ -5082,7 +5116,36 @@ void Renderer::run() {
             // Riding and falling are out of the gas's reach (the line starts out over the sea).
             const bool in_drop=dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed;
             const Vector3 zone_feet=in_drop ? Vector3{mode_session.center().x,0,mode_session.center().y} : feet;
-            if(lan_royale) mode_session.set_lan(enemies_alive(),!bots_mirrored,teammates_alive());
+            if(lan_royale) {
+                // Squad revive: the helper keeps at it while close; the downed bleed, or get up.
+                if(const auto helping=squad_revive.helping();helping!=game::lan::SquadRevive::nobody) {
+                    const auto* who=lan_play.find(helping);
+                    const bool still=who && who->known && (who->state.flags&net::StateAlive) && down(*who) &&
+                        std::hypot(who->shown.x-feet.x,who->shown.z-feet.z)<=game::lan::SquadRevive::keep_reach &&
+                        player_health.alive() && !player_health.downed() && !driving && weapons.events().shots==0;
+                    if(!still) squad_revive.stop_helping();
+                }
+                const bool helped=player_health.downed() && game::lan::SquadRevive::helped_by(lan.slot(),feet,lan_play.remotes(),teammate);
+                if(squad_revive.update(dt,player_health,squad_play() && !in_drop,teammates_standing(),helped)) {
+                    std::string helper="A TEAMMATE";
+                    for(const auto& r:lan_play.remotes()) if(r.known && r.state.reviving==lan.slot() && teammate(r.slot)) {helper=r.name;break;}
+                    const std::string line=helper+" PICKED UP "+lan.name_of(lan.slot());
+                    br_bots.add_feed(line);if(lan.in_match()) lan.send(net::Msg::Feed,net::Feed{line});
+                    interaction_message="BACK ON YOUR FEET";interaction_remaining=2.5F;
+                }
+                if(player_health.downed() && !was_downed) {
+                    // Knocked down: out of any car; the side can pick you up.
+                    if(vehicles.driver()) {
+                        Vector3 exit{};
+                        if(vehicles.exit(verda_region,exit,true)) {player.position=Vector3Add(exit,{0,1,0});player.vertical_velocity=0;vehicle_renderer.reset_camera();}
+                    }
+                    const std::string line=lan.name_of(lan.slot())+" IS DOWN";
+                    br_bots.add_feed(line);if(lan.in_match()) lan.send(net::Msg::Feed,net::Feed{line});
+                    haptics.hit_taken(60);
+                }
+                was_downed=player_health.downed();
+                mode_session.set_lan(enemies_alive(),!bots_mirrored,teammates_alive());
+            }
             mode_session.update(dt,zone_feet,player_health,br_bots,vehicle_paused);
             if(game_mode==game::GameMode::BattleRoyale) {
                 br_bots.sync_bodies(npcs,&character_registry);
@@ -5127,6 +5190,11 @@ void Renderer::run() {
                     state.health=player_health.current();
                     state.weapon=static_cast<std::uint8_t>(weapons.selected());
                     if(player_health.alive()) state.flags|=net::StateAlive;
+                    if(player_health.downed()) {
+                        state.status|=net::StatusDowned;
+                        state.revive=static_cast<std::uint8_t>(std::clamp(squad_revive.progress(),0.0F,1.0F)*255);
+                    }
+                    state.reviving=squad_revive.helping();
                     if(lan_fired) state.flags|=net::StateFiring;
                     if(controls.aim) state.flags|=net::StateAiming;
                     if(player.grounded) state.flags|=net::StateGrounded;
@@ -5571,7 +5639,7 @@ void Renderer::run() {
         const float gun_work=!held_weapon.automatic && held_weapon.interval>.5F ?
             std::sin(std::clamp(1-weapons.cooldown()/held_weapon.interval,0.0F,1.0F)*PI)*(weapons.cooldown()>0 ? 1.0F : 0.0F) : 0.0F;
         const float gun_reload=weapons.reload_remaining()/held_weapon.reload_seconds;
-        if(weapons.available() && !driving && !creator_active && (!player.third_person || ads_view) && !scoped)
+        if(weapons.available() && !driving && !creator_active && !player_health.downed() && (!player.third_person || ads_view) && !scoped)
             game::combat::CombatRenderer::draw_gun(gun_grip,look_direction,view_up,weapons.selected(),gun_reload,weapons.muzzle_flash(),true,gun_work,sight);
         if(!creator_active)loot_ui.draw_world(item_registry,loot_session.world(),loot_feet,loot_session.inventory().state().light);
 
@@ -5620,6 +5688,9 @@ void Renderer::run() {
                 // Every gang in its colours: officers sharp, soldiers in the gang's shirt (the Green Hand's white).
                 if(actor.bot>=0 && actor.character_id==outfit_body && mafio.active())
                     if(const int gang=mafio.gang_of(actor.bot);gang>=0) body.outfit=gang_outfit(gang,mafio.officer(actor.bot));
+                // Another player knocked down (squad play): on their knees, no gun.
+                if(game::lan::LanPlay::is_remote_body(actor.bot))
+                    if(const auto* who=lan_play.find(game::lan::LanPlay::slot_of(actor.bot));who && down(*who)) {body.downed=1;return;}
                 // Arrests: hands up, or cuffed behind the back.
                 if(actor.bot>=0 && mafio.active()) {
                     if(callouts.escorting(actor.bot)) {body.cuffed=1;return;}
@@ -5671,7 +5742,8 @@ void Renderer::run() {
             characters::BodyPose body;
             crouch_blend+=((controls.crouch ? 1.0F : 0.0F)-crouch_blend)*(1.0F-std::exp(-dt*10.0F));
             body.crouch=crouch_blend;
-            if(weapons.available() && !creator_active) {
+            body.downed=player_health.downed() ? 1.0F : 0.0F;
+            if(weapons.available() && !creator_active && !player_health.downed()) {
                 const auto gun=game::combat::gun_layout(weapons.selected());
                 body.hold=held_weapon.hold==game::combat::WeaponHold::Pistol ? characters::BodyHold::Pistol : characters::BodyHold::Shouldered;
                 body.stock=gun.stock;body.support=gun.support;
@@ -6829,6 +6901,23 @@ void Renderer::run() {
             DrawTextEx(font,store_prompt.c_str(),{screen_width/2-width/2,static_cast<float>(screen_height-129)},size,1,YELLOW);
         }
         if(shop_open && current_shop) play_ui.draw_shop(economy,*current_shop,loot_session.economy(),item_registry,loot_session.inventory(),shop_status,screen_width,screen_height);
+        // Squad revive: down (the bleed and the pick-up), or picking a teammate up.
+        if(squad_play() && !mode_session.terminal()) {
+            const auto bar=[&](const char* title,float fill,Color colour,int y) {
+                const int w=320,x=screen_width/2-w/2,tw=MeasureText(title,20),box=std::max(w,tw);
+                DrawRectangle(screen_width/2-box/2-12,y-30,box+24,52,Fade(BLACK,.6F));
+                DrawText(title,screen_width/2-tw/2,y-25,20,colour);
+                DrawRectangle(x,y,w,10,Fade(WHITE,.15F));
+                DrawRectangle(x,y,static_cast<int>(w*std::clamp(fill,0.0F,1.0F)),10,colour);
+            };
+            const int y=screen_height/2+90;
+            if(player_health.downed()) {
+                if(squad_revive.progress()>0) bar("BEING PICKED UP - HOLD ON",squad_revive.progress(),Color{120,235,140,255},y);
+                else bar("YOU'RE DOWN - CRAWL TO COVER FOR A TEAMMATE",squad_revive.bleed(),Color{235,80,60,255},y);
+            } else if(const auto helping=squad_revive.helping();helping!=game::lan::SquadRevive::nobody)
+                if(const auto* who=lan_play.find(helping))
+                    bar(TextFormat("PICKING UP %s",who->name.c_str()),static_cast<float>(who->state.revive)/255.0F,Color{120,235,140,255},y);
+        }
         // Out, with the side fighting on: follow them (the result comes when the side wins or falls).
         if(mode_session.squad_fighting()) {
             const auto* who=lan_play.find(static_cast<std::uint8_t>(std::max(0,spectate_slot)));
@@ -7085,8 +7174,9 @@ void Renderer::run() {
             }
             // The player's side (LAN): each teammate on the strip, by name.
             for(const auto& r:lan_play.remotes())
-                if(r.known && (r.state.flags&net::StateAlive) && teammate(r.slot) && flat(r.shown)>6)
-                    compass_marks.push_back({r.shown,Glyph::Objective,Color{120,235,140,255},r.name,false});
+                if(r.known && (r.state.flags&net::StateAlive) && teammate(r.slot) && (flat(r.shown)>6 || down(r)))
+                    compass_marks.push_back({r.shown,Glyph::Objective,down(r) ? Color{255,150,70,255} : Color{120,235,140,255},
+                                             down(r) ? r.name+" - DOWN" : r.name,false});
             if(game::rules_for(game_mode).civilian_life) {
                 // The nearest of each, if close enough to matter.
                 const auto nearest=[&](Glyph glyph,Color colour,const std::string& label,float range,auto&& points) {

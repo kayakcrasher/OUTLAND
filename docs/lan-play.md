@@ -34,6 +34,12 @@ It works on desktop and Android. The browser build has no LAN: a web page cannot
   - Teammates' names show green over their heads from any distance and through walls, with how far they are, and each is on the compass by name.
   - The HUD shows `SQUAD n` or `TEAM n`: how many of your side still stand.
   - Your side wins when no bots and nobody from another side is left. It doesn't matter who on your side is still up.
+  - **Knocked down, not out:** while a teammate is still standing, a hit that would kill you knocks you down instead (`game::lan::SquadRevive`, with the down state in `game::Health`).
+    - Down, you crawl on your knees at about a fifth of walking speed. You can't shoot, heal, throw or pick anything up, and you're thrown out of any car.
+    - You bleed out over 40 seconds (the red bar). The zone still hurts you, and another hit finishes you. The bots leave you alone.
+    - A teammate picks you up: they walk up and press **USE** (E, or the touch USE button) beside you, then stay within about 3 m for 5 seconds. Both of you see a green bar, and the bleeding stops while they work. You get up with 35 health. Pressing USE again, walking off, shooting or getting in a car stops it.
+    - Downed teammates show orange on the compass as "NAME - DOWN", and the kill feed says who went down and who picked them up.
+    - When nobody on your side is left standing, everyone down is out.
   - **Out, but your side fights on:** the camera follows a teammate ("YOU'RE OUT · YOUR SQUAD FIGHTS ON"). TAB or a tap watches the next one, and H goes home. If your side wins, you share it: "YOUR SIDE WINS".
 - **Zone and winning:** the zone closes on the same schedule everywhere. The last one standing wins: no bots and no other players left. ALIVE counts bots plus people, and the HUD shows `LAN n`.
 - **No pausing:** a LAN match never stops for one player's menu, bag or result screen.
@@ -51,7 +57,7 @@ The code is in `src/net` and `src/game/lan`.
 - **Ports:**
   - Discovery beacons go to port `47821` on the broadcast address. That port is shared (`SO_REUSEPORT`), so several games on one machine can listen.
   - Each game socket uses a port the system chooses.
-- **Messages:** every message starts with a 12-byte header: `OLAN` magic, version (3: sides), type, sender slot, target slot and match id. The message types are `LanProtocol.hpp`. The beacon, roster and start carry the sides (`net::Sides`; `side_of`, `same_side`).
+- **Messages:** every message starts with a 12-byte header: `OLAN` magic, version (4: squad revive), type, sender slot, target slot and match id. The message types are `LanProtocol.hpp`. The beacon, roster and start carry the sides (`net::Sides`; `side_of`, `same_side`). Each player's state carries `StatusDowned`, the teammate they are picking up (`reviving`) and, when down, how far they have been picked up (`revive`). Every player keeps their own down state; nobody else decides it.
 - **Timeouts:** a peer silent for 8 seconds is dropped, and the others see that player leave. If the host goes, everyone else carries on alone and their games start running their own bots.
 - **Android:** the manifest asks for `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE` and `CHANGE_WIFI_MULTICAST_STATE`. `GameActivity` holds a Wi-Fi multicast lock while the game is open, because many phones otherwise drop broadcast packets.
 

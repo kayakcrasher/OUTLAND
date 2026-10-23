@@ -14,11 +14,16 @@ void Health::damage(float amount) {
         return;
     }
 
+    if (downable_ && !downed_ && current_ > 0.0F && current_ <= amount) {
+        downed_ = true;
+        current_ = down_pool;
+        return;
+    }
     current_ = std::max(0.0F, current_ - amount);
 }
 
 void Health::heal(float amount) {
-    if (amount <= 0.0F) {
+    if (amount <= 0.0F || downed()) {
         return;
     }
 
@@ -27,6 +32,15 @@ void Health::heal(float amount) {
 
 void Health::reset() {
     current_ = maximum_;
+    downed_ = false;
+}
+
+void Health::get_up(float health) {
+    if (!downed()) {
+        return;
+    }
+    downed_ = false;
+    current_ = std::clamp(health, 1.0F, maximum_);
 }
 
 float Health::current() const {

@@ -232,6 +232,7 @@ add_library(
     src/net/LanSession.cpp
     src/game/LanScreen.cpp
     src/game/lan/LanPlay.cpp
+    src/game/lan/SquadRevive.cpp
     src/world/sky/DayNight.cpp
     src/world/assets/VerdanArchitecture.cpp
     src/world/assets/VerdanProps.cpp

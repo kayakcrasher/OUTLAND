@@ -1,5 +1,8 @@
 // LAN play: the message format round-trips, and a host and two clients on this machine find each
-// other, gather in a lobby, start together and pass play messages through the host.
+// other, gather in a lobby, start together and pass play messages through the host. And the squad
+// revive: knocked down while a teammate stands, picked up, or out.
+#include "outland/game/lan/LanPlay.hpp"
+#include "outland/game/lan/SquadRevive.hpp"
 #include "outland/net/LanSession.hpp"
 #include <chrono>
 #include <cmath>
@@ -38,10 +41,11 @@ template <class T> bool inbox_has(std::vector<Inbound>& inbox, Msg type, T& out,
 int main() {
     // The format.
     {
-        PlayerState state{12.5F, {1, 2, 3}, 1.25F, -.2F, {4, 0, 5}, 97, 2, StateAlive | StateDriving, 0, 7, {10, 1, 20}, 90, 12};
+        PlayerState state{12.5F, {1, 2, 3}, 1.25F, -.2F, {4, 0, 5}, 97, 2, StateAlive | StateDriving, 0, StatusDowned, 3, 200, 7, {10, 1, 20}, 90, 12};
         PlayerState back;
         check(decode(encode(state), back) && back.vehicle == 7 && back.car.z == 20 && back.health == 97 && back.flags == (StateAlive | StateDriving),
               "a player's state round-trips");
+        check(back.status == StatusDowned && back.reviving == 3 && back.revive == 200 && PlayerState{}.reviving == 255, "...down, helping, picked up");
         state.vehicle = -1;
         check(decode(encode(state), back) && back.vehicle == -1 && encode(state).size() < encode(PlayerState{.vehicle = 3}).size(), "no car, fewer bytes");
         BotSnapshot snapshot{3.5F, {}, {}};
@@ -143,6 +147,73 @@ int main() {
             return m.header.type == Msg::Leave && m.header.from == cee_slot; }); }), "a client leaves");
     host.stop();
     check(settle({&bee}, [&] { return bee.role() != LanSession::Role::Client; }), "the host leaves, and the client knows");
+    // Squad revive.
+    {
+        using outland::game::Health;
+        using outland::game::lan::Remote;
+        using outland::game::lan::SquadRevive;
+        const auto mate = [](std::uint8_t slot) { return slot == 1 || slot == 2; };   // 0 (me), 1, 2 one side; 3 the other
+        const auto person = [](std::uint8_t slot, Vector3 at, std::uint8_t status = 0, std::uint8_t reviving = 255) {
+            Remote r; r.slot = slot; r.name = "P" + std::to_string(slot); r.known = true; r.shown = at;
+            r.state.flags = StateAlive; r.state.status = status; r.state.reviving = reviving; return r;
+        };
+        Health me{125};
+        SquadRevive revive;
+        // Alone (free for all, or nobody standing): a killing hit kills.
+        revive.update(.1F, me, false, 1, false);
+        me.damage(200);
+        check(!me.alive() && !me.downed(), "free for all: out");
+        me.reset();
+        revive.update(.1F, me, true, 0, false);
+        me.damage(200);
+        check(!me.alive(), "the last of the side standing: out");
+        // A teammate stands: knocked down instead, alive; healing does nothing.
+        me.reset();
+        revive.update(.1F, me, true, 1, false);
+        me.damage(200);
+        check(me.alive() && me.downed() && me.current() == Health::down_pool, "knocked down");
+        me.heal(50);
+        check(me.current() == Health::down_pool, "no healing yourself up");
+        // Bleeding.
+        for (int i = 0; i < 10; ++i) revive.update(.1F, me, true, 1, false);
+        check(me.downed() && std::abs(me.current() - (Health::down_pool - Health::down_pool / SquadRevive::bleed_seconds)) < .01F && revive.bleed() < 1,
+              "bleeding out");
+        // A teammate kneels beside them (within reach, helping slot 0): picked up.
+        std::vector<Remote> others{person(1, {1, 0, 0}, 0, 0), person(3, {.5F, 0, 0}, StatusDowned)};
+        check(SquadRevive::helped_by(0, {0, 0, 0}, others, mate), "helped");
+        check(!SquadRevive::helped_by(0, {20, 0, 0}, others, mate), "...not from afar");
+        others[0].state.reviving = 2;
+        check(!SquadRevive::helped_by(0, {0, 0, 0}, others, mate), "...not when helping someone else");
+        const float before = me.current();
+        bool up = false;
+        for (int i = 0; i < 60 && !up; ++i) {
+            up = revive.update(.1F, me, true, 1, true);
+            check(up || me.current() == before, "no bleeding while picked up");
+        }
+        check(up && !me.downed() && me.current() == SquadRevive::get_up_health, "back on their feet");
+        // Down again, and the last teammate falls too: out.
+        revive.update(.1F, me, true, 1, false);
+        me.damage(500);
+        check(me.downed(), "down again");
+        revive.update(.1F, me, true, 0, false);
+        check(!me.alive(), "nobody left to help: out");
+        // Down, then finished off: the hit while down kills.
+        me.reset();
+        revive.update(.1F, me, true, 2, false);
+        me.damage(500);
+        revive.update(.1F, me, true, 2, false);
+        me.damage(Health::down_pool + 1);
+        check(!me.alive(), "finished off");
+        // Who's in reach: the nearest downed teammate, not an enemy, not someone standing.
+        std::vector<Remote> field{person(1, {1.5F, 0, 0}, StatusDowned), person(2, {1, 0, 0}), person(3, {.5F, 0, 0}, StatusDowned)};
+        check(SquadRevive::downed_near({0, 0, 0}, field, mate) == 1, "the downed teammate in reach");
+        check(SquadRevive::downed_near({10, 0, 0}, field, mate) == SquadRevive::nobody, "...none out of reach");
+        // Bots leave someone down alone.
+        outland::game::lan::LanPlay play;
+        PlayerState down; down.flags = StateAlive; down.status = StatusDowned;
+        play.received(1, "P1", down, 0);
+        check(play.others().size() == 1 && !play.others().front().alive, "the bots leave a downed player alone");
+    }
     if (failures) return 1;
     std::cout << "[PASS] LAN play\n";
     return 0;

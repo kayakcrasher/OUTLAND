@@ -108,6 +108,14 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
         left_thigh=right_thigh=1.45F;left_flex=right_flex=1.4F;
         lean=-.08F;
     }
+    const float downed=dying || seated ? 0 : std::clamp(body.downed,0.0F,1.0F);
+    if(downed>0) {
+        // On the knees: thighs down, shins flat behind, the chest slumped over; crawling shuffles.
+        const float shuffle=.18F*std::sin(phase)*moving;
+        left_thigh+=((.12F+shuffle)-left_thigh)*downed; right_thigh+=((.12F-shuffle)-right_thigh)*downed;
+        left_flex+=(1.6F-left_flex)*downed; right_flex+=(1.6F-right_flex)*downed;
+        lean+=(1.15F-lean)*downed;
+    }
     const float skydive=dying ? 0 : std::clamp(body.skydive,0.0F,1.0F), hang=dying ? 0 : std::clamp(body.hang,0.0F,1.0F);
     const bool airborne=skydive>0 || hang>0;
     if(airborne) {
@@ -299,6 +307,11 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
             if(!dying && body.hands_up>0) {
                 const float h=std::clamp(body.hands_up,0.0F,1.0F);
                 if(left_upper || right_upper || left_lower || right_lower) angle*=1-h;
+            }
+            // Down: the arms hang straight to the ground under the slumped chest.
+            if(downed>0) {
+                if(left_upper || right_upper) angle*=1-downed;
+                if(left_lower || right_lower) angle=angle*(1-downed)+.1F*downed;
             }
             if(!dying && body.cuffed>0) {
                 const float c=std::clamp(body.cuffed,0.0F,1.0F);
