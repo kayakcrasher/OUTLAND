@@ -50,6 +50,23 @@ int main() {
     for (const char* stock : {"vehicle_marker_capital_verda_vehicle_spawn_semi_depot_cattle_1", "vehicle_marker_ranch_bovbazaro_vehicle_spawn_semi_cattle_1"})
         check(Trucking::stock_rig(stock), std::string("a stock-trailer rig: ") + stock);
     check(!Trucking::company_rig("vehicle_spawn_truck_capital") && !Trucking::company_rig("vehicle_spawn_hatchback_capital"), "a truck or a car isn't a rig");
+    // Diesel: on the company's account it fills free; otherwise it costs tank_price a tank, in
+    // whole kronoj, and stops when the cash runs out.
+    {
+        using outland::game::freight::Diesel;
+        float fuel = 0, owed = 0;
+        std::int64_t money = 1000;
+        for (int i = 0; i < 100; ++i) Diesel::fill(fuel, .1F, true, money, owed);
+        check(fuel > .999F && money == 1000, "on the company's account: full, and free");
+        fuel = 0;
+        std::int64_t paid = 0;
+        for (int i = 0; i < 100; ++i) paid += Diesel::fill(fuel, .1F, false, money, owed);
+        check(fuel > .999F && paid >= Diesel::tank_price - 1 && paid <= Diesel::tank_price && money == 1000 - paid, "paying: a tank costs tank_price");
+        fuel = 0; money = 75; owed = 0;
+        for (int i = 0; i < 100; ++i) Diesel::fill(fuel, .1F, false, money, owed);
+        check(money == 0 && std::abs(fuel - .25F) < .01F, "the cash runs out: a quarter tank");
+        check(Diesel::fill(fuel, .1F, false, money, owed) == 0, "...and no more");
+    }
     Trucking t;
     t.seed(7);
     t.talk(false, now, world);

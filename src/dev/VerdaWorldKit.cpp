@@ -2168,12 +2168,14 @@ void cargo_terminal(Kit& kit, world::VerdaRegion& region) {
     // face with the trawlers alongside.
     const float fish_mid = (L::cargo_z + L::cargo_quay_half + L::quay_z1) * .5F;
     kit.put(city + "ground/parking_lot_68.glb", {L::cargo_quay_x1 - 34, quay + .01F, fish_mid}, 0, false, false);
-    kit.put(city + "civic/fishers_jetty.glb", {L::fishers_jetty.x + 22, quay - 10, L::fishers_jetty.z}, 90, false, false);
+    kit.put(city + "civic/fishers_jetty.glb", {L::fishers_jetty.x + 22, quay - 10, L::fishers_jetty.z}, 90, false);   // (solid: walk out on it)
     for (int i = 0; i < 4; ++i) {
         const auto r = hash(9300U + static_cast<std::uint32_t>(i));
-        prop(kit, shacks + (i % 2 ? "Pallet.glb" : "Barrel.glb"), {L::cargo_quay_x1 - 6 - static_cast<float>(r % 5), quay, L::fish_z - 30 - i * 6.0F},
+        prop(kit, shacks + (i % 2 ? "Pallet.glb" : "Barrel.glb"), {L::cargo_quay_x1 - 3 - static_cast<float>(r % 3), quay, L::fish_z - 18 - i * 2.5F},
              static_cast<float>(r % 360), 1);
     }
+    // Marnafto's diesel lane for the rigs, beside the quay lane (layout::quay_diesel).
+    kit.put(city + "civic/diesel_island.glb", {L::quay_diesel.x, quay, L::quay_diesel.z}, 0, false);
     // The ship at the berth, her quay side 1.2 m off the quay face; the keel 5 m under the sea.
     if (!kit.put(city + "civic/cargo_ship.glb", {L::cargo_quay_x1 + 9.2F, L::sea_level - 5, z}, 0, false, false)) return;
     for (const float cz : {z - 22, z})
@@ -2228,6 +2230,8 @@ void freight_depot(Kit& kit, world::VerdaRegion& region) {
     }
     for (int i = 0; i < 4; ++i)
         kit.put(urban + "Traffic lights/street_light.glb", {-500 - i * 40.0F, 0, road_z - truck_road * .5F - 1.4F}, 0);
+    // The company's diesel lane, on the yard road's north side by the sheds (layout::depot_diesel).
+    kit.put(city + "civic/diesel_island.glb", L::depot_diesel, 90);
     // The truck park: noses to the road.
     int n = 0;
     for (const float x : {-512.0F, -526.0F, -540.0F})
@@ -2477,6 +2481,10 @@ void freight_yards(Kit& kit, world::VerdaRegion& region) {
                 kit.purpose({shed.x - out.x * 4, world::terrain::TerrainHeight::sample(shed.x, shed.z) + .1F, shed.z - out.z * 4}, yaw,
                             world::BuildingPurpose::Industrial, std::string("freight_yard_") + id);
                 const Vector3 across{-out.z, 0, out.x};
+                // A Marnafto diesel lane inside the loop, on its far side: pull up beside it going round.
+                // (Its centre 4.5 m inside the loop's inner edge: 2.5 m clear of the lane.)
+                const float diesel = ring - lane * .5F - 4.5F;
+                kit.put(city + "civic/diesel_island.glb", {centre.x + out.x * diesel, 0, centre.z + out.z * diesel}, std::atan2(across.x, across.z) * RAD2DEG);
                 for (const float s : {-14.0F, 14.0F})
                     kit.put(city + "civic/container_stack.glb", {shed.x + across.x * s, world::terrain::TerrainHeight::sample(shed.x + across.x * s, shed.z + across.z * s),
                                                                   shed.z + across.z * s}, yaw + 90, false);

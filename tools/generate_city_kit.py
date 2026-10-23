@@ -1636,6 +1636,40 @@ def gas_station():
     return b
 
 
+
+def diesel_island():
+    """Marnafto's truck diesel lane (DIZELO): a long pump island along Z with two tall diesel
+    pumps, crash bollards at both ends, and a high canopy on two columns over the island (x +-2,
+    its underside 6.2 m up, clear of a rig's mirrors and its trailer) - it stands beside the road,
+    and the rig pulls up alongside on the carriageway. A logo board stands on the canopy. The
+    island's centre is the origin."""
+    b = Builder()
+    b.material("concrete", flat((176, 174, 166), 6), 3, 3)
+    b.material("white", flat((236, 236, 232), 3), 3, 3)
+    b.material("blue", flat(MARNAFTO_BLUE, 3), 3, 1)
+    b.material("orange", flat(MARNAFTO_ORANGE, 3), 3, 1)
+    b.material("logo", marnafto_logo(), 2.4, 2.4)
+    b.material("steel", flat((150, 154, 160), 3), 2, 2)
+    b.material("yellow", flat((226, 186, 40), 3), 1, 1)
+    b.material("hose", flat((24, 24, 26), 2), 1, 1)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.solid((-.8, 0, -5.4), (.8, .25, 5.4), "concrete")
+    for z in (-2.4, 2.4):
+        b.solid((-.4, .25, z - .35), (.4, 2.3, z + .35), "white")
+        b.box((-.41, 1.5, z - .36), (.41, 2.1, z + .36), {'+x': "blue", '-x': "blue", '+z': "blue", '-z': "blue"})
+        b.box((-.42, 2.3, z - .37), (.42, 2.55, z + .37), {s: "orange" for s in ('+x', '-x', '+z', '-z', '+y')})
+        for sx in (-1, 1):
+            b.solid((sx * .41, .9, z - .06), (sx * .48, 1.7, z + .06), "hose")
+    for z in (-5.7, 5.7):                                                    # crash bollards
+        b.solid((-.2, 0, z - .2), (.2, 1.1, z + .2), "yellow")
+    for z in (-4.6, 4.6):                                                    # canopy columns, on the island
+        b.solid((-.3, .25, z - .3), (.3, 6.2, z + .3), "white")
+    b.box((-2.0, 6.2, -6.0), (2.0, 6.9, 6.0), {'-y': "white", '+y': "roof", '-z': "blue", '+z': "blue", '+x': "blue", '-x': "blue"})
+    for x0, x1, side in ((-2.02, -2.0, '-x'), (2.0, 2.02, '+x')):
+        b.box((x0, 6.4, -6.0), (x1, 6.6, 6.0), {side: "orange"})
+    b.box((-.15, 6.9, -1.6), (.15, 8.6, 1.6), {'+x': "logo", '-x': "logo", '+z': "blue", '-z': "blue", '+y': "orange"})
+    return b
+
 def mechanic_shop():
     """A Meĥanikejo (modular workshop, front faces -Z): two drive-in bays behind wide door
     openings (x -5 and +1), lifts, benches and tyre stacks, an office on the +X side with its own
@@ -2100,6 +2134,7 @@ def kit():
         mast = RADIO_STYLES[style]["mast"]
         add(f"civic/radio_station_{style}.glb", radio_station(style), f"city_radio_station_{style}",
             f"Radio station - {name} (modular studio, transmitter mast)", "Building", 18, 13.4 if RADIO_STYLES[style]["porch"] else 11.2, mast + 4.35)
+    add("civic/diesel_island.glb", diesel_island(), "city_diesel_island", "Marnafto truck diesel lane (DIZELO) - pump island under a high canopy", "BuildingPart", 4, 12, 8.6)
     add("civic/gas_station.glb", gas_station(), "city_gas_station", "Marnafto - filling station (modular, drive-in canopy, kiosk shop)", "Building", 24, 22, 6.2)
     add("civic/mechanic_shop.glb", mechanic_shop(), "city_mechanic_shop", "Meĥanikejo - mechanic's workshop (modular, two drive-in bays, office)", "Building", 18.1, 12.15, 5.0)
     add("civic/car_lot.glb", car_lot(), "city_car_lot", "Aŭtovendejo Verda - car lot with sales office and bunting", "Building", 36, 26.62, 6.4)

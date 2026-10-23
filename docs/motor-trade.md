@@ -25,6 +25,8 @@ sea line. The slogan reads *Nafto el niaj propraj platformoj* ("oil from our own
 - **The tank:** a car runs about 25 km on a full tank in Explore (a tuned engine drinks more).
   Empty, it won't pull. The compass shows the nearest station within 500 m, or from anywhere on the
   island once the tank is under 30%.
+- **Big rigs** go four times as far on a tank and have their own drive-up diesel lanes; see
+  [trucking.md](trucking.md#diesel-for-the-rigs).
 
 ## Meĥanikejo (workshops)
 A modular workshop with two drive-in bays, lifts, benches and tyre stacks, and an office on one

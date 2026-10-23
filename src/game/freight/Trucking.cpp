@@ -186,6 +186,20 @@ void Trucking::cattle_loaded(int head) {
     say("No cattle in the corral yet - the family is bringing them in. Wait here", 3);
 }
 
+std::int64_t Diesel::fill(float& fuel, float dt, bool company, std::int64_t& money, float& owed) {
+    if (fuel >= 1 || dt <= 0) return 0;
+    float add = std::min(1 - fuel, fill_per_second * dt);
+    if (company) { fuel = std::min(1.0F, fuel + add); return 0; }
+    add = std::min(add, std::max(0.0F, (static_cast<float>(money) - owed) / tank_price));
+    if (add <= 0) return 0;
+    fuel = std::min(1.0F, fuel + add);
+    owed += add * tank_price;
+    const auto whole = std::min(money, static_cast<std::int64_t>(owed));
+    owed -= static_cast<float>(whole);
+    money -= whole;
+    return whole;
+}
+
 std::string Trucking::serialise() const {
     std::ostringstream out;
     out << "hired=" << (hired_ ? 1 : 0) << "\ntrips=" << trips_ << "\nearned=" << earned_ << "\n";

@@ -739,6 +739,9 @@ void Renderer::run() {
     std::string gang_news;float gang_news_time=0;
     bool island_ruled=false;
     std::vector<game::career::DockSpot> smuggling_docks;
+    // Marnafto's diesel lanes for the big rigs (found by model; game::freight::Diesel).
+    std::vector<Vector3> diesel_lanes;
+    float diesel_owed=0;std::int64_t diesel_paid=0;
     // La Verda Mano's colours: the gable mural on the Verda City hideout, and the banners over the
     // hideouts and town squares it holds (rebuilt when a town changes hands).
     struct Mural { Vector3 centre{}, normal{}; float width{0}; bool placed{false}; } green_hand_mural;
@@ -1331,6 +1334,8 @@ void Renderer::run() {
     vehicles.bind_fuel([&](const std::string& id,float metres) {
         if(game_mode!=game::GameMode::Explore) return 0.0F;
         const auto* a=vehicles.asset(verda_region,id);
+        // A big rig's tank goes four times as far (game::freight::Diesel).
+        if(a && a->model_path.find("semi_body")!=std::string::npos) return metres/(game::freight::Diesel::range_km*1000);
         return metres/25000.0F*(a ? std::max(1.0F,a->vehicle.power) : 1.0F);
     });
     const auto gang_name=[](int faction) -> std::string {
@@ -2164,6 +2169,9 @@ void Renderer::run() {
                             const Vector3 foot{a.position.x-std::sin(r)*25,0,a.position.z-std::cos(r)*25};
                             smuggling_docks.push_back({town.name+" jetty",{foot.x,world::terrain::TerrainHeight::sample(foot.x,foot.z),foot.z}});
                         }
+                    diesel_lanes.clear();
+                    for(const auto& town:verda_region.settlements())
+                        for(const auto& a:town.assets) if(a.model_path.ends_with("diesel_island.glb")) diesel_lanes.push_back(a.position);
                     if(smuggling_docks.empty())
                         for(const auto& place:island_life.places())
                             if(place.kind==game::life::PlaceKind::Dock && static_cast<std::size_t>(place.settlement)<verda_region.settlements().size())
@@ -3150,6 +3158,25 @@ void Renderer::run() {
                     break;
                 }
             }
+            // Marnafto's diesel lanes: a big rig pulled up beside the island and stopped fills by
+            // itself - on Verda Transporto's account in one of its rigs while you drive for it.
+            if(driven && player_health.alive() && !motor_menu.is_open())
+                if(auto* rig=vehicles.asset(verda_region,driven->id);rig && rig->model_path.find("semi_body")!=std::string::npos) {
+                    const bool at=std::any_of(diesel_lanes.begin(),diesel_lanes.end(),[&](Vector3 p){
+                        return std::hypot(p.x-driven->position.x,p.z-driven->position.z)<game::freight::Diesel::reach;});
+                    if(!at || std::abs(driven->speed)>game::freight::Diesel::still) diesel_paid=0;
+                    else if(rig->vehicle.fuel<.999F) {
+                        const bool company=trucking.hired() && game::freight::Trucking::company_rig(driven->id);
+                        const auto before=rig->vehicle.fuel;
+                        const auto paid=game::freight::Diesel::fill(rig->vehicle.fuel,dt,company,wallet.money,diesel_owed);
+                        diesel_paid+=paid;vehicle_dirty=true;
+                        if(paid>0) loot_session.changed();
+                        interaction_message=rig->vehicle.fuel<=before ? std::string("DIZELO - not enough kronoj") :
+                            TextFormat("DIZELO  %d%%  -  %s",static_cast<int>(rig->vehicle.fuel*100),
+                                       company ? "on Verda Transporto's account" : TextFormat("%lld kr",static_cast<long long>(diesel_paid)));
+                        interaction_remaining=1.5F;
+                    } else if(diesel_paid>=0) {interaction_message="DIZELO - tank full";interaction_remaining=2;diesel_paid=-1;}
+                }
             // The car lot: at the salesman's desk, on foot.
             int at_desk=-1;
             if(!driven && !motor_menu.is_open())
@@ -7206,6 +7233,10 @@ void Renderer::run() {
                     float range=500;
                     if(const auto* v=vehicles.driver()) if(const auto* a=vehicles.asset(verda_region,v->id);a && a->vehicle.fuel<.3F) range=4000;
                     nearest(Glyph::Shop,Color{238,122,26,255},"MARNAFTO",range,pumps);
+                    // At a rig's wheel: the nearest diesel lane (from anywhere once the tank is under 35%).
+                    if(const auto* v=vehicles.driver())
+                        if(const auto* a=vehicles.asset(verda_region,v->id);a && a->model_path.find("semi_body")!=std::string::npos)
+                            nearest(Glyph::Shop,Color{238,122,26,255},"DIZELO",a->vehicle.fuel<.35F ? 1e9F : 900.0F,diesel_lanes);
                 }
                 {   // Armilejo: the nearest gun shop, from further off.
                     std::vector<Vector3> doors;

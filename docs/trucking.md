@@ -48,8 +48,8 @@ Porto Luma stands 38 m above the sea, so the terminal is down at the shore:
 ### Two docks, one loop
 The cargo end is where the island gets its supplies. The same quay runs on south, level, to the
 **fishers' quay** (Fiŝista Kajo), which is the locals' end:
-- **The fishers' jetty** stands off the quay face at z = -360. Its deck is level with the quay, so
-  you can walk or drive straight on. Two trawlers lie alongside and a third at its end, with a
+- **The fishers' jetty** stands off the quay face at z = -360. Its deck is solid and level with
+  the quay, so you can walk or drive straight on. Two trawlers lie alongside and a third at its end, with a
   rowing boat, fish boxes, nets, lobster pots and a fish stall at the land end
   (`civic/fishers_jetty.glb`). The smugglers land here too, after dark (see [gangs.md](gangs.md)).
 - **A paved parking area** behind the jetty, for the locals.
@@ -60,6 +60,27 @@ The cargo end is where the island gets its supplies. The same quay runs on south
 So the docks are a loop: down the terminal ramp, along the quay under the cranes, past the fishers'
 jetty and up the fishers' ramp, or the other way round. A rig never has to turn round on the quay.
 The quay road between the two ramps is 14 m wide, like the other trucking routes.
+
+## Diesel for the rigs
+A big rig runs about **100 km on a tank**; a car runs about 25. Marnafto runs **diesel lanes**
+(DIZELO) for the rigs where truckers already go:
+- in Verda Transporto's yard, on the yard road's north side by the sheds;
+- on Porto Luma's quay, beside the lane on the fishers' quay;
+- in each of the four freight yards, inside the loop on its far side.
+
+Each lane is a long pump island with two tall diesel pumps under a **high canopy** (6.2 m up),
+standing 2.5 m clear of the road. Pull up on the road beside the island (within 12 m) and stop.
+The tank **fills by itself** in about 8 seconds,
+with no menu and no attendant. A line shows how full it is:
+- In one of the company's rigs while you drive for Verda Transporto, it goes **on the company's
+  account** and costs nothing.
+- Otherwise it costs **300 kr** for a full tank, charged as it fills. It stops when your cash runs
+  out.
+
+At a rig's wheel the compass shows the nearest diesel lane within 900 m, or from anywhere once the
+tank is under 35%. The Marnafto filling stations still serve rigs too, through the attendant's
+menu at the car pumps. Code: `game::freight::Diesel`, the city kit's `civic/diesel_island.glb`,
+and `layout::depot_diesel` / `quay_diesel`.
 
 ## Verda Transporto
 The depot is in Verda City's **industrial quarter** (Industria Kvartalo), on level ground west of

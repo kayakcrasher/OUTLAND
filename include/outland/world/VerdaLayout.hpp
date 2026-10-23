@@ -80,8 +80,14 @@ inline constexpr float fish_z = -360;                         // the second ramp
 inline constexpr float quay_z0 = cargo_z - cargo_quay_half, quay_z1 = fish_z + 18;   // the whole quay, end to end
 inline constexpr float quay_lane_x = 2214;                    // the lane along the quay, under the cranes
 inline constexpr Vector3 fishers_jetty{cargo_quay_x1, 0, fish_z};   // the jetty's land end, at the quay face
+// Marnafto's diesel lanes for the big rigs (city kit civic/diesel_island.glb, 4 x 12 m; the game
+// finds them by model), each 2.5 m clear of the road a rig pulls up on: one beside the quay lane
+// on the fishers' quay, one in Verda Transporto's yard, and one inside each freight yard's loop
+// (placed there by the kit).
+inline constexpr Vector3 quay_diesel{quay_lane_x + 11.5F, 0, fish_z - 40};   // 2.5 m clear of the lane
 inline constexpr Vector3 freight_depot_gate{-560, 0, -84};   // Verda Transporto's front, on the yard road
 inline constexpr Vector3 freight_boss{-556.5F, 0, -71.5F};     // the boss, out front of the office door (facing the road)
+inline constexpr Vector3 depot_diesel{-612, 0, -72};          // the company's diesel lane, north side of the yard road
 // Verda's suburbs, west (Okcidenta Verda) and east (Orienta Verda): level ground either side of
 // downtown, |x| in [suburb_near, suburb_far], |z| <= suburb_half.
 inline constexpr float suburb_near = 150, suburb_far = 485, suburb_half = 190;

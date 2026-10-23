@@ -56,6 +56,22 @@ struct TruckFrame {
     float speed{0};                   // its speed, m/s
 };
 
+// Diesel for the big rigs: Marnafto's diesel lanes (DIZELO, city kit civic/diesel_island.glb) in
+// Verda Transporto's yard, on Porto Luma's quay and in every freight yard - the places a trucker
+// passes anyway. A rig runs about range_km on a tank (a car about 25). Pull up beside a lane's
+// island and stop: it fills by itself, no menu - on the company's account while you drive one of
+// its rigs for it, otherwise at tank_price for a full tank.
+struct Diesel {
+    static constexpr float range_km = 100;
+    static constexpr float reach = 12;               // the rig this close to the island's centre (on the road beside it)
+    static constexpr float still = .8F;              // ...and stopped (m/s)
+    static constexpr float fill_per_second = .125F;  // empty to full in 8 s
+    static constexpr int tank_price = 300;           // kr for a full tank, off the company's account
+    // Fills `fuel` (0..1) for `dt` seconds; `owed` carries part-kronoj between frames. Returns the
+    // kronoj taken from `money` (none on the company's account; it stops when the cash runs out).
+    static std::int64_t fill(float& fuel, float dt, bool company, std::int64_t& money, float& owed);
+};
+
 enum class TruckEvent : std::uint8_t { None, CallCattle, LoadCattle, ShipCattle, Loaded, Delivered };
 
 class Trucking {
