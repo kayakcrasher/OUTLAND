@@ -43,9 +43,11 @@ int main() {
     }
     // Every big rig on the island counts (they all wear the company's colours): the yard's rigs
     // for hire, the company drivers', the supply rig; the stock trailers for cattle.
-    for (const char* box : {"vehicle_spawn_semi_depot_2", "vehicle_spawn_semi_haul_1", "capital/vehicle_spawn_semi_haul_3", "vehicle_spawn_semi_freight_1"})
+    // (The game's ids, as VehicleSystem makes them from the depot's markers: all seven stand in one row.)
+    for (const char* box : {"vehicle_marker_capital_verda_vehicle_spawn_semi_depot_2", "vehicle_marker_capital_verda_vehicle_spawn_semi_haul_1",
+                            "vehicle_marker_capital_verda_vehicle_spawn_semi_haul_3", "vehicle_marker_ranch_bovbazaro_vehicle_spawn_semi_freight_1"})
         check(Trucking::company_rig(box) && !Trucking::stock_rig(box), std::string("a box-trailer rig: ") + box);
-    for (const char* stock : {"vehicle_spawn_semi_depot_cattle_1", "vehicle_spawn_semi_cattle_1"})
+    for (const char* stock : {"vehicle_marker_capital_verda_vehicle_spawn_semi_depot_cattle_1", "vehicle_marker_ranch_bovbazaro_vehicle_spawn_semi_cattle_1"})
         check(Trucking::stock_rig(stock), std::string("a stock-trailer rig: ") + stock);
     check(!Trucking::company_rig("vehicle_spawn_truck_capital") && !Trucking::company_rig("vehicle_spawn_hatchback_capital"), "a truck or a car isn't a rig");
     Trucking t;
