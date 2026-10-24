@@ -86,6 +86,11 @@ public:
     bool hospitalise(int resident,Vector3 door,double minutes);
     bool in_hospital(const Resident& resident) const {return resident.hospital_until>clock_.minutes;}
     void release(int resident);
+    // Put away (their body already gone): off the island until let out at `gate` - by `until`
+    // (island minutes), or sooner with set_free(). False if they are not alive.
+    bool imprison(int resident,Vector3 gate,double until);
+    void set_free(int resident);
+    bool in_jail(const Resident& resident) const {return resident.jail_until>clock_.minutes;}
     LifeStats stats() const;
 
     // Cars: bind the world's vehicles (Explore) before reset(); nullptr unbinds. Without them,

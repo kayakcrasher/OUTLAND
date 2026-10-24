@@ -48,6 +48,9 @@ public:
     [[nodiscard]] int snitch() const { return snitch_; }
     // Stops someone where they stand for `seconds` (they turn to whoever is there).
     void pause(int bot, float seconds);
+    // An inmate joins a gang inside: a new body in its colours where he stood (his new bot id; the
+    // old body is the game's to hide). -1 if he isn't here.
+    int recruit(int bot, const Chooser& choose);
     // Out of the yard for good (the snitch, shanked).
     bool remove(int bot);
     [[nodiscard]] const PrisonPerson* find(int bot) const;

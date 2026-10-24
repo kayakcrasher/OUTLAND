@@ -42,7 +42,7 @@ When a crime happens, every living resident is checked.
 - Drive more than 90 m away first and it is a **hit and run**: wanted, one star.
 - Busted while wanted for it means **mandatory prison time**: 90 seconds on top of the rest of the sentence. If the police lose you, it is off the books.
 - **Police with their lights on are exempt.** Pedestrians ahead of a police car running fast with its lights move aside; one who doesn't is at fault.
-- **NPC drivers** who hit someone and drive on are chased too. The nearest free patrol car or Ŝosea Patrolo cruiser rides out with its lights, follows the roads until it is close, then drives straight at the car. Once it's on their bumper for two seconds, the car is pulled over (`VehicleSystem::hold`), the officers get out, and the driver is taken in; the car goes to the pound. The news reports the hit and the arrest. Units already after a wanted player stay on the player. Police cars and ambulances with their lights on, and the bus, are exempt.
+- **NPC drivers** who hit someone and drive on are chased too. The nearest free patrol car or Ŝosea Patrolo cruiser rides out with its lights, follows the roads until it is close, then drives straight at the car. Once it's on their bumper for two seconds, the car is pulled over (`VehicleSystem::hold`), the officers get out, and the driver goes to prison for a game week (see [a week inside](callouts-and-prison.md#a-week-inside-npcs)); the car goes to the pound. The news reports the hit and the arrest. Units already after a wanted player stay on the player. Police cars and ambulances with their lights on, and the bus, are exempt.
 - Code: `EmergencyServices::pursue` (game::services).
 - Code: `game::law::HitAndRun` (`include/outland/game/law/HitAndRun.hpp`).
 

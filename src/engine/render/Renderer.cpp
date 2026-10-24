@@ -19,6 +19,7 @@
 #include "outland/game/career/Backup.hpp"
 #include "outland/game/career/Armory.hpp"
 #include "outland/game/law/HitAndRun.hpp"
+#include "outland/game/law/JailTerms.hpp"
 #include "outland/game/law/PrisonYard.hpp"
 #include "outland/game/career/TrainingCamp.hpp"
 #include "outland/game/career/CampRenderer.hpp"
@@ -642,6 +643,7 @@ void Renderer::run() {
     const Vector3 prison_intake=prison_at(0,-42);   // outside the gate: where officers hand prisoners over
     double prison_until=-1;
     game::law::PrisonYard prison_yard;   // its guards and inmates
+    game::law::JailTerms jail_terms;     // ...and how long the island's people booked in there stay (one game week)
     // Who wears which body there: guards in the Policio's navy, gangsters, the island's law breakers.
     const auto prison_body=[&](bool guard,bool gang,std::uint64_t seed) -> std::string {
         if(guard) return seed%2 ? "character_18_police" : "character_21_police";
@@ -1870,7 +1872,7 @@ void Renderer::run() {
                     loot_session.economy().money=std::max<std::int64_t>(0,loot_session.economy().money+poker.cash_out()-poker_buy_in);
                     poker_open=false;poker_buy_in=0;
                 }
-                walking_man.clear();backup.clear();cb_backup.clear();kamionistoj.clear();society={};player_crew.clear();prison_yard.clear();
+                walking_man.clear();backup.clear();cb_backup.clear();kamionistoj.clear();society={};player_crew.clear();prison_yard.clear();jail_terms.clear();
                 trucking=game::freight::Trucking{};trucking_path.clear();depot_boss={};haul_world={};
                 career=game::career::Career{};career_path.clear();mafio.set_player_gang(-1);services.assign_player_car({});
                 police_camp=game::career::TrainingCamp{};chief={};lights_car.clear();
@@ -2067,6 +2069,7 @@ void Renderer::run() {
                         const Vector3 c=world::layout::prison_center;
                         prison_yard.start({c.x,world::terrain::TerrainHeight::sample(c.x,c.z),c.z},world::layout::prison_yaw,session_seed,prison_body);
                         for(const auto& p:prison_yard.people()) prison_spawn(p);
+                        jail_terms.clear();jail_terms.seed(session_seed^0x9e3779b97f4a7c15ULL);
                     }
                     br_bots.sync_bodies(npcs,&character_registry);
                     walking_man.dress(npcs);
@@ -5252,10 +5255,21 @@ void Renderer::run() {
                 services.update(call,vehicles,verda_region,npcs,&island_life);
                 if(!services.events().message.empty()) {interaction_message=services.events().message;interaction_remaining=3;}
                 // A hit-and-run driver pulled over and taken in: the car goes to the pound.
+                // The driver goes to Ŝtata Malliberejo for a week.
                 for(const auto& car:services.events().arrested) {
-                    island_life.take_car(car);
+                    const auto taken=island_life.take_car(car);
                     vehicles.hold(car,true);
-                    gang_news="HIT AND RUN: the police caught the driver";gang_news_time=6;
+                    const int resident=taken.occupied ? taken.owner : -1;
+                    std::string who="the driver";
+                    if(resident>=0) {
+                        npcs.despawn_resident(resident);
+                        island_life.imprison(resident,prison_intake,island_life.clock().minutes+game::law::JailTerms::week);
+                        who=island_life.residents()[static_cast<std::size_t>(resident)].full_name();
+                    }
+                    const int inmate=prison_yard.admit(false,prison_body);
+                    if(inmate>=0) for(const auto& p:prison_yard.people()) if(p.bot==inmate) prison_spawn(p);
+                    jail_terms.book(inmate,resident,island_life.clock().minutes);
+                    gang_news="HIT AND RUN: the police caught "+who+" - a week in Ŝtata Malliberejo";gang_news_time=7;
                 }
                 if(services.events().backup)   // a Ŝosea Patrolo cruiser found you: the Policio sends more
                     justice.tip_off(std::min(5,justice.wanted()+1),frame.player,frame,island_life,"The Ŝosea Patrolo radioed the Policio for backup");
@@ -5923,10 +5937,34 @@ void Renderer::run() {
                         interaction_message=career.message();interaction_remaining=4;gun_audio.kill_confirm();
                         // Into the yard with the rest.
                         for(int k=0;k<held;++k)
-                            if(const int id=prison_yard.admit(true,prison_body);id>=0)
+                            if(const int id=prison_yard.admit(true,prison_body);id>=0) {
                                 for(const auto& p:prison_yard.people()) if(p.bot==id) prison_spawn(p);
+                                jail_terms.book(id,-1,island_life.clock().minutes,true);   // a week inside, with his own
+                            }
                     }
-                    // The prison's people go about their day.
+                    // The prison's people go about their day. The island's people booked in do their week:
+                    // they join a gang inside, or get shanked and go to the hospital (and out from there).
+                    for(const auto& e:jail_terms.update(island_life.clock().minutes)) {
+                        const auto& term=e.term;
+                        const std::string who=term.resident>=0 ? island_life.residents()[static_cast<std::size_t>(term.resident)].full_name() : std::string();
+                        if(e.fate==game::law::JailTerms::Fate::Joined && term.inmate>=0) {
+                            if(const int recruit=prison_yard.recruit(term.inmate,prison_body);recruit>=0) {
+                                npcs.set_bot_hidden(term.inmate,true);
+                                for(const auto& p:prison_yard.people()) if(p.bot==recruit) prison_spawn(p);
+                                jail_terms.moved(term.inmate,recruit);
+                            }
+                            if(!who.empty()) {gang_news="PRISON: "+who+" joined "+gang_name(term.gang)+" inside";gang_news_time=6;}
+                        } else if(e.fate==game::law::JailTerms::Fate::Shanked) {
+                            if(term.inmate>=0) {npcs.set_bot_hidden(term.inmate,true);prison_yard.remove(term.inmate);}
+                            if(term.resident>=0) island_life.hospitalise(term.resident,services.has_hospital() ? services.hospital_door() : prison_intake,
+                                                                      game::services::EmergencyServices::treatment_minutes);
+                            if(!who.empty()) {gang_news="PRISON: "+who+" wouldn't join a gang - shanked in the yard. To the hospital, then out";gang_news_time=6;}
+                        } else if(e.fate==game::law::JailTerms::Fate::Released) {
+                            if(term.inmate>=0) {npcs.set_bot_hidden(term.inmate,true);prison_yard.remove(term.inmate);}
+                            if(term.resident>=0) island_life.set_free(term.resident);
+                            if(!who.empty()) {gang_news="PRISON: "+who+" did the week and walked out of the gate";gang_news_time=6;}
+                        }
+                    }
                     prison_yard.update(dt);
                     for(const auto& p:prison_yard.people())
                         npcs.set_bot(p.bot,prison_yard.world(p),prison_yard.world_yaw(p),100,prison_yard.state(p));

@@ -108,6 +108,9 @@ struct Resident {
     // out of the hospital door back into their day.
     double hospital_until{-1};
     Vector3 hospital_at{};
+    // In prison (game::law::JailTerms): off the street until let out, then out of the prison gate.
+    double jail_until{-1};
+    Vector3 jail_at{};
     std::string full_name() const { return first_name+" "+family_name; }
 };
 

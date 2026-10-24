@@ -69,6 +69,18 @@ int PrisonYard::admit(bool gang, const Chooser& choose) {
     return people_.back().bot;
 }
 
+int PrisonYard::recruit(int bot, const Chooser& choose) {
+    for (auto& p : people_) {
+        if (p.bot != bot || p.guard) continue;
+        if (snitch_ == bot) snitch_ = -1;
+        p.bot = next_bot_++;
+        p.gang = true;
+        p.character = choose ? choose(false, true, seed_ + static_cast<std::uint64_t>(p.bot) * 31ULL) : std::string();
+        return p.bot;
+    }
+    return -1;
+}
+
 int PrisonYard::mark_snitch() {
     if (snitch_ >= 0 && find(snitch_)) return snitch_;
     snitch_ = -1;

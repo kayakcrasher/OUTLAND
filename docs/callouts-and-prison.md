@@ -54,6 +54,16 @@ You're arrested at one star when an officer reaches you and you're calm. You're 
 - twelve cells along the back wall, each with an open barred front, a bunk, a toilet and a shelf;
 - walled off at the east end, the SHU: a red band, and two solitary cells behind shut steel doors.
 
+## A week inside (NPCs)
+
+- Anyone the Policio books in does **one game week** (7 island days) in Ŝtata Malliberejo. That covers a hit-and-run driver pulled over by the police and a Krimulo an officer brings to the gate. They stand in the yard with the other inmates, and a resident is off the street while inside.
+- Within the first two days, inmates who aren't in a gang face a choice. Most (60%) **join one of the five gangs** for protection; they change into its colours in the yard.
+- The rest get **shanked** in the yard: taken to the hospital, treated, and let out from there (not back to prison).
+- Gangsters booked in are with their gang already. When the week is up, everyone left walks out of the prison gate back into their life.
+- The news reports a named resident's choices: "PRISON: … joined … inside", "… shanked in the yard", "… walked out of the gate".
+- Terms aren't saved: a new session starts with the yard's usual inmates.
+- Code: `game::law::JailTerms`, `LifeSimulation::imprison` / `set_free`, `PrisonYard::recruit`.
+
 ## Gang shirts
 
 Every gang wears its colours so officers can tell them apart; see [gangs](gangs.md).

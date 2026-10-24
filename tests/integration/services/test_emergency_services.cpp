@@ -4,6 +4,7 @@
 // them to the hospital, where island life keeps them until they are discharged.
 #include "outland/creator/CreatorMapIO.hpp"
 #include "outland/characters/NpcSystem.hpp"
+#include "outland/game/law/JailTerms.hpp"
 #include "outland/game/life/LifeSimulation.hpp"
 #include "outland/game/services/EmergencyServices.hpp"
 #include "outland/game/vehicles/VehicleSystem.hpp"
@@ -186,6 +187,45 @@ int main() {
         step(frame, 30, [&] { return !services.pursued(suspect); });
         check(!services.pursued(suspect) && !cars.held(suspect), "the unit goes back on duty and lets the car go");
         cars.clear_autopilot(suspect);
+    }
+    // Prison: a week inside for anyone booked in. Each either joins a gang or gets shanked (to the
+    // hospital, and out from there); the rest walk out of the gate when the week is up.
+    {
+        using game::law::JailTerms;
+        JailTerms terms;
+        terms.seed(11);
+        const double now = life.clock().minutes;
+        int joined = 0, shanked = 0, released = 0;
+        for (int k = 0; k < 40; ++k) terms.book(100 + k, -1, now);
+        terms.book(500, -1, now, true);   // a gangster: with his gang already
+        check(terms.update(now + JailTerms::decide_min - 1).empty(), "nothing happens on the first day");
+        for (const auto& e : terms.update(now + JailTerms::decide_max)) {
+            if (e.fate == JailTerms::Fate::Joined) { ++joined; check(e.term.gang >= 0 && e.term.gang < JailTerms::gangs, "joined a real gang"); }
+            if (e.fate == JailTerms::Fate::Shanked) ++shanked;
+            check(e.term.inmate != 500, "the gangster doesn't have to choose");
+        }
+        check(joined + shanked == 40 && joined > 12 && shanked > 6, "everyone chooses: " + std::to_string(joined) + " joined, " + std::to_string(shanked) + " shanked");
+        check(terms.terms().size() == static_cast<std::size_t>(joined + 1), "the shanked are gone from the yard");
+        check(terms.update(now + JailTerms::week - 1).empty(), "the rest are still inside before the week is up");
+        terms.moved(100, 900);
+        for (const auto& e : terms.update(now + JailTerms::week)) released += e.fate == JailTerms::Fate::Released;
+        check(released == joined + 1 && terms.terms().empty(), "out of the gate after a week");
+
+        // Island life: a resident put away is off the street until let out at the gate.
+        int convict = -1;
+        for (const auto& r : life.residents()) if (r.alive && !r.physical && !life.in_hospital(r)) { convict = r.id; break; }
+        check(convict >= 0, "a resident to put away");
+        const Vector3 gate{1234, 0, 567};
+        check(life.imprison(convict, gate, life.clock().minutes + JailTerms::week), "imprisoned");
+        const auto& r = life.residents()[static_cast<std::size_t>(convict)];
+        check(life.in_jail(r) && Vector3Distance(life.position(r), gate) < .1F, "in prison");
+        life.set_free(convict);
+        for (int k = 0; k < 400 && r.jail_until >= 0; ++k) life.update(.05F, {0, 0, 9000}, npcs);
+        check(!life.in_jail(r) && r.jail_until < 0, "let out");
+        check(Vector3Distance(life.position(r), gate) < 30, "out of the gate");
+        // Shanked inside: the hospital has them, and lets them out (not back to prison).
+        check(life.imprison(convict, gate, life.clock().minutes + JailTerms::week) && life.hospitalise(convict, hospital, 90), "shanked: to hospital");
+        check(life.in_hospital(r) && !life.in_jail(r), "in hospital, not prison");
     }
     std::cout << "emergency services tests passed\n";
     return 0;

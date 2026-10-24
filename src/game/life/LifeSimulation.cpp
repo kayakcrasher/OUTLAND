@@ -152,6 +152,7 @@ bool LifeSimulation::outdoors_now(const Resident& r) const {
 
 Vector3 LifeSimulation::abstract_position(const Resident& r) const {
     if(in_hospital(r)) return r.hospital_at;
+    if(in_jail(r)) return r.jail_at;
     if(r.responding) {
         // Driving to the scene: straight line at car speed in real seconds.
         const double real_seconds=(clock_.minutes-r.depart)*60.0/std::max(.01F,config_.time_scale);
@@ -186,7 +187,11 @@ bool LifeSimulation::indoors(const Resident& r) const {
 }
 
 void LifeSimulation::replan(Resident& r) {
-    if(!r.alive || r.responding || in_hospital(r)) return;
+    if(!r.alive || r.responding || in_hospital(r) || in_jail(r)) return;
+    if(r.jail_until>=0) { // time served: out of the prison gate
+        r.jail_until=-1;r.fear=0;r.shelter_until=-1;
+        r.place=-1;r.from=r.jail_at;r.depart=r.arrive=clock_.minutes;r.trip=Trip::Walk;
+    }
     if(r.hospital_until>=0) { // discharged: out of the hospital door, healed
         r.hospital_until=-1;r.health=100;r.fear=0;r.shelter_until=-1;
         r.place=-1;r.from=r.hospital_at;r.depart=r.arrive=clock_.minutes;r.trip=Trip::Walk;
@@ -274,7 +279,7 @@ void LifeSimulation::sync_bodies(Vector3 player,characters::NpcSystem& npcs) {
     }
     std::vector<std::pair<float,int>> candidates;
     for(const auto& r:island_.residents) {
-        if(r.physical || !r.alive || r.trip==Trip::Driving || in_hospital(r)) continue;
+        if(r.physical || !r.alive || r.trip==Trip::Driving || in_hospital(r) || in_jail(r)) continue;
         const float distance=flat_distance(abstract_position(r),player);
         if(indoors(r) && island_.places[static_cast<std::size_t>(r.place)].sealed) continue;
         if(distance<=(indoors(r) ? config_.indoor_radius : config_.materialize_radius)) candidates.emplace_back(distance,r.id);
@@ -345,13 +350,29 @@ void LifeSimulation::hear(const sound::SoundBus& sounds) {
     heard_up_to_=sounds.latest();
 }
 
+bool LifeSimulation::imprison(int resident,Vector3 gate,double until) {
+    if(resident<0 || static_cast<std::size_t>(resident)>=island_.residents.size()) return false;
+    auto& r=island_.residents[static_cast<std::size_t>(resident)];
+    if(!r.alive) return false;
+    if(r.responding) release(resident);
+    r.physical=false;r.trip=Trip::Walk;r.fear=0;r.shelter_until=-1;r.hospital_until=-1;
+    r.jail_until=std::max(until,clock_.minutes+1);r.jail_at=gate;
+    return true;
+}
+
+void LifeSimulation::set_free(int resident) {
+    if(resident<0 || static_cast<std::size_t>(resident)>=island_.residents.size()) return;
+    auto& r=island_.residents[static_cast<std::size_t>(resident)];
+    if(r.jail_until>clock_.minutes) r.jail_until=clock_.minutes;
+}
+
 bool LifeSimulation::hospitalise(int resident,Vector3 door,double minutes) {
     if(resident<0 || static_cast<std::size_t>(resident)>=island_.residents.size()) return false;
     auto& r=island_.residents[static_cast<std::size_t>(resident)];
     if(!r.alive) return false;
     if(r.responding) release(resident);
     r.physical=false;r.trip=Trip::Walk;r.fear=0;r.shelter_until=-1;
-    r.hospital_until=clock_.minutes+std::max(1.0,minutes);r.hospital_at=door;
+    r.hospital_until=clock_.minutes+std::max(1.0,minutes);r.hospital_at=door;r.jail_until=-1;
     return true;
 }
 
