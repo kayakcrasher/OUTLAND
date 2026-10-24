@@ -14,9 +14,12 @@ the south-west parking block) into `maps/verda_world.map`. Layout constants: `wo
   each ramp you turn round in the aisle at that end to reach the next one. The ramps are solid, with
   a wall between the lanes and yellow-capped rails round the openings; a hazard strip marks where
   each ramp meets its deck. They go down the same way.
-- Open decks: concrete parapets between the columns, lamps under every deck, painted bays on the
-  west side. Seven cars are parked on the levels (anyone can take one; the island's drivers leave
-  them be). A blue **P** sign on the north-west corner; a height bar over the entrance.
+- **Art Deco dress:**
+  - limestone parapets between the columns, with two gold speed lines along every level, on a dark granite plinth;
+  - stepped limestone pylons with gold caps and gold fins at the four corners;
+  - a stepped sign tower on the north-west corner carrying the blue **P**, with gold fins down its face.
+- Lamps under every deck; painted bays on the west side. Seven cars are parked on the levels (anyone can take one; the island's drivers leave
+  them be). A height bar over the entrance.
 - Big rigs don't fit under the decks.
 
 ## How cars drive on it
@@ -31,10 +34,15 @@ The garage (and Verda Transporto's truck depot, which had been solid to vehicles
 buildings: a car meets their real columns, walls and ramps (`WorldCollision`).
 
 ## The mansion (Explore)
-On the roof's west side stands a **three-storey mansion**: white render, tall tinted windows, gold
-string courses, a gold porch and potted trees at the door.
-- Inside: a living room on a black-and-white marble floor (a velvet sofa, rug and coffee table, a
-  kitchen bar), the dining floor above, the master bedroom on top (a bed with a gold headboard).
+On the roof's west side stands a **three-storey Art Deco mansion**, the little sister of Stela Turo:
+- dressed limestone on a granite plinth, tall tinted windows with gold sills;
+- piers between the window bays that rise past the roof with gold caps;
+- bronze chevron spandrels between the floors;
+- a gold door surround with a sunburst fan over the door, under a bronze marquee on gold posts;
+- bay trees in gold urns at the door;
+- on top, a stepped crown over the entrance bay, gold fins up each step and a gold spire.
+- Inside: a living room on a black-and-white marble floor (a teal velvet sofa, a striped red-and-gold
+  rug and a coffee table, a kitchen bar), the dining floor above, the master bedroom on top (a bed with a gold headboard).
   Stairs (0.2 m risers) climb the east wall.
 - **For sale: 60,000 kronoj** (`game::economy::SkyMansion`). Walk in and E / USE buys it; the prompt
   shows the price. Kept with the Explore wallet as a property.

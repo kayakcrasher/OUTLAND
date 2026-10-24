@@ -39,7 +39,7 @@ ASSET "creator_city_intersection_16_kit18" 5 "assets/verda/city/ground/intersect
 ASSET "creator_city_intersection_16_kit19" 5 "assets/verda/city/ground/intersection_16.glb" 171 0.0900000036 84 16 0.100000001 16 0 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_intersection_16_kit20" 5 "assets/verda/city/ground/intersection_16.glb" 171 0.0900000036 168 16 0.100000001 16 0 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_parking_lot_68_kit1" 4 "assets/verda/city/ground/parking_lot_68.glb" -129 0 -126 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_parking_garage_kit1" 0 "assets/verda/city/civic/parking_garage.glb" -129 0.150000006 -125.75 38.5999985 20.2000008 32.5999985 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_parking_garage_kit1" 0 "assets/verda/city/civic/parking_garage.glb" -129 0.150000006 -125.699997 38.5999985 20.2000008 32.5999985 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_1" 6 "" -145 0.150000006 -158.399994 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_2" 6 "" -113 0.150000006 -158.399994 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit1" 9 "assets/verda/urban/Traffic lights/street_light.glb" -129 0.150000006 -158.399994 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1

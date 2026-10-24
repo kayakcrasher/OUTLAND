@@ -1459,28 +1459,34 @@ def parking_garage():
     floor and two open decks, and the roof - four levels you drive up. Two ramp lanes on the east
     side zig-zag up (ground -> deck 1 and deck 2 -> roof climbing north in lane A, deck 1 -> deck 2
     climbing south in lane B), turning aisles at both ends, painted bays on the west side, open
-    parapets between the columns. On the roof stands a three-storey mansion (white render, tall
-    glass, a gold cornice), for sale in Explore, with its own gold-lined parking bay at the door
-    (game::economy::SkyMansion). Inside: a living room, a dining floor, the master bedroom on top,
-    stairs up the east wall."""
+    parapets between the columns, all in Art Deco dress: limestone with gold speed lines, stepped
+    pylons with gold fins at the corners, and a stepped sign tower carrying the blue P. On the roof
+    stands an Art Deco mansion of three storeys - dressed limestone on a granite plinth, piers rising
+    past the roof with gold caps, bronze chevron spandrels, a gold sunburst over the door under a
+    bronze marquee, a stepped crown with gold fins and a spire - for sale in Explore, with its own
+    gold-lined parking bay at the door (game::economy::SkyMansion). Inside: a living room, a dining
+    floor, the master bedroom on top, stairs up the east wall."""
     b = Builder()
     b.material("deck", flat((128, 128, 124), 7), 3, 3)
     b.material("ramp", stripes((120, 120, 116), (108, 108, 104), 4, 223), 1.0, 1.0)
     b.material("concrete", flat((178, 174, 166), 6), 3, 3)
-    b.material("band", stripes((196, 192, 182), (170, 166, 158), 8, 227), 1.0, 1.0)
+    b.material("band", limestone((214, 202, 176), 229), 1.2, 1.2)
+    b.material("stone", limestone((226, 214, 188), 231), 1.2, 1.2)
+    b.material("granite", flat((52, 50, 54), 4), 3, 3)
+    b.material("bronze", chevrons((84, 66, 44), (196, 156, 72), 233), 2.5, 1.5)
     b.material("under", flat((150, 148, 142), 4), 3, 3)
     b.material("line", flat((236, 236, 228), 1), 1, 1)
-    b.material("gold", flat((212, 172, 60), 2), 1, 1)
+    b.material("gold", flat((214, 172, 74), 3), 1, 1)
     b.material("yellow", flat((230, 190, 40), 2), 1, 1)
     b.material("hazard", stripes((222, 182, 30), (30, 30, 30), 6, 219), 1, 1)
     b.material("lamp", flat((250, 246, 220), 1), 1, 1)
     b.material("sign", flat((30, 80, 170), 2), 1, 1)
-    b.material("render", flat((238, 234, 224), 4), 3, 3)
     b.material("inside", flat((246, 242, 232), 3), 3, 3)
     b.material("glass", flat((70, 110, 140), 2), 1, 1)
     b.material("marble", checker((236, 232, 226), (40, 40, 44), 4), 2, 2)
     b.material("parquet", wood(), 2, 2)
-    b.material("velvet", flat((120, 24, 40), 3), 1, 1)
+    b.material("velvet", flat((26, 96, 92), 6), 1, 1)
+    b.material("rug", stripes((120, 30, 40), (196, 156, 72), 4, 235), 1, 1)
     b.material("linen", flat((240, 236, 226), 2), 1, 1)
     b.material("dark", flat((40, 34, 30), 2), 1, 1)
     b.material("green", flat((60, 120, 60), 6), 1, 1)
@@ -1521,12 +1527,46 @@ def parking_garage():
     for z in (-D, -D / 3, D / 3, D - .6):
         for x in (-W, W - .6):
             b.solid((x, 0, z), (x + .6, roof, z + .6), "concrete")
-    # Over the entrance: a blue P sign and a height bar; lamps under every deck.
+    # Art Deco dress: gold speed lines along every parapet, stepped pylons with gold fins at the
+    # corners, a granite plinth.
+    for k, y in enumerate(decks):
+        for dy in (.55, .75):
+            yy = y + (1.1 if k == 3 else 1.0) - dy
+            if k == 0:
+                b.solid((-W - .04, yy, -D - .04), (bx0 - .3, yy + .06, -D), "gold")
+            else:
+                b.solid((-W - .04, yy, -D - .04), (W + .04, yy + .06, -D), "gold")
+            b.solid((-W - .04, yy, D), (W + .04, yy + .06, D + .04), "gold")
+            b.solid((-W - .04, yy, -D), (-W, yy + .06, D), "gold")
+            b.solid((W, yy, -D), (W + .04, yy + .06, D), "gold")
+    b.solid((-W - .1, 0, -D - .1), (bx0 - .3, .6, -D), "granite")
+    b.solid((-W - .1, 0, D), (W + .1, .6, D + .1), "granite")
+    for sx, sz in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
+        x0, x1 = (-W - .3, -W + 1.2) if sx < 0 else (W - 1.2, W + .3)
+        z0, z1 = (-D - .3, -D + 1.2) if sz < 0 else (D - 1.2, D + .3)
+        for step, (inset, top) in enumerate(((0, roof + 2.0), (.25, roof + 2.8), (.5, roof + 3.4))):
+            b.solid((x0 + inset, 0 if step == 0 else roof + 2.0 + (step - 1) * .8, z0 + inset), (x1 - inset, top, z1 - inset), "stone")
+            b.solid((x0 + inset - .05, top - .12, z0 + inset - .05), (x1 - inset + .05, top, z1 - inset + .05), "gold")
+        fz = z0 - .02 if sz < 0 else z1
+        for i in range(3):
+            x = x0 + .3 + i * .45
+            b.solid((x - .06, roof - 2.0, min(fz, fz + .1)), (x + .06, roof + 1.9, max(fz, fz + .1)), "gold")
+    # The sign tower on the north-west corner: a stepped limestone pylon carrying the blue P.
+    tx0, tx1 = -W + 1.4, -W + 4.4
+    b.solid((tx0, 0, -D - .9), (tx1, roof + 4.2, -D), "stone")
+    b.solid((tx0 + .3, roof + 4.2, -D - .7), (tx1 - .3, roof + 5.2, -D - .1), "stone")
+    b.solid((tx0 + .6, roof + 5.2, -D - .55), (tx1 - .6, roof + 5.9, -D - .25), "gold")
+    b.solid((tx0 + .2, roof - 1.2, -D - .95), (tx1 - .2, roof + 1.8, -D - .9), "sign")
+    px = (tx0 + tx1) / 2 - .7
+    # (Drawn mirrored in x: from the front, which faces -Z, the model's +X is on the viewer's left.)
+    for lo, hi in (((px + 1.05, roof - .9), (px + 1.4, roof + 1.5)), ((px + .3, roof + 1.15), (px + 1.05, roof + 1.5)),
+                   ((px + .3, roof + .4), (px + 1.05, roof + .75)), ((px, roof + .4), (px + .3, roof + 1.5))):
+        b.solid((lo[0], lo[1], -D - 1.0), (hi[0], hi[1], -D - .95), "line")
+    for i in range(4):                                                    # gold fins down the tower's face
+        x = tx0 + .45 + i * .7
+        b.solid((x - .06, 1.2, -D - .98), (x + .06, roof - 1.5, -D - .9), "gold")
+    # Over the entrance: a height bar; lamps under every deck.
     b.solid((bx0, decks[0] + 2.8, -D - .5), (W - .6, decks[0] + 3.0, -D - .3), "hazard")
-    b.solid((-W + 1, roof - 3.0, -D - .45), (-W + 3.6, roof - .4, -D - .3), "sign")
-    for lo, hi in (((-W + 1.7, roof - 2.6), (-W + 2.05, roof - .8)), ((-W + 2.05, roof - 1.15), (-W + 2.8, roof - .8)),
-                   ((-W + 2.05, roof - 1.9), (-W + 2.8, roof - 1.55)), ((-W + 2.8, roof - 1.9), (-W + 3.1, roof - .8))):
-        b.solid((lo[0], lo[1], -D - .5), (hi[0], hi[1], -D - .45), "line")
     for k in (1, 2, 3):
         for x in (-12.0, -2.0, 8.0):
             for z in (-12.0, 0.0, 12.0):
@@ -1555,14 +1595,14 @@ def parking_garage():
     st, mw = MANSION_STOREY, .25
     top = roof + 3 * st
     win = lambda a0, a1, k, low=.9, high=2.6: (a0, a1, roof + k * st + low, roof + k * st + high)
-    front = [(MANSION_DOOR_X[0], MANSION_DOOR_X[1], roof, roof + 2.4), win(-16.6, -13.4, 0, .4), win(-7.8, -4.6, 0, .4)]
+    front = [(MANSION_DOOR_X[0], MANSION_DOOR_X[1], roof, roof + 2.4), win(-16.6, -13.8, 0, .4), win(-7.6, -5.1, 0, .4)]
     front += [win(a, a + 2.6, k) for k in (1, 2) for a in (-16.4, -12.0, -7.6)]
     back = [win(a, a + 2.4, k) for k in (0, 1, 2) for a in (-16.0, -11.0)]
     sides = [win(a, a + 2.4, k) for k in (0, 1, 2) for a in (-.5, 5.5)]
-    wall_with_openings(b, 'x', mz0, (mx0, mx1), top, mw, front, "render", "inside", -1, base=roof)
-    wall_with_openings(b, 'x', mz1, (mx0, mx1), top, mw, back, "render", "inside", +1, base=roof)
-    wall_with_openings(b, 'z', mx0, (mz0 + mw, mz1 - mw), top, mw, sides, "render", "inside", -1, base=roof)
-    wall_with_openings(b, 'z', mx1, (mz0 + mw, mz1 - mw), top, mw, [], "render", "inside", +1, base=roof)
+    wall_with_openings(b, 'x', mz0, (mx0, mx1), top, mw, front, "stone", "inside", -1, base=roof)
+    wall_with_openings(b, 'x', mz1, (mx0, mx1), top, mw, back, "stone", "inside", +1, base=roof)
+    wall_with_openings(b, 'z', mx0, (mz0 + mw, mz1 - mw), top, mw, sides, "stone", "inside", -1, base=roof)
+    wall_with_openings(b, 'z', mx1, (mz0 + mw, mz1 - mw), top, mw, [], "stone", "inside", +1, base=roof)
     # Tinted glass in the upper windows and the back and side ones (the ground floor's front stays open).
     for openings, axis, fixed, inward in ((front[3:], 'x', mz0, 1), (back, 'x', mz1, -1), (sides, 'z', mx0, 1)):
         for a0, a1, y0, y1 in openings:
@@ -1584,24 +1624,68 @@ def parking_garage():
         lx0, lx1 = lanes[floor - 1]
         y = roof + floor * st
         slab_with_holes(b, ix0, ix1, iz0, iz1, y - .2, .2, [(lx0, lx1, sz0, sz0 + steps * tread)], "parquet", "inside")
-    b.box((mx0 - .3, top - .2, mz0 - .3), (mx1 + .3, top, mz1 + .3), {'+y': "render", '-y': "inside", '+x': "gold", '-x': "gold", '+z': "gold", '-z': "gold"})
-    b.solid((mx0 - .3, top, mz0 - .3), (mx1 + .3, top + .7, mz0 - .1), "render")                 # the roof's parapet
-    b.solid((mx0 - .3, top, mz1 + .1), (mx1 + .3, top + .7, mz1 + .3), "render")
-    b.solid((mx0 - .3, top, mz0 - .1), (mx0 - .1, top + .7, mz1 + .1), "render")
-    b.solid((mx1 + .1, top, mz0 - .1), (mx1 + .3, top + .7, mz1 + .1), "render")
-    for k in (1, 2):                                                                                # gold string courses
-        b.solid((mx0 - .05, roof + k * st - .12, mz0 - .05), (mx1 + .05, roof + k * st + .02, mz0), "gold")
-    b.solid((MANSION_DOOR_X[0] - .3, roof + 2.4, mz0 - 1.6), (MANSION_DOOR_X[1] + .3, roof + 2.6, mz0), "gold")   # the porch canopy
-    for x in (MANSION_DOOR_X[0] - .3, MANSION_DOOR_X[1] + .1):
-        b.solid((x, roof, mz0 - 1.6), (x + .2, roof + 2.4, mz0 - 1.4), "gold")
-    for x in (-17.6, -5.0):                                                                         # potted trees by the door
-        b.solid((x - .4, roof, mz0 - 1.4), (x + .4, roof + .7, mz0 - .6), "dark")
+    # ---- Art Deco dress: the roof and its parapet, piers, chevron spandrels, the entrance, the crown
+    b.box((mx0 - .1, top - .2, mz0 - .1), (mx1 + .1, top, mz1 + .1), {'+y': "stone", '-y': "inside", '+x': "stone", '-x': "stone", '+z': "stone", '-z': "stone"})
+    for lo, hi in (((mx0 - .1, top, mz0 - .1), (mx1 + .1, top + .9, mz0 + .15)), ((mx0 - .1, top, mz1 - .15), (mx1 + .1, top + .9, mz1 + .1)),
+                   ((mx0 - .1, top, mz0 - .1), (mx0 + .15, top + .9, mz1 + .1)), ((mx1 - .15, top, mz0 - .1), (mx1 + .1, top + .9, mz1 + .1))):
+        b.solid(lo, hi, "stone")
+    b.solid((mx0 - .2, top + .9, mz0 - .2), (mx1 + .2, top + 1.02, mz0 + .15), "gold")            # gold coping, front
+    b.solid((mx0 - .15, roof, mz0 - .15), (MANSION_DOOR_X[0] - .45, roof + .5, mz0), "granite")  # granite plinth (broken at the door)
+    b.solid((MANSION_DOOR_X[1] + .45, roof, mz0 - .15), (mx1 + .15, roof + .5, mz0), "granite")
+    b.solid((mx0 - .15, roof, mz0), (mx0, roof + .5, mz1 + .15), "granite")
+    b.solid((mx1, roof, mz0), (mx1 + .15, roof + .5, mz1 + .15), "granite")
+    b.solid((mx0 - .15, roof, mz1), (mx1 + .15, roof + .5, mz1 + .15), "granite")
+    # Piers between the front's window bays, standing proud and rising past the parapet with gold caps.
+    for x in (mx0, -13.7, -9.2, -5.0, mx1 - .5):
+        b.solid((x, roof + .5, mz0 - .3), (x + .5, top + 1.8, mz0), "stone")
+        b.solid((x - .05, top + 1.8, mz0 - .35), (x + .55, top + 2.0, mz0 + .05), "gold")
+    for z in (mz0 + 4.5, mz0 + 9.0, mz0 + 13.5):                                                  # and down the sides
+        for x0, x1 in ((mx0 - .3, mx0), (mx1, mx1 + .3)):
+            b.solid((x0, roof + .5, z), (x1, top + 1.4, z + .5), "stone")
+            b.solid((x0 - .05, top + 1.4, z - .05), (x1 + .05, top + 1.55, z + .55), "gold")
+    # Bronze chevron spandrels between one floor's windows and the next; gold sills.
+    for k in (1, 2):
+        for a0 in (-16.4, -12.0, -7.6):
+            b.solid((a0, roof + k * st - .6, mz0 - .06), (a0 + 2.6, roof + k * st + .85, mz0 - .01), "bronze")
+            b.solid((a0 - .1, roof + k * st + .82, mz0 - .14), (a0 + 2.7, roof + k * st + .9, mz0), "gold")
+    for a0 in (-16.4, -12.0, -7.6):
+        b.solid((a0, top - .6, mz0 - .06), (a0 + 2.6, top - .2, mz0 - .01), "bronze")
+    # The entrance: a gold surround, a sunburst fan over the door, a bronze marquee.
+    d0, d1 = MANSION_DOOR_X
+    dc = (d0 + d1) / 2
+    b.solid((d0 - .45, roof, mz0 - .3), (d0, roof + 2.9, mz0), "gold")
+    b.solid((d1, roof, mz0 - .3), (d1 + .45, roof + 2.9, mz0), "gold")
+    b.solid((d0 - .45, roof + 2.6, mz0 - .3), (d1 + .45, roof + 2.9, mz0), "gold")
+    zf = mz0 - .32
+    for k in range(9):
+        a0, a1 = math.pi * (k + .15) / 9, math.pi * (k + .85) / 9
+        p = [(dc, roof + 2.9, zf), (dc, roof + 2.9, zf), (dc - math.cos(a1) * 1.6, roof + 2.9 + math.sin(a1) * 1.2, zf),
+             (dc - math.cos(a0) * 1.6, roof + 2.9 + math.sin(a0) * 1.2, zf)]
+        b.raw("gold", p, (0, 0, -1), [(0, 0), (0, 0), (1, 1), (0, 1)])
+    b.solid((d0 - 1.2, roof + 2.95, mz0 - 1.8), (d1 + 1.2, roof + 3.15, mz0), "bronze")             # the marquee
+    b.solid((d0 - 1.25, roof + 2.85, mz0 - 1.85), (d1 + 1.25, roof + 2.95, mz0 - 1.75), "gold")
+    for x in (d0 - 1.15, d1 + 1.0):
+        b.solid((x, roof, mz0 - 1.8), (x + .15, roof + 2.95, mz0 - 1.65), "gold")
+    # The crown: a stepped tower over the entrance bay, gold fins up each step, a gold spire.
+    cz0 = mz0 - .1
+    y = top
+    for (hx, depth), height in (((3.2, 4.0), 2.7), ((2.4, 3.0), 1.4), ((1.6, 2.0), 1.1)):
+        b.box((dc - hx, y, cz0), (dc + hx, y + height, cz0 + depth), {s: "stone" for s in ALL_SIDES})
+        for i in range(5):
+            x = dc - hx + 2 * hx * (i + .5) / 5
+            b.solid((x - .07, y + .2, cz0 - .12), (x + .07, y + height + .25, cz0), "gold")
+        b.solid((dc - hx - .08, y + height - .18, cz0 - .08), (dc + hx + .08, y + height, cz0 + depth + .08), "gold")
+        y += height
+    b.ring("gold", dc, cz0 + 1.0, .45, .05, y, y + 3.2, 8)
+    b.ring("gold", dc, cz0 + 1.0, .7, .7, y, y + .3, 12, top_cap=True)
+    for x in (-17.6, -5.0):                                                                         # bay trees in gold urns
+        b.solid((x - .4, roof, mz0 - 1.4), (x + .4, roof + .7, mz0 - .6), "gold")
         b.solid((x - .55, roof + .7, mz0 - 1.55), (x + .55, roof + 2.2, mz0 - .45), "green")
     # Ground floor: a velvet sofa round a rug and a coffee table, a kitchen bar along the back.
     f0 = roof + .02
     b.solid((-17.4, f0, 1.0), (-13.6, f0 + .45, 2.0), "velvet")
     b.solid((-17.4, f0, 2.0), (-13.6, f0 + .95, 2.3), "velvet")
-    b.solid((-17.0, f0, -1.4), (-14.0, f0 + .01, .8), "velvet")
+    b.solid((-17.0, f0, -1.4), (-14.0, f0 + .01, .8), "rug")
     b.solid((-16.2, f0, -.8), (-14.8, f0 + .4, .2), "dark")
     b.solid((-15.0, f0, 13.2), (-7.0, f0 + 1.0, 14.6), "marble")
     # First floor: the dining table and chairs.
