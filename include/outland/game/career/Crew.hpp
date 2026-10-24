@@ -68,6 +68,8 @@ public:
     void end_ride(ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers, vehicles::VehicleSystem& cars, const world::VerdaRegion& region);
 
     [[nodiscard]] const std::vector<int>& members() const { return members_; }
+    // Who is in the car with the player at the wheel (they shoot from the windows).
+    [[nodiscard]] const std::vector<int>& aboard_now() const { return aboard_; }
     [[nodiscard]] int partner() const { return partner_on_ ? partner_ : -1; }
     [[nodiscard]] int partner_bot() const { return partner_; }
     [[nodiscard]] bool member(int bot) const;

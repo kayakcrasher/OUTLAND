@@ -136,6 +136,7 @@ struct CareerState {
     float authority{0};            // a cop's AUTHORITY (0-100): what the Ŝosea Patrolo is built on
     int outposts_built{0};         // Ŝosea Patrolo outposts the player opened (THE PATROL)
     float union_raise{0};          // a trucker's raises won on strike, on top of the union rate
+    bool rig_issued{false};        // the brotherhood handed the trucker a rig of their own (once)
 };
 
 class Career {
@@ -159,6 +160,9 @@ public:
     [[nodiscard]] float haul_rate() const { return trucker() ? 1 + union_rate + state_.union_raise : 1; }
     // A load delivered for Verda Transporto: a member earns respect for it.
     void haul_done();
+    // The brotherhood's rig, handed over once (the game spawns it; it is the player's to keep).
+    [[nodiscard]] bool rig_due() const { return trucker() && !state_.rig_issued; }
+    void rig_issued() { state_.rig_issued = true; }
     // AUTHORITY: what a cop has built. THE PATROL comes up at each step (outpost_authority(n) for
     // the n-th outpost the player opens, up to max_built).
     static constexpr float authority_max = 100;

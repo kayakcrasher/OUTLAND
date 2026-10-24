@@ -111,7 +111,7 @@ void BotDrivers::cancel(int bot, BattleRoyaleBots& bots, vehicles::VehicleSystem
         ride.active = false;
         cars.clear_autopilot(ride.vehicle);
         bots.set_mounted(ride.bot, false);
-        for (const int p : ride.passengers) bots.set_mounted(p, false);
+        for (const int p : ride.passengers) { bots.set_mounted(p, false); bots.set_hidden(p, false); }
     }
 }
 
@@ -131,7 +131,7 @@ void BotDrivers::clear(BattleRoyaleBots& bots, vehicles::VehicleSystem& cars) {
     for (auto& ride : rides_) {
         cars.clear_autopilot(ride.vehicle);
         bots.set_mounted(ride.bot, false);
-        for (const int p : ride.passengers) bots.set_mounted(p, false);
+        for (const int p : ride.passengers) { bots.set_mounted(p, false); bots.set_hidden(p, false); }
     }
     rides_.clear();
 }
@@ -153,6 +153,7 @@ void BotDrivers::dismount(BotRide& ride, BattleRoyaleBots& bots, vehicles::Vehic
     occupants.insert(occupants.end(), ride.passengers.begin(), ride.passengers.end());
     for (std::size_t k = 0; k < occupants.size(); ++k) {
         bots.set_mounted(occupants[k], false);
+        if (k > 0) bots.set_hidden(occupants[k], false);   // the passengers, out of the windows and out of the car
         auto* bot = bots.find(occupants[k]);
         if (!bot || v < 0) continue;
         const auto& car = cars.vehicles()[static_cast<std::size_t>(v)];
@@ -230,14 +231,28 @@ void BotDrivers::update(float dt, BattleRoyaleBots& bots, vehicles::VehicleSyste
             ride.active = false;
             cars.clear_autopilot(ride.vehicle);
             bots.set_mounted(ride.bot, false);
-            for (const int p : ride.passengers) bots.set_mounted(p, false);
+            for (const int p : ride.passengers) { bots.set_mounted(p, false); bots.set_hidden(p, false); }
             continue;
         }
         const auto& car = cars.vehicles()[static_cast<std::size_t>(v)];
         bot->set_position(car.position);
         bot->set_yaw(car.yaw);
-        for (const int p : ride.passengers)
-            if (auto* passenger = bots.find(p)) { passenger->set_position(car.position); passenger->set_yaw(car.yaw); }
+        // The passengers lean out of the windows: awake and armed (out of sight in the car), they
+        // fight whoever their side fights as the car goes by - a drive-by. The driver drives.
+        {
+            const float a = car.yaw * DEG2RAD;
+            const Vector3 side{std::cos(a), 0, -std::sin(a)}, back{-std::sin(a), 0, -std::cos(a)};
+            for (std::size_t k = 0; k < ride.passengers.size(); ++k)
+                if (auto* passenger = bots.find(ride.passengers[k]); passenger && passenger->alive()) {
+                    const float s = k % 2 == 0 ? 1.25F : -1.25F, along = .4F + static_cast<float>(k / 2) * 1.0F;
+                    const Vector3 window{car.position.x + side.x * s + back.x * along, car.position.y, car.position.z + side.z * s + back.z * along};
+                    bots.set_mounted(ride.passengers[k], false);
+                    bots.set_hidden(ride.passengers[k], true);
+                    passenger->set_position(window);
+                    passenger->set_yaw(car.yaw);
+                    passenger->set_roam_center(window, .3F);
+                }
+        }
         ride.driven += dt;
         // A wrecked car throws its driver out, hurt.
         if (asset->vehicle.destroyed || asset->vehicle.health <= 0) {

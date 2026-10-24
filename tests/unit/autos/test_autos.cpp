@@ -39,6 +39,15 @@ int main() {
     autos::Mods back;
     check(autos::parse(autos::serialise(big), back) && back == big, "mods survive a save");
     check(!autos::parse("1 2", back) && !autos::parse("1 9 1 0", back), "bad mods are refused");
+    // The depot's work on a rig: plating and a roof gun, saved with the rest (older saves have neither).
+    check(autos::parse("1 2 3 2", back) && back.plating == 0 && back.gun == 0, "an older save: no plating, no gun");
+    autos::Mods armed{-1, 1, 1, 0, 2, 1};
+    check(autos::valid(armed) && autos::parse(autos::serialise(armed), back) && back == armed, "plating and the roof gun survive a save");
+    check(autos::tuning(armed).plating == .25F && autos::tuning(armed).gun && autos::tuning({-1, 0, 1, 0, 1, 0}).plating == .5F, "plating stops rounds");
+    check(!autos::valid(autos::Mods{-1, 0, 1, 0, 3, 0}) && !autos::valid(autos::Mods{-1, 0, 1, 0, 0, 2}), "no such plating or gun");
+    world::VehiclePlacementState plated;
+    autos::apply(armed, plated);
+    check(plated.gun && plated.plating == .25F && autos::mods_of(plated) == armed, "the rig remembers its fit-out");
     // Smaller tyres sit low and grip; bigger ones lift the car.
     check(autos::tuning({-1, 0, 0, 0}).wheel < 1 && autos::tuning({-1, 0, 0, 0}).grip > 1, "low-profile tyres");
 
@@ -68,6 +77,9 @@ int main() {
     check(autos::parse(autos::serialise(mine), loaded) && loaded.definition == "truck" && loaded.mods == mine.mods &&
           std::abs(loaded.at.z + 40.25F) < 1e-3F && std::abs(loaded.yaw - 87) < 1e-3F && std::abs(loaded.fuel - .5F) < 1e-4F && loaded.vehicle.empty(),
           "a bought car survives a save (its id is the session's)");
+    check(autos::parse("semi 0 0 1 0 1 2 3 4 1", loaded) && loaded.definition == "semi" && loaded.mods.plating == 0, "an older car line still loads");
+    autos::OwnedCar rig{"semi", "", {-1, 0, 1, 0, 1, 1}, {1, 2, 3}, 0, 1};
+    check(autos::parse(autos::serialise(rig), loaded) && loaded.mods == rig.mods, "an armed rig's save line");
     check(!autos::parse("tr uck 0 0 1 0 1 2 3 4 1", loaded) && !autos::parse("truck 0 0 1 0 1 2 3 4 2", loaded), "bad car lines are refused");
 
     if (failures == 0) std::cout << "autos ok\n";

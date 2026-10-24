@@ -24,6 +24,7 @@ std::vector<Site> sites(const VerdaRegion& region) {
             if (asset.model_path == gas_model) kind = Kind::Gas;
             else if (asset.model_path == mechanic_model) kind = Kind::Mechanic;
             else if (asset.model_path == car_lot_model) kind = Kind::CarLot;
+            else if (asset.model_path == depot_model) kind = Kind::Depot;
             else continue;
             // The world kit placed the model's bounds centre (and its base); back to its own origin.
             Site site{kind, asset.id, asset.position, asset.rotation_y};
@@ -48,6 +49,12 @@ bool at_pump(const Site& gas, Vector3 car) {
 
 int bay_at(const Site& shop, Vector3 car) {
     const Vector3 p = shop.to_local(car);
+    if (shop.kind == Kind::Depot) {
+        if (p.z < depot_bay_z0 || p.z > depot_bay_z1) return -1;
+        for (std::size_t i = 0; i < depot_bays.size(); ++i)
+            if (std::abs(p.x - depot_bays[i]) < depot_bay_half) return static_cast<int>(i);
+        return -1;
+    }
     if (p.z < mechanic_bay_z0 || p.z > mechanic_bay_z1) return -1;
     for (std::size_t i = 0; i < mechanic_bays.size(); ++i)
         if (std::abs(p.x - mechanic_bays[i]) < mechanic_bay_half) return static_cast<int>(i);

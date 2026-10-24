@@ -11,6 +11,7 @@ Only modes with civilian life (`rules_for(mode).civilian_life`, so Explore) run 
 | Shooting | 1 | Firing a gun where someone sees or hears it |
 | Assault | 2 | Hurting a resident |
 | Murder | 3 | Killing a resident |
+| Hit and run | 1 | Hitting a pedestrian with a vehicle and driving off (see below) |
 | Attack on an officer | 4 | Hurting a police officer |
 
 The **WANTED** stars show under the clock, and messages such as "A witness called the police: murder" appear for 4 seconds.
@@ -33,6 +34,16 @@ When a crime happens, every living resident is checked.
 - Officers report immediately.
 - A witness who dies before calling never reports, so killing witnesses works, but each killing seen by someone else is a new murder.
 - Each witness makes one call, about the worst thing they saw.
+
+## Hit and run
+
+- A vehicle moving faster than about 3.5 m/s hurts anyone it hits. Damage grows with speed, and a rig or bus hits more than twice as hard.
+- Hit someone and you have to **pull over and wait** for the ambulance and the police. Stay stopped (or out of the car) within 35 m of the scene for 15 seconds and it was an accident.
+- Drive more than 90 m away first and it is a **hit and run**: wanted, one star.
+- Busted while wanted for it means **mandatory prison time**: 90 seconds on top of the rest of the sentence. If the police lose you, it is off the books.
+- **Police with their lights on are exempt.** Pedestrians ahead of a police car running fast with its lights move aside; one who doesn't is at fault.
+- NPC drivers who hit someone and drive on make the news ("HIT AND RUN"). The police don't chase them yet.
+- Code: `game::law::HitAndRun` (`include/outland/game/law/HitAndRun.hpp`).
 
 ## Police response
 

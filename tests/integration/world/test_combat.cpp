@@ -109,7 +109,7 @@ int main() {
     gun.update(.05F,input,high,world);assert(gun.reload_remaining()==0 && gun.selected()==WeaponId::Rifle);
     // SWITCH WEAPON goes through the guns, then to empty hands, then back to the first gun.
     input.next_weapon=false;
-    assert(gun.select(WeaponId::Rocket) && !gun.holstered());
+    assert(gun.select(WeaponId::MachinePistol) && !gun.holstered());   // (the last gun in the list)
     gun.update(.05F,input,high,world);   // (the switch cooldown)
     input.next_weapon=true;gun.update(.05F,input,high,world);
     assert(gun.holstered() && !gun.available());

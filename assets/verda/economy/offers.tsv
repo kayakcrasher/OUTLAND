@@ -41,6 +41,7 @@ general_lantern	general	lantern	40	15	5
 general_knife	general	knife	35	14	5
 general_hunting_rifle	general	hunting_rifle	220	90	2
 general_smg	general	smg	260	100	2
+general_machine_pistol	general	machine_pistol	240	95	2
 general_shotgun	general	shotgun	180	70	2
 general_double_barrel	general	double_barrel	220	85	2
 general_auto_shotgun	general	auto_shotgun	420	160	1
@@ -146,6 +147,7 @@ general_lighter	general	lighter	12	4	8
 general_spray_paint	general	spray_paint	15	5	12
 guns_pistol	guns	pistol	180	70	6
 guns_smg	guns	smg	650	260	4
+guns_machine_pistol	guns	machine_pistol	550	220	3
 guns_shotgun	guns	shotgun	520	210	4
 guns_double_barrel	guns	double_barrel	380	150	4
 guns_auto_shotgun	guns	auto_shotgun	900	360	3

@@ -17,6 +17,8 @@
 #include "outland/game/mafia/GangLogos.hpp"
 #include "outland/game/career/Career.hpp"
 #include "outland/game/career/Backup.hpp"
+#include "outland/game/career/Armory.hpp"
+#include "outland/game/law/HitAndRun.hpp"
 #include "outland/game/law/PrisonYard.hpp"
 #include "outland/game/career/TrainingCamp.hpp"
 #include "outland/game/career/CampRenderer.hpp"
@@ -793,7 +795,7 @@ void Renderer::run() {
     std::string store_status,store_prompt;
     // The motor trade (game::autos): Marnafto's pumps, the Meĥanikejo bays, the car lot's desk.
     game::autos::AutoMenu motor_menu;
-    enum class MotorScreen{None,Pump,Workshop,Paint,Engine,Tires,Bumper,Dealer};
+    enum class MotorScreen{None,Pump,Workshop,Paint,Engine,Tires,Bumper,Dealer,Depot,Plating,Gun};
     MotorScreen motor_screen=MotorScreen::None;
     std::vector<world::motor::Site> motor_sites;
     int motor_site=-1,motor_served=-1;   // the site in use; one whose menu was closed (not again till the car leaves it)
@@ -1230,6 +1232,26 @@ void Renderer::run() {
     float zone_banner=0;
 
     game::combat::WeaponSystem weapons;
+    // A rig's roof gun (the depot's fit-out): a machine gun of its own, fed from the rig.
+    game::combat::WeaponSystem roof_gun;
+    bool roof_gun_ready=false,roof_gun_on=false;
+    // The Policio's desk and armory, and the gangs' gun men (game::career::Armory): one list on screen.
+    enum class GearScreen{None,Desk,Armory,GunMan};
+    GearScreen gear_screen=GearScreen::None;
+    game::autos::AutoMenu gear_menu;
+    int gear_gang=-1;                 // whose gun man
+    bool gear_open_desk=false,gear_open_gun_man=false;   // asked for this frame
+    struct GunMan { Vector3 at{}; float yaw{0}; int gang{-1}; };
+    std::vector<GunMan> gun_men;
+    constexpr int gun_man_bot=960000;
+    std::unordered_set<std::string> shotgun_cars;   // police cars whose shotgun the officer already took
+    std::vector<char> drive_by_alive;
+    // Cars and pedestrians: who was struck lately (by key), the player's hit pending or run from,
+    // and the last news of somebody else's hit and run.
+    std::unordered_map<int,double> struck_at;
+    game::law::HitAndRun hit_and_run;
+    double npc_hit_news=-1e9;
+    double next_hijack=-1;            // when a gang next tries for the player's loaded rig   // the Mafio's members standing last frame (a drive-by's crew kills count)
     game::combat::CombatWorld combat_world(verda_region);
     game::Health player_health{game::player_max_health};
     // LAN sides (net::Sides, picked in the lobby): who is on the player's side, how many of each
@@ -1371,6 +1393,7 @@ void Renderer::run() {
     const auto armour_level=[&]{
         if(game_mode==game::GameMode::DevLab) return 0;
         const auto& bag=loot_session.inventory();
+        if(game_mode==game::GameMode::Explore && career.on_duty()) return 2;   // an officer on duty wears body armour
         return bag.count("vest_heavy")>0 ? 2 : bag.count("vest_light")>0 ? 1 : 0;
     };
     const auto hurt_player=[&](float amount){
@@ -1929,6 +1952,25 @@ void Renderer::run() {
                         for(const auto& crew:mafio.crews())
                             for(const int id:crew.members) if(const auto* bot=br_bots.find(id))
                                 npcs.spawn_bot(id,outfit_body,bot->position(),bot->yaw());
+                    // Each gang's GUN MAN, by its main base's door: guns for the gang's own people.
+                    gun_men.clear();
+                    if(character_registry.find(outfit_body))
+                        for(const auto& crew:mafio.crews()) {
+                            if(!crew.base || crew.disbanded) continue;
+                            if(std::any_of(gun_men.begin(),gun_men.end(),[&](const GunMan& g){return g.gang==crew.gang;})) continue;
+                            Vector3 out=Vector3Subtract(crew.door,crew.interior);out.y=0;
+                            out=Vector3Length(out)>.1F ? Vector3Normalize(out) : Vector3{0,0,1};
+                            const Vector3 side{-out.z,0,out.x};
+                            for(const float along:{-3.2F,3.2F,-4.6F,4.6F}) {
+                                Vector3 at=Vector3Add(Vector3Add(crew.door,Vector3Scale(out,1.6F)),Vector3Scale(side,along));
+                                const float top=at.y+2;
+                                at.y=world::physics::WorldCollision::ground_height({at.x,top,at.z},top,verda_region);
+                                if(!std::isfinite(at.y) || world::physics::WorldCollision::body_blocked(at,at.y,verda_region,.4F)) continue;
+                                gun_men.push_back({at,std::atan2(out.x,out.z)*RAD2DEG,crew.gang});
+                                npcs.spawn_bot(gun_man_bot+crew.gang,outfit_body,at,gun_men.back().yaw);
+                                break;
+                            }
+                        }
                     // The Vakeroj on their ranches (each in their own clothes and hat), then the big rigs.
                     ranches.start(verda_region,br_bots,vehicles,&character_registry,session_seed,island_life.clock());
                     for(const auto& v:ranches.vakeros())
@@ -2568,7 +2610,7 @@ void Renderer::run() {
                 if(escape && inventory_open) {inventory_open=false;input_system.cancel_controls();}
                 else if(escape && shop_open) {shop_open=false;input_system.cancel_controls();}
                 else if(escape && store_open) {store_open=false;input_system.cancel_controls();}
-                else if(escape && motor_menu.is_open()) {}   // (its own ESC: back, or leave)
+                else if(escape && (motor_menu.is_open()||gear_menu.is_open())) {}   // (its own ESC: back, or leave)
                 else if(escape && build_mode.active()) {}
                 else if(escape || lost_mouse || menu_tapped) {pause_menu.open();input_system.cancel_controls();}
             }
@@ -2693,7 +2735,7 @@ void Renderer::run() {
         if(game_mode==game::GameMode::DevLab && !creator_active)reserved=[&](Vector2 point){return CheckCollisionPointRec(point,audio_button)||dev_lab.owns_point(point,screen_width,screen_height);};
 #endif
         // The map is modal like the bag; MAP / M opens it during play.
-        if(!map_screen.is_open() && !pause_menu.is_open() && game_mode!=game::GameMode::DevLab && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !inventory_open && !mode_session.terminal() &&
+        if(!map_screen.is_open() && !pause_menu.is_open() && game_mode!=game::GameMode::DevLab && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !inventory_open && !mode_session.terminal() &&
            (map_screen.tapped_map_button(screen_width,screen_height,IsWindowFocused()) || (IsWindowFocused() && settings.bindings.pressed(input::Action::Map,mouse_captured)))) {
             map_screen.open();input_system.cancel_controls();
         }
@@ -2728,8 +2770,10 @@ void Renderer::run() {
             if(town_building) reserved=[&,base=reserved](Vector2 point){return base(point) || build_mode.owns_point(point,screen_width,screen_height);};
             input_system.set_driving(vehicles.driver()!=nullptr); // steer left, pedals right, pan above
             {
-                const bool armed_at_wheel=vehicles.driver()!=nullptr && weapons.available() &&
-                    (weapons.selected()==game::combat::WeaponId::Pistol || weapons.selected()==game::combat::WeaponId::Smg);
+                // At the wheel only a roof gun fires (the FIRE button shows for it).
+                const auto* wheel=vehicles.driver();
+                const auto* wheel_asset=wheel ? vehicles.asset(verda_region,wheel->id) : nullptr;
+                const bool armed_at_wheel=wheel_asset && wheel_asset->vehicle.gun && !wheel_asset->vehicle.destroyed;
                 input_system.set_drive_by(armed_at_wheel);touch_hud.set_drive_by(armed_at_wheel);
                 // At the wheel of a police car (any patrol car, or the Interceptor): LIGHTS.
                 const auto* car=vehicles.driver();
@@ -2770,7 +2814,7 @@ void Renderer::run() {
             dev_ui=game_mode==game::GameMode::DevLab && (dev_lab.tools_open() || creator_active);
 #endif
             const bool want=!touch_ui && IsWindowFocused() && !pause_menu.is_open() && !map_screen.is_open() && !inventory_open &&
-                !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !mode_session.terminal() && !dev_ui;
+                !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !mode_session.terminal() && !dev_ui;
             input::PointerEvents::capture_mouse(want);
             mouse_wanted=want;
             build_mode.set_mouse_aim(mouse_captured);
@@ -2810,7 +2854,7 @@ void Renderer::run() {
         {
             // BUILD (K): lay roads, homes and bus stops in Explore, on foot.
             const bool can_build=game::rules_for(game_mode).civilian_life && !vehicles.driver() && !map_screen.is_open() &&
-                !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !mode_session.terminal() && player_health.alive();
+                !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !mode_session.terminal() && player_health.alive();
             build_mode.tick(dt);
             bool toggled_now=false;
             if(can_build && build_mode.toggled(screen_width,screen_height,IsWindowFocused())) {
@@ -2902,7 +2946,7 @@ void Renderer::run() {
             }
             return best;
         };
-        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && player_health.alive()) {
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !at_table && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
             if(const int hands_up=career.on_duty() && !vehicles.driver() ? callouts.to_cuff(feet,mafio,br_bots) : -1;hands_up>=0) {
                 // A suspect with his hands up: cuffed, he walks with the officer to the car.
@@ -2944,6 +2988,12 @@ void Renderer::run() {
             if(vehicles.driver() || game_mode!=game::GameMode::Explore || career_path.empty()) return -1;
             for(std::size_t i=0;i<kamionistoj.size();++i)
                 if(std::hypot(kamionistoj[i].at.x-feet.x,kamionistoj[i].at.z-feet.z)<2.6F && std::abs(kamionistoj[i].at.y-feet.y)<1.6F) return static_cast<int>(i);
+            return -1;
+        };
+        const auto gun_man_near=[&](Vector3 feet) -> int {
+            if(vehicles.driver() || game_mode!=game::GameMode::Explore || career_path.empty()) return -1;
+            for(const auto& g:gun_men)
+                if(std::hypot(g.at.x-feet.x,g.at.z-feet.z)<2.4F && std::abs(g.at.y-feet.y)<1.6F) return g.gang;
             return -1;
         };
         const auto society_near=[&](Vector3 feet){
@@ -3033,7 +3083,7 @@ void Renderer::run() {
                     return services.station_near(place.door,40);
             return nullptr;
         };
-        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && !vehicles.driver() &&
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !at_table && !vehicles.driver() &&
            game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
             const int crew=boss_near(feet);
@@ -3046,12 +3096,10 @@ void Renderer::run() {
                     interaction_message=TextFormat("He's with you - your crew: %d of %d",static_cast<int>(player_crew.members().size()),game::career::Crew::max_gang);
                 } else interaction_message=TextFormat("Your crew is full (%d)",game::career::Crew::max_gang);
                 interaction_remaining=3;input_system.player().interact=false;
-            } else if(station && career.on_duty() && player_crew.partner()<0 && !confirming) {
-                // The desk pairs the officer up.
-                const Vector3 at=Vector3Add(feet,{std::cos(player.yaw)*1.2F,0,-std::sin(player.yaw)*1.2F});
-                if(player_crew.assign_partner(at,player.yaw*RAD2DEG+180,br_bots,match_time))
-                    interaction_message="Desk sergeant: \"Officer Novak rides with you from now on.\" (USE again here to hand in your badge)";
-                interaction_remaining=4;input_system.player().interact=false;
+            } else if(station && career.on_duty() && !confirming) {
+                // The desk: a partner, the armory, the badge.
+                gear_open_desk=true;
+                input_system.player().interact=false;
             } else if(crew>=0 && career.on_duty()) {
                 interaction_message="The boss won't talk to a cop - hand in your badge at a station first";
                 interaction_remaining=3;input_system.player().interact=false;
@@ -3131,7 +3179,7 @@ void Renderer::run() {
                 interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
             }
         }
-        if(controls.interact && at_table && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !mode_session.terminal()) {
+        if(controls.interact && at_table && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !mode_session.terminal()) {
             const auto money=loot_session.economy().money;
             if(money<20) {interaction_message="The Green Hand's table: 20 kr to sit down";interaction_remaining=3;}
             else {
@@ -3157,7 +3205,7 @@ void Renderer::run() {
                 poker_open=false;input_system.cancel_controls();
             }
         }
-        if(controls.interact && (store_mannequin>=0 || at_store_counter) && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && !mode_session.terminal()) {
+        if(controls.interact && (store_mannequin>=0 || at_store_counter) && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !at_table && !mode_session.terminal()) {
             const auto& state=loot_session.economy();
             int look=store_mannequin>=0 ? store_mannequin+1 : 0;
             if(store_mannequin<0) if(const auto* on=game::wardrobe::wearing(state,wardrobe_catalogue))
@@ -3169,12 +3217,12 @@ void Renderer::run() {
             store_open=true;store_status.clear();player.third_person=true;
             input_system.cancel_controls();
         }
-        else if(controls.interact && nearby_shop && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && !mode_session.terminal()) {
+        else if(controls.interact && nearby_shop && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !at_table && !mode_session.terminal()) {
             current_shop=nearby_shop;shop_open=true;shop_status="Select supplies, equipment or furniture. BUY / SELL transfers one item.";
             play_ui.opened();input_system.cancel_controls();
         }
         // The Chief (talk), and the training camp's stand (start the next drill).
-        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && !vehicles.driver() &&
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !at_table && !vehicles.driver() &&
            game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
             const auto ron_truck_near=[&]{
@@ -3209,6 +3257,10 @@ void Renderer::run() {
                 input_system.player().interact=false;
             } else if(const int k=trucker_near(feet);k>=0) {
                 chief_line=trucker_talk(k);chief_line_time=9;
+                input_system.player().interact=false;
+            } else if(const int g=gun_man_near(feet);g>=0) {
+                if(career.in_gang(g)) {gear_gang=g;gear_open_gun_man=true;}
+                else {chief_line="Gun man ("+gang_name(g)+"): \"I sell to family. You're not family.\"";chief_line_time=6;}
                 input_system.player().interact=false;
             } else if(society_near(feet)) {
                 static constexpr const char* lines[]{
@@ -3251,7 +3303,7 @@ void Renderer::run() {
                 (game::rules_for(game_mode).civilian_life && penthouse.inside(feet)) || home_here;
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
                 here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 || (career.on_duty() && callouts.to_cuff(feet,mafio,br_bots)>=0) ||
-                    (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) || trucker_near(feet)>=0 || society_near(feet) ||
+                    (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) || trucker_near(feet)>=0 || society_near(feet) || gun_man_near(feet)>=0 ||
                     (!campaign_path.empty() && (story.talking() || (uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F))) ||
                     boss_near(feet)>=0 || station_desk(feet)!=nullptr || recruit_near(feet)>=0 ||
                     booking.stage==2 || inside_line<inside_lines.size() ||
@@ -3270,6 +3322,7 @@ void Renderer::run() {
                     else if(const int k=trucker_near(feet);k>=0)
                         store_prompt=kamionistoj[static_cast<std::size_t>(k)].rep ? std::string("E - Talk to ")+brotherhood_man+" (the truckers' brotherhood)" : "E - Talk to the trucker";
                     else if(society_near(feet)) store_prompt="E - Talk to La Verda Mano Kultura Societo";
+                    else if(const int g=gun_man_near(feet);g>=0) store_prompt=career.in_gang(g) ? "E - The gun man: guns for the family" : "E - Talk to the gun man";
                     else if(recruit_near(feet)>=0)
                         store_prompt=static_cast<int>(player_crew.members().size())<game::career::Crew::max_gang ?
                             TextFormat("E - Recruit him (crew %d of %d)",static_cast<int>(player_crew.members().size())+1,game::career::Crew::max_gang) : "Your crew is full";
@@ -3277,7 +3330,7 @@ void Renderer::run() {
                         const std::string name(game::mafia::gangs[static_cast<std::size_t>(mafio.crews()[static_cast<std::size_t>(crew)].gang)].name);
                         store_prompt=career.in_gang(mafio.crews()[static_cast<std::size_t>(crew)].gang) ? "E - Talk to your boss" : "E - Talk to the boss of "+name;
                     } else if(station_desk(feet)) store_prompt=!career.on_duty() ? "E - Sign up with the Policio de Verda" :
-                        player_crew.partner()<0 ? "E - Ask the desk for a partner" : "E - Hand in your badge";
+                        "E - The desk: partner, armory, badge";
                 }
             }
             if(squad_play() && player_health.alive() && !player_health.downed() && !vehicles.driver()) {
@@ -3289,6 +3342,129 @@ void Renderer::run() {
                 }
             }
             use_available=here && !creator_active && player_health.alive() && !player_health.downed();
+        }
+        // ====================================================
+        // THE POLICIO'S DESK AND ARMORY, AND THE GANGS' GUN MEN (game::career::Armory)
+        // ====================================================
+        {
+            using game::autos::MenuRow;
+            namespace armory=game::career;
+            static constexpr const char* police_ranks[]{"Kadeto","Patrolano","Serĝento","Leŭtenanto","Komisaro"};
+            static constexpr const char* gang_ranks[]{"Novulo","Soldato","Kapo","Leŭtenanto","Estro"};
+            const auto open_gear=[&](GearScreen screen,int selected) {
+                std::vector<MenuRow> rows;
+                std::string title,subtitle,back="BACK";
+                const auto& bag=loot_session.inventory();
+                switch(screen) {
+                case GearScreen::Desk:
+                    title="POLICIO DE VERDA";subtitle="The desk";back="LEAVE";
+                    rows.push_back({"Partner",player_crew.partner()>=0 ? "Officer Novak rides with you" : "ask for one to ride with you","",player_crew.partner()<0});
+                    rows.push_back({"Armory","free kit - the heavier guns come with rank",""});
+                    rows.push_back({"Hand in your badge","leave the Policio de Verda",""});
+                    break;
+                case GearScreen::Armory:
+                    title="ARMILEJO DE LA POLICIO";subtitle=std::string("Free - ")+career.rank_name()+"'s issue";
+                    for(std::size_t i=0;i<armory::armory.size();++i) {
+                        const auto& a=armory::armory[i];
+                        const bool may=armory::police_may_draw(career.rank(),i);
+                        const bool owned=bag.count(a.item)>0;
+                        rows.push_back({a.name,may ? (owned && a.ammo[0] ? "in your bag - more rounds" : owned ? "in your bag" : "") : std::string("for a ")+police_ranks[a.police_rank],
+                                        may ? "Free" : "Rank",may,owned});
+                    }
+                    break;
+                case GearScreen::GunMan:
+                    title="PAFILISTO";subtitle=gang_name(gear_gang)+" - for the family, no questions";back="LEAVE";
+                    for(std::size_t i=0;i<armory::armory.size();++i) {
+                        const auto& a=armory::armory[i];
+                        if(a.gang_rank<0) continue;
+                        const bool may=armory::gang_may_buy(career.rank(),i);
+                        rows.push_back({a.name,may ? (a.ammo[0] ? TextFormat("with %d rounds",a.rounds) : "") : std::string("for a ")+gang_ranks[a.gang_rank],
+                                        may ? std::to_string(a.gang_price)+" kr" : "Rank",may && loot_session.economy().money>=a.gang_price});
+                    }
+                    break;
+                default: return;
+                }
+                gear_screen=screen;
+                gear_menu.set_font(sign_renderer.font());
+                gear_menu.open(title,subtitle,std::move(rows),back,selected);
+                input_system.cancel_controls();
+            };
+            // Kit into the bag: the gun (or gear) if it isn't there, and its rounds.
+            const auto issue=[&](std::size_t i) {
+                const auto& a=armory::armory[i];
+                auto& bag=loot_session.edit_inventory();
+                const bool gear=!a.ammo[0];
+                int got=0;
+                if(gear) got+=bag.add(item_registry,a.item,std::max(1,a.rounds));
+                else {
+                    if(bag.count(a.item)==0) got+=bag.add(item_registry,a.item,1);
+                    got+=bag.add(item_registry,a.ammo,a.rounds);
+                }
+                loot_session.changed();
+                return got>0;
+            };
+            if(gear_open_desk) {gear_open_desk=false;open_gear(GearScreen::Desk,0);}
+            if(gear_open_gun_man) {gear_open_gun_man=false;open_gear(GearScreen::GunMan,0);}
+            if(gear_menu.is_open()) {
+                if(!player_health.alive() || vehicles.driver()) {gear_menu.close();gear_screen=GearScreen::None;}
+                const auto act=gear_menu.is_open() ? gear_menu.input(screen_width,screen_height,IsWindowFocused()) : game::autos::MenuAction{};
+                if(act.back) {
+                    if(gear_screen==GearScreen::Armory) open_gear(GearScreen::Desk,1);
+                    else {gear_menu.close();gear_screen=GearScreen::None;input_system.cancel_controls();}
+                } else if(act.chosen>=0) {
+                    const auto feet=Vector3{player.position.x,player.position.y-1,player.position.z};
+                    switch(gear_screen) {
+                    case GearScreen::Desk:
+                        if(act.chosen==0) {
+                            const Vector3 at=Vector3Add(feet,{std::cos(player.yaw)*1.2F,0,-std::sin(player.yaw)*1.2F});
+                            gear_menu.set_status(player_crew.assign_partner(at,player.yaw*RAD2DEG+180,br_bots,match_time) ?
+                                "Desk sergeant: \"Officer Novak rides with you from now on.\"" : "You already have a partner");
+                            open_gear(GearScreen::Desk,0);
+                        } else if(act.chosen==1) open_gear(GearScreen::Armory,0);
+                        else {
+                            career.quit();services.assign_player_car({});lights_car.clear();join_offer={};
+                            if(backup.active()) backup.dismiss(br_bots,match_time);
+                            player_crew.dismiss_partner(br_bots);
+                            gear_menu.close();gear_screen=GearScreen::None;input_system.cancel_controls();
+                        }
+                        break;
+                    case GearScreen::Armory:
+                        if(armory::police_may_draw(career.rank(),static_cast<std::size_t>(act.chosen))) {
+                            gear_menu.set_status(issue(static_cast<std::size_t>(act.chosen)) ? "Signed out - bring it back in one piece" : "Your bag is full");
+                            open_gear(GearScreen::Armory,act.chosen);
+                        }
+                        break;
+                    case GearScreen::GunMan: {
+                        // (The list skips what he doesn't sell: find the row's item.)
+                        int row=-1;
+                        for(std::size_t i=0;i<armory::armory.size();++i) {
+                            if(armory::armory[i].gang_rank<0) continue;
+                            if(++row==act.chosen) {
+                                auto& wallet=loot_session.economy();
+                                if(!armory::gang_may_buy(career.rank(),i)) break;
+                                if(wallet.money<armory::armory[i].gang_price) {gear_menu.set_status("Not enough kronoj");break;}
+                                if(issue(i)) {wallet.money-=armory::armory[i].gang_price;loot_session.changed();gear_menu.set_status("\"Pleasure doing business. You didn't get it from me.\"");}
+                                else gear_menu.set_status("Your bag is full");
+                                break;
+                            }
+                        }
+                        open_gear(GearScreen::GunMan,act.chosen);
+                        break;
+                    }
+                    default: break;
+                    }
+                }
+            }
+            // An officer getting into a police car takes the shotgun from its rack (once a car).
+            if(const auto* car=vehicles.driver();car && career.on_duty())
+                if(const auto* asset=vehicles.asset(verda_region,car->id);asset && armory::police_vehicle(asset->vehicle.definition) && !shotgun_cars.contains(car->id)) {
+                    shotgun_cars.insert(car->id);
+                    auto& bag=loot_session.edit_inventory();
+                    const bool had=bag.count("shotgun")>0;
+                    if(!had) bag.add(item_registry,"shotgun",1);
+                    bag.add(item_registry,"shotgun_shells",10);loot_session.changed();
+                    interaction_message=had ? "Shells from the car's rack: +10" : "The car's pump shotgun is in your hands - and ten shells";interaction_remaining=4;
+                }
         }
         // ====================================================
         // THE MOTOR TRADE (game::autos): Marnafto's pumps, the Meĥanikejo bays, the car lot
@@ -3335,6 +3511,23 @@ void Renderer::run() {
                 }
 #endif
             }
+            // The brotherhood's rig for a new brother: in the truck park at the depot, the player's to keep.
+            if(owned_ready && career.rig_due() && depot_boss.placed && player_health.alive()) {
+                autos::OwnedCar c;
+                c.definition="semi";
+                c.at={-626,world::terrain::TerrainHeight::sample(-626,-100),-100};c.yaw=0;
+                if(owned_cars.size()<autos::max_owned && spawn_owned(c)) {
+                    owned_cars.push_back(c);store_owned();
+                    chief_line=std::string(brotherhood_man)+": \"Every brother drives his own. Your rig's in the truck park at the depot - box trailer hitched, "
+                               "tank full. Take her into the shed for armour and a roof gun when you can afford it.\"";chief_line_time=10;
+                }
+                career.rig_issued();
+            }
+            {
+                std::string own;
+                for(const auto& c:owned_cars) if(c.definition=="semi") {own=c.vehicle;break;}
+                trucking.set_own_rig(own);
+            }
             if((owned_sync-=dt)<=0 && !owned_cars.empty()) {
                 owned_sync=3;
                 for(auto& c:owned_cars)
@@ -3360,6 +3553,20 @@ void Renderer::run() {
                     rows.push_back({"Fill up",TextFormat("%d%% in the tank",car ? static_cast<int>(car->vehicle.fuel*100+.5F) : 0),cost>0 ? kr(cost) : "Full",cost>0});
                     break;
                 }
+                case MotorScreen::Depot: {
+                    // Verda Transporto's shed: the company's mechanics service a rig and fit it out for the road.
+                    title="VERDA TRANSPORTO · SERVO";subtitle=career.trucker() ? "A brother pays 30% less" : "Service and fit-out for working trucks";back="LEAVE";
+                    const int service=car ? autos::repair_cost(car->vehicle)+(car->vehicle.fuel<.999F ? autos::fill_cost(car->vehicle.fuel) : 0) : 0;
+                    rows.push_back({"Service",service>0 ? "repairs, new tyres, a full tank" : "nothing to do",service>0 ? kr(service) : "",service>0});
+                    rows.push_back({"Engine",autos::engines[static_cast<std::size_t>(mods.engine)].name,""});
+                    rows.push_back({"Armour plating",autos::platings[static_cast<std::size_t>(mods.plating)].name,""});
+                    rows.push_back({"Roof gun",autos::guns[static_cast<std::size_t>(mods.gun)].name,""});
+                    rows.push_back({"Paint",mods.paint>=0 ? autos::paints[static_cast<std::size_t>(mods.paint)].name : "Factory colour",""});
+                    rows.push_back({"Front bumper",autos::bumpers[static_cast<std::size_t>(mods.bumper)].name,""});
+                    break;
+                }
+                case MotorScreen::Plating: title="KIRASO";subtitle="Steel against bullets";part_rows(autos::platings,mods.plating);break;
+                case MotorScreen::Gun: title="TEGMENTA PAFILO";subtitle="A gun on the roof - gangs think twice";part_rows(autos::guns,mods.gun);break;
                 case MotorScreen::Workshop: {
                     title="MEĤANIKEJO";subtitle="What can we do for you?";back="LEAVE";
                     const int repair=car ? autos::repair_cost(car->vehicle) : 0;
@@ -3402,11 +3609,11 @@ void Renderer::run() {
                     const auto& site=motor_sites[i];
                     const bool there=driven && Vector3Distance(site.origin,driven->position)<40 &&
                         ((site.kind==world::motor::Kind::Gas && world::motor::at_pump(site,driven->position)) ||
-                         (site.kind==world::motor::Kind::Mechanic && world::motor::bay_at(site,driven->position)>=0));
+                         ((site.kind==world::motor::Kind::Mechanic || site.kind==world::motor::Kind::Depot) && world::motor::bay_at(site,driven->position)>=0));
                     if(static_cast<int>(i)==motor_served) {if(!there) motor_served=-1;continue;}
                     if(!there || std::abs(driven->speed)>.6F) continue;
                     motor_site=static_cast<int>(i);motor_car=driven->id;
-                    open_motor(site.kind==world::motor::Kind::Gas ? MotorScreen::Pump : MotorScreen::Workshop,0);
+                    open_motor(site.kind==world::motor::Kind::Gas ? MotorScreen::Pump : site.kind==world::motor::Kind::Depot ? MotorScreen::Depot : MotorScreen::Workshop,0);
                     break;
                 }
             }
@@ -3448,7 +3655,10 @@ void Renderer::run() {
             if(motor_menu.is_open()) {
                 const auto act=motor_menu.input(screen_width,screen_height,IsWindowFocused());
                 auto* car=served();
+                const bool at_depot=motor_site>=0 && motor_site<static_cast<int>(motor_sites.size()) &&
+                    motor_sites[static_cast<std::size_t>(motor_site)].kind==world::motor::Kind::Depot;
                 const auto pay=[&](int price) {
+                    if(at_depot && career.trucker()) price=price*7/10;   // the brotherhood's price at the company shed
                     if(wallet.money<price) {motor_menu.set_status("Not enough kronoj");return false;}
                     wallet.money-=price;loot_session.changed();return true;
                 };
@@ -3462,7 +3672,11 @@ void Renderer::run() {
                 const int chosen=act.chosen;
                 const auto mods=car ? autos::mods_of(car->vehicle) : autos::Mods{};
                 if(act.back) {
-                    if(motor_screen==MotorScreen::Paint || motor_screen==MotorScreen::Engine || motor_screen==MotorScreen::Tires || motor_screen==MotorScreen::Bumper)
+                    if(at_depot && (motor_screen==MotorScreen::Paint || motor_screen==MotorScreen::Engine || motor_screen==MotorScreen::Bumper ||
+                                    motor_screen==MotorScreen::Plating || motor_screen==MotorScreen::Gun))
+                        open_motor(MotorScreen::Depot,motor_screen==MotorScreen::Engine ? 1 : motor_screen==MotorScreen::Plating ? 2 : motor_screen==MotorScreen::Gun ? 3 :
+                                                      motor_screen==MotorScreen::Paint ? 4 : 5);
+                    else if(motor_screen==MotorScreen::Paint || motor_screen==MotorScreen::Engine || motor_screen==MotorScreen::Tires || motor_screen==MotorScreen::Bumper)
                         open_motor(MotorScreen::Workshop,motor_screen==MotorScreen::Paint ? 0 : motor_screen==MotorScreen::Engine ? 1 : motor_screen==MotorScreen::Tires ? 2 : 3);
                     else leave_motor();
                 } else if(chosen>=0 && (car || motor_screen==MotorScreen::Dealer)) {
@@ -3476,6 +3690,19 @@ void Renderer::run() {
                         open_motor(MotorScreen::Pump,0);
                         break;
                     }
+                    case MotorScreen::Depot: {
+                        const bool rig=car->vehicle.definition=="semi" || car->vehicle.definition=="truck";
+                        if(chosen==0) {
+                            const int cost=autos::repair_cost(car->vehicle)+(car->vehicle.fuel<.999F ? autos::fill_cost(car->vehicle.fuel) : 0);
+                            if(cost>0 && pay(cost)) {autos::repair(car->vehicle);car->vehicle.fuel=1;vehicle_dirty=true;motor_menu.set_status("Serviced: good as new, tank full");}
+                            open_motor(MotorScreen::Depot,0);
+                        } else if((chosen==2 || chosen==3) && !rig) motor_menu.set_status("Plating and roof guns are for working trucks - a rig or a pickup");
+                        else open_motor(chosen==1 ? MotorScreen::Engine : chosen==2 ? MotorScreen::Plating : chosen==3 ? MotorScreen::Gun :
+                                        chosen==4 ? MotorScreen::Paint : MotorScreen::Bumper,0);
+                        break;
+                    }
+                    case MotorScreen::Plating: {auto m=mods;m.plating=chosen;fit(m,autos::platings[static_cast<std::size_t>(chosen)].price,chosen ? "Plated - let them shoot" : "The plating comes off");open_motor(MotorScreen::Plating,chosen);break;}
+                    case MotorScreen::Gun: {auto m=mods;m.gun=chosen;fit(m,autos::guns[static_cast<std::size_t>(chosen)].price,chosen ? "The gun is on the roof - FIRE at the wheel works it" : "The gun comes off");open_motor(MotorScreen::Gun,chosen);break;}
                     case MotorScreen::Workshop:
                         if(chosen<4) {open_motor(chosen==0 ? MotorScreen::Paint : chosen==1 ? MotorScreen::Engine : chosen==2 ? MotorScreen::Tires : MotorScreen::Bumper,0);break;}
                         if(pay(autos::repair_cost(car->vehicle))) {autos::repair(car->vehicle);vehicle_dirty=true;motor_menu.set_status("Good as new");}
@@ -3512,7 +3739,7 @@ void Renderer::run() {
                 }
             }
         }
-        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table) {
+        if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !at_table) {
             Vector3 exit{};
             if(bus_ride>=0) {
                 // On the bus: off at a stop, toward the shelter.
@@ -3608,6 +3835,27 @@ void Renderer::run() {
             }
         }
         if(!lights_car.empty() && vehicles.find(lights_car)<0) lights_car.clear();
+        // HITCH / J at the wheel of a big rig, stopped: drop the trailer, or back under it and hitch it.
+        {
+            const auto* car=vehicles.driver();
+            const auto* asset=car ? vehicles.asset(verda_region,car->id) : nullptr;
+            bool hitch=controls.hitch;
+            static std::vector<int> hitch_touches;
+            if(asset && asset->vehicle.definition=="semi" && touch_ui) {
+                std::vector<int> now;
+                const Vector2 spot{screen_width*.42F-150,screen_height-92.0F};
+                for(int i=0;i<GetTouchPointCount();++i) {
+                    now.push_back(GetTouchPointId(i));
+                    if(std::find(hitch_touches.begin(),hitch_touches.end(),GetTouchPointId(i))==hitch_touches.end() &&
+                       Vector2Distance(GetTouchPosition(i),spot)<46) hitch=true;
+                }
+                hitch_touches=now;
+            }
+            if(hitch && asset && asset->vehicle.definition=="semi") {
+                interaction_message=std::abs(car->speed)>1 ? std::string("Stop the rig first") : freight.drop_or_hitch(verda_region,vehicles,car->id);
+                interaction_remaining=3;
+            }
+        }
         // RADIO / O at the wheel: the next station, then off.
         if(controls.radio && driving) {car_radio.press();store_settings();}
         // BACKUP / Z for a trucker: the CB - two brothers from the nearest truck stop.
@@ -3642,7 +3890,7 @@ void Renderer::run() {
         const float pedal_throttle=std::clamp(-controls.move_y+controls.gas-controls.brake_pedal,-1.0F,1.0F);
         game::vehicles::VehicleInput driving_input{pedal_throttle,-controls.move_x,controls.brake,controls.crouch,IsKeyDown(KEY_H),controls.sprint};
         // In a LAN match the world goes on for everyone, whatever menu this player has open.
-        const bool vehicle_paused=lan_match ? creator_active : creator_active||inventory_open||shop_open||store_open||motor_menu.is_open()||poker_open||mode_session.terminal()||!IsWindowFocused()
+        const bool vehicle_paused=lan_match ? creator_active : creator_active||inventory_open||shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()||poker_open||mode_session.terminal()||!IsWindowFocused()
 #ifdef OUTLAND_DEV_TOOLS
             || (game_mode==game::GameMode::DevLab && dev_lab.tools_open())
 #endif
@@ -3696,7 +3944,7 @@ void Renderer::run() {
             if(controls.next_weapon)loot_session.changed();
             // The penthouse: buy it (anywhere on its floor), or sleep in its bed once it is yours.
             bool home_used=false;
-            if(game::rules_for(game_mode).civilian_life && penthouse.inside(loot_feet) && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !inventory_open) {
+            if(game::rules_for(game_mode).civilian_life && penthouse.inside(loot_feet) && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !inventory_open) {
                 const bool owned=game::economy::Penthouse::owned(loot_session.economy());
                 if(!was_in_penthouse) {interaction_message=owned ? "Home: the Stela Turo penthouse" : "Stela Turo penthouse - for sale";interaction_remaining=3;}
                 if(controls.interact && loot_session.world().nearest(loot_feet,2.8F,reachable_pickup)<0) {
@@ -3721,7 +3969,7 @@ void Renderer::run() {
                 for(const auto& home:homes_for_sale) if(game::economy::inside(home,loot_feet)) {home_here=&home;break;}
             // Uncle Ron's house, before he has handed it over, is just his.
             if(home_here && home_here->price<=0 && !game::economy::owns(loot_session.economy(),*home_here)) home_here=nullptr;
-            if(home_here && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !inventory_open && !home_used) {
+            if(home_here && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !inventory_open && !home_used) {
                 const bool owned=game::economy::owns(loot_session.economy(),*home_here);
                 if(home_here!=was_in_home) {interaction_message=owned ? "Home: "+home_here->name : home_here->name+" - for sale";interaction_remaining=3;}
                 if(controls.interact && loot_session.world().nearest(loot_feet,2.8F,reachable_pickup)<0) {
@@ -3747,7 +3995,7 @@ void Renderer::run() {
                 }
             }
             was_in_home=home_here;
-            if(controls.interact && !home_used && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !at_table && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0 &&
+            if(controls.interact && !home_used && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !at_table && !vehicles.driver() && vehicles.nearest(verda_region,loot_feet)<0 &&
                prison_until<0 && booking.stage<0){
                 interaction_message=loot_session.interact(loot_feet,weapons,reachable_pickup);interaction_remaining=2.5F;
                 if(interaction_message.starts_with("Picked up")) gun_audio.pickup();
@@ -3838,7 +4086,7 @@ void Renderer::run() {
                         [&](game::combat::WeaponId id){return loot_session.inventory().owns_weapon(item_registry,id);},sights_owned);
                 sight_seen[i]=held_now;
             }
-            if(controls.sight && !driving && !inventory_open && !(shop_open||store_open||motor_menu.is_open())) sight_mounts.cycle(weapons.selected(),sights_owned);
+            if(controls.sight && !driving && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open())) sight_mounts.cycle(weapons.selected(),sights_owned);
         }
         const auto sight=weapons.available() ? sight_mounts.mounted(weapons.selected()) : game::combat::Sight::Iron;
         const float sight_fov=weapons.available() ? game::combat::sight_fov(weapons.selected(),sight) : 70.0F;
@@ -4415,10 +4663,9 @@ void Renderer::run() {
         if (muzzle_obstruction.hit()) gun_muzzle=Vector3Lerp(head_position,gun_muzzle,
             std::max(0.0F,muzzle_obstruction.fraction-.05F));
         Vector3 gun_direction=Vector3Normalize(Vector3Subtract(aim_point,gun_muzzle));
-        // Drive-by: a pistol or SMG fires out of the driver's window, where the camera looks. The
-        // shot leaves from outside the car's body so it never hits the player's own car.
-        const bool drive_by=driving && weapons.available() && !creator_active &&
-            (weapons.selected()==game::combat::WeaponId::Pistol || weapons.selected()==game::combat::WeaponId::Smg);
+        // The driver keeps both hands on the wheel: no shooting from the driver's seat (the crew in
+        // the back does it - game::career::Crew - and a rig's roof gun is worked from the cab).
+        const bool drive_by=false;
         // Riding with the crew, the player shoots out of the passenger window: any gun.
         const int ride_index=riding_now ? vehicles.find(player_crew.ride_car()) : -1;
         const bool ride_by=ride_index>=0 && weapons.available() && !creator_active;
@@ -4505,6 +4752,30 @@ void Renderer::run() {
             }
         }
         for(const auto& note:weapons.events().hits) combat_feedback.hit(note.position,note.damage,note.headshot);
+        // The roof gun: fired from the cab, it shoots from the mount over the cab wherever the camera looks.
+        {
+            if(!roof_gun_ready) {roof_gun.reset(true);roof_gun.select(game::combat::WeaponId::Rifle);roof_gun_ready=true;}
+            const auto* car=vehicles.driver();
+            const auto* asset=car ? vehicles.asset(verda_region,car->id) : nullptr;
+            roof_gun_on=asset && asset->vehicle.gun && !asset->vehicle.destroyed && !creator_active && !inventory_open && player_health.alive();
+            if(roof_gun_on) {
+                const auto* def=vehicles.definition(*asset);
+                const Vector3 mount{car->position.x,car->position.y+(def ? def->height : 3.0F)+.45F,car->position.z};
+                const Vector3 from=Vector3Add(camera.position,Vector3Scale(camera_direction,Vector3Distance(camera.position,mount)+4.0F));
+                const Vector3 far=Vector3Add(camera.position,Vector3Scale(camera_direction,600.0F));
+                const auto past=combat_world.trace_segment(from,far,true,true,true);
+                const Vector3 target=past.hit() ? past.position : far;
+                const Vector3 dir=Vector3Normalize(Vector3Subtract(target,mount));
+                game::combat::WeaponInput fire;
+                fire.fire=controls.fire && bus_ride<0;fire.aim=true;fire.grounded=true;
+                roof_gun.update(vehicle_paused ? 0.0F : dt,fire,{Vector3Add(mount,Vector3Scale(dir,1.1F)),dir},combat_world);
+                for(int shot=0;shot<roof_gun.events().shots;++shot) {
+                    gun_audio.player_shot(game::combat::WeaponId::Rifle);
+                    sound_bus.emit(game::sound::SoundKind::Gunshot,mount,game::ai::BattleRoyaleBots::gunshot_radius_rifle,0,match_time);
+                }
+                for(const auto& note:roof_gun.events().hits) combat_feedback.hit(note.position,note.damage,note.headshot);
+            } else if(roof_gun_ready) roof_gun.update(dt,{},{},combat_world);   // its rounds still in the air fly on
+        }
         // The rocket launcher: each shot sends a rocket off (flown and burst by the grenade system).
         for(const auto& launch:weapons.events().launches) {
             grenades.launch_rocket(launch.origin,launch.velocity);
@@ -4516,13 +4787,13 @@ void Renderer::run() {
         const bool bag_grenades=game_mode!=game::GameMode::DevLab;
         if(bag_grenades) grenades.set_count(loot_session.inventory().count("frag_grenade"));
         // Quick heal (H / HEAL): the medical item that best covers the damage; boost heals slowly.
-        if(controls.heal && !creator_active && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && player_health.alive() && !mode_session.terminal() &&
+        if(controls.heal && !creator_active && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && player_health.alive() && !mode_session.terminal() &&
            game_mode!=game::GameMode::DevLab) {
             if(const auto said=loot_session.quick_heal(weapons,player_health); !said.empty()) {interaction_message=said;interaction_remaining=2.5F;}
         }
         if(!mode_session.terminal() && !vehicle_paused) loot_session.tick(dt,player_health);
         if(auto picked=loot_session.take_auto_message(); !picked.empty()) {interaction_message=picked;interaction_remaining=1.6F;}
-        if(controls.grenade && !driving && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && player_health.alive() && !mode_session.terminal()) {
+        if(controls.grenade && !driving && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && player_health.alive() && !mode_session.terminal()) {
             const Vector3 carried=dt>0 ? Vector3Scale(Vector3Subtract(player.position,position_before_move),1.0F/dt) : Vector3{};
             if(grenades.throw_grenade(head_position,look_direction,carried)) {
                 gun_audio.grenade_pin();
@@ -4675,6 +4946,100 @@ void Renderer::run() {
             sound_bus.emit(game::sound::SoundKind::Gunshot,shot.from,game::sound::radius::pistol,-2,match_time);
             police_tracers.push_back({shot.from,shot.to,.09F});
         }
+        // Cars and people. A moving car that reaches someone on foot knocks them down and hurts them
+        // (more the faster it goes, much more from a big rig). The player who does it stops and waits
+        // for the ambulance - or it's a hit and run (game::law::HitAndRun). An officer running with
+        // the lights on is exempt: people get out of the way of a police car with its lights on, and
+        // one who doesn't is at fault. Somebody else's car that hits someone is news.
+        if(game::rules_for(game_mode).civilian_life && !vehicle_paused && game_mode==game::GameMode::Explore) {
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            const auto* mine=vehicles.driver();
+            const bool lights_on=mine && career.on_duty() && lights_car==mine->id;
+            for(const auto& v:vehicles.vehicles()) {
+                if(std::abs(v.speed)<3.5F || std::hypot(v.position.x-feet.x,v.position.z-feet.z)>160) continue;
+                const auto* asset=vehicles.asset(verda_region,v.id);
+                const auto* def=asset ? vehicles.definition(*asset) : nullptr;
+                if(!def || asset->vehicle.destroyed) continue;
+                const bool player_car=mine && mine->id==v.id;
+                const float a=v.yaw*DEG2RAD;
+                const Vector3 fwd{std::sin(a),0,std::cos(a)},right{std::cos(a),0,-std::sin(a)};
+                const float half_l=def->length*.5F+.35F,half_w=def->width*.5F+.35F;
+                const float heavy=def->length>9 ? 2.2F : 1.0F;   // a rig or a bus hits much harder
+                // A police car running with its lights: the people ahead get out of the way.
+                if(player_car && lights_on && std::abs(v.speed)>7)
+                    for(const auto& actor:npcs.actors()) {
+                        if(actor.resident<0 || actor.state==characters::NpcState::Dead || !actor.active) continue;
+                        const Vector3 d{actor.position.x-v.position.x,0,actor.position.z-v.position.z};
+                        const float along=d.x*fwd.x+d.z*fwd.z,side=d.x*right.x+d.z*right.z;
+                        if(along<0 || along>std::abs(v.speed)*1.8F+half_l || std::abs(side)>half_w+2.5F) continue;
+                        const float away=side>=0 ? 1.0F : -1.0F;
+                        const Vector3 aside=Vector3Add(actor.position,Vector3Scale(right,away*(half_w+3.0F-std::abs(side))));
+                        npcs.direct_resident(actor.resident,aside,1.0F,true);
+                    }
+                for(std::size_t i=0;i<npcs.actors().size();++i) {
+                    const auto& actor=npcs.actors()[i];
+                    if(!actor.active || actor.hidden || actor.state==characters::NpcState::Dead) continue;
+                    if(actor.bot>=0 && (actor.bot>=910000 || br_bots.hidden(actor.bot) || br_bots.mounted(actor.bot))) continue;   // the island's named people stand clear; riders are in cars
+                    const Vector3 d{actor.position.x-v.position.x,0,actor.position.z-v.position.z};
+                    const float along=d.x*fwd.x+d.z*fwd.z,side=d.x*right.x+d.z*right.z;
+                    if(std::abs(along)>half_l || std::abs(side)>half_w || std::abs(actor.position.y-v.position.y)>2.2F) continue;
+                    const int key=actor.bot>=0 ? actor.bot : 2000000+static_cast<int>(i);
+                    if(const auto hit=struck_at.find(key);hit!=struck_at.end() && match_time-hit->second<2.5) continue;
+                    struck_at[key]=match_time;
+                    const float amount=std::clamp((std::abs(v.speed)-2.5F)*7.0F*heavy,8.0F,220.0F);
+                    if(actor.bot>=0) {
+                        if(!player_car) continue;   // the gangs and the troops step out of each other's cars' way
+                        if(mafio.active()) mafio.provoke(actor.bot,match_time);
+                        if(br_bots.damage_bot(actor.bot,amount,v.position,match_time)) {
+                            pending_kills.push_back(actor.position);
+                            career.killed(faction_of(actor.bot),true);
+                        }
+                        continue;
+                    }
+                    npcs.damage(i,amount,v.position);
+                    if(player_car) {
+                        if(lights_on) {interaction_message="They didn't get out of the way of the lights - not your fault";interaction_remaining=3;}
+                        else if(hit_and_run.struck(actor.position,false)) {
+                            interaction_message="You hit someone! Stop and wait for the ambulance and the police - or it's a hit and run";interaction_remaining=5;
+                        }
+                    } else if(match_time-npc_hit_news>25) {
+                        npc_hit_news=match_time;
+                        gang_news="HIT AND RUN: a car hit someone and drove on";gang_news_time=6;
+                    }
+                }
+            }
+            // A hit pending: stopped (or on foot) near the scene for the ambulance, or gone.
+            const bool stopped=!mine || std::abs(mine->speed)<1;
+            switch(hit_and_run.update(feet,stopped,dt)) {
+                case game::law::HitAndRun::Outcome::Stayed:
+                    interaction_message="The ambulance has them, and the police took your statement. You stayed - no charges";interaction_remaining=5;
+                    break;
+                case game::law::HitAndRun::Outcome::Ran: {
+                    game::law::JusticeFrame tip;tip.now=match_time;tip.player=feet;
+                    justice.tip_off(1,hit_and_run.scene(),tip,island_life,"HIT AND RUN - a pedestrian down and the driver gone. Busted, it's prison");
+                    career.crime(false);
+                    break;
+                }
+                default: break;
+            }
+            if(hit_and_run.wanted() && justice.wanted()==0) hit_and_run.lost_them();
+            // A loaded rig on the road draws the gangs: now and then a carload comes to hijack it.
+            const auto* rig_asset=mine ? vehicles.asset(verda_region,mine->id) : nullptr;
+            const bool loaded=rig_asset && rig_asset->vehicle.definition=="semi" && freight.hitched(mine->id) && mafio.active() && !career.on_duty() &&
+                (trucking.job().stage==game::freight::HaulStage::Deliver || (career.job().kind==game::career::JobKind::Contraband && career.job().taken));
+            if(!loaded) next_hijack=-1;
+            else {
+                static const bool dev_hijack=[]{const char* v=std::getenv("OUTLAND_DEV_HIJACK");return v && *v=='1';}();
+                if(next_hijack<0) next_hijack=match_time+(dev_hijack ? 15.0 : 240.0+static_cast<double>(GetRandomValue(0,240)));
+                if(match_time>=next_hijack) {
+                    next_hijack=-1;
+                    if(dev_hijack || GetRandomValue(0,99)<55)
+                        if(const int gang=mafio.send_hijackers(mine->position,player_gang(),br_bots,bot_drivers,vehicles,verda_region,match_time);gang>=0) {
+                            gang_news="HIJACKERS: "+gang_name(gang)+" want your load - a car is coming";gang_news_time=8;
+                        }
+                }
+            }
+        }
         if(game::rules_for(game_mode).civilian_life && !island_life.empty()) {
             game::law::JusticeFrame frame;
             frame.dt=vehicle_paused ? 0.0F : dt;frame.now=match_time;
@@ -4720,7 +5085,7 @@ void Renderer::run() {
             if(busted && game_mode==game::GameMode::Explore && !career_path.empty() && prison_until<0 && booking.stage<0 && player_health.alive()) {
                 // Busted: cuffed, into the back of a police car, and off to the state prison (a fade),
                 // then the booking photo. The sentence starts once the photo is taken.
-                booking={0,0,career.jailed()};
+                booking={0,0,career.jailed()+hit_and_run.busted()};   // a hit and run is mandatory time
                 if(backup.active()) backup.dismiss(br_bots,match_time);
                 Vector3 exit{};
                 if(vehicles.driver()) vehicles.exit(verda_region,exit,true);
@@ -5075,6 +5440,22 @@ void Renderer::run() {
                         interaction_message=said;interaction_remaining=3;
                     }
                 }
+                // A drive-by with the crew in the back: close to the target crew they open up, and what
+                // they bring down counts for the job (the driver drives).
+                if(const auto& job=career.job();job.kind==game::career::JobKind::DriveBy && vehicles.driver() && !player_crew.aboard_now().empty()) {
+                    const Vector3 car=vehicles.driver()->position;
+                    if(std::hypot(car.x-job.target.x,car.z-job.target.z)<45 && !mafio.provoked(job.gang,match_time))
+                        mafio.provoke_gang(job.gang,match_time,"Your crew opens up from the car - "+gang_name(job.gang)+" shoot back");
+                    if(drive_by_alive.size()!=mafio.members().size()) drive_by_alive.assign(mafio.members().size(),1);
+                    for(std::size_t i=0;i<mafio.members().size();++i) {
+                        const auto& m=mafio.members()[i];
+                        const auto* bot=br_bots.find(m.bot);
+                        const bool alive=bot && bot->alive();
+                        if(drive_by_alive[i] && !alive && mafio.gang_of(m.bot)==job.gang && bot &&
+                           std::hypot(bot->position().x-car.x,bot->position().z-car.z)<70) career.killed(job.gang,true);
+                        drive_by_alive[i]=alive;
+                    }
+                } else drive_by_alive.clear();
                 // The officer's backup: arrive, keep close, go home.
                 if(backup.active()) {
                     if(!career.serving()) backup.dismiss(br_bots,match_time);
@@ -5120,13 +5501,15 @@ void Renderer::run() {
                     work.camp=police_camp.line();work.camp_known=police_camp.placed();
                     // The Ŝosea Patrolo's next outpost; the depot gate and the freight yards for the truckers.
                     if(patrol_open<static_cast<int>(patrol_posts.size())) {work.next_post=patrol_posts[static_cast<std::size_t>(patrol_open)].at;work.post_known=true;}
-                    work.driving_rig=game::freight::Trucking::company_rig(work.driving);
+                    work.driving_rig=(game::freight::Trucking::company_rig(work.driving) || (!work.driving.empty() && work.driving==trucking.own_rig())) &&
+                                     freight.hitched(work.driving);
                     work.depot=haul_world.depot;work.depot_known=depot_boss.placed;
                     for(const auto& t:haul_world.towns) if(t.name!="Verda") work.yards.push_back({t.name,t.point});
                     // The Chief stands at his post; the range runs its drill (counting the shots fired).
                     if(chief.placed) npcs.set_bot(chief_bot,chief.at,chief.yaw,100,characters::NpcState::Idle);
                     for(std::size_t i=0;i<kamionistoj.size();++i)
                         npcs.set_bot(kamionisto_bot+static_cast<int>(i),kamionistoj[i].at,kamionistoj[i].yaw,100,characters::NpcState::Idle);
+                    for(const auto& g:gun_men) npcs.set_bot(gun_man_bot+g.gang,g.at,g.yaw,100,characters::NpcState::Idle);
                     // A secure Verda: the last of the gangs gone, the Green Hand's bar opens as a cultural society.
                     static const bool dev_secure=[]{const char* v=std::getenv("OUTLAND_DEV_SECURE");return v && *v=='1';}();   // dev: the society opens at once
                     if(!society.open && mafio.active() && !mafio.crews().empty() &&
@@ -5230,6 +5613,7 @@ void Renderer::run() {
                         game::freight::TruckFrame haul;
                         haul.dt=dt;haul.now=match_time;haul.player=feet;
                         if(const auto* car=vehicles.driver()) {haul.driving=car->id;haul.speed=car->speed;}
+                        if(!haul.driving.empty() && !freight.hitched(haul.driving)) haul.driving.clear();   // no trailer, no load
                         const int ranch=trucking.job().ranch;
                         switch(trucking.update(haul)) {
                             case game::freight::TruckEvent::CallCattle: ranches.call_cattle(ranch,4);break;
@@ -6016,6 +6400,22 @@ void Renderer::run() {
         }
 
         game::combat::CombatRenderer::draw_world(weapons,combat_world);
+        if(roof_gun_ready) game::combat::CombatRenderer::draw_world(roof_gun,combat_world);
+        // Roof guns on the rigs fitted with them: a post and the gun, aimed where the driver looks (or ahead).
+        for(const auto& v:vehicles.vehicles()) {
+            const auto* asset=vehicles.asset(verda_region,v.id);
+            if(!asset || !asset->vehicle.gun || Vector3DistanceSqr(v.position,camera.position)>200*200) continue;
+            const auto* def=vehicles.definition(*asset);
+            const float roof=v.position.y+(def ? def->height : 3.0F);
+            const Vector3 mount{v.position.x,roof+.45F,v.position.z};
+            const bool mine=vehicles.driver() && vehicles.driver()->id==v.id;
+            const float a=v.yaw*DEG2RAD;
+            Vector3 aim=mine ? Vector3Normalize(Vector3Subtract(Vector3Add(camera.position,Vector3Scale(camera_direction,300.0F)),mount)) : Vector3{std::sin(a),0,std::cos(a)};
+            DrawCylinder({v.position.x,roof,v.position.z},.09F,.12F,.45F,8,Color{40,42,46,255});
+            DrawCylinder({v.position.x,roof+.05F,v.position.z},.55F,.55F,.08F,12,Color{70,74,78,255});   // the ring mount
+            game::combat::CombatRenderer::draw_gun(Vector3Subtract(mount,Vector3Scale(aim,.25F)),aim,{0,1,0},game::combat::WeaponId::Rifle,0,
+                                                   mine ? roof_gun.muzzle_flash() : 0,false);
+        }
         // A drive-by's flash at the driver's window.
         if((drive_by || ride_by) && weapons.muzzle_flash()>0) {
             DrawSphere(gun_muzzle,.12F,Color{255,228,135,255});
@@ -6118,6 +6518,8 @@ void Renderer::run() {
                     if(const int gang=mafio.gang_of(actor.bot);gang>=0) body.outfit=gang_outfit(gang,mafio.officer(actor.bot));
                 // The occupiers in camouflage.
                 if(actor.bot>=0 && actor.character_id==outfit_body && endgame.soldier(actor.bot)) body.outfit=outfits.occupier.id;
+                // A gang's gun man: the gang's colours, a rifle slung (in his hands).
+                if(actor.bot>=gun_man_bot && actor.bot<gun_man_bot+5) body.outfit=gang_outfit(actor.bot-gun_man_bot,true);
                 // The Green Hand's cultural society: their colours, no guns.
                 if(actor.bot>=society_bot && actor.bot<society_bot+society_size) {body.outfit=actor.bot==society_bot ? outfits.kapo.id : outfits.soldato.id;return;}
                 // Another player knocked down (squad play): on their knees, no gun.
@@ -6451,6 +6853,21 @@ void Renderer::run() {
                 code==input::Bindings::wheel ? "WHEEL" : input::Bindings::name(code);
             return name;
         };
+        // At the wheel of a big rig: the trailer (dropped or hitched) - J, or a tap here on a touch screen.
+        if(const auto* car=vehicles.driver();car && !creator_active && !inventory_open)
+            if(const auto* asset=vehicles.asset(verda_region,car->id);asset && asset->vehicle.definition=="semi") {
+                const bool on=freight.hitched(car->id);
+                if(touch_ui) {
+                    const Vector2 spot{screen_width*.42F-150,screen_height-92.0F};
+                    DrawCircleV(spot,34,Fade(BLACK,.45F));
+                    const char* l=on ? "DROP" : "HITCH";
+                    DrawText(l,static_cast<int>(spot.x-MeasureText(l,16)/2.0F),static_cast<int>(spot.y-8),16,on ? RAYWHITE : ORANGE);
+                } else if(std::abs(car->speed)<1) {
+                    const char* l=on ? "J - DROP THE TRAILER" : "J - HITCH THE TRAILER";
+                    DrawText(l,24,screen_height-236,16,on ? Color{220,220,220,200} : ORANGE);
+                }
+                if(asset->vehicle.gun && !touch_ui) DrawText("ROOF GUN - LMB FIRE, LOOK TO AIM",24,screen_height-256,16,Color{240,200,90,220});
+            }
         // Driving with a pistol or SMG: what is in the hand for a drive-by (over the speedometer).
         if((drive_by || ride_by) && !creator_active && !inventory_open) {
             const char* line=TextFormat(ride_by ? "PASSENGER  %s  %d / %d   %s" : "DRIVE-BY  %s  %d / %d   %s",weapons.weapon().name,weapons.ammo().loaded,weapons.ammo().reserve,
@@ -6566,7 +6983,7 @@ void Renderer::run() {
 #ifdef OUTLAND_DEV_TOOLS
         asset_drawer_open = game_mode == game::GameMode::DevLab && creator_touch_ui.inventory_open();
 #endif
-        if (touch_ui && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !mode_session.terminal() && !asset_drawer_open && !pause_menu.is_open()) touch_hud.draw(
+        if (touch_ui && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !mode_session.terminal() && !asset_drawer_open && !pause_menu.is_open()) touch_hud.draw(
             controls,
             input_system.drawn_layout(screen_width,screen_height),
             screen_width,
@@ -6657,7 +7074,7 @@ void Renderer::run() {
             loot_ui.set_quests(std::move(quests));
             loot_ui.draw_inventory(item_registry,loot_session,weapons,screen_width,screen_height);
         }
-        if(!creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !mode_session.terminal()){
+        if(!creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !mode_session.terminal()){
             const int nearby=loot_session.world().nearest(loot_feet,2.8F,reachable_pickup);
             if(nearby>=0){const auto& pickup=loot_session.world().state().pickups[static_cast<std::size_t>(nearby)];
                 const auto* item=item_registry.find(pickup.item);
@@ -6670,7 +7087,7 @@ void Renderer::run() {
             }
         }
         // La Mafio: gang tags over Krimuloj near by, whose turf this is, the news, the poker table.
-        if(mafio.active() && !poker_open && !inventory_open && !(shop_open||store_open||motor_menu.is_open())) {
+        if(mafio.active() && !poker_open && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open())) {
             const Font& font=sign_renderer.font();
             std::vector<Vector2> tagged; // one tag per spot on screen: a crew standing together shares one
             for(const auto& body:npcs.actors()) {
@@ -7232,7 +7649,7 @@ void Renderer::run() {
             const auto map_button=game::MapScreen::map_button(screen_width,screen_height);
             DrawRectangleRec(map_button,Fade(BLACK,.60F));
             DrawText("MAP · M",static_cast<int>(map_button.x)+14,53,14,RAYWHITE);
-            if(game::rules_for(game_mode).civilian_life && !map_screen.is_open() && !inventory_open && !(shop_open||store_open||motor_menu.is_open()))
+            if(game::rules_for(game_mode).civilian_life && !map_screen.is_open() && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()))
                 build_mode.draw_hud(player_builds,screen_width,screen_height);
             // Entering a zone: its name, what it means, and what it is like.
             const int here=static_cast<int>(world::zones::zone_at(player.position));
@@ -7287,7 +7704,7 @@ void Renderer::run() {
                          static_cast<int>(screen_width*.42F)+84,screen_height-26,15,YELLOW);
         }
         else if(!creator_active && !inventory_open && store_prompt.empty() && vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z})>=0)DrawText("USE / E - Enter vehicle",screen_width/2-120,screen_height-100,20,YELLOW);
-        if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !(shop_open||store_open||motor_menu.is_open()) && !poker_open && !inventory_open) {
+        if(game_mode!=game::GameMode::DevLab && !mode_session.terminal() && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !inventory_open) {
             const int objective_bottom=game::PlayUI::draw_objective(mode_session,screen_width);
             if(game_mode==game::GameMode::BattleRoyale) {
                 // The zone: its phase, the countdown, and how far the next circle is.
@@ -7339,6 +7756,7 @@ void Renderer::run() {
         }
         if(store_open) store_ui.draw(wardrobe_catalogue,loot_session.economy(),mafio.player_gang()==0,store_status,screen_width,screen_height);
         if(motor_menu.is_open()) motor_menu.draw(static_cast<long long>(loot_session.economy().money),screen_width,screen_height);
+        if(gear_menu.is_open()) gear_menu.draw(static_cast<long long>(loot_session.economy().money),screen_width,screen_height);
         else if(!store_prompt.empty() && !inventory_open && !(shop_open||poker_open)) {
             const Font& font=sign_renderer.font();
             const float size=20,width=MeasureTextEx(font,store_prompt.c_str(),size,1).x;

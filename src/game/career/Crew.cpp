@@ -139,16 +139,25 @@ std::vector<int> Crew::update(const Frame& frame, ai::BattleRoyaleBots& bots, co
                 const auto* bot = bots.find(id);
                 if (!bot || bots.mounted(id) || flat(bot->position(), frame.car) > board_radius) continue;
                 aboard_.push_back(id);
-                bots.set_mounted(id, true);
-                bots.set_hidden(id, true);
-                bots.set_asleep(id, true);
+                bots.set_hidden(id, true);   // in the car (out of sight), awake: they shoot from the windows
+                bots.set_asleep(id, false);
             }
         }
         driving_ = frame.driving;
         last_car_ = frame.car;
         last_yaw_ = frame.car_yaw;
-        for (const int id : aboard_)
-            if (auto* bot = bots.find(id)) bot->set_position(frame.car);
+        // The crew lean out of the windows: whoever they fight, they fight from the car - the
+        // player drives (a driver keeps both hands on the wheel).
+        const float a = frame.car_yaw * DEG2RAD;
+        const Vector3 side{std::cos(a), 0, -std::sin(a)}, back{-std::sin(a), 0, -std::cos(a)};
+        for (std::size_t k = 0; k < aboard_.size(); ++k)
+            if (auto* bot = bots.find(aboard_[k])) {
+                const float s = k % 2 == 0 ? -1.25F : 1.25F, along = .3F + static_cast<float>(k / 2) * 1.0F;
+                const Vector3 window{frame.car.x + side.x * s + back.x * along, frame.car.y, frame.car.z + side.z * s + back.z * along};
+                bot->set_position(window);
+                bot->set_yaw(frame.car_yaw);
+                bot->set_roam_center(window, .3F);
+            }
     } else if (!driving_.empty()) {
         // Out of the car: so are they.
         get_out(last_car_, last_yaw_, bots, region);

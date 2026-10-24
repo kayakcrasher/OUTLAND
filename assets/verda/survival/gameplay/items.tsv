@@ -24,6 +24,7 @@ sniper	VP7 sniper rifle	weapon		1	1.2	equip	0	sniper	0		0	0
 double_barrel	VD2 double barrel	weapon		1	0.8	equip	0	double_barrel	0		0	0
 auto_shotgun	VA12 auto shotgun	weapon		1	1.1	equip	0	auto_shotgun	0		0	0
 rocket_launcher	VR7 rocket launcher	weapon		1	1.6	equip	0	rocket_launcher	0		0	0
+machine_pistol	VM9 machine pistol	weapon		1	0.35	equip	0	machine_pistol	0		0	0
 rockets	Rockets	ammo	assets/verda/survival/runtime/Ammunition.glb	4	0.3	ammo	0	rocket_launcher	0		0	0
 backpack	Backpack	container	assets/verda/survival/runtime/Backpack.glb	1	0.55	container	0		12		0	0
 trunk	Field storage trunk	container	assets/verda/survival/runtime/Trunk.glb	1	0.8	container	0		8		0	0

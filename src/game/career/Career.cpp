@@ -810,11 +810,11 @@ void Career::update(const CareerFrame& frame) {
 
 std::string Career::serialise() const {
     std::ostringstream out;
-    out << "career 7 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
+    out << "career 8 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
         << (state_.record ? 1 : 0) << ' ' << state_.jobs_done << ' ' << (state_.patrol_car.empty() ? "-" : state_.patrol_car) << ' '
         << static_cast<int>(state_.police_stage) << ' ' << (state_.honourable ? 1 : 0) << ' ' << state_.defended << ' ' << (state_.chief_dead ? 1 : 0) << ' ' << state_.notoriety << ' '
         << state_.callouts << ' ' << (state_.prison_toured ? 1 : 0) << ' ' << state_.inmate << ' ' << (state_.inside_told ? 1 : 0) << ' '
-        << state_.authority << ' ' << state_.outposts_built << ' ' << state_.union_raise << '\n';
+        << state_.authority << ' ' << state_.outposts_built << ' ' << state_.union_raise << ' ' << (state_.rig_issued ? 1 : 0) << '\n';
     return out.str();
 }
 
@@ -823,7 +823,7 @@ bool Career::parse(const std::string& text) {
     std::string tag, car;
     int version = 0, side = 0, gang = -1, record = 0, jobs = 0;
     float respect = 0;
-    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 7 ||
+    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 8 ||
         side < 0 || side > 3 || !std::isfinite(respect))
         return false;
     // Officers from before the questline are already serving.
@@ -840,8 +840,11 @@ bool Career::parse(const std::string& text) {
     float authority = 0, raise = 0;
     int built = 0;
     if (version >= 7 && (!(in >> authority >> built >> raise) || !std::isfinite(authority) || !std::isfinite(raise) || built < 0)) return false;
+    int issued = 0;
+    if (version >= 8 && !(in >> issued)) return false;
     CareerState s;
     s.side = static_cast<Side>(side);
+    s.rig_issued = issued != 0;
     s.authority = std::clamp(authority, 0.0F, authority_max);
     s.outposts_built = std::min(built, max_built);
     s.union_raise = std::clamp(raise, 0.0F, raise_max);

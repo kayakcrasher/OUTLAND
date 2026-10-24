@@ -97,8 +97,12 @@ public:
     [[nodiscard]] static bool company_rig(const std::string& vehicle) { return vehicle.find("vehicle_spawn_semi_") != std::string::npos; }
     [[nodiscard]] static bool stock_rig(const std::string& vehicle) { return company_rig(vehicle) && vehicle.find("cattle") != std::string::npos; }
     [[nodiscard]] bool right_rig(const std::string& vehicle) const {
+        if (!own_rig_.empty() && vehicle == own_rig_) return job_.kind != HaulKind::Cattle;   // the player's own (a box trailer)
         return company_rig(vehicle) && (job_.kind == HaulKind::Cattle) == stock_rig(vehicle);
     }
+    // The player's own rig (an outlaw trucker's, from the brotherhood): it hauls box loads too.
+    void set_own_rig(std::string vehicle) { own_rig_ = std::move(vehicle); }
+    [[nodiscard]] const std::string& own_rig() const { return own_rig_; }
 
     [[nodiscard]] bool hired() const { return hired_; }
     [[nodiscard]] const Haul& job() const { return job_; }
@@ -122,6 +126,7 @@ private:
     void say(std::string text, float seconds = 4) { message_ = std::move(text); message_time_ = seconds; }
 
     bool hired_{false};
+    std::string own_rig_;
     int trips_{0};
     std::int64_t earned_{0};
     Haul job_;

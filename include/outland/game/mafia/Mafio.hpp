@@ -185,6 +185,11 @@ public:
     // whether it set off (it needs a usable car near the hideout and a road).
     bool send_hit_squad(int from, int target, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers,
                         vehicles::VehicleSystem& cars, world::VerdaRegion& region, double now);
+    // Hijackers: the nearest crew (within `reach`, not of gang `spare`) sends a carload after a
+    // loaded rig at `rig` - shooting from the windows as they come, then on foot. Their gang turns
+    // on the player. Returns the gang that sent them, or -1.
+    int send_hijackers(Vector3 rig, int spare, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers,
+                       vehicles::VehicleSystem& cars, world::VerdaRegion& region, double now, float reach = 900);
 
     // Callouts: two of `crew` (not the boss) at `scene` with the getaway car `car` (parked there
     // by the game). False when the crew can't spare two.

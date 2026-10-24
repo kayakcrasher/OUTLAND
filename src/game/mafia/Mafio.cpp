@@ -368,6 +368,35 @@ bool Mafio::send_hit_squad(int from, int target, ai::BattleRoyaleBots& bots, ai:
     return true;
 }
 
+int Mafio::send_hijackers(Vector3 rig, int spare, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers,
+                          vehicles::VehicleSystem& cars, world::VerdaRegion& region, double now, float reach) {
+    std::vector<int> order;
+    for (std::size_t i = 0; i < crews_.size(); ++i)
+        if (!crews_[i].disbanded && crews_[i].gang != spare && static_cast<int>(i) != besieged_ && flat(crews_[i].door, rig) < reach)
+            order.push_back(static_cast<int>(i));
+    std::sort(order.begin(), order.end(), [&](int a, int b) {
+        return flat(crews_[static_cast<std::size_t>(a)].door, rig) < flat(crews_[static_cast<std::size_t>(b)].door, rig); });
+    for (const int c : order) {
+        const auto& home = crews_[static_cast<std::size_t>(c)];
+        std::vector<int> squad;
+        for (const int id : home.members) {
+            if (id == home.members.front()) continue;   // the boss stays home
+            const auto* bot = bots.find(id);
+            const auto* m = member(id);
+            const bool busy = std::any_of(wars_.begin(), wars_.end(), [&](const War& w) {
+                return std::find(w.squad.begin(), w.squad.end(), id) != w.squad.end(); });
+            if (bot && bot->alive() && !bots.mounted(id) && !busy && !(m && (m->lent || m->held)) && !heist_of(id)) squad.push_back(id);
+            if (squad.size() >= 3) break;
+        }
+        if (squad.size() < 2) continue;
+        if (!drivers.dispatch(bots, cars, region, squad, home.door, rig, 200)) continue;
+        for (const int id : squad) bots.set_asleep(id, false);
+        provoke_gang(home.gang, now, std::string(gangs[static_cast<std::size_t>(home.gang)].name) + " are after your rig - hijackers!");
+        return home.gang;
+    }
+    return -1;
+}
+
 void Mafio::plan_war(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers,
                      vehicles::VehicleSystem& cars, world::VerdaRegion& region) {
     // A crew near the player (so the fight can be seen) is hit by the nearest rival crew.

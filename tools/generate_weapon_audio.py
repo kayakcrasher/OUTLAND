@@ -46,6 +46,7 @@ GUNS = {
     "sniper":  dict(crack=(1.4, 3200, 1.0), boom=(85, 36, .120, 1.0), bark=(600, 2500, .065, .85), tail=(1.50, .32), drive=3.2),
     "double_barrel": dict(crack=(4.0, 1100, .95), boom=(85, 34, .115, 1.0), bark=(380, 1500, .070, .85), tail=(1.30, .34), drive=3.3),
     "auto_shotgun":  dict(crack=(3.0, 1400, .85), boom=(105, 46, .080, .95), bark=(450, 1700, .050, .80), tail=(.95, .28), drive=2.9),
+    "machine_pistol": dict(crack=(2.0, 2400, .95), boom=(185, 82, .030, .65), bark=(1000, 3600, .022, .70), tail=(.45, .18), drive=2.1),
 }
 
 
@@ -227,6 +228,7 @@ RELOADS = {
     "double_barrel": (2.6, [("lever", .18), ("hinge", .30), ("eject", .52), ("shell", 1.25), ("shell", 1.72), ("hinge_shut", 2.3)]),
     "auto_shotgun":  (3.4, [("release", .15), ("out", .30), ("in", 2.0), ("slap", 2.2), ("handle", 2.85)]),
     "rocket":        (3.6, [("release", .25), ("slide_in", 1.6), ("in", 2.6), ("slap", 2.8), ("handle", 3.3)]),
+    "machine_pistol": (1.8, [("release", .10), ("out", .18), ("in", .9), ("handle", 1.35)]),
 }
 
 

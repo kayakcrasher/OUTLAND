@@ -95,6 +95,14 @@ public:
     // Every semi's trailer, wherever the tractor is (parked, on a run or driven by the player).
     void follow_trailers(const world::VerdaRegion& region, const vehicles::VehicleSystem& cars);
     [[nodiscard]] std::vector<TrailerPose> trailers() const;
+    // Dropping and hitching (the player, at the wheel of a rig, stopped): a dropped trailer stays
+    // where it was left; back the tractor's fifth wheel up under its nose (within hitch_reach,
+    // lined up within hitch_angle) to hitch it again. Returns what happened, for the screen.
+    static constexpr float hitch_reach = 3.5F, hitch_angle = 35;
+    std::string drop_or_hitch(const world::VerdaRegion& region, const vehicles::VehicleSystem& cars, const std::string& vehicle);
+    [[nodiscard]] bool hitched(const std::string& vehicle) const;
+    // Where a rig's dropped trailer stands (its nose), if it has one.
+    [[nodiscard]] bool dropped_at(const std::string& vehicle, Vector3& kingpin) const;
     [[nodiscard]] std::vector<RigDriver> drivers() const;
     [[nodiscard]] const std::vector<Rig>& rigs() const { return rigs_; }
     [[nodiscard]] bool running() const { return running_; }
@@ -108,7 +116,7 @@ private:
     void say(std::string text) { message_ = std::move(text); message_time_ = 5; }
 
     std::vector<Rig> rigs_;
-    struct Hitch { std::string model; Vector3 kingpin{}, axles{}; bool placed{false}; };
+    struct Hitch { std::string model; Vector3 kingpin{}, axles{}; bool placed{false}, dropped{false}; };
     std::map<std::string, Hitch> hitches_;   // per semi
     bool running_{false};
     int reversals_{0};

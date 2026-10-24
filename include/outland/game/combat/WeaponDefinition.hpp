@@ -6,8 +6,8 @@
 namespace outland::game::combat {
 
 // Saves store weapons by index: append new weapons, never reorder.
-enum class WeaponId : std::size_t { Pistol, Rifle, Smg, Shotgun, Sniper, DoubleBarrel, AutoShotgun, Rocket };
-inline constexpr std::size_t weapon_count = 8;
+enum class WeaponId : std::size_t { Pistol, Rifle, Smg, Shotgun, Sniper, DoubleBarrel, AutoShotgun, Rocket, MachinePistol };
+inline constexpr std::size_t weapon_count = 9;
 
 // How the body holds it: a pistol in both hands at arm's length, long guns shouldered.
 enum class WeaponHold : unsigned char { Pistol, Shouldered };
@@ -83,6 +83,11 @@ inline constexpr std::array<WeaponDefinition, weapon_count> weapons{{
     {"VR7 ROCKET LAUNCHER", 1, 4, false, 1.0F, 3.6F, 60.0F, 0.0F, 0.0F, 0.020F, 0.0030F, 0.0600F,
      0.0F, 0.0100F, 0.60F, 0.0F, 50.0F, 1.0F, 1.0F,
      1, 0, "rocket_launcher", WeaponHold::Shouldered, 0.55F, 450, 0, 1, 0.50F, true},
+    // Compact 9 mm machine pistol: a 30-round stick, a frantic cyclic rate, one hand - the gun that
+    // makes a drive-by. Shares the pistol's 9 mm rounds; sprays wide, hits soft, falls off fast.
+    {"VM9 MACHINE PISTOL", 30, 90, true, 0.058F, 1.8F, 340.0F, 23.0F, 0.18F, 0.036F, 0.0045F, 0.0068F,
+     0.06F, 0.0065F, 0.55F, 0.06F, 56.0F, 1.80F, 0.90F,
+     1, 0, "machine_pistol", WeaponHold::Pistol, 0.20F, 170, 40, 0, 1.35F},
 }};
 
 inline const WeaponDefinition& definition(WeaponId id) {
@@ -91,7 +96,7 @@ inline const WeaponDefinition& definition(WeaponId id) {
 
 // The ammunition a weapon loads: every shotgun takes the same 12-gauge shells.
 inline constexpr WeaponId ammo_of(WeaponId id) {
-    return id == WeaponId::DoubleBarrel || id == WeaponId::AutoShotgun ? WeaponId::Shotgun : id;
+    return id == WeaponId::DoubleBarrel || id == WeaponId::AutoShotgun ? WeaponId::Shotgun : id == WeaponId::MachinePistol ? WeaponId::Pistol : id;
 }
 inline constexpr bool is_shotgun(WeaponId id) { return ammo_of(id) == WeaponId::Shotgun; }
 

@@ -1,3 +1,4 @@
+#include "outland/game/autos/Autos.hpp"
 #include <cstdio>
 #include "outland/creator/CreatorMapIO.hpp"
 #include "outland/game/combat/WeaponSystem.hpp"
@@ -310,6 +311,43 @@ int main() {
     assert(original->vehicle.health==42 && original->vehicle.engine==31 && original->vehicle.destroyed);
     assert(original->vehicle.tires[0]==20 && original->position.x==position.x);
     assert(cars.vehicles()[0].position.x==position.x && !cars.driver());
+    // A heavy rig into a parked car shoves it out of the way (and barely slows); armour plating
+    // takes most of a round's damage.
+    {
+        world::VerdaRegion yard;
+        for (auto &site : yard.runtime_settlements()) site.gameplay_markers.clear();
+        VehicleSystem traffic(registry);
+        traffic.reconcile(yard);
+        assert(traffic.spawn(yard, {30, 0, 38}, 0, "hatchback"));
+        const auto parked = traffic.last_spawned();
+        assert(traffic.spawn(yard, {30, 0, 22}, 0, "semi"));
+        const auto rig = traffic.last_spawned();
+        const float start = traffic.asset(yard, parked)->position.z;
+        traffic.set_autopilot(rig, {1, 0});
+        float rig_speed = 0;
+        for (int i = 0; i < 250; ++i) {
+            traffic.update(.02F, {}, yard, {30, 0, 30});
+            rig_speed = std::max(rig_speed, std::abs(traffic.vehicles()[static_cast<std::size_t>(traffic.find(rig))].speed));
+        }
+        const float moved = traffic.asset(yard, parked)->position.z - start;
+        std::cout << "  the rig shoved the car " << moved << " m\n";
+        assert(moved > 1.5F && rig_speed > 3);
+        auto *armoured = traffic.asset(yard, rig);
+        game::autos::Mods plated;
+        plated.plating = 2;
+        game::autos::apply(plated, armoured->vehicle);
+        const float before = armoured->vehicle.health;
+        BulletHit round;
+        round.kind = HitKind::Vehicle;
+        round.target = traffic.find(rig);
+        round.zone = static_cast<int>(VehicleZone::Body);
+        traffic.damage(yard, round, 100);
+        const float plated_loss = before - armoured->vehicle.health;
+        armoured->vehicle.health = before;
+        game::autos::apply(game::autos::Mods{}, armoured->vehicle);
+        traffic.damage(yard, round, 100);
+        assert(plated_loss > 0 && plated_loss < (before - armoured->vehicle.health) * .3F);
+    }
     world::VerdaRegion bounded;
     for (auto &site : bounded.runtime_settlements())
         site.gameplay_markers.clear();

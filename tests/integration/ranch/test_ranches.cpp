@@ -265,6 +265,30 @@ int main() {
     check(worst_fold < 95, "trailers never fold past a right angle");
     for (const auto& t : freight.trailers()) check(std::isfinite(t.centre.x) && std::isfinite(t.yaw), "trailer pose");
 
+    // Dropping a trailer and hitching it again: it stays where it was dropped; the tractor has to
+    // back its fifth wheel under the trailer's nose.
+    {
+        freight.stop(region, cars);
+        freight.follow_trailers(region, cars);
+        const auto poses = freight.trailers();
+        check(!poses.empty(), "a trailer to drop");
+        const std::string id = poses.front().vehicle;
+        const Vector3 centre = poses.front().centre;
+        const auto* tractor = cars.asset(region, id);
+        const Vector3 home = tractor->position;
+        const float yaw = tractor->rotation_y;
+        check(freight.drop_or_hitch(region, cars, id).find("dropped") != std::string::npos && !freight.hitched(id), "trailer dropped");
+        const Vector3 away{home.x + std::sin(yaw * DEG2RAD) * 12, home.y, home.z + std::cos(yaw * DEG2RAD) * 12};
+        check(cars.place(region, id, away, yaw), "the tractor pulls away");
+        freight.follow_trailers(region, cars);
+        bool stayed = false;
+        for (const auto& t : freight.trailers()) if (t.vehicle == id) stayed = Vector3Distance(t.centre, centre) < .01F;
+        check(stayed, "the dropped trailer stays put");
+        check(freight.drop_or_hitch(region, cars, id).find("Back") != std::string::npos && !freight.hitched(id), "too far to hitch");
+        check(cars.place(region, id, home, yaw), "backed up under it");
+        check(freight.drop_or_hitch(region, cars, id) == "Trailer hitched" && freight.hitched(id), "hitched again");
+    }
+
     if (failures) { std::cerr << failures << " failures\n"; return 1; }
     std::cout << "ranches ok\n";
     return 0;

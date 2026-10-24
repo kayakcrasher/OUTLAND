@@ -23,6 +23,7 @@ namespace outland::game::autos {
 // colour, tires 1 the factory tyres.
 struct Mods {
     int paint{-1}, engine{0}, tires{1}, bumper{0};
+    int plating{0}, gun{0};     // the depot's work on a big rig: armour plating, a roof gun
     friend bool operator==(const Mods&, const Mods&) = default;
 };
 
@@ -59,6 +60,17 @@ inline constexpr std::array<Part, 3> bumpers{{
     {"Bull bar", "crashes hurt the car much less", 1600},
 }};
 inline constexpr int factory_tires = 1;
+// Verda Transporto's shed fits a big rig out for the road: armour against rounds (and crashes),
+// and a gun on the roof the driver works from the cab (all round, wherever they look).
+inline constexpr std::array<Part, 3> platings{{
+    {"No plating", "as it left the works", 0},
+    {"Steel plating", "half the damage from rounds and crashes", 6000},
+    {"Fortress plating", "a quarter of the damage, bullet-proof glass", 15000},
+}};
+inline constexpr std::array<Part, 2> guns{{
+    {"No roof gun", "as it left the works", 0},
+    {"Roof gun", "a machine gun on the cab roof - fire it from the wheel", 12000},
+}};
 
 // What the mods do to the car (game::vehicles reads these from its placement state).
 struct Tuning {
@@ -67,13 +79,15 @@ struct Tuning {
     float slope{0};             // degrees more slope it can climb
     float armour{1};            // crash damage multiplier
     float grip{1};              // cornering grip multiplier
+    float plating{1};           // damage from rounds (and crashes) multiplier
+    bool gun{false};            // a roof gun
 };
 [[nodiscard]] Tuning tuning(const Mods& mods);
 [[nodiscard]] bool valid(const Mods& mods);
 // Fit the mods to a car: its placement state carries the tuning and the paint from now on.
 void apply(const Mods& mods, world::VehiclePlacementState& car);
 [[nodiscard]] Mods mods_of(const world::VehiclePlacementState& car);
-[[nodiscard]] std::string serialise(const Mods& mods);       // "paint engine tires bumper"
+[[nodiscard]] std::string serialise(const Mods& mods);       // "paint engine tires bumper plating gun"
 [[nodiscard]] bool parse(std::string_view text, Mods& out);
 
 // A repair: a few kronoj a point of damage (body, engine and tyres).

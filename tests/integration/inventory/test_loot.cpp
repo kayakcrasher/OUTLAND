@@ -39,7 +39,7 @@ int main() {
     ItemRegistry registry;
     std::string error;
     assert(registry.load(items.string(), tables.string(), error));
-    assert(registry.items().size() == 84);
+    assert(registry.items().size() == 85);
     // A new game starts with just the pistol (and food, water, a bandage): no rifle, no grenades.
     assert(registry.find("frag_grenade") && registry.find("frag_grenade")->starting_quantity == 0);
     assert(registry.find("hunting_rifle")->starting_quantity == 0 && registry.find("pistol")->starting_quantity == 1);
@@ -90,7 +90,7 @@ int main() {
         file << "bad header\n";
     }
     assert(!registry.load(invalid.string(), tables.string(), error) &&
-           registry.items().size() == 84);
+           registry.items().size() == 85);
 
     Inventory bag;
     assert(bag.add(registry, "water", 8) == 8);

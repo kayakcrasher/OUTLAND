@@ -103,6 +103,16 @@ On top of the supply rig and the cattle rig (see [vakeroj.md](vakeroj.md)):
 They drive like the other rigs: kinematically along the roads, slowing for towns and corners. At
 the terminal "the crane swings a container onto the rig".
 
+## The depot
+
+The shed at Verda Transporto is a drive-in garage: two roll-up doors on the yard side, an inspection pit, a gantry and benches inside. Stop a vehicle in one of the two bays for the service menu (see [careers](careers.md#the-outlaw-truckers-la-frateco-de-kamionistoj)): repairs, fuel, engine, armour plating, a roof gun, paint and a bumper.
+
+## Crashes
+
+- A heavy vehicle that hits a lighter one shoves it out of the way. The push depends on the masses (length × width × height), so a rig sends a car flying and barely slows down; a car bounces off a rig.
+- Both take damage when the player is driving.
+- Pedestrians can be run over and hurt (see [witnesses and police](witnesses-police.md#hit-and-run)).
+
 ## The truckers' brotherhood
 
 Verda Transporto's drivers aren't alone: La Frateco de Kamionistoj, the outlaw truckers' brotherhood, has a man at the yard's diesel lane (Ivo Kovač) and a trucker in every town. Members drive the same loads for the union rate, strike at the gate for raises and run contraband. See [careers](careers.md#the-outlaw-truckers-la-frateco-de-kamionistoj).

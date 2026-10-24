@@ -436,6 +436,23 @@ bool VehicleSystem::blocked(const world::VerdaRegion &r, Vector3 p, float yaw,
     return std::atan(std::hypot(pitch, roll)) * RAD2DEG > d.max_slope;
 }
 
+int VehicleSystem::vehicle_hit(const world::VerdaRegion &r, Vector3 p, float yaw, const VehicleDefinition &d, float scale,
+                               std::string_view self) const {
+    for (std::size_t o = 0; o < vehicles_.size(); ++o) {
+        if (vehicles_[o].id == self) continue;
+        const auto *oa = asset(r, vehicles_[o].id);
+        const auto *od = oa ? definition(*oa) : nullptr;
+        if (!oa || !od || !oa->vehicle.enabled || distance(oa->position, p) > 22 * 22) continue;
+        const float os = scale_of(*oa, *od);
+        for (const float x : {-d.width * .5F, 0.0F, d.width * .5F})
+            for (const float z : {-d.length * .5F, 0.0F, d.length * .5F}) {
+                const Vector3 q = local_point(world_point({x, 0, z}, p, yaw, scale), oa->position, oa->rotation_y, os);
+                if (std::abs(q.x) < od->width * .5F + .25F && std::abs(q.z) < od->length * .5F + .25F) return static_cast<int>(o);
+            }
+    }
+    return -1;
+}
+
 bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, Vector3 player,
                            bool paused) {
     if (!std::isfinite(dt) || dt <= 0)
@@ -550,6 +567,38 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
             p.y = world::terrain::TerrainHeight::sample(p.x, p.z);
             if (v.escape > 0) v.escape -= travel * dt / steps;
             else if (blocked(r, p, yaw, *shape, scale, a->id)) {
+                // Another vehicle in the way: momentum goes into it. A heavy one (a rig, a bus)
+                // shoves a car aside and barely slows; a car into a rig mostly stops. The one
+                // struck is woken and slides off along the push.
+                if (const int other = vehicle_hit(r, p, yaw, *d, scale, v.id); other >= 0 && travel > 1.5F) {
+                    auto &o = vehicles_[static_cast<std::size_t>(other)];
+                    auto *oa = asset(r, o.id);
+                    const auto *od = oa ? definition(*oa) : nullptr;
+                    if (oa && od && !kinematic_.contains(o.id)) {
+                        const float mine = d->length * d->width * d->height, theirs = od->length * od->width * od->height;
+                        const float share = mine / (mine + theirs);
+                        const Vector3 forward = world_point({0, 0, 1}, {}, yaw), side = world_point({1, 0, 0}, {}, yaw);
+                        const Vector3 velocity = Vector3Add(Vector3Scale(forward, v.speed), Vector3Scale(side, v.slip));
+                        const Vector3 push = Vector3Scale(velocity, share * 1.35F);
+                        const Vector3 o_forward = world_point({0, 0, 1}, {}, oa->rotation_y), o_side = world_point({1, 0, 0}, {}, oa->rotation_y);
+                        o.speed += Vector3DotProduct(push, o_forward);
+                        o.slip += Vector3DotProduct(push, o_side);
+                        o.sleeping = false;
+                        if (driving) oa->vehicle.health = std::max(0.0F, oa->vehicle.health - std::min(40.0F, travel * 2.2F * share));
+                        if (driving) {
+                            // The player's own car takes its share of the blow.
+                            const float impact = travel * (1 - share) * 1.6F;
+                            a->vehicle.health = std::max(0.0F, a->vehicle.health - std::min(25.0F, std::max(0.0F, impact - 9) * 1.2F) * a->vehicle.armour);
+                            if (impact > 16 && occupant_damage_) occupant_damage_((impact - 16) * 2);
+                            events_.crash = std::max(events_.crash, travel * (1 - share) + 2);
+                        }
+                        v.speed *= 1 - share * .35F - (1 - share) * .9F;
+                        v.slip *= .5F;
+                        events_.collision = true;
+                        changed = true;
+                        break;
+                    }
+                }
                 // The player's crashes hurt the car in proportion to the impact - nudges and
                 // parking bumps (under 32 km/h) do not, and no single crash takes more than a
                 // quarter of it - and a really hard one (over 58 km/h) hurts the driver. Cars
@@ -672,8 +721,11 @@ void VehicleSystem::damage(world::VerdaRegion &r, const combat::BulletHit &hit, 
     if (!d)
         return;
     const auto zone = static_cast<VehicleZone>(hit.zone);
+    // Armour plating (the depot's work): rounds do a half or a quarter of the damage; behind
+    // fortress plating's glass the driver is safe.
+    amount *= std::clamp(a->vehicle.plating, .05F, 1.0F);
     if (zone == VehicleZone::Occupant) {
-        if (occupant_damage_)
+        if (occupant_damage_ && a->vehicle.plating > .3F)
             occupant_damage_(amount);
         return;
     }

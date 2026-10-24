@@ -7,6 +7,7 @@ The guns are modelled at real-world sizes, and characters hold them in their han
 | Gun | Type | Damage | Fire rate | Magazine | Aim zoom | Range role |
 |---|---|---|---|---|---|---|
 | V9 pistol | Semi-automatic 9 mm | 35 | 0.135 s | 15 | 55° | Sidearm |
+| **VM9 machine pistol** | 9 mm automatic | 23 | about 1000 rounds/min | 30 | 55° (red dot) | Close range; a fast spray from one hand; loads pistol rounds |
 | VR30 rifle | 5.56 automatic | 41 | 700 rounds/min | 30 | 46° (holographic sight) | All-rounder |
 | **VK45 SMG** | .45 automatic | 32 | 800 rounds/min | 25 | 52° (red dot) | Close range; steady from the hip; damage falls off with range |
 | **VS12 shotgun** | 12-gauge pump | 9 pellets × 22 | 0.8 s pump | 5 | 60° | Inside 15 m; useless at 60 m |

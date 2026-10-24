@@ -3,12 +3,14 @@
 #include <algorithm>
 #include <cmath>
 #include <sstream>
+#include <vector>
 
 namespace outland::game::autos {
 
 bool valid(const Mods& m) {
     return m.paint >= -1 && m.paint < static_cast<int>(paints.size()) && m.engine >= 0 && m.engine < static_cast<int>(engines.size()) &&
-           m.tires >= 0 && m.tires < static_cast<int>(tires.size()) && m.bumper >= 0 && m.bumper < static_cast<int>(bumpers.size());
+           m.tires >= 0 && m.tires < static_cast<int>(tires.size()) && m.bumper >= 0 && m.bumper < static_cast<int>(bumpers.size()) &&
+           m.plating >= 0 && m.plating < static_cast<int>(platings.size()) && m.gun >= 0 && m.gun < static_cast<int>(guns.size());
 }
 
 Tuning tuning(const Mods& m) {
@@ -22,32 +24,40 @@ Tuning tuning(const Mods& m) {
     t.wheel = wheel[static_cast<std::size_t>(m.tires)];
     t.slope = slope[static_cast<std::size_t>(m.tires)];
     t.grip = grip[static_cast<std::size_t>(m.tires)];
-    t.armour = armour[static_cast<std::size_t>(m.bumper)];
+    static constexpr std::array<float, 3> plating{1, .5F, .25F};
+    t.plating = plating[static_cast<std::size_t>(m.plating)];
+    t.armour = armour[static_cast<std::size_t>(m.bumper)] * (m.plating > 0 ? .7F : 1.0F);
+    t.gun = m.gun > 0;
     return t;
 }
 
 void apply(const Mods& m, world::VehiclePlacementState& car) {
     if (!valid(m)) return;
     const auto t = tuning(m);
-    car.mods = {m.paint, m.engine, m.tires, m.bumper};
+    car.mods = {m.paint, m.engine, m.tires, m.bumper, m.plating, m.gun};
     car.power = t.power; car.top = t.top; car.wheel = t.wheel; car.armour = t.armour; car.grip = t.grip; car.slope = t.slope;
+    car.plating = t.plating; car.gun = t.gun;
     car.painted = m.paint >= 0;
     if (car.painted) car.paint = paints[static_cast<std::size_t>(m.paint)].color;
 }
 
 Mods mods_of(const world::VehiclePlacementState& car) {
-    Mods m{car.mods[0], car.mods[1], car.mods[2], car.mods[3]};
+    Mods m{car.mods[0], car.mods[1], car.mods[2], car.mods[3], car.mods[4], car.mods[5]};
     return valid(m) ? m : Mods{};
 }
 
 std::string serialise(const Mods& m) {
-    return std::to_string(m.paint) + ' ' + std::to_string(m.engine) + ' ' + std::to_string(m.tires) + ' ' + std::to_string(m.bumper);
+    return std::to_string(m.paint) + ' ' + std::to_string(m.engine) + ' ' + std::to_string(m.tires) + ' ' + std::to_string(m.bumper) + ' ' +
+           std::to_string(m.plating) + ' ' + std::to_string(m.gun);
 }
 
 bool parse(std::string_view text, Mods& out) {
     std::istringstream in{std::string(text)};
     Mods m;
-    if (!(in >> m.paint >> m.engine >> m.tires >> m.bumper) || !valid(m)) return false;
+    if (!(in >> m.paint >> m.engine >> m.tires >> m.bumper)) return false;
+    // (Older saves stop at the bumper: no plating, no gun.)
+    if (in >> m.plating) in >> m.gun;
+    if (!valid(m)) return false;
     out = m;
     return true;
 }
@@ -85,8 +95,20 @@ std::string serialise(const OwnedCar& c) {
 bool parse(std::string_view text, OwnedCar& out) {
     std::istringstream in{std::string(text)};
     OwnedCar c;
-    if (!(in >> c.definition >> c.mods.paint >> c.mods.engine >> c.mods.tires >> c.mods.bumper >> c.at.x >> c.at.y >> c.at.z >> c.yaw >> c.fuel))
-        return false;
+    std::vector<std::string> words;
+    for (std::string w; in >> w;) words.push_back(w);
+    // definition, the mods (4 in older saves; 6 with the depot's plating and roof gun), where, fuel.
+    if (words.size() != 10 && words.size() != 12) return false;
+    std::istringstream fields;
+    {
+        std::string joined;
+        for (std::size_t i = 1; i < words.size(); ++i) joined += words[i] + ' ';
+        fields.str(joined);
+    }
+    c.definition = words[0];
+    if (!(fields >> c.mods.paint >> c.mods.engine >> c.mods.tires >> c.mods.bumper)) return false;
+    if (words.size() == 12 && !(fields >> c.mods.plating >> c.mods.gun)) return false;
+    if (!(fields >> c.at.x >> c.at.y >> c.at.z >> c.yaw >> c.fuel)) return false;
     if (c.definition.empty() || c.definition.size() > 64 || !valid(c.mods) || !std::isfinite(c.at.x) || !std::isfinite(c.at.y) ||
         !std::isfinite(c.at.z) || !std::isfinite(c.yaw) || !std::isfinite(c.fuel) || c.fuel < 0 || c.fuel > 1)
         return false;

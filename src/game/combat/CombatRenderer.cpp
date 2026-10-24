@@ -82,6 +82,20 @@ void pistol(float reload,float line) {
     front_post(.11F,line,.023F,false);
     box(0,line-.0012F,.11F-.002F,.0024F,.0024F,.001F,white_dot);
 }
+void machine_pistol(float reload,float line) {
+    // A boxy 9 mm machine pistol: a square receiver, a short threaded barrel, the 30-round stick
+    // through the grip and well below it, a wire stock folded along the top.
+    tube(.13F,.19F,.009F,.004F,dark);                      // barrel and thread
+    box(0,.008F,.04F,.034F,.05F,.17F,black);               // receiver
+    box(-.0175F,.018F,.06F,.001F,.012F,.04F,dark);         // ejection port
+    box(0,.036F,.04F,.012F,.006F,.13F,dark);               // the folded wire stock
+    box(0,.04F,-.04F,.024F,.008F,.012F,dark);
+    box(0,-.026F,.04F,.005F,.005F,.04F,polymer);           // trigger guard
+    tilted(12,0,-.07F-reload*.06F,-.012F,.03F,.11F,.036F,polymer); // grip
+    tilted(12,0,-.16F-reload*.14F,-.03F,.022F,.10F,.028F,black);   // the long magazine below it
+    rear_notch(-.03F,line,.034F);
+    front_post(.12F,line,.034F,false);
+}
 void smg(float reload,bool irons,float line) {
     tube(.24F,.30F,.011F,0,dark);                         // barrel and thread
     box(0,0,.07F,.04F,.065F,.34F,polymer);                // receiver
@@ -248,7 +262,7 @@ void rocket_launcher(float reload,bool irons,float line) {
 }
 // First-person hands and forearms: trigger hand on the grip, support hand under the fore-end.
 void hands(WeaponId id,const GunLayout& layout) {
-    if(id==WeaponId::Pistol) {
+    if(id==WeaponId::Pistol || id==WeaponId::MachinePistol) {
         tilted(18,0,-.068F,-.048F,.05F,.085F,.07F,glove);
         tilted(18,.026F,-.075F,-.04F,.028F,.08F,.065F,glove);
         DrawCylinderEx({0,-.09F,-.09F},{-.04F,-.17F,-.36F},.032F,.04F,8,sleeve);
@@ -265,7 +279,7 @@ void hands(WeaponId id,const GunLayout& layout) {
 GunLayout gun_layout(WeaponId id,Sight sight) {
     const float line=sight_height(id,sight);
     switch(id) {
-        case WeaponId::Pistol: return {0,0,line,definition(id).length};
+        case WeaponId::Pistol: case WeaponId::MachinePistol: return {0,0,line,definition(id).length};
         case WeaponId::Smg: return {.26F,.17F,line,definition(id).length};
         case WeaponId::Shotgun: return {.34F,.24F,line,definition(id).length};
         case WeaponId::Sniper: return {.36F,.24F,line,definition(id).length};
@@ -301,6 +315,7 @@ void CombatRenderer::draw_gun(Vector3 grip,Vector3 aim,Vector3 up,WeaponId id,fl
         case WeaponId::DoubleBarrel: double_barrel(reload,line);break;
         case WeaponId::AutoShotgun: auto_shotgun(reload,sight==Sight::Iron,line);break;
         case WeaponId::Rocket: rocket_launcher(reload,sight==Sight::Iron,line);break;
+        case WeaponId::MachinePistol: machine_pistol(reload,line);break;
         default: rifle(reload,sight==Sight::Iron,line);break;
     }
     if(draw_hands) hands(id,gun_layout(id));

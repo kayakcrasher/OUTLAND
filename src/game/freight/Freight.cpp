@@ -353,6 +353,7 @@ void Freight::follow_trailers(const world::VerdaRegion& region, const vehicles::
         const auto* asset = cars.asset(region, car.id);
         if (!asset || asset->vehicle.definition != "semi") continue;
         auto& hitch = hitches_[car.id];
+        if (hitch.dropped) continue;          // left standing where it was dropped
         if (hitch.model.empty()) hitch.model = car.id.find("cattle") != std::string::npos ? cattle_trailer : box_trailer;   // (the depot's stock rig too)
         const float a = asset->rotation_y * DEG2RAD;
         const Vector3 forward{std::sin(a), 0, std::cos(a)};
@@ -377,6 +378,42 @@ void Freight::follow_trailers(const world::VerdaRegion& region, const vehicles::
         }
     }
     std::erase_if(hitches_, [&](const auto& entry) { return cars.find(entry.first) < 0; });
+}
+
+bool Freight::hitched(const std::string& vehicle) const {
+    const auto found = hitches_.find(vehicle);
+    return found == hitches_.end() || !found->second.dropped;
+}
+
+bool Freight::dropped_at(const std::string& vehicle, Vector3& kingpin) const {
+    const auto found = hitches_.find(vehicle);
+    if (found == hitches_.end() || !found->second.dropped) return false;
+    kingpin = found->second.kingpin;
+    return true;
+}
+
+std::string Freight::drop_or_hitch(const world::VerdaRegion& region, const vehicles::VehicleSystem& cars, const std::string& vehicle) {
+    const auto found = hitches_.find(vehicle);
+    const int index = cars.find(vehicle);
+    if (found == hitches_.end() || index < 0) return "No trailer to drop";
+    auto& hitch = found->second;
+    const auto* asset = cars.asset(region, vehicle);
+    if (!asset) return "No trailer to drop";
+    if (!hitch.dropped) {
+        hitch.dropped = true;
+        return "Trailer dropped - back up under its nose and press HITCH to take it again";
+    }
+    const float a = asset->rotation_y * DEG2RAD;
+    const Vector3 forward{std::sin(a), 0, std::cos(a)};
+    const Vector3 fifth = Vector3Add(asset->position, Vector3Scale(forward, fifth_wheel));
+    Vector3 along{hitch.kingpin.x - hitch.axles.x, 0, hitch.kingpin.z - hitch.axles.z};
+    const float length = Vector3Length(along);
+    if (length > 1e-3F) along = Vector3Scale(along, 1 / length);
+    const float angle = std::acos(std::clamp(forward.x * along.x + forward.z * along.z, -1.0F, 1.0F)) * RAD2DEG;
+    if (flat(fifth, hitch.kingpin) > hitch_reach) return "Back the rig up under the trailer's nose to hitch it";
+    if (angle > hitch_angle) return "Line the rig up with the trailer to hitch it";
+    hitch.dropped = false;
+    return "Trailer hitched";
 }
 
 std::vector<TrailerPose> Freight::trailers() const {

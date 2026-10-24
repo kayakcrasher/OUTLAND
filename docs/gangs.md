@@ -112,6 +112,10 @@ These join the hits, drive-bys and rig robberies in "the word":
 | **TAG UP** | One of the nearest rival towns: spray 5 tags on that gang's walls there. The boss hands you 8 cans with the job. Tags anywhere else don't count, and the town's patrols will come looking. | 900 | 12 |
 | **STORE ROBBERY** | A shop 80 m to 1.6 km away: go in with a gun out and press **USE** (E) at the counter to empty the till. The alarm goes off: 2 stars. Then get the takings back to your hideout, on foot or in a car. | 400-750 (the till) | 10 |
 
+## The gun man
+
+Each gang's main base has a gun man at the door. He sells guns to the gang's own members, by rank (see [careers](careers.md#the-armory-and-the-gun-man)). Gangs also send hijackers after loaded rigs.
+
 ## The gang map
 
 For gang members, the map (**M**) becomes a gang map:

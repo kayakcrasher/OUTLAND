@@ -195,6 +195,11 @@ Verda's trucking is a tough grind, so the truckers stick together. They are Espe
 | **STRIKE** | Park a big rig at Verda Transporto's gate and hold it there 60 s. Leave the gate and the clock starts again. Win and the brotherhood's rate goes up 5% for good (up to +25% from strikes). | 500 | 10 |
 | **CONTRABAND RUN** | Unmarked crates at a smugglers' jetty: pick them up in a big rig, and somebody talks (2 stars, the Ŝosea Patrolo is out). Run them to a freight yard across the island. | 2200 | 14 |
 
+- **Your own rig:** a brother of rank Ŝoforo or higher is given a rig of his own, parked by the diesel lane (Ivo says so). It is saved with your cars and can haul any of the company's loads except cattle.
+- **The depot's service bays:** Verda Transporto's shed is a drive-in garage. Drive in through either open door and stop in a bay for **VERDA TRANSPORTO · SERVO**: service (repair and fill up), engine, **armour plating** (steel 6000 kr, fortress 15 000 kr; the cab takes a half or a quarter of the damage, and fortress plating stops bullets reaching the driver), a **roof gun** (12 000 kr), paint and a bumper. Plating and the roof gun fit rigs and trucks only. Brothers pay 70%.
+- **The trailer:** with the rig stopped, J (touch: HITCH) drops the trailer where it stands. Back the rig up to it, lined up, and J again to hitch it. A load only counts with the trailer on.
+- **The roof gun:** at the wheel of a rig with one fitted, look to aim and fire (LMB / FIRE). It fires rifle rounds along your view.
+- **Hijackers:** gangs sometimes send two or three men in a car after a loaded rig. A plated rig with a roof gun is the answer.
 - **Outlaws:** a crime goes on a brother's record and raises his notoriety, like a gangster's. The Policio won't take him with a record.
 - **If the gangs win**, the brothers fight the occupiers like anyone else (LIBERATION orders, see [gangs](gangs.md#how-it-ends)).
 
@@ -229,9 +234,16 @@ saved: recruit again after loading a game.
 
 ## Drive-bys
 
-- Anyone at the wheel with a **pistol or SMG** can shoot out of the driver's window: look to aim, LMB to fire, or the left **FIRE** button on touch screens.
-- The shot leaves from outside the car's body, so it never hits your own car.
-- A line over the speedometer shows the gun and its ammo.
+- **The driver can't shoot** (except a fitted roof gun, above). The shooting is done by the passengers.
+- Your **crew ride at the windows** and shoot out of them at your enemies. Drive past a rival gang's people with your crew aboard and the fight is on; kills they make count for your gang job.
+- Gangsters driving their own cars do the same: their passengers fire from the windows.
+- From the passenger seat (your crew driving) you can shoot out of the window yourself.
+
+## The armory and the gun man
+
+- **The Policio's armory** is at every station's desk (USE on duty: partner, armory, badge). It is the best kit on the island, and all of it is free, but restricted by rank: a Kadeto draws a pistol and a plate carrier, the shotgun and VM9 come at the next rank, rifles and grenades after that, the sniper and auto shotgun later, the rocket launcher only for a Komisaro.
+- **An officer on duty wears body armour** (level II), and every police car carries a pump shotgun: get in one for the first time and you take it with 10 shells.
+- **The gang's GUN MAN** stands by the door of each gang's main base, in its colours. He sells to family only: guns cheaper than the Armilejo, the heavier ones for those of higher rank. Code: `game::career::armory` (`include/outland/game/career/Armory.hpp`).
 
 ## Saving
 

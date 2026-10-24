@@ -1,5 +1,7 @@
 // Careers: joining a gang or the police, respect and ranks, jobs and their pay, and the one-way door.
 #include "outland/game/career/Career.hpp"
+#include "outland/game/career/Armory.hpp"
+#include "outland/game/law/HitAndRun.hpp"
 #include <cmath>
 #include <iostream>
 using namespace outland::game::career;
@@ -561,6 +563,36 @@ int main() {
         check(back.parse(t.serialise()) && back.trucker() && back.haul_rate() == t.haul_rate(), "a brother saved and loaded");
         t.quit();
         check(!t.trucker() && t.haul_rate() == 1, "out of the brotherhood");
+    }
+    // The armory: free for an officer, by rank; the gun man sells to the gang by rank.
+    {
+        using outland::game::career::armory;
+        check(outland::game::career::police_may_draw(0, 0) && !outland::game::career::police_may_draw(0, armory.size() - 1), "a Kadeto draws a sidearm, not a rocket launcher");
+        check(outland::game::career::police_may_draw(4, armory.size() - 1), "a Komisaro draws anything");
+        bool shotgun_for_patrolano = false;
+        for (std::size_t i = 0; i < armory.size(); ++i)
+            if (std::string(armory[i].item) == "shotgun") shotgun_for_patrolano = outland::game::career::police_may_draw(1, i);
+        check(shotgun_for_patrolano, "a Patrolano draws a shotgun");
+        check(!outland::game::career::gang_may_buy(0, armory.size() - 1) && outland::game::career::gang_may_buy(4, armory.size() - 1), "the heavy stuff for an Estro");
+        check(outland::game::career::police_vehicle("interceptor") && !outland::game::career::police_vehicle("semi"), "police cars carry a shotgun");
+    }
+    // HIT AND RUN: stop and wait, or run and be wanted (prison if busted); the lights excuse an officer.
+    {
+        outland::game::law::HitAndRun h;
+        check(!h.struck({0, 0, 0}, true) && !h.pending(), "the lights on: not their fault");
+        check(h.struck({0, 0, 0}, false) && h.pending(), "a pedestrian hit");
+        using Out = outland::game::law::HitAndRun::Outcome;
+        Out out = Out::None;
+        for (int i = 0; i < 20 && out == Out::None; ++i) out = h.update({5, 0, 5}, true, 1);
+        check(out == Out::Stayed && !h.wanted() && h.busted() == 0, "stayed for the ambulance: no charges");
+        h.struck({0, 0, 0}, false);
+        h.update({10, 0, 0}, false, 1);
+        check(h.update({200, 0, 0}, false, 1) == Out::Ran && h.wanted(), "drove off: hit and run");
+        check(h.busted() == outland::game::law::HitAndRun::sentence && !h.wanted(), "busted for it: mandatory time");
+        h.struck({0, 0, 0}, false);
+        h.update({200, 0, 0}, false, 1);
+        h.lost_them();
+        check(!h.wanted() && h.busted() == 0, "the police gave up");
     }
     // Ranks and saving.
     {

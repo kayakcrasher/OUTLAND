@@ -33,6 +33,7 @@ TEX = 64
 GAS_ISLANDS = (-3.5, 3.5)       # gas_station(): the pump islands' x
 GAS_PUMPS_Z = (-5.0, -3.0)      # ...and each pump's z on them
 MECH_BAYS = (-5.0, 1.0)         # mechanic_shop(): the bays' x (door centres)
+DEPOT_DOORS = (-15.0, 9.0)     # Verda Transporto's depot: the drive-in doorways' west edges (world::motor::depot_bays)
 MECH_DOOR = 4.6                 # ...and the door openings' width
 CAR_LOT_ROWS = (-6.0, 3.0)      # car_lot(): the display rows' z
 CAR_LOT_SPOTS_X = (-14.0, -8.0, -2.0, 4.0, 10.0)
@@ -1351,26 +1352,66 @@ def cattle_gangway():
 
 
 def truck_depot():
-    """Verda Transporto's depot: a steel-clad truck shed (36 x 22 m, 9 m to the eaves) with three
-    roller doors in the front (-Z), and the two-storey office across the middle of the front with
-    its door, windows and a canopy. The game hangs the company's sign over the office."""
+    """Verda Transporto's depot: a steel-clad truck shed (36 x 22 m, 9 m to the eaves) you can
+    drive into. Two wide doorways in the front (-Z, x -15..-9 and 9..15, their roller doors rolled
+    up) open on a lit hall: a service bay behind each (a yellow-edged inspection pit, a gantry
+    beam), tool boards and benches on the back wall, tyre stacks, drums. The two-storey office
+    stands across the middle of the front with its door, windows and a canopy (the game hangs the
+    company's sign over it). A rig stopped in a bay gets the company's mechanics (game::autos)."""
     b = Builder()
     b.material("clad", stripes((176, 184, 190), (150, 158, 166), 6, 71), 1.0, 1.0)
+    b.material("inside", stripes((198, 202, 204), (184, 188, 192), 6, 73), 1.0, 1.0)
     b.material("office", window_tile((214, 208, 196), (110, 114, 120), (60, 86, 110)), BAY, FLOOR)
     b.material("roof", gravel_roof(), 3, 3)
+    b.material("ceiling", flat((150, 154, 158), 3), 3, 3)
     b.material("door", stripes((120, 130, 140), (100, 108, 118), 3, 72), 1.0, 1.0)
     b.material("slab", flat((150, 148, 142), 6), 3, 3)
+    b.material("floor", flat((118, 118, 114), 8), 3, 3)
+    b.material("pit", flat((40, 40, 42), 2), 1, 1)
     b.material("green", flat((16, 128, 70), 2), 1, 1)
     b.material("steel", flat((90, 96, 100), 3), 2, 2)
     b.material("glass", flat((60, 86, 110), 2), 1, 1)
     b.material("yellow", flat((230, 190, 40), 2), 1, 1)
-    w, d, h = 18.0, 11.0, 9.0
-    b.box((-w, 0, -d), (w, h, d), {'+x': "clad", '-x': "clad", '+z': "clad", '-z': "clad", '+y': "roof"}, v_origin=h)
-    b.solid((-w - .1, h - .6, -d - .1), (w + .1, h, d + .1), "green")             # the eaves band
-    for x in (-15.0, 9.0):
-        b.solid((x, 0, -d - .06), (x + 6, 5.5, -d), "door")                        # roller doors
-        b.solid((x - .2, 0, -d - .3), (x, 1.0, -d), "yellow")                      # bollards
-        b.solid((x + 6, 0, -d - .3), (x + 6.2, 1.0, -d), "yellow")
+    b.material("hazard", stripes((222, 182, 30), (30, 30, 30), 6, 219), 1, 1)
+    b.material("lamp", flat((250, 246, 220), 1), 1, 1)
+    b.material("tyre", flat((28, 28, 30), 2), 1, 1)
+    b.material("drum", flat((200, 90, 30), 3), 1, 1)
+    b.material("wood", wood(), 2, 2)
+    w, d, h, t, slab = 18.0, 11.0, 9.0, .3, .08
+    doors = [(x0, x0 + 6.0, 0, 5.5) for x0 in DEPOT_DOORS]
+    wall_with_openings(b, 'x', -d, (-w, w), h, t, doors, "clad", "inside", -1)
+    wall_with_openings(b, 'x', d, (-w, w), h, t, [], "clad", "inside", +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), h, t, [], "clad", "inside", -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), h, t, [], "clad", "inside", +1)
+    b.box((-w, h - .3, -d), (w, h, d), {'+y': "roof", '-y': "ceiling", '+x': "clad", '-x': "clad", '+z': "clad", '-z': "clad"})
+    b.solid((-w - .1, h - .6, -d - .1), (w + .1, h, -d), "green")                 # the eaves band (front)
+    b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor"})
+    for x0 in DEPOT_DOORS:
+        b.solid((x0, 5.5, -d - .4), (x0 + 6, 6.1, -d), "door")                      # the roller doors, rolled up
+        b.solid((x0 - .2, 0, -d - .3), (x0, 1.0, -d), "yellow")                     # bollards
+        b.solid((x0 + 6, 0, -d - .3), (x0 + 6.2, 1.0, -d), "yellow")
+        b.solid((x0 - .14, 0, -d - .05), (x0, 5.5, -d + t), "hazard")               # door jambs
+        b.solid((x0 + 6, 0, -d - .05), (x0 + 6.14, 5.5, -d + t), "hazard")
+        c = x0 + 3.0
+        # The service bay: a pit edged in yellow, a gantry beam over it, lamps.
+        b.solid((c - .9, slab, -d + 3), (c + .9, slab + .01, d - 3), "pit")
+        for sx in (-1, 1):
+            b.solid((c + sx * .95 - .08, slab, -d + 3), (c + sx * .95 + .08, slab + .02, d - 3), "yellow")
+        for z in (-4.0, 4.0):
+            b.solid((c - 3.6, 7.2, z - .15), (c + 3.6, 7.5, z + .15), "steel")
+        for z in (-6.0, 0.0, 6.0):
+            b.solid((c - .6, h - .5, z - .2), (c + .6, h - .4, z + .2), "lamp")
+    # The back wall: benches and tool boards; tyre stacks and drums by the side walls.
+    for x0 in (-16.0, -6.0, 4.0):
+        b.solid((x0, slab, d - t - .9), (x0 + 4.0, 1.0, d - t - .05), "wood")
+        b.solid((x0, 1.5, d - t - .06), (x0 + 4.0, 2.8, d - t - .02), "steel")
+    for k in range(6):
+        x = -w + t + .6 + (k % 2) * .9
+        z = -6.0 + (k // 2) * 1.0
+        for level in range(4):
+            b.solid((x - .4, slab + level * .3, z - .4), (x + .4, slab + level * .3 + .28, z + .4), "tyre")
+    for k in range(4):
+        b.solid((w - t - 1.0, slab, -5.0 + k * .8), (w - t - .4, 1.0, -4.4 + k * .8), "drum")
     # The office: two storeys across the middle of the front.
     b.box((-6, 0, -d - 5), (6, 7.0, -d), {'+x': "office", '-x': "office", '-z': "office", '+y': "roof"}, v_origin=7.0)
     b.solid((-1.2, 0, -d - 5.06), (1.2, 2.4, -d - 5.0), "glass")                  # the door

@@ -311,6 +311,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
     player_.toggle_view |= b.pressed(Action::View, mouse_buttons);
     player_.lights |= b.pressed(Action::Lights, mouse_buttons);
     player_.radio |= b.pressed(Action::Radio, mouse_buttons);
+    player_.hitch |= b.pressed(Action::Hitch, mouse_buttons);
     if (gameplay) {
         player_.crouch |= b.down(Action::Crouch, mouse_buttons);
         player_.fire |= b.down(Action::Fire, mouse_buttons);

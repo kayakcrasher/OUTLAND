@@ -111,6 +111,9 @@ class VehicleSystem {
     static Vector3 world_point(Vector3 local, Vector3 origin, float yaw, float scale = 1);
 
   private:
+    // The vehicle (index) whose body the footprint at `p` reaches, other than `self`; -1 none.
+    int vehicle_hit(const world::VerdaRegion &r, Vector3 p, float yaw, const VehicleDefinition &d, float scale,
+                    std::string_view self) const;
     bool training_structure_{true};
     const VehicleRegistry &registry_;
     std::vector<VehicleRuntime> vehicles_;
