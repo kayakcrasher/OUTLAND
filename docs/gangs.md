@@ -137,13 +137,43 @@ Late in the gang questline, once you are a **Leŭtenanto** (70 respect) *and* yo
 - **The price:** every officer on the island comes for you.
 - **Afterwards:** the Chief stays dead for good. The Policio is leaderless and takes no more recruits.
 
+## What the bosses say
+
+Talk to your own boss (**USE** at the hideout door) and he tells you how the gang sees Verda before offering you the way out (USE again to walk away).
+
+- **La Verda Mano** are Esperantista Loyalists, a gang of nationalists: "Our people are drifting apart. The Green Hand is the only gang capable of uniting them - and we'll reap the rewards." Once every town is theirs, the parliament is next.
+- **The other gangs** see the island drifting apart too, but want their own share first, and say the Green Hand only want the parliament.
+
+A Green Hand boss pitches the same line to anyone not yet in the gang.
+
 ## Winning
 
-When every town is your gang's and every family rides with you or pays you, a gold **"<GANG> RULE VERDA"** banner goes up. Holding it is another matter: the police keep coming.
+When every town is your gang's and every family rides with you or pays you, a gold **"<GANG> RULE VERDA"** banner goes up. Holding it is another matter: the police keep coming, and so does the endgame.
+
+## How it ends
+
+The Ĉefo warned it would come to this (`game::mafia::Endgame`).
+
+1. **THE SIEGE (the Green Hand only).** Once La Verda Mano rule Verda, the order is the parliament: take Registaro de Verda.
+   - Six of the parliament's guard hold the front steps. They fight you and any gangster who comes near.
+   - Put them all down and walk into the hall. "REGISTARO DE VERDA HAS FALLEN": Verda is one nation under the Hand.
+   - Pays 25 000 kronoj and 20 respect.
+   - Any other gang that wins skips the siege: they take the island, not the nation.
+2. **THE LANDING.** About 45 seconds after the parliament falls (or after any other gang wins), Russian troops come ashore "to restore order".
+3. **LIBERATION.** The troops garrison the five county seats (Verda City, Espera, Porto Luma, Suda Haveno and Roka): five soldiers in woodland camouflage and steel helmets on each town square.
+   - They fight anyone not in their uniform: you, every gang and the police. Your crews fight back beside you.
+   - Their dead stay dead. Clear a garrison and that town is free ("ESPERA IS FREE - 4 to go").
+   - The waypoint is the nearest garrison still held, and the banner up top counts them: **RUSSIAN TROOPS HOLD n OF 5 TOWNS**.
+   - Clear all five: **VERDA IS FREE**, 100 000 kronoj and 30 respect. Your gang rules a free Verda.
+
+Shooting during the siege or the liberation is nobody's crime. Going down doesn't cancel the orders. The endgame's progress is saved beside the territory (`<profile>.endgame`): a garrison not yet cleared is back at full strength next session.
 
 ## Saving and dev
 
 - Territory is saved beside the Explore profile (`<profile>.territory`): owners, holds, family stances and tags. It is saved every couple of seconds whenever something changes.
 - Dev builds log the counts: `OUTLAND territory: N turfs, N tags, N docks`.
 - `outland_signage_tests` checks the banner's cross, star, hand and crown; `outland_generated_green_hand_car` keeps the GT's model in step with its generator.
-- `outland_territory_tests` covers hold, flips, tags painting over, extortion by stance, raids and the save. `outland_career_tests` covers the three jobs.
+- `outland_territory_tests` covers hold, flips, tags painting over, extortion by stance, raids and the save. `outland_career_tests` covers the jobs, the orders and what the Chief and the bosses say.
+- `outland_endgame_tests` covers the siege, the landing, who the guard and the troops fight, the garrisons freed, the pay and the save.
+- Dev: `OUTLAND_DEV_ENDGAME=siege` starts the Green Hand's siege, and `=landing` lands the troops at once.
+- The occupiers' camouflage is generated with the gang outfits (`tools/generate_gang_outfits.py`: `rusa_soldato.png`).

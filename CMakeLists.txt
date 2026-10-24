@@ -198,6 +198,7 @@ add_library(
     src/game/ai/BotDrivers.cpp
     src/game/mafia/Mafio.cpp
     src/game/mafia/Territory.cpp
+    src/game/mafia/Endgame.cpp
     src/game/mafia/GangLogos.cpp
     src/game/career/Career.cpp
     src/game/career/Callouts.cpp
@@ -743,6 +744,10 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_mafio_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_mafio_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_mafio_tests COMMAND outland_mafio_tests)
+    add_executable(outland_endgame_tests tests/integration/mafia/test_endgame.cpp)
+    target_link_libraries(outland_endgame_tests PRIVATE outland_render)
+    target_compile_options(outland_endgame_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_endgame_tests COMMAND outland_endgame_tests)
     add_executable(outland_walking_man_tests tests/integration/life/test_walking_man.cpp)
     target_link_libraries(outland_walking_man_tests PRIVATE outland_render)
     target_compile_options(outland_walking_man_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

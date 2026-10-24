@@ -154,6 +154,8 @@ The law on Verda's highways, and above all the giant ring road round the island.
 
 The goal of the police questline is to get rid of the gangs. Once you serve, about 4 calls in 10 are the Chief's own orders: **CLEAN UP** (1400 pay, 14 respect).
 
+**Why it matters (the Chief's words):** "Our people are becoming lawless. If we do not get our act together, our sovereignty is at stake." He means it: if the gangs win Verda, Russian troops land "to restore order" and must be fought town by town (see [gangs](gangs.md#how-it-ends)). Talk to him (USE) and he says so, between the count of towns still held.
+
 - **What it takes:** go to a crew's hideout and take down every one of them (arrests count). The crew is broken up for good.
   - While the order stands the crew is **under siege**: their dead stay down (no respawns), and their hit squads are called home.
   - Going down yourself doesn't cancel the order. Come back from the hospital and finish it.

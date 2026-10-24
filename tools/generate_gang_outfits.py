@@ -18,6 +18,11 @@ and every other gang's colours, so the Policio can tell them apart at a glance:
   gang_<n>_kapo.png       their bosses: the charcoal jacket with the tie and pocket square in
                           the gang's colour.
 
+and the occupiers' (game::mafia::Endgame):
+
+  rusa_soldato.png        the Russian troops who land when the gangs win: the shirt turned to a
+                          woodland camouflage of olive, earth and dark green blotches.
+
 On this texture the shirt's front panel lies on its side (its collar toward +x) and the back
 panel upside down (its collar toward +y); the drawing is turned to match.
 
@@ -156,6 +161,34 @@ def colours_shirt(colour):
     return make
 
 
+def camouflage(base):
+    """The occupiers' field shirt: olive with blotches of earth and dark green (a fixed pattern)."""
+    image = base.copy()
+    mask = shirt_mask(base)
+    recolour(image, mask, (92, 98, 62), .45)
+    blotches = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(blotches)
+    state = 20251024
+    def rand():
+        nonlocal state
+        state = (state * 1103515245 + 12345) & 0x7fffffff
+        return state / 0x7fffffff
+    for colour in ((70, 56, 38, 255), (44, 58, 34, 255), (128, 120, 82, 255)):
+        for _ in range(70):
+            x, y = rand() * image.width, rand() * image.height
+            rx, ry = 6 + rand() * 16, 4 + rand() * 10
+            d.ellipse([x - rx, y - ry, x + rx, y + ry], fill=colour)
+    px, m, b = image.load(), mask.load(), blotches.load()
+    for y in range(image.height):
+        for x in range(image.width):
+            if m[x, y] and b[x, y][3]:
+                r, g, bl, a = px[x, y]
+                # Keep the folds: the blotch colour moved by the shirt's own shading.
+                shade_k = (r + g + bl) / 3 / 84
+                px[x, y] = tuple(max(0, min(255, int(c * shade_k))) for c in b[x, y][:3]) + (a,)
+    return image
+
+
 def build():
     base = Image.open(SOURCE).convert("RGBA")
     out = {}
@@ -163,6 +196,7 @@ def build():
     for gang, colour in GANG_COLOURS.items():
         makers.append((f"gang_{gang}_soldato.png", colours_shirt(colour)))
         makers.append((f"gang_{gang}_kapo.png", lambda b, c=colour: kapo(b, shade(c, 1), shade(c, .6), pin=False)))
+    makers.append(("rusa_soldato.png", camouflage))
     for name, make in makers:
         buffer = io.BytesIO()
         make(base).save(buffer, "PNG", optimize=True)

@@ -29,6 +29,8 @@ const char* job_name(JobKind kind) {
         case JobKind::Callout: return "CALLOUT";
         case JobKind::RobStore: return "STORE ROBBERY";
         case JobKind::TagUp: return "TAG UP";
+        case JobKind::Siege: return "THE SIEGE";
+        case JobKind::Liberate: return "LIBERATION";
         case JobKind::None: break;
     }
     return "";
@@ -270,16 +272,23 @@ int Career::towns_left(const CareerFrame& frame) {
 std::string Career::chief_talk(bool& issue) {
     issue = false;
     const std::string chief = std::string(chief_name) + ": ";
+    const int talk = chief_talks_++;
+    if (occupied_) {
+        if (state_.side == Side::Gang) return chief + "You wanted Verda. Now look who came to take it from you. If you've any love left for this island, fight them.";
+        return chief + "I warned them. A nation that loses its law loses itself - and now Russian boots are on Verda's streets. "
+                       "Every garrison, every town. Drive them into the sea.";
+    }
     if (state_.side != Side::Police) {
         if (state_.record) return chief + "I know your record. Get out of my station before I remember your face.";
-        return chief + "Verda needs officers. Sign up at any station - then come and see me.";
+        return chief + "Our people are becoming lawless. Verda needs officers - sign up at any station, then come and see me.";
     }
     switch (state_.police_stage) {
         case PoliceStage::Report:
             state_.police_stage = PoliceStage::Training;
             job_ = {};
-            return chief + "So you're the new Kadeto. Nobody wears my badge until they can shoot straight. "
-                           "The training camp is outside the city - qualify on all three drills, then report back.";
+            return chief + "So you're the new Kadeto. Look around you: our people are becoming lawless. If we do not get our act together, "
+                           "our sovereignty is at stake. Nobody wears my badge until they can shoot straight - "
+                           "the training camp is outside the city. Qualify on all three drills, then report back.";
         case PoliceStage::Training:
             return chief + "Not yet. Three drills at the camp, all qualified. Pistol, rifle, then the movers.";
         case PoliceStage::Graduated: {
@@ -293,14 +302,69 @@ std::string Career::chief_talk(bool& issue) {
         }
         case PoliceStage::Serving: break;
     }
-    if (verda_clean_) return chief + "The gangs are gone. Verda is free - you did that. Komisaro suits you.";
-    if (campaign_left_ > 0)
-        return chief + "Our work is the gangs. " + std::to_string(campaign_left_) + (campaign_left_ == 1 ? " town" : " towns") +
-               " still under them - start out there, not here. Verda City is mine to say when.";
-    if (campaign_left_ == 0) return chief + "The towns are clean. Now Verda City: bring them down, every one.";
+    if (verda_clean_) return chief + "The gangs are gone. Verda is free, and it stays ours - you did that. Komisaro suits you.";
+    if (campaign_left_ > 0) {
+        const std::string left = std::to_string(campaign_left_) + (campaign_left_ == 1 ? " town" : " towns");
+        if (talk % 2 == 1)
+            return chief + "Understand what we're fighting for. If the gangs take Verda, Moscow won't wait - they'll send troops \"to restore order\", "
+                           "and this island will never be ours again. " + left + " still under the gangs.";
+        return chief + "Our people are becoming lawless. If we do not get our act together, our sovereignty is at stake. " + left +
+               " still under the gangs - start out there, not here. Verda City is mine to say when.";
+    }
+    if (campaign_left_ == 0) return chief + "The towns are clean. Now Verda City: bring them down, every one. Then Verda is a nation again.";
     if (rank() >= 3) return chief + "Leŭtenanto. Verda sleeps better with you on the street. Keep it that way.";
     if (job_.kind != JobKind::None) return chief + "You have a call. Why are you standing in my office?";
+    if (talk % 2 == 1) return chief + "Every gang town is a door left open to whoever wants this island. We keep them shut.";
     return chief + "Keep your radio on, and keep your nose clean. One crime on duty and the badge is mine.";
+}
+
+std::string Career::boss_talk(int gang, bool member, bool ruled, bool occupied, int line) {
+    const bool hand = gang == 0;
+    if (occupied) {
+        if (hand) return "\"The Russians think Verda is theirs for the taking. Show them whose island this is - every garrison, every town.\"";
+        return "\"Soldiers in our streets. Nobody runs Verda but Verdans - not even them. Kill every one.\"";
+    }
+    if (!member) {
+        if (hand) return "\"Our people are drifting apart. The Green Hand is the only gang capable of uniting them - Esperantista Loyalists, "
+                         "for Verda, and we reap the rewards. Want in?\"";
+        return "\"Want in? Gangsters only - never the people.\"";
+    }
+    if (hand) {
+        if (ruled) return "\"Every town is ours. Now the Registaro - we march on the parliament, and Verda is one nation under the Hand.\"";
+        switch (line % 3) {
+            case 0: return "\"Our people are drifting apart. The Green Hand is the only gang capable of uniting them - and we'll reap the rewards.\"";
+            case 1: return "\"We're Esperantista Loyalists, nevo. One island, one tongue, one flag. Take every town, and then the parliament.\"";
+            default: return "\"The other gangs want a piece of Verda. We want all of it - in one piece.\"";
+        }
+    }
+    if (ruled) return "\"Verda is ours. Every town. Let the Green Hand weep over their parliament.\"";
+    if (line % 2 == 0) return "\"Our people are drifting apart. Everyone wants a piece of Verda - we take ours first.\"";
+    return "\"The Green Hand talk about uniting the people. All they want is the parliament. Hold our towns.\"";
+}
+
+void Career::orders(JobKind kind, Vector3 target, const std::string& detail) {
+    if (state_.side == Side::Civilian || jailed_) return;
+    if (state_.side == Side::Police && state_.police_stage != PoliceStage::Serving) return;   // a recruit's orders are the camp's
+    if (job_.kind == kind) { job_.target = target; job_.detail = detail; return; }
+    // Orders that stand: whatever was in hand is off, no blame.
+    job_ = {};
+    job_.kind = kind;
+    job_.title = job_name(kind);
+    job_.target = target;
+    job_.detail = detail;
+    job_.deadline = 1e18;
+    say(job_.title + ": " + detail);
+}
+
+void Career::orders_done(JobKind kind, int pay, float respect) {
+    if (job_.kind != kind) {
+        // Done before the orders reached the player (a civilian, say): the pay still comes.
+        pay_ += state_.side == Side::Civilian ? 0 : pay;
+        return;
+    }
+    job_.pay = pay;
+    job_.respect = respect;
+    finish(true, "");
 }
 
 void Career::passed_training() {
@@ -344,7 +408,7 @@ void Career::turf_taken(int turf, const std::string& name) {
 void Career::died() {
     custody_ = 0;                                       // the prisoners got away
     if (state_.side == Side::Civilian) return;
-    if (job_.kind == JobKind::Quest) return;            // orders stand
+    if (job_.kind == JobKind::Quest || job_.kind == JobKind::Siege || job_.kind == JobKind::Liberate) return;   // orders stand
     if (job_.kind == JobKind::CleanUp) { say("You went down - the Chief's orders stand: their dead stay down, finish it"); return; }
     if (job_.kind != JobKind::None) finish(false, "You went down - the job is off");
     else gain(-3);
@@ -354,7 +418,8 @@ void Career::finish(bool success, const std::string& why) {
     if (success) {
         strays_ = 0;
         finished_ = job_;
-        const int paid = job_.kind == JobKind::HitChief ? job_.pay : static_cast<int>(std::lround(static_cast<float>(job_.pay) * pay_scale()));
+        const bool flat_pay = job_.kind == JobKind::HitChief || job_.kind == JobKind::Siege || job_.kind == JobKind::Liberate;
+        const int paid = flat_pay ? job_.pay : static_cast<int>(std::lround(static_cast<float>(job_.pay) * pay_scale()));
         pay_ += paid;
         ++state_.jobs_done;
         say((job_.kind == JobKind::Callout ? job_.title : std::string(job_name(job_.kind))) + " DONE: +" + std::to_string(static_cast<int>(job_.respect)) + " respect, +" +

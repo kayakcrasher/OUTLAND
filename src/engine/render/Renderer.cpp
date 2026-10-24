@@ -13,6 +13,7 @@
 #include "outland/game/casino/PokerTable.hpp"
 #include "outland/game/mafia/Mafio.hpp"
 #include "outland/game/mafia/Territory.hpp"
+#include "outland/game/mafia/Endgame.hpp"
 #include "outland/game/mafia/GangLogos.hpp"
 #include "outland/game/career/Career.hpp"
 #include "outland/game/career/Backup.hpp"
@@ -58,6 +59,7 @@
 #include "outland/game/feel/Haptics.hpp"
 #include "outland/game/transit/BusLine.hpp"
 #include "outland/world/Zones.hpp"
+#include <optional>
 #include "outland/game/life/LifeSimulation.hpp"
 #include "outland/game/ai/BattleRoyaleBots.hpp"
 #include "outland/game/aircraft/HelicopterDrop.hpp"
@@ -744,6 +746,11 @@ void Renderer::run() {
     float territory_save_wait=0;
     std::string gang_news;float gang_news_time=0;
     bool island_ruled=false;
+    // How it ends when the gangs win: the Green Hand's siege of the parliament, then the Russian
+    // landing and the garrisons to clear (saved beside the territory).
+    game::mafia::Endgame endgame;
+    std::string endgame_path,endgame_saved;
+    int boss_talks=0;                // the bosses vary what they say
     std::vector<game::career::DockSpot> smuggling_docks;
     // Marnafto's diesel lanes for the big rigs (found by model; game::freight::Diesel).
     std::vector<Vector3> diesel_lanes;
@@ -829,6 +836,7 @@ void Renderer::run() {
     std::vector<characters::AnimationController> ranch_seats; // drivers' idle
     // Outsiders: Paul Acosta, the Vakeroj, and an officer's backup (against a gang at war with the officer).
     mafio.set_outsiders([&](int a,int b,double now){
+        if(endgame.ours(a) || endgame.ours(b)) return endgame.hostile(a,b);   // the parliament's guard, the occupiers
         const auto officer=[&](int id){return backup.officer(id) || (player_crew.partner()>=0 && id==player_crew.partner());};
         if(officer(a) || officer(b)) {
             const int gang=mafio.gang_of(officer(a) ? b : a);
@@ -885,9 +893,31 @@ void Renderer::run() {
         DrawCube({0,.065F,.135F},.04F,.045F,.012F,gold);                 // the badge
         rlPopMatrix();
     };
+    // The occupiers' steel helmet: an olive shell over the crown with a rim (built from parts).
+    const auto draw_helmet=[&](const characters::HeldGun& head) {
+        if(!head.hat) return;
+        const Vector3 up=Vector3Normalize(head.crown_up);
+        Vector3 forward=Vector3Subtract(head.crown_forward,Vector3Scale(up,Vector3DotProduct(head.crown_forward,up)));
+        if(Vector3Length(forward)<1e-3F) return;
+        forward=Vector3Normalize(forward);
+        const Vector3 right=Vector3CrossProduct(up,forward);
+        const Vector3 at=Vector3Subtract(Vector3Subtract(head.crown,Vector3Scale(up,.085F)),Vector3Scale(forward,.015F));
+        Matrix m=MatrixIdentity();
+        m.m0=right.x;m.m1=right.y;m.m2=right.z;m.m4=up.x;m.m5=up.y;m.m6=up.z;m.m8=forward.x;m.m9=forward.y;m.m10=forward.z;
+        m.m12=at.x;m.m13=at.y;m.m14=at.z;
+        rlPushMatrix();
+        rlMultMatrixf(MatrixToFloat(m));
+        const Color olive{78,86,52,255},dark{52,58,36,255};
+        DrawCylinder({0,0,0},.128F,.132F,.012F,16,dark);                // the rim
+        DrawCylinder({0,.012F,0},.122F,.118F,.045F,16,olive);           // the sides
+        DrawCylinder({0,.057F,0},.118F,.085F,.035F,16,olive);           // shoulder of the dome
+        DrawCylinder({0,.092F,0},.085F,.02F,.03F,16,olive);             // the crown
+        rlPopMatrix();
+    };
     const auto krimulo_hostile=[&](int bot){return !mafio.active() || mafio.provoked(mafio.gang_of(bot),match_time) ||
         walking_man.hostile_to(bot,game::ai::BattleRoyaleBots::player_id,match_time) ||
-        ranches.hostile_to(bot,game::ai::BattleRoyaleBots::player_id,match_time);};
+        ranches.hostile_to(bot,game::ai::BattleRoyaleBots::player_id,match_time) ||
+        endgame.hostile(bot,game::ai::BattleRoyaleBots::player_id);};
 
     // Combat feedback (numbers, kill marker, hurt flash and arrow, shake) and frag grenades.
     game::combat::CombatFeedback combat_feedback;
@@ -942,10 +972,11 @@ void Renderer::run() {
     // foot soldiers' white shirt with the green hand, the officers' charcoal suit and green tie.
     // Every other gang in its own colours (gang_<n>_soldato/kapo): easy to pick out on the street.
     struct Outfits {
-        Texture2D soldato{}, kapo{};
+        Texture2D soldato{}, kapo{}, occupier{};
         std::array<Texture2D,5> gang_soldato{},gang_kapo{};
         ~Outfits() {
             if(soldato.id) UnloadTexture(soldato);
+            if(occupier.id) UnloadTexture(occupier);
             if(kapo.id) UnloadTexture(kapo);
             for(auto* set:{&gang_soldato,&gang_kapo}) for(auto& t:*set) if(t.id) UnloadTexture(t);
         }
@@ -960,6 +991,7 @@ void Renderer::run() {
         };
         outfits.soldato=load_outfit("assets/verda/characters/outfits/verda_mano_soldato.png");
         outfits.kapo=load_outfit("assets/verda/characters/outfits/verda_mano_kapo.png");
+        outfits.occupier=load_outfit("assets/verda/characters/outfits/rusa_soldato.png");   // the occupiers' camouflage
         for(int g=1;g<5;++g) {
             outfits.gang_soldato[static_cast<std::size_t>(g)]=load_outfit(TextFormat("assets/verda/characters/outfits/gang_%d_soldato.png",g));
             outfits.gang_kapo[static_cast<std::size_t>(g)]=load_outfit(TextFormat("assets/verda/characters/outfits/gang_%d_kapo.png",g));
@@ -1787,6 +1819,7 @@ void Renderer::run() {
                 career=game::career::Career{};career_path.clear();mafio.set_player_gang(-1);services.assign_player_car({});
                 police_camp=game::career::TrainingCamp{};chief={};lights_car.clear();
                 territory.clear();territory_path.clear();smuggling_docks.clear();
+                endgame.clear();endgame_path.clear();endgame_saved.clear();
                 mafio.clear(br_bots,bot_drivers,vehicles);
                 callouts.reset();booking={};inside_lines.clear();inside_line=0;in_shu=false;sleep_fade=-1;prison_tour={};
                 services.clear(vehicles,npcs);
@@ -1905,6 +1938,44 @@ void Renderer::run() {
                         // The partner a desk can give an officer.
                         player_crew.start(br_bots,park,session_seed);
                         npcs.spawn_bot(player_crew.partner_bot(),"character_21_police",park,0);
+                    }
+                    // How it ends: the parliament's guard on Registaro de Verda's steps, and a garrison
+                    // for each county seat's square (both out of the game until their part comes).
+                    endgame.clear();
+                    if(game::rules_for(game_mode).civilian_life) {
+                        const auto open_ground=[&](Vector3 c) -> std::optional<Vector3> {
+                            for(float r=0;r<=48;r+=6)
+                                for(int k=0;k<(r==0 ? 1 : 12);++k) {
+                                    const float a=static_cast<float>(k)*PI/6;
+                                    const float x=c.x+std::cos(a)*r,z=c.z+std::sin(a)*r;
+                                    const float top=std::max(world::terrain::TerrainHeight::sample(x,z),c.y)+3;
+                                    const float y=world::physics::WorldCollision::ground_height({x,top,z},top,verda_region);
+                                    if(!std::isfinite(y) || y<world::layout::sea_level+1) continue;
+                                    if(!world::physics::WorldCollision::body_blocked({x,y,z},y,verda_region,.9F)) return Vector3{x,y,z};
+                                }
+                            return std::nullopt;
+                        };
+                        const game::life::Place* hall=nullptr;
+                        for(const auto& place:island_life.places()) if(place.civic_hall) {hall=&place;break;}
+                        std::vector<Vector3> posts;std::vector<std::string> towns;
+                        for(const auto& zone:world::zones::zones)
+                            for(const auto& town:verda_region.settlements()) if(town.id==zone.seat)
+                                if(const auto at=open_ground({town.center.x,world::terrain::TerrainHeight::sample(town.center.x,town.center.z),town.center.z})) {
+                                    posts.push_back(*at);towns.push_back(town.name.empty() ? town.id : town.name);
+                                }
+                        if(hall && !posts.empty()) {
+                            Vector3 out=Vector3Subtract(hall->door,hall->interior);out.y=0;
+                            out=Vector3Length(out)>.1F ? Vector3Normalize(out) : Vector3{0,0,1};
+                            const auto steps=open_ground(Vector3Add(hall->door,Vector3Scale(out,7)));
+                            endgame.start(br_bots,steps.value_or(hall->door),hall->interior,std::atan2(out.x,out.z)*RAD2DEG,posts,towns,session_seed);
+                            // The guard in the Policio's uniform, the troops in theirs (on the body the outfits fit).
+                            for(const auto& bot:br_bots.bots()) {
+                                if(endgame.guard(bot.id())) npcs.spawn_bot(bot.id(),bot.id()%2 ? "character_18_police" : "character_21_police",bot.position(),0);
+                                else if(endgame.soldier(bot.id()) && character_registry.find(outfit_body)) npcs.spawn_bot(bot.id(),outfit_body,bot.position(),0);
+                            }
+                            TraceLog(LOG_INFO,"OUTLAND endgame: the parliament's guard at %.0f %.0f, %d garrisons",hall->door.x,hall->door.z,static_cast<int>(posts.size()));
+                            for(std::size_t g=0;g<posts.size();++g) TraceLog(LOG_INFO,"OUTLAND endgame garrison %s at %.0f %.1f %.0f",towns[g].c_str(),posts[g].x,posts[g].y,posts[g].z);
+                        }
                     }
                     // The state prison's guards and inmates.
                     {
@@ -2225,6 +2296,14 @@ void Renderer::run() {
                     TraceLog(LOG_INFO,"OUTLAND territory: %d turfs, %d tags, %d docks%s",static_cast<int>(territory.turfs().size()),
                              static_cast<int>(territory.tags().size()),static_cast<int>(smuggling_docks.size()),territory_loaded ? " (saved)" : "");
                     territory_saved=territory_loaded ? territory.serialise() : std::string();   // a fresh island is saved at once
+                    // Where the endgame stood: the siege, the landing, the towns already freed.
+                    endgame_path=game::inventory::LootSave::profile_path(map_path,game_mode)+".endgame";
+                    endgame_saved.clear();
+                    if(endgame.ready() && FileExists(endgame_path.c_str())) if(char* text=LoadFileText(endgame_path.c_str())) {
+                        if(endgame.parse(text,br_bots)) endgame_saved=endgame.serialise();
+                        else TraceLog(LOG_WARNING,"Endgame: unreadable %s",endgame_path.c_str());
+                        UnloadFileText(text);
+                    }
                     // The Verda Mano GT waits outside the Verda City hideout (one on the island).
                     if(const auto* home=mafio.casino()) {
                         bool parked=false;
@@ -2854,8 +2933,14 @@ void Renderer::run() {
                     career.quit();mafio.set_player_gang(-1);island_ruled=false;join_offer={};
                     interaction_message=career.state().record ? "You walked away - your record stays" : "You walked away with your honour - your record is clean";
                 } else {
+                    // A word from the boss first (how the gang sees Verda), then the way out.
                     join_offer={crew,{},match_time+5};
-                    interaction_message="Boss: \"Leaving us?\" - USE again to walk away from "+std::string(game::mafia::gangs[static_cast<std::size_t>(mafio.crews()[static_cast<std::size_t>(crew)].gang)].name);
+                    const int gang=mafio.crews()[static_cast<std::size_t>(crew)].gang;
+                    const bool dario=!campaign_path.empty() && mafio.casino()==&mafio.crews()[static_cast<std::size_t>(crew)] && gang==0;
+                    chief_line=std::string(dario ? "Uncle Dario: " : "Boss: ")+
+                        game::career::Career::boss_talk(gang,true,island_ruled,endgame.phase()==game::mafia::EndPhase::Occupied,boss_talks++);
+                    chief_line_time=9;
+                    interaction_message="USE again to walk away from "+std::string(game::mafia::gangs[static_cast<std::size_t>(gang)].name);
                 }
                 interaction_remaining=4;input_system.player().interact=false;
             } else if(crew>=0 && !mafio.provoked(mafio.crews()[static_cast<std::size_t>(crew)].gang,match_time)) {
@@ -2879,7 +2964,11 @@ void Renderer::run() {
                 } else {
                     join_offer={crew,{},match_time+5};
                     interaction_message=dario ? std::string("Uncle Dario: \"Nevo! Ron said you were back. The Green Hand looks after its own - family first.\" USE again to join") :
-                        "Boss of "+name+": \"Want in? Gangsters only - never the people.\" USE again to join";
+                        "Boss of "+name+": "+game::career::Career::boss_talk(gang,false,false,endgame.phase()==game::mafia::EndPhase::Occupied,0)+" USE again to join";
+                    if(dario) {
+                        chief_line="Uncle Dario: "+game::career::Career::boss_talk(0,false,false,endgame.phase()==game::mafia::EndPhase::Occupied,0);
+                        chief_line_time=9;
+                    }
                 }
                 interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
             } else if(station && career.on_duty()) {
@@ -4443,6 +4532,7 @@ void Renderer::run() {
             // nobody's business.
             bool gang_business=mafio.active() && mafio.turf_at(frame.player,60)>=0;
             for(int g=0;g<static_cast<int>(game::mafia::gangs.size());++g) gang_business|=mafio.provoked(g,match_time);
+            gang_business|=endgame.fighting();   // a siege or a war on the occupiers: nobody calls the police over it
             if(frame.player_fired && !gang_business && !career.on_duty()) justice.crime(game::law::CrimeKind::ShotsFired,frame.player,-1,frame,island_life);
             // Your crew runs this town: the more of Verda it runs, the more often nobody saw a thing.
             if(const int mine=player_gang();mine>=0 && !crimes.empty())
@@ -5143,6 +5233,41 @@ void Renderer::run() {
                         gang_news=gang_name(mine)+" RULE VERDA - every town and every ranch is yours";gang_news_time=12;
                         gun_audio.kill_confirm();
                     }
+                    // How it ends: a gang that rules Verda brings on the endgame - the Green Hand
+                    // march on the parliament first; then the Russians land.
+                    if(endgame.ready()) {
+                        // Dev: OUTLAND_DEV_ENDGAME=siege (the Green Hand's) or =landing (another gang's win).
+                        if(static const char* dev=std::getenv("OUTLAND_DEV_ENDGAME");dev && endgame.phase()==game::mafia::EndPhase::None)
+                            endgame.gang_won(std::string(dev)=="siege" ? 0 : 2,match_time-(std::string(dev)=="siege" ? 0 : game::mafia::Endgame::landing_delay),br_bots);
+                        if(island_ruled && player_gang()>=0 && endgame.phase()==game::mafia::EndPhase::None) {
+                            endgame.gang_won(player_gang(),match_time,br_bots);
+                            if(endgame.phase()==game::mafia::EndPhase::Siege) {gang_news="THE GREEN HAND MARCH ON THE REGISTARO - take the parliament";gang_news_time=12;}
+                        }
+                        const auto before=endgame.phase();
+                        if(const auto said=endgame.update(feet,player_health.alive(),match_time,br_bots);!said.empty()) {
+                            gang_news=said;gang_news_time=14;gun_audio.kill_confirm();
+                        }
+                        const auto now_phase=endgame.phase();
+                        if(before==game::mafia::EndPhase::Siege && now_phase!=game::mafia::EndPhase::Siege) {
+                            career.orders_done(game::career::JobKind::Siege,25000,20);
+                            banner_key.clear();
+                        }
+                        if(before==game::mafia::EndPhase::Occupied && now_phase==game::mafia::EndPhase::Free) {
+                            const int pay=endgame.take_pay();
+                            if(career.state().side==game::career::Side::Civilian) {loot_session.economy().money+=pay;loot_session.changed();}
+                            else career.orders_done(game::career::JobKind::Liberate,pay,30);
+                        }
+                        career.set_occupied(now_phase==game::mafia::EndPhase::Occupied);
+                        if(now_phase==game::mafia::EndPhase::Siege && career.in_gang(0))
+                            career.orders(game::career::JobKind::Siege,endgame.hall(),
+                                          "Take Registaro de Verda: the parliament's guard holds the steps - put them down and walk into the hall");
+                        if(now_phase==game::mafia::EndPhase::Occupied)
+                            career.orders(game::career::JobKind::Liberate,endgame.objective(feet),
+                                          TextFormat("Russian troops hold %d of %d towns - clear the garrison in %s",endgame.garrisons_left(),
+                                                     static_cast<int>(endgame.garrisons().size()),endgame.objective_town(feet).c_str()));
+                        if(!endgame_path.empty() && game::rules_for(game_mode).civilian_life)
+                            if(const auto text=endgame.serialise();text!=endgame_saved && SaveFileText(endgame_path.c_str(),const_cast<char*>(text.c_str()))) endgame_saved=text;
+                    }
                     gang_news_time=std::max(0.0F,gang_news_time-dt);
                     territory_save_wait-=dt;
                     if(territory_save_wait<=0 && !territory_path.empty()) {
@@ -5741,6 +5866,7 @@ void Renderer::run() {
         const auto draw_hat=[&](const characters::NpcInstance& actor,const characters::HeldGun& held) {
             if(actor.bot>=0 && ranches.vakero(actor.bot) && actor.state!=characters::NpcState::Dead) draw_cowboy_hat(held);
             if(actor.bot==chief_bot) draw_chief_cap(held);
+            if(actor.bot>=0 && endgame.soldier(actor.bot)) draw_helmet(held);
             if(actor.resident>=0 && actor.state!=characters::NpcState::Dead && services.trooper(actor.resident))
                 draw_cowboy_hat(held,"assets/verda/ranch/trooper_hat.glb");
         };
@@ -5780,6 +5906,8 @@ void Renderer::run() {
                 // Every gang in its colours: officers sharp, soldiers in the gang's shirt (the Green Hand's white).
                 if(actor.bot>=0 && actor.character_id==outfit_body && mafio.active())
                     if(const int gang=mafio.gang_of(actor.bot);gang>=0) body.outfit=gang_outfit(gang,mafio.officer(actor.bot));
+                // The occupiers in camouflage.
+                if(actor.bot>=0 && actor.character_id==outfit_body && endgame.soldier(actor.bot)) body.outfit=outfits.occupier.id;
                 // Another player knocked down (squad play): on their knees, no gun.
                 if(game::lan::LanPlay::is_remote_body(actor.bot))
                     if(const auto* who=lan_play.find(game::lan::LanPlay::slot_of(actor.bot));who && down(*who)) {body.downed=1;return;}
@@ -6701,10 +6829,15 @@ void Renderer::run() {
                 DrawRectangle(static_cast<int>(screen_width/2-mw/2-14),screen_height-384,static_cast<int>(mw+28),30,Fade(Color{30,10,10,255},.7F*alpha));
                 DrawTextEx(font,gang_news.c_str(),{screen_width/2-mw/2,static_cast<float>(screen_height-379)},19,1,Fade(Color{255,190,140,255},alpha));
             }
-            if(island_ruled && player_gang()>=0) {
-                const std::string crown=gang_name(player_gang())+" RULE VERDA";
+            if((island_ruled && player_gang()>=0) || endgame.phase()==game::mafia::EndPhase::Occupied || endgame.phase()==game::mafia::EndPhase::Free) {
+                using game::mafia::EndPhase;
+                const auto phase=endgame.phase();
+                const std::string gang=player_gang()>=0 ? gang_name(player_gang()) : std::string();
+                const std::string crown=phase==EndPhase::Siege ? gang+" RULE VERDA  ·  TAKE THE REGISTARO" :
+                    phase==EndPhase::Occupied ? TextFormat("RUSSIAN TROOPS HOLD %d OF %d TOWNS",endgame.garrisons_left(),static_cast<int>(endgame.garrisons().size())) :
+                    phase==EndPhase::Free ? (gang.empty() ? std::string("VERDA IS FREE") : gang+" RULE A FREE VERDA") : gang+" RULE VERDA";
                 const float cw=MeasureTextEx(font,crown.c_str(),18,1).x;
-                DrawTextEx(font,crown.c_str(),{screen_width/2-cw/2,58},18,1,Color{240,200,90,255});
+                DrawTextEx(font,crown.c_str(),{screen_width/2-cw/2,80},18,1,phase==EndPhase::Occupied ? Color{240,110,90,255} : Color{240,200,90,255});
             }
             // (The career - side, rank, respect, the job in hand - is in the bag's QUESTS.)
             // Doing time, or prisoners in the back of the car.

@@ -34,7 +34,7 @@ namespace outland::game::career {
 
 enum class Side : std::uint8_t { Civilian, Gang, Police };
 enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, Raid, BreakUpWar, Quest, Smuggle, Extort, TakeTurf, CleanUp, HitChief, Callout,
-                                     RobStore, TagUp };
+                                     RobStore, TagUp, Siege, Liberate };
 // A recruit's road onto the force: report to the Chief at Verda City HQ, qualify at the training
 // camp's range, report back for the badge and the Interceptor, then serve (calls).
 enum class PoliceStage : std::uint8_t { Report, Training, Graduated, Serving };
@@ -208,6 +208,18 @@ public:
     // in its rival town; the boss hands over the cans with the job (take_cans).
     void tagged(int turf);
     int take_cans() { const int c = cans_; cans_ = 0; return c; }
+    // How it ends (game::mafia::Endgame): orders that stand until done - THE SIEGE of the
+    // parliament (the Green Hand, once they rule Verda) and LIBERATION (the Russian garrisons,
+    // for anyone with a side). `orders` sets them, or moves the waypoint; `orders_done` pays out
+    // `pay` flat with `respect`.
+    void orders(JobKind kind, Vector3 target, const std::string& detail);
+    void orders_done(JobKind kind, int pay, float respect);
+    // Verda under occupation (the Russian troops have landed): the Chief and the bosses say so.
+    void set_occupied(bool occupied) { occupied_ = occupied; }
+    // A gang boss's word to the player (`member`: one of his own). The Green Hand's
+    // Esperantista Loyalists believe they alone can unite the people; the others want their share.
+    // `ruled`: the player's gang runs every town. Varies with `line`.
+    [[nodiscard]] static std::string boss_talk(int gang, bool member, bool ruled, bool occupied, int line);
     // The last job finished well (kind, where, ranch), once - the territory pays out on it.
     bool take_finished(Job& out) { if (finished_.kind == JobKind::None) return false; out = finished_; finished_ = {}; return true; }
     [[nodiscard]] PoliceStage police_stage() const { return state_.police_stage; }
@@ -261,6 +273,8 @@ private:
     bool tipoff_{false}, demanded_{false};
     int cans_{0};                    // spray cans the boss hands over with a TAG UP
     bool verda_clean_{false};
+    bool occupied_{false};
+    int chief_talks_{0};             // the Chief varies what he says
     double capital_warned_{-1e9};
     int campaign_left_{-1};
     Job finished_;

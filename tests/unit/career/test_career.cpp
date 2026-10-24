@@ -446,6 +446,50 @@ int main() {
             if (low.job().kind != JobKind::None) { f.now = now += 2000; low.update(f); } }
         check(!ordered, "only a Leŭtenanto gets that order");
     }
+    // How it ends: the morale lines, and orders that stand (THE SIEGE, LIBERATION).
+    {
+        std::string why;
+        Career cop;
+        cop.join_police("car", why);
+        bool car = false;
+        const auto first = cop.chief_talk(car);
+        check(first.find("becoming lawless") != std::string::npos && first.find("sovereignty is at stake") != std::string::npos, "the Chief speaks of lawlessness and sovereignty");
+        cop.set_occupied(true);
+        check(cop.chief_talk(car).find("Russian") != std::string::npos, "the Chief under occupation");
+        check(Career::boss_talk(0, true, false, false, 0).find("only gang capable of uniting") != std::string::npos, "the Green Hand unite the people");
+        check(Career::boss_talk(0, true, false, false, 1).find("Esperantista Loyalists") != std::string::npos, "Esperantista Loyalists");
+        check(Career::boss_talk(0, true, true, false, 0).find("parliament") != std::string::npos, "then the parliament");
+        check(Career::boss_talk(0, false, false, false, 0).find("Want in?") != std::string::npos, "the Green Hand's pitch");
+        check(Career::boss_talk(3, true, false, false, 0).find("drifting apart") != std::string::npos, "the other gangs see it too");
+        check(Career::boss_talk(2, true, false, true, 0).find("Soldiers") != std::string::npos, "a boss under occupation");
+
+        Career g;
+        g.join_gang(0, "La Verda Mano", why);
+        CareerFrame f;
+        f.now = 10;
+        g.orders(JobKind::Siege, {5, 0, 5}, "Take the parliament");
+        check(g.job().kind == JobKind::Siege && g.job().target.x == 5, "THE SIEGE ordered");
+        f.now = 1e6; g.update(f);
+        check(g.job().kind == JobKind::Siege, "no deadline on orders");
+        g.died();
+        check(g.job().kind == JobKind::Siege, "the orders stand when you go down");
+        g.orders(JobKind::Siege, {9, 0, 9}, "Take the parliament");
+        check(g.job().target.x == 9, "the waypoint moves");
+        g.take_pay();
+        g.orders_done(JobKind::Siege, 25000, 20);
+        Job done;
+        check(g.job().kind == JobKind::None && g.take_finished(done) && done.kind == JobKind::Siege && g.take_pay() == 25000, "the siege pays flat");
+        g.orders(JobKind::Liberate, {1, 0, 1}, "Clear the garrison");
+        g.orders_done(JobKind::Liberate, 100000, 30);
+        check(g.take_pay() == 100000, "liberation pays");
+        Career recruit;
+        recruit.join_police("car", why);
+        recruit.orders(JobKind::Liberate, {1, 0, 1}, "Clear the garrison");
+        check(recruit.job().kind != JobKind::Liberate, "a recruit's orders are the camp's");
+        Career nobody;
+        nobody.orders(JobKind::Liberate, {1, 0, 1}, "Clear the garrison");
+        check(nobody.job().kind == JobKind::None, "a civilian takes no orders");
+    }
     // Ranks and saving.
     {
         check(Career::rank_of(0) == 0 && Career::rank_of(15) == 1 && Career::rank_of(40) == 2 && Career::rank_of(100) == 4, "ranks");

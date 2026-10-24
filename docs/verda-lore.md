@@ -9,6 +9,8 @@ These points come from the game's creator.
 - **The whole island was a Cold War experiment that was forgotten.** Nobody came back for it. It carried on and survived on its own.
 - **The island is strange.** That strangeness is why everything happens here: the battle royales, the zombies, and an everyday life that carries on as if neither were unusual.
 - **The flag looks like Cuba's but is green like the Esperanto flag.**
+- **The law is slipping.** Verda's people are becoming lawless, and the Policio knows what that means: if the gangs win, the island's sovereignty goes with them. A broken Verda is an open door, and Russia is waiting on the other side of it.
+- **La Verda Mano are Esperantista Loyalists.** The Green Hand are a gang of nationalists. Verda's people are drifting apart, and the Green Hand believe they are the only gang capable of uniting them (and of reaping the rewards). Once they hold every town, they march on the parliament.
 
 ## The flag
 
@@ -19,6 +21,14 @@ The Verda flag has Cuba's layout in Esperanto colours:
 This mirrors the Esperanto flag's white canton with its green star. A thin green rim keeps the triangle apart from the white stripes.
 
 The green is Esperanto green, `#009900`. The flag is drawn by `game::culture::flag_image()` in `src/game/culture/Signage.cpp`, and the colours are constants there, so a different design is a small change.
+
+## How the story ends
+
+Both careers argue over the same question: who holds Verda together.
+
+- **The Policio (Ĉefo Marko Forta):** "Our people are becoming lawless. If we do not get our act together, our sovereignty is at stake." Let the gangs take Verda and Moscow will send troops "to restore order", and the island will never be Verda's again.
+- **The gangs:** "Our people are drifting apart." Green Hand bosses say only the Green Hand can unite them. The other gangs want their share first.
+- **If the gangs win:** the Green Hand lay siege to the parliament, Registaro de Verda. Then the Russians land, as the Chief warned, and the winners have to kill them too, town by town. See [gangs](gangs.md#how-it-ends).
 
 ## Working details
 
