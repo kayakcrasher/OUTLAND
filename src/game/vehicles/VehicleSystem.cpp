@@ -85,7 +85,7 @@ bool VehicleSystem::spawn(world::VerdaRegion &region, Vector3 near, float yaw,
     for (float offset : {4.0F, 6.0F, 8.0F})
         for (float side : {1.0F, -1.0F}) {
             Vector3 p = world_point({side * offset, 0, 2}, near, yaw);
-            p.y = world::terrain::TerrainHeight::sample(p.x, p.z);
+            p.y = ground(p, near.y);
             if (blocked(region, p, yaw, *d, 1))
                 continue;
             world::WorldAsset a;
@@ -139,7 +139,7 @@ bool VehicleSystem::place(world::VerdaRegion &region, std::string_view id, Vecto
     const int index = find(id);
     if (!a || index < 0)
         return false;
-    position.y = world::terrain::TerrainHeight::sample(position.x, position.z);
+    position.y = ground(position, position.y);
     a->position = position;
     a->rotation_y = std::remainder(yaw, 360.0F);
     auto &v = vehicles_[static_cast<std::size_t>(index)];
@@ -200,7 +200,7 @@ void VehicleSystem::restore_checkpoint(world::VerdaRegion& region,const std::vec
 void VehicleSystem::reset_match_fleet(world::VerdaRegion& region) {
     leave_session();
     for(auto& town:region.runtime_settlements()) for(auto& a:town.assets) if(!a.vehicle.definition.empty() && !parts_donor(a.vehicle.marker)) {
-        a.position=a.vehicle.home;a.position.y=world::terrain::TerrainHeight::sample(a.position.x,a.position.z);
+        a.position=a.vehicle.home;a.position.y=ground(a.position,a.vehicle.home.y);
         a.rotation_y=a.vehicle.home_yaw;a.vehicle.health=a.vehicle.engine=100;a.vehicle.fuel=1;
         a.vehicle.tires.fill(100);a.vehicle.destroyed=false;
     }
@@ -242,8 +242,7 @@ bool VehicleSystem::reconcile(world::VerdaRegion &region) {
                     a.id = id;
                     a.model_path = d->body;
                     a.position = m.position;
-                    a.position.y =
-                        world::terrain::TerrainHeight::sample(m.position.x, m.position.z);
+                    a.position.y = ground(m.position, m.position.y);
                     a.rotation_y = m.rotation_y;
                     // Vehicles spawn at their real size (the manifest's metres). Marker sizes are
                     // only a parking footprint hint: most are 2 m wide, which used to shrink every
@@ -268,8 +267,7 @@ bool VehicleSystem::reconcile(world::VerdaRegion &region) {
                     if (distance(found->vehicle.home, m.position) > .001F ||
                         found->vehicle.home_yaw != m.rotation_y) {
                         found->position = m.position;
-                        found->position.y =
-                            world::terrain::TerrainHeight::sample(m.position.x, m.position.z);
+                        found->position.y = ground(m.position, m.position.y);
                         found->rotation_y = m.rotation_y;
                         found->vehicle.home = m.position;
                         found->vehicle.home_yaw = m.rotation_y;
@@ -391,8 +389,9 @@ bool VehicleSystem::exit(world::VerdaRegion &r, Vector3 &destination, bool force
              {d->exit, {-d->exit.x, 0, d->exit.z}, {0, 0, -d->length * .5F - 1.2F}}) {
             auto p = world_point(Vector3Scale(local, radius), a->position, a->rotation_y,
                                  scale_of(*a, *d));
-            p.y = world::terrain::TerrainHeight::sample(p.x, p.z);
-            if (world::physics::WorldCollision::blocked(p, r, .45F))
+            p.y = ground(p, a->position.y);
+            // (Height-aware: getting out on a parking deck isn't blocked by the deck above.)
+            if (world::physics::WorldCollision::body_blocked(p, p.y, r, .45F))
                 continue;
             destination = p;
             for (auto &runtime : vehicles_)
@@ -403,6 +402,13 @@ bool VehicleSystem::exit(world::VerdaRegion &r, Vector3 &destination, bool force
             return true;
         }
     return false;
+}
+float VehicleSystem::ground(Vector3 p, float from) const {
+    if (surface_) {
+        const float y = surface_(p, from);
+        if (std::isfinite(y)) return y;
+    }
+    return world::terrain::TerrainHeight::sample(p.x, p.z);
 }
 bool VehicleSystem::blocked(const world::VerdaRegion &r, Vector3 p, float yaw,
                             const VehicleDefinition &d, float scale,
@@ -422,8 +428,8 @@ bool VehicleSystem::blocked(const world::VerdaRegion &r, Vector3 p, float yaw,
     for (float x : {-d.width * .5F, 0.0F, d.width * .5F}) {
         int column = 0;
         for (float z : {-d.length * .5F, 0.0F, d.length * .5F}) {
-            const auto point = world_point({x, 0, z}, p, yaw, scale);
-            heights[row][column++] = world::terrain::TerrainHeight::sample(point.x, point.z);
+            auto point = world_point({x, 0, z}, p, yaw, scale);
+            point.y = heights[row][column++] = ground(point, p.y);
             if (world::physics::WorldCollision::vehicle_blocked(point, r, .2F, ignore))
                 return true;
         }
@@ -474,7 +480,7 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
             v.wrecked = unseen ? v.wrecked + dt : 0;
             if (v.wrecked >= tow_seconds) {
                 a->position = a->vehicle.home;
-                a->position.y = world::terrain::TerrainHeight::sample(a->position.x, a->position.z);
+                a->position.y = ground(a->position, a->vehicle.home.y);
                 a->rotation_y = a->vehicle.home_yaw;
                 a->vehicle.health = a->vehicle.engine = 100;
                 a->vehicle.tires.fill(100);
@@ -569,7 +575,7 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
             v.escape = d->length * scale + .5F;
         for (int step = 0; step < steps; ++step) {
             auto p = world_point({v.slip * dt / steps, 0, v.speed * dt / steps}, a->position, yaw);
-            p.y = world::terrain::TerrainHeight::sample(p.x, p.z);
+            p.y = ground(p, a->position.y);
             if (v.escape > 0) v.escape -= travel * dt / steps;
             else if (blocked(r, p, yaw, *shape, scale, a->id) || (barrier_ && barrier_(v.id, a->position, p, yaw))) {
                 // Another vehicle in the way: momentum goes into it. A heavy one (a rig, a bus)
@@ -635,9 +641,7 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
                    rear = world_point({0, 0, d->rear_z}, a->position, v.yaw, scale);
         const auto left = world_point({-d->track * .5F, 0, 0}, a->position, v.yaw, scale),
                    right = world_point({d->track * .5F, 0, 0}, a->position, v.yaw, scale);
-        const auto height = [](Vector3 p) {
-            return world::terrain::TerrainHeight::sample(p.x, p.z);
-        };
+        const auto height = [&](Vector3 p) { return ground(p, a->position.y); };
         v.pitch =
             std::atan2(height(front) - height(rear), (d->front_z - d->rear_z) * scale) * RAD2DEG +
             std::clamp((v.speed - old_speed) / dt * .15F, -3.0F, 3.0F);

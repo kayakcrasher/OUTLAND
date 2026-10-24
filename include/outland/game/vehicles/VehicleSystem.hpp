@@ -89,6 +89,10 @@ class VehicleSystem {
     bool held(std::string_view id) const { return held_.contains(std::string(id)); }
     // A no-entry rule for a move (vehicle id, from, to, yaw): true refuses it, as a wall would.
     void bind_barrier(std::function<bool(std::string_view, Vector3, Vector3, float)> barrier) { barrier_ = std::move(barrier); }
+    // What a car drives on at (x, z), coming from height `from`: the terrain unless something says
+    // otherwise (a parking garage's decks and ramps). Unbound: the terrain.
+    void bind_surface(std::function<float(Vector3, float)> surface) { surface_ = std::move(surface); }
+    [[nodiscard]] float ground(Vector3 p, float from) const;
     // Index into vehicles(), or -1.
     int find(std::string_view id) const;
     // Move a vehicle to a new pose at rest (off-screen traffic, parking it home). Refused while
@@ -135,5 +139,6 @@ class VehicleSystem {
     std::unordered_set<std::string> kinematic_;
     std::unordered_set<std::string> held_;
     std::function<bool(std::string_view, Vector3, Vector3, float)> barrier_;
+    std::function<float(Vector3, float)> surface_;
 };
 } // namespace outland::game::vehicles

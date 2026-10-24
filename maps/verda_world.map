@@ -39,6 +39,7 @@ ASSET "creator_city_intersection_16_kit18" 5 "assets/verda/city/ground/intersect
 ASSET "creator_city_intersection_16_kit19" 5 "assets/verda/city/ground/intersection_16.glb" 171 0.0900000036 84 16 0.100000001 16 0 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_intersection_16_kit20" 5 "assets/verda/city/ground/intersection_16.glb" 171 0.0900000036 168 16 0.100000001 16 0 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_parking_lot_68_kit1" 4 "assets/verda/city/ground/parking_lot_68.glb" -129 0 -126 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_parking_garage_kit1" 0 "assets/verda/city/civic/parking_garage.glb" -129 0.150000006 -125.75 38.5999985 20.2000008 32.5999985 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_1" 6 "" -145 0.150000006 -158.399994 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_kit_tree_2" 6 "" -113 0.150000006 -158.399994 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit1" 9 "assets/verda/urban/Traffic lights/street_light.glb" -129 0.150000006 -158.399994 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
@@ -5825,7 +5826,7 @@ ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit46" 9 "assets/ver
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit47" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -374 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit48" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -366 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit49" 9 "assets/verda/urban/Cones & Barriers/Bollards/square_bollard.glb" 2237.3999 -28 -350 0.181769997 1.35214102 0.181769997 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_truck_depot_kit1" 0 "assets/verda/city/civic/truck_depot.glb" -560 0 -56.4500008 38 9 31 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_truck_depot_kit1" 0 "assets/verda/city/civic/truck_depot.glb" -560 0 -56.5 38 9 31 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_parking_lot_68_kit10" 4 "assets/verda/city/ground/parking_lot_68.glb" -524 0 -126 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_parking_lot_68_kit11" 4 "assets/verda/city/ground/parking_lot_68.glb" -592 0 -126 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit4" 4 "assets/verda/city/civic/container_stack.glb" -640.070007 0 -128 10.5 7.80000019 37.5 0 255 255 255 255 80 80 80 255 1
@@ -6838,6 +6839,13 @@ BUILDING "verda_okcidento_house_86" 0 -396 0 182 13 4 10 0 184 196 160 255 58 62
 BUILDING "verda_okcidento_house_87" 1 -420 0 182 11 7 9 0 236 232 220 255 86 96 104 255 1
 BUILDING "verda_okcidento_house_88" 1 -444 0 182 11 7 9 0 150 168 182 255 58 62 58 255 1
 MARKER "vehicle_spawn_hatchback_capital" 3 -60 0 6.80000019 3 1.79999995 5 90 1
+MARKER "vehicle_spawn_hatchback_garage_0_1" 3 -113.099998 0.25 -115.400002 2 1.60000002 4.4000001 270 1
+MARKER "vehicle_spawn_hatchback_garage_0_4" 3 -125.099998 0.25 -123.199997 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_sedan_garage_1_0" 3 -113.099998 3.45000005 -112.800003 2 1.60000002 4.4000001 270 1
+MARKER "vehicle_spawn_sedan_garage_1_3" 3 -113.099998 3.45000005 -120.599998 2 1.60000002 4.4000001 270 1
+MARKER "vehicle_spawn_hatchback_garage_1_7" 3 -125.099998 3.45000005 -131 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_garage_2_5" 3 -113.099998 6.6500001 -125.800003 2 1.60000002 4.4000001 270 1
+MARKER "vehicle_spawn_hatchback_garage_2_2" 3 -125.099998 6.6500001 -118 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_downtown_1" 3 -121 0 -6.79999924 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_downtown_2" 3 -147 0 -6.79999924 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_downtown_3" 3 -121 0 6.79999924 2 1.60000002 4.4000001 90 1

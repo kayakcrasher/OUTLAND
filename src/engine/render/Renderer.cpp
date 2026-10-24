@@ -68,6 +68,8 @@
 #include "outland/game/aircraft/HelicopterDrop.hpp"
 #include "outland/game/aircraft/DropRenderer.hpp"
 #include "outland/game/economy/Penthouse.hpp"
+#include "outland/game/economy/SkyMansion.hpp"
+#include "outland/world/ParkingGarage.hpp"
 #include "outland/game/economy/Homes.hpp"
 #include "outland/game/sound/SoundBus.hpp"
 #include "outland/world/navigation/NavGrid.hpp"
@@ -110,6 +112,7 @@
 #include <rlgl.h>
 
 #include <algorithm>
+#include <limits>
 #include <cstring>
 #include <cstdio>
 #include <cstdlib>
@@ -819,6 +822,10 @@ void Renderer::run() {
     // Explore: the Stela Turo penthouse, for sale; once bought, home (sleep there, wake there).
     game::economy::Penthouse penthouse;
     bool was_in_penthouse=false;
+    // Parkumejo Centra, the multi-storey car park downtown: cars drive on its decks and ramps, and the
+    // mansion on its roof is for sale (game::economy::SkyMansion), with its own parking bay.
+    world::garage::Site garage_site;
+    bool garage_here=false,was_in_mansion=false,was_in_bay=false;
     // Homes for sale round the island (besides the penthouse): vacant while listed this session.
     std::vector<game::economy::Listing> homes_for_sale;
     std::vector<game::economy::Vacated> vacated_homes;
@@ -1151,6 +1158,13 @@ void Renderer::run() {
         TraceLog(LOG_ERROR,"Vehicle catalog: %s",vehicle_error.c_str());
     game::vehicles::VehicleSystem vehicles(vehicle_registry);
     game::vehicles::VehicleRenderer vehicle_renderer;
+    // Over the parking garage a car rides its decks and ramps: the highest floor of it within a
+    // metre above the wheels (WorldCollision::ground_height); everywhere else, the terrain.
+    garage_here=world::garage::find(verda_region,garage_site);
+    vehicles.bind_surface([&](Vector3 p,float from) {
+        if(!garage_here || !garage_site.over(p,1.5F)) return std::numeric_limits<float>::quiet_NaN();
+        return world::physics::WorldCollision::ground_height({p.x,from,p.z},from,verda_region,1.0F);
+    });
     vehicles.reconcile(verda_region);
     const std::string vehicle_state_path=map_path+".vehicles";
     bool vehicle_save_protected=false,vehicle_dirty=false;
@@ -1810,6 +1824,7 @@ void Renderer::run() {
                 if(bus_line.running()) bus_line.stop(verda_region,vehicles);
                 if(freight.running()) freight.stop(verda_region,vehicles);
                 ranches.clear(vehicles);
+                garage_here=world::garage::find(verda_region,garage_site);
                 vehicles.reconcile(verda_region);
                 if(game_mode==game::GameMode::BattleRoyale) {
                     match_fleet=vehicles.checkpoint(verda_region);match_fleet_active=true;fleet_was_dirty=vehicle_dirty;
@@ -2480,14 +2495,20 @@ void Renderer::run() {
                     penthouse.locate(verda_region);was_in_penthouse=false;
                     // Owners wake up at home: the one they bought last (a house, a flat or the penthouse).
                     const game::economy::Listing* wake_home=nullptr;
+                    bool wake_mansion=false;
                     {
                         const auto& owned=loot_session.economy().properties;
                         for(auto it=owned.rbegin();it!=owned.rend() && !wake_home;++it) {
                             if(*it==game::economy::Penthouse::property_id) break;
+                            if(*it==game::economy::SkyMansion::property_id) {wake_mansion=garage_here;break;}
                             for(const auto& home:homes_for_sale) if(home.id==*it) {wake_home=&home;break;}
                         }
                     }
-                    if(respawn_at_hospital && wake_home) {
+                    if(respawn_at_hospital && wake_mansion) {
+                        const auto bed=garage_site.to_world(world::garage::wake);
+                        player.position={bed.x,bed.y+1,bed.z};player.yaw=0;
+                        interaction_message="You wake up at home in the mansion on Parkumejo Centra";interaction_remaining=5;
+                    } else if(respawn_at_hospital && wake_home) {
                         const Vector3 c=wake_home->centre;
                         const float floor=world::physics::WorldCollision::ground_height({c.x,c.y+1.2F,c.z},c.y+1.2F,verda_region);
                         player.position={c.x,floor+1,c.z};player.yaw=0;
@@ -3989,6 +4010,39 @@ void Renderer::run() {
                 }
             }
             was_in_penthouse=penthouse.inside(loot_feet);
+            // The mansion on the parking garage's roof: buy it inside, sleep in the master bedroom.
+            const bool in_mansion=garage_here && game::rules_for(game_mode).civilian_life && !vehicles.driver() && garage_site.in_mansion(loot_feet);
+            if(in_mansion && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !inventory_open) {
+                const bool owned=game::economy::SkyMansion::owned(loot_session.economy());
+                if(!was_in_mansion) {interaction_message=owned ? "Home: the mansion on Parkumejo Centra" : "The mansion on Parkumejo Centra - for sale, with its own parking bay";interaction_remaining=3;}
+                const auto bed=garage_site.to_world(world::garage::bed);
+                const bool by_bed=std::hypot(loot_feet.x-bed.x,loot_feet.z-bed.z)<2.4F && std::abs(loot_feet.y-bed.y)<1.5F;
+                if(controls.interact && !home_used && loot_session.world().nearest(loot_feet,2.8F,reachable_pickup)<0) {
+                    if(!owned) {
+                        interaction_message=game::economy::SkyMansion::buy(loot_session.economy());loot_session.changed();
+                        if(game::economy::SkyMansion::owned(loot_session.economy())) {gun_audio.kill_confirm();haptics.hit_given(true);}
+                        interaction_remaining=5;home_used=true;
+                    } else if(by_bed) {
+                        const auto clock=island_life.clock();
+                        const int days=clock.minute_of_day()>=7*60 ? clock.day()+1 : clock.day();
+                        island_life.set_clock(game::life::WorldClock::at(days,7,0));
+                        player_health.reset();health_seen=player_health.current();
+                        interaction_message="Slept until morning - "+island_life.clock().label();interaction_remaining=4;home_used=true;
+                    }
+                }
+            }
+            was_in_mansion=in_mansion;
+            // Its parking bay: the owner's; anyone else is told it's private.
+            if(garage_here && game::rules_for(game_mode).civilian_life) {
+                const auto* car=vehicles.driver();
+                const bool in_bay=car && std::abs(car->speed)<.8F && garage_site.in_bay(car->position);
+                if(in_bay && !was_in_bay) {
+                    interaction_message=game::economy::SkyMansion::owned(loot_session.economy()) ? "Your own bay, at your own front door. It stays here till you're back"
+                                                                                                  : "PRIVATA - the mansion's owner parks here";
+                    interaction_remaining=4;
+                }
+                was_in_bay=in_bay;
+            }
             // The homes for sale: buy the one you stand in; at home, sleep in your bed.
             home_here=nullptr;
             if(game::rules_for(game_mode).civilian_life && !vehicles.driver())
@@ -7815,6 +7869,18 @@ void Renderer::run() {
                     DrawRectangle(static_cast<int>(screen_width/2-tw/2-14),screen_height-252,static_cast<int>(tw+28),32,Fade(BLACK,.6F));
                     DrawTextEx(font,line.c_str(),{screen_width/2-tw/2,static_cast<float>(screen_height-246)},20,1,owned ? Color{140,220,150,255} : GOLD);
                 }
+                if(garage_here && !vehicles.driver() && garage_site.in_mansion(loot_feet)) {
+                    const bool owned=game::economy::SkyMansion::owned(loot_session.economy());
+                    const auto bed=garage_site.to_world(world::garage::bed);
+                    const bool by_bed=std::hypot(loot_feet.x-bed.x,loot_feet.z-bed.z)<2.4F && std::abs(loot_feet.y-bed.y)<1.5F;
+                    const char* line=!owned ? TextFormat("MANSION FOR SALE - %lld kronoj (with its own parking bay)   E / USE: BUY",static_cast<long long>(game::economy::SkyMansion::price)) :
+                        by_bed ? "E / USE: SLEEP UNTIL MORNING" : nullptr;
+                    if(line) {
+                        const int tw=MeasureText(line,22);
+                        DrawRectangle(screen_width/2-tw/2-14,screen_height-252,tw+28,34,Fade(BLACK,.6F));
+                        DrawText(line,screen_width/2-tw/2,screen_height-246,22,GOLD);
+                    }
+                }
                 if(penthouse.inside(loot_feet)) {
                     const bool owned=game::economy::Penthouse::owned(loot_session.economy());
                     const char* line=!owned ? TextFormat("PENTHOUSE FOR SALE - %lld kronoj   E / USE: BUY",static_cast<long long>(game::economy::Penthouse::price)) :
@@ -8168,6 +8234,8 @@ void Renderer::run() {
                     compass_marks.push_back({clothing_store->front,Glyph::Shop,Color{60,200,130,255},"VESTAĴEJO",false});
                 if(penthouse.found() && game::economy::Penthouse::owned(loot_session.economy()))
                     compass_marks.push_back({penthouse.to_world({0,0,0}),Glyph::Home,Color{255,214,90,255},"HOME",false});
+                if(garage_here && game::economy::SkyMansion::owned(loot_session.economy()))
+                    compass_marks.push_back({garage_site.to_world(world::garage::door),Glyph::Home,Color{255,214,90,255},"HOME",false});
                 // Hideouts: your own crew's (the nearest, anywhere) and any rival's close by.
                 const int mine=player_gang();
                 std::vector<Vector3> own;
@@ -8312,6 +8380,9 @@ void Renderer::run() {
                 view.home_owned=game::economy::Penthouse::owned(loot_session.economy());
             }
             view.marks=compass_marks;
+            if(game::rules_for(game_mode).civilian_life && garage_here && !game::economy::SkyMansion::owned(loot_session.economy()))
+                view.marks.push_back({garage_site.to_world(world::garage::door),game::hud::Glyph::Home,Color{230,90,90,255},
+                    TextFormat("MANSION FOR SALE %lld kr",static_cast<long long>(game::economy::SkyMansion::price)),false});
             for(const auto& home:homes_for_sale) {
                 const bool mine=game::economy::owns(loot_session.economy(),home);
                 view.marks.push_back({home.board,game::hud::Glyph::Home,mine ? Color{255,214,90,255} : Color{230,90,90,255},

@@ -96,6 +96,9 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_cattle_gangway", .name = "Cattle gangway up a ship's side", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/civic/cattle_gangway.glb", .thumbnail_path = "", .footprint = {18.00F, 2.60F, 4.20F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_parking_garage", .name = "Parkumejo Centra - multi-storey car park (drive up 4 levels), rooftop mansion for sale", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/parking_garage.glb", .thumbnail_path = "", .footprint = {38.60F, 32.60F, 20.20F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_truck_depot", .name = "Verda Transporto - truck depot with office", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/truck_depot.glb", .thumbnail_path = "", .footprint = {38.00F, 31.00F, 9.00F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

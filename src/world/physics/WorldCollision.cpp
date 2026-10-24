@@ -371,10 +371,12 @@ bool WorldCollision::blocked_impl(
             if(vehicle && light_prop(asset))return false;
             // Paving, lots and pads (a few centimetres high) are driven over, not into.
             if(vehicle && asset.vehicle.definition.empty() && asset.size.y<.35F)return false;
-            // Buildings you drive into (a filling station's canopy, a workshop's bays, the car lot):
+            // Buildings you drive into (a filling station's canopy, a workshop's bays, the car lot, the
+            // truck depot's shed, the parking garage's decks and ramps):
             // a car meets their real shape - columns, pumps, walls - not their bounding box.
             if(vehicle && asset.collision && (asset.model_path.ends_with("civic/gas_station.glb") ||
-               asset.model_path.ends_with("civic/mechanic_shop.glb") || asset.model_path.ends_with("civic/car_lot.glb"))) {
+               asset.model_path.ends_with("civic/mechanic_shop.glb") || asset.model_path.ends_with("civic/car_lot.glb") ||
+               asset.model_path.ends_with("civic/truck_depot.glb") || asset.model_path.ends_with("civic/parking_garage.glb"))) {
                 const auto* mesh=MeshCollisionLibrary::get(asset.model_path);
                 if(!mesh) return false;
                 const float dx=position.x-asset.position.x,dz=position.z-asset.position.z,yaw=asset.rotation_y*DEG2RAD;

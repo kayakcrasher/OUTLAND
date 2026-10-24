@@ -12,6 +12,7 @@ Built by `outland_build_world` (`src/dev/VerdaWorldKit.cpp`) into `maps/verda_wo
 - **The square:** Verda City's square, where residents meet and loiter, is the courthouse park block (north-west of the boulevard's crossing, around x −45, z 42). The city centre itself is the boulevard's crossing, so people no longer crowd the street there.
 - **Level ground:** the terrain is levelled under the whole of it (`layout::downtown_outside`).
 - **Traffic:** keeps right, 2.4 m off the centre line. Parked cars sit tight to the kerb.
+- **Parkumejo Centra:** the multi-storey car park in the south-west corner block. Drive up its four levels; a three-storey mansion on the roof is for sale, with its own parking bay. See [the parking garage](parking-garage.md).
 
 ## Okcidenta Verda (west suburbs)
 - Downtown's east–west streets carry on west to x = −476; cross streets at x = −330 and −476.

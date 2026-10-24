@@ -37,6 +37,16 @@ DEPOT_DOORS = (-15.0, 9.0)     # Verda Transporto's depot: the drive-in doorways
 MECH_DOOR = 4.6                 # ...and the door openings' width
 CAR_LOT_ROWS = (-6.0, 3.0)      # car_lot(): the display rows' z
 CAR_LOT_SPOTS_X = (-14.0, -8.0, -2.0, 4.0, 10.0)
+# parking_garage() (world::garage): 38 x 32 m, decks' tops, the ramp lanes, the rooftop mansion
+GARAGE_W, GARAGE_D = 19.0, 16.0
+GARAGE_DECKS = (0.1, 3.3, 6.5, 9.7)
+GARAGE_LANE_A = (12.0, 18.4)    # ground -> deck 1 and deck 2 -> roof, climbing +z
+GARAGE_LANE_B = (5.0, 11.4)     # deck 1 -> deck 2, climbing -z
+GARAGE_RAMP_Z = (-9.0, 9.0)
+MANSION_X, MANSION_Z = (-18.0, -3.2), (-3.0, 15.2)
+MANSION_STOREY = 3.2
+MANSION_DOOR_X = (-11.4, -9.8)
+PRIVATE_BAY = (-12.2, -9.0, -10.8, -5.2)   # x0, x1, z0, z1 on the roof
 
 
 # ---------------------------------------------------------------- textures
@@ -1423,6 +1433,192 @@ def truck_depot():
     return b
 
 
+def ramp(b, x0, x1, z_low, z_high, y_low, y_high, base, top, side):
+    """A solid driving ramp across x0..x1: its surface rises from y_low at z_low to y_high at z_high
+    (either way along z), filled down to `base`. Sides and the high end are walls."""
+    za, zb = min(z_low, z_high), max(z_low, z_high)
+    ya, yb = (y_low, y_high) if z_low < z_high else (y_high, y_low)
+    s = (yb - ya) / (zb - za)
+    n = (0.0, 1.0 / math.hypot(1, s), -s / math.hypot(1, s))
+    tu, tv = b.materials[top][1], b.materials[top][2]
+    b.raw(top, [(x0, ya, za), (x0, yb, zb), (x1, yb, zb), (x1, ya, za)], n,
+          [(x0 / tu, za / tv), (x0 / tu, zb / tv), (x1 / tu, zb / tv), (x1 / tu, za / tv)])
+    su, sv = b.materials[side][1], b.materials[side][2]
+    b.raw(side, [(x0, base, za), (x0, base, zb), (x0, yb, zb), (x0, ya, za)], (-1, 0, 0),
+          [(za / su, 0), (zb / su, 0), (zb / su, (yb - base) / sv), (za / su, (ya - base) / sv)])
+    b.raw(side, [(x1, base, zb), (x1, base, za), (x1, ya, za), (x1, yb, zb)], (1, 0, 0),
+          [(zb / su, 0), (za / su, 0), (za / su, (ya - base) / sv), (zb / su, (yb - base) / sv)])
+    if yb >= ya:
+        b.box((x0, base, zb - .001), (x1, yb, zb), {'+z': side})
+    else:
+        b.box((x0, base, za), (x1, ya, za + .001), {'-z': side})
+
+
+def parking_garage():
+    """Parkumejo Centra, downtown Verda City's multi-storey car park (front -Z, 38 x 32 m): a ground
+    floor and two open decks, and the roof - four levels you drive up. Two ramp lanes on the east
+    side zig-zag up (ground -> deck 1 and deck 2 -> roof climbing north in lane A, deck 1 -> deck 2
+    climbing south in lane B), turning aisles at both ends, painted bays on the west side, open
+    parapets between the columns. On the roof stands a three-storey mansion (white render, tall
+    glass, a gold cornice), for sale in Explore, with its own gold-lined parking bay at the door
+    (game::economy::SkyMansion). Inside: a living room, a dining floor, the master bedroom on top,
+    stairs up the east wall."""
+    b = Builder()
+    b.material("deck", flat((128, 128, 124), 7), 3, 3)
+    b.material("ramp", stripes((120, 120, 116), (108, 108, 104), 4, 223), 1.0, 1.0)
+    b.material("concrete", flat((178, 174, 166), 6), 3, 3)
+    b.material("band", stripes((196, 192, 182), (170, 166, 158), 8, 227), 1.0, 1.0)
+    b.material("under", flat((150, 148, 142), 4), 3, 3)
+    b.material("line", flat((236, 236, 228), 1), 1, 1)
+    b.material("gold", flat((212, 172, 60), 2), 1, 1)
+    b.material("yellow", flat((230, 190, 40), 2), 1, 1)
+    b.material("hazard", stripes((222, 182, 30), (30, 30, 30), 6, 219), 1, 1)
+    b.material("lamp", flat((250, 246, 220), 1), 1, 1)
+    b.material("sign", flat((30, 80, 170), 2), 1, 1)
+    b.material("render", flat((238, 234, 224), 4), 3, 3)
+    b.material("inside", flat((246, 242, 232), 3), 3, 3)
+    b.material("glass", flat((70, 110, 140), 2), 1, 1)
+    b.material("marble", checker((236, 232, 226), (40, 40, 44), 4), 2, 2)
+    b.material("parquet", wood(), 2, 2)
+    b.material("velvet", flat((120, 24, 40), 3), 1, 1)
+    b.material("linen", flat((240, 236, 226), 2), 1, 1)
+    b.material("dark", flat((40, 34, 30), 2), 1, 1)
+    b.material("green", flat((60, 120, 60), 6), 1, 1)
+    W, D = GARAGE_W, GARAGE_D
+    decks, slab, wall = GARAGE_DECKS, .3, .3
+    (ax0, ax1), (bx0, bx1), (rz0, rz1) = GARAGE_LANE_A, GARAGE_LANE_B, GARAGE_RAMP_Z
+    roof = decks[-1]
+    # ---- the decks: the ground slab, two decks and the roof, holed over the ramps that climb through
+    b.box((-W, 0, -D), (W, decks[0], D), {'+y': "deck", '+x': "concrete", '-x': "concrete", '+z': "concrete", '-z': "concrete"})
+    holes = {1: [(ax0, ax1, rz0, rz1)], 2: [(bx0, bx1, rz0, rz1)], 3: [(ax0, ax1, rz0, rz1)]}
+    for k in (1, 2, 3):
+        slab_with_holes(b, -W, W, -D, D, decks[k] - slab, slab, holes[k], "deck", "under")
+    # ---- the ramps (solid, so nothing drives in under them) and the wall between the lanes
+    ramp(b, ax0, ax1, rz0, rz1, decks[0], decks[1], decks[0], "ramp", "concrete")
+    ramp(b, bx0, bx1, rz1, rz0, decks[1], decks[2], decks[1], "ramp", "concrete")
+    ramp(b, ax0, ax1, rz0, rz1, decks[2], decks[3], decks[2], "ramp", "concrete")
+    b.solid((bx1, decks[0], rz0), (ax0, roof + 1.0, rz1), "concrete")
+    # Rails round the holes, except where a ramp arrives.
+    for k, (x0, x1, z) in ((1, (ax0, ax1, rz0)), (3, (ax0, ax1, rz0))):
+        b.solid((x0, decks[k], z - .25), (x1, decks[k] + 1.0, z), "concrete")
+        b.solid((x0, decks[k] + 1.0, z - .25), (x1, decks[k] + 1.08, z), "yellow")
+    b.solid((bx0, decks[2], rz1), (bx1, decks[2] + 1.0, rz1 + .25), "concrete")
+    b.solid((bx0 - .25, decks[2], rz0), (bx0, decks[2] + 1.0, rz1 + .25), "concrete")
+    for x0, x1, k in ((ax0, ax1, 1), (bx0, bx1, 2), (ax0, ax1, 3)):     # a hazard edge where each ramp meets its deck
+        z = rz1 if k != 2 else rz0
+        b.solid((x0, decks[k], z - .15), (x1, decks[k] + .01, z + .15), "hazard")
+    # ---- the outside: parapets between the columns on every level; the entrance on the ground floor
+    for k, y in enumerate(decks):
+        top = 1.1 if k == 3 else 1.0
+        front_gap = [(bx0 - .3, W, y, y + 3.0)] if k == 0 else []
+        wall_with_openings(b, 'x', -D, (-W, W), y + top, wall, front_gap, "band", "concrete", -1, base=y)
+        wall_with_openings(b, 'x', D, (-W, W), y + top, wall, [], "band", "concrete", +1, base=y)
+        wall_with_openings(b, 'z', -W, (-D + wall, D - wall), y + top, wall, [], "band", "concrete", -1, base=y)
+        wall_with_openings(b, 'z', W, (-D + wall, D - wall), y + top, wall, [], "band", "concrete", +1, base=y)
+    for x in (-W, -W / 2 + .25, 0.0, bx0 - .3, W - .6):
+        for z in (-D, D - .6):
+            b.solid((x, 0, z), (x + .6, roof, z + .6), "concrete")
+    for z in (-D, -D / 3, D / 3, D - .6):
+        for x in (-W, W - .6):
+            b.solid((x, 0, z), (x + .6, roof, z + .6), "concrete")
+    # Over the entrance: a blue P sign and a height bar; lamps under every deck.
+    b.solid((bx0, decks[0] + 2.8, -D - .5), (W - .6, decks[0] + 3.0, -D - .3), "hazard")
+    b.solid((-W + 1, roof - 3.0, -D - .45), (-W + 3.6, roof - .4, -D - .3), "sign")
+    for lo, hi in (((-W + 1.7, roof - 2.6), (-W + 2.05, roof - .8)), ((-W + 2.05, roof - 1.15), (-W + 2.8, roof - .8)),
+                   ((-W + 2.05, roof - 1.9), (-W + 2.8, roof - 1.55)), ((-W + 2.8, roof - 1.9), (-W + 3.1, roof - .8))):
+        b.solid((lo[0], lo[1], -D - .5), (hi[0], hi[1], -D - .45), "line")
+    for k in (1, 2, 3):
+        for x in (-12.0, -2.0, 8.0):
+            for z in (-12.0, 0.0, 12.0):
+                b.solid((x - .8, decks[k] - slab - .06, z - .1), (x + .8, decks[k] - slab, z + .1), "lamp")
+    # ---- painted bays on the west side of every level (on the roof: east of the mansion)
+    def bays(y, x0, x1, z0, z1, width=2.6, paint="line"):
+        z = z0
+        while z <= z1 + 1e-3:
+            b.solid((x0, y, z - .06), (x1, y + .01, z + .06), paint)
+            z += width
+    for k in (0, 1, 2):
+        bays(decks[k], -W + wall, -W + 5.3, -D + 1.5, D - 1.5)
+        bays(decks[k], -6.4, -1.4, -D + 1.5, D - 1.5)
+    bays(roof, -1.0, 4.4, MANSION_Z[0] + 1, D - 1.5)
+    bays(roof, -W + wall, -W + 5.3, -D + 1.5, MANSION_Z[0] - 1.5)
+    # The mansion's own bay: gold lines and a gold bollard at each front corner.
+    px0, px1, pz0, pz1 = PRIVATE_BAY
+    for x in (px0, px1):
+        b.solid((x - .08, roof, pz0), (x + .08, roof + .015, pz1), "gold")
+    b.solid((px0, roof, pz0 - .08), (px1, roof + .015, pz0 + .08), "gold")
+    for x in (px0, px1):
+        b.solid((x - .15, roof, pz0 - .15), (x + .15, roof + .9, pz0 + .15), "gold")
+    # ---- the mansion: three storeys of white render on the roof's west side
+    mx0, mx1 = MANSION_X
+    mz0, mz1 = MANSION_Z
+    st, mw = MANSION_STOREY, .25
+    top = roof + 3 * st
+    win = lambda a0, a1, k, low=.9, high=2.6: (a0, a1, roof + k * st + low, roof + k * st + high)
+    front = [(MANSION_DOOR_X[0], MANSION_DOOR_X[1], roof, roof + 2.4), win(-16.6, -13.4, 0, .4), win(-7.8, -4.6, 0, .4)]
+    front += [win(a, a + 2.6, k) for k in (1, 2) for a in (-16.4, -12.0, -7.6)]
+    back = [win(a, a + 2.4, k) for k in (0, 1, 2) for a in (-16.0, -11.0)]
+    sides = [win(a, a + 2.4, k) for k in (0, 1, 2) for a in (-.5, 5.5)]
+    wall_with_openings(b, 'x', mz0, (mx0, mx1), top, mw, front, "render", "inside", -1, base=roof)
+    wall_with_openings(b, 'x', mz1, (mx0, mx1), top, mw, back, "render", "inside", +1, base=roof)
+    wall_with_openings(b, 'z', mx0, (mz0 + mw, mz1 - mw), top, mw, sides, "render", "inside", -1, base=roof)
+    wall_with_openings(b, 'z', mx1, (mz0 + mw, mz1 - mw), top, mw, [], "render", "inside", +1, base=roof)
+    # Tinted glass in the upper windows and the back and side ones (the ground floor's front stays open).
+    for openings, axis, fixed, inward in ((front[3:], 'x', mz0, 1), (back, 'x', mz1, -1), (sides, 'z', mx0, 1)):
+        for a0, a1, y0, y1 in openings:
+            mid = fixed + inward * mw * .5
+            lo = (a0, y0, mid - .02) if axis == 'x' else (mid - .02, y0, a0)
+            hi = (a1, y1, mid + .02) if axis == 'x' else (mid + .02, y1, a1)
+            b.solid(lo, hi, "glass")
+    ix0, ix1, iz0, iz1 = mx0 + mw, mx1 - mw, mz0 + mw, mz1 - mw
+    b.box((ix0, roof, iz0), (ix1, roof + .02, iz1), {'+y': "marble"})
+    # Stairs up the east wall: 16 risers of 0.2 m, 0.28 m treads; flight 1 climbs north, flight 2 south.
+    steps, tread, sz0 = 16, .28, 9.0
+    lanes = ((ix1 - 1.4, ix1), (ix1 - 2.9, ix1 - 1.5))
+    for floor, (lx0, lx1) in enumerate(lanes):
+        base = roof + floor * st
+        for k in range(steps):
+            z0 = sz0 + k * tread if floor == 0 else sz0 + (steps - k - 1) * tread
+            b.solid((lx0, base, z0), (lx1, base + (k + 1) * .2 - (.2 if k == steps - 1 else 0), z0 + tread), "dark")
+    for floor in (1, 2):
+        lx0, lx1 = lanes[floor - 1]
+        y = roof + floor * st
+        slab_with_holes(b, ix0, ix1, iz0, iz1, y - .2, .2, [(lx0, lx1, sz0, sz0 + steps * tread)], "parquet", "inside")
+    b.box((mx0 - .3, top - .2, mz0 - .3), (mx1 + .3, top, mz1 + .3), {'+y': "render", '-y': "inside", '+x': "gold", '-x': "gold", '+z': "gold", '-z': "gold"})
+    b.solid((mx0 - .3, top, mz0 - .3), (mx1 + .3, top + .7, mz0 - .1), "render")                 # the roof's parapet
+    b.solid((mx0 - .3, top, mz1 + .1), (mx1 + .3, top + .7, mz1 + .3), "render")
+    b.solid((mx0 - .3, top, mz0 - .1), (mx0 - .1, top + .7, mz1 + .1), "render")
+    b.solid((mx1 + .1, top, mz0 - .1), (mx1 + .3, top + .7, mz1 + .1), "render")
+    for k in (1, 2):                                                                                # gold string courses
+        b.solid((mx0 - .05, roof + k * st - .12, mz0 - .05), (mx1 + .05, roof + k * st + .02, mz0), "gold")
+    b.solid((MANSION_DOOR_X[0] - .3, roof + 2.4, mz0 - 1.6), (MANSION_DOOR_X[1] + .3, roof + 2.6, mz0), "gold")   # the porch canopy
+    for x in (MANSION_DOOR_X[0] - .3, MANSION_DOOR_X[1] + .1):
+        b.solid((x, roof, mz0 - 1.6), (x + .2, roof + 2.4, mz0 - 1.4), "gold")
+    for x in (-17.6, -5.0):                                                                         # potted trees by the door
+        b.solid((x - .4, roof, mz0 - 1.4), (x + .4, roof + .7, mz0 - .6), "dark")
+        b.solid((x - .55, roof + .7, mz0 - 1.55), (x + .55, roof + 2.2, mz0 - .45), "green")
+    # Ground floor: a velvet sofa round a rug and a coffee table, a kitchen bar along the back.
+    f0 = roof + .02
+    b.solid((-17.4, f0, 1.0), (-13.6, f0 + .45, 2.0), "velvet")
+    b.solid((-17.4, f0, 2.0), (-13.6, f0 + .95, 2.3), "velvet")
+    b.solid((-17.0, f0, -1.4), (-14.0, f0 + .01, .8), "velvet")
+    b.solid((-16.2, f0, -.8), (-14.8, f0 + .4, .2), "dark")
+    b.solid((-15.0, f0, 13.2), (-7.0, f0 + 1.0, 14.6), "marble")
+    # First floor: the dining table and chairs.
+    f1 = roof + st
+    b.solid((-15.5, f1, 4.0), (-10.5, f1 + .76, 6.0), "parquet")
+    for x in (-15.0, -13.0, -11.0):
+        for z in (3.2, 6.4):
+            b.solid((x - .25, f1, z - .25), (x + .25, f1 + .45, z + .25), "dark")
+    # Second floor: the master bedroom - a bed with a gold headboard.
+    f2 = roof + 2 * st
+    b.solid((-15.2, f2, 9.6), (-12.8, f2 + .55, 12.0), "linen")
+    b.solid((-15.3, f2, 12.0), (-12.7, f2 + 1.4, 12.2), "gold")
+    b.solid((-15.0, f2 + .55, 11.3), (-13.0, f2 + .7, 11.9), "linen")
+    b.solid((-12.4, f2, 11.4), (-11.8, f2 + .5, 12.0), "dark")
+    return b
+
+
 RADIO_STYLES = {
     # walls, accent, mast height, porch (timber, country), dishes on the roof
     "popolko": dict(walls=("render", (236, 228, 206)), accent=(16, 128, 70), mast=30.0, porch=False, dishes=1),
@@ -2169,6 +2365,7 @@ def kit():
     add("civic/harbour_crane.glb", harbour_crane(), "city_harbour_crane", "Ship-to-shore container crane on quay rails", "BuildingPart", 58, 15, 42)
     add("civic/container_stack.glb", container_stack(), "city_container_stack", "Stacked shipping containers (40 ft)", "BuildingPart", 10.5, 37.5, 7.8)
     add("civic/cattle_gangway.glb", cattle_gangway(), "city_cattle_gangway", "Cattle gangway up a ship's side", "BuildingPart", 18, 2.6, 4.2)
+    add("civic/parking_garage.glb", parking_garage(), "city_parking_garage", "Parkumejo Centra - multi-storey car park (drive up 4 levels), rooftop mansion for sale", "Building", 38.6, 32.6, 20.2)
     add("civic/truck_depot.glb", truck_depot(), "city_truck_depot", "Verda Transporto - truck depot with office", "Building", 38, 31, 9)
     add("civic/gun_shop.glb", gun_shop(), "city_gun_shop", "Armilejo - gun shop (modular, enterable)", "Building", 12.2, 9.2, 4.4)
     for style, name in (("popolko", "Verda Popolko 98.1"), ("kantrio", "Radio Sovaĝejo 102.5"), ("roko", "Espera Roko 105.9")):

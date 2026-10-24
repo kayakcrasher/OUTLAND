@@ -1,6 +1,7 @@
 #include "outland/dev/VerdaWorldKit.hpp"
 #include "outland/creator/CreatorAssetRegistry.hpp"
 #include "outland/world/VerdaLayout.hpp"
+#include "outland/world/ParkingGarage.hpp"
 #include "outland/world/Highways.hpp"
 #include "outland/world/MotorTrade.hpp"
 #include "outland/world/Ranches.hpp"
@@ -441,6 +442,24 @@ void downtown(Kit& kit, world::VerdaRegion& region) {
                 kit.put(urban + "Bus stops/busstop_clean_bench.glb", at(bx + 31, bz + 12), 270, false);
                 break;
             case Zone::Parking:
+                // The south-west lot: Parkumejo Centra, the multi-storey car park with the mansion on its
+                // roof (world::garage), its entrance and front on the inner street (north).
+                if (bx < 0 && bz < 0 && kit.put(world::garage::model, at(bx, bz), 180, false)) {
+                    kit.report.parking_garage = true;
+                    kit.report.parking_garage_at = at(bx, bz);
+                    // Cars parked on its levels (the island's drivers leave them be: "_garage_").
+                    const auto bay = [&](int level, float x, int slot) {
+                        auto p = to_world(at(bx, bz), 180, x, world::garage::decks[static_cast<std::size_t>(level)], -13.2F + 2.6F * static_cast<float>(slot));
+                        world::GameplayMarker car;
+                        car.id = std::string("vehicle_spawn_") + (slot % 3 ? "hatchback" : "sedan") + "_garage_" + std::to_string(level) + "_" + std::to_string(slot);
+                        car.type = world::GameplayMarkerType::VehicleSpawn;
+                        car.position = p; car.size = {2, 1.6F, 4.4F}; car.rotation_y = x < -10 ? 270.0F : 90.0F;
+                        capital->gameplay_markers.push_back(car);
+                    };
+                    for (const auto& [level, x, slot] : std::initializer_list<std::tuple<int, float, int>>{
+                             {0, -15.9F, 1}, {0, -3.9F, 4}, {1, -15.9F, 0}, {1, -15.9F, 3}, {1, -3.9F, 7}, {2, -15.9F, 5}, {2, -3.9F, 2}})
+                        bay(level, x, slot);
+                }
                 break;
         }
         // Street trees and lights on every sidewalk (the square has its own ring of trees).

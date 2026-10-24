@@ -361,7 +361,7 @@ void assign_cars(Island& island,const world::VerdaRegion& region) {
     std::vector<Car> parked;
     for(const auto& town:region.settlements()) {
         for(const auto& marker:town.gameplay_markers)
-            if(marker.type==world::GameplayMarkerType::VehicleSpawn && marker.enabled && marker.id.find("_donor_")==std::string::npos && marker.id.find("_forsale_")==std::string::npos && marker.id.find("vehicle_spawn_bus_")==std::string::npos &&
+            if(marker.type==world::GameplayMarkerType::VehicleSpawn && marker.enabled && marker.id.find("_donor_")==std::string::npos && marker.id.find("_forsale_")==std::string::npos && marker.id.find("_garage_")==std::string::npos && marker.id.find("vehicle_spawn_bus_")==std::string::npos &&
                marker.id.find("vehicle_spawn_police_")==std::string::npos && marker.id.find("vehicle_spawn_ambulance_")==std::string::npos &&
                marker.id!=WalkingMan::car_marker) // donors never run, the car lot's are for sale; buses are the line's, patrol cars and ambulances the services', Paul Acosta's car his
                 parked.push_back({"vehicle_marker_"+town.id+"_"+marker.id,-1,-1,marker.position,marker.rotation_y});
