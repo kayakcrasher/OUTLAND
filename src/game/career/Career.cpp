@@ -9,6 +9,7 @@ namespace {
 constexpr float rank_floor[]{0, 15, 40, 70, 95};
 constexpr const char* gang_ranks[]{"Novulo", "Soldato", "Kapo", "Leŭtenanto", "Estro"};
 constexpr const char* police_ranks[]{"Kadeto", "Patrolano", "Serĝento", "Leŭtenanto", "Komisaro"};
+constexpr const char* trucker_ranks[]{"Novulo", "Ŝoforo", "Veterano", "Ŝosea Lupo", "Reĝo de la Vojo"};
 float flat(Vector3 a, Vector3 b) { return std::hypot(a.x - b.x, a.z - b.z); }
 }
 
@@ -31,6 +32,9 @@ const char* job_name(JobKind kind) {
         case JobKind::TagUp: return "TAG UP";
         case JobKind::Siege: return "THE SIEGE";
         case JobKind::Liberate: return "LIBERATION";
+        case JobKind::BuildPost: return "THE PATROL";
+        case JobKind::Contraband: return "CONTRABAND RUN";
+        case JobKind::Strike: return "STRIKE";
         case JobKind::None: break;
     }
     return "";
@@ -44,7 +48,7 @@ int Career::rank_of(float respect) {
 
 const char* Career::rank_name() const {
     if (state_.side == Side::Civilian) return "";
-    return (state_.side == Side::Police ? police_ranks : gang_ranks)[rank()];
+    return (state_.side == Side::Police ? police_ranks : state_.side == Side::Trucker ? trucker_ranks : gang_ranks)[rank()];
 }
 
 float Career::random() {
@@ -56,6 +60,7 @@ bool Career::join_gang(int gang, const std::string& gang_name, std::string& why)
     if (gang < 0) { why = "Nobody here to join"; return false; }
     if (state_.side == Side::Gang && state_.gang == gang) { why = "You are already one of them"; return false; }
     if (state_.side == Side::Police) { why = "You wear the badge - hand it in at a station first"; return false; }
+    if (state_.side == Side::Trucker) { why = "You ride with the brotherhood - tell them you're out first"; return false; }
     state_.side = Side::Gang;
     state_.gang = gang;
     state_.respect = 0;            // a new crew: respect is earned again
@@ -73,6 +78,7 @@ bool Career::join_police(const std::string& patrol_car, std::string& why) {
     if (state_.record) { why = "The Policio checked your record: no criminals on the force"; return false; }
     if (state_.side == Side::Gang) { why = "You still run with a gang - leave them first"; return false; }
     if (state_.side == Side::Police) { why = "You are already on the force"; return false; }
+    if (state_.side == Side::Trucker) { why = "You ride with the outlaw truckers - leave the brotherhood first"; return false; }
     state_.side = Side::Police;
     state_.gang = -1;
     state_.respect = 0;
@@ -84,9 +90,36 @@ bool Career::join_police(const std::string& patrol_car, std::string& why) {
     return true;
 }
 
+bool Career::join_truckers(std::string& why) {
+    if (state_.side == Side::Trucker) { why = "You're already one of us, brother"; return false; }
+    if (state_.side == Side::Police) { why = "No badges in the brotherhood - hand it in first"; return false; }
+    if (state_.side == Side::Gang) { why = "We don't haul for gangsters - walk away from your gang first"; return false; }
+    state_.side = Side::Trucker;
+    state_.gang = -1;
+    state_.respect = 0;
+    state_.patrol_car.clear();
+    job_ = {};
+    next_offer_ = -1;
+    say("Welcome to La Frateco de Kamionistoj. Truckers stick together - union rate on every load from now on");
+    return true;
+}
+
+void Career::haul_done() {
+    if (state_.side != Side::Trucker) return;
+    gain(3);
+}
+
+void Career::build_authority(float amount) {
+    if (state_.side != Side::Police || amount <= 0) return;
+    const int before = static_cast<int>(state_.authority) / 25;
+    state_.authority = std::min(authority_max, state_.authority + amount);
+    if (static_cast<int>(state_.authority) / 25 > before)
+        say("AUTHORITY " + std::to_string(static_cast<int>(state_.authority)) + " - Verda listens to the Policio again");
+}
+
 void Career::quit() {
     if (state_.side == Side::Civilian) return;
-    say(state_.side == Side::Police ? "You handed in your badge" : "You walked away from the gang");
+    say(state_.side == Side::Police ? "You handed in your badge" : state_.side == Side::Trucker ? "You left the brotherhood" : "You walked away from the gang");
     state_.side = Side::Civilian;
     state_.gang = -1;
     state_.respect = 0;
@@ -148,6 +181,7 @@ int Career::deliver() {
     const int paid = static_cast<int>(std::lround(static_cast<float>(booking_pay * n) * pay_scale()));
     pay_ += paid;
     gain(2.0F * static_cast<float>(n));
+    build_authority(static_cast<float>(n));
     say("Booked in at the state prison: " + std::to_string(n) + (n == 1 ? " prisoner" : " prisoners") + ", +" + std::to_string(paid) + " kronoj");
     return n;
 }
@@ -206,7 +240,7 @@ void Career::released() {
 }
 
 void Career::crime(bool serious) {
-    if (state_.side == Side::Gang) {
+    if (state_.side == Side::Gang || state_.side == Side::Trucker) {
         // The gang doesn't mind; the island does: a record for good, and a name people fear.
         state_.record = true;
         const float before = state_.notoriety;
@@ -425,6 +459,16 @@ void Career::finish(bool success, const std::string& why) {
         say((job_.kind == JobKind::Callout ? job_.title : std::string(job_name(job_.kind))) + " DONE: +" + std::to_string(static_cast<int>(job_.respect)) + " respect, +" +
             std::to_string(paid) + " kronoj");
         gain(job_.respect);        // after the line, so a promotion is what shows
+        if (job_.kind == JobKind::BuildPost) {
+            ++state_.outposts_built;
+            say("THE PATROL: outpost " + std::to_string(state_.outposts_built + 1) + " of the Ŝosea Patrolo is open - the ring road is safer");
+        }
+        if (job_.kind == JobKind::Strike) {
+            state_.union_raise = std::min(raise_max, state_.union_raise + strike_raise);
+            say("STRIKE WON: Verda Transporto gives in - the brotherhood's rate is now +" +
+                std::to_string(static_cast<int>(std::lround((union_rate + state_.union_raise) * 100))) + "%");
+        }
+        build_authority(job_.kind == JobKind::CleanUp ? 8.0F : job_.kind == JobKind::BuildPost ? 5.0F : 3.0F);
     } else {
         gain(-job_.respect * .5F);
         say(why + " (-" + std::to_string(static_cast<int>(std::ceil(job_.respect * .5F))) + " respect)");
@@ -544,7 +588,15 @@ void Career::offer(const CareerFrame& frame) {
         const CrewSpot* order = nullptr;
         for (const auto& c : frame.crews)
             if (!c.cleared && (!c.capital || capital_ok) && (!order || flat(c.door, frame.player) < flat(order->door, frame.player))) order = &c;
-        if (order && random() < .4F) {
+        if (frame.post_known && state_.outposts_built < max_built && state_.authority >= outpost_authority(state_.outposts_built)) {
+            // Authority enough for another outpost: the Chief sends the officer to open it.
+            job.kind = JobKind::BuildPost;
+            job.target = frame.next_post;
+            job.needed = 1;
+            job.detail = std::string(chief_name) + ": \"Your authority carries now. The Ŝosea Patrolo needs another outpost on the ring - "
+                         "drive a police car out to the site and open it.\"";
+            job.pay = 900; job.respect = 10; job.deadline = frame.now + 1500;
+        } else if (order && random() < .4F) {
             job.kind = JobKind::CleanUp;
             job.gang = order->gang; job.crew = order->crew; job.target = order->door;
             job.needed = std::max(1, order->alive);
@@ -575,11 +627,35 @@ void Career::offer(const CareerFrame& frame) {
             job.detail = "Raid the " + name_of(crew->gang) + " hideout at " + crew->town + ": take down " + std::to_string(job.needed);
             job.pay = 480; job.respect = 9; job.deadline = frame.now + 420;
         }
+    } else if (state_.side == Side::Trucker) {
+        // The brotherhood's work, between the company's loads: contraband past the patrol, and a
+        // strike at the depot for a better rate.
+        const float roll = random();
+        if (roll < .45F && frame.depot_known && state_.union_raise < raise_max - 1e-4F) {
+            job.kind = JobKind::Strike;
+            job.target = frame.depot;
+            job.needed = 1;
+            job.detail = "The brotherhood is striking for a better rate: park a big rig at Verda Transporto's gate and hold it there " +
+                         std::to_string(static_cast<int>(strike_seconds)) + " s";
+            job.pay = 500; job.respect = 10; job.deadline = frame.now + 900;
+        } else if (!frame.docks.empty() && !frame.yards.empty()) {
+            const auto& dock = frame.docks[std::min(frame.docks.size() - 1, static_cast<std::size_t>(random() * static_cast<float>(frame.docks.size())))];
+            const TownSpot* yard = nullptr;
+            for (const auto& y : frame.yards) if (!yard || flat(y.centre, dock.point) > flat(yard->centre, dock.point)) yard = &y;
+            job.kind = JobKind::Contraband;
+            job.target = dock.point;
+            job.vehicle = yard->name;
+            job.needed = 1;
+            job.detail = "Unmarked crates came ashore at " + dock.name + ": pick them up in a big rig and run them to " + yard->name +
+                         " - the Ŝosea Patrolo will hear";
+            job.pay = 2200; job.respect = 14; job.deadline = frame.now + 1200;
+            contraband_drop_ = yard->centre;
+        }
     }
     if (job.kind == JobKind::None) { next_offer_ = frame.now + job_gap; return; }
     job.title = job_name(job.kind);
     job_ = job;
-    say((state_.side == Side::Police ? "CALL: " : "THE WORD: ") + job.detail);
+    say((state_.side == Side::Police ? "CALL: " : state_.side == Side::Trucker ? "ON THE CB: " : "THE WORD: ") + job.detail);
 }
 
 void Career::update(const CareerFrame& frame) {
@@ -609,7 +685,8 @@ void Career::update(const CareerFrame& frame) {
         if (all && !verda_clean_) {
             verda_clean_ = true;
             if (state_.respect < 95) gain(95 - state_.respect);
-            say("VERDA IS CLEAN: the last of the gangs is gone - " + std::string(chief_name) + " makes you Komisaro");
+            build_authority(authority_max);
+            say("VERDA IS SECURE: the last of the gangs is gone, the Green Hand lay down their guns - " + std::string(chief_name) + " makes you Komisaro");
         }
         if (all && job_.kind == JobKind::None) return;   // nothing left to fight
     }
@@ -672,6 +749,29 @@ void Career::update(const CareerFrame& frame) {
         case JobKind::Extort:
             if (!job_.taken && flat(frame.player, job_.target) < 25) { job_.taken = true; demanded_ = true; }
             break;
+        case JobKind::BuildPost:
+            if (frame.post_known) job_.target = frame.next_post;
+            if (frame.driving_police && flat(frame.player, job_.target) < arrive_radius) { job_.done = 1; finish(true, ""); return; }
+            break;
+        case JobKind::Contraband:
+            if (!job_.taken && frame.driving_rig && flat(frame.player, job_.target) < arrive_radius) {
+                job_.taken = true;
+                tipoff_ = true;
+                job_.target = contraband_drop_;
+                say("CONTRABAND RUN: the crates are aboard - somebody talked, the patrol is out. Run them to " + job_.vehicle);
+            }
+            if (job_.taken && frame.driving_rig && flat(frame.player, job_.target) < arrive_radius) { job_.done = 1; finish(true, ""); return; }
+            break;
+        case JobKind::Strike:
+            // The rig at the gate, held there: the company gives in.
+            if (frame.driving_rig && flat(frame.player, job_.target) < arrive_radius) {
+                if (job_.held_since < 0) { job_.held_since = frame.now; say("STRIKE: the gate is blocked - hold it"); }
+                if (frame.now - job_.held_since >= strike_seconds) { job_.done = 1; finish(true, ""); return; }
+            } else if (job_.held_since >= 0) {
+                job_.held_since = -1;
+                say("STRIKE: you left the gate - get back and block it");
+            }
+            break;
         case JobKind::RobStore:
             // The till in hand: home with it, on foot or in a car.
             if (job_.taken) {
@@ -710,10 +810,11 @@ void Career::update(const CareerFrame& frame) {
 
 std::string Career::serialise() const {
     std::ostringstream out;
-    out << "career 6 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
+    out << "career 7 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
         << (state_.record ? 1 : 0) << ' ' << state_.jobs_done << ' ' << (state_.patrol_car.empty() ? "-" : state_.patrol_car) << ' '
         << static_cast<int>(state_.police_stage) << ' ' << (state_.honourable ? 1 : 0) << ' ' << state_.defended << ' ' << (state_.chief_dead ? 1 : 0) << ' ' << state_.notoriety << ' '
-        << state_.callouts << ' ' << (state_.prison_toured ? 1 : 0) << ' ' << state_.inmate << ' ' << (state_.inside_told ? 1 : 0) << '\n';
+        << state_.callouts << ' ' << (state_.prison_toured ? 1 : 0) << ' ' << state_.inmate << ' ' << (state_.inside_told ? 1 : 0) << ' '
+        << state_.authority << ' ' << state_.outposts_built << ' ' << state_.union_raise << '\n';
     return out.str();
 }
 
@@ -722,8 +823,8 @@ bool Career::parse(const std::string& text) {
     std::string tag, car;
     int version = 0, side = 0, gang = -1, record = 0, jobs = 0;
     float respect = 0;
-    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 6 ||
-        side < 0 || side > 2 || !std::isfinite(respect))
+    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 7 ||
+        side < 0 || side > 3 || !std::isfinite(respect))
         return false;
     // Officers from before the questline are already serving.
     int stage = static_cast<int>(PoliceStage::Serving);
@@ -736,8 +837,14 @@ bool Career::parse(const std::string& text) {
     if (version >= 5 && (!(in >> notoriety) || !std::isfinite(notoriety))) return false;
     int callouts = 0, toured = 0, inmate = 0, told = 0;
     if (version >= 6 && (!(in >> callouts >> toured >> inmate >> told) || callouts < 0 || inmate < 0)) return false;
+    float authority = 0, raise = 0;
+    int built = 0;
+    if (version >= 7 && (!(in >> authority >> built >> raise) || !std::isfinite(authority) || !std::isfinite(raise) || built < 0)) return false;
     CareerState s;
     s.side = static_cast<Side>(side);
+    s.authority = std::clamp(authority, 0.0F, authority_max);
+    s.outposts_built = std::min(built, max_built);
+    s.union_raise = std::clamp(raise, 0.0F, raise_max);
     s.gang = s.side == Side::Gang ? gang : -1;
     s.respect = std::clamp(respect, 0.0F, respect_max);
     s.record = record != 0;

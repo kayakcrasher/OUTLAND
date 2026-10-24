@@ -103,6 +103,10 @@ On top of the supply rig and the cattle rig (see [vakeroj.md](vakeroj.md)):
 They drive like the other rigs: kinematically along the roads, slowing for towns and corners. At
 the terminal "the crane swings a container onto the rig".
 
+## The truckers' brotherhood
+
+Verda Transporto's drivers aren't alone: La Frateco de Kamionistoj, the outlaw truckers' brotherhood, has a man at the yard's diesel lane (Ivo Kovač) and a trucker in every town. Members drive the same loads for the union rate, strike at the gate for raises and run contraband. See [careers](careers.md#the-outlaw-truckers-la-frateco-de-kamionistoj).
+
 ## Driving for Verda Transporto
 Talk to the boss (**USE** next to him). The first time, he offers work; **USE again** to sign
 on. A serving officer is turned away ("hand in your badge first"). Gang members and civilians are

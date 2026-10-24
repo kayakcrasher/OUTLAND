@@ -490,6 +490,78 @@ int main() {
         nobody.orders(JobKind::Liberate, {1, 0, 1}, "Clear the garrison");
         check(nobody.job().kind == JobKind::None, "a civilian takes no orders");
     }
+    // AUTHORITY and THE PATROL: a cop builds the Ŝosea Patrolo.
+    {
+        std::string why;
+        Career cop;
+        cop.join_police("car", why);
+        bool car = false;
+        cop.chief_talk(car); cop.passed_training(); cop.chief_talk(car);   // serving
+        check(cop.serving() && cop.authority() == 0, "a new officer has no authority yet");
+        CareerFrame f;
+        f.next_post = {500, 0, 0}; f.post_known = true;
+        double now = 0;
+        bool ordered = false;
+        for (int i = 0; i < 200 && !ordered; ++i) { f.now = now += 20; cop.update(f); ordered = cop.job().kind == JobKind::BuildPost;
+            if (cop.job().kind != JobKind::None && !ordered) { f.now = now += 5000; cop.update(f); } }
+        check(!ordered, "no outpost without authority");
+        CareerState st = cop.state(); st.authority = Career::outpost_authority(0); cop.restore(st);
+        for (int i = 0; i < 50 && !ordered; ++i) { f.now = now += 20; cop.update(f); ordered = cop.job().kind == JobKind::BuildPost; }
+        check(ordered && cop.job().target.x == 500, "THE PATROL: the Chief sends the officer to the site");
+        f.player = {500, 0, 5}; f.driving = "police_1"; f.driving_police = true;
+        f.now = now += 1; cop.update(f);
+        check(cop.outposts_built() == 1 && cop.authority() > Career::outpost_authority(0), "the outpost is open, and authority grows");
+        Career back;
+        check(back.parse(cop.serialise()) && back.outposts_built() == 1 && back.authority() == cop.authority(), "authority and outposts saved");
+    }
+    // The outlaw truckers: the brotherhood, the union rate, a strike and a contraband run.
+    {
+        std::string why;
+        Career t;
+        check(t.haul_rate() == 1, "a civilian drives for the company rate");
+        check(t.join_truckers(why) && t.trucker() && std::string(t.rank_name()) == "Novulo", "joined the brotherhood");
+        check(t.haul_rate() > 1.2F, "the union rate");
+        check(!t.join_police("car", why) && !t.join_gang(1, "Montaj Lupoj", why), "a brother joins nobody else first");
+        Career cop;
+        cop.join_police("car", why);
+        check(!cop.join_truckers(why), "no badges in the brotherhood");
+        t.haul_done();
+        check(t.state().respect == 3, "a load is respect");
+        CareerFrame f;
+        f.depot = {0, 0, 0}; f.depot_known = true;
+        f.docks.push_back({"the jetty", {1000, 0, 0}});
+        f.yards.push_back({"Roka", {-1000, 0, 0}});
+        double now = 0;
+        bool strike = false, run = false;
+        for (int i = 0; i < 400 && !(strike && run); ++i) {
+            f.now = now += 20; f.player = {5000, 0, 5000}; f.driving.clear(); f.driving_rig = false;
+            t.update(f);
+            const auto kind = t.job().kind;
+            if (kind == JobKind::Strike && !strike) {
+                f.player = {3, 0, 0}; f.driving = "vehicle_spawn_semi_depot_1"; f.driving_rig = true;
+                const float before = t.haul_rate();
+                f.now = now += 1; t.update(f);
+                check(t.job().kind == JobKind::Strike && t.job().held_since >= 0, "the gate is blocked");
+                f.now = now += Career::strike_seconds + 1; t.update(f);
+                check(t.job().kind == JobKind::None && t.haul_rate() > before, "strike won: the rate goes up");
+                strike = true;
+            } else if (kind == JobKind::Contraband && !run) {
+                f.player = {1000, 0, 3}; f.driving = "vehicle_spawn_semi_depot_1"; f.driving_rig = true;
+                f.now = now += 1; t.update(f);
+                check(t.job().taken && t.take_tipoff() && t.job().target.x == -1000, "the crates aboard, the patrol tipped off");
+                t.take_pay();
+                f.player = {-1000, 0, 3};
+                f.now = now += 1; t.update(f);
+                check(t.job().kind == JobKind::None && t.take_pay() > 2000, "the run pays");
+                run = true;
+            } else if (kind != JobKind::None) { f.now = now += 5000; t.update(f); }
+        }
+        check(strike && run, "the brotherhood's work comes up");
+        Career back;
+        check(back.parse(t.serialise()) && back.trucker() && back.haul_rate() == t.haul_rate(), "a brother saved and loaded");
+        t.quit();
+        check(!t.trucker() && t.haul_rate() == 1, "out of the brotherhood");
+    }
     // Ranks and saving.
     {
         check(Career::rank_of(0) == 0 && Career::rank_of(15) == 1 && Career::rank_of(40) == 2 && Career::rank_of(100) == 4, "ranks");

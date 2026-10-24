@@ -38,10 +38,10 @@ bool Backup::officer(int bot) const {
 
 std::string Backup::call(Vector3 player, double now, Vector3 station, float yaw, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers,
                          vehicles::VehicleSystem& cars, world::VerdaRegion& region) {
-    if (ids_.empty()) return "Dispatch: no units to send";
-    if (phase_ == BackupPhase::Driving) return "Dispatch: backup is on its way - hold on";
-    if (phase_ == BackupPhase::OnScene) return "Backup is with you";
-    if (now < ready_at_) return "Dispatch: no units free - " + std::to_string(static_cast<int>(std::ceil(ready_at_ - now))) + " s";
+    if (ids_.empty()) return line("Dispatch: no units to send", "CB: nobody on the channel");
+    if (phase_ == BackupPhase::Driving) return line("Dispatch: backup is on its way - hold on", "CB: the brothers are rolling - hold on");
+    if (phase_ == BackupPhase::OnScene) return line("Backup is with you", "The brothers are with you");
+    if (now < ready_at_) return line("Dispatch: no units free - ", "CB: everyone's on a run - ") + std::to_string(static_cast<int>(std::ceil(ready_at_ - now))) + " s";
     // On their feet at the station...
     for (std::size_t k = 0; k < ids_.size(); ++k) {
         const Vector3 at = ground(Vector3Add(station, {static_cast<float>(k) * 1.2F, 0, 0}), region);
@@ -55,7 +55,7 @@ std::string Backup::call(Vector3 player, double now, Vector3 station, float yaw,
     if (!driving) {
         std::vector<std::string> before;
         for (const auto& car : cars.vehicles()) before.push_back(car.id);
-        if (cars.spawn(region, station, yaw, "police"))
+        if (cars.spawn(region, station, yaw, vehicle_))
             for (const auto& car : cars.vehicles())
                 if (std::find(before.begin(), before.end(), car.id) == before.end()) { car_ = car.id; break; }
         if (usable()) driving = drivers.dispatch(bots, cars, region, ids_, station, player, 1e6F, car_);
@@ -64,9 +64,9 @@ std::string Backup::call(Vector3 player, double now, Vector3 station, float yaw,
     last_moved_ = now;
     last_seen_ = {1e9F, 0, 1e9F};
     until_ = now + stay;
-    if (driving) return "Dispatch: backup rolling from the station - two officers";
+    if (driving) return line("Dispatch: backup rolling from the station - two officers", "CB: \"Breaker one-nine, a brother in trouble\" - two Kamionistoj rolling from the truck stop");
     on_foot(player, station, bots, region);
-    return "Dispatch: two officers on foot, right round the corner";
+    return line("Dispatch: two officers on foot, right round the corner", "CB: two brothers on foot, right round the corner");
 }
 
 void Backup::on_foot(Vector3 player, Vector3 from, ai::BattleRoyaleBots& bots, const world::VerdaRegion& region) {
@@ -91,7 +91,7 @@ std::string Backup::update(Vector3 player, double now, bool player_alive, bool f
         if (bot && bot->alive()) ++standing;
         if (drivers.ride_of(id)) riding = true;
     }
-    if (standing == 0) { dismiss(bots, now); return "Your backup is down - dispatch will send more when it can"; }
+    if (standing == 0) { dismiss(bots, now); return line("Your backup is down - dispatch will send more when it can", "The brothers are down - the CB will find more when it can"); }
     std::string said;
     if (phase_ == BackupPhase::Driving) {
         if (riding) {
@@ -106,7 +106,7 @@ std::string Backup::update(Vector3 player, double now, bool player_alive, bool f
         // Out of the car: on the scene.
         phase_ = BackupPhase::OnScene;
         until_ = now + stay;
-        said = "Backup is here";
+        said = line("Backup is here", "The brothers are here - truckers stick together");
     }
     // At your side: they keep close and fight whatever comes.
     if (fighting) until_ = std::max(until_, now + 30);
@@ -116,7 +116,7 @@ std::string Backup::update(Vector3 player, double now, bool player_alive, bool f
         if (flat(bot->position(), player) > 120) bot->set_position(player);   // left far behind: they catch up
         bot->set_roam_center(player, follow_radius);
     }
-    if (now >= until_) { dismiss(bots, now); return "Backup heads back to the station"; }
+    if (now >= until_) { dismiss(bots, now); return line("Backup heads back to the station", "The brothers head back to the road"); }
     return said;
 }
 

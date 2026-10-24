@@ -168,6 +168,10 @@ The Ĉefo warned it would come to this (`game::mafia::Endgame`).
 
 Shooting during the siege or the liberation is nobody's crime. Going down doesn't cancel the orders. The endgame's progress is saved beside the territory (`<profile>.endgame`): a garrison not yet cleared is back at full strength next session.
 
+## If the Policio wins
+
+The cop's ending is a **secure Verda**: every crew broken up, the Ŝosea Patrolo on every stretch of the ring. La Verda Mano are the last to go, and instead of disappearing they become **La Verda Mano Kultura Societo**, a cultural society at their old Verda City bar. They keep the language, the songs and the flag, and give up the guns. See [careers](careers.md#the-campaign-rid-verda-of-the-gangs).
+
 ## Saving and dev
 
 - Territory is saved beside the Explore profile (`<profile>.territory`): owners, holds, family stances and tags. It is saved every couple of seconds whenever something changes.

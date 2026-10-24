@@ -1,4 +1,4 @@
-# Careers: the gangs and the police
+# Careers: the gangs, the police and the outlaw truckers
 
 In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. Each side gives work, pays for it, and keeps score in **respect**. Logic: `game::career::Career`. Wiring: `Renderer.cpp`.
 
@@ -142,6 +142,11 @@ The law on Verda's highways, and above all the giant ring road round the island.
 - **The look:** troopers wear tan shirts with olive trousers and a tan campaign hat. Their cruisers are tan with an orange waist stripe and a red and blue light bar, and carry the orange star and "ŜOSEA PATROLO" on the doors. Each outpost is one small modular building from the city kit (`civic/patrol_outpost.glb`, an 8 x 6 m tan block with a door, a counter, an orange fascia and the star sign on the roof) with a carport on its side for the cruiser. They stand on open ground, well clear of the ranches and the stockyard.
 - **Outposts:** at first there is just one, beside the north highway half a kilometre out of Verda City.
   - The patrol grows with the police campaign: one more outpost for every quarter of the towns cleared, all **five** once Verda is clean. The others stand round the ring road.
+  - Officers build it too (THE PATROL, below): every outpost an officer opens comes on top of those.
+- **Authority:** an officer's AUTHORITY (0-100) is what the patrol is built on.
+  - It grows with the work: +3 for every job done, +8 for every town cleaned up, +5 for every outpost opened, +1 for every prisoner booked at the state prison. A secure Verda makes it 100.
+  - At authority 15, 35, 55 and 75 the Chief orders **THE PATROL** (900 pay, 10 respect): drive any police car out to the next outpost site on the ring (the waypoint), and the outpost opens with its cruiser and troopers.
+  - The bag's QUESTS shows authority and how many outposts you built.
   - Each outpost has a cruiser and two troopers.
   - The map shows every outpost (tan shield); the compass shows them within 1.4 km.
 - **On the beat:** each cruiser drives round and round the ring road.
@@ -168,8 +173,30 @@ The goal of the police questline is to get rid of the gangs. Once you serve, abo
   - Shooting the Green Hand's capital crew before he gives the word costs 3 respect and earns a warning.
   - Ask him (USE) and he tells you how many towns the gangs still hold.
 - **Then Verda City:** once every other town is clean, the last order is the capital (4000 pay, 25 respect).
-- **The end:** when the last crew is gone, **VERDA IS CLEAN** and he makes you Komisaro.
+- **The end: a secure Verda.** When the last crew is gone, **VERDA IS SECURE**: the Chief makes you Komisaro, your authority is full and every outpost is open.
+  - La Verda Mano, the last of the gangs, lay down their guns. Their Verda City bar becomes **La Verda Mano Kultura Societo**, a cultural society: four of them stand outside under the banner, in their colours, unarmed. The mural stays.
+  - Talk to them (USE): Esperanto classes, the old songs and the flag, "a pen, not a pistol".
+  - "VERDA IS SECURE" shows at the top of the screen from then on.
 - This is the law's side of Verda's yin and yang (see [gang wars](gangs.md#yin-and-yang)): every town you clean up makes the island safer. On the other side, a gang Leŭtenanto whose gang runs at least 75% of the island may be ordered to kill the Chief (THE BIG HIT). If that happens, the Policio is left without a head and takes no more recruits.
+
+## The outlaw truckers: La Frateco de Kamionistoj
+
+Verda's trucking is a tough grind, so the truckers stick together. They are Esperantistoj, working class, in every town on the island, and they hold out for a higher rate. The brotherhood is the third road, beside the gangs and the Policio.
+
+- **Joining:** talk to **Ivo Kovač**, the brotherhood's man at the diesel lane in Verda Transporto's yard (USE, then USE again). Anyone but a cop or a gangster can join (they leave their side first, and a brother leaves the brotherhood before joining one). Talk to him again (USE twice) to leave.
+- **Ranks:** Novulo, Ŝoforo, Veterano, Ŝosea Lupo, Reĝo de la Vojo.
+- **The union rate:** every Verda Transporto load pays a brother 25% more than the company rate, plus every raise won on strike (up to +50% in all). Each load is also +3 respect. The pay message shows both rates.
+- **Truckers in every town:** a Kamionisto stands outside a pub (or the shop) in every town. They talk shop with a brother, and point anyone else to Ivo.
+- **The CB (BACKUP / Z):** two brothers come from the nearest truck stop in a pickup to fight beside you, the same way an officer's backup does. They stay a few minutes, longer while there's shooting.
+- **The brotherhood's work** ("ON THE CB"), between the company's loads:
+
+| Job | What | Pay | Respect |
+|---|---|---|---|
+| **STRIKE** | Park a big rig at Verda Transporto's gate and hold it there 60 s. Leave the gate and the clock starts again. Win and the brotherhood's rate goes up 5% for good (up to +25% from strikes). | 500 | 10 |
+| **CONTRABAND RUN** | Unmarked crates at a smugglers' jetty: pick them up in a big rig, and somebody talks (2 stars, the Ŝosea Patrolo is out). Run them to a freight yard across the island. | 2200 | 14 |
+
+- **Outlaws:** a crime goes on a brother's record and raises his notoriety, like a gangster's. The Policio won't take him with a record.
+- **If the gangs win**, the brothers fight the occupiers like anyone else (LIBERATION orders, see [gangs](gangs.md#how-it-ends)).
 
 ## Your crew
 
@@ -212,7 +239,8 @@ The career is saved beside the Explore loot profile (`<profile>.career`): side, 
 
 ## Dev and tests
 
-- `OUTLAND_DEV_CAREER=gang:N` or `police` starts the session in a gang or on the force.
+- `OUTLAND_DEV_CAREER=gang:N`, `police` or `trucker` starts the session in a gang, on the force or in the brotherhood.
+- `OUTLAND_DEV_SECURE=1` opens the Green Hand's cultural society at once.
 - Dev builds log every crew door and police station.
 - `outland_training_camp_tests`: a drill starts from the line, targets take real traces and head shots, leaving the line stops it, retries, movers and graduation.
 - `outland_career_tests` covers:
@@ -221,4 +249,5 @@ The career is saved beside the Explore loot profile (`<profile>.career`): side, 
   - a lapsed job costing respect, and killing your own;
   - the questline (orders, the Chief, the camp, the Interceptor);
   - patrols needing the patrol car, raids, gang-war calls;
-  - going bad, ranks, and save/load.
+  - going bad, ranks, and save/load;
+  - authority and THE PATROL; the brotherhood, the union rate, a strike and a contraband run.

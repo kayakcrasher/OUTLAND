@@ -19,6 +19,9 @@ namespace outland::game::vehicles { class VehicleSystem; }
 // The officers are CombatBots in the shared ai::BattleRoyaleBots (the Mafio's hostility rule asks
 // officer() who they fight); off duty they are out of the game and out of sight. The squad car is
 // a "police" vehicle the call spawns at the station the first time and reuses after.
+//
+// The truckers' brotherhood answers the same way on the CB (set_truckers): two Kamionistoj in a
+// pickup from the nearest truck stop, to fight beside a member.
 namespace outland::game::career {
 
 enum class BackupPhase : std::uint8_t { Idle, Driving, OnScene };
@@ -34,6 +37,9 @@ public:
     // The two officers, added once a session (after the Mafio's crews): out of the game until called.
     void start(ai::BattleRoyaleBots& bots, Vector3 park, std::uint64_t seed);
     void clear() { ids_.clear(); phase_ = BackupPhase::Idle; car_.clear(); ready_at_ = 0; }
+    // The brotherhood on the CB instead of the Policio's dispatch: their pickup ("truck"), their words.
+    void set_truckers() { truckers_ = true; vehicle_ = "truck"; }
+    [[nodiscard]] bool truckers() const { return truckers_; }
     // Reuse a squad car left from an earlier session (a "police" vehicle the call spawned).
     void set_car(std::string id) { car_ = std::move(id); }
 
@@ -61,6 +67,9 @@ private:
     double ready_at_{0}, until_{0}, last_moved_{0};
     Vector3 last_seen_{};
     std::uint64_t seed_{0};
+    bool truckers_{false};
+    std::string vehicle_{"police"};
+    [[nodiscard]] std::string line(const char* police, const char* trucker) const { return truckers_ ? trucker : police; }
 };
 
 } // namespace outland::game::career

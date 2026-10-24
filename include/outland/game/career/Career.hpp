@@ -27,14 +27,26 @@
 // the Chief himself - late in the game, once the gang runs at least three quarters of the island. Do it and the gang takes the whole island (and 500 000 kronoj); the Policio
 // is left without a head and takes no more recruits.
 //
+// The cops' road also builds AUTHORITY (0-100): every job done, every prisoner booked, every town
+// cleaned. Authority is what the Ŝosea Patrolo is built on: at each step the Chief orders THE
+// PATROL - drive a police car out to the next outpost site on the ring and open it. The cop's
+// ending is a SECURE VERDA: every gang gone, the patrol on the roads - and La Verda Mano, the last
+// of them, turned from a gang into a cultural society.
+//
+// The third road: the OUTLAW TRUCKERS (La Frateco de Kamionistoj, the truckers' brotherhood).
+// Verda's trucking is a tough grind, so the truckers stick together: Esperantista working class
+// in every town, holding out for higher pay. A member drives for the union rate (more for every
+// load), strikes at the depot for a raise, runs contraband loads past the Ŝosea Patrolo, and can
+// call the brotherhood on the CB when trouble comes.
+//
 // This class is the rules and the bookkeeping only; the game tells it what happened (kills,
 // crimes, where the player is and what they drive) and what the world holds (crews, rigs,
 // towns), and reads back the job, the respect and the pay.
 namespace outland::game::career {
 
-enum class Side : std::uint8_t { Civilian, Gang, Police };
+enum class Side : std::uint8_t { Civilian, Gang, Police, Trucker };
 enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, Raid, BreakUpWar, Quest, Smuggle, Extort, TakeTurf, CleanUp, HitChief, Callout,
-                                     RobStore, TagUp, Siege, Liberate };
+                                     RobStore, TagUp, Siege, Liberate, BuildPost, Contraband, Strike };
 // A recruit's road onto the force: report to the Chief at Verda City HQ, qualify at the training
 // camp's range, report back for the badge and the Interceptor, then serve (calls).
 enum class PoliceStage : std::uint8_t { Report, Training, Graduated, Serving };
@@ -78,6 +90,15 @@ struct CareerFrame {
     std::vector<RanchSpot> ranches;
     std::vector<TurfSpot> turfs;
     std::vector<ShopSpot> shops;
+    // The Ŝosea Patrolo: where its next outpost goes (THE PATROL).
+    Vector3 next_post{};
+    bool post_known{false};
+    // The truckers: the player at the wheel of a big rig, Verda Transporto's depot gate, and the
+    // freight yards a contraband load goes to.
+    bool driving_rig{false};
+    Vector3 depot{};
+    bool depot_known{false};
+    std::vector<TownSpot> yards;
 };
 
 struct Job {
@@ -91,6 +112,7 @@ struct Job {
     int ranch{-1};                 // Extort: the family's ranch
     int turf{-1};                  // TakeTurf: the town
     double deadline{0};
+    double held_since{-1};         // STRIKE: since when the rig has held the gate (-1: not there)
     int pay{0};
     float respect{0};
 };
@@ -111,6 +133,9 @@ struct CareerState {
     bool prison_toured{false};     // the warden showed the officer how the prison works
     int inmate{0};                 // the player's prison number, once booked (0: never)
     bool inside_told{false};       // a guard told the new inmate how it works inside
+    float authority{0};            // a cop's AUTHORITY (0-100): what the Ŝosea Patrolo is built on
+    int outposts_built{0};         // Ŝosea Patrolo outposts the player opened (THE PATROL)
+    float union_raise{0};          // a trucker's raises won on strike, on top of the union rate
 };
 
 class Career {
@@ -124,6 +149,23 @@ public:
     // Joining. False (with why) when the door is shut.
     bool join_gang(int gang, const std::string& gang_name, std::string& why);
     bool join_police(const std::string& patrol_car, std::string& why);
+    // La Frateco de Kamionistoj (any but a cop or a gangster).
+    bool join_truckers(std::string& why);
+    [[nodiscard]] bool trucker() const { return state_.side == Side::Trucker; }
+    // The brotherhood's rate: what a member's load pays against the company's (1 + union_rate +
+    // the raises won on strike, up to raise_max).
+    static constexpr float union_rate = .25F, strike_raise = .05F, raise_max = .25F;
+    static constexpr double strike_seconds = 60;   // a STRIKE: the gate held this long
+    [[nodiscard]] float haul_rate() const { return trucker() ? 1 + union_rate + state_.union_raise : 1; }
+    // A load delivered for Verda Transporto: a member earns respect for it.
+    void haul_done();
+    // AUTHORITY: what a cop has built. THE PATROL comes up at each step (outpost_authority(n) for
+    // the n-th outpost the player opens, up to max_built).
+    static constexpr float authority_max = 100;
+    static constexpr int max_built = 4;
+    [[nodiscard]] static float outpost_authority(int built) { return 15 + 20 * static_cast<float>(built); }
+    [[nodiscard]] float authority() const { return state_.authority; }
+    [[nodiscard]] int outposts_built() const { return state_.outposts_built; }
     // Walk away (the record stays).
     void quit();
 
@@ -274,6 +316,8 @@ private:
     int cans_{0};                    // spray cans the boss hands over with a TAG UP
     bool verda_clean_{false};
     bool occupied_{false};
+    void build_authority(float amount);
+    Vector3 contraband_drop_{};      // a CONTRABAND RUN's freight yard
     int chief_talks_{0};             // the Chief varies what he says
     double capital_warned_{-1e9};
     int campaign_left_{-1};

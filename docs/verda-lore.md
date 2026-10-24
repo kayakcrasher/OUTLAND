@@ -29,6 +29,8 @@ Both careers argue over the same question: who holds Verda together.
 - **The Policio (Ĉefo Marko Forta):** "Our people are becoming lawless. If we do not get our act together, our sovereignty is at stake." Let the gangs take Verda and Moscow will send troops "to restore order", and the island will never be Verda's again.
 - **The gangs:** "Our people are drifting apart." Green Hand bosses say only the Green Hand can unite them. The other gangs want their share first.
 - **If the gangs win:** the Green Hand lay siege to the parliament, Registaro de Verda. Then the Russians land, as the Chief warned, and the winners have to kill them too, town by town. See [gangs](gangs.md#how-it-ends).
+- **If the Policio wins:** a secure Verda. The officers build up their authority and, with it, the Ŝosea Patrolo on the ring. At the very end the Green Hand stop being a gang and become a cultural society, La Verda Mano Kultura Societo.
+- **The truckers:** La Frateco de Kamionistoj. Verda's trucking is a tough grind, so the truckers stick together: Esperantistoj, working class, in every town, holding out for higher pay. Outlaws when they need to be.
 
 ## Working details
 

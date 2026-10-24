@@ -709,6 +709,20 @@ void Renderer::run() {
     struct DepotBoss { Vector3 at{}; float yaw{180}; bool placed{false}; } depot_boss;
     constexpr int depot_boss_bot=930001;
     constexpr const char* depot_boss_name="Tomaso Rado";
+    // La Frateco de Kamionistoj, the outlaw truckers' brotherhood: its man at the depot's diesel
+    // lane (Ivo Kovač, first) and a trucker at a pub in every town (bodies under their own ids),
+    // and the brothers who answer a member's CB call (game::career::Backup, set_truckers).
+    struct Kamionisto { Vector3 at{}; float yaw{0}; std::string town; bool rep{false}; };
+    std::vector<Kamionisto> kamionistoj;
+    constexpr int kamionisto_bot=932000;
+    constexpr const char* brotherhood_man="Ivo Kovač";
+    game::career::Backup cb_backup;
+    int trucker_talks=0;double brotherhood_offer=-1;
+    // A secure Verda's last word: La Verda Mano, the last of the gangs, lay down their guns at their
+    // Verda City bar and become La Verda Mano Kultura Societo - the language, the songs, the flag.
+    struct Society { bool open{false}; Vector3 at{}; float yaw{0}; } society;
+    constexpr int society_bot=950000,society_size=4;
+    int society_talks=0;
     // The campaign: this save slot's story (Uncle Ron's welcome home), Uncle Ron himself (a body
     // under his own id), his house (one of the Okcidenta homes, the player's once he hands it
     // over), his truck, and the autosave.
@@ -837,7 +851,7 @@ void Renderer::run() {
     // Outsiders: Paul Acosta, the Vakeroj, and an officer's backup (against a gang at war with the officer).
     mafio.set_outsiders([&](int a,int b,double now){
         if(endgame.ours(a) || endgame.ours(b)) return endgame.hostile(a,b);   // the parliament's guard, the occupiers
-        const auto officer=[&](int id){return backup.officer(id) || (player_crew.partner()>=0 && id==player_crew.partner());};
+        const auto officer=[&](int id){return backup.officer(id) || cb_backup.officer(id) || (player_crew.partner()>=0 && id==player_crew.partner());};
         if(officer(a) || officer(b)) {
             const int gang=mafio.gang_of(officer(a) ? b : a);
             return gang>=0 && mafio.provoked(gang,now);
@@ -1814,7 +1828,7 @@ void Renderer::run() {
                     loot_session.economy().money=std::max<std::int64_t>(0,loot_session.economy().money+poker.cash_out()-poker_buy_in);
                     poker_open=false;poker_buy_in=0;
                 }
-                walking_man.clear();backup.clear();player_crew.clear();prison_yard.clear();
+                walking_man.clear();backup.clear();cb_backup.clear();kamionistoj.clear();society={};player_crew.clear();prison_yard.clear();
                 trucking=game::freight::Trucking{};trucking_path.clear();depot_boss={};haul_world={};
                 career=game::career::Career{};career_path.clear();mafio.set_player_gang(-1);services.assign_player_car({});
                 police_camp=game::career::TrainingCamp{};chief={};lights_car.clear();
@@ -1937,6 +1951,16 @@ void Renderer::run() {
                         if(!backup.car().empty()) bot_drivers.reserve(backup.car());
                         // The partner a desk can give an officer.
                         player_crew.start(br_bots,park,session_seed);
+                        // The brotherhood's two on the CB: truckers in their everyday clothes.
+                        cb_backup=game::career::Backup{};cb_backup.set_truckers();
+                        cb_backup.start(br_bots,park,session_seed+31);
+                        for(std::size_t k=0;k<cb_backup.ids().size();++k) {
+                            std::string body="character_05";
+                            for(std::uint64_t n=0;n<40;++n)
+                                if(const auto* d=character_registry.choose(characters::CharacterPool::Civilian,session_seed+311+k*53+n);
+                                   d && d->id.find("female")==std::string::npos && d->id.find("police")==std::string::npos && d->id.find("doctor")==std::string::npos) {body=d->id;break;}
+                            npcs.spawn_bot(cb_backup.ids()[k],body,park,0);
+                        }
                         npcs.spawn_bot(player_crew.partner_bot(),"character_21_police",park,0);
                     }
                     // How it ends: the parliament's guard on Registaro de Verda's steps, and a garrison
@@ -2036,11 +2060,12 @@ void Renderer::run() {
                     career_saved=career.serialise();career_dead=false;join_offer={};
                     if(career.state().gang>=static_cast<int>(game::mafia::gangs.size())) career=game::career::Career{};
 #ifdef OUTLAND_DEV_TOOLS
-                    // OUTLAND_DEV_CAREER=gang:N[:respect] or police: start this session in a gang or on the force.
+                    // OUTLAND_DEV_CAREER=gang:N[:respect], police or trucker: start this session in a gang, on the force or in the brotherhood.
                     if(const char* dev=std::getenv("OUTLAND_DEV_CAREER"); dev && *dev) {
                         std::string why;const std::string want=dev;
                         career=game::career::Career{};
-                        if(want.rfind("gang:",0)==0) {
+                        if(want=="trucker") career.join_truckers(why);
+                        else if(want.rfind("gang:",0)==0) {
                             const int gang=std::clamp(std::atoi(want.c_str()+5),0,static_cast<int>(game::mafia::gangs.size())-1);
                             career.join_gang(gang,std::string(game::mafia::gangs[static_cast<std::size_t>(gang)].name),why);
                             loot_session.edit_inventory().add(item_registry,"spray_paint",4);
@@ -2128,6 +2153,53 @@ void Renderer::run() {
                             npcs.spawn_bot(depot_boss_bot,body,depot_boss.at,depot_boss.yaw);
                             TraceLog(LOG_INFO,"OUTLAND Verda Transporto boss %s at %.1f %.1f",body.c_str(),depot_boss.at.x,depot_boss.at.z);
                         }
+                    }
+                    // La Frateco de Kamionistoj: Ivo Kovač by the depot's diesel lane, and a trucker outside a
+                    // pub in every town (the brotherhood is everywhere a load goes).
+                    kamionistoj.clear();society={};
+                    if(game::rules_for(game_mode).civilian_life) {
+                        const auto stand=[&](Vector3 c) -> std::optional<Vector3> {
+                            for(float r=0;r<=14;r+=1.5F)
+                                for(int k=0;k<(r==0 ? 1 : 10);++k) {
+                                    const float a=static_cast<float>(k)*PI/5;
+                                    const float x=c.x+std::cos(a)*r,z=c.z+std::sin(a)*r;
+                                    const float top=std::max(world::terrain::TerrainHeight::sample(x,z),c.y)+2;
+                                    const float y=world::physics::WorldCollision::ground_height({x,top,z},top,verda_region);
+                                    if(std::isfinite(y) && !world::physics::WorldCollision::body_blocked({x,y,z},y,verda_region,.6F)) return Vector3{x,y,z};
+                                }
+                            return std::nullopt;
+                        };
+                        const Vector3 lane=world::layout::depot_diesel;
+                        if(const auto at=stand({lane.x,world::terrain::TerrainHeight::sample(lane.x,lane.z),lane.z+9}))
+                            kamionistoj.push_back({*at,0,"Verda Transporto's yard",true});
+                        std::vector<int> towns_done;
+                        // A pub where the town has one, else its shop.
+                        std::vector<const game::life::Place*> spots;
+                        for(const auto kind:{game::life::PlaceKind::Pub,game::life::PlaceKind::Shop})
+                            for(const auto& place:island_life.places()) if(place.kind==kind) spots.push_back(&place);
+                        for(const auto* spot:spots) {
+                            const auto& place=*spot;
+                            if(place.settlement<0 || static_cast<std::size_t>(place.settlement)>=verda_region.settlements().size()) continue;
+                            if(std::find(towns_done.begin(),towns_done.end(),place.settlement)!=towns_done.end()) continue;
+                            const auto& town=verda_region.settlements()[static_cast<std::size_t>(place.settlement)];
+                            if(town.id.starts_with("ranch_")) continue;
+                            Vector3 out=Vector3Subtract(place.door,place.interior);out.y=0;
+                            out=Vector3Length(out)>.1F ? Vector3Normalize(out) : Vector3{0,0,1};
+                            const Vector3 side{-out.z,0,out.x};
+                            if(const auto at=stand(Vector3Add(Vector3Add(place.door,Vector3Scale(out,2.2F)),Vector3Scale(side,2.0F)))) {
+                                kamionistoj.push_back({*at,std::atan2(out.x,out.z)*RAD2DEG,town.name.empty() ? town.id : town.name});
+                                towns_done.push_back(place.settlement);
+                            }
+                        }
+                        for(std::size_t i=0;i<kamionistoj.size();++i) {
+                            std::string body="character_05";
+                            for(std::uint64_t n=0;n<40;++n)
+                                if(const auto* d=character_registry.choose(characters::CharacterPool::Civilian,session_seed+1201+i*37+n);
+                                   d && d->id.find("female")==std::string::npos && d->id.find("police")==std::string::npos && d->id.find("doctor")==std::string::npos) {body=d->id;break;}
+                            npcs.spawn_bot(kamionisto_bot+static_cast<int>(i),body,kamionistoj[i].at,kamionistoj[i].yaw);
+                        }
+                        TraceLog(LOG_INFO,"OUTLAND truckers' brotherhood: %d Kamionistoj (Ivo Kovach at %.0f %.0f)",static_cast<int>(kamionistoj.size()),
+                                 kamionistoj.empty() ? 0.0F : kamionistoj.front().at.x,kamionistoj.empty() ? 0.0F : kamionistoj.front().at.z);
                     }
                     // The training camp: open, level ground outside Verda City, downrange pointing away from it.
                     police_camp=game::career::TrainingCamp{};
@@ -2867,6 +2939,63 @@ void Renderer::run() {
                 input_system.player().interact=false;
             }
         }
+        // The truckers' brotherhood: the Kamionisto within reach (-1: none), and what he says.
+        const auto trucker_near=[&](Vector3 feet) -> int {
+            if(vehicles.driver() || game_mode!=game::GameMode::Explore || career_path.empty()) return -1;
+            for(std::size_t i=0;i<kamionistoj.size();++i)
+                if(std::hypot(kamionistoj[i].at.x-feet.x,kamionistoj[i].at.z-feet.z)<2.6F && std::abs(kamionistoj[i].at.y-feet.y)<1.6F) return static_cast<int>(i);
+            return -1;
+        };
+        const auto society_near=[&](Vector3 feet){
+            return society.open && !vehicles.driver() && std::hypot(society.at.x-feet.x,society.at.z-feet.z)<3.4F && std::abs(society.at.y-feet.y)<1.6F;
+        };
+        const auto trucker_talk=[&](int k) -> std::string {
+            const int line=trucker_talks++;
+            if(kamionistoj[static_cast<std::size_t>(k)].rep) {
+                const std::string ivo=std::string(brotherhood_man)+": ";
+                const bool confirming=match_time<brotherhood_offer;
+                brotherhood_offer=-1;
+                if(career.on_duty()) return ivo+"\"No badges at the diesel lane, officer. The brotherhood looks after its own.\"";
+                if(career.trucker()) {
+                    if(confirming) {
+                        if(cb_backup.active()) cb_backup.dismiss(br_bots,match_time);
+                        career.quit();
+                        return ivo+"\"Going it alone? Out there? ...Your call, brother. The door's open if you come back.\"";
+                    }
+                    brotherhood_offer=match_time+5;
+                    static constexpr const char* lines[]{
+                        "\"The company pays what it can get away with. Together, we make it pay what a load is worth.\"",
+                        "\"Every town on the island has a brother in it. Call on the CB and they come.\"",
+                        "\"The Ŝosea Patrolo grows by the month. Fine - we know every back road on Verda.\""};
+                    return ivo+lines[line%3]+" (USE again to leave the brotherhood)";
+                }
+                if(confirming) {
+                    std::string why;
+                    if(career.join_truckers(why)) {
+                        gun_audio.kill_confirm();
+                        return ivo+"\"Welcome, brother. The union rate on every load, the CB when you need us. Sign on with "+depot_boss_name+" for loads.\"";
+                    }
+                    return ivo+"\""+why+"\"";
+                }
+                brotherhood_offer=match_time+5;
+                return ivo+"\"Verda's trucking is a tough grind - that's why truckers stick together. Esperantistoj, working class, every town on the island, "
+                           "one rate for all of us and a higher one every year. Join La Frateco de Kamionistoj?\" (USE again to join)";
+            }
+            const std::string who="Kamionisto ("+kamionistoj[static_cast<std::size_t>(k)].town+"): ";
+            if(career.trucker()) {
+                static constexpr const char* lines[]{
+                    "\"Brother! Keep the rubber side down.\"",
+                    "\"The company squeezes us, we squeeze back. A strike at the gate and the rate goes up.\"",
+                    "\"The patrol's thick on the ring - run the crates on the back roads.\"",
+                    "\"Trouble? Get on the CB and we come running.\""};
+                return who+lines[line%4];
+            }
+            static constexpr const char* lines[]{
+                "\"Verda's trucking is a tough grind. That's why we stick together.\"",
+                "\"Every town, every road - Esperantistoj, working people. Ivo Kovač at the depot's diesel lane signs up new brothers.\"",
+                "\"One rate for all of us, and we hold out for a higher one. That's the brotherhood.\""};
+            return who+lines[line%3];
+        };
         // Joining: a gang by talking to its boss (the man by the door of the hideout); the
         // Policio at a station's front door - where a recruit signs up and an officer hands in the
         // badge. USE twice. (A cop never joins a gang: the badge goes back first.)
@@ -3078,6 +3207,16 @@ void Renderer::run() {
             } else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) {
                 chief_line=trucking.talk(career.on_duty(),match_time,haul_world);chief_line_time=9;
                 input_system.player().interact=false;
+            } else if(const int k=trucker_near(feet);k>=0) {
+                chief_line=trucker_talk(k);chief_line_time=9;
+                input_system.player().interact=false;
+            } else if(society_near(feet)) {
+                static constexpr const char* lines[]{
+                    "La Verda Mano Kultura Societo: \"No more guns. We keep the language, the songs and the flag - Verda is one people, and we'll show it the right way now.\"",
+                    "La Verda Mano Kultura Societo: \"Esperanto classes on Thursdays, the old songs after. Bring your neighbours.\"",
+                    "La Verda Mano Kultura Societo: \"We said only the Green Hand could unite the people. Turns out it takes a pen, not a pistol.\""};
+                chief_line=lines[society_talks++%3];chief_line_time=9;
+                input_system.player().interact=false;
             } else if(police_camp.placed() && police_camp.at_line(feet) &&
                       police_camp.phase()!=game::career::CampPhase::Countdown && police_camp.phase()!=game::career::CampPhase::Running) {
                 if(!career.on_duty()) {interaction_message="The range is for Policio recruits - sign up at any police station";interaction_remaining=4;}
@@ -3112,7 +3251,7 @@ void Renderer::run() {
                 (game::rules_for(game_mode).civilian_life && penthouse.inside(feet)) || home_here;
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
                 here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 || (career.on_duty() && callouts.to_cuff(feet,mafio,br_bots)>=0) ||
-                    (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) ||
+                    (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) || trucker_near(feet)>=0 || society_near(feet) ||
                     (!campaign_path.empty() && (story.talking() || (uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F))) ||
                     boss_near(feet)>=0 || station_desk(feet)!=nullptr || recruit_near(feet)>=0 ||
                     booking.stage==2 || inside_line<inside_lines.size() ||
@@ -3128,6 +3267,9 @@ void Renderer::run() {
                     else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F)
                         store_prompt=!trucking.hired() ? "E - Ask the boss of Verda Transporto for work" :
                             trucking.job().stage==game::freight::HaulStage::Report ? "E - Report in for your pay" : "E - Talk to the boss";
+                    else if(const int k=trucker_near(feet);k>=0)
+                        store_prompt=kamionistoj[static_cast<std::size_t>(k)].rep ? std::string("E - Talk to ")+brotherhood_man+" (the truckers' brotherhood)" : "E - Talk to the trucker";
+                    else if(society_near(feet)) store_prompt="E - Talk to La Verda Mano Kultura Societo";
                     else if(recruit_near(feet)>=0)
                         store_prompt=static_cast<int>(player_crew.members().size())<game::career::Crew::max_gang ?
                             TextFormat("E - Recruit him (crew %d of %d)",static_cast<int>(player_crew.members().size())+1,game::career::Crew::max_gang) : "Your crew is full";
@@ -3468,6 +3610,19 @@ void Renderer::run() {
         if(!lights_car.empty() && vehicles.find(lights_car)<0) lights_car.clear();
         // RADIO / O at the wheel: the next station, then off.
         if(controls.radio && driving) {car_radio.press();store_settings();}
+        // BACKUP / Z for a trucker: the CB - two brothers from the nearest truck stop.
+        if(controls.backup && career.trucker() && game_mode==game::GameMode::Explore && player_health.alive() && !kamionistoj.empty()) {
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            const Kamionisto* stop=&kamionistoj.front();
+            for(const auto& k:kamionistoj) if(Vector3Distance(k.at,feet)<Vector3Distance(stop->at,feet)) stop=&k;
+            const world::roads::RoadGraph graph(verda_region);
+            const Vector3 kerb=graph.nearest(stop->at).point;
+            const std::string before=cb_backup.car();
+            interaction_message=cb_backup.call(feet,match_time,kerb,stop->yaw,br_bots,bot_drivers,vehicles,verda_region);
+            if(cb_backup.car()!=before && !cb_backup.car().empty()) {bot_drivers.reserve(cb_backup.car());vehicle_dirty=true;}
+            br_bots.sync_bodies(npcs,&character_registry);
+            interaction_remaining=4;
+        }
         // BACKUP / Z: an officer radios the nearest station for two more.
         if(controls.backup && career.serving() && game_mode==game::GameMode::Explore && player_health.alive() && services.active()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
@@ -4907,6 +5062,19 @@ void Renderer::run() {
                     if(!player_health.alive() && player_crew.size()>0)
                         for(const int id:player_crew.dismiss(br_bots)) mafio.lend(id,false,br_bots,feet);
                 }
+                // The brothers on the CB: the same, for a trucker.
+                if(cb_backup.active()) {
+                    if(!career.trucker()) cb_backup.dismiss(br_bots,match_time);
+                    bool fighting=false;
+                    for(const auto& m:mafio.members()) {
+                        if(fighting) break;
+                        const auto* bot=br_bots.find(m.bot);
+                        fighting=bot && bot->alive() && !br_bots.hidden(m.bot) && std::hypot(bot->position().x-feet.x,bot->position().z-feet.z)<60;
+                    }
+                    if(const auto said=cb_backup.update(feet,match_time,player_health.alive(),fighting,br_bots,bot_drivers,vehicles,verda_region);!said.empty()) {
+                        interaction_message=said;interaction_remaining=3;
+                    }
+                }
                 // The officer's backup: arrive, keep close, go home.
                 if(backup.active()) {
                     if(!career.serving()) backup.dismiss(br_bots,match_time);
@@ -4950,8 +5118,40 @@ void Renderer::run() {
                     work.chief=chief.at;work.chief_known=chief.placed;
                     work.crew_share=territory.balance(player_gang()).crime;
                     work.camp=police_camp.line();work.camp_known=police_camp.placed();
+                    // The Ŝosea Patrolo's next outpost; the depot gate and the freight yards for the truckers.
+                    if(patrol_open<static_cast<int>(patrol_posts.size())) {work.next_post=patrol_posts[static_cast<std::size_t>(patrol_open)].at;work.post_known=true;}
+                    work.driving_rig=game::freight::Trucking::company_rig(work.driving);
+                    work.depot=haul_world.depot;work.depot_known=depot_boss.placed;
+                    for(const auto& t:haul_world.towns) if(t.name!="Verda") work.yards.push_back({t.name,t.point});
                     // The Chief stands at his post; the range runs its drill (counting the shots fired).
                     if(chief.placed) npcs.set_bot(chief_bot,chief.at,chief.yaw,100,characters::NpcState::Idle);
+                    for(std::size_t i=0;i<kamionistoj.size();++i)
+                        npcs.set_bot(kamionisto_bot+static_cast<int>(i),kamionistoj[i].at,kamionistoj[i].yaw,100,characters::NpcState::Idle);
+                    // A secure Verda: the last of the gangs gone, the Green Hand's bar opens as a cultural society.
+                    static const bool dev_secure=[]{const char* v=std::getenv("OUTLAND_DEV_SECURE");return v && *v=='1';}();   // dev: the society opens at once
+                    if(!society.open && mafio.active() && !mafio.crews().empty() &&
+                       (dev_secure || std::all_of(mafio.crews().begin(),mafio.crews().end(),[](const game::mafia::Crew& c){return c.disbanded;})))
+                        if(const auto* home=mafio.casino()) {
+                            Vector3 out=Vector3Subtract(home->door,home->interior);out.y=0;
+                            out=Vector3Length(out)>.1F ? Vector3Normalize(out) : Vector3{0,0,1};
+                            society={true,Vector3Add(home->door,Vector3Scale(out,2.0F)),std::atan2(out.x,out.z)*RAD2DEG};
+                            const Vector3 side{-out.z,0,out.x};
+                            for(int k=0;k<society_size;++k) {
+                                const Vector3 at=Vector3Add(society.at,Vector3Scale(side,(static_cast<float>(k)-1.5F)*1.3F));
+                                const float top=at.y+2;
+                                npcs.spawn_bot(society_bot+k,outfit_body,{at.x,world::physics::WorldCollision::ground_height({at.x,top,at.z},top,verda_region),at.z},society.yaw);
+                            }
+                            TraceLog(LOG_INFO,"OUTLAND La Verda Mano Kultura Societo opens at %.0f %.0f",society.at.x,society.at.z);
+                        }
+                    if(society.open) {
+                        Vector3 out{std::sin(society.yaw*DEG2RAD),0,std::cos(society.yaw*DEG2RAD)};
+                        const Vector3 side{-out.z,0,out.x};
+                        for(int k=0;k<society_size;++k) {
+                            const Vector3 at=Vector3Add(society.at,Vector3Scale(side,(static_cast<float>(k)-1.5F)*1.3F));
+                            const float top=at.y+2;
+                            npcs.set_bot(society_bot+k,{at.x,world::physics::WorldCollision::ground_height({at.x,top,at.z},top,verda_region),at.z},society.yaw,100,characters::NpcState::Idle);
+                        }
+                    }
                     // The campaign: the story moves on (the drive home, the house handed over), Uncle Ron
                     // turns to the player when he's close, and the game saves itself now and then.
                     if(!campaign_path.empty()) {
@@ -5038,7 +5238,15 @@ void Renderer::run() {
                             case game::freight::TruckEvent::Loaded: case game::freight::TruckEvent::Delivered: gun_audio.kill_confirm();break;
                             default: break;
                         }
-                        if(const int pay=trucking.take_pay();pay>0) {loot_session.economy().money+=pay;loot_session.changed();}
+                        if(const int pay=trucking.take_pay();pay>0) {
+                            // A brother drives for the union rate.
+                            const int paid=static_cast<int>(std::lround(static_cast<float>(pay)*career.haul_rate()));
+                            loot_session.economy().money+=paid;loot_session.changed();
+                            if(career.trucker()) {
+                                career.haul_done();
+                                interaction_message=TextFormat("Union rate: %d kr for the load (company rate %d)",paid,pay);interaction_remaining=4;
+                            }
+                        }
                     }
                     if(police_camp.placed()) {
                         police_camp.update(dt,feet,weapons.events().shots);
@@ -5181,7 +5389,9 @@ void Renderer::run() {
                     if(career.take_tipoff()) {
                         game::law::JusticeFrame tip;tip.now=match_time;tip.player=feet;
                         justice.tip_off(2,feet,tip,island_life,career.job().kind==game::career::JobKind::RobStore ?
-                                        "Store robbery: the alarm went off - the police are on the way" : "Contraband run: someone tipped off the police");
+                                        "Store robbery: the alarm went off - the police are on the way" :
+                                        career.job().kind==game::career::JobKind::Contraband ? "Contraband in a big rig: the Ŝosea Patrolo is out for it" :
+                                        "Contraband run: someone tipped off the police");
                     }
                     // TAG UP: the boss hands over a bag of cans with the job.
                     if(const int cans=career.take_cans();cans>0) {
@@ -5908,6 +6118,8 @@ void Renderer::run() {
                     if(const int gang=mafio.gang_of(actor.bot);gang>=0) body.outfit=gang_outfit(gang,mafio.officer(actor.bot));
                 // The occupiers in camouflage.
                 if(actor.bot>=0 && actor.character_id==outfit_body && endgame.soldier(actor.bot)) body.outfit=outfits.occupier.id;
+                // The Green Hand's cultural society: their colours, no guns.
+                if(actor.bot>=society_bot && actor.bot<society_bot+society_size) {body.outfit=actor.bot==society_bot ? outfits.kapo.id : outfits.soldato.id;return;}
                 // Another player knocked down (squad play): on their knees, no gun.
                 if(game::lan::LanPlay::is_remote_body(actor.bot))
                     if(const auto* who=lan_play.find(game::lan::LanPlay::slot_of(actor.bot));who && down(*who)) {body.downed=1;return;}
@@ -6410,9 +6622,10 @@ void Renderer::run() {
                 quests.push_back({"THE STORY",story.objective(),
                                   uncle_ron.placed ? TextFormat("%.0f m",metres(uncle_ron.at)) : "",Color{255,214,120,255}});
             if(career.state().side!=game::career::Side::Civilian) {
-                const bool cop=career.on_duty();
-                const Color tint=cop ? Color{110,160,255,255} : game::mafia::gangs[static_cast<std::size_t>(std::max(0,career.state().gang))].color;
-                const std::string who=cop ? std::string("POLICIO DE VERDA") : std::string(game::mafia::gangs[static_cast<std::size_t>(std::max(0,career.state().gang))].name);
+                const bool cop=career.on_duty(),trucker=career.trucker();
+                const Color tint=cop ? Color{110,160,255,255} : trucker ? Color{230,150,60,255} : game::mafia::gangs[static_cast<std::size_t>(std::max(0,career.state().gang))].color;
+                const std::string who=cop ? std::string("POLICIO DE VERDA") : trucker ? std::string("LA FRATECO DE KAMIONISTOJ") :
+                    std::string(game::mafia::gangs[static_cast<std::size_t>(std::max(0,career.state().gang))].name);
                 const auto& job=career.job();
                 if(job.kind!=game::career::JobKind::None) {
                     const int left=static_cast<int>(std::max(0.0,job.deadline-match_time));
@@ -6425,12 +6638,15 @@ void Renderer::run() {
                 }
                 // Who you are on the island: rank, respect, honour and your crew.
                 std::string standing=TextFormat("Respect %d",static_cast<int>(career.state().respect));
+                if(cop) standing+=TextFormat("  ·  authority %d  ·  %d outposts built",static_cast<int>(career.authority()),career.outposts_built());
+                else if(trucker) standing+=TextFormat("  ·  union rate +%d%%",static_cast<int>(std::lround((career.haul_rate()-1)*100)));
                 if(!cop) standing+=career.state().notoriety>0 ? TextFormat("  ·  notoriety %d",static_cast<int>(career.state().notoriety)) :
-                                   std::string(career.state().honourable ? "  ·  honourable" : "  ·  no honour");
+                                   std::string(trucker ? "" : career.state().honourable ? "  ·  honourable" : "  ·  no honour");
                 const std::string with=cop ? (player_crew.partner()>=0 ? "Your partner rides with you." : "No partner - ask at a station's desk.") :
+                    trucker ? std::string("Every town has a brother in it - Z on the CB calls two to your side.") :
                     TextFormat("Your crew: %d of %d - recruit your gang's men with USE.",static_cast<int>(player_crew.members().size()),game::career::Crew::max_gang);
                 quests.push_back({who+"  ·  "+career.rank_name(),
-                                  (job.kind!=game::career::JobKind::None ? std::string() : std::string(cop ? "On patrol - a call will come over the radio. " : "Waiting for the word from the boss. "))+with,
+                                  (job.kind!=game::career::JobKind::None ? std::string() : std::string(cop ? "On patrol - a call will come over the radio. " : trucker ? "Listening to the CB - the brotherhood will have work. " : "Waiting for the word from the boss. "))+with,
                                   standing,tint});
             }
             if(trucking.hired() && trucking.job().stage!=game::freight::HaulStage::None) {
@@ -6829,7 +7045,11 @@ void Renderer::run() {
                 DrawRectangle(static_cast<int>(screen_width/2-mw/2-14),screen_height-384,static_cast<int>(mw+28),30,Fade(Color{30,10,10,255},.7F*alpha));
                 DrawTextEx(font,gang_news.c_str(),{screen_width/2-mw/2,static_cast<float>(screen_height-379)},19,1,Fade(Color{255,190,140,255},alpha));
             }
-            if((island_ruled && player_gang()>=0) || endgame.phase()==game::mafia::EndPhase::Occupied || endgame.phase()==game::mafia::EndPhase::Free) {
+            if(society.open && !(island_ruled && player_gang()>=0)) {
+                const char* crown="VERDA IS SECURE";
+                const float cw=MeasureTextEx(font,crown,18,1).x;
+                DrawTextEx(font,crown,{screen_width/2-cw/2,124},18,1,Color{150,200,255,255});
+            } else if((island_ruled && player_gang()>=0) || endgame.phase()==game::mafia::EndPhase::Occupied || endgame.phase()==game::mafia::EndPhase::Free) {
                 using game::mafia::EndPhase;
                 const auto phase=endgame.phase();
                 const std::string gang=player_gang()>=0 ? gang_name(player_gang()) : std::string();
@@ -6837,7 +7057,7 @@ void Renderer::run() {
                     phase==EndPhase::Occupied ? TextFormat("RUSSIAN TROOPS HOLD %d OF %d TOWNS",endgame.garrisons_left(),static_cast<int>(endgame.garrisons().size())) :
                     phase==EndPhase::Free ? (gang.empty() ? std::string("VERDA IS FREE") : gang+" RULE A FREE VERDA") : gang+" RULE VERDA";
                 const float cw=MeasureTextEx(font,crown.c_str(),18,1).x;
-                DrawTextEx(font,crown.c_str(),{screen_width/2-cw/2,80},18,1,phase==EndPhase::Occupied ? Color{240,110,90,255} : Color{240,200,90,255});
+                DrawTextEx(font,crown.c_str(),{screen_width/2-cw/2,124},18,1,phase==EndPhase::Occupied ? Color{240,110,90,255} : Color{240,200,90,255});
             }
             // (The career - side, rank, respect, the job in hand - is in the bag's QUESTS.)
             // Doing time, or prisoners in the back of the car.
@@ -6961,7 +7181,7 @@ void Renderer::run() {
                     row("INMATE No.",TextFormat("%05d",career.inmate_number()),Color{160,40,30,255});
                     const auto& st=career.state();
                     row("AFFILIATION",st.side==game::career::Side::Gang ? std::string(game::mafia::gangs[static_cast<std::size_t>(std::max(0,st.gang))].name) :
-                        std::string("none known"),ink);
+                        st.side==game::career::Side::Trucker ? std::string("La Frateco de Kamionistoj") : std::string("none known"),ink);
                     row("CHARGE",justice.reports()>0 ? std::string("Wanted - taken in by the Policio") : std::string("Resisting arrest"),ink);
                     const int sentence=static_cast<int>(booking.sentence);
                     row("SENTENCE",TextFormat("%d min %02d s  ·  Ŝtata Malliberejo",sentence/60,sentence%60),ink);
@@ -7188,7 +7408,8 @@ void Renderer::run() {
         // Policio has cleared (all five once Verda is clean), each with its cruiser and two troopers.
         if(game::rules_for(game_mode).civilian_life && services.active() && !territory.turfs().empty() && !patrol_posts.empty()) {
             const float law=territory.balance(-1).law;
-            int want=std::min(static_cast<int>(patrol_posts.size()),game::services::outposts_open(law,law>=.999F));
+            int want=std::min(static_cast<int>(patrol_posts.size()),
+                              game::services::outposts_open(law,law>=.999F)+career.outposts_built());   // the law's reach, and what an officer's authority built
 #ifdef OUTLAND_DEV_TOOLS
             // OUTLAND_DEV_PATROL=N: open N outposts at once.
             if(const char* dev=std::getenv("OUTLAND_DEV_PATROL")) want=std::clamp(std::atoi(dev),want,static_cast<int>(patrol_posts.size()));
