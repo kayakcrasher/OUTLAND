@@ -1406,6 +1406,25 @@ void Renderer::run() {
     game::vehicles::VehicleAudio vehicle_audio;
     game::radio::RadioAudio radio_audio;
     vehicles.bind_occupant_damage([&](float amount){player_health.damage(amount);});
+    // Verda Transporto's shed takes a rig without its trailer: drop it (J) outside first.
+    bool depot_barred=false;
+    vehicles.bind_barrier([&](std::string_view id,Vector3 from,Vector3 to,float yaw) {
+        const auto* driven=vehicles.driver();
+        if(!driven || driven->id!=id || !freight.hitched(driven->id)) return false;
+        const auto* a=vehicles.asset(verda_region,id);
+        const auto* def=a ? vehicles.definition(*a) : nullptr;
+        if(!def) return false;
+        const float r=yaw*DEG2RAD,half=def->length*.5F;
+        const Vector3 ahead{std::sin(r)*half,0,std::cos(r)*half};
+        for(const auto& site:motor_sites) {
+            if(site.kind!=world::motor::Kind::Depot || std::hypot(site.origin.x-to.x,site.origin.z-to.z)>60) continue;
+            for(const float end:{1.0F,-1.0F}) {
+                const Vector3 was=Vector3Add(from,Vector3Scale(ahead,end)),now=Vector3Add(to,Vector3Scale(ahead,end));
+                if(world::motor::in_depot(site,now) && !world::motor::in_depot(site,was)) {depot_barred=true;return true;}
+            }
+        }
+        return false;
+    });
     // The tank: about 25 km of driving in Explore (a bigger engine drinks more); Marnafto fills it.
     vehicles.bind_fuel([&](const std::string& id,float metres) {
         if(game_mode!=game::GameMode::Explore) return 0.0F;
@@ -3602,6 +3621,10 @@ void Renderer::run() {
                 motor_menu.close();motor_screen=MotorScreen::None;motor_served=motor_site;motor_car.clear();
                 input_system.cancel_controls();
             };
+            if(depot_barred) {
+                depot_barred=false;
+                interaction_message="The trailer won't go in the shed - drop it out here first (J), then drive in";interaction_remaining=4;
+            }
             // Pull up at a pump or into a workshop bay (and stop): the attendant or the mechanic comes over.
             const auto* driven=vehicles.driver();
             if(!motor_menu.is_open() && player_health.alive()) {
@@ -5002,9 +5025,15 @@ void Renderer::run() {
                         else if(hit_and_run.struck(actor.position,false)) {
                             interaction_message="You hit someone! Stop and wait for the ambulance and the police - or it's a hit and run";interaction_remaining=5;
                         }
-                    } else if(match_time-npc_hit_news>25) {
-                        npc_hit_news=match_time;
-                        gang_news="HIT AND RUN: a car hit someone and drove on";gang_news_time=6;
+                    } else if(!services.siren(v.id) && !services.unit(v.id) && !vehicles.kinematic(v.id) && !services.pursued(v.id)) {
+                        // Somebody else's car drove on: a hit and run, and the police go after it
+                        // (a police car or an ambulance on a call is exempt; so is the bus on its line).
+                        const bool chased=services.pursue(v.id,actor.position,vehicles);
+                        if(match_time-npc_hit_news>25 || chased) {
+                            npc_hit_news=match_time;
+                            gang_news=chased ? "HIT AND RUN: a car hit someone and drove on - the police are after it" : "HIT AND RUN: a car hit someone and drove on";
+                            gang_news_time=6;
+                        }
                     }
                 }
             }
@@ -5222,6 +5251,12 @@ void Renderer::run() {
                 call.sight=frame.line_of_sight;
                 services.update(call,vehicles,verda_region,npcs,&island_life);
                 if(!services.events().message.empty()) {interaction_message=services.events().message;interaction_remaining=3;}
+                // A hit-and-run driver pulled over and taken in: the car goes to the pound.
+                for(const auto& car:services.events().arrested) {
+                    island_life.take_car(car);
+                    vehicles.hold(car,true);
+                    gang_news="HIT AND RUN: the police caught the driver";gang_news_time=6;
+                }
                 if(services.events().backup)   // a Ŝosea Patrolo cruiser found you: the Policio sends more
                     justice.tip_off(std::min(5,justice.wanted()+1),frame.player,frame,island_life,"The Ŝosea Patrolo radioed the Policio for backup");
             }

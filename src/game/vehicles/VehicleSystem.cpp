@@ -514,6 +514,11 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
             controls.steer = 0;
         if (paused || a->vehicle.destroyed)
             controls.brake = true;
+        if (!driving && held_.contains(v.id)) {
+            controls = VehicleInput{};
+            if (std::abs(v.speed) > .4F) controls.throttle = v.speed > 0 ? -1.0F : 1.0F;
+            else controls.parking = true;
+        }
         const float tire =
             (*std::min_element(a->vehicle.tires.begin(), a->vehicle.tires.end())) / 100;
         const float performance =
@@ -566,7 +571,7 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
             auto p = world_point({v.slip * dt / steps, 0, v.speed * dt / steps}, a->position, yaw);
             p.y = world::terrain::TerrainHeight::sample(p.x, p.z);
             if (v.escape > 0) v.escape -= travel * dt / steps;
-            else if (blocked(r, p, yaw, *shape, scale, a->id)) {
+            else if (blocked(r, p, yaw, *shape, scale, a->id) || (barrier_ && barrier_(v.id, a->position, p, yaw))) {
                 // Another vehicle in the way: momentum goes into it. A heavy one (a rig, a bus)
                 // shoves a car aside and barely slows; a car into a rig mostly stops. The one
                 // struck is woken and slides off along the push.

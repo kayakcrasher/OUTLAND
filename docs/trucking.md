@@ -105,7 +105,7 @@ the terminal "the crane swings a container onto the rig".
 
 ## The depot
 
-The shed at Verda Transporto is a drive-in garage: two roll-up doors on the yard side, an inspection pit, a gantry and benches inside. Stop a vehicle in one of the two bays for the service menu (see [careers](careers.md#the-outlaw-truckers-la-frateco-de-kamionistoj)): repairs, fuel, engine, armour plating, a roof gun, paint and a bumper.
+The shed at Verda Transporto is a drive-in garage: two roll-up doors on the yard side, an inspection pit, a gantry and benches inside. Drop the trailer outside first (J): a rig with its trailer on is stopped at the doors. Stop a vehicle in one of the two bays for the service menu (see [careers](careers.md#the-outlaw-truckers-la-frateco-de-kamionistoj)): repairs, fuel, engine, armour plating, a roof gun, paint and a bumper.
 
 ## Crashes
 

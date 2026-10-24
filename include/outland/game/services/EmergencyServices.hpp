@@ -32,6 +32,11 @@ namespace outland::game::life { class LifeSimulation; }
 // the chase and radios the Policio for backup (events().backup); guard() sends the nearest to a
 // ranch in trouble. Two troopers stand at each outpost, and turn on a dangerous player near it.
 //
+// Hit and run (game::law::HitAndRun): somebody else's car that hits a pedestrian and drives on is
+// chased too (pursue()). The nearest free patrol car or cruiser rides out with its lights, catches
+// the car up, pulls it over (VehicleSystem::hold) and its officers make the arrest. A wanted player
+// comes first: the units on the player stay on the player.
+//
 // Officers and paramedics on foot are NpcSystem residents with ids from crew_base up (not island
 // life's residents).
 namespace outland::game::services {
@@ -55,6 +60,8 @@ struct Unit {
     int patient{-1};           // NpcSystem resident id being collected (ambulance)
     bool loaded{false}, patient_alive{false};
     int waypoint{-1};          // Ŝosea Patrolo: where on the beat
+    std::string suspect;       // the car of a hit-and-run driver this unit is after ("" none)
+    float gap{0}, stalled{0};  // ...the closest it has come in the chase, and how long since it closed in
 };
 
 struct ServicesFrame {
@@ -72,6 +79,7 @@ struct ServicesEvents {
     std::vector<int> morgue;        // island life residents brought in dead
     std::string message;
     bool backup{false};             // a Ŝosea Patrolo car found the wanted player and radioed for backup
+    std::vector<std::string> arrested; // the hit-and-run drivers' cars stopped and their drivers taken in
 };
 
 class EmergencyServices {
@@ -112,8 +120,15 @@ public:
     static constexpr const char* trooper_characters[2]{"character_19_police", "character_20_police"};
     // The police station (its patrol car's parking place) within `radius` of `feet`, or null.
     [[nodiscard]] const Unit* station_near(Vector3 feet, float radius) const;
+    // A hit-and-run driver (their car's vehicle id), last seen at `where`: the nearest free patrol
+    // car or cruiser goes after them. False if nobody is free (or the car is already wanted).
+    bool pursue(const std::string& suspect, Vector3 where, vehicles::VehicleSystem& cars);
+    [[nodiscard]] bool pursued(std::string_view suspect) const;
+    static constexpr float suspect_reach = 1600;   // how far a free unit rides out for a hit and run
 
 private:
+    void after_suspect(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region, characters::NpcSystem& npcs);
+    void drop_suspect(Unit& u, vehicles::VehicleSystem& cars);
     void highway(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region, characters::NpcSystem& npcs);
     void police(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region, characters::NpcSystem& npcs);
     void ambulance(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region,

@@ -197,7 +197,7 @@ Verda's trucking is a tough grind, so the truckers stick together. They are Espe
 
 - **Your own rig:** a brother of rank Ŝoforo or higher is given a rig of his own, parked by the diesel lane (Ivo says so). It is saved with your cars and can haul any of the company's loads except cattle.
 - **The depot's service bays:** Verda Transporto's shed is a drive-in garage. Drive in through either open door and stop in a bay for **VERDA TRANSPORTO · SERVO**: service (repair and fill up), engine, **armour plating** (steel 6000 kr, fortress 15 000 kr; the cab takes a half or a quarter of the damage, and fortress plating stops bullets reaching the driver), a **roof gun** (12 000 kr), paint and a bumper. Plating and the roof gun fit rigs and trucks only. Brothers pay 70%.
-- **The trailer:** with the rig stopped, J (touch: HITCH) drops the trailer where it stands. Back the rig up to it, lined up, and J again to hitch it. A load only counts with the trailer on.
+- **The trailer:** the shed only takes a rig without its trailer. A rig with its trailer hitched is stopped at the doors ("drop it out here first"). With the rig stopped, J (touch: HITCH) drops the trailer where it stands. Back the rig up to it, lined up, and J again to hitch it. A load only counts with the trailer on.
 - **The roof gun:** at the wheel of a rig with one fitted, look to aim and fire (LMB / FIRE). It fires rifle rounds along your view.
 - **Hijackers:** gangs sometimes send two or three men in a car after a loaded rig. A plated rig with a roof gun is the answer.
 - **Outlaws:** a crime goes on a brother's record and raises his notoriety, like a gangster's. The Policio won't take him with a record.

@@ -45,5 +45,8 @@ struct Site {
 [[nodiscard]] bool at_pump(const Site& gas, Vector3 car);
 // The workshop bay (or the depot's service bay) a car (its centre) stands in, or -1.
 [[nodiscard]] int bay_at(const Site& shop, Vector3 car);
+// Inside the depot's shed (its walls' footprint): a rig drives in only without its trailer.
+inline constexpr float depot_half_x = 18.4F, depot_half_z = 11.4F;
+[[nodiscard]] bool in_depot(const Site& depot, Vector3 p);
 
 } // namespace outland::world::motor

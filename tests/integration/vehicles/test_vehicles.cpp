@@ -347,6 +347,19 @@ int main() {
         game::autos::apply(game::autos::Mods{}, armoured->vehicle);
         traffic.damage(yard, round, 100);
         assert(plated_loss > 0 && plated_loss < (before - armoured->vehicle.health) * .3F);
+        // Pulled over: a held car brakes to a stop whatever its driver wants, and drives on when let go.
+        traffic.hold(rig, true);
+        for (int i = 0; i < 300; ++i) traffic.update(.02F, {}, yard, {30, 0, 30});
+        assert(traffic.held(rig) && std::abs(traffic.vehicles()[static_cast<std::size_t>(traffic.find(rig))].speed) < .5F);
+        traffic.hold(rig, false);
+        // A no-entry rule refuses a move like a wall.
+        const auto& runtime = traffic.vehicles()[static_cast<std::size_t>(traffic.find(rig))];
+        const float line = runtime.position.z + 3;
+        traffic.bind_barrier([&](std::string_view id, Vector3 from, Vector3 to, float) { return id == rig && to.z > line && from.z <= line; });
+        for (int i = 0; i < 300; ++i) traffic.update(.02F, {}, yard, {30, 0, 30});
+        assert(runtime.position.z <= line + .01F);
+        traffic.bind_barrier({});
+        std::cout << "  held and barred\n";
     }
     world::VerdaRegion bounded;
     for (auto &site : bounded.runtime_settlements())

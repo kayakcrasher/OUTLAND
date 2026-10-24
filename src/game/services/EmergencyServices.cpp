@@ -73,6 +73,7 @@ int EmergencyServices::start(vehicles::VehicleSystem& cars, world::VerdaRegion& 
 void EmergencyServices::clear(vehicles::VehicleSystem& cars, characters::NpcSystem& npcs) {
     for (auto& u : units_) {
         cars.clear_autopilot(u.vehicle);
+        if (!u.suspect.empty()) cars.hold(u.suspect, false);
         for (const int id : u.crew) npcs.despawn_resident(id);
     }
     for (const auto& t : troopers_) npcs.despawn_resident(t.resident);
@@ -191,6 +192,100 @@ void EmergencyServices::highway(Unit& u, const ServicesFrame& frame, vehicles::V
     }
     dispatch(u, beat_[static_cast<std::size_t>(u.waypoint)], false, cars);
     u.state = UnitState::Patrol;
+}
+
+bool EmergencyServices::pursued(std::string_view suspect) const {
+    return std::any_of(units_.begin(), units_.end(), [&](const Unit& u) { return u.suspect == suspect; });
+}
+
+bool EmergencyServices::pursue(const std::string& suspect, Vector3 where, vehicles::VehicleSystem& cars) {
+    if (suspect.empty() || pursued(suspect) || unit(suspect) || cars.find(suspect) < 0) return false;
+    Unit* best = nullptr;
+    float nearest = suspect_reach;
+    for (auto& u : units_) {
+        if (u.kind == UnitKind::Ambulance || u.vehicle == player_car_) continue;
+        if (u.state != UnitState::Parked && u.state != UnitState::Returning && u.state != UnitState::Patrol) continue;
+        const int v = cars.find(u.vehicle);
+        if (v < 0) continue;
+        const float d = flat(cars.vehicles()[static_cast<std::size_t>(v)].position, where);
+        if (d < nearest) { nearest = d; best = &u; }
+    }
+    if (!best) return false;
+    dispatch(*best, where, true, cars);
+    best->suspect = suspect;
+    events_.message = best->kind == UnitKind::Highway ? "The Ŝosea Patrolo is after the hit-and-run driver" : "Police are after the hit-and-run driver";
+    return true;
+}
+
+void EmergencyServices::drop_suspect(Unit& u, vehicles::VehicleSystem& cars) {
+    cars.hold(u.suspect, false);
+    u.suspect.clear();
+    go_home(u, cars);
+}
+
+void EmergencyServices::after_suspect(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
+                                      characters::NpcSystem& npcs) {
+    const int v = cars.find(u.vehicle), s = cars.find(u.suspect);
+    const auto* suspect_asset = s >= 0 ? cars.asset(region, u.suspect) : nullptr;
+    const bool taken = cars.driver() && cars.driver()->id == u.suspect;   // the player took the car: nobody left to arrest
+    if (v < 0 || s < 0 || !suspect_asset || suspect_asset->vehicle.destroyed || taken) {
+        if (crew_back(u, cars, npcs, frame.dt, true)) drop_suspect(u, cars);
+        else halt(u, cars);
+        return;
+    }
+    const auto& car = cars.vehicles()[static_cast<std::size_t>(v)];
+    const auto& them = cars.vehicles()[static_cast<std::size_t>(s)];
+    const float distance = flat(car.position, them.position);
+    const float a = them.yaw * DEG2RAD;
+    const Vector3 velocity{std::sin(a) * them.speed, 0, std::cos(a) * them.speed};
+    switch (u.state) {
+        case UnitState::Responding: {
+            u.replan -= frame.dt;
+            if (u.replan <= 0 && flat(them.position, u.target) > 25) dispatch(u, them.position, true, cars);
+            // By road until close; then straight at them.
+            const bool done = drive(u, cars, frame.dt);
+            if (distance < 45) { u.state = UnitState::Pursuit; u.scene = u.unseen = u.stalled = 0; u.gap = distance; break; }
+            if (done) dispatch(u, them.position, true, cars);
+            break;
+        }
+        case UnitState::Pursuit:
+            // Not closing in (a wall between, or they got away): back to the roads.
+            if (distance < u.gap - 1) { u.gap = distance; u.stalled = 0; }
+            else u.stalled += frame.dt;
+            if (distance > 80 || (u.stalled > 4 && distance > 16)) { dispatch(u, them.position, true, cars); break; }
+            // On their bumper for a couple of seconds and they pull over.
+            u.scene = distance < 14 ? u.scene + frame.dt : std::max(0.0F, u.scene - frame.dt);
+            if (u.scene > 2.0F || (distance < 16 && std::abs(them.speed) < 1)) {
+                cars.hold(u.suspect, true);
+                halt(u, cars);
+                u.state = UnitState::OnScene;
+                u.scene = 0;
+                crew_out(u, 2, true, false, cars, region, npcs);
+                break;
+            }
+            chase(u, cars, them.position, velocity, frame.dt);
+            break;
+        case UnitState::OnScene: {
+            cars.hold(u.suspect, true);
+            halt(u, cars);
+            u.scene += frame.dt;
+            if (u.scene < 8) {
+                std::erase_if(u.crew, [&](int id) { return npcs.find_resident(id) < 0; });
+                for (const int id : u.crew) npcs.direct_resident(id, them.position, 1.0F, false);
+                break;
+            }
+            // The driver is cuffed and taken in; the car goes to the pound.
+            if (u.scene < 8.5F && std::find(events_.arrested.begin(), events_.arrested.end(), u.suspect) == events_.arrested.end()) {
+                events_.arrested.push_back(u.suspect);
+                events_.message = "HIT AND RUN: the police caught the driver";
+            }
+            if (crew_back(u, cars, npcs, frame.dt, false)) drop_suspect(u, cars);
+            break;
+        }
+        default:
+            dispatch(u, them.position, true, cars);
+            break;
+    }
 }
 
 std::string EmergencyServices::character(bool police) {
@@ -478,6 +573,8 @@ void EmergencyServices::update(const ServicesFrame& frame, vehicles::VehicleSyst
             cars.clear_autopilot(u.vehicle);
             for (const int id : u.crew) npcs.arm_resident(id, false);
             u.crew.clear();
+            if (!u.suspect.empty()) cars.hold(u.suspect, false);
+            u.suspect.clear();
             if (u.patient >= 0) std::erase(claimed_, u.patient);
             u.patient = -1;
             u.siren = false;
@@ -542,6 +639,7 @@ void EmergencyServices::update(const ServicesFrame& frame, vehicles::VehicleSyst
     }
     for (auto& u : units_) {
         if (u.state == UnitState::Out || cars.find(u.vehicle) < 0) continue;
+        if (!u.suspect.empty()) { after_suspect(u, frame, cars, region, npcs); continue; }
         if (u.kind == UnitKind::Highway) { highway(u, frame, cars, region, npcs); continue; }
         if (u.state == UnitState::Parked) continue;
         if (u.kind == UnitKind::Police) police(u, frame, cars, region, npcs);

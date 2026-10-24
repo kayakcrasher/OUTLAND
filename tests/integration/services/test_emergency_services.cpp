@@ -155,6 +155,38 @@ int main() {
                       << " crew " << u.crew.size() << '\n';
         }
     check(services.count(UnitKind::Ambulance, UnitState::Parked) == 3, "the ambulance is back at the hospital");
+    // A hit and run by somebody else: the nearest free unit goes after the car, catches it up,
+    // pulls it over and makes the arrest.
+    {
+        const auto& station = *std::find_if(services.units().begin(), services.units().end(), [](const auto& u) { return u.kind == UnitKind::Police; });
+        std::string suspect;
+        float best = 1e9F;
+        for (const auto& car : cars.vehicles()) {
+            if (services.unit(car.id) || car.id.find("_police_") != std::string::npos) continue;
+            const float d = std::hypot(car.position.x - station.home.x, car.position.z - station.home.z);
+            if (d > 40 && d < best) { best = d; suspect = car.id; }
+        }
+        check(!suspect.empty() && best < 600, "a car near a station to drive off in");
+        game::vehicles::VehicleInput off;
+        off.throttle = .35F;
+        cars.set_autopilot(suspect, off);   // drives on after the hit
+        frame.player = {0, 0, 9000};
+        frame.wanted = 0;
+        const Vector3 scene = cars.vehicles()[static_cast<std::size_t>(cars.find(suspect))].position;
+        check(services.pursue(suspect, scene, cars) && services.pursued(suspect), "the police go after the hit-and-run driver");
+        check(!services.pursue(suspect, scene, cars), "...one unit for one car");
+        bool caught = false;
+        const float took = step(frame, 120, [&] {
+            for (const auto& id : services.events().arrested) caught |= id == suspect;
+            return caught;
+        });
+        std::cout << "the hit-and-run driver (" << best << " m from the station) caught after " << took << " s\n";
+        check(caught, "pulled over and arrested");
+        check(cars.held(suspect) || !services.pursued(suspect), "the car was pulled over");
+        step(frame, 30, [&] { return !services.pursued(suspect); });
+        check(!services.pursued(suspect) && !cars.held(suspect), "the unit goes back on duty and lets the car go");
+        cars.clear_autopilot(suspect);
+    }
     std::cout << "emergency services tests passed\n";
     return 0;
 }

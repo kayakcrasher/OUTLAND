@@ -47,6 +47,12 @@ bool at_pump(const Site& gas, Vector3 car) {
     return false;
 }
 
+bool in_depot(const Site& depot, Vector3 p) {
+    if (depot.kind != Kind::Depot) return false;
+    const Vector3 local = depot.to_local(p);
+    return std::abs(local.x) < depot_half_x && std::abs(local.z) < depot_half_z;
+}
+
 int bay_at(const Site& shop, Vector3 car) {
     const Vector3 p = shop.to_local(car);
     if (shop.kind == Kind::Depot) {

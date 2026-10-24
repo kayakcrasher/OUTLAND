@@ -83,6 +83,12 @@ class VehicleSystem {
     void clear_autopilot(std::string_view id) { autopilot_.erase(std::string(id)); }
     bool autopiloted(std::string_view id) const { return autopilot_.contains(std::string(id)); }
     void clear_autopilots() { autopilot_.clear(); }
+    // Pulled over (the police have a driver stopped): an autopiloted vehicle brakes and stays put
+    // whatever its driver asks for, until released.
+    void hold(std::string_view id, bool on) { if (on) held_.insert(std::string(id)); else held_.erase(std::string(id)); }
+    bool held(std::string_view id) const { return held_.contains(std::string(id)); }
+    // A no-entry rule for a move (vehicle id, from, to, yaw): true refuses it, as a wall would.
+    void bind_barrier(std::function<bool(std::string_view, Vector3, Vector3, float)> barrier) { barrier_ = std::move(barrier); }
     // Index into vehicles(), or -1.
     int find(std::string_view id) const;
     // Move a vehicle to a new pose at rest (off-screen traffic, parking it home). Refused while
@@ -127,5 +133,7 @@ class VehicleSystem {
     std::unordered_map<std::string, world::WorldAsset *> assets_;
     std::unordered_map<std::string, VehicleInput> autopilot_;
     std::unordered_set<std::string> kinematic_;
+    std::unordered_set<std::string> held_;
+    std::function<bool(std::string_view, Vector3, Vector3, float)> barrier_;
 };
 } // namespace outland::game::vehicles
