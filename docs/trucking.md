@@ -20,7 +20,7 @@ ramps, the quay and the berth), `dev::build_verda_towns` (`cargo_terminal()`, `f
 - **Freight yards.** Espera, Porto Luma, Suda Haveno and Roka each have one of Verda
   Transporto's yards just off the highway, before it narrows into town. A 16 m road leads in from
   the highway (with a median opening) to a 14 m loop round a gravel yard: drive in, go round, stop
-  to unload, and head back out the way you came. A shed and containers stand beyond the loop.
+  to unload, and head back out the way you came. Containers stand beyond the loop.
   Deliveries to those towns are dropped there, not in the town's streets
   (`dev::freight_yards`, marker `freight_yard_<town>`).
 - **The camera.** Driving a rig (or a bus) the camera looks from over the cab, a little ahead of
@@ -64,7 +64,7 @@ The quay road between the two ramps is 14 m wide, like the other trucking routes
 ## Diesel for the rigs
 A big rig runs about **100 km on a tank**; a car runs about 25. Marnafto runs **diesel lanes**
 (DIZELO) for the rigs where truckers already go:
-- in Verda Transporto's yard, on the yard road's north side by the sheds;
+- in Verda Transporto's yard, on the yard road's north side west of the office;
 - on Porto Luma's quay, beside the lane on the fishers' quay;
 - in each of the four freight yards, inside the loop on its far side.
 

@@ -89,8 +89,16 @@ When the hold runs out, the town goes to whichever gang pushed hardest. The hold
 - Buy **spray paint** at general stores ($15), or find it in loot. Joining a gang gives 4 cans.
 - Face a wall within about 4 m and press **T** (or the **TAG** touch button). One can paints your gang's logo, about 2 × 1 m.
 - A tag paints over any tag within 2.5 m. Re-spraying your own tag changes nothing.
-- A tag in your own town shores up the hold. A tag in a rival town wears its hold down and starts a gang war: that gang sends a hit squad after you.
+- A tag in your own town shores up the hold. A tag in a rival town wears its hold down at once, but nobody saw you do it - yet.
 - Each hideout starts with its gang's tag by the door. Tags are saved.
+
+### Street patrols
+
+In most towns two of the crew's soldiers patrol the street in front of their hideout, walking 60 m each way and back (`game::mafia::Patrol`). A rival's fresh tag on their gang's wall doesn't stay unnoticed for long. When a patroller comes within about 26 m of one, he has seen it:
+- **The first tag of yours they find:** that gang turns on you and hunts you for a while.
+- **Every one after that:** it's war. The gang turns on you and sends a hit squad in a car at your nearest crew.
+
+Kill the patrol, or tag where they don't walk, and your tags can go unseen. Patrols only walk while you're near enough to wake their town. They don't patrol while they're on a hit squad, in a heist, held or lent to you.
 
 ## Gang jobs
 
@@ -101,6 +109,8 @@ These join the hits, drive-bys and rig robberies in "the word":
 | **SMUGGLE** | Drive down to a jetty (Porto Luma's fishers' jetty, down the fishers' ramp to the south end of the quay, or the smugglers' jetty down the gravel track south of Suda Haveno) and pick up the contraband off the coaster at the jetty's foot, then drive it home to your hideout. Someone tips off the police at the pickup: you leave with 2 stars. A delivery adds 25 hold. | 1300 | 12 |
 | **EXTORT** | Drive to a ranch and lean on the family. Open families pay. Fierce or allied ones fight: take out 2 of them and they pay. Either way, the ranch then counts for your gang. | 700 | 9 |
 | **TAKE TURF** | Your rivals' weakest town: kill their crew and tag their walls until it falls to you. | 1500 | 15 |
+| **TAG UP** | One of the nearest rival towns: spray 5 tags on that gang's walls there. The boss hands you 8 cans with the job. Tags anywhere else don't count, and the town's patrols will come looking. | 900 | 12 |
+| **STORE ROBBERY** | A shop 80 m to 1.6 km away: go in with a gun out and press **USE** (E) at the counter to empty the till. The alarm goes off: 2 stars. Then get the takings back to your hideout, on foot or in a car. | 400-750 (the till) | 10 |
 
 ## The gang map
 

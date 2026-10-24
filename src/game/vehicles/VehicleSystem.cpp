@@ -350,7 +350,9 @@ bool VehicleSystem::enter(world::VerdaRegion &r, int index, Vector3 p) {
         distance(p, a->position) > 49) // nearest() already measures to the body
         return false;
     // Test the approach against the same world collision used by pedestrians, up to the body:
-    // whatever is under the car itself does not stand between the player and the door.
+    // whatever is under the car itself does not stand between the player and the door. (The
+    // walker's test - real shapes over step height - not the flat footprint test: a parking lot's
+    // 68 m pad is a footprint too, and from it a rig parked there could never be reached.)
     const auto *def = definition(*a);
     const float half_w = def ? def->width * scale_of(*a, *def) * .5F : 0,
                 half_l = def ? def->length * scale_of(*a, *def) * .5F : 0;
@@ -359,7 +361,7 @@ bool VehicleSystem::enter(world::VerdaRegion &r, int index, Vector3 p) {
         const auto local = Vector3RotateByAxisAngle(Vector3Subtract(point, a->position), {0, 1, 0}, -a->rotation_y * DEG2RAD);
         if (std::abs(local.x) < half_w && std::abs(local.z) < half_l)
             break;
-        if (world::physics::WorldCollision::blocked(point, r, .15F, a->id))
+        if (world::physics::WorldCollision::body_blocked(point, p.y, r, .15F, a->id))
             return false;
     }
     driver_id_ = a->id;

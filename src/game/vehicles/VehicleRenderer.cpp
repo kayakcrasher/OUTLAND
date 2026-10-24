@@ -188,6 +188,20 @@ void VehicleRenderer::camera(Camera3D &camera, const VehicleSystem &system,
         return;
     }
     const float scale = a->size.x / d->width, speed = std::abs(v->speed) / d->top_speed;
+    if (cab_ && follow.empty() && system.driver()) {
+        // From the driver's eyes: over the seat, a hand forward of it; the look controls turn the
+        // head (orbit) and tip it (pitch). The body's own faces are back-facing from inside, so the
+        // cab doesn't block the windscreen.
+        const float heading = v->yaw * DEG2RAD, yaw = (v->yaw + orbit) * DEG2RAD;
+        const float look = std::clamp(-.06F + pitch * .45F, -.9F, .7F);
+        const Vector3 eye = Vector3Add(system.seat(region), {std::sin(heading) * .35F * scale, .6F * scale, std::cos(heading) * .35F * scale});
+        camera.position = eye;
+        camera.target = Vector3Add(eye, {std::sin(yaw) * std::cos(look) * 10, std::sin(look) * 10, std::cos(yaw) * std::cos(look) * 10});
+        camera.up = {0, 1, 0};
+        camera.fovy = 74 + speed * 6;
+        following_ = false;
+        return;
+    }
     // A big vehicle (a rig, a bus) is looked at from over its cab, a little ahead of its centre,
     // so the road in front stays in view; a trailer pushes the camera back and up over it.
     const float big = std::clamp((d->length - 6) / 4, 0.0F, 1.0F);

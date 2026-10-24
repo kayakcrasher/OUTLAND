@@ -771,8 +771,6 @@ ASSET "creator_kit_tree_266" 6 "" -1782.40002 14.207366 546 1 7 1 0 255 255 255 
 ASSET "creator_kit_tree_267" 6 "" -1782.40002 14.207366 514 1 7 1 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit116" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1782.40002 14.207366 530 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_parking_lot_68_kit3" 4 "assets/verda/city/ground/parking_lot_68.glb" -1670 14.0573664 370 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_b_kit1" 4 "assets/verda/industrial/shacks/Large Shed B.glb" -1685 14.207366 364 8.80000019 5.50099993 14.3219995 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_a_kit1" 4 "assets/verda/industrial/shacks/Large Shed A.glb" -1655 14.207366 364 8.80000019 6.20100021 14.3219995 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit1" 9 "assets/verda/industrial/shacks/Barrel.glb" -1691 14.0573664 343 0.800000012 0.899999976 0.692799985 317 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_pallet_kit1" 9 "assets/verda/industrial/shacks/Pallet.glb" -1651 14.0573664 346 0.899999976 0.100000001 1.20000005 117 255 255 255 255 80 80 80 255 0
 ASSET "creator_industrial_pallet_kit2" 9 "assets/verda/industrial/shacks/Pallet.glb" -1649 14.0573664 343 0.899999976 0.100000001 1.20000005 179 255 255 255 255 80 80 80 255 0
@@ -901,8 +899,6 @@ ASSET "creator_urban_traffic_lights_street_light_kit122" 9 "assets/verda/urban/T
 ASSET "creator_urban_traffic_lights_street_light_kit123" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1670 14.207366 482.399994 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit124" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1702.40002 14.207366 450 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_parking_lot_68_kit5" 4 "assets/verda/city/ground/parking_lot_68.glb" -1670 14.0573664 530 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_b_kit2" 4 "assets/verda/industrial/shacks/Large Shed B.glb" -1685 14.207366 524 8.80000019 5.50099993 14.3219995 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_a_kit2" 4 "assets/verda/industrial/shacks/Large Shed A.glb" -1655 14.207366 524 8.80000019 6.20100021 14.3219995 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit7" 9 "assets/verda/industrial/shacks/Barrel.glb" -1649 14.0573664 506 0.800000012 0.899999976 0.692799985 287 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_pallet_kit10" 9 "assets/verda/industrial/shacks/Pallet.glb" -1685 14.0573664 503 0.899999976 0.100000001 1.20000005 115 255 255 255 255 80 80 80 255 0
 ASSET "creator_industrial_pallet_kit11" 9 "assets/verda/industrial/shacks/Pallet.glb" -1662 14.0573664 503 0.899999976 0.100000001 1.20000005 130 255 255 255 255 80 80 80 255 0
@@ -1235,10 +1231,6 @@ ASSET "creator_verda_kit_roof_slab_kit133" 4 "assets/verda/kit/roof_slab_3x3.glb
 ASSET "creator_verda_kit_roof_slab_kit134" 4 "assets/verda/kit/roof_slab_3x3.glb" -1925.5 17.0573654 499.5 3 0.100000001 3 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_verda_kit_roof_slab_kit135" 4 "assets/verda/kit/roof_slab_3x3.glb" -1925.5 17.0573654 496.5 3 0.100000001 3 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_verda_kit_roof_slab_kit136" 4 "assets/verda/kit/roof_slab_3x3.glb" -1925.5 17.0573654 493.5 3 0.100000001 3 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_a_kit3" 4 "assets/verda/industrial/shacks/Large Shed A.glb" -1890 14.0573664 355 8.80000019 6.20100021 14.3219995 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_b_kit3" 4 "assets/verda/industrial/shacks/Large Shed B.glb" -1935 14.0573664 355 8.80000019 5.50099993 14.3219995 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_b_kit4" 4 "assets/verda/industrial/shacks/Large Shed B.glb" -1890 14.0573664 545 8.80000019 5.50099993 14.3219995 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_a_kit4" 4 "assets/verda/industrial/shacks/Large Shed A.glb" -1935 14.0573664 545 8.80000019 6.20100021 14.3219995 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_buildings_prebuild_hangar1_kit3" 0 "assets/verda/urban/Buildings Prebuild/Hangar1.glb" -1890 14.0573664 470 11.5692987 5.30000019 8 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_pipes_pipe_rusted_kit1" 9 "assets/verda/urban/Pipes/pipe_rusted.glb" -1900 14.0573664 435 1 0.433012992 0.5 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_pipes_pipe_rusted_kit2" 9 "assets/verda/urban/Pipes/pipe_rusted.glb" -1898 14.0573664 435 1 0.433012992 0.5 90 255 255 255 255 80 80 80 255 1
@@ -1787,7 +1779,6 @@ ASSET "creator_verda_kit_roof_slab_kit151" 4 "assets/verda/kit/roof_slab_3x3.glb
 ASSET "creator_verda_kit_roof_slab_kit152" 4 "assets/verda/kit/roof_slab_3x3.glb" 360.5 9.14999962 1897 3 0.100000001 3 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_verda_kit_roof_slab_kit153" 4 "assets/verda/kit/roof_slab_3x3.glb" 360.5 9.14999962 1894 3 0.100000001 3 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_verda_kit_roof_slab_kit154" 4 "assets/verda/kit/roof_slab_3x3.glb" 360.5 9.14999962 1891 3 0.100000001 3 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_a_kit5" 4 "assets/verda/industrial/shacks/Large Shed A.glb" 402 6.1500001 1894 8.80000019 6.20100021 14.3219995 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit24" 9 "assets/verda/industrial/shacks/Barrel.glb" 368 6 1868 0.800000012 0.899999976 0.692799985 322 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_pallet_kit23" 9 "assets/verda/industrial/shacks/Pallet.glb" 389 6 1871 0.899999976 0.100000001 1.20000005 303 255 255 255 255 80 80 80 255 0
 ASSET "creator_industrial_pallet_kit24" 9 "assets/verda/industrial/shacks/Pallet.glb" 359 6 1867 0.899999976 0.100000001 1.20000005 33 255 255 255 255 80 80 80 255 0
@@ -3193,11 +3184,6 @@ ASSET "creator_urban_traffic_lights_traffic_light_kit47" 9 "assets/verda/urban/T
 ASSET "creator_urban_traffic_lights_traffic_light_kit48" 9 "assets/verda/urban/Traffic lights/traffic_light.glb" 1782.80005 6.1500001 -432.799988 1.06959903 5.66429281 0.803224981 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_traffic_light_kit49" 9 "assets/verda/urban/Traffic lights/traffic_light.glb" 1797.19995 6.1500001 -367.200012 1.06959903 5.66429281 0.803224981 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_traffic_light_kit50" 9 "assets/verda/urban/Traffic lights/traffic_light.glb" 1782.80005 6.1500001 -352.799988 1.06959903 5.66429281 0.803224981 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_b_kit5" 4 "assets/verda/industrial/shacks/Large Shed B.glb" 1910 6 -495 8.80000019 5.50099993 14.3219995 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_b_kit6" 4 "assets/verda/industrial/shacks/Large Shed B.glb" 1910 6 -410 8.80000019 5.50099993 14.3219995 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_a_kit7" 4 "assets/verda/industrial/shacks/Large Shed A.glb" 1910 6 -390 8.80000019 6.20100021 14.3219995 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_b_kit7" 4 "assets/verda/industrial/shacks/Large Shed B.glb" 1910 6 -325 8.80000019 5.50099993 14.3219995 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_a_kit8" 4 "assets/verda/industrial/shacks/Large Shed A.glb" 1910 6 -305 8.80000019 6.20100021 14.3219995 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_building_parts_stuco_wall_window_2_kit44" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 1897.5 6.08519459 -524 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_building_parts_stuco_wall_window_2_kit45" 4 "assets/verda/urban/Building Parts/stuco_wall_window_2.glb" 1897.5 6.08519459 -512 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_building_parts_stuco_wall_window_1_kit30" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" 1900.5 6.08519459 -524 0.00999999978 3 3 90 255 255 255 255 80 80 80 255 1
@@ -4982,11 +4968,10 @@ ASSET "creator_transit_bus_stop_kit2" 9 "assets/verda/transit/bus_stop.glb" 1033
 ASSET "creator_transit_concrete_kit5" 5 "assets/verda/transit/concrete.glb" 1033.43298 14.9420872 -1072.05042 2 0.0599999987 0.810000002 136.249954 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_concrete_kit6" 5 "assets/verda/transit/concrete.glb" 1036.46692 14.8825655 -1069.14612 2 0.0599999987 0.810000002 136.249954 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_bus_stop_sign_kit2" 9 "assets/verda/transit/bus_stop_sign.glb" 1038.18518 14.8547974 -1068.19336 0.5 2.6400001 0.0700000003 226.249954 255 255 255 255 80 80 80 255 1
-ASSET "creator_transit_bus_stop_kit3" 9 "assets/verda/transit/bus_stop.glb" 1749 6 -270.700012 4.17000008 3.19000006 1.36000001 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_transit_concrete_kit7" 5 "assets/verda/transit/concrete.glb" 1746.90002 6 -272.799988 2 0.0599999987 0.810000002 180 255 255 255 255 80 80 80 255 0
-ASSET "creator_transit_concrete_kit8" 5 "assets/verda/transit/concrete.glb" 1751.09998 6 -272.799988 2 0.0599999987 0.810000002 180 255 255 255 255 80 80 80 255 0
-ASSET "creator_transit_bus_stop_sign_02_kit1" 9 "assets/verda/transit/bus_stop_sign_02.glb" 1753 6 -273.299988 0.670000017 2.88000011 0.0799999982 270 255 255 255 255 80 80 80 255 1
-ASSET "creator_transit_lamppost_kit2" 9 "assets/verda/transit/lamppost.glb" 1742.5 6 -271.700012 1.04999995 10.5200005 3.47000003 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_transit_bus_stop_kit3" 9 "assets/verda/transit/bus_stop.glb" 1814 6 -430.700012 4.17000008 3.19000006 1.36000001 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_transit_concrete_kit7" 5 "assets/verda/transit/concrete.glb" 1811.90002 6 -432.799988 2 0.0599999987 0.810000002 180 255 255 255 255 80 80 80 255 0
+ASSET "creator_transit_concrete_kit8" 5 "assets/verda/transit/concrete.glb" 1816.09998 6 -432.799988 2 0.0599999987 0.810000002 180 255 255 255 255 80 80 80 255 0
+ASSET "creator_transit_bus_stop_sign_02_kit1" 9 "assets/verda/transit/bus_stop_sign_02.glb" 1818 6 -433.299988 0.670000017 2.88000011 0.0799999982 270 255 255 255 255 80 80 80 255 1
 ASSET "creator_transit_bus_stop_alt_kit2" 9 "assets/verda/transit/bus_stop_alt.glb" 309 6 1750.69995 4.1500001 3.51999998 1.96000004 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_transit_concrete_kit9" 5 "assets/verda/transit/concrete.glb" 311.100006 6 1752.80005 2 0.0599999987 0.810000002 -0 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_concrete_kit10" 5 "assets/verda/transit/concrete.glb" 306.899994 6 1752.80005 2 0.0599999987 0.810000002 -0 255 255 255 255 80 80 80 255 0
@@ -4998,7 +4983,7 @@ ASSET "creator_transit_concrete_kit12" 5 "assets/verda/transit/concrete.glb" -17
 ASSET "creator_transit_bus_stop_sign_01_kit2" 9 "assets/verda/transit/bus_stop_sign_01.glb" -1716.69995 14.0573664 463 0.589999974 2.8499999 0.0700000003 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_police_station_kit1" 0 "assets/verda/city/civic/police_station.glb" -6.94999981 6 -1936.42505 20 4.69999981 12 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_police_station_kit2" 0 "assets/verda/city/civic/police_station.glb" -27.9500008 -0.0562306717 -186.425003 20 4.69999981 12 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_police_station_kit3" 0 "assets/verda/city/civic/police_station.glb" 1886.42505 6 -398.950012 20 4.69999981 12 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_police_station_kit3" 0 "assets/verda/city/civic/police_station.glb" 1748.94995 6 -263.575012 20 4.69999981 12 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_police_station_kit4" 0 "assets/verda/city/civic/police_station.glb" 306.950012 6 1936.42505 20 4.69999981 12 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_police_station_kit5" 0 "assets/verda/city/civic/police_station.glb" -1751.05005 14.0573664 586.424988 20 4.69999981 12 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_police_station_kit6" 0 "assets/verda/city/civic/police_station.glb" -1812.94995 14.0573664 313.575012 20 4.69999981 12 180 255 255 255 255 80 80 80 255 1
@@ -5843,9 +5828,6 @@ ASSET "creator_urban_cones_barriers_bollards_square_bollard_kit49" 9 "assets/ver
 ASSET "creator_city_truck_depot_kit1" 0 "assets/verda/city/civic/truck_depot.glb" -560 0 -56.4500008 38 9 31 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_parking_lot_68_kit10" 4 "assets/verda/city/ground/parking_lot_68.glb" -524 0 -126 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_parking_lot_68_kit11" 4 "assets/verda/city/ground/parking_lot_68.glb" -592 0 -126 68 0.150000006 68 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_a_kit9" 4 "assets/verda/industrial/shacks/Large Shed A.glb" -622 -0 -52 8.80000019 6.20100021 14.3219995 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_b_kit8" 4 "assets/verda/industrial/shacks/Large Shed B.glb" -638 -0 -52 8.80000019 5.50099993 14.3219995 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_b_kit9" 4 "assets/verda/industrial/shacks/Large Shed B.glb" -508 -0 -52 8.80000019 5.50099993 14.3219995 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit4" 4 "assets/verda/city/civic/container_stack.glb" -640.070007 0 -128 10.5 7.80000019 37.5 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_barrel_kit57" 9 "assets/verda/industrial/shacks/Barrel.glb" -582 -0 -48 0.800000012 0.899999976 0.692799985 342 255 255 255 255 80 80 80 255 1
 ASSET "creator_industrial_pallet_kit53" 9 "assets/verda/industrial/shacks/Pallet.glb" -583.599976 -0 -48 0.899999976 0.100000001 1.20000005 287 255 255 255 255 80 80 80 255 0
@@ -5867,10 +5849,10 @@ ASSET "creator_city_gun_shop_kit3" 0 "assets/verda/city/civic/gun_shop.glb" 1615
 ASSET "creator_city_gun_shop_kit4" 0 "assets/verda/city/civic/gun_shop.glb" 165.850006 6 1796 12.1999998 4.4000001 9.19999981 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gun_shop_kit5" 0 "assets/verda/city/civic/gun_shop.glb" -1746 14.0573664 315.849976 12.1999998 4.4000001 9.19999981 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_house_white_kit23" 0 "assets/verda/residential/houses/house_white.glb" 20 6 -1660.90002 14.4200001 9.02999973 20.1700001 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_house_blue_kit21" 0 "assets/verda/residential/houses/house_blue.glb" 1762 6 -260.899994 14.4200001 9.02999973 20.1700001 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_house_blue_kit21" 0 "assets/verda/residential/houses/house_blue.glb" 1886 6 -380.100006 14.4200001 9.02999973 20.1700001 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_house_sage_kit15" 0 "assets/verda/residential/houses/house_sage.glb" 160.899994 6 1812 14.4200001 9.02999973 20.1700001 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_house_cream_kit17" 0 "assets/verda/residential/houses/house_cream.glb" -1610.90002 14.0573664 470 14.4200001 9.02999973 20.1700001 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_gas_station_kit1" 0 "assets/verda/city/civic/gas_station.glb" -497.700012 -0.126039669 -26 24 6.19999981 22 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gas_station_kit1" 0 "assets/verda/city/civic/gas_station.glb" -526 0 -62.2999992 24 6.19999981 22 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit2" 0 "assets/verda/city/civic/gas_station.glb" 457.299988 0 26 24 6.19999981 22 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit3" 0 "assets/verda/city/civic/gas_station.glb" -140.699997 6 -1780 24 6.19999981 22 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit4" 0 "assets/verda/city/civic/gas_station.glb" 1770 6 -540.700012 24 6.19999981 22 180 255 255 255 255 80 80 80 255 1
@@ -5880,25 +5862,21 @@ ASSET "creator_city_gas_station_kit7" 0 "assets/verda/city/civic/gas_station.glb
 ASSET "creator_city_car_lot_kit1" 0 "assets/verda/city/civic/car_lot.glb" -195.990005 0 -126 36 6.4000001 26.6200008 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_mechanic_shop_kit1" 0 "assets/verda/city/civic/mechanic_shop.glb" -229 0 -17.3249989 18.1000004 5 12.1499996 -180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_mechanic_shop_kit2" 0 "assets/verda/city/civic/mechanic_shop.glb" -21.7249966 6 -1662 18.1000004 5 12.1499996 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_mechanic_shop_kit3" 0 "assets/verda/city/civic/mechanic_shop.glb" 1738 6 -261.675018 18.1000004 5 12.1499996 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_mechanic_shop_kit3" 0 "assets/verda/city/civic/mechanic_shop.glb" 1770 6 -261.675018 18.1000004 5 12.1499996 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_mechanic_shop_kit4" 0 "assets/verda/city/civic/mechanic_shop.glb" 161.675003 6 1780 18.1000004 5 12.1499996 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_mechanic_shop_kit5" 0 "assets/verda/city/civic/mechanic_shop.glb" -1730 14.0573664 311.675018 18.1000004 5 12.1499996 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_oil_rig_kit1" 4 "assets/verda/city/civic/oil_rig.glb" 1325.02026 -46 -2306.50269 59.5 79.1999969 30.6000004 -30 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_oil_rig_kit2" 4 "assets/verda/city/civic/oil_rig.glb" 2693.96851 -46 479.492035 59.5 79.1999969 30.6000004 40 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_oil_rig_kit3" 4 "assets/verda/city/civic/oil_rig.glb" 679.594177 -46 2536.27954 59.5 79.1999969 30.6000004 105 255 255 255 255 80 80 80 255 0
-ASSET "creator_industrial_large_shed_a_kit10" 4 "assets/verda/industrial/shacks/Large Shed A.glb" -103.399994 -1.19234073 -1430 8.80000019 6.20100021 14.3219995 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_diesel_island_kit3" 4 "assets/verda/city/civic/diesel_island.glb" -73.8999939 1.65247262 -1430 4 8.60000038 12 -180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit5" 4 "assets/verda/city/civic/container_stack.glb" -103.329994 -0.210299879 -1416 10.5 7.80000019 37.5 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit6" 4 "assets/verda/city/civic/container_stack.glb" -103.329994 -1.75828695 -1444 10.5 7.80000019 37.5 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_a_kit11" 4 "assets/verda/industrial/shacks/Large Shed A.glb" 1353.65051 0.0586862862 -450.134644 8.80000019 6.20100021 14.3219995 110.323143 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_diesel_island_kit4" 4 "assets/verda/city/civic/diesel_island.glb" 1363.89624 -0.938250303 -422.471069 4 8.60000038 12 110.323135 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit7" 4 "assets/verda/city/civic/container_stack.glb" 1340.54626 0.581763983 -445.206604 10.5 7.80000019 37.5 110.323143 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit8" 4 "assets/verda/city/civic/container_stack.glb" 1366.80334 -0.136583447 -454.931396 10.5 7.80000019 37.5 110.323143 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_a_kit12" 4 "assets/verda/industrial/shacks/Large Shed A.glb" 342.796509 -2.40234494 1375.10632 8.80000019 6.20100021 14.3219995 11.6336517 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_diesel_island_kit5" 4 "assets/verda/city/civic/diesel_island.glb" 313.902557 -6.38062048 1381.05518 4 8.60000038 12 11.6336441 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit9" 4 "assets/verda/city/civic/container_stack.glb" 339.904785 -4.51012945 1361.40808 10.5 7.80000019 37.5 11.6336517 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit10" 4 "assets/verda/city/civic/container_stack.glb" 345.551086 -0.983053446 1388.83289 10.5 7.80000019 37.5 11.6336517 255 255 255 255 80 80 80 255 1
-ASSET "creator_industrial_large_shed_a_kit13" 4 "assets/verda/industrial/shacks/Large Shed A.glb" -1356.66199 5.47932434 451.494873 8.80000019 6.20100021 14.3219995 -76.3527832 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_diesel_island_kit6" 4 "assets/verda/city/civic/diesel_island.glb" -1363.62219 2.33562827 422.827759 4 8.60000038 12 -76.3527985 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit11" 4 "assets/verda/city/civic/container_stack.glb" -1343.07373 7.49380493 448.123657 10.5 7.80000019 37.5 -76.3527832 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit12" 4 "assets/verda/city/civic/container_stack.glb" -1370.2832 3.47131681 454.730042 10.5 7.80000019 37.5 -76.3527832 255 255 255 255 80 80 80 255 1
@@ -6073,7 +6051,7 @@ MARKER "vehicle_spawn_truck_village_espera_1" 3 -60 6 -1728 2 1.60000002 4.40000
 MARKER "creator_marker_building_purpose_kit_153" 4 -3.99999952 6.3499999 -1932.19995 1.20000005 2.20000005 1.20000005 180 1
 MARKER "vehicle_spawn_police_village_espera_1" 3 -12.999999 6 -1927.80005 2 1.60000002 4.4000001 270 1
 MARKER "creator_marker_building_purpose_kit_154" 4 -25 0.29376933 -182.199997 1.20000005 2.20000005 1.20000005 180 1
-MARKER "creator_marker_building_purpose_kit_155" 4 1882.19995 6.3499999 -396 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_155" 4 1746 6.3499999 -267.799988 1.20000005 2.20000005 1.20000005 -0 1
 MARKER "creator_marker_building_purpose_kit_156" 4 304 6.3499999 1932.19995 1.20000005 2.20000005 1.20000005 -0 1
 MARKER "creator_marker_building_purpose_kit_157" 4 -1754 14.4073668 582.200012 1.20000005 2.20000005 1.20000005 -0 1
 MARKER "creator_marker_building_purpose_kit_158" 4 -1810 14.4073668 317.799988 1.20000005 2.20000005 1.20000005 180 1
@@ -6183,10 +6161,10 @@ MARKER "creator_marker_building_purpose_kit_182" 4 1619.1001 6.3499999 -396 1.20
 MARKER "creator_marker_building_purpose_kit_183" 4 169.100006 6.3499999 1796 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_184" 4 -1746 14.4073668 319.099976 1.20000005 2.20000005 1.20000005 180 1
 MARKER "gang_house_village_espera" 4 17.5900002 6.05999994 -1665.55005 1.20000005 2.20000005 1.20000005 -0 1
-MARKER "gang_house_port_luma" 4 1759.58997 6.05999994 -265.549988 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "gang_house_port_luma" 4 1888.41003 6.05999994 -375.450012 1.20000005 2.20000005 1.20000005 180 1
 MARKER "gang_house_south_haven" 4 165.549988 6.05999994 1809.58997 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "gang_house_west_roka" 4 -1615.55005 14.1173668 472.410004 1.20000005 2.20000005 1.20000005 90 1
-MARKER "creator_marker_building_purpose_kit_185" 4 -503.900024 0.023960337 -26 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_185" 4 -526 0.150000006 -56.0999985 1.20000005 2.20000005 1.20000005 0 1
 MARKER "creator_marker_building_purpose_kit_186" 4 451.099976 0.150000006 26 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_187" 4 -146.899994 6.1500001 -1780 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_188" 4 1770 6.1500001 -546.900024 1.20000005 2.20000005 1.20000005 180 1
@@ -6196,7 +6174,7 @@ MARKER "creator_marker_building_purpose_kit_191" 4 -715.964233 4.63421869 1352.2
 MARKER "creator_marker_building_purpose_kit_192" 4 -203.5 0.119999997 -113.199997 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_193" 4 -235.600006 0.100000001 -12.5999994 1.20000005 2.20000005 1.20000005 -180 1
 MARKER "creator_marker_building_purpose_kit_194" 4 -16.9999962 6.0999999 -1655.40002 1.20000005 2.20000005 1.20000005 -90 1
-MARKER "creator_marker_building_purpose_kit_195" 4 1744.59998 6.0999999 -266.399994 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_195" 4 1776.59998 6.0999999 -266.399994 1.20000005 2.20000005 1.20000005 -0 1
 MARKER "creator_marker_building_purpose_kit_196" 4 166.400009 6.0999999 1786.59998 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_197" 4 -1736.59998 14.1573668 316.399994 1.20000005 2.20000005 1.20000005 180 1
 MARKER "freight_yard_village_espera" 4 -99.3999939 -1.09234071 -1430 1.20000005 2.20000005 1.20000005 90 1
@@ -7424,15 +7402,15 @@ ROAD 1624 0 -280 1876 0 -280 12 2
 ROAD 1876 0 -440 1946 0 -440 9 2
 ROAD 1876 0 -360 1946 0 -360 14 2
 ROAD 1946 0 -510 1946 0 -290 14 2
-ROAD 1825 0 -280 1825 0 -266 7.25 2
-ROAD 1825 0 -266 1834.19238 0 -262.192383 7.25 2
-ROAD 1834.19238 0 -262.192383 1838 0 -253 7.25 2
-ROAD 1838 0 -253 1834.19238 0 -243.807617 7.25 2
-ROAD 1834.19238 0 -243.807617 1825 0 -240 7.25 2
-ROAD 1825 0 -240 1815.80762 0 -243.807617 7.25 2
-ROAD 1815.80762 0 -243.807617 1812 0 -253 7.25 2
-ROAD 1812 0 -253 1815.80762 0 -262.192383 7.25 2
-ROAD 1815.80762 0 -262.192383 1825 0 -266 7.25 2
+ROAD 1902 0 -440 1902 0 -426 7.25 2
+ROAD 1902 0 -426 1911.19238 0 -422.192383 7.25 2
+ROAD 1911.19238 0 -422.192383 1915 0 -413 7.25 2
+ROAD 1915 0 -413 1911.19238 0 -403.807617 7.25 2
+ROAD 1911.19238 0 -403.807617 1902 0 -400 7.25 2
+ROAD 1902 0 -400 1892.80762 0 -403.807617 7.25 2
+ROAD 1892.80762 0 -403.807617 1889 0 -413 7.25 2
+ROAD 1889 0 -413 1892.80762 0 -422.192383 7.25 2
+ROAD 1892.80762 0 -422.192383 1902 0 -426 7.25 2
 ROAD 1876 0 -470 1950 0 -470 14 2
 ROAD 1950 0 -470 2214 0 -470 13 2
 ROAD 1946 0 -360 2214 0 -360 13 2
@@ -7447,7 +7425,7 @@ MARKER "vehicle_spawn_hatchback_porto_7" 3 1794.80005 6 -392 2 1.60000002 4.4000
 MARKER "vehicle_spawn_hatchback_porto_8" 3 1794.80005 6 -418 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_truck_port_luma_1" 3 1936 6 -462 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_truck_port_luma_2" 3 1936 6 -338 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_police_port_luma_1" 3 1877.80005 6 -405 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_police_port_luma_1" 3 1755 6 -272.200012 2 1.60000002 4.4000001 90 1
 MARKER "loot_spawn_general_bldg_168" 0 1690 6.3499999 -501 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_medical_bldg_169" 0 1690 6.3499999 -483 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_170" 0 1690 6.3499999 -468 0.5 0.5 0.5 0 1

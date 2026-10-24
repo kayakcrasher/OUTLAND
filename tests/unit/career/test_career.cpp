@@ -78,6 +78,7 @@ int main() {
 
         // Too slow fails, and costs respect.
         check(wait_for(c, JobKind::KillRivals, now), "another hit");
+        c.turf_taken(9, "Sablovalo");   // (some respect to lose: the jobs passed over on the way cost some)
         const float had = c.state().respect;
         now += 1000;
         c.update(world(now));
@@ -158,6 +159,53 @@ int main() {
             }
         }
         check(smuggle && extort && turf, "all three jobs come up");
+        // A store robbery (a gun out at the counter, the till, home with the police after you) and
+        // a tag up (the cans with the job; five tags in the rival town, none elsewhere).
+        {
+            Career r;
+            r.join_gang(0, "La Verda Mano", why);
+            const auto robbing = [&](double t) {
+                auto f = full(t);
+                f.shops = {{"the shop on Roka's high street", "Roka", {420, 0, 15}}};
+                return f;
+            };
+            bool robbery = false, tag_up = false;
+            for (int i = 0; i < 6000 && !(robbery && tag_up); ++i) {
+                now += 1;
+                auto f = robbing(now);
+                r.update(f);
+                const auto kind = r.job().kind;
+                if (kind == JobKind::RobStore && !robbery) {
+                    robbery = true;
+                    check(std::abs(r.job().target.x - 420) < .1F && r.job().pay >= 400 && r.job().title == "STORE ROBBERY", "the shop, and a till worth having");
+                    check(!r.take_tipoff(), "nobody called yet");
+                    check(r.robbed() && !r.robbed() && r.job().taken && r.take_tipoff(), "the till taken (once), the alarm goes off");
+                    f.player = {420, 0, 15};
+                    r.update(f);
+                    check(std::abs(r.job().target.x - 30) < .1F, "now home to the hideout");
+                    f.player = {31, 0, 1};
+                    r.update(f);
+                    Job done;
+                    check(r.job().kind == JobKind::None && r.take_finished(done) && done.kind == JobKind::RobStore && r.take_pay() >= 400, "home with it");
+                } else if (kind == JobKind::TagUp && !tag_up) {
+                    tag_up = true;
+                    const int town = r.job().turf;
+                    check((town == 1 || town == 2) && r.job().needed == 5 && r.job().title == "TAG UP", "a rival town, five tags");
+                    check(r.take_cans() >= 5 && r.take_cans() == 0, "the boss hands over the cans (once)");
+                    r.tagged(0);
+                    check(r.job().done == 0, "a tag at home doesn't count");
+                    for (int k = 0; k < 4; ++k) r.tagged(town);
+                    check(r.job().kind == JobKind::TagUp && r.job().done == 4, "four of five");
+                    r.tagged(town);
+                    Job done;
+                    check(r.job().kind == JobKind::None && r.take_finished(done) && done.kind == JobKind::TagUp && r.take_pay() >= 900, "tagged up");
+                } else if (kind != JobKind::None) {
+                    now += 2000; f.now = now; r.update(f);
+                }
+            }
+            check(robbery && tag_up, "both new jobs come up");
+            check(!r.robbed(), "no robbery on: nothing to take");
+        }
         // A town the Policio cleared is nobody's to take; a load with no hideout left to go to is off.
         Career d;
         d.join_gang(0, "La Verda Mano", why);

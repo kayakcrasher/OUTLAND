@@ -116,6 +116,41 @@ int main() {
     for (const auto& m : mafio.members()) asleep += bots.asleep(m.bot) ? 1 : 0;
     check(asleep > 0 && !bots.asleep(casino->members.front()), "crews far away sleep, the near one is awake");
 
+    // Street patrols: two soldiers of most crews walk a loop of their town's streets; one that
+    // comes within sight of a spot (a fresh tag) has seen it - his gang's walls only.
+    check(mafio.patrols().size() >= crews, "patrols in most towns");
+    for (const auto& p : mafio.patrols()) check(p.route.size() >= 2 && !mafio.members()[static_cast<std::size_t>(p.member)].officer, "a loop of the streets, walked by soldiers");
+    {
+        const auto& patrol = mafio.patrols().front();
+        const auto& walker = mafio.members()[static_cast<std::size_t>(patrol.member)];
+        const auto& crew = mafio.crews()[static_cast<std::size_t>(walker.crew)];
+        const Vector3 start = bots.find(walker.bot)->position();
+        double t = now;
+        float walked = 0;
+        for (int k = 0; k < 900; ++k) {   // 45 s with the player in town (so the crew is awake)
+            game::mafia::MafioFrame frame;
+            frame.dt = .05F; frame.now = t; frame.player_feet = Vector3Add(crew.door, {0, 0, 30}); frame.player_alive = true;
+            mafio.update(frame, bots, world, drivers, cars, region);
+            walked = std::max(walked, Vector3Distance(bots.find(walker.bot)->position(), start));
+            t += .05;
+        }
+        std::cout << "a " << crew.town << " patroller walked up to " << walked << " m from where he started\n";
+        check(walked > 12, "the patrol walks its streets");
+        const Vector3 here = bots.find(walker.bot)->position();
+        check(mafio.spotted_by_patrol(here, crew.gang, bots) >= 0, "a tag right by a patroller is seen");
+        check(mafio.spotted_by_patrol(here, (crew.gang + 1) % 5, bots) < 0, "...by his own gang only");
+        check(mafio.spotted_by_patrol(Vector3Add(here, {500, 0, 500}), crew.gang, bots) < 0, "...not from across the island");
+        check(mafio.patroller(walker.bot) && !mafio.patroller(casino->members.front()), "who patrols");
+        // Back to the Verda City crew for the rest.
+        for (int k = 0; k < 40; ++k) {
+            game::mafia::MafioFrame frame;
+            frame.dt = .05F; frame.now = t; frame.player_feet = player; frame.player_alive = true;
+            mafio.update(frame, bots, world, drivers, cars, region);
+            t += .05;
+        }
+        now = t;
+    }
+
     // The player fires at a door guard: the whole gang shoots back.
     const auto* guard = bots.find(casino->members.front());
     step(.1F, true, {guard->position().x, guard->position().y + 1.2F, guard->position().z});

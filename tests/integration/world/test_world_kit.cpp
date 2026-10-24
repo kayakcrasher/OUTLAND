@@ -196,14 +196,15 @@ int main() {
         check(grid == 8, "Roka's street grid: " + std::to_string(grid));
         for (const auto& s : region.settlements()) for (const auto& road : s.roads)
             for (const auto& end : {road.start, road.end}) check(std::hypot(end.x - roka->center.x, end.z - roka->center.z) > 1, "no road ends in the middle of the square");
-        int works = 0, flats = 0, sheds = 0;
+        int works = 0, flats = 0, hangars = 0, sheds = 0;
         for (const auto& s : region.settlements()) for (const auto& asset : s.assets) {
             if (std::hypot(asset.position.x - roka->center.x, asset.position.z - roka->center.z) > 230) continue;
             flats += asset.model_path.find("Buildings Prebuild/flat_") != std::string::npos;
-            sheds += asset.model_path.find("Large Shed") != std::string::npos || asset.model_path.find("Hangar1") != std::string::npos;
+            hangars += asset.model_path.find("Hangar1") != std::string::npos;
+            sheds += asset.model_path.find("Large Shed") != std::string::npos;
         }
         for (const auto& b : report.enterable) works += std::hypot(b.origin.x - roka->center.x + 165, b.origin.z - roka->center.z) < 70;
-        check(flats == 8 && sheds >= 8 && works == 2, "flats, sheds and factory halls: " + std::to_string(flats) + "/" + std::to_string(sheds) + "/" + std::to_string(works));
+        check(flats == 8 && hangars >= 3 && sheds == 0 && works == 2, "flats, hangars (no white sheds) and factory halls: " + std::to_string(flats) + "/" + std::to_string(hangars) + "/" + std::to_string(sheds) + "/" + std::to_string(works));
         const float h = world::terrain::TerrainHeight::sample(roka->center.x, roka->center.z);
         for (const auto& [x, z] : std::initializer_list<std::pair<float, float>>{{-180, 0}, {120, 120}, {-120, -120}, {180, -60}})
             check(std::abs(world::terrain::TerrainHeight::sample(roka->center.x + x, roka->center.z + z) - h) < .05F, "Roka on a level pad");
@@ -236,7 +237,8 @@ int main() {
                 if (std::hypot(asset.position.x - town->center.x, asset.position.z - town->center.z) > 200) continue;
                 rows += asset.model_path.find("/main_street/") != std::string::npos;
                 flats += asset.model_path.find("Buildings Prebuild/flat_") != std::string::npos;
-                yard += asset.model_path.find("ranch/barn") != std::string::npos || asset.model_path.find("Large Shed") != std::string::npos;
+                yard += asset.model_path.find("ranch/barn") != std::string::npos || asset.model_path.find("Pallet.glb") != std::string::npos;
+                check(asset.model_path.find("Large Shed") == std::string::npos, "no white sheds");
                 square += asset.model_path.find("courthouse_square") != std::string::npos;
             }
             check(rows >= 30 && flats == 4 && yard >= 1 && square == 1, town->name + ": rows, flats, the yard and the square: " +

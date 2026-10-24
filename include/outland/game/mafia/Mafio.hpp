@@ -104,6 +104,16 @@ struct Heist {
     std::vector<int> running, surrendered, settled;    // settled: decided (run or give up) once stopped
 };
 
+// A gang's street patrol: a couple of a crew's soldiers walk a loop of their town's streets round
+// the hideout (one point after another), watching the walls - a rival's fresh tag doesn't go
+// unnoticed for long (spotted_by_patrol).
+struct Patrol {
+    int member{-1};                // index in members()
+    std::vector<Vector3> route;
+    int leg{0};
+    double leg_since{0};
+};
+
 struct War {
     int attackers{-1}, defenders{-1}; // gangs
     int target{-1};                   // crew attacked
@@ -207,6 +217,14 @@ public:
     [[nodiscard]] const std::vector<Crew>& crews() const { return crews_; }
     [[nodiscard]] const std::vector<Member>& members() const { return members_; }
     [[nodiscard]] const std::vector<War>& wars() const { return wars_; }
+    // Street patrols (see Patrol). A patrol member of `gang`, awake and on his feet, within
+    // `patrol_sight` of `at`: he has seen it (a fresh tag on his gang's wall).
+    static constexpr int patrols_per_crew = 2;
+    static constexpr float patrol_sight = 26;
+    static constexpr double patrol_leg = 50;       // seconds to a point before moving on regardless
+    [[nodiscard]] const std::vector<Patrol>& patrols() const { return patrols_; }
+    [[nodiscard]] bool patroller(int bot) const;
+    [[nodiscard]] int spotted_by_patrol(Vector3 at, int gang, ai::BattleRoyaleBots& bots) const;   // the bot, or -1
     [[nodiscard]] const Crew* casino() const;
     // The crew whose hideout `feet` stands at (within `radius` of door or inside), or -1.
     [[nodiscard]] int turf_at(Vector3 feet, float radius = turf_radius) const;
@@ -237,6 +255,8 @@ private:
     std::vector<Crew> crews_;
     std::vector<Member> members_;
     std::vector<War> wars_;
+    std::vector<Patrol> patrols_;
+    void walk_patrols(const MafioFrame& frame, ai::BattleRoyaleBots& bots);
     std::array<double, world::zones::zone_count> provoked_until_{};
     double next_war_{0};
     std::uint64_t rng_{0x51ed2701f3a5c3b9ULL}, seed_{0};

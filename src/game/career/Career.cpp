@@ -27,6 +27,8 @@ const char* job_name(JobKind kind) {
         case JobKind::CleanUp: return "CLEAN UP";
         case JobKind::HitChief: return "THE BIG HIT";
         case JobKind::Callout: return "CALLOUT";
+        case JobKind::RobStore: return "STORE ROBBERY";
+        case JobKind::TagUp: return "TAG UP";
         case JobKind::None: break;
     }
     return "";
@@ -318,6 +320,20 @@ void Career::extort_result(bool paid, int family_faction) {
     say("EXTORTION: they reach for their shotguns");
 }
 
+bool Career::robbed() {
+    if (state_.side != Side::Gang || job_.kind != JobKind::RobStore || job_.taken) return false;
+    job_.taken = true;
+    tipoff_ = true;
+    say("STORE ROBBERY: the till is yours - the alarm's gone off. Get it back to the hideout");
+    return true;
+}
+
+void Career::tagged(int turf) {
+    if (state_.side != Side::Gang || job_.kind != JobKind::TagUp || turf != job_.turf) return;
+    if (++job_.done >= job_.needed) { finish(true, ""); return; }
+    say("TAG UP: " + std::to_string(job_.done) + " of " + std::to_string(job_.needed));
+}
+
 void Career::turf_taken(int turf, const std::string& name) {
     if (state_.side != Side::Gang) return;
     if (job_.kind == JobKind::TakeTurf && job_.turf == turf) { job_.done = 1; finish(true, ""); return; }
@@ -395,20 +411,35 @@ void Career::offer(const CareerFrame& frame) {
             return a->hold + flat(a->centre, frame.player) * .02F < b->hold + flat(b->centre, frame.player) * .02F; });
         std::vector<const RanchSpot*> leanable;
         for (const auto& r : frame.ranches) if (!r.yours) leanable.push_back(&r);
-        if (roll < .16F && !frame.docks.empty() && home()) {
+        // Shops worth the trip: not on the doorstep, not across the island.
+        std::vector<const ShopSpot*> shops;
+        for (const auto& shop : frame.shops)
+            if (const float d = flat(shop.till, frame.player); d > 80 && d < 1600) shops.push_back(&shop);
+        if (roll < .13F && !frame.docks.empty() && home()) {
             const auto& dock = frame.docks[std::min(frame.docks.size() - 1, static_cast<std::size_t>(random() * static_cast<float>(frame.docks.size())))];
             job.kind = JobKind::Smuggle;
             job.target = dock.point;
             job.detail = "Contraband came ashore at " + dock.name + ": collect it in a car and run it to your hideout - the police will hear";
             job.needed = 1; job.pay = 1300; job.respect = 12; job.deadline = frame.now + 600;
-        } else if (roll < .32F && !leanable.empty()) {
+        } else if (roll < .26F && !leanable.empty()) {
             const auto* r = leanable[std::min(leanable.size() - 1, static_cast<std::size_t>(random() * static_cast<float>(leanable.size())))];
             job.kind = JobKind::Extort;
             job.ranch = r->ranch;
             job.target = r->gate;
             job.detail = "Lean on the " + r->family + " family at " + r->name + ": protection money, or else";
             job.needed = 1; job.pay = 700; job.respect = 9; job.deadline = frame.now + 600;
-        } else if (roll < .5F && !rival_towns.empty()) {
+        } else if (roll < .52F && !rival_towns.empty() && roll >= .40F) {
+            // Tag up a rival town: the boss hands over a bag of cans.
+            const auto* t = rival_towns[std::min(rival_towns.size() - 1, static_cast<std::size_t>(random() * static_cast<float>(std::min<std::size_t>(3, rival_towns.size()))))];
+            job.kind = JobKind::TagUp;
+            job.turf = t->turf;
+            job.gang = t->owner;
+            job.target = t->centre;
+            job.needed = 5;
+            job.detail = "Tag up " + t->name + ": spray 5 tags on the " + name_of(t->owner) + "'s walls there. Here's a bag of cans - their patrols will come looking";
+            job.pay = 900; job.respect = 12; job.deadline = frame.now + 1500;
+            cans_ = job.needed + 3;
+        } else if (roll < .52F && !rival_towns.empty()) {
             const auto* t = rival_towns.front();
             job.kind = JobKind::TakeTurf;
             job.turf = t->turf;
@@ -416,7 +447,15 @@ void Career::offer(const CareerFrame& frame) {
             job.target = t->centre;
             job.detail = "Take " + t->name + " from the " + name_of(t->owner) + ": tag their walls, hit their crew, break their hold";
             job.needed = 1; job.pay = 1500; job.respect = 15; job.deadline = frame.now + 1800;
-        } else if (roll < .62F && !frame.rigs.empty() && home()) {
+        } else if (roll < .66F && !shops.empty() && home()) {
+            // A store robbery: in with a gun out, the till, then home with the police after you.
+            const auto* shop = shops[std::min(shops.size() - 1, static_cast<std::size_t>(random() * static_cast<float>(shops.size())))];
+            job.kind = JobKind::RobStore;
+            job.target = shop->till;
+            job.needed = 1;
+            job.detail = "Rob " + shop->name + " in " + shop->town + ": go in with a gun out, USE at the counter for the till, then get it back to the hideout";
+            job.pay = 400 + static_cast<int>(random() * 8) * 50; job.respect = 10; job.deadline = frame.now + 900;
+        } else if (roll < .76F && !frame.rigs.empty() && home()) {
             const auto& rig = frame.rigs[std::min(frame.rigs.size() - 1, static_cast<std::size_t>(random() * static_cast<float>(frame.rigs.size())))];
             job.kind = JobKind::RobRig;
             job.vehicle = rig.vehicle;
@@ -567,6 +606,15 @@ void Career::update(const CareerFrame& frame) {
         }
         case JobKind::Extort:
             if (!job_.taken && flat(frame.player, job_.target) < 25) { job_.taken = true; demanded_ = true; }
+            break;
+        case JobKind::RobStore:
+            // The till in hand: home with it, on foot or in a car.
+            if (job_.taken) {
+                const CrewSpot* home = home_of(frame);
+                if (!home) { finish(false, "STORE ROBBERY: your gang has no hideout left to take it to"); return; }
+                job_.target = home->door;
+                if (flat(frame.player, home->door) < drop_radius) { job_.done = 1; finish(true, ""); return; }
+            }
             break;
         case JobKind::BreakUpWar: {
             const auto war = std::find_if(frame.wars.begin(), frame.wars.end(), [&](const WarSpot& w) { return w.attackers == job_.gang; });

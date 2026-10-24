@@ -587,7 +587,7 @@ void downtown_south(Kit& kit, world::VerdaRegion& region) {
 // (avenues and streets at +-40 and +-120 from the centre) round Placo de la Laboristoj. Main
 // Street rows north and south of the square, worker flats on the west blocks with the town hall
 // between them, and the east blocks are yards - sheds, hangars and factories on asphalt, with
-// trucks. West of the grid stand the works: a long factory hall, sheds, pipes and a fenced yard.
+// trucks. West of the grid stand the works: a long factory hall, a hangar, pipes and a fenced yard.
 // The highways from the capital and the ring road end at the grid's east edge.
 world::Settlement* settlement(world::VerdaRegion& region, std::string_view id);
 void vehicle_marker(world::Settlement& town, const std::string& id, Vector3 at, float yaw);
@@ -632,12 +632,13 @@ void roka_city(Kit& kit, world::VerdaRegion& region) {
             kit.put(urban + "Bus stops/busstop_clean_bench.glb", at(31, 12), 270, false);
             kit.put(urban + "Bus stops/busstop_clean_bench.glb", at(-31, -12), 90, false);
         } else if (yard) {
-            // Yards: a big shed or a hangar each side of the block, trucks, pallets and barrels.
+            // Yards: a hangar each side of the block (the middle one), trucks, pallets and barrels.
+            // (No more of the shacks kit's Large Sheds anywhere: their materials have no colour, so
+            // they stood about the island as blank white boxes.)
             const bool hangar = bz == 0;
             for (const float side : {-1.0F, 1.0F}) {
                 const Vector3 p = at(bx + side * 15, bz - 6);
-                if (hangar) { if (kit.claim(p, 6, 3, 0)) kit.put(prebuild + "Hangar1.glb", p, side > 0 ? 270.0F : 90.0F, false); }
-                else if (kit.claim(p, 4.6F, 7.4F, 0)) kit.put(shacks + (side > 0 ? "Large Shed A.glb" : "Large Shed B.glb"), p, 0, false);
+                if (hangar && kit.claim(p, 6, 3, 0)) kit.put(prebuild + "Hangar1.glb", p, side > 0 ? 270.0F : 90.0F, false);
             }
             if (hangar) modular_building(kit, at(bx, bz + 18), 180, 6, 3, "brick", 2, seed, world::BuildingPurpose::Industrial);
             truck(at(bx + (bz == 0 ? -22 : 22), bz + 24), bz == 0 ? 90.0F : 270.0F);
@@ -690,13 +691,10 @@ void roka_city(Kit& kit, world::VerdaRegion& region) {
         kit.put(urban + "Traffic lights/traffic_light.glb", at(i - o, j + o), 180, false);
     }
     kit.claim(c, edge + 2, edge + 2, 0);
-    // The works, west of the grid either side of the works road: a long factory hall, sheds, a
+    // The works, west of the grid either side of the works road: a long factory hall, a
     // hangar, pipe runs and a fenced stock yard.
     modular_building(kit, {c.x - 165, 0, c.z - 45}, 0, 10, 5, "brick", 2, 4401, world::BuildingPurpose::Industrial);
     modular_building(kit, {c.x - 165, 0, c.z + 48}, 180, 8, 4, "stuco", 1, 4402, world::BuildingPurpose::Industrial);
-    for (const auto& [x, z, name, yaw] : std::initializer_list<std::tuple<float, float, const char*, float>>{
-            {-140, -95, "Large Shed A", 90}, {-185, -95, "Large Shed B", 90}, {-140, 95, "Large Shed B", 90}, {-185, 95, "Large Shed A", 90}})
-        if (kit.claim({c.x + x, 0, c.z + z}, 7.4F, 4.6F, 0)) kit.put(shacks + std::string(name) + ".glb", {c.x + x, 0, c.z + z}, yaw);
     if (kit.claim({c.x - 140, 0, c.z + 20}, 6, 3, 0)) kit.put(prebuild + "Hangar1.glb", {c.x - 140, 0, c.z + 20}, 180);
     for (int i = 0; i < 10; ++i) kit.put(urban + "Pipes/pipe_rusted.glb", {c.x - 150 + i * 2.0F, 0, c.z - 15}, 90);
     for (int i = 0; i < 6; ++i) kit.put(urban + "Pipes/pipe.glb", {c.x - 190, 0, c.z - 30 + i * 2.0F}, 0);
@@ -1125,7 +1123,6 @@ void county_town(Kit& kit, world::VerdaRegion& region, const TownPlan& plan) {
             } else {
                 // The harbour yard: the fish market hall and a boat shed, pallets and barrels.
                 modular_building(kit, at(bx - 12, bz + back * 14), back > 0 ? 180.0F : 0.0F, 6, 3, "stuco", 1, seed, world::BuildingPurpose::Dock, pad_top);
-                if (kit.claim(at(bx + 22, bz + back * 14), 4.6F, 7.4F, 0)) kit.put(shacks + "Large Shed A.glb", at(bx + 22, bz + back * 14), 0, false);
                 for (int i = 0; i < 12; ++i) {
                     const auto r = hash(seed + 50U + static_cast<std::uint32_t>(i));
                     prop(kit, shacks + (i % 3 ? "Pallet.glb" : "Barrel.glb"),
@@ -1411,10 +1408,7 @@ void porto_luma_city(Kit& kit, world::VerdaRegion& region) {
         kit.put(urban + "Traffic lights/traffic_light.glb", at(i - o, j + o), 180, false);
     }
     kit.claim(c, edge + 2, edge + 2, 0);
-    // Waterfront: warehouses between the quay roads, the harbour office, the quay edge.
-    for (const auto& [z, name] : std::initializer_list<std::pair<float, const char*>>{
-            {-95, "Large Shed B"}, {-75, "Large Shed A"}, {-10, "Large Shed B"}, {10, "Large Shed A"}, {75, "Large Shed B"}, {95, "Large Shed A"}})
-        if (kit.claim({c.x + 160, 0, c.z + z}, 7.2F, 4.4F, 0)) kit.put(shacks + std::string(name) + ".glb", {c.x + 160, 0, c.z + z}, 90);
+    // Waterfront: the harbour office, the quay edge.
     modular_building(kit, {c.x + 158, 0, c.z - 118}, 0, 8, 4, "stuco", 2, 9101, world::BuildingPurpose::Office); // harbour office
     modular_building(kit, {c.x + 158, 0, c.z + 118}, 180, 4, 4, "brick", 1, 9102, world::BuildingPurpose::Dock);
     for (int i = 0; i < 28; ++i) kit.put(urban + "Cones & Barriers/Bollards/square_bollard.glb", {c.x + 206, 0, c.z - 108 + i * 8.0F}, 0);
@@ -2203,7 +2197,7 @@ void cargo_terminal(Kit& kit, world::VerdaRegion& region) {
 // z = -84 runs on into the yard of Verda Transporto, the island's trucking company - the depot
 // (sheds and the office, where the boss gives out loads) on its north side, the truck park on the
 // south: the company's rigs for hire (vehicle_spawn_semi_depot_...) and its own drivers' rigs
-// (vehicle_spawn_semi_haul_..., game::freight), with sheds and containers round about.
+// (vehicle_spawn_semi_haul_..., game::freight), with containers round about.
 void freight_depot(Kit& kit, world::VerdaRegion& region) {
     namespace L = world::layout;
     auto* capital = settlement(region, "capital_verda");
@@ -2220,9 +2214,6 @@ void freight_depot(Kit& kit, world::VerdaRegion& region) {
     kit.purpose({-560, ground, -52 - 11 - 3.5F}, 0, world::BuildingPurpose::Office);   // the office, inside its door
     for (const float x : {-524.0F, -592.0F})
         kit.put(city + "ground/parking_lot_68.glb", {x, ground, -126}, 0, false);
-    kit.put(shacks + std::string("Large Shed A.glb"), {-622, 0, -52}, 0);
-    kit.put(shacks + std::string("Large Shed B.glb"), {-638, 0, -52}, 0);
-    kit.put(shacks + std::string("Large Shed B.glb"), {-508, 0, -52}, 0);
     kit.put(city + "civic/container_stack.glb", {-640, ground, -128}, 0, false);
     for (int i = 0; i < 6; ++i) {   // pallets and drums against the shed's flank
         const auto r = hash(9800U + static_cast<std::uint32_t>(i));
@@ -2230,7 +2221,7 @@ void freight_depot(Kit& kit, world::VerdaRegion& region) {
     }
     for (int i = 0; i < 4; ++i)
         kit.put(urban + "Traffic lights/street_light.glb", {-500 - i * 40.0F, 0, road_z - truck_road * .5F - 1.4F}, 0);
-    // The company's diesel lane, on the yard road's north side by the sheds (layout::depot_diesel).
+    // The company's diesel lane, on the yard road's north side west of the office (layout::depot_diesel).
     kit.put(city + "civic/diesel_island.glb", L::depot_diesel, 90);
     // The truck park: noses to the road.
     int n = 0;
@@ -2474,10 +2465,9 @@ void freight_yards(Kit& kit, world::VerdaRegion& region) {
                     owner->roads.push_back({corner(k), corner(k + 1), lane, world::RoadType::Asphalt});
                 }
                 kit.add_roads(std::vector<world::Road>(owner->roads.end() - 13, owner->roads.end()));
-                // Beyond the loop: the shed (its door to the yard) and the containers.
+                // Beyond the loop: the yard's drop point (facing the yard) and the containers.
                 const float yaw = std::atan2(-out.x, -out.z) * RAD2DEG;   // facing back toward the highway
                 const Vector3 shed{centre.x + out.x * (ring + lane + 4), 0, centre.z + out.z * (ring + lane + 4)};
-                kit.put(shacks + std::string("Large Shed A.glb"), shed, yaw + 90);
                 kit.purpose({shed.x - out.x * 4, world::terrain::TerrainHeight::sample(shed.x, shed.z) + .1F, shed.z - out.z * 4}, yaw,
                             world::BuildingPurpose::Industrial, std::string("freight_yard_") + id);
                 const Vector3 across{-out.z, 0, out.x};

@@ -53,6 +53,7 @@ int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegio
     crews_.clear();
     members_.clear();
     wars_.clear();
+    patrols_.clear();
     heists_.clear();
     provoked_until_.fill(-1e9);
     next_war_ = 0;
@@ -167,12 +168,57 @@ int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegio
             crew.members.push_back(m.bot);
             members_.push_back(m);
         }
+        // The street patrol: the last soldiers of the crew (never the boss or the card table) walk
+        // up and down the street in front of the hideout - its nearest road, from 60 m one way to
+        // 60 m the other - out on the street from the start (a straight walk, nothing in the way,
+        // past the walls a rival would tag).
+        if (!crew.casino && size >= 3) {
+            const world::Road* street = nullptr;
+            float near = 60, along = 0;
+            for (const auto& road : town.roads) {
+                if (road.type == world::RoadType::Highway) continue;
+                const Vector3 d{road.end.x - road.start.x, 0, road.end.z - road.start.z};
+                const float length = std::hypot(d.x, d.z);
+                if (length < 30) continue;
+                const float t = std::clamp(((crew.door.x - road.start.x) * d.x + (crew.door.z - road.start.z) * d.z) / (length * length), 0.0F, 1.0F);
+                const Vector3 foot{road.start.x + d.x * t, 0, road.start.z + d.z * t};
+                if (const float gap = flat(foot, crew.door); gap < near) { near = gap; street = &road; along = t * length; }
+            }
+            std::vector<Vector3> route;
+            if (street) {
+                const Vector3 d{street->end.x - street->start.x, 0, street->end.z - street->start.z};
+                const float length = std::hypot(d.x, d.z);
+                for (const float offset : {-60.0F, -30.0F, 0.0F, 30.0F, 60.0F}) {
+                    const float s = std::clamp(along + offset, 0.0F, length);
+                    const Vector3 p = ground({street->start.x + d.x * s / length, 0, street->start.z + d.z * s / length}, region);
+                    if (route.empty() || flat(p, route.back()) > 10) route.push_back(p);
+                }
+                // Up the street and back: there, then the way back (not a jump from the far end).
+                for (int k = static_cast<int>(route.size()) - 2; k > 0; --k) route.push_back(route[static_cast<std::size_t>(k)]);
+            }
+            if (route.size() >= 2)
+                for (int k = 0; k < patrols_per_crew && k < size - 2; ++k) {
+                    Patrol patrol;
+                    patrol.member = static_cast<int>(members_.size()) - 1 - k;
+                    patrol.route = route;
+                    patrol.leg = static_cast<int>((route.size() / 2) * static_cast<std::size_t>(k) % route.size());   // the two start apart
+                    // On the street from the start: his post is where the street passes the door.
+                    auto& m = members_[static_cast<std::size_t>(patrol.member)];
+                    std::size_t nearest = 0;
+                    for (std::size_t r = 1; r < route.size(); ++r) if (flat(route[r], crew.door) < flat(route[nearest], crew.door)) nearest = r;
+                    m.post = route[nearest];
+                    m.post_radius = 3;
+                    if (auto* b = bots.find(m.bot)) { b->set_position(m.post); b->set_roam_center(m.post, m.post_radius); }
+                    patrols_.push_back(std::move(patrol));
+                }
+        }
         crews_.push_back(std::move(crew));
     }
     return static_cast<int>(crews_.size());
 }
 
 void Mafio::clear(ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers, vehicles::VehicleSystem& cars) {
+    patrols_.clear();
     if (!crews_.empty()) {
         drivers.clear(bots, cars);
         bots.clear();
@@ -497,8 +543,47 @@ void Mafio::update(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotW
     bf.player_fired = frame.player_fired;
     bf.player_weapon = frame.player_weapon;
     bf.player_in_vehicle = frame.player_in_vehicle;
+    walk_patrols(frame, bots);
     drivers.update(frame.dt, bots, cars, region, frame.player_feet, frame.player_alive, 0, world.environment.line_of_sight);
     bots.update(bf, world);
+}
+
+void Mafio::walk_patrols(const MafioFrame& frame, ai::BattleRoyaleBots& bots) {
+    for (auto& patrol : patrols_) {
+        if (patrol.member < 0 || static_cast<std::size_t>(patrol.member) >= members_.size() || patrol.route.empty()) continue;
+        const auto& m = members_[static_cast<std::size_t>(patrol.member)];
+        auto* bot = bots.find(m.bot);
+        // Not while away (lent to the player, held, on a hit squad or a heist), asleep or dead,
+        // nor once the crew is broken up.
+        if (!bot || !bot->alive() || m.dead || m.lent || m.held || bots.asleep(m.bot) || bots.mounted(m.bot) || heist_of(m.bot) ||
+            crews_[static_cast<std::size_t>(m.crew)].disbanded) continue;
+        bool away = false;
+        for (const auto& war : wars_) away = away || std::find(war.squad.begin(), war.squad.end(), m.bot) != war.squad.end();
+        if (away) continue;
+        if (patrol.leg_since <= 0) patrol.leg_since = frame.now;
+        const Vector3 point = patrol.route[static_cast<std::size_t>(patrol.leg) % patrol.route.size()];
+        if (flat(bot->position(), point) < 4 || frame.now - patrol.leg_since > patrol_leg) {
+            patrol.leg = (patrol.leg + 1) % static_cast<int>(patrol.route.size());
+            patrol.leg_since = frame.now;
+        }
+        bot->set_roam_center(patrol.route[static_cast<std::size_t>(patrol.leg)], 1.5F);
+    }
+}
+
+bool Mafio::patroller(int bot) const {
+    return std::any_of(patrols_.begin(), patrols_.end(), [&](const Patrol& p) {
+        return p.member >= 0 && static_cast<std::size_t>(p.member) < members_.size() && members_[static_cast<std::size_t>(p.member)].bot == bot; });
+}
+
+int Mafio::spotted_by_patrol(Vector3 at, int gang, ai::BattleRoyaleBots& bots) const {
+    for (const auto& patrol : patrols_) {
+        if (patrol.member < 0 || static_cast<std::size_t>(patrol.member) >= members_.size()) continue;
+        const auto& m = members_[static_cast<std::size_t>(patrol.member)];
+        if (m.dead || m.held || m.lent || crews_[static_cast<std::size_t>(m.crew)].gang != gang) continue;
+        const auto* bot = bots.find(m.bot);
+        if (bot && bot->alive() && !bots.asleep(m.bot) && flat(bot->position(), at) < patrol_sight) return m.bot;
+    }
+    return -1;
 }
 
 const Heist* Mafio::heist_of(int bot) const {

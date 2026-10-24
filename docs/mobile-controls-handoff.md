@@ -133,7 +133,12 @@ At the wheel the touch layout changes (`InputSystem::set_driving`, `TouchHUD::dr
   (`InputSystem::pan_area`) - a floating stick from where the thumb lands. Let go and the camera
   swings back behind the car after about a second.
 - **EXIT** (USE) and **BOOST** (SPRINT) stay; the combat buttons are hidden.
-Keyboard is unchanged: W/S, A/D, Space handbrake, Shift boost, C park, H horn, E exit.
+- **Cab view:** tap the speedometer to switch between the chase camera and the view from the
+  driver's seat (`VehicleRenderer::set_cab`). It needs no extra button over the road. The same pan
+  drag turns your head in the cab.
+- USE is ignored for 0.75 s after getting in, so a second tap doesn't put you straight back out.
+Keyboard is unchanged: W/S, A/D, Space handbrake, Shift boost, C park, H horn, E exit, and V for the
+cab view.
 
 ## Instruments
 - **Speedometer** while driving (bottom middle): a dial to the car's top speed (rounded up to 20

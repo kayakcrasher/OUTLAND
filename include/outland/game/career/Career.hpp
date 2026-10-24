@@ -33,7 +33,8 @@
 namespace outland::game::career {
 
 enum class Side : std::uint8_t { Civilian, Gang, Police };
-enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, Raid, BreakUpWar, Quest, Smuggle, Extort, TakeTurf, CleanUp, HitChief, Callout };
+enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, Raid, BreakUpWar, Quest, Smuggle, Extort, TakeTurf, CleanUp, HitChief, Callout,
+                                     RobStore, TagUp };
 // A recruit's road onto the force: report to the Chief at Verda City HQ, qualify at the training
 // camp's range, report back for the badge and the Interceptor, then serve (calls).
 enum class PoliceStage : std::uint8_t { Report, Training, Graduated, Serving };
@@ -53,6 +54,7 @@ struct WarSpot { int attackers{-1}, defenders{-1}; Vector3 where{}; std::string 
 struct TownSpot { std::string name; Vector3 centre{}; };            // patrol stops (towns, not ranches)
 struct DockSpot { std::string name; Vector3 point{}; };            // where contraband comes ashore
 struct RanchSpot { int ranch{-1}; std::string name, family; Vector3 gate{}; bool yours{false}; };
+struct ShopSpot { std::string name, town; Vector3 till{}; };          // a shop that can be robbed (its counter)
 struct TurfSpot { int turf{-1}; std::string name; Vector3 centre{}; int owner{-1}; float hold{100}; bool cleared{false}; };
 
 // What the world holds this frame, and what the player is doing.
@@ -75,6 +77,7 @@ struct CareerFrame {
     std::vector<DockSpot> docks;
     std::vector<RanchSpot> ranches;
     std::vector<TurfSpot> turfs;
+    std::vector<ShopSpot> shops;
 };
 
 struct Job {
@@ -84,7 +87,7 @@ struct Job {
     int gang{-1}, crew{-1};        // whose people (KillRivals, DriveBy, Raid, BreakUpWar)
     int needed{0}, done{0};
     std::string vehicle;           // the rig to rob
-    bool taken{false};             // RobRig: the rig is in the player's hands; Smuggle: the load; Extort: the demand made
+    bool taken{false};             // RobRig: the rig is in the player's hands; Smuggle: the load; Extort: the demand made; RobStore: the till
     int ranch{-1};                 // Extort: the family's ranch
     int turf{-1};                  // TakeTurf: the town
     double deadline{0};
@@ -197,6 +200,14 @@ public:
     bool take_extort_arrival() { const bool a = demanded_; demanded_ = false; return a; }
     void extort_result(bool paid, int family_faction);
     void turf_taken(int turf, const std::string& name);
+    // STORE ROBBERY: the player, gun out at the job's counter, took the till (once): the alarm goes
+    // off (take_tipoff) and the takings go home to the hideout. False when there's no robbery on.
+    static constexpr float till_reach = 4.5F;      // USE this close to the counter
+    bool robbed();
+    // TAG UP: a tag sprayed on a wall in `turf` (Territory's index). The job wants `needed` of them
+    // in its rival town; the boss hands over the cans with the job (take_cans).
+    void tagged(int turf);
+    int take_cans() { const int c = cans_; cans_ = 0; return c; }
     // The last job finished well (kind, where, ranch), once - the territory pays out on it.
     bool take_finished(Job& out) { if (finished_.kind == JobKind::None) return false; out = finished_; finished_ = {}; return true; }
     [[nodiscard]] PoliceStage police_stage() const { return state_.police_stage; }
@@ -248,6 +259,7 @@ private:
     int strays_{0};                  // bystanders killed in crossfire since the last job done
     bool jailed_{false};             // doing time: no work till released
     bool tipoff_{false}, demanded_{false};
+    int cans_{0};                    // spray cans the boss hands over with a TAG UP
     bool verda_clean_{false};
     double capital_warned_{-1e9};
     int campaign_left_{-1};

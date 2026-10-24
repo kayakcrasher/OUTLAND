@@ -46,7 +46,7 @@ pointer, and that opens the pause menu.
 | Fire mode (auto / single) | B |
 | Change sight | X |
 | Bag / inventory | TAB or I |
-| Camera view (first / third person) | V |
+| Camera view (first / third person; at the wheel: the cab view / chase camera) | V |
 | Map | M |
 | Build (Explore) | K. While building: left click places, right click removes, the wheel picks the piece |
 | Pause menu | ESC |

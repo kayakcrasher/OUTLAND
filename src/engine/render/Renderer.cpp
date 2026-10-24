@@ -716,6 +716,12 @@ void Renderer::run() {
     // What Uncle Ron has to say next time the player talks to him (his reaction to the road they took).
     struct HouseTag { bool found{false}; Vector3 at{}, normal{}; };
     std::vector<HouseTag> house_tags;   // per Mafio crew: where its tag is sprayed
+    // The player's tags on a rival gang's walls that nobody has seen yet: a patrol of that gang
+    // (game::mafia::Patrol) that comes within sight finds it. The first one found makes the gang
+    // hunt the player; after that, each one is war - a squad sent at the player's nearest crew.
+    struct FreshTag { Vector3 at{}; int owner{-1}, tagger{-1}, turf{-1}; };
+    std::vector<FreshTag> fresh_tags;
+    std::array<int,game::mafia::gang_count> tags_found{};
     std::vector<game::campaign::Line> ron_pending;
     bool ron_pending_home=false;   // ...and then he drives the player home (the prison gate)
     struct UncleRon { Vector3 at{}; float yaw{0}; bool placed{false}; } uncle_ron;
@@ -759,6 +765,7 @@ void Renderer::run() {
     game::wardrobe::StoreUI store_ui;
     // Whether anything is in reach of USE (the touch USE button shows only then).
     bool use_available=false;
+    double entered_at=-10;   // when the player last got in at a driver's door (GetTime)
     int banner_turf=-1;float banner_time=0;   // the crew banner shows a few seconds on arriving
     float drive_hint=0;                       // the driving keys, shown for a while after getting in
     bool store_open=false;
@@ -1838,7 +1845,7 @@ void Renderer::run() {
                     std::vector<std::string> not_for_gangs;
                     for(const auto& home:homes_for_sale) not_for_gangs.push_back(home.building);
                     mafio.start(island_life.places(),verda_region,br_bots,session_seed,lived_in,not_for_gangs);
-                    house_tags.clear();
+                    house_tags.clear();fresh_tags.clear();tags_found.fill(0);
 #ifdef OUTLAND_DEV_TOOLS
                     for(const auto& crew:mafio.crews()) TraceLog(LOG_INFO,"OUTLAND crew %s at %s: door %.1f %.1f yaw %.0f",
                         std::string(game::mafia::gangs[static_cast<std::size_t>(crew.gang)].name).c_str(),crew.town.c_str(),crew.door.x,crew.door.z,crew.yaw);
@@ -2694,6 +2701,20 @@ void Renderer::run() {
         int store_mannequin=-1;
         bool at_store_counter=false;
         store_prompt.clear();
+        // STORE ROBBERY: at the job's counter with a gun out, USE takes the till.
+        if(career.job().kind==game::career::JobKind::RobStore && !career.job().taken && !vehicles.driver() && player_health.alive() && weapons.available()) {
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            const Vector3 till=career.job().target;
+            if(std::hypot(feet.x-till.x,feet.z-till.z)<game::career::Career::till_reach && std::abs(feet.y-till.y)<3) {
+                store_prompt=touch_ui ? "USE - Empty the till" : "E - Empty the till";
+                use_available=true;
+                if(input_system.player().interact && career.robbed()) {
+                    input_system.player().interact=false;
+                    career.crime(true);
+                    interaction_message="\"Take it, take it!\" - the till's emptied. Now get it home";interaction_remaining=4;
+                }
+            }
+        }
         if(clothing_store && game_mode==game::GameMode::Explore && !vehicles.driver() && player_health.alive() && !store_open) {
             if(nearby_shop && nearby_shop->id==clothing_store->place_id) nearby_shop=nullptr;
             const auto close_to=[&](Vector3 at,float reach){
@@ -3287,7 +3308,10 @@ void Renderer::run() {
                 player_crew.end_ride(br_bots,bot_drivers,vehicles,verda_region);
                 interaction_message="Your crew pulls over";
             } else if(vehicles.driver()){
-                if(vehicles.exit(verda_region,exit)){player.position=Vector3Add(exit,{0,1,0});player.vertical_velocity=0;vehicle_renderer.reset_camera();interaction_message="Exited vehicle";}
+                // (Not on the press that got you in, or a second tap right after it: a double tap
+                // on USE used to drop you straight back out.)
+                if(GetTime()-entered_at<.75) {}
+                else if(vehicles.exit(verda_region,exit)){player.position=Vector3Add(exit,{0,1,0});player.vertical_velocity=0;vehicle_renderer.reset_camera();interaction_message="Exited vehicle";}
                 else interaction_message="Stop and leave space beside the vehicle to exit";
             }else {
                 const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
@@ -3330,8 +3354,8 @@ void Renderer::run() {
                 }
                 else if(vehicle>=0 && island_life.car_moving(id) && std::abs(vehicles.vehicles()[static_cast<std::size_t>(vehicle)].speed)>3) interaction_message="It's moving";
                 else if(vehicle>=0 && vehicles.enter(verda_region,vehicle,feet)){
-                    vehicle_orbit=vehicle_pitch=0;input_system.cancel_controls();drive_hint=8;
-                    interaction_message=touch_ui ? "Steer left, GAS and BRAKE right; USE gets out" : "";
+                    vehicle_orbit=vehicle_pitch=0;input_system.cancel_controls();drive_hint=8;entered_at=GetTime();
+                    interaction_message=touch_ui ? "Steer left, GAS and BRAKE right; USE gets out; tap the speedometer for the cab view" : "";
                     if(game::rules_for(game_mode).civilian_life) {
                         const auto taken=island_life.take_car(id);
                         if(taken.occupied) {crimes.push_back({game::law::CrimeKind::Assault,taken.owner});interaction_message="You pulled the driver out - carjacking";}
@@ -3531,9 +3555,24 @@ void Renderer::run() {
         // VIEW MODE
         // ====================================================
 
+        // At the wheel, VIEW (V) swaps the chase camera for the cab view; on foot, third person
+        // for first. On a touch screen, a tap on the speedometer does it at the wheel (no extra
+        // button over the road).
         if (controls.toggle_view) {
-            player.third_person =
-                !player.third_person;
+            if(vehicles.driver()) vehicle_renderer.set_cab(!vehicle_renderer.cab());
+            else player.third_person=!player.third_person;
+        }
+        if(vehicles.driver() && touch_ui) {
+            static std::vector<int> touches_before;
+            std::vector<int> touches_now;
+            const Vector2 dial{screen_width*.42F,screen_height-92.0F};
+            for(int i=0;i<GetTouchPointCount();++i) {
+                const int id=GetTouchPointId(i);
+                touches_now.push_back(id);
+                if(std::find(touches_before.begin(),touches_before.end(),id)==touches_before.end() &&
+                   Vector2Distance(GetTouchPosition(i),dial)<70) vehicle_renderer.set_cab(!vehicle_renderer.cab());
+            }
+            touches_before=std::move(touches_now);
         }
 
         // ====================================================
@@ -4176,18 +4215,11 @@ void Renderer::run() {
                     if(t.ranch>=0) interaction_message="Tagged the "+territory.families()[static_cast<std::size_t>(t.ranch)].name+" family's land";
                     else if(t.owner==gang) interaction_message=t.name+" is ours - the tag shores up our hold";
                     else {
-                        interaction_message=TextFormat("Tagged %s's wall in %s - hold %d",gang_name(t.owner).c_str(),t.name.c_str(),static_cast<int>(t.hold));
-                        // They will not stand for it: war, and a squad sent at your nearest crew.
-                        mafio.provoke_gang(t.owner,match_time,gang_name(t.owner)+" saw your tag on their wall - it's war");
-                        int from=-1,to=-1;float near_from=1e9F,near_to=1e9F;
-                        for(std::size_t c=0;c<mafio.crews().size();++c) {
-                            const auto& crew=mafio.crews()[c];
-                            const float d=Vector3Distance(crew.door,wall.position);
-                            if(crew.gang==t.owner && d<near_from) {near_from=d;from=static_cast<int>(c);}
-                            if(crew.gang==gang && d<near_to) {near_to=d;to=static_cast<int>(c);}
-                        }
-                        if(from>=0 && to>=0) mafio.send_hit_squad(from,to,br_bots,bot_drivers,vehicles,verda_region,match_time);
+                        interaction_message=TextFormat("Tagged %s's wall in %s - hold %d. Their patrols will find it",gang_name(t.owner).c_str(),t.name.c_str(),static_cast<int>(t.hold));
+                        // Nobody saw you do it - yet: the town's street patrols will find it (below).
+                        fresh_tags.push_back({wall.position,t.owner,gang,turf});
                     }
+                    career.tagged(turf);
                 }
             }
             interaction_remaining=3;
@@ -4729,6 +4761,27 @@ void Renderer::run() {
                     frame.player_lights=frame.player_police_car && lights_car==car->id;
                 }
                 if(!player_health.alive()) mafio.forgive();
+                // The street patrols: one that walks past a fresh tag of the player's on its gang's
+                // wall finds it. The first: the gang hunts the player. After that: war.
+                for(std::size_t i=0;i<fresh_tags.size();) {
+                    const auto f=fresh_tags[i];
+                    if(f.owner<0 || f.owner>=game::mafia::gang_count || mafio.spotted_by_patrol(f.at,f.owner,br_bots)<0) {++i;continue;}
+                    fresh_tags.erase(fresh_tags.begin()+static_cast<std::ptrdiff_t>(i));
+                    const std::string town=f.turf>=0 && static_cast<std::size_t>(f.turf)<territory.turfs().size() ? territory.turfs()[static_cast<std::size_t>(f.turf)].name : std::string("town");
+                    if(++tags_found[static_cast<std::size_t>(f.owner)]==1) {
+                        mafio.provoke_gang(f.owner,match_time,gang_name(f.owner)+"'s patrol found your tag in "+town+" - they're out looking for you");
+                        continue;
+                    }
+                    mafio.provoke_gang(f.owner,match_time,gang_name(f.owner)+"'s patrol found another of your tags in "+town+" - it's war");
+                    int from=-1,to=-1;float near_from=1e9F,near_to=1e9F;
+                    for(std::size_t c=0;c<mafio.crews().size();++c) {
+                        const auto& crew=mafio.crews()[c];
+                        const float d=Vector3Distance(crew.door,f.at);
+                        if(crew.gang==f.owner && !crew.disbanded && d<near_from) {near_from=d;from=static_cast<int>(c);}
+                        if(crew.gang==f.tagger && !crew.disbanded && d<near_to) {near_to=d;to=static_cast<int>(c);}
+                    }
+                    if(from>=0 && to>=0) mafio.send_hit_squad(from,to,br_bots,bot_drivers,vehicles,verda_region,match_time);
+                }
                 const double bots_t0=GetTime();
                 if(ranches.active()) {
                     game::ranch::RanchFrame ranch_frame;
@@ -4904,6 +4957,11 @@ void Renderer::run() {
                     chief_line_time=std::max(0.0F,chief_line_time-dt);
                     // The underworld: docks, ranches and towns, and who holds them.
                     work.docks=smuggling_docks;
+                    for(const auto& place:island_life.places())
+                        if(place.kind==game::life::PlaceKind::Shop && place.indoor && static_cast<std::size_t>(place.settlement)<verda_region.settlements().size()) {
+                            const auto& town=verda_region.settlements()[static_cast<std::size_t>(place.settlement)];
+                            work.shops.push_back({"the shop on "+(town.name.empty() ? town.id : town.name)+"'s high street",town.name.empty() ? town.id : town.name,place.interior});
+                        }
                     for(std::size_t i=0;i<territory.turfs().size();++i) {
                         const auto& t=territory.turfs()[i];
                         if(t.ranch>=0) {
@@ -5032,7 +5090,13 @@ void Renderer::run() {
                     // What the job set off: the police tipped off, a demand at a ranch, a job paid out.
                     if(career.take_tipoff()) {
                         game::law::JusticeFrame tip;tip.now=match_time;tip.player=feet;
-                        justice.tip_off(2,feet,tip,island_life,"Contraband run: someone tipped off the police");
+                        justice.tip_off(2,feet,tip,island_life,career.job().kind==game::career::JobKind::RobStore ?
+                                        "Store robbery: the alarm went off - the police are on the way" : "Contraband run: someone tipped off the police");
+                    }
+                    // TAG UP: the boss hands over a bag of cans with the job.
+                    if(const int cans=career.take_cans();cans>0) {
+                        loot_session.edit_inventory().add(item_registry,"spray_paint",cans);loot_session.changed();
+                        interaction_message=TextFormat("The boss hands you %d cans of spray paint",cans);interaction_remaining=4;
                     }
                     if(career.take_extort_arrival()) {
                         const int ranch=career.job().ranch,gang=player_gang();
@@ -6866,7 +6930,7 @@ void Renderer::run() {
             }
             drive_hint=std::max(0.0F,drive_hint-GetFrameTime());
             if(!touch_ui && drive_hint>0)
-                DrawText("W/S drive | A/D steer | SPACE handbrake | SHIFT boost | C park | H horn | E exit",
+                DrawText("W/S drive | A/D steer | SPACE handbrake | SHIFT boost | C park | H horn | V cab view | E exit",
                          static_cast<int>(screen_width*.42F)+84,screen_height-26,15,YELLOW);
         }
         else if(!creator_active && !inventory_open && store_prompt.empty() && vehicles.nearest(verda_region,{player.position.x,player.position.y-1,player.position.z})>=0)DrawText("USE / E - Enter vehicle",screen_width/2-120,screen_height-100,20,YELLOW);

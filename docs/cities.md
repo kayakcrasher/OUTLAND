@@ -67,7 +67,7 @@ the capital's population grows by three per house.
   the street north of the square (it crosses the ring road on the way; see [highways.md](highways.md)).
 - Main Street rows, a glass tower and office block, corner mid-rises, a car park, signals, street
   trees and lights, and parked cars.
-- Waterfront east of the grid: quay roads, six warehouses, a harbour office, a dock building,
+- Waterfront east of the grid: quay roads, a harbour office, a dock building,
   pallets and barrels, and a line of bollards.
 - The cargo terminal (Kargohaveno) below the town: a ramp from the quay road down to a quay at the
   shore, with Stella Maris at the berth, two container cranes, and the cattle quay. See
@@ -92,7 +92,7 @@ and trees go, and the old village loot moves to the square.
 | | Espera, the farm town | Suda Haveno, the harbour town |
 |---|---|---|
 | square | Placo de Espera, with the old village windmill | the square |
-| yard | the farmers' co-op (−80, 80), by the highway: a red barn, grain bins, a brick feed store (shop), hay bales, a water trough and the farm truck | the fish market (80, 80), on the sea side: a stucco market hall (dock), a boat shed, pallets and barrels |
+| yard | the farmers' co-op (−80, 80), by the highway: a red barn, grain bins, a brick feed store (shop), hay bales, a water trough and the farm truck | the fish market (80, 80), on the sea side: a stucco market hall (dock), pallets and barrels |
 | flats | (−80, −80), four blocks of flats, each a home | (−80, 80) |
 | corner mid-rise | (80, −80) | (80, −80) |
 | car park | (80, 80) | (−80, −80), by the highway |
@@ -111,9 +111,9 @@ from the centre) round Placo de la Laboristoj, on a level pad 220 m in radius.
 - North and south of the square: Main Street rows (shops, a pub, rooms above).
 - West blocks: worker flats (eight prebuilt brick and concrete blocks, each a home) and, between
   them, the town hall and the clinic facing the square.
-- East blocks: yards on asphalt - large sheds, hangars, a two-storey factory, trucks, pallets.
+- East blocks: yards on asphalt - hangars, a two-storey factory, trucks, pallets.
 - West of the grid, along the works road: the works - a long factory hall and a second hall,
-  four sheds, a hangar, pipe runs, barricades and a chainlink-fenced stock yard.
+  a hangar, pipe runs, barricades and a chainlink-fenced stock yard.
 - The highway from the capital ends at the grid's east edge (street z = −40); it crosses the
   ring road on the way (see [highways.md](highways.md)).
 Every home in the city is lived in (no population cap).
