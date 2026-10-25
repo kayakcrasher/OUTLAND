@@ -56,18 +56,28 @@ int main() {
                 const int want = (home ? line.home : line.away)[inning - 1];
                 if (want < 0) continue;
                 int runs = 0, outs = 0;
-                std::uint8_t bases = 0;
+                std::uint8_t bases = inning > static_cast<std::size_t>(League::innings) ? 2 : 0;   // extra innings: a man on second
                 for (const auto& p : line.plays) {
                     if (p.inning != static_cast<int>(inning) || p.home != home) continue;
                     check(p.bases == bases && p.outs == outs, "each plate appearance picks up where the last left off");
-                    const auto a = advance(p.bases, p.outcome, p.outs);
-                    check(a.after == p.after && a.runs == p.runs, "runners move by the rules");
-                    runs += p.runs; outs += p.out() ? 1 : 0; bases = p.after;
+                    // The record adds up: who's on after it, the runs, the outs.
+                    std::uint8_t after = 0;
+                    int scored = 0, outs_made = 0;
+                    for (int k = 0; k <= 3; ++k) {
+                        const bool there = k == 0 || ((p.bases >> (k - 1)) & 1);
+                        const int to = p.to[static_cast<std::size_t>(k)];
+                        if (!there) { check(to == -1, "nobody where nobody was"); continue; }
+                        check(to == -1 || to >= k, "nobody runs backwards");
+                        if (to == 4) ++scored; else if (to >= 1) after |= static_cast<std::uint8_t>(1 << (to - 1)); else ++outs_made;
+                    }
+                    check(after == p.after && scored == p.runs && outs_made == p.outs_made, "runners move by the rules");
+                    check(p.balls <= 3 && p.strikes <= 2 && p.pitches >= 1, "a count");
+                    runs += p.runs; outs += p.outs_made; bases = p.after;
                     check(p.action >= League::plate_appearance * .9 - 1e-6 && p.action <= League::plate_appearance * 4.1 + 1e-6 && p.length > p.action && p.length < p.action + 10, "a plate appearance takes a few island minutes");
                 }
                 check(runs == want, "the plays bring in the half's runs");
                 const bool walkoff = home && static_cast<int>(inning) == static_cast<int>(line.away.size()) && line.total(true) > line.total(false);
-                check(outs == 3 || (walkoff && outs < 3), "three outs a half (or a walk-off)");
+                check(outs == 3 || (walkoff && outs < 3), "three outs a half (or a walk-off): " + std::to_string(outs));
             }
         for (std::size_t k = 1; k < line.plays.size(); ++k)
             check(line.plays[k].at >= line.plays[k - 1].at + line.plays[k - 1].length - 1e-9, "one at a time");
@@ -116,12 +126,46 @@ int main() {
         check(cheering == 9, "the winners mob the mound");
         check(scene(fixture, line, -League::pregame - 5).figures.empty() && scene(fixture, line, line.length + League::postgame + 5).figures.empty(), "an empty field otherwise");
     }
-    // The rules of the bases.
-    check(advance(0b111, Outcome::Walk, 0).runs == 1 && advance(0b111, Outcome::Walk, 0).after == 0b111, "a bases-loaded walk forces one in");
-    check(advance(0b101, Outcome::Walk, 1).after == 0b111 && advance(0b101, Outcome::Walk, 1).runs == 0, "a walk with first and third loads them");
-    check(advance(0b111, Outcome::HomeRun, 2).runs == 4 && advance(0b111, Outcome::HomeRun, 2).after == 0, "a grand slam");
-    check(advance(0b100, Outcome::Flyout, 1).runs == 1 && advance(0b100, Outcome::Flyout, 2).runs == 0, "a sacrifice fly, but not with two out");
-    check(advance(0b011, Outcome::Double, 0).after == 0b110 && advance(0b011, Outcome::Double, 0).runs == 1, "a double: second scores, first to third");
+    // Real baseball out of the simulation: over many games, the numbers of high-school ball - and
+    // the better club wins more often, but not always.
+    {
+        int pa = 0, k = 0, bb = 0, hits = 0, hr = 0, dp = 0, errors = 0, ab = 0, runs = 0, games_played = 0, extra = 0;
+        std::array<int, team_count> wins{};
+        for (int season = 0; season < 6; ++season) {
+            League l;
+            l.start(2, 9000 + static_cast<std::uint64_t>(season) * 7);
+            for (int i = 0; i < static_cast<int>(l.fixtures().size()); ++i) {
+                const auto line = l.linescore(i);
+                ++games_played;
+                runs += line.total(true) + line.total(false);
+                extra += line.away.size() > static_cast<std::size_t>(League::innings);
+                const auto& g = l.fixtures()[static_cast<std::size_t>(i)];
+                ++wins[static_cast<std::size_t>(line.total(true) > line.total(false) ? g.home : g.away)];
+                for (const auto& p : line.plays) {
+                    ++pa;
+                    k += p.outcome == Outcome::Strikeout;
+                    bb += p.outcome == Outcome::Walk;
+                    hr += p.outcome == Outcome::HomeRun;
+                    dp += p.outcome == Outcome::DoublePlay;
+                    errors += p.outcome == Outcome::Error;
+                    hits += p.outcome == Outcome::Single || p.outcome == Outcome::Double || p.outcome == Outcome::Triple || p.outcome == Outcome::HomeRun;
+                    ab += p.outcome != Outcome::Walk;
+                }
+            }
+        }
+        const double avg = static_cast<double>(hits) / ab, k_rate = static_cast<double>(k) / pa, bb_rate = static_cast<double>(bb) / pa;
+        const double per_game = static_cast<double>(runs) / games_played;
+        std::cout << "simulated " << games_played << " games: " << per_game << " runs a game, avg " << avg << ", K " << k_rate
+                  << ", BB " << bb_rate << ", HR/game " << static_cast<double>(hr) / games_played << ", DP/game "
+                  << static_cast<double>(dp) / games_played << ", errors/game " << static_cast<double>(errors) / games_played
+                  << ", extra innings " << extra << '\n';
+        check(avg > .2 && avg < .34, "a batting average like ball games have");
+        check(k_rate > .1 && k_rate < .3 && bb_rate > .04 && bb_rate < .16, "strikeouts and walks");
+        check(per_game > 5 && per_game < 16, "runs");
+        check(hr > 0 && dp > 0 && errors > 0, "home runs, double plays, errors all happen");
+        check(wins[0] > wins[3], "the strongest club (the Leonoj) wins more than the weakest (the Ardeoj)");
+        check(wins[3] > 0, "...but the weakest wins some");
+    }
     const auto first = league.linescore(0), again = league.linescore(0);
     check(first.runs == again.runs, "the same game every time it is asked for");
 

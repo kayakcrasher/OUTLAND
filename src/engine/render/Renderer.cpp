@@ -6186,7 +6186,16 @@ void Renderer::run() {
                                     break;
                                 case EventKind::Run:
                                     (e.team==g.home ? park_cheer_home : park_cheer_away)[static_cast<std::size_t>(g.home)]=match_time+5;
-                                    if(here) {interaction_message=TextFormat("%s score!  %s %d - %d %s",nick(e.team).c_str(),nick(g.home).c_str(),score.home_runs,score.away_runs,nick(g.away).c_str());interaction_remaining=4;}
+                                    if(here) {
+                                        // Who did it, and how.
+                                        std::string how=nick(e.team)+" score!";
+                                        if(score.play>=0) {
+                                            const auto line=league.linescore(e.fixture);
+                                            const auto& pl=line.plays[static_cast<std::size_t>(score.play)];
+                                            how=league.roster(pl.home ? g.home : g.away).lineup[static_cast<std::size_t>(pl.batter)].name+" "+outcome_name(pl.outcome)+"!";
+                                        }
+                                        interaction_message=TextFormat("%s  %s %d - %d %s",how.c_str(),nick(g.home).c_str(),score.home_runs,score.away_runs,nick(g.away).c_str());interaction_remaining=4;
+                                    }
                                     break;
                                 case EventKind::GameOver:
                                     gang_news=TextFormat("FINAL at %s: %s %d, %s %d",teams[static_cast<std::size_t>(g.home)].town,nick(g.home).c_str(),score.home_runs,nick(g.away).c_str(),score.away_runs);gang_news_time=7;
@@ -8260,6 +8269,19 @@ void Renderer::run() {
                         if(live.phase==Phase::Playing && !riot) {
                             // The outs, and a little diamond with the runners on.
                             DrawTextEx(font,TextFormat("%d OUT",std::min(live.outs,2)),{x+200,y+62},18,1,RAYWHITE);
+                            // Who's up, the count, and who's pitching (and how many he's thrown).
+                            if(live.play>=0) {
+                                const auto line=league.linescore(live.fixture);
+                                const auto& pl=line.plays[static_cast<std::size_t>(live.play)];
+                                const auto& batting=league.roster(pl.home ? g.home : g.away);
+                                const auto& pitching=league.roster(pl.home ? g.away : g.home);
+                                int thrown=0;
+                                for(const auto& q:line.plays) if(q.home==pl.home && q.pitcher==pl.pitcher && q.at<=pl.at) thrown+=q.pitches;
+                                const float yb=y+(table ? 240.0F : 100.0F);
+                                DrawRectangle(static_cast<int>(x),static_cast<int>(yb),340,46,Fade(BLACK,.7F));
+                                DrawTextEx(font,TextFormat("AB  %s  %d-%d",batting.lineup[static_cast<std::size_t>(pl.batter)].name.c_str(),pl.balls,pl.strikes),{x+12,yb+4},16,1,RAYWHITE);
+                                DrawTextEx(font,TextFormat("P   %s  (%d)",pitching.staff[static_cast<std::size_t>(pl.pitcher)].name.c_str(),thrown),{x+12,yb+24},16,1,Fade(RAYWHITE,.8F));
+                            }
                             const Vector2 c{x+305,y+62};
                             const std::array<Vector2,3> bag{{{c.x+11,c.y},{c.x,c.y-11},{c.x-11,c.y}}};
                             for(int k=0;k<3;++k) {

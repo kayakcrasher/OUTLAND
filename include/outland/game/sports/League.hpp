@@ -1,5 +1,7 @@
 #pragma once
 #include <raylib.h>
+#include <algorithm>
+#include <memory>
 #include <array>
 #include <cstdint>
 #include <string>
@@ -10,8 +12,9 @@
 // - two games every island day at 13:00, one team resting - then the top two meet in the
 // championship final at the leader's park. Then a new season.
 //
-// Every game is settled by the season's seed: its line score (runs per half-inning, at the
-// minute each run scores) follows from the fixture alone, so where a game stands is a function
+// Every game is played out - pitch by pitch, the batted ball flown and fielded, the runners racing
+// the throws - between the two clubs' rosters, from the season's seed: so its line score (runs per
+// half-inning, at the minute each run scores) follows from the fixture alone, so where a game stands is a function
 // of the island clock and only the season and the rivalries need saving. The fans: the home crowd
 // turns out, the visitors' followers travel (more for a rivalry), fights break out in the stands
 // now and then (more between rivals) - and the championship final ends in a riot.
@@ -47,8 +50,25 @@ struct Fixture {
     bool final{false};
 };
 
+// The players. Ratings run 0..1 (a club's strength sets its players' average); a game is played
+// out between two rosters, pitch by pitch (game::sports::simulate_game).
+struct Player {
+    std::string name;
+    float contact{.5F}, power{.5F}, eye{.5F};     // at the plate
+    float speed{.5F}, arm{.5F}, glove{.5F};       // on the bases and in the field
+};
+struct Pitcher {
+    std::string name;
+    float velocity{.5F}, control{.5F}, stuff{.5F}, stamina{.5F};
+};
+struct Roster {
+    std::array<Player, 9> lineup;                 // the batting order (the designated hitter bats for the pitcher)
+    std::array<int, 9> position{};                // the lineup slot playing each fielding spot 1..8 (0: the pitcher)
+    std::array<Pitcher, 3> staff;                 // the starter, then the bullpen
+};
+
 // A plate appearance and how it ends.
-enum class Outcome : std::uint8_t { Strikeout, Walk, Groundout, Flyout, Single, Double, Triple, HomeRun };
+enum class Outcome : std::uint8_t { Strikeout, Walk, Groundout, Flyout, Single, Double, Triple, HomeRun, DoublePlay, Error };
 const char* outcome_name(Outcome outcome);
 
 struct Play {
@@ -61,18 +81,23 @@ struct Play {
     int outs{0};                    // outs before it
     std::uint8_t bases{0}, after{0};   // runners on (bit 0 first .. bit 2 third), before and after
     int runs{0};                    // runs it brings in
+    int outs_made{0};               // outs it makes (2 for a double play)
+    // Where the batter (0) and the runners on first..third (1..3) ended up: 1..3 a base, 4 home
+    // (scored), -1 out (or nobody there).
+    std::array<int, 4> to{{-1, -1, -1, -1}};
+    int balls{0}, strikes{0};       // the count when it ended
+    int pitches{1};                 // how many pitches it took
+    int pitcher{0};                 // who was pitching (Roster::staff)
     float angle{0};                 // where the ball goes: degrees off the line to second, + toward third
     float depth{0};                 // metres from the plate it lands or is fielded
+    float apex{0}, hang{0};         // a ball in the air: how high it went (m), how long it was up (s)
+    bool grounder{false};           // a ball on the ground
     int fielder{1};                 // who fields it (world::ballpark::fielders index; the catcher on a strikeout or walk)
-    [[nodiscard]] bool out() const { return outcome == Outcome::Strikeout || outcome == Outcome::Groundout || outcome == Outcome::Flyout; }
+    [[nodiscard]] bool out() const { return to[0] < 0; }   // the batter is out
     // Through the play (0..1 of `action`): the pitch is let go, it reaches the plate, the runs score.
     static constexpr double release = .30, contact = .37, scored = .86;
     [[nodiscard]] double run_time() const { return at + action * scored; }
 };
-// Where the runners end up (bit mask), how many score and whether the batter is out.
-struct Advance { std::uint8_t after{0}; int runs{0}; bool out{false}; std::array<int, 4> to{{-1, -1, -1, -1}}; };
-// to[k]: the base (1..3, 4 home) the runner on base k (1..3; 0 the batter) ends on; -1 none (out / no runner).
-Advance advance(std::uint8_t bases, Outcome outcome, int outs);
 
 // One game's runs: per half-inning, and the minute (from first pitch) each run crosses the plate;
 // every plate appearance that makes them.
@@ -103,6 +128,7 @@ struct Live {
     int home_runs{0}, away_runs{0};
     int outs{0};                // in this half, so far
     std::uint8_t bases{0};      // runners on now
+    int play{-1};               // the plate appearance under way or just over (Linescore::plays)
 };
 
 enum class EventKind : std::uint8_t { GameOn, Run, GameOver, Fight, Riot, Champion, NewSeason };
@@ -138,6 +164,8 @@ public:
     [[nodiscard]] int season_day(double now) const;      // days into this season
     [[nodiscard]] const std::vector<Fixture>& fixtures() const { return fixtures_; }
     [[nodiscard]] double first_pitch_at(int fixture) const;
+    // A club's players this season.
+    [[nodiscard]] const Roster& roster(int team) const { return rosters_[static_cast<std::size_t>(std::clamp(team, 0, team_count - 1))]; }
     [[nodiscard]] Linescore linescore(int fixture) const;
     // The game at team `park`'s ballpark around `now` (pregame to postgame), if any.
     [[nodiscard]] Live live(int park, double now) const;
@@ -166,6 +194,8 @@ private:
     int start_day_{0};
     std::uint64_t seed_{1};
     std::vector<Fixture> fixtures_;
+    std::array<Roster, 5> rosters_{};
+    mutable std::vector<std::shared_ptr<const Linescore>> games_;   // each fixture's game, played out once
     std::array<std::array<float, 5>, 5> rivalry_{};
     double processed_{-1};
 };

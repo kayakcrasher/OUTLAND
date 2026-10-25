@@ -201,6 +201,7 @@ add_library(
     src/game/mafia/Endgame.cpp
     src/game/sports/League.cpp
     src/game/sports/BallGame.cpp
+    src/game/sports/GameSim.cpp
     src/game/mafia/GangLogos.cpp
     src/game/career/Career.cpp
     src/game/career/Callouts.cpp

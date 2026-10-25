@@ -69,12 +69,36 @@ The town bus line doesn't use them.
   doesn't bat in the last if it's ahead. A walk-off ends the game when the winning run scores.
 - **The final:** after a day off, the top two meet at the leader's park in La Finalo. A new
   season starts two days later.
-- **Results:** every game is settled by the season's seed, plate appearance by plate appearance:
-  - each play is a strikeout, walk, groundout, flyout, single, double, triple or home run;
-  - where the ball goes and who fields it come with each play;
-  - the runners move by the rules: forced on a walk, a productive groundout, the sacrifice fly,
-    first to third on a double, and so on;
-  - every run in the line score comes from a play (`Linescore::plays`).
+- **Results: nothing is decided in advance.** Every game is simulated between the two clubs'
+  rosters (`game::sports::simulate_game`, `src/game/sports/GameSim.cpp`), and the score and the
+  winner are whatever the game produces.
+  - **The players:** each club has nine batters (the designated hitter bats for the pitcher) and
+    three pitchers, rated 0–1 for contact, power, eye, speed, arm and glove (pitchers: velocity,
+    control, stuff, stamina). A club's strength sets its players' average, and every season
+    brings a new roster (it's high school).
+  - **Every pitch:** in the zone or not (control, worse as the pitcher tires), taken or swung at
+    (the batter's eye, the count), missed, fouled off or put in play (contact against stuff).
+    Strikeouts and walks come from the count.
+  - **Every ball in play:** an exit speed (about 70 mph on average, up to about 98), a launch
+    angle and a direction.
+    - **In the air,** it's flown with gravity and drag: over the 88 m fence is a home run, off it
+      is a ball in play; otherwise it comes down where the flight says.
+    - **On the ground,** it skips along and slows down.
+    - **Foul pop-ups** can be caught.
+  - **Every fielder:** whether he can get there in time (his speed, a first step, the angle). Fly
+    balls are caught, dived for or dropped. Grounders are cut off, booted (errors, from his glove)
+    or thrown to first in time or not (his arm, the transfer).
+    - **Double plays:** turned when the force at second and the relay beat the runners.
+    - **Base hits:** the batter beats the throw (infield singles), or the ball gets through.
+  - **Every runner:** his time to the next bag against the ball's: retrieved, relayed, thrown. He
+    takes the extra base when he's safe, sometimes tries when it's close and gets thrown out.
+    Tagging up on a fly ball works the same way.
+  - **The game:** the starter tires and the bullpen comes in. Extra innings start with a runner
+    on second, and a walk-off ends the game.
+  - **Typical numbers:** about 5 runs a game between the two sides, a .260 batting average, 23%
+    strikeouts and 11% walks, about 0.6 home runs, 0.9 doubles and 0.75 double plays a game, and
+    extra innings in about one game in seven. The better club wins more often, but not always.
+  - The same season seed plays the same games, so a game can still be read off the clock.
 - **Saving:** a game follows from the fixture alone, so where it stands is just a function of the
   clock. Only the season, its seed and the rivalries are saved (`<career>.league`).
 - **Clock:** a plate appearance takes as long as its running needs: about 2 island minutes for a
@@ -85,8 +109,9 @@ The town bus line doesn't use them.
   - The gates open 75 minutes before first pitch, and the crowd leaves within 40 minutes of the
     last out.
 - **News:** first pitch, the final scores and the champion arrive as messages. Near a game you
-  also hear each run and see the scoreboard panel: the score, the inning, the outs, a little
-  diamond with the runners on, and LA FINALO for the final.
+  also hear each run (who drove it in, and how) and see the scoreboard panel: the score, the
+  inning, the outs, a little diamond with the runners on, who's at bat with the count, who's
+  pitching with his pitch count, and LA FINALO for the final.
 
 ## The game on the field
 
@@ -176,8 +201,10 @@ followed by `:park`:
 
 ## Limits
 
-- The game is played out from its plays, which are settled by the seed. Nothing the player does
-  on the field changes it, and there is no physics in the ball.
+- The simulation is a model, not a physics engine: batted balls are flown with drag, but fielders
+  run at constant speeds and throws are straight lines. Only the deciding pitch of each plate
+  appearance is shown on the field (the scoreboard has the count). Nothing the player does
+  changes a game.
 - The players are drawn figures, not island residents.
 - Fans in the stands are drawn in their seats; they only become bodies in the world on the way in
   and out.

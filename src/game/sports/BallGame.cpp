@@ -142,11 +142,22 @@ void off_the_field(Scene& s, bool batting_home, std::uint8_t left_on) {
 }
 
 // A plate appearance's play, `u` 0..1 through it.
-void action(Scene& s, const Play& p, double u, bool batting_home, float seconds_per_minute) {
+// How a play looks: a double play or an error starts as a grounder like any other, an
+// inside-the-park home run as a ball to the wall; where everyone ends up is the play's own.
+Play shown(const Play& play) {
+    Play p = play;
+    if (p.outcome == Outcome::DoublePlay || p.outcome == Outcome::Error) p.outcome = Outcome::Groundout;
+    if (p.outcome == Outcome::Single && p.grounder && p.depth < 42) p.outcome = Outcome::Groundout;   // beaten out
+    if (p.outcome == Outcome::HomeRun && p.depth < BP::fence_radius) p.outcome = Outcome::Triple;
+    return p;
+}
+
+void action(Scene& s, const Play& play, double u, bool batting_home, float seconds_per_minute) {
+    const Play p = shown(play);
     Builder b{s};
     const bool fielding_home = !batting_home;
     const bool in_play = !(p.outcome == Outcome::Strikeout || p.outcome == Outcome::Walk);
-    const auto adv = advance(p.bases, p.outcome, p.outs);
+    const auto& adv = p;   // where everyone ends up
     const float a = p.angle * DEG2RAD;
     const Vector3 dir{std::sin(a), 0, std::cos(a)};
     const Vector3 land = Vector3Add(flat(BP::plate), Vector3Scale(dir, p.depth));
@@ -234,7 +245,22 @@ void action(Scene& s, const Play& p, double u, bool batting_home, float seconds_
     };
     const float lead_bases = 2.2F / BP::base_path;
     const auto runner = [&](int from, int to, double start, double end, Role role) {
-        if (to < 0) return;
+        if (to < 0 && from == 0) return;
+        // Thrown out (or forced out): down the line to the next bag, then off the field.
+        if (to < 0) {
+            Vector3 at;
+            float yaw;
+            Motion motion;
+            const double out_at = start + .25;
+            if (u < out_at) {
+                const float k = static_cast<float>(span(u, start, out_at));
+                at = on_path(static_cast<float>(from) + .9F * k);
+                yaw = yaw_to(at, base(from + 1));
+                motion = u > start ? Motion::Run : Motion::Stand;
+            } else { walk_off(on_path(static_cast<float>(from) + .9F), out_at, at, yaw); motion = Motion::Walk; }
+            b.add(role, 4 + from, batting_home, at, yaw, motion);
+            return;
+        }
         // A lead off the bag till the pitch is in (the batter none).
         const float lead = from == 0 ? 0 : u < Play::contact || to != from ? ease(span(u, .05, .25)) * lead_bases
                                                                           : (1 - ease(span(u, .45, .65))) * lead_bases;
@@ -306,7 +332,7 @@ void action(Scene& s, const Play& p, double u, bool batting_home, float seconds_
                 break;
             }
             case Outcome::Flyout: {
-                const float apex = p.depth > 40 ? 26.0F : 16.0F;
+                const float apex = p.apex > 1 ? p.apex : p.depth > 40 ? 26.0F : 16.0F;
                 if (u < .62) ball = arc(contact, {land.x, 1.8F, land.z}, span(u, Play::contact, .62), apex);
                 else if (u < .70) ball = in_glove(p.fielder);
                 else if (u < .80) ball = arc(hand(land), target_hand, span(u, .70, .80), 3.0F);
@@ -394,11 +420,11 @@ Scene regroup(const Scene& from, const std::vector<int>& reached, const Scene& t
 
 // The base each runner (and the batter) in a play's scene reached, -1 none.
 std::vector<int> reached_bases(const Scene& sc, const Play& p) {
-    const auto a = advance(p.bases, p.outcome, p.outs);
+    const auto& a = p;
     std::vector<int> out(sc.figures.size(), -1);
     for (std::size_t i = 0; i < sc.figures.size(); ++i) {
         const auto& f = sc.figures[i];
-        if (f.role == Role::Runner) out[i] = a.to[static_cast<std::size_t>(f.index)];
+        if (f.role == Role::Runner && f.index >= 1 && f.index <= 3) out[i] = a.to[static_cast<std::size_t>(f.index)];
         if (f.role == Role::Batter) out[i] = a.to[0];
         if (out[i] == 4) out[i] = -1;
     }
