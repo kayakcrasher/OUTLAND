@@ -33,11 +33,14 @@ struct LightSource {
     Vector3 ground{};  // centre of the pool of light on the ground
     float radius{8};   // pool radius
 };
-// Every light-emitting world asset (street lights, fires). Cheap enough to rebuild when the map changes.
+// Every light-emitting world asset (street lights, lampposts, fires). Cheap enough to rebuild when the map changes.
 std::vector<LightSource> collect_lights(const VerdaRegion& region);
 
 // Draw helpers (inside BeginMode3D). They set and restore additive blending themselves.
 void draw_sky_objects(const SkyState& sky, Vector3 camera);                 // sun, moon, stars
+// Lamps light the ground within lamp_pool_range of the camera; further out, to lamp_glow_range,
+// only their bulbs glow (a town seen lit up from across the island).
+inline constexpr float lamp_pool_range = 240, lamp_glow_range = 900;
 void draw_lights(const std::vector<LightSource>& lights, const SkyState& sky, Vector3 camera, float time_seconds);
 void draw_headlights(Vector3 car, float yaw_degrees, const SkyState& sky);
 }

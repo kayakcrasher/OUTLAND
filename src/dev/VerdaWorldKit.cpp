@@ -2552,6 +2552,51 @@ void freight_yards(Kit& kit, world::VerdaRegion& region) {
     }
 }
 
+// Lit streets: every town street, lane and suburb road gets a street light at least every
+// street_light_spacing metres, alternating sides, on the verge with its arm out over the road -
+// wherever there isn't one already, and where nothing stands (a house, a tree, a wall, another road).
+void street_lighting(Kit& kit, world::VerdaRegion& region) {
+    const std::string light = "assets/verda/urban/Traffic lights/street_light.glb";
+    std::vector<Vector3> lit;
+    std::vector<world::Road> roads;
+    for (const auto& town : region.settlements()) {
+        for (const auto& a : town.assets)
+            if (a.model_path.find("Traffic lights/street_light") != std::string::npos || a.model_path.find("lamppost") != std::string::npos) lit.push_back(a.position);
+        for (const auto& r : town.roads) roads.push_back(r);
+    }
+    const auto clear_of_roads = [&](Vector3 p) {
+        for (const auto& r : roads) {
+            const float dx = r.end.x - r.start.x, dz = r.end.z - r.start.z, l2 = dx * dx + dz * dz;
+            const float t = l2 > 0 ? std::clamp(((p.x - r.start.x) * dx + (p.z - r.start.z) * dz) / l2, 0.0F, 1.0F) : 0;
+            if (std::hypot(p.x - r.start.x - dx * t, p.z - r.start.z - dz * t) < r.width * .5F + .9F) return false;
+        }
+        return true;
+    };
+    std::vector<world::Road> streets;
+    for (const auto& town : region.settlements()) {
+        if (town.id.starts_with("ranch_")) continue;
+        for (const auto& r : town.roads)
+            if (r.type != world::RoadType::Highway && r.type != world::RoadType::Dirt && r.width >= 5) streets.push_back(r);
+    }
+    for (const auto& road : streets) {
+        const float length = std::hypot(road.end.x - road.start.x, road.end.z - road.start.z);
+        if (length < 10) continue;
+        const Vector3 dir{(road.end.x - road.start.x) / length, 0, (road.end.z - road.start.z) / length}, normal{dir.z, 0, -dir.x};
+        int k = 0;
+        for (float along = std::min(8.0F, length * .5F); along < length - 3; along += street_light_spacing * .5F, ++k) {
+            const float side = (k + static_cast<int>(std::lround(road.start.x + road.start.z))) % 2 ? 1.0F : -1.0F;
+            const Vector3 p{road.start.x + dir.x * along + normal.x * side * (road.width * .5F + 1.3F), 0,
+                            road.start.z + dir.z * along + normal.z * side * (road.width * .5F + 1.3F)};
+            if (world::terrain::TerrainHeight::sample(p.x, p.z) <= world::layout::sea_level + .5F) continue;
+            if (std::any_of(lit.begin(), lit.end(), [&](Vector3 q) { return std::hypot(q.x - p.x, q.z - p.z) < street_light_spacing * .5F; })) continue;
+            if (!clear_of_roads(p) || world::physics::WorldCollision::blocked({p.x, world::terrain::TerrainHeight::sample(p.x, p.z), p.z}, region, 1.0F)) continue;
+            // The arm (the model's +x) reaches out over the road.
+            const float yaw = std::atan2(normal.z * side, -normal.x * side) * RAD2DEG;
+            if (kit.put(light, p, yaw)) {lit.push_back(p); ++kit.report.street_lights;}
+        }
+    }
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     lay_highways(region);
@@ -2596,6 +2641,8 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     freight_yards(kit, region);
     // After those (new pieces only): La Verda Basballigo's ballparks, one in each county.
     ballparks(kit, region);
+    // Last, round everything built: street lights wherever a town's street is dark.
+    street_lighting(kit, region);
     return kit.report;
 }
 }

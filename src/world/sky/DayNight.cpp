@@ -116,6 +116,13 @@ std::vector<LightSource> collect_lights(const VerdaRegion& region) {
             light.ground = local(asset.position, asset.rotation_y, 1.8F, 0, 0);
             light.radius = 11;
             lights.push_back(light);
+        } else if (path.find("transit/lamppost") != std::string::npos) {
+            // The bus stops' and the boulevard's lampposts: a lantern on top of the post.
+            LightSource light;
+            light.bulb = Vector3Add(asset.position, {0, asset.size.y * .92F, 0});
+            light.ground = asset.position;
+            light.radius = 8;
+            lights.push_back(light);
         } else if (path.find("bonfire") != std::string::npos) {
             LightSource light;
             light.kind = LightKind::Fire;
@@ -150,14 +157,22 @@ void draw_lights(const std::vector<LightSource>& lights, const SkyState& sky, Ve
     begin_additive();
     for (std::size_t i = 0; i < lights.size(); ++i) {
         const auto& light = lights[i];
-        if (Vector3DistanceSqr(light.ground, camera) > 240.0F * 240.0F) continue;
+        const float far = Vector3DistanceSqr(light.ground, camera);
+        if (far > lamp_glow_range * lamp_glow_range) continue;
         if (light.kind == LightKind::StreetLamp) {
             if (sky.lamps < .01F) continue;
+            // Far off only the bulb shows, bigger so it reads: a town glows across the dark.
+            if (far > lamp_pool_range * lamp_pool_range) {
+                const float d = std::sqrt(far);
+                glow_sprite(light.bulb, 2.6F * d / lamp_pool_range, scale({255, 214, 150, 255}, .8F * sky.lamps), camera);
+                continue;
+            }
             const Vector3 pool{light.ground.x, light.ground.y + .12F, light.ground.z};
             glow_disc(pool, {light.radius, 0, 0}, {0, 0, light.radius}, scale({255, 196, 120, 255}, .85F * sky.lamps));
             glow_sprite(light.bulb, .9F, scale({255, 228, 170, 255}, sky.lamps), camera);
             glow_sprite(light.bulb, 2.6F, scale({255, 190, 110, 255}, .35F * sky.lamps), camera);
         } else {
+            if (far > lamp_pool_range * lamp_pool_range) continue;
             // Fires burn day and night; at night their light carries.
             const float flicker = .82F + .18F * std::sin(time_seconds * 11 + static_cast<float>(i)) * std::sin(time_seconds * 7.3F);
             const float strength = flicker * (.35F + .65F * (1 - sky.daylight));
