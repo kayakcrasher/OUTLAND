@@ -15,6 +15,10 @@
 #include <iostream>
 #include <limits>
 #include <string>
+#include <utility>
+#include <vector>
+#include <algorithm>
+#include <raymath.h>
 
 using namespace outland;
 namespace garage = world::garage;
@@ -78,6 +82,44 @@ int main() {
     check(furthest > 9.5F, "through the entrance and up the ramp");
     check(std::abs(level(climbed.position.y) - garage::decks[1]) < .2F, "on deck 1 at the top (" + std::to_string(level(climbed.position.y)) + ")");
     cars.clear_autopilot(car);
+
+    // All the way up: a car and a pickup, driven at a parking pace, climb lane A to deck 1, swing
+    // round the north aisle into lane B, climb to deck 2, round the south aisle and up lane A to
+    // the roof - no lamp, pylon or open ramp edge in the way. (A pickup swings wider.)
+    for (const auto& [kind, radius] : {std::pair{"hatchback", 3.75F}, std::pair{"truck", 4.6F}}) {
+        check(cars.spawn(region, site.to_world({15.2F, 0, -21}), site.yaw, kind), std::string("a ") + kind + " at the entrance");
+        const auto who = cars.last_spawned();
+        check(cars.place(region, who, site.to_world({15.2F, 0, -21}), site.yaw), "placed");
+        const float cx = 11.7F;
+        std::vector<Vector3> route{{15.2F, 0, -8}, {cx + radius, 0, 6.5F}};
+        for (int a = 1; a <= 8; ++a) route.push_back({cx + radius * std::cos(a * PI / 8), 0, 6.5F + radius * std::sin(a * PI / 8)});
+        route.push_back({cx - radius, 0, -6.5F});
+        for (int a = 1; a <= 8; ++a) route.push_back({cx - radius * std::cos(a * PI / 8), 0, -6.5F - radius * std::sin(a * PI / 8)});
+        route.push_back({15.2F, 0, 8.5F});
+        std::size_t next = 0;
+        float stalled = 0;
+        int backing = 0;
+        for (int f = 0; f < 60 * 120 && next < route.size(); ++f) {
+            const auto& v = cars.vehicles()[static_cast<std::size_t>(cars.find(who))];
+            const auto local = site.to_local(v.position);
+            const float dx = route[next].x - local.x, dz = route[next].z - local.z;
+            if (std::hypot(dx, dz) < 1.5F) { ++next; continue; }
+            const float err = std::remainder(std::atan2(dx, dz) - (v.yaw - site.yaw) * DEG2RAD, 2 * PI);
+            game::vehicles::VehicleInput in;
+            in.steer = std::clamp(err / .6F, -1.0F, 1.0F);
+            const bool turning = (next >= 2 && next <= 10) || (next >= 12 && next <= 19) || std::abs(err) > .35F;
+            in.throttle = std::clamp(((turning ? 2.5F : 6.0F) - v.speed) * .6F, v.speed < .5F ? 0.0F : -1.0F, 1.0F);
+            if (backing > 0) { in.throttle = -.5F; in.steer = -in.steer; --backing; }
+            else if ((stalled = std::abs(v.speed) < .3F ? stalled + 1.0F / 60 : 0) > 1) { stalled = 0; backing = 70; }
+            cars.set_autopilot(who, in);
+            cars.update(1.0F / 60, {}, region, site.origin);
+        }
+        const auto& up = cars.vehicles()[static_cast<std::size_t>(cars.find(who))];
+        std::cout << kind << ": " << next << " of " << route.size() << " waypoints, at height " << level(up.position.y) << " m\n";
+        check(next == route.size() && std::abs(level(up.position.y) - garage::roof) < .2F, std::string("a ") + kind + " drives all the way up to the roof");
+        cars.clear_autopilot(who);
+        check(cars.remove(region, who), "and goes");
+    }
 
     // Left in the mansion's bay: on the roof (a car that was saved up there comes back up there).
     const Vector3 bay = site.to_world({(garage::bay_x0 + garage::bay_x1) * .5F, garage::roof, (garage::bay_z0 + garage::bay_z1) * .5F});

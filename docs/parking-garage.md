@@ -9,14 +9,21 @@ the south-west parking block) into `maps/verda_world.map`. Layout constants: `wo
 ## The garage
 - **38 x 32 m, four levels you drive up:** the ground floor (0.1 m), deck 1 (3.3 m), deck 2 (6.5 m)
   and the roof (9.7 m), 2.9 m of headroom on the covered levels.
-- **Ramps:** two lanes on the east side (6.4 m wide, 10°), zig-zagging up. Lane A takes you from the
-  ground floor to deck 1, and from deck 2 to the roof; lane B from deck 1 to deck 2. At the top of
-  each ramp you turn round in the aisle at that end to reach the next one. The ramps are solid, with
-  a wall between the lanes and yellow-capped rails round the openings; a hazard strip marks where
-  each ramp meets its deck. They go down the same way.
+- **Ramps:** two lanes on the east side, zig-zagging up. Lane A (6.4 m wide) takes you from the
+  ground floor to deck 1, and from deck 2 to the roof. Lane B (7.4 m wide) takes you from deck 1 to
+  deck 2.
+  - Each ramp is 12 m long at 15%, which leaves a turning aisle about 10 m deep at each end. At the
+    top of a ramp you swing round in that aisle to reach the next one: a car turns inside the lanes,
+    a pickup swings wide.
+  - The ramps are solid, with a wall between the lanes and a wall along lane B's open side (so
+    nobody drops off its edge onto deck 1). Yellow-capped rails run round the openings, and a hazard
+    strip marks where each ramp meets its deck.
+  - No ceiling lamp hangs over a ramp. They go down the same way.
+- **Steering:** at a crawl every vehicle's wheels turn up to 40% further (none by 30 km/h), for
+  aisles, yards and parking.
 - **Art Deco dress:**
   - limestone parapets between the columns, with two gold speed lines along every level, on a dark granite plinth;
-  - stepped limestone pylons with gold caps and gold fins at the four corners;
+  - slender stepped limestone pylons with gold caps and gold fins at the four corners, outside the walls (the aisles' corners stay clear);
   - a stepped sign tower on the north-west corner carrying the blue **P**, with gold fins down its face.
 - Lamps under every deck; painted bays on the west side. Seven cars are parked on the levels (anyone can take one; the island's drivers leave
   them be). A height bar over the entrance.
@@ -59,6 +66,7 @@ On the roof's west side stands a **three-storey Art Deco mansion**, the little s
 published map:
 - the garage is placed, and the parked cars stand on their decks;
 - a car driven in at the entrance climbs the first ramp to deck 1;
+- a car and a pickup, driven at a parking pace, go all the way up: both ramps, both turning aisles, to the roof;
 - a car parked in the mansion's bay stands on the roof and stays there;
 - the surface is the terrain anywhere else;
 - the mansion's floors and its sale;

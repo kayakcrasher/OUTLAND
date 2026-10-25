@@ -581,8 +581,11 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
                                  (controls.parking ? d->brake * 1.8F : 0);
         v.speed = std::copysign(std::max(0.0F, std::abs(v.speed) - resistance * dt), v.speed);
         v.speed = std::clamp(v.speed, -d->reverse * performance, top);
+        // At a crawl the wheels turn further (parking, a car park's aisles, a yard): up to 40% more
+        // lock below walking pace, none by 30 km/h.
+        const float crawl = 1 + .4F * std::clamp(1 - std::abs(v.speed) / 8.0F, 0.0F, 1.0F);
         const float target =
-            std::clamp(controls.steer, -1.0F, 1.0F) * d->steer / (1 + std::abs(v.speed) * .04F);
+            std::clamp(controls.steer, -1.0F, 1.0F) * d->steer * crawl / (1 + std::abs(v.speed) * .04F);
         v.steering += (target - v.steering) * std::min(1.0F, dt * 8);
         // The handbrake locks the rear wheels: the tail swings round.
         const float yaw_delta = v.speed / std::max(.5F, (d->front_z - d->rear_z) * scale) *

@@ -41,8 +41,8 @@ CAR_LOT_SPOTS_X = (-14.0, -8.0, -2.0, 4.0, 10.0)
 GARAGE_W, GARAGE_D = 19.0, 16.0
 GARAGE_DECKS = (0.1, 3.3, 6.5, 9.7)
 GARAGE_LANE_A = (12.0, 18.4)    # ground -> deck 1 and deck 2 -> roof, climbing +z
-GARAGE_LANE_B = (5.0, 11.4)     # deck 1 -> deck 2, climbing -z
-GARAGE_RAMP_Z = (-9.0, 9.0)
+GARAGE_LANE_B = (4.0, 11.4)     # deck 1 -> deck 2, climbing -z (7.4 m: room to swing in off the aisle)
+GARAGE_RAMP_Z = (-6.0, 6.0)    # 12 m ramps (15%), leaving ~10 m turning aisles at both ends
 MANSION_X, MANSION_Z = (-18.0, -3.2), (-3.0, 15.2)
 MANSION_STOREY = 3.2
 MANSION_DOOR_X = (-11.4, -9.8)
@@ -1517,6 +1517,9 @@ def parking_garage():
         b.solid((x0, decks[k] + 1.0, z - .25), (x1, decks[k] + 1.08, z), "yellow")
     b.solid((bx0, decks[2], rz1), (bx1, decks[2] + 1.0, rz1 + .25), "concrete")
     b.solid((bx0 - .25, decks[2], rz0), (bx0, decks[2] + 1.0, rz1 + .25), "concrete")
+    # Lane B climbs out of deck 1 with nothing beside it: a wall along its open (west) side, so a
+    # car can't drop off the ramp's edge onto the deck.
+    b.solid((bx0 - .25, decks[1], rz0), (bx0, decks[2], rz1), "concrete")
     for x0, x1, k in ((ax0, ax1, 1), (bx0, bx1, 2), (ax0, ax1, 3)):     # a hazard edge where each ramp meets its deck
         z = rz1 if k != 2 else rz0
         b.solid((x0, decks[k], z - .15), (x1, decks[k] + .01, z + .15), "hazard")
@@ -1549,14 +1552,15 @@ def parking_garage():
     b.solid((-W - .1, 0, -D - .1), (bx0 - .3, .6, -D), "granite")
     b.solid((-W - .1, 0, D), (W + .1, .6, D + .1), "granite")
     for sx, sz in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
-        x0, x1 = (-W - .3, -W + 1.2) if sx < 0 else (W - 1.2, W + .3)
-        z0, z1 = (-D - .3, -D + 1.2) if sz < 0 else (D - 1.2, D + .3)
-        for step, (inset, top) in enumerate(((0, roof + 2.0), (.25, roof + 2.8), (.5, roof + 3.4))):
+        # (Slender, and outside the walls: the turning aisles' corners stay clear for a car.)
+        x0, x1 = (-W - .3, -W + .3) if sx < 0 else (W - .3, W + .3)
+        z0, z1 = (-D - .3, -D + .3) if sz < 0 else (D - .3, D + .3)
+        for step, (inset, top) in enumerate(((0, roof + 2.0), (.1, roof + 2.8), (.2, roof + 3.4))):
             b.solid((x0 + inset, 0 if step == 0 else roof + 2.0 + (step - 1) * .8, z0 + inset), (x1 - inset, top, z1 - inset), "stone")
             b.solid((x0 + inset - .05, top - .12, z0 + inset - .05), (x1 - inset + .05, top, z1 - inset + .05), "gold")
         fz = z0 - .02 if sz < 0 else z1
         for i in range(3):
-            x = x0 + .3 + i * .45
+            x = x0 + .12 + i * .18
             b.solid((x - .06, roof - 2.0, min(fz, fz + .1)), (x + .06, roof + 1.9, max(fz, fz + .1)), "gold")
     # The sign tower on the north-west corner: a stepped limestone pylon carrying the blue P.
     tx0, tx1 = -W + 1.4, -W + 4.4
@@ -1577,6 +1581,9 @@ def parking_garage():
     for k in (1, 2, 3):
         for x in (-12.0, -2.0, 8.0):
             for z in (-12.0, 0.0, 12.0):
+                # (None hanging in a ramp's hole: it would float in the lane, a bar across the ramp.)
+                if any(hx0 - 1 < x < hx1 + 1 and hz0 - 1 < z < hz1 + 1 for hx0, hx1, hz0, hz1 in holes[k]):
+                    continue
                 b.solid((x - .8, decks[k] - slab - .06, z - .1), (x + .8, decks[k] - slab, z + .1), "lamp")
     # ---- painted bays on the west side of every level (on the roof: east of the mansion)
     def bays(y, x0, x1, z0, z1, width=2.6, paint="line"):
