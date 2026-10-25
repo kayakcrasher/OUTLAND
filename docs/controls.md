@@ -56,6 +56,7 @@ pointer, and that opens the pause menu.
 | Radio for backup (Explore, police officers) | Z (touch: BACKUP, where TAG goes) |
 | Arrest a Krimulo (Explore, police officers) | E / USE beside him |
 | Recruit a gang member / ask for a partner (Explore) | E / USE beside one of your gang's Krimuloj / at a station's desk. See [careers](careers.md#your-crew) |
+| Sit in a ballpark's stands / get up (Explore) | E / USE at either stand. See [baseball](baseball.md) |
 | Ride as a passenger (your crew drives) | E / USE at a car's passenger (right) door with your crew near; USE again to get out |
 | Drop / hitch the trailer (a stopped rig) | J (touch: HITCH) |
 | Fire the roof gun (a rig or truck with one fitted) | left mouse button at the wheel |

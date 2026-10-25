@@ -70,6 +70,8 @@
 #include "outland/game/economy/Penthouse.hpp"
 #include "outland/game/economy/SkyMansion.hpp"
 #include "outland/world/ParkingGarage.hpp"
+#include "outland/world/Ballparks.hpp"
+#include "outland/game/sports/League.hpp"
 #include "outland/game/economy/Homes.hpp"
 #include "outland/game/sound/SoundBus.hpp"
 #include "outland/world/navigation/NavGrid.hpp"
@@ -647,6 +649,34 @@ void Renderer::run() {
     double prison_until=-1;
     game::law::PrisonYard prison_yard;   // its guards and inmates
     game::law::JailTerms jail_terms;     // ...and how long the island's people booked in there stay (one game week)
+    // La Verda Basballigo (game::sports): the county clubs' league, their parks and buses, the
+    // crowds in the stands (drawn, not simulated), fights, the championship's riot.
+    game::sports::League league;
+    std::array<world::ballpark::Site,5> parks{};
+    std::string league_path,league_saved;
+    std::array<double,5> park_fight_until{},park_cheer_home{},park_cheer_away{};   // (match_time)
+    constexpr int rioter_base=970000;
+    std::vector<int> rioters;
+    int riot_park=-1,riot_team=0;
+    double league_bus_sync=0;
+    struct StandSeat { bool on{false}; Vector3 at{}; float yaw{0}; } stand_seat;   // the player sitting in the stands
+    characters::AnimationController crowd_pose,cheer_pose,brawl_pose,field_pose;
+    // The nearest free seat in a park's stands within reach of `feet` (false: none).
+    const auto stand_seat_near=[&](Vector3 feet,Vector3& seat,float& yaw) {
+        float best=2.6F;   // from the foot of the stand, or a row up
+        bool found=false;
+        for(const auto& site:parks) {
+            if(site.team<0 || std::hypot(feet.x-site.origin.x,feet.z-site.origin.z)>90) continue;
+            for(const bool home:{true,false})
+                for(int row=0;row<world::ballpark::rows;++row)
+                    for(int place=0;place<world::ballpark::seats_per_row;++place) {
+                        const Vector3 s=site.seat(home,row,place);
+                        const float d=std::hypot(s.x-feet.x,s.z-feet.z);
+                        if(d<best && std::abs(s.y-feet.y)<1.6F) {best=d;seat=s;yaw=site.yaw;found=true;}
+                    }
+        }
+        return found;
+    };
     // Who wears which body there: guards in the Policio's navy, gangsters, the island's law breakers.
     const auto prison_body=[&](bool guard,bool gang,std::uint64_t seed) -> std::string {
         if(guard) return seed%2 ? "character_18_police" : "character_21_police";
@@ -999,9 +1029,11 @@ void Renderer::run() {
     struct Outfits {
         Texture2D soldato{}, kapo{}, occupier{};
         std::array<Texture2D,5> gang_soldato{},gang_kapo{};
+        std::array<Texture2D,5> team{};   // La Verda Basballigo's jerseys (players and fans alike)
         ~Outfits() {
             if(soldato.id) UnloadTexture(soldato);
             if(occupier.id) UnloadTexture(occupier);
+            for(auto& t:team) if(t.id) UnloadTexture(t);
             if(kapo.id) UnloadTexture(kapo);
             for(auto* set:{&gang_soldato,&gang_kapo}) for(auto& t:*set) if(t.id) UnloadTexture(t);
         }
@@ -1017,6 +1049,7 @@ void Renderer::run() {
         outfits.soldato=load_outfit("assets/verda/characters/outfits/verda_mano_soldato.png");
         outfits.kapo=load_outfit("assets/verda/characters/outfits/verda_mano_kapo.png");
         outfits.occupier=load_outfit("assets/verda/characters/outfits/rusa_soldato.png");   // the occupiers' camouflage
+        for(int k=0;k<5;++k) outfits.team[static_cast<std::size_t>(k)]=load_outfit(TextFormat("assets/verda/characters/outfits/team_%d_jersey.png",k));
         for(int g=1;g<5;++g) {
             outfits.gang_soldato[static_cast<std::size_t>(g)]=load_outfit(TextFormat("assets/verda/characters/outfits/gang_%d_soldato.png",g));
             outfits.gang_kapo[static_cast<std::size_t>(g)]=load_outfit(TextFormat("assets/verda/characters/outfits/gang_%d_kapo.png",g));
@@ -2197,6 +2230,41 @@ void Renderer::run() {
                     trucking_path=career_path+".trucking";
                     if(FileExists(trucking_path.c_str())) if(char* text=LoadFileText(trucking_path.c_str())) {trucking.parse(text);UnloadFileText(text);}
                     trucking_saved=trucking.serialise();
+                    // La Verda Basballigo: the parks, and the league where it stood (or a new one today).
+                    parks=world::ballpark::find(verda_region);
+                    league=game::sports::League{};
+                    league_path=career_path+".league";
+                    {
+                        bool loaded=false;
+                        if(FileExists(league_path.c_str())) if(char* text=LoadFileText(league_path.c_str())) {loaded=league.parse(text);UnloadFileText(text);}
+                        if(!loaded) league.start(island_life.clock().day(),session_seed);
+                    }
+                    for(const int id:rioters) npcs.despawn_resident(id);
+                    rioters.clear();riot_park=-1;stand_seat={};park_fight_until={};
+#ifdef OUTLAND_DEV_TOOLS
+                    // OUTLAND_DEV_LEAGUE=game|final|riot[:park]: a game at that park (or the final, at that park) about to start, or the riot on.
+                    if(const char* dev=std::getenv("OUTLAND_DEV_LEAGUE");dev && *dev) {
+                        std::string what=dev;
+                        int park=-1;
+                        if(const auto colon=what.find(':');colon!=std::string::npos) {park=std::atoi(what.c_str()+colon+1);what.resize(colon);}
+                        const int today=island_life.clock().day();
+                        std::uint64_t seed=session_seed;
+                        league.start(today,seed);
+                        // The final is at the leader's park: try seasons till it falls at that one.
+                        if(what!="game" && park>=0)
+                            for(int i=0;i<500 && league.fixtures().back().home!=park;++i) league.start(today,seed+=2);   // (the seed is made odd)
+                        int fixture=what=="game" ? 0 : static_cast<int>(league.fixtures().size())-1;
+                        if(what=="game" && park>=0) for(int i=0;i<static_cast<int>(league.fixtures().size());++i) if(league.fixtures()[static_cast<std::size_t>(i)].home==park) {fixture=i;break;}
+                        league.start(today-league.fixtures()[static_cast<std::size_t>(fixture)].day,seed);
+                        const double pitch=league.first_pitch_at(fixture);
+                        const double at=what=="riot" ? pitch+league.linescore(fixture).length+2 : pitch-(what=="game" ? 8 : 3);
+                        island_life.set_clock(game::life::WorldClock{at});
+                        const auto& f=league.fixtures()[static_cast<std::size_t>(fixture)];
+                        TraceLog(LOG_INFO,"OUTLAND league dev: %s at park %d (%s v %s)",what.c_str(),f.home,game::sports::teams[static_cast<std::size_t>(f.home)].nick,game::sports::teams[static_cast<std::size_t>(f.away)].nick);
+                    }
+#endif
+                    league.update(island_life.clock().minutes);
+                    league_saved=league.serialise();
                     {
                         bool depot=false;
                         for(const auto& town:verda_region.settlements()) for(const auto& asset:town.assets) {
@@ -3344,6 +3412,7 @@ void Renderer::run() {
             bool here=store_mannequin>=0 || at_store_counter || nearby_shop || at_table ||
                 vehicles.nearest(verda_region,feet)>=0 || loot_session.world().nearest(feet,2.8F)>=0 ||
                 (game::rules_for(game_mode).civilian_life && penthouse.inside(feet)) || home_here;
+            if(!here && game::rules_for(game_mode).civilian_life && !vehicles.driver()) {Vector3 s{};float y=0;here=stand_seat.on || stand_seat_near(feet,s,y);}
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
                 here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 || (career.on_duty() && callouts.to_cuff(feet,mafio,br_bots)>=0) ||
                     (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) || trucker_near(feet)>=0 || society_near(feet) || gun_man_near(feet)>=0 ||
@@ -4032,6 +4101,21 @@ void Renderer::run() {
                 }
             }
             was_in_mansion=in_mansion;
+            // The ballparks' stands: USE to sit down and watch; USE (or walk off) to get up.
+            if(game::rules_for(game_mode).civilian_life && !vehicles.driver()) {
+                if(stand_seat.on) {
+                    if(controls.interact || std::abs(controls.move_x)>.3F || std::abs(controls.move_y)>.3F || controls.jump) {
+                        stand_seat.on=false;home_used=true;input_system.player().interact=false;
+                        player.position={stand_seat.at.x,stand_seat.at.y+1.0F,stand_seat.at.z};player.vertical_velocity=0;
+                    }
+                } else if(controls.interact && !home_used) {
+                    Vector3 seat{};float yaw=0;
+                    if(stand_seat_near(loot_feet,seat,yaw)) {
+                        stand_seat={true,seat,yaw};home_used=true;input_system.player().interact=false;
+                        interaction_message="You take a seat in the stands. USE to get up";interaction_remaining=3;
+                    }
+                }
+            } else stand_seat.on=false;
             // Its parking bay: the owner's; anyone else is told it's private.
             if(garage_here && game::rules_for(game_mode).civilian_life) {
                 const auto* car=vehicles.driver();
@@ -4465,6 +4549,8 @@ void Renderer::run() {
             }
         }
 
+        // Sitting in the stands at a ballpark: stay put (look round as you like).
+        if(stand_seat.on) {player.position={stand_seat.at.x,stand_seat.at.y+.55F,stand_seat.at.z};player.vertical_velocity=0;player.grounded=true;}
 #ifdef OUTLAND_DEV_TOOLS
         if(creator_flying) {
             if(IsWindowFocused() && !creator_touch_ui.inventory_open())player.position.y+=creator_touch_ui.actions().fly_vertical*speed*dt;
@@ -6020,6 +6106,106 @@ void Renderer::run() {
                         }
                     }
                     prison_yard.update(dt);
+                    // La Verda Basballigo: the games, as the island clock runs.
+                    if(game::rules_for(game_mode).civilian_life && !league.fixtures().empty()) {
+                        using namespace game::sports;
+                        const double now=island_life.clock().minutes;
+                        const auto nick=[](int team){return std::string(teams[static_cast<std::size_t>(team)].nick);};
+                        for(const auto& e:league.update(now)) {
+                            if(e.kind==EventKind::NewSeason) {gang_news=TextFormat("BASBALLIGO: season %d begins - five clubs, one cup",league.season());gang_news_time=6;continue;}
+                            if(e.fixture<0 || e.fixture>=static_cast<int>(league.fixtures().size())) continue;
+                            const auto& g=league.fixtures()[static_cast<std::size_t>(e.fixture)];
+                            const auto& site=parks[static_cast<std::size_t>(g.home)];
+                            const bool here=site.team>=0 && std::hypot(feet.x-site.origin.x,feet.z-site.origin.z)<320;
+                            const auto score=league.live_fixture(e.fixture,now);
+                            switch(e.kind) {
+                                case EventKind::GameOn:
+                                    gang_news=(g.final ? "THE FINAL: " : "PLAY BALL: ")+nick(g.home)+" host the "+nick(g.away)+" at "+teams[static_cast<std::size_t>(g.home)].town;gang_news_time=6;
+                                    break;
+                                case EventKind::Run:
+                                    (e.team==g.home ? park_cheer_home : park_cheer_away)[static_cast<std::size_t>(g.home)]=match_time+5;
+                                    if(here) {interaction_message=TextFormat("%s score!  %s %d - %d %s",nick(e.team).c_str(),nick(g.home).c_str(),score.home_runs,score.away_runs,nick(g.away).c_str());interaction_remaining=4;}
+                                    break;
+                                case EventKind::GameOver:
+                                    gang_news=TextFormat("FINAL at %s: %s %d, %s %d",teams[static_cast<std::size_t>(g.home)].town,nick(g.home).c_str(),score.home_runs,nick(g.away).c_str(),score.away_runs);gang_news_time=7;
+                                    break;
+                                case EventKind::Fight:
+                                    park_fight_until[static_cast<std::size_t>(g.home)]=match_time+45;
+                                    if(here) {interaction_message="A fight breaks out between the "+nick(g.home)+" and "+nick(g.away)+" fans!";interaction_remaining=5;}
+                                    else {gang_news="BRAWL in the stands at "+std::string(teams[static_cast<std::size_t>(g.home)].town)+": "+nick(g.home)+" and "+nick(g.away)+" fans";gang_news_time=6;}
+                                    break;
+                                case EventKind::Champion:
+                                    gang_news="ĈAMPIONOJ! The "+std::string(teams[static_cast<std::size_t>(e.team)].name)+" win the Basballigo!";gang_news_time=9;
+                                    break;
+                                case EventKind::Riot:
+                                    gang_news="RIOT at "+std::string(teams[static_cast<std::size_t>(g.home)].town)+": the "+nick(e.team)+" fans won't take it - police on the way";gang_news_time=9;
+                                    riot_team=e.team;
+                                    if(site.team>=0 && services.active()) services.respond(site.to_world(world::ballpark::gate),3,match_time+game::sports::League::riot_minutes*60.0/30.0,vehicles);
+                                    break;
+                                default: break;
+                            }
+                        }
+                        // A riot: while one burns and the player is close, the angriest fans go for anyone
+                        // near (hostile, in their club's shirts). They go home when it's over.
+                        int burning=-1;
+                        for(int p=0;p<5;++p) if(parks[static_cast<std::size_t>(p)].team>=0 && league.rioting(p,now)) burning=p;
+                        if(burning>=0 && riot_park<0) {
+                            const auto& site=parks[static_cast<std::size_t>(burning)];
+                            if(std::hypot(feet.x-site.origin.x,feet.z-site.origin.z)<260) {
+                                riot_park=burning;
+                                const auto& fin=league.fixtures().back();
+                                if(riot_team!=fin.home && riot_team!=fin.away) riot_team=league.champion(now)==fin.home ? fin.away : fin.home;
+                                for(int k=0;k<12;++k) {
+                                    characters::ResidentSpawn spawn;
+                                    spawn.resident=rioter_base+k;
+                                    spawn.character_id=outfit_body;
+                                    spawn.pool=characters::CharacterPool::Hostile;
+                                    const float a=static_cast<float>(k)*.9F;
+                                    Vector3 local{std::cos(a)*(10.0F+static_cast<float>(k%4)*4),0,-58.0F+std::sin(a)*8};
+                                    spawn.position=site.to_world(local);
+                                    spawn.anchor=spawn.position;spawn.anchor_radius=14;
+                                    spawn.yaw_degrees=site.yaw+static_cast<float>(k*40);
+                                    npcs.spawn_resident(spawn);
+                                    rioters.push_back(spawn.resident);
+                                }
+                                interaction_message="A riot! The "+nick(riot_team)+" fans are tearing the place up";interaction_remaining=5;
+                            }
+                        }
+                        if(riot_park>=0 && (!league.rioting(riot_park,now) ||
+                           std::hypot(feet.x-parks[static_cast<std::size_t>(riot_park)].origin.x,feet.z-parks[static_cast<std::size_t>(riot_park)].origin.z)>420)) {
+                            for(const int id:rioters) npcs.despawn_resident(id);
+                            rioters.clear();riot_park=-1;
+                        }
+                        // The clubs' buses: each in its colours; on a game day the visitors' bus is parked at
+                        // the home team's park (moved while nobody's watching either end).
+                        if((league_bus_sync-=dt)<=0) {
+                            league_bus_sync=2;
+                            for(const auto& v:vehicles.vehicles()) {
+                                const auto at=v.id.find("vehicle_spawn_bus_team_");
+                                if(at==std::string::npos) continue;
+                                const int team=v.id.back()-'0';
+                                if(team<0 || team>=team_count) continue;
+                                auto* bus=vehicles.asset(verda_region,v.id);
+                                if(!bus || bus->vehicle.destroyed) continue;
+                                const std::size_t paint=game::autos::team_paints+static_cast<std::size_t>(team);
+                                if(!bus->vehicle.painted || bus->vehicle.mods[0]!=static_cast<int>(paint)) {
+                                    bus->vehicle.painted=true;bus->vehicle.mods[0]=static_cast<int>(paint);bus->vehicle.paint=game::autos::paints[paint].color;
+                                }
+                                if(vehicles.driver() && vehicles.driver()->id==v.id) continue;
+                                int host=team;
+                                for(int i=0;i<static_cast<int>(league.fixtures().size());++i) {
+                                    const auto& g=league.fixtures()[static_cast<std::size_t>(i)];
+                                    if(g.away==team && league.live_fixture(i,now).phase!=Phase::Quiet) host=g.home;
+                                }
+                                const auto& site=parks[static_cast<std::size_t>(host)];
+                                if(site.team<0) continue;
+                                const Vector3 bay=site.to_world(host==team ? world::ballpark::home_bus : world::ballpark::away_bus);
+                                if(std::hypot(v.position.x-bay.x,v.position.z-bay.z)<8) continue;
+                                if(std::hypot(feet.x-bay.x,feet.z-bay.z)<160 || std::hypot(feet.x-v.position.x,feet.z-v.position.z)<160) continue;
+                                vehicles.place(verda_region,v.id,bay,site.yaw);
+                            }
+                        }
+                    }
                     for(const auto& p:prison_yard.people())
                         npcs.set_bot(p.bot,prison_yard.world(p),prison_yard.world_yaw(p),100,prison_yard.state(p));
                     if(const int pay=career.take_pay();pay>0) {loot_session.economy().money+=pay;loot_session.changed();}
@@ -6033,6 +6219,7 @@ void Renderer::run() {
                         career_save_wait=1;
                         if(const auto text=career.serialise();text!=career_saved && SaveFileText(career_path.c_str(),const_cast<char*>(text.c_str()))) career_saved=text;
                         if(const auto text=trucking.serialise();!trucking_path.empty() && text!=trucking_saved && SaveFileText(trucking_path.c_str(),const_cast<char*>(text.c_str()))) trucking_saved=text;
+                        if(const auto text=league.serialise();!league_path.empty() && text!=league_saved && SaveFileText(league_path.c_str(),const_cast<char*>(text.c_str()))) league_saved=text;
                     }
                 }
                 br_bots.sync_bodies(npcs,&character_registry);
@@ -6417,6 +6604,125 @@ void Renderer::run() {
                 }
             }
         }
+        // La Verda Basballigo at its parks: the crowd in the stands (home fans on the first-base side,
+        // the visitors' followers across the diamond), both clubs on the field, the ball, a brawl when
+        // tempers go, and after the final a riot's fires.
+        if(game::rules_for(game_mode).civilian_life && !league.fixtures().empty()) {
+            using namespace game::sports;
+            namespace BP=world::ballpark;
+            const double now=island_life.clock().minutes;
+            crowd_pose.advance(characters::AnimationAction::Idle,dt,0);
+            cheer_pose.advance(characters::AnimationAction::Walk,dt,.6F);
+            brawl_pose.advance(characters::AnimationAction::Attack,dt,0);
+            field_pose.advance(characters::AnimationAction::Idle,dt,0);
+            const auto jersey=[&](int team){return team>=0 && team<5 ? outfits.team[static_cast<std::size_t>(team)].id : 0U;};
+            for(int p=0;p<5;++p) {
+                const auto& site=parks[static_cast<std::size_t>(p)];
+                if(site.team<0 || Vector3DistanceSqr(site.origin,camera.position)>280*280) continue;
+                const auto live=league.live(p,now);
+                const bool riot=league.rioting(p,now);
+                if(live.phase==Phase::Quiet && !riot) continue;
+                const int fixture=live.fixture>=0 ? live.fixture : static_cast<int>(league.fixtures().size())-1;
+                const auto& g=league.fixtures()[static_cast<std::size_t>(fixture)];
+                const float facing=site.yaw;
+                // The crowd: the home turnout and the travelling support, in the stands.
+                if(live.phase!=Phase::Quiet) {
+                    // Fewer bodies from further off (a phone draws every one of them).
+                    const float off=Vector3Distance(site.origin,camera.position);
+                    const int home_n=(live.phase==Phase::Pregame ? 24 : 56)/(off>120 ? 2 : 1);
+                    const int away_n=static_cast<int>(static_cast<float>(home_n)*league.travelling(fixture));
+                    for(const bool home_side:{true,false}) {
+                        const int n=home_side ? home_n : away_n;
+                        const bool cheering=(home_side ? park_cheer_home : park_cheer_away)[static_cast<std::size_t>(p)]>match_time;
+                        for(int k=0;k<n;++k) {
+                            const int slot=(k*37+fixture*11)%(BP::rows*BP::seats_per_row);
+                            const int row=slot%BP::rows, place=slot/BP::rows;
+                            const Vector3 seat=site.seat(home_side,row,place);
+                            if(Vector3DistanceSqr(seat,camera.position)>170*170 || !view.sphere(seat,1.2F)) continue;
+                            if(stand_seat.on && Vector3DistanceSqr(seat,stand_seat.at)<.6F*.6F) continue;   // the player's seat
+                            const bool fan_shirt=(k*7+fixture)%10<7;
+                            std::string body=outfit_body;
+                            if(!fan_shirt) if(const auto* d=character_registry.choose(characters::CharacterPool::Civilian,static_cast<std::uint64_t>(9000+k*31+(home_side?0:500)))) body=d->id;
+                            characters::BodyPose pose;
+                            pose.outfit=fan_shirt ? jersey(home_side ? g.home : g.away) : 0U;
+                            const bool up=cheering && (k%3!=0);
+                            pose.seated=!up;
+                            const Vector3 at=up ? Vector3{seat.x,seat.y,seat.z} : Vector3{seat.x,seat.y-.42F,seat.z};
+                            character_renderer.draw(body,at,facing+static_cast<float>((k*29)%24)-12,1,up ? &cheer_pose : &crowd_pose,pose);
+                        }
+                    }
+                }
+                // The teams: in the field and at bat; before the game, lined up by their dugouts.
+                if(live.phase==Phase::Playing || live.phase==Phase::Pregame) {
+                    const int fielding=live.phase==Phase::Pregame ? g.home : live.top ? g.home : g.away;
+                    const int batting=fielding==g.home ? g.away : g.home;
+                    const Vector3 plate=site.to_world(BP::plate);
+                    for(std::size_t i=0;i<BP::fielders.size();++i) {
+                        Vector3 spot=live.phase==Phase::Pregame ? Vector3{-6.0F-static_cast<float>(i)*1.4F,0,-30.0F+static_cast<float>(i)*.9F} : BP::fielders[i];
+                        const Vector3 at=site.to_world(spot);
+                        const float yaw=std::atan2(plate.x-at.x,plate.z-at.z)*RAD2DEG;
+                        characters::BodyPose pose;pose.outfit=jersey(fielding);
+                        character_renderer.draw(outfit_body,at,live.phase==Phase::Pregame ? facing+90 : yaw,1,&field_pose,pose);
+                    }
+                    if(live.phase==Phase::Pregame)
+                        for(int i=0;i<9;++i) {
+                            const Vector3 at=site.to_world({6.0F+static_cast<float>(i)*1.4F,0,-30.0F+static_cast<float>(i)*.9F});
+                            characters::BodyPose pose;pose.outfit=jersey(batting);
+                            character_renderer.draw(outfit_body,at,facing-90,1,&field_pose,pose);
+                        }
+                    else {
+                        const Vector3 box=site.to_world({1.1F,0,BP::plate.z});
+                        characters::BodyPose pose;pose.outfit=jersey(batting);
+                        character_renderer.draw(outfit_body,box,facing-90,1,&field_pose,pose);
+                        // The rest of the batting side on their dugout's bench.
+                        const Vector3 dug=batting==g.home ? BP::home_dugout : BP::away_dugout;
+                        characters::BodyPose sit;sit.seated=true;sit.outfit=jersey(batting);
+                        for(int i=0;i<5;++i) character_renderer.draw(outfit_body,site.to_world({dug.x-4.0F+static_cast<float>(i)*2,-.45F,dug.z-.85F}),facing,1,&crowd_pose,sit);
+                        // The ball: pitched, then now and then hit out into the field.
+                        if(Vector3DistanceSqr(plate,camera.position)<170*170) {
+                            const double cycle=std::fmod(match_time+p*1.7,7.0);
+                            const auto lerp=[](Vector3 a,Vector3 b,float u){return Vector3Lerp(a,b,u);};
+                            const Vector3 mound=site.to_world({0,1.9F,-17.4F}),catcher=site.to_world({0,1.0F,-37.4F});
+                            Vector3 ball{};bool shown=false;
+                            if(cycle>1.0 && cycle<1.5) {ball=lerp(mound,catcher,static_cast<float>((cycle-1.0)/.5));shown=true;}
+                            const int pitch=static_cast<int>((match_time+p*1.7)/7.0);
+                            if(cycle>=1.5 && cycle<4.2 && (pitch*7919)%10<4) {
+                                const float u=static_cast<float>((cycle-1.5)/2.7);
+                                const float a=(static_cast<float>((pitch*131)%90)-45)*DEG2RAD, r=25.0F+static_cast<float>((pitch*17)%55);
+                                const Vector3 land=site.to_world({std::sin(a)*r,1.0F,BP::plate.z+std::cos(a)*r});
+                                ball=lerp(site.to_world({.3F,1.0F,BP::plate.z+.5F}),land,u);
+                                ball.y+=std::sin(u*PI)*(6.0F+static_cast<float>((pitch*7)%14));
+                                shown=true;
+                            }
+                            if(shown) DrawSphere(ball,.11F,RAYWHITE);
+                        }
+                    }
+                }
+                // A brawl: fans of both clubs at it on the concourse between the stands and the gate.
+                const bool brawl=park_fight_until[static_cast<std::size_t>(p)]>match_time || riot;
+                if(brawl) {
+                    const int pairs=riot ? 8 : 3;
+                    for(int k=0;k<pairs;++k) {
+                        const Vector3 c{static_cast<float>(k-pairs/2)*3.2F,0,-49.0F+static_cast<float>(k%2)*2.4F};
+                        const Vector3 a=site.to_world({c.x-.45F,0,c.z}),b=site.to_world({c.x+.45F,0,c.z});
+                        characters::BodyPose home_pose;home_pose.outfit=jersey(g.home);
+                        characters::BodyPose away_pose;away_pose.outfit=jersey(g.away);
+                        character_renderer.draw(outfit_body,a,facing+90,1,&brawl_pose,home_pose);
+                        character_renderer.draw(outfit_body,b,facing-90,1,&brawl_pose,away_pose);
+                    }
+                }
+                // The riot's fires: burning bins in the car park and on the field.
+                if(riot)
+                    for(int k=0;k<5;++k) {
+                        const Vector3 at=site.to_world({static_cast<float>(k-2)*11.0F,0,k%2 ? -62.0F : -26.0F});
+                        const float flick=.75F+.25F*std::sin(static_cast<float>(match_time)*13+static_cast<float>(k)*2);
+                        DrawCylinder(at,.45F,.45F,.9F,10,Color{60,62,66,255});
+                        DrawSphere(Vector3Add(at,{0,1.2F,0}),.55F*flick,Fade(ORANGE,.85F));
+                        DrawSphere(Vector3Add(at,{0,1.7F,0}),.35F*flick,Fade(YELLOW,.8F));
+                        DrawSphere(Vector3Add(at,{0,3.0F+flick,0}),1.1F,Fade(DARKGRAY,.35F));
+                    }
+            }
+        }
         // Drivers at the wheel of the side-by-sides and the big rigs (Vakeroj in their hats).
         {
             std::vector<std::pair<std::string,std::pair<std::string,bool>>> seated;
@@ -6645,6 +6951,8 @@ void Renderer::run() {
                     if(const int gang=mafio.gang_of(actor.bot);gang>=0) body.outfit=gang_outfit(gang,mafio.officer(actor.bot));
                 // The occupiers in camouflage.
                 if(actor.bot>=0 && actor.character_id==outfit_body && endgame.soldier(actor.bot)) body.outfit=outfits.occupier.id;
+                // Rioters after the final: their club's shirt.
+                if(actor.resident>=rioter_base && actor.resident<rioter_base+40) {body.outfit=outfits.team[static_cast<std::size_t>(std::clamp(riot_team,0,4))].id;return;}
                 // A gang's gun man: the gang's colours, a rifle slung (in his hands).
                 if(actor.bot>=gun_man_bot && actor.bot<gun_man_bot+5) body.outfit=gang_outfit(actor.bot-gun_man_bot,true);
                 // The Green Hand's cultural society: their colours, no guns.
@@ -6719,7 +7027,8 @@ void Renderer::run() {
             const bool uniform=!store_open && game_mode==game::GameMode::Explore && career.on_duty() && character_registry.find(police_uniform);
             character_renderer.set_player(uniform ? std::string(police_uniform) : look ? look->character : std::string());
             body.outfit=uniform ? 0U : look ? outfit_texture(look->outfit) : 0U;
-            const auto held=character_renderer.draw_player(character_feet, player.yaw, body);
+            if(stand_seat.on) body.seated=true;   // in the stands
+            const auto held=character_renderer.draw_player(character_feet, stand_seat.on ? stand_seat.yaw*DEG2RAD : player.yaw, body);
             const auto* hat=store_open ? (store_ui.hat()>=0 ? &wardrobe_catalogue.hats()[static_cast<std::size_t>(store_ui.hat())] : nullptr) :
                 uniform ? nullptr : game::wardrobe::wearing_hat(loot_session.economy(),wardrobe_catalogue);
             if(hat && !scoped) draw_cowboy_hat(held,hat->model.c_str());
@@ -7869,6 +8178,46 @@ void Renderer::run() {
                     DrawRectangle(static_cast<int>(screen_width/2-tw/2-14),screen_height-252,static_cast<int>(tw+28),32,Fade(BLACK,.6F));
                     DrawTextEx(font,line.c_str(),{screen_width/2-tw/2,static_cast<float>(screen_height-246)},20,1,owned ? Color{140,220,150,255} : GOLD);
                 }
+                // La Verda Basballigo's scoreboard at a park with a game on (sitting in the stands: the table too).
+                if(game::rules_for(game_mode).civilian_life && !league.fixtures().empty()) {
+                    using namespace game::sports;
+                    const double now=island_life.clock().minutes;
+                    for(int p=0;p<5;++p) {
+                        const auto& site=parks[static_cast<std::size_t>(p)];
+                        if(site.team<0 || std::hypot(loot_feet.x-site.origin.x,loot_feet.z-site.origin.z)>170) continue;
+                        const auto live=league.live(p,now);
+                        const bool riot=league.rioting(p,now);
+                        if(live.phase==Phase::Quiet && !riot) continue;
+                        const int fixture=live.fixture>=0 ? live.fixture : static_cast<int>(league.fixtures().size())-1;
+                        const auto& g=league.fixtures()[static_cast<std::size_t>(fixture)];
+                        const auto& home=teams[static_cast<std::size_t>(g.home)];
+                        const auto& away=teams[static_cast<std::size_t>(g.away)];
+                        const auto score=league.live_fixture(fixture,now);
+                        const Font& font=sign_renderer.font();
+                        const float x=static_cast<float>(screen_width-360),y=250;
+                        const bool table=stand_seat.on;
+                        DrawRectangle(static_cast<int>(x),static_cast<int>(y),340,table ? 236 : 96,Fade(BLACK,.7F));
+                        DrawTextEx(font,g.final ? "BASBALLIGO - LA FINALO" : "BASBALLIGO",{x+12,y+8},16,1,GOLD);
+                        DrawRectangle(static_cast<int>(x+12),static_cast<int>(y+32),10,22,away.primary);
+                        DrawTextEx(font,TextFormat("%s  %d",away.nick,score.away_runs),{x+28,y+32},22,1,RAYWHITE);
+                        DrawRectangle(static_cast<int>(x+12),static_cast<int>(y+60),10,22,home.primary);
+                        DrawTextEx(font,TextFormat("%s  %d",home.nick,score.home_runs),{x+28,y+60},22,1,RAYWHITE);
+                        const char* state=riot ? "RIOT!" : live.phase==Phase::Pregame ? "First pitch 14:00" : live.phase==Phase::Over ? "FINAL" :
+                            TextFormat("%s %d",live.top ? "TOP" : "BOTTOM",live.inning);
+                        DrawTextEx(font,state,{x+210,y+46},20,1,riot ? RED : GOLD);
+                        if(table) {
+                            DrawTextEx(font,TextFormat("Season %d table",league.season()),{x+12,y+96},16,1,GOLD);
+                            int row=0;
+                            for(const auto& s:league.standings(now)) {
+                                const auto& team=teams[static_cast<std::size_t>(s.team)];
+                                DrawRectangle(static_cast<int>(x+12),static_cast<int>(y+122+row*22),8,16,team.primary);
+                                DrawTextEx(font,TextFormat("%d. %s  %d-%d",row+1,team.name,s.wins,s.losses),{x+26,y+120+row*22.0F},17,1,RAYWHITE);
+                                ++row;
+                            }
+                        }
+                        break;
+                    }
+                }
                 if(garage_here && !vehicles.driver() && garage_site.in_mansion(loot_feet)) {
                     const bool owned=game::economy::SkyMansion::owned(loot_session.economy());
                     const auto bed=garage_site.to_world(world::garage::bed);
@@ -8236,6 +8585,15 @@ void Renderer::run() {
                     compass_marks.push_back({penthouse.to_world({0,0,0}),Glyph::Home,Color{255,214,90,255},"HOME",false});
                 if(garage_here && game::economy::SkyMansion::owned(loot_session.economy()))
                     compass_marks.push_back({garage_site.to_world(world::garage::door),Glyph::Home,Color{255,214,90,255},"HOME",false});
+                // A ball game on (or about to be) within a drive: its park on the compass.
+                if(!league.fixtures().empty())
+                    for(int p=0;p<5;++p) {
+                        const auto& site=parks[static_cast<std::size_t>(p)];
+                        if(site.team<0 || flat(site.origin)>1400) continue;
+                        const auto live=league.live(p,island_life.clock().minutes);
+                        if(live.phase==game::sports::Phase::Pregame || live.phase==game::sports::Phase::Playing)
+                            compass_marks.push_back({site.to_world(world::ballpark::gate),Glyph::Shop,game::sports::teams[static_cast<std::size_t>(p)].secondary,"PLAY BALL",false});
+                    }
                 // Hideouts: your own crew's (the nearest, anywhere) and any rival's close by.
                 const int mine=player_gang();
                 std::vector<Vector3> own;
@@ -8380,6 +8738,12 @@ void Renderer::run() {
                 view.home_owned=game::economy::Penthouse::owned(loot_session.economy());
             }
             view.marks=compass_marks;
+            // The ballparks on the map, each in its club's colour.
+            if(game::rules_for(game_mode).civilian_life)
+                for(const auto& site:parks)
+                    if(site.team>=0)
+                        view.marks.push_back({site.to_world(world::ballpark::gate),game::hud::Glyph::Shop,game::sports::teams[static_cast<std::size_t>(site.team)].primary,
+                            TextFormat("%s BALLPARK",game::sports::teams[static_cast<std::size_t>(site.team)].nick),false});
             if(game::rules_for(game_mode).civilian_life && garage_here && !game::economy::SkyMansion::owned(loot_session.economy()))
                 view.marks.push_back({garage_site.to_world(world::garage::door),game::hud::Glyph::Home,Color{230,90,90,255},
                     TextFormat("MANSION FOR SALE %lld kr",static_cast<long long>(game::economy::SkyMansion::price)),false});

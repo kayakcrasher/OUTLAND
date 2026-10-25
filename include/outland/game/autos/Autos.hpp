@@ -31,7 +31,9 @@ struct Paint { const char* name; Color color; int price; };
 struct Part { const char* name; const char* detail; int price; };
 
 inline constexpr int paint_price = 1200;
-inline constexpr std::array<Paint, 10> paints{{
+// The street colours, then the five ball clubs' (game::sports::teams: their buses wear them).
+inline constexpr std::size_t street_paints = 10, team_paints = street_paints;
+inline constexpr std::array<Paint, 15> paints{{
     {"Verda green", {38, 132, 74, 255}, paint_price},
     {"Racing red", {176, 28, 30, 255}, paint_price},
     {"Sea blue", {28, 82, 160, 255}, paint_price},
@@ -42,6 +44,11 @@ inline constexpr std::array<Paint, 10> paints{{
     {"Gunmetal grey", {92, 98, 104, 255}, paint_price},
     {"Plum purple", {104, 48, 120, 255}, paint_price},
     {"Sky teal", {40, 160, 164, 255}, paint_price},
+    {"Leonoj green", {18, 118, 58, 255}, paint_price},
+    {"Ursoj brown", {104, 66, 38, 255}, paint_price},
+    {"Mevoj navy", {26, 46, 108, 255}, paint_price},
+    {"Ardeoj teal", {0, 124, 126, 255}, paint_price},
+    {"Ministoj charcoal", {40, 40, 44, 255}, paint_price},
 }};
 inline constexpr std::array<Part, 3> engines{{
     {"Factory engine", "as it left the works", 0},

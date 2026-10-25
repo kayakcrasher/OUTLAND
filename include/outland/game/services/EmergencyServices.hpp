@@ -62,6 +62,8 @@ struct Unit {
     int waypoint{-1};          // Ŝosea Patrolo: where on the beat
     std::string suspect;       // the car of a hit-and-run driver this unit is after ("" none)
     float gap{0}, stalled{0};  // ...the closest it has come in the chase, and how long since it closed in
+    double call_until{-1};     // called to a scene (a riot): there till then (ServicesFrame::now)
+    Vector3 call_at{};
 };
 
 struct ServicesFrame {
@@ -125,10 +127,15 @@ public:
     bool pursue(const std::string& suspect, Vector3 where, vehicles::VehicleSystem& cars);
     [[nodiscard]] bool pursued(std::string_view suspect) const;
     static constexpr float suspect_reach = 1600;   // how far a free unit rides out for a hit and run
+    // A call to a scene (a riot at a ballpark): up to `cars` of the nearest free patrol cars ride
+    // out with their lights, their officers get out and stand guard there until `until`
+    // (ServicesFrame::now), then go home. Returns how many went.
+    int respond(Vector3 where, int cars, double until, vehicles::VehicleSystem& cars_system);
 
 private:
     void after_suspect(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region, characters::NpcSystem& npcs);
     void drop_suspect(Unit& u, vehicles::VehicleSystem& cars);
+    void at_call(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region, characters::NpcSystem& npcs);
     void highway(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region, characters::NpcSystem& npcs);
     void police(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region, characters::NpcSystem& npcs);
     void ambulance(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region,

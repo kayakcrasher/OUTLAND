@@ -89,8 +89,16 @@ void CharacterRenderer::draw(const std::string& id,Vector3 feet,float yaw,float 
             MatrixTranslate(feet.x,feet.y,feet.z));
         const auto world=MatrixMultiply(MatrixMultiply(skin ? *skin : MatrixIdentity(),model->transform),placement);
         const float metres=Vector3Distance(Vector3Transform({1,0,0},world),Vector3Transform({0,0,0},world))/scale;
-        posed=gait_.apply(*model,animation->action(),animation->gait_cycle(),animation->ground_speed(),asset->facing_degrees,skin,
-            body,static_cast<float>(animation->elapsed()),metres);
+        // A crowd shares one controller: a body already posed exactly so keeps its bones.
+        BodyPose shape=body;shape.outfit=0;
+        const PoseKey key{animation->action(),animation->gait_cycle(),animation->ground_speed(),animation->elapsed(),metres,shape};
+        auto last=last_pose_.find(model);
+        if(!held && last!=last_pose_.end() && same_pose(last->second,key)) posed=true;
+        else {
+            posed=gait_.apply(*model,animation->action(),animation->gait_cycle(),animation->ground_speed(),asset->facing_degrees,skin,
+                body,static_cast<float>(animation->elapsed()),metres);
+            if(posed) last_pose_[model]=key; else last_pose_.erase(model);
+        }
         if(posed && held && gait_.holding()) {
             const auto grip=Vector3Transform(gait_.grip(),world);
             const auto toward=[&](Vector3 d){return Vector3Normalize(Vector3Subtract(Vector3Transform(Vector3Add(gait_.grip(),d),world),grip));};
@@ -102,7 +110,7 @@ void CharacterRenderer::draw(const std::string& id,Vector3 feet,float yaw,float 
             held->hat=true;held->crown=crown;held->crown_up=toward(gait_.crown_up());held->crown_forward=toward(gait_.crown_forward());
         }
     }
-    if(!posed) posed=AnimationController::apply_sample(*model,clips,sample,models_.posed(model));
+    if(!posed) {posed=AnimationController::apply_sample(*model,clips,sample,models_.posed(model));last_pose_.erase(model);}
     models_.mark_posed(model,posed);
     // An outfit: the same body in other clothes (its texture swapped in for this draw only).
     std::vector<unsigned int> own;

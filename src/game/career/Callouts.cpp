@@ -94,7 +94,7 @@ bool Callouts::dispatch(const Frame& frame, const std::vector<CallScene>& scenes
         const float along = std::atan2(scene.out.x, scene.out.z) * RAD2DEG + 90;
         if (!cars.spawn(region, kerb, along, ride.definition)) continue;
         const std::string car = cars.last_spawned();
-        const std::size_t colour = 1 + (h >> 16) % (autos::paints.size() - 1);
+        const std::size_t colour = 1 + (h >> 16) % (autos::street_paints - 1);
         if (auto* a = cars.asset(region, car)) {
             autos::apply({static_cast<int>(colour), 0, 1, 0}, a->vehicle);
             a->vehicle.marker = "getaway_" + car;   // nobody else's to drive off in

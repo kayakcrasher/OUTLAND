@@ -2,6 +2,7 @@
 #include "outland/creator/CreatorAssetRegistry.hpp"
 #include "outland/world/VerdaLayout.hpp"
 #include "outland/world/ParkingGarage.hpp"
+#include "outland/world/Ballparks.hpp"
 #include "outland/world/Highways.hpp"
 #include "outland/world/MotorTrade.hpp"
 #include "outland/world/Ranches.hpp"
@@ -1226,6 +1227,54 @@ void driveways(Kit& kit, world::VerdaRegion& region) {
         town.gameplay_markers.insert(town.gameplay_markers.end(), cars.begin(), cars.end());
     }
 }
+// ------------------------------------------------------------------ La Verda Basballigo's ballparks
+// One in each county on its level pad (world::ballpark::parks): the front - the gate, the car park
+// and the bus bays - toward the nearest road, a road in to the gate, and the club's bus in its bay.
+void ballparks(Kit& kit, world::VerdaRegion& region) {
+    namespace B = world::ballpark;
+    for (const auto& park : B::parks) {
+        auto* town = settlement(region, park.site);
+        if (!town) continue;
+        Vector3 road_point{};
+        float best = 1e9F;
+        for (const auto& t : region.settlements())
+            for (const auto& road : t.roads) {
+                if (road.type == world::RoadType::Highway) continue;
+                const Vector3 ab = Vector3Subtract(road.end, road.start);
+                const float length = ab.x * ab.x + ab.z * ab.z;
+                const float u = length > 0 ? std::clamp(((park.centre.x - road.start.x) * ab.x + (park.centre.z - road.start.z) * ab.z) / length, 0.0F, 1.0F) : 0;
+                const Vector3 q{road.start.x + ab.x * u, 0, road.start.z + ab.z * u};
+                const float d = std::hypot(q.x - park.centre.x, q.z - park.centre.z) - road.width * .5F;
+                if (d < best) { best = d; road_point = q; }
+            }
+        if (best > 400) continue;
+        // The model's front (-Z) toward the road.
+        const float dx = road_point.x - park.centre.x, dz = road_point.z - park.centre.z;
+        const float yaw = std::atan2(-dx, -dz) * RAD2DEG;
+        const Vector3 origin{park.centre.x, world::terrain::TerrainHeight::sample(park.centre.x, park.centre.z), park.centre.z};
+        // Its whole footprint (the model's bounds, off-centre toward the car park) clear of roads and lots.
+        const Vector3 middle = to_world(origin, yaw, (B::model_min.x + B::model_max.x) * .5F, 0, (B::model_min.z + B::model_max.z) * .5F);
+        // (Verda City's is built on the stadium ground kept for it.)
+        const Lot reserve{stadium_reserve.x - stadium_half, stadium_reserve.z - stadium_half, stadium_reserve.x + stadium_half, stadium_reserve.z + stadium_half};
+        const bool on_reserve = std::hypot(park.centre.x - stadium_reserve.x, park.centre.z - stadium_reserve.z) < 1;
+        if (!kit.claim(middle, (B::model_max.x - B::model_min.x) * .5F, (B::model_max.z - B::model_min.z) * .5F, yaw, on_reserve ? &reserve : nullptr)) continue;
+        if (!kit.put(B::model(park.team), origin, yaw, false)) continue;
+        kit.report.ballparks.push_back(origin);
+        // The road in: from the gate out to the road.
+        const Vector3 gate = to_world(origin, yaw, 0, 0, -76);
+        const world::Road access{{gate.x, 0, gate.z}, {road_point.x, 0, road_point.z}, 8, world::RoadType::Asphalt};
+        if (Vector3Distance(access.start, access.end) > 2) { town->roads.push_back(access); kit.add_roads({access}); }
+        // The club's bus, in its bay (the bus line leaves it be: "_team_").
+        world::GameplayMarker bus;
+        bus.id = "vehicle_spawn_bus_team_" + std::to_string(park.team);
+        bus.type = world::GameplayMarkerType::VehicleSpawn;
+        bus.position = to_world(origin, yaw, B::home_bus.x, 0, B::home_bus.z);
+        bus.size = {2.6F, 3.2F, 11};
+        bus.rotation_y = yaw;
+        town->gameplay_markers.push_back(bus);
+    }
+}
+
 world::Settlement* settlement(world::VerdaRegion& region, std::string_view id) {
     for (auto& town : region.runtime_settlements()) if (town.id == id) return &town;
     return nullptr;
@@ -2545,6 +2594,8 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     motor_trade(kit, region);
     // After those (new pieces only): Verda Transporto's freight yards off the highways.
     freight_yards(kit, region);
+    // After those (new pieces only): La Verda Basballigo's ballparks, one in each county.
+    ballparks(kit, region);
     return kit.report;
 }
 }

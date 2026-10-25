@@ -7,6 +7,7 @@
 #include "outland/game/life/LifeSimulation.hpp"
 #include "outland/characters/NpcSystem.hpp"
 #include "outland/world/VerdaLayout.hpp"
+#include "outland/world/Ballparks.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/Highways.hpp"
 #include "outland/world/roads/Turnaround.hpp"
@@ -294,6 +295,8 @@ int main() {
         else if (road.start.z == -84 && road.end.z == -84 && road.start.x == -476 && road.end.x < world::layout::freight_x1) ++freight_roads;
         // Verda Transporto's freight yards off the spokes (a 16 m road in, a 14 m loop), far out of town.
         else if (std::hypot(road.start.x, road.start.z) > 1000 && (road.width == 16 || road.width == 14)) continue;
+        // The Leonoj's ballpark: an 8 m road from its gate to the street.
+        else if (road.width == 8 && std::hypot(road.start.x - world::ballpark::parks[0].centre.x, road.start.z - world::ballpark::parks[0].centre.z) < 90) continue;
         else check(world::roads::turnaround_road(road.width), "a capital road that is neither street, highway nor bus turnaround");
     }
     check(grid_streets == 9 + 5 && highways == 2 && through >= 4 && suburb_streets == 16, // + the south blocks' four avenues and one street; the west street in three (the truckers' link)
@@ -558,9 +561,10 @@ int main() {
         check(seats == 5 && clerks >= 5, "seats of government with clerks: " + std::to_string(seats) + " / " + std::to_string(clerks));
         for (const auto& town : region.settlements())
             for (const auto& asset : town.assets)
-                check(!(asset.collision && std::abs(asset.position.x - dev::stadium_reserve.x) < dev::stadium_half &&
+                check(!(asset.collision && asset.model_path != world::ballpark::model(0) && asset.id.find("bus_team_0") == std::string::npos &&
+                        std::abs(asset.position.x - dev::stadium_reserve.x) < dev::stadium_half &&
                         std::abs(asset.position.z - dev::stadium_reserve.z) < dev::stadium_half),
-                      "nothing built on the stadium ground: " + asset.id);
+                      "nothing but the Leonoj's ballpark (and their bus) on the stadium ground: " + asset.id);
         check(staffed + static_cast<int>(report.gang_houses.size()) == kit_places, "people live or work in every part-built building: " + std::to_string(staffed));
         // Stela Turo: downtown, every floor walkable, both stair cores
         // climbable, the penthouse and the roof reachable.

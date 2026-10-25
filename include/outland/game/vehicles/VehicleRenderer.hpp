@@ -22,7 +22,7 @@ class VehicleRenderer {
   private:
     assets::ModelCache models_{128};
     // Repainted bodies (game::autos paints): one cache per paint, each body recoloured once.
-    std::array<std::unique_ptr<assets::ModelCache>, 10> painted_{};
+    std::array<std::unique_ptr<assets::ModelCache>, 16> painted_{};   // one per paint (game::autos::paints)
     bool following_{false}, cab_{false};
     float trailer_{0};
     Vector3 follow_position_{}, follow_target_{};

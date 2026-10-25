@@ -47,6 +47,13 @@ MANSION_X, MANSION_Z = (-18.0, -3.2), (-3.0, 15.2)
 MANSION_STOREY = 3.2
 MANSION_DOOR_X = (-11.4, -9.8)
 PRIVATE_BAY = (-12.2, -9.0, -10.8, -5.2)   # x0, x1, z0, z1 on the roof
+# ballpark() (world::ballpark): the five county clubs' colours (game::sports::teams) and the diamond
+BALL_TEAMS = [((18, 118, 58), (228, 182, 40)), ((104, 66, 38), (240, 122, 24)), ((26, 46, 108), (118, 190, 240)),
+              ((0, 124, 126), (236, 236, 226)), ((40, 40, 44), (196, 42, 30))]
+BALL_PLATE_Z = -36.0
+BALL_FENCE = 88.0
+BALL_STANDS = (22.0, 46.0, -41.0, .45, .8, 6)    # |x| from, |x| to, front z, row rise, row depth, rows
+BALL_LOCKER = (-44.0, -30.0, -62.0, -52.0)
 
 
 # ---------------------------------------------------------------- textures
@@ -1703,6 +1710,152 @@ def parking_garage():
     return b
 
 
+def ballpark(team):
+    """A high-school ballpark for one of La Verda Basballigo's clubs (world::ballpark), in its
+    colours. Front -Z: the car park with two bus bays and the gate; home plate toward the front,
+    centre field toward +Z (first base on the right seen from behind the plate, at -X). A grass
+    field with a dirt infield, base paths, a raised mound, bases and the plate; an 88 m outfield
+    fence padded in the team's colour with a yellow cap, foul poles, a backstop; dugouts either
+    side of the plate (home on the first-base side); stepped aluminium bleachers along each side
+    (home and visitors, six rows each, rails behind); the home team's locker room behind its stand
+    (enterable: lockers in the club's colours, benches, a crest, the showers); a scoreboard beyond
+    centre field and four light towers."""
+    primary, secondary = BALL_TEAMS[team]
+    b = Builder()
+    b.material("grass", stripes((74, 140, 58), (66, 128, 52), 16, 301 + team), 4, 4)
+    b.material("dirt", flat((164, 116, 74), 8), 2, 2)
+    b.material("chalk", flat((246, 246, 240), 1), 1, 1)
+    b.material("pad", flat(primary, 4), 1, 1)
+    b.material("trim", flat(secondary, 3), 1, 1)
+    b.material("yellow", flat((236, 200, 40), 2), 1, 1)
+    b.material("mesh", stripes((70, 74, 78), (40, 42, 46), 4, 307), .5, .5)
+    b.material("steel", flat((150, 156, 162), 3), 2, 2)
+    b.material("alu", stripes((196, 200, 206), (170, 176, 182), 6, 311), 1, 1)
+    b.material("concrete", flat((178, 174, 166), 6), 3, 3)
+    b.material("block", brick((196, 190, 178), (160, 156, 148), 313), 2, 2)
+    b.material("asphalt", asphalt(), 4, 4)
+    b.material("dark", flat((30, 32, 34), 2), 1, 1)
+    b.material("lamp", flat((250, 246, 220), 1), 1, 1)
+    b.material("tile", checker((222, 228, 232), (196, 204, 210), 4, 317), 1, 1)
+    b.material("wood", wood(), 2, 2)
+    b.material("inside", flat((232, 228, 216), 3), 3, 3)
+    pz = BALL_PLATE_Z
+    # ---- the ground: the pad, the outfield grass, the car park
+    b.box((-68, -.3, -76), (68, .02, 64), {'+y': "grass", '+x': "concrete", '-x': "concrete", '+z': "concrete", '-z': "concrete"})
+    b.box((-30, .02, -76), (30, .05, -52), {'+y': "asphalt"})
+    for x in (-16.0, 16.0):                                                       # the bus bays, in the team's colour
+        for dx in (-2.0, 2.0):
+            b.solid((x + dx - .08, .05, -74), (x + dx + .08, .06, -62), "trim")
+    # ---- the infield: the dirt skin (a fan round the plate), the grass square, base paths, bases, mound
+    def fan(material, cx, cz, r, a0, a1, y, steps=18):
+        for k in range(steps):
+            t0, t1 = a0 + (a1 - a0) * k / steps, a0 + (a1 - a0) * (k + 1) / steps
+            p = [(cx, y, cz), (cx, y, cz), (cx + r * math.sin(t1), y, cz + r * math.cos(t1)), (cx + r * math.sin(t0), y, cz + r * math.cos(t0))]
+            b.raw(material, p, (0, 1, 0), [(0, 0), (0, 0), (1, 1), (0, 1)])
+    fan("dirt", 0, pz, 29.0, -math.pi / 4 - .05, math.pi / 4 + .05, .03, 24)
+    d = 27.43 / math.sqrt(2)                                                       # the infield grass: a square on its point
+    inset = 2.6
+    sq = [(0, .04, pz + inset * 1.4), (-(d - inset), .04, pz + d), (0, .04, pz + 2 * d - inset * 1.4), ((d - inset), .04, pz + d)]
+    b.raw("grass", [sq[0], sq[1], sq[2], sq[3]], (0, 1, 0), [(0, 0), (1, 0), (1, 1), (0, 1)])
+    for k in range(10):                                                           # the mound, raised in steps
+        r = 2.7 * (1 - k / 10)
+        b.ring("dirt", 0, -17.56, r, r, .03 + k * .025, .055 + k * .025, 16, top_cap=True)
+    b.solid((-.3, .28, -17.66), (.3, .3, -17.46), "chalk")                        # the rubber
+    for bx, bz in ((-19.4, -16.6), (0, 2.8), (19.4, -16.6)):
+        b.solid((bx - .2, .04, bz - .2), (bx + .2, .12, bz + .2), "chalk")
+    b.solid((-.22, .04, pz - .22), (.22, .06, pz + .22), "chalk")                 # home plate
+    for side in (-1, 1):                                                          # the batter's boxes
+        b.solid((side * .55 - .06, .04, pz - .9), (side * .55 + .06, .05, pz + .9), "chalk")
+        b.solid((side * 1.75 - .06, .04, pz - .9), (side * 1.75 + .06, .05, pz + .9), "chalk")
+    # Foul lines, out to the fence.
+    for side in (-1, 1):
+        L = BALL_FENCE
+        dx, dz = side * math.sin(math.pi / 4), math.cos(math.pi / 4)
+        p = [(0, .05, pz), (side * .08, .05, pz), (L * dx + side * .08, .05, pz + L * dz), (L * dx, .05, pz + L * dz)]
+        if side > 0:
+            p = [p[1], p[0], p[3], p[2]]
+        b.raw("chalk", p, (0, 1, 0), [(0, 0), (1, 0), (1, 1), (0, 1)])
+    # ---- the outfield fence: padded panels in the team's colour, a yellow cap; foul poles
+    seg = 24
+    for k in range(seg):
+        t0, t1 = -math.pi / 4 + math.pi / 2 * k / seg, -math.pi / 4 + math.pi / 2 * (k + 1) / seg
+        p0 = (BALL_FENCE * math.sin(t0), pz + BALL_FENCE * math.cos(t0))
+        p1 = (BALL_FENCE * math.sin(t1), pz + BALL_FENCE * math.cos(t1))
+        nx, nz = -(p0[0] + p1[0]) / 2, -((p0[1] + p1[1]) / 2 - pz)
+        n = math.hypot(nx, nz)
+        nx, nz = nx / n, nz / n
+        quad = [(p1[0], 0, p1[1]), (p0[0], 0, p0[1]), (p0[0], 2.4, p0[1]), (p1[0], 2.4, p1[1])]
+        b.raw("pad", quad, (nx, 0, nz), [(0, 0), (1, 0), (1, 1), (0, 1)])
+        back = [(p0[0], 0, p0[1]), (p1[0], 0, p1[1]), (p1[0], 2.4, p1[1]), (p0[0], 2.4, p0[1])]
+        b.raw("dark", back, (-nx, 0, -nz), [(0, 0), (1, 0), (1, 1), (0, 1)])
+        cap = [(p0[0], 2.4, p0[1]), (p1[0], 2.4, p1[1]), (p1[0] - nx * .25, 2.4, p1[1] - nz * .25), (p0[0] - nx * .25, 2.4, p0[1] - nz * .25)]
+        b.raw("yellow", cap, (0, 1, 0), [(0, 0), (1, 0), (1, 1), (0, 1)])
+    for side in (-1, 1):
+        x, z = side * BALL_FENCE * math.sin(math.pi / 4), pz + BALL_FENCE * math.cos(math.pi / 4)
+        b.solid((x - .15, 0, z - .15), (x + .15, 12, z + .15), "yellow")
+    # ---- the backstop and the dugouts
+    b.solid((-9, 0, pz - 12.2), (9, 6, pz - 12), "mesh")
+    for side in (-1, 1):
+        x0, x1 = (min(side * 9.0, side * 20.5), max(side * 9.0, side * 20.5))
+        z0 = pz - 6.2
+        b.solid((x0, -.6, z0), (x1, 0, z0 + 2.4), "concrete")                     # sunk a little
+        b.box((x0, 0, z0 - .2), (x1, 2.5, z0), {'+z': "block", '-z': "block", '+y': "block"})          # back wall
+        b.box((x0 - .2, 0, z0 - .2), (x0, 2.5, z0 + 2.4), {s: "block" for s in ALL_SIDES})
+        b.box((x1, 0, z0 - .2), (x1 + .2, 2.5, z0 + 2.4), {s: "block" for s in ALL_SIDES})
+        b.box((x0 - .2, 2.5, z0 - .2), (x1 + .2, 2.7, z0 + 2.6), {'+y': "pad", '-y': "concrete", '+z': "trim", '-z': "pad", '+x': "pad", '-x': "pad"})
+        b.solid((x0 + .3, 0, z0 + .1), (x1 - .3, .45, z0 + .55), "wood")            # the bench
+        b.solid((x0, 0, z0 + 2.3), (x1, .9, z0 + 2.45), "pad")                    # the rail at the front
+    # ---- the stands: stepped aluminium bleachers, solid underneath (walk up them), a rail behind
+    sx0, sx1, sz, rise, depth, rows = BALL_STANDS
+    for side in (-1, 1):
+        x0, x1 = (min(side * sx0, side * sx1), max(side * sx0, side * sx1))
+        for k in range(rows):
+            z1 = sz - k * depth
+            b.box((x0, 0, z1 - depth), (x1, (k + 1) * rise, z1), {'+y': "alu", '+z': "trim" if k == 0 else "alu", '-x': "alu", '+x': "alu"})
+        back = sz - rows * depth
+        b.box((x0, 0, back - .1), (x1, rows * rise + 1.1, back), {'+z': "alu", '-z': "pad", '+y': "trim", '+x': "alu", '-x': "alu"})
+        for end in (x0, x1):
+            b.solid((end - .05, rows * rise, back), (end + .05, rows * rise + 1.0, sz), "steel")
+        b.solid((x0, (rows + 2.2) * rise, back - .4), (x1, (rows + 2.2) * rise + .5, back - .1), "pad")   # the club's banner board
+    # ---- the home team's locker room (Vestejo): block walls, a door to the car park, lockers inside
+    lx0, lx1, lz0, lz1 = BALL_LOCKER
+    h = 3.4
+    wall_with_openings(b, 'x', lz0, (lx0, lx1), h, .25, [(-37.7, -36.3, 0, 2.3)], "block", "inside", -1)
+    wall_with_openings(b, 'x', lz1, (lx0, lx1), h, .25, [], "block", "inside", +1)
+    wall_with_openings(b, 'z', lx0, (lz0 + .25, lz1 - .25), h, .25, [(-60.0, -58.4, 1.4, 2.4)], "block", "inside", -1)
+    wall_with_openings(b, 'z', lx1, (lz0 + .25, lz1 - .25), h, .25, [(-60.0, -58.4, 1.4, 2.4)], "block", "inside", +1)
+    b.box((lx0 - .2, h, lz0 - .2), (lx1 + .2, h + .3, lz1 + .2), {'+y': "concrete", '-y': "inside", '+x': "pad", '-x': "pad", '+z': "pad", '-z': "pad"})
+    b.box((lx0 + .25, .0, lz0 + .25), (lx1 - .25, .04, lz1 - .25), {'+y': "tile"})
+    for k in range(10):                                                           # the lockers along the back wall
+        x = lx0 + .6 + k * 1.0
+        b.solid((x, .04, lz1 - .85), (x + .9, 2.1, lz1 - .25), "pad")
+        b.solid((x + .05, 1.9, lz1 - .87), (x + .85, 2.0, lz1 - .85), "trim")
+        b.solid((x + .7, 1.0, lz1 - .88), (x + .8, 1.2, lz1 - .85), "steel")
+    for z in (-58.6, -55.8):                                                      # benches down the middle
+        b.solid((lx0 + 1.2, .04, z), (lx1 - 4.2, .45, z + .45), "wood")
+    b.solid((lx1 - 3.6, .04, lz0 + .3), (lx1 - .3, 2.4, lz0 + .32), "tile")       # the showers, tiled, in the corner
+    b.solid((lx1 - 3.6, .04, lz0 + .3), (lx1 - 3.56, 2.4, lz0 + 3.4), "tile")
+    for x in (lx1 - 2.8, lx1 - 1.4):
+        b.solid((x - .05, 2.1, lz0 + 1.2), (x + .05, 2.3, lz0 + 1.4), "steel")
+    b.ring("trim", lx0 + 7, lz1 - .2, .9, .9, 2.4, 2.45, 16)                       # the crest over the lockers
+    b.solid((lx0 + 6.2, 2.1, lz1 - .3), (lx0 + 7.8, 2.9, lz1 - .26), "pad")
+    # ---- the gate, the scoreboard, light towers
+    for x in (-4.0, 4.0):
+        b.solid((x - .3, 0, -52.3), (x + .3, 4.2, -51.7), "pad")
+    b.solid((-4.3, 4.2, -52.4), (4.3, 5.2, -51.6), "trim")
+    b.solid((-6, 0, 59.6), (-5.6, 5, 60), "steel")
+    b.solid((5.6, 0, 59.6), (6, 5, 60), "steel")
+    b.box((-8, 5, 59.4), (8, 10, 60.2), {'-z': "dark", '+z': "pad", '+x': "pad", '-x': "pad", '+y': "trim", '-y': "pad"})
+    b.solid((-8.2, 9.8, 59.3), (8.2, 10.4, 60.3), "trim")
+    for row in range(3):
+        for col in range(10):
+            b.solid((-6.6 + col * 1.3, 6.0 + row * 1.2, 59.36), (-6.0 + col * 1.3, 6.6 + row * 1.2, 59.4), "lamp")
+    for x, z in ((-50, -48), (50, -48), (-58, 30), (58, 30)):
+        b.solid((x - .3, 0, z - .3), (x + .3, 18, z + .3), "steel")
+        b.box((x - 1.6, 18, z - .4), (x + 1.6, 19.6, z + .4), {'+y': "steel", '-y': "lamp", '+z': "lamp", '-z': "lamp", '+x': "steel", '-x': "steel"})
+    return b
+
+
 RADIO_STYLES = {
     # walls, accent, mast height, porch (timber, country), dishes on the roof
     "popolko": dict(walls=("render", (236, 228, 206)), accent=(16, 128, 70), mast=30.0, porch=False, dishes=1),
@@ -2449,6 +2602,9 @@ def kit():
     add("civic/harbour_crane.glb", harbour_crane(), "city_harbour_crane", "Ship-to-shore container crane on quay rails", "BuildingPart", 58, 15, 42)
     add("civic/container_stack.glb", container_stack(), "city_container_stack", "Stacked shipping containers (40 ft)", "BuildingPart", 10.5, 37.5, 7.8)
     add("civic/cattle_gangway.glb", cattle_gangway(), "city_cattle_gangway", "Cattle gangway up a ship's side", "BuildingPart", 18, 2.6, 4.2)
+    for team in range(len(BALL_TEAMS)):
+        add(f"civic/ballpark_{team}.glb", ballpark(team), f"city_ballpark_{team}",
+            f"Ballpark - La Verda Basballigo, club {team} colours (bleachers, dugouts, locker room)", "Building", 136, 140, 19.6)
     add("civic/parking_garage.glb", parking_garage(), "city_parking_garage", "Parkumejo Centra - multi-storey car park (drive up 4 levels), rooftop mansion for sale", "Building", 38.6, 32.6, 20.2)
     add("civic/truck_depot.glb", truck_depot(), "city_truck_depot", "Verda Transporto - truck depot with office", "Building", 38, 31, 9)
     add("civic/gun_shop.glb", gun_shop(), "city_gun_shop", "Armilejo - gun shop (modular, enterable)", "Building", 12.2, 9.2, 4.4)

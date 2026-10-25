@@ -26,6 +26,7 @@ struct WorldKitReport {
     bool hospital{false};
     bool parliament{false}, stadium_reserved{false}, stela_turo{false};
     Vector3 stela_turo_at{};
+    std::vector<Vector3> ballparks;    // La Verda Basballigo's parks (origins), in team order
     bool parking_garage{false};       // Parkumejo Centra (world/ParkingGarage.hpp), its origin
     Vector3 parking_garage_at{};
     std::vector<Vector3> ranches;     // each Vakero ranch's yard

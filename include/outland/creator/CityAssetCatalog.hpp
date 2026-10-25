@@ -96,6 +96,21 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_cattle_gangway", .name = "Cattle gangway up a ship's side", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/civic/cattle_gangway.glb", .thumbnail_path = "", .footprint = {18.00F, 2.60F, 4.20F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_ballpark_0", .name = "Ballpark - La Verda Basballigo, club 0 colours (bleachers, dugouts, locker room)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/ballpark_0.glb", .thumbnail_path = "", .footprint = {136.00F, 140.00F, 19.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_ballpark_1", .name = "Ballpark - La Verda Basballigo, club 1 colours (bleachers, dugouts, locker room)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/ballpark_1.glb", .thumbnail_path = "", .footprint = {136.00F, 140.00F, 19.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_ballpark_2", .name = "Ballpark - La Verda Basballigo, club 2 colours (bleachers, dugouts, locker room)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/ballpark_2.glb", .thumbnail_path = "", .footprint = {136.00F, 140.00F, 19.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_ballpark_3", .name = "Ballpark - La Verda Basballigo, club 3 colours (bleachers, dugouts, locker room)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/ballpark_3.glb", .thumbnail_path = "", .footprint = {136.00F, 140.00F, 19.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_ballpark_4", .name = "Ballpark - La Verda Basballigo, club 4 colours (bleachers, dugouts, locker room)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/ballpark_4.glb", .thumbnail_path = "", .footprint = {136.00F, 140.00F, 19.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_parking_garage", .name = "Parkumejo Centra - multi-storey car park (drive up 4 levels), rooftop mansion for sale", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/parking_garage.glb", .thumbnail_path = "", .footprint = {38.60F, 32.60F, 20.20F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

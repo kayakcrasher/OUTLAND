@@ -36,6 +36,16 @@ private:
     AnimationController player_animation_;
     std::string player_id_;
     SkeletalGait gait_;
+    // How each model's bones were last posed by the gait (so a body drawn again alike is not re-posed).
+    struct PoseKey { AnimationAction action; double cycle; float speed; double elapsed; float metres; BodyPose body; };
+    static bool same_pose(const PoseKey& a,const PoseKey& b) {
+        const auto& p=a.body;const auto& q=b.body;
+        return a.action==b.action && a.cycle==b.cycle && a.speed==b.speed && a.elapsed==b.elapsed && a.metres==b.metres &&
+            p.hold==q.hold && p.style==q.style && p.aim_pitch==q.aim_pitch && p.crouch==q.crouch && p.stock==q.stock &&
+            p.support==q.support && p.seated==q.seated && p.skydive==q.skydive && p.hang==q.hang && p.body_pitch==q.body_pitch &&
+            p.body_roll==q.body_roll && p.hands_up==q.hands_up && p.cuffed==q.cuffed && p.downed==q.downed;
+    }
+    std::unordered_map<const Model*,PoseKey> last_pose_;
     const CharacterRegistry& registry_;
     std::string asset_root_;
     assets::ModelCache models_{64};

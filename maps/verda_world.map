@@ -18,6 +18,7 @@ ROAD 63 0 -1720 53.8076096 0 -1723.80762 7.25 2
 ROAD 53.8076096 0 -1723.80762 50 0 -1733 7.25 2
 ROAD 50 0 -1733 53.8076172 0 -1742.19238 7.25 2
 ROAD 53.8076172 0 -1742.19238 63 0 -1746 7.25 2
+ROAD -180.056152 0 -1757.9209 -126 0 -1760 8 2
 ASSET "creator_city_intersection_16_kit1" 5 "assets/verda/city/ground/intersection_16.glb" -171 0.0900000036 -168 16 0.100000001 16 0 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_intersection_16_kit2" 5 "assets/verda/city/ground/intersection_16.glb" -171 0.0900000036 -84 16 0.100000001 16 0 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_intersection_16_kit3" 5 "assets/verda/city/ground/intersection_16.glb" -171 0.0900000036 0 16 0.100000001 16 0 255 255 255 255 80 80 80 255 0
@@ -5881,6 +5882,11 @@ ASSET "creator_city_container_stack_kit10" 4 "assets/verda/city/civic/container_
 ASSET "creator_city_diesel_island_kit6" 4 "assets/verda/city/civic/diesel_island.glb" -1363.62219 2.33562827 422.827759 4 8.60000038 12 -76.3527985 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit11" 4 "assets/verda/city/civic/container_stack.glb" -1343.07373 7.49380493 448.123657 10.5 7.80000019 37.5 -76.3527832 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit12" 4 "assets/verda/city/civic/container_stack.glb" -1370.2832 3.47131681 454.730042 10.5 7.80000019 37.5 -76.3527832 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_ballpark_0_kit1" 0 "assets/verda/city/civic/ballpark_0.glb" 600 7.3839941 46 136 19.6000004 140 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_ballpark_1_kit1" 0 "assets/verda/city/civic/ballpark_1.glb" -250.004425 5.4000001 -1755.23059 136 19.6000004 140 -87.7974014 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_ballpark_2_kit1" 0 "assets/verda/city/civic/ballpark_2.glb" 1630 5.4000001 -192 136 19.6000004 140 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_ballpark_3_kit1" 0 "assets/verda/city/civic/ballpark_3.glb" 180 5.4000001 1592 136 19.6000004 140 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_ballpark_4_kit1" 0 "assets/verda/city/civic/ballpark_4.glb" -1708.10913 13.457366 680.000977 136 19.6000004 140 1.04162657 255 255 255 255 80 80 80 255 1
 MARKER "creator_marker_loot_spawn_general_training" 0 4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 0.5 0.5 0.5 0 1
@@ -6182,6 +6188,7 @@ MARKER "freight_yard_village_espera" 4 -99.3999939 -1.09234071 -1430 1.20000005 
 MARKER "freight_yard_port_luma" 4 1355.03979 0.15868628 -446.383636 1.20000005 2.20000005 1.20000005 20.3231449 1
 MARKER "freight_yard_south_haven" 4 338.878693 -2.30234504 1375.91296 1.20000005 2.20000005 1.20000005 -78.3663483 1
 MARKER "freight_yard_west_roka" 4 -1357.60571 5.57932425 447.607819 1.20000005 2.20000005 1.20000005 -166.352783 1
+MARKER "vehicle_spawn_bus_team_1" 3 -188.665161 6 -1773.60156 2.5999999 3.20000005 11 -87.7974014 1
 PURPOSE "creator_marker_building_purpose_kit_1" 1
 PURPOSE "creator_marker_building_purpose_kit_2" 1
 PURPOSE "creator_marker_building_purpose_kit_3" 1
@@ -6750,6 +6757,7 @@ ROAD -1383.93799 0 427.24585 -1389.89392 0 416.343292 14 2
 ROAD -1389.89392 0 416.343292 -1389.60059 0 403.923431 14 2
 ROAD -1389.60059 0 403.923431 -1383.13672 0 393.314178 14 2
 ROAD -1383.13672 0 393.314178 -1372.23413 0 387.358246 14 2
+ROAD 530 0 46.0000038 476 0 46 8 2
 BUILDING "verda_okcidento_house_1" 1 -200 0 -182 11 7 9 180 232 206 196 255 58 62 58 255 1
 BUILDING "verda_okcidento_house_2" 1 -222 0 -182 11 7 9 180 150 168 182 255 58 62 58 255 1
 BUILDING "verda_okcidento_house_3" 0 -244 0 -182 13 4 10 180 236 232 220 255 128 66 52 255 1
@@ -7310,6 +7318,7 @@ MARKER "vehicle_spawn_sxs_forsale_2" 3 -190.300003 -0 -134 2 1.60000002 4.400000
 MARKER "vehicle_spawn_sedan_forsale_3" 3 -190.300003 0 -128 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_truck_forsale_4" 3 -190.300003 0 -122 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_green_hand_gt_forsale_5" 3 -190.300003 0 -116 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_bus_team_0" 3 538 7.98399401 62.0000038 2.5999999 3.20000005 11 90 1
 PURPOSE "verda_okcidento_house_1" 1
 PURPOSE "verda_okcidento_house_2" 1
 PURPOSE "verda_okcidento_house_3" 1
@@ -7423,6 +7432,7 @@ ROAD 1876 0 -470 1950 0 -470 14 2
 ROAD 1950 0 -470 2214 0 -470 13 2
 ROAD 1946 0 -360 2214 0 -360 13 2
 ROAD 2214 0 -522 2214 0 -360 14 2
+ROAD 1630 0 -262 1630 0 -274 8 2
 MARKER "vehicle_spawn_hatchback_porto_1" 3 1705.19995 6 -392 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_porto_2" 3 1705.19995 6 -418 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_porto_3" 3 1758 6 -444.799988 2 1.60000002 4.4000001 90 1
@@ -7514,6 +7524,7 @@ MARKER "loot_spawn_weapons_bldg_477" 0 1850.80005 6.3499999 -424 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_bldg_478" 0 1850.22498 6.3499999 -409 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_479" 0 1850.80005 6.3499999 -394 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_bldg_480" 0 1850.80005 6.3499999 -382 0.5 0.5 0.5 0 1
+MARKER "vehicle_spawn_bus_team_2" 3 1614 6 -254 2.5999999 3.20000005 11 -0 1
 SETTLEMENT "south_haven" "Suda Haveno" 300 0 1800 0 0 0 0
 ROAD 180 0 1674 180 0 1926 12 2
 ROAD 174 0 1680 426 0 1680 12 2
@@ -7534,6 +7545,7 @@ ROAD 246 0 1733 242.192383 0 1742.19238 7.25 2
 ROAD 242.192383 0 1742.19238 233 0 1746 7.25 2
 ROAD 1060.66016 0 1060.66016 1265.95837 0 1265.95837 7 2
 ROAD 340 0 1926 340 0 2152 6 0
+ROAD 180 0 1662 180 0 1674 8 2
 MARKER "vehicle_spawn_hatchback_suda_lot_1" 3 214 6 1708 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_suda_lot_2" 3 228 6 1732 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_suda_3" 3 255.199997 6 1808 2 1.60000002 4.4000001 0 1
@@ -7620,6 +7632,7 @@ MARKER "loot_spawn_medical_bldg_399" 0 400.799988 6.3499999 1776 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_weapons_bldg_400" 0 400.799988 6.3499999 1788 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_401" 0 400.799988 6.3499999 1800 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_medical_bldg_402" 0 400.225006 6.3499999 1815 0.5 0.5 0.5 0 1
+MARKER "vehicle_spawn_bus_team_3" 3 196 6 1654 2.5999999 3.20000005 11 -180 1
 SETTLEMENT "west_roka" "Roka" -1750 0 450 0 0 0 0
 ROAD -1870 0 324 -1870 0 576 12 2
 ROAD -1876 0 330 -1624 0 330 12 2
@@ -7639,6 +7652,7 @@ ROAD -1670 0 547 -1673.80762 0 556.192383 7.25 2
 ROAD -1673.80762 0 556.192383 -1683 0 560 7.25 2
 ROAD -1683 0 560 -1692.19238 0 556.192383 7.25 2
 ROAD -1692.19238 0 556.192383 -1696 0 547 7.25 2
+ROAD -1709.38159 0 610.012573 -1710 0 576 8 2
 MARKER "vehicle_spawn_hatchback_roka_1" 3 -1742 14.0573664 405.200012 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_roka_2" 3 -1768 14.0573664 405.200012 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_roka_3" 3 -1742 14.0573664 494.799988 2 1.60000002 4.4000001 90 1
@@ -7685,6 +7699,7 @@ MARKER "loot_spawn_medical_bldg_362" 0 -1726 14.4073658 550.799988 0.5 0.5 0.5 0
 MARKER "loot_spawn_medical_bldg_363" 0 -1741 14.4073658 550.224976 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_364" 0 -1759 14.4073658 550.224976 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_365" 0 -1774 14.4073658 550.799988 0.5 0.5 0.5 0 1
+MARKER "vehicle_spawn_bus_team_4" 3 -1725.23352 14.0573664 618.302063 2.5999999 3.20000005 11 1.04162657 1
 SETTLEMENT "ferarbaro_sovagejo" "Sovaĝejo" -1790 0 90 0 48 0 0
 ROAD -1790 0 40 -1790 0 142 6 0
 ROAD -1790 0 142 -1790 0 324 5 0

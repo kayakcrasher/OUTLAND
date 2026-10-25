@@ -141,7 +141,7 @@ bool BusLine::build(const world::VerdaRegion& region, const vehicles::VehicleSys
         for (int k = 0, n = 1 + static_cast<int>(rng_() % 5); k < n; ++k) {++stop.waiting; stop.crowd.push_back(face());}
     // The buses, each with a driver.
     for (const auto& v : vehicles.vehicles()) {
-        if (v.id.find("vehicle_spawn_bus_") == std::string::npos) continue;
+        if (v.id.find("vehicle_spawn_bus_") == std::string::npos || v.id.find("_team_") != std::string::npos) continue;   // (the ball clubs' buses are theirs)
         Bus bus;
         bus.vehicle = v.id;
         if (characters) {

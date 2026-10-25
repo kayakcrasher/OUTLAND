@@ -18,6 +18,11 @@ and every other gang's colours, so the Policio can tell them apart at a glance:
   gang_<n>_kapo.png       their bosses: the charcoal jacket with the tie and pocket square in
                           the gang's colour.
 
+the ball clubs' jerseys (game::sports, La Verda Basballigo):
+
+  team_<n>_jersey.png     team n's colours: the shirt in its first colour, a band of the second
+                          across the shoulders and a block of it on the back.
+
 and the occupiers' (game::mafia::Endgame):
 
   rusa_soldato.png        the Russian troops who land when the gangs win: the shirt turned to a
@@ -161,6 +166,34 @@ def colours_shirt(colour):
     return make
 
 
+# La Verda Basballigo's five teams (game::sports::teams): the shirt in the team's colour, a band
+# of its second colour across the shoulders and a block of it on the back (the players' and the
+# fans' jerseys alike).
+TEAM_COLOURS = [((18, 118, 58), (228, 182, 40)), ((104, 66, 38), (240, 122, 24)), ((26, 46, 108), (118, 190, 240)),
+                ((0, 124, 126), (236, 236, 226)), ((40, 40, 44), (196, 42, 30))]
+
+
+def team_jersey(primary, secondary):
+    def make(base):
+        image = base.copy()
+        mask = shirt_mask(base)
+        recolour(image, mask, primary, .45)
+        band = tuple(secondary) + (255,)
+        px, m = image.load(), mask.load()
+        w, h = image.size
+        for y in range(h):
+            for x in range(w):
+                if not m[x, y]:
+                    continue
+                front = x < 256 and y < 256
+                if (front and 146 <= x <= 176) or (not front and x >= 256 and 344 <= y <= 376):
+                    px[x, y] = band
+                elif not front and x >= 256 and 300 <= y <= 330 and 360 <= x <= 424:   # the number block on the back
+                    px[x, y] = band
+        return image
+    return make
+
+
 def camouflage(base):
     """The occupiers' field shirt: olive with blotches of earth and dark green (a fixed pattern)."""
     image = base.copy()
@@ -197,6 +230,8 @@ def build():
         makers.append((f"gang_{gang}_soldato.png", colours_shirt(colour)))
         makers.append((f"gang_{gang}_kapo.png", lambda b, c=colour: kapo(b, shade(c, 1), shade(c, .6), pin=False)))
     makers.append(("rusa_soldato.png", camouflage))
+    for team, (primary, secondary) in enumerate(TEAM_COLOURS):
+        makers.append((f"team_{team}_jersey.png", team_jersey(primary, secondary)))
     for name, make in makers:
         buffer = io.BytesIO()
         make(base).save(buffer, "PNG", optimize=True)

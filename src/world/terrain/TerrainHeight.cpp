@@ -3,8 +3,10 @@
 
 #include <cmath>
 #include <algorithm>
+#include <string_view>
 #include "outland/world/VerdaLayout.hpp"
 #include "outland/world/Ranches.hpp"
+#include "outland/world/Ballparks.hpp"
 
 namespace outland::world::terrain {
 
@@ -198,6 +200,7 @@ float TerrainHeight::pad_weight(
     const auto c=ranches::Frame(ranches::stockyard_gate,ranches::stockyard_up).at(ranches::stockyard_pad_centre);
     pad(c.x,c.z,ranches::stockyard_pad_radius,40);
     pad(layout::prison_center.x,layout::prison_center.z,layout::prison_flat_radius,45);
+    for (const auto& park:ballpark::parks) pad(park.centre.x,park.centre.z,ballpark::flat_radius,ballpark::flat_blend);
     return std::clamp(weight,0.0F,1.0F);
 }
 
@@ -324,10 +327,12 @@ float TerrainHeight::unpaved(
             }
         }
         // The Vakeroj's ranches and the stockyard: a level pad round each farm (world/Ranches.hpp).
-        const auto level_pad=[&](Vector3 c,float flat,float band) {
+        // `level` (when given): level with that point's pad instead of its own.
+        const auto level_pad=[&](Vector3 c,float flat,float band,const Vector3* level=nullptr) {
             const float d=std::hypot(world_x-c.x,world_z-c.z);
             if(d>=flat+band) return;
-            const float pad=std::max(6.0F,large_hills(c.x,c.z)+rolling_ground(c.x,c.z)+small_variation(c.x,c.z));
+            const Vector3 at=level ? *level : c;
+            const float pad=std::max(6.0F,large_hills(at.x,at.z)+rolling_ground(at.x,at.z)+small_variation(at.x,at.z));
             const float blend=smooth((d-flat)/band);
             height=pad*(1-blend)+height*blend;
         };
@@ -335,6 +340,12 @@ float TerrainHeight::unpaved(
             level_pad(ranches::Frame(ranch.gate,ranch.up_track).at(ranches::pad_centre),ranches::pad_radius,ranches::pad_blend);
         level_pad(ranches::Frame(ranches::stockyard_gate,ranches::stockyard_up).at(ranches::stockyard_pad_centre),ranches::stockyard_pad_radius,40);
         level_pad(layout::prison_center,layout::prison_flat_radius,45);   // the state prison
+        // The ballparks: level with their towns' pads where they meet (Verda City's stands on its own).
+        for (const auto& park:ballpark::parks) {
+            const Vector3* town=nullptr;
+            for (std::size_t i=1;i<layout::sites.size();++i) if (std::string_view(layout::sites[i].id)==park.site) town=&layout::sites[i].center;
+            level_pad(park.centre,ballpark::flat_radius,ballpark::flat_blend,town);
+        }
         const float shore=layout::shore_radius(world_x,world_z);
         const float blend=smooth((distance-(shore-layout::shoreline_band))/(2*layout::shoreline_band));
         if (distance>shore-layout::shoreline_band) height=height*(1-blend)+(layout::sea_level-8.0F)*blend;

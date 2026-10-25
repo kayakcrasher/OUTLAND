@@ -34,7 +34,7 @@ int main() {
     check(autos::mods_of(car) == big, "the car remembers what was fitted");
     autos::apply(autos::Mods{}, car);
     check(!car.painted && car.power == 1 && car.wheel == 1, "back to factory");
-    check(!autos::valid(autos::Mods{10, 0, 1, 0}) && !autos::valid(autos::Mods{-1, 3, 1, 0}) && !autos::valid(autos::Mods{-1, 0, 4, 0}),
+    check(!autos::valid(autos::Mods{static_cast<int>(autos::paints.size()), 0, 1, 0}) && !autos::valid(autos::Mods{-1, 3, 1, 0}) && !autos::valid(autos::Mods{-1, 0, 4, 0}),
           "no such parts");
     autos::Mods back;
     check(autos::parse(autos::serialise(big), back) && back == big, "mods survive a save");
