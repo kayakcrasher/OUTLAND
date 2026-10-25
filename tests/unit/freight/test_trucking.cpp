@@ -66,6 +66,13 @@ int main() {
         for (int i = 0; i < 100; ++i) Diesel::fill(fuel, .1F, false, money, owed);
         check(money == 0 && std::abs(fuel - .25F) < .01F, "the cash runs out: a quarter tank");
         check(Diesel::fill(fuel, .1F, false, money, owed) == 0, "...and no more");
+        // Long-range tanks hold more: slower to fill, dearer to fill.
+        fuel = 0; money = 10000; owed = 0;
+        std::int64_t big = 0;
+        for (int i = 0; i < 100; ++i) big += Diesel::fill(fuel, .1F, false, money, owed, 2);
+        check(fuel > .6F && fuel < .7F, "double tanks: 10 s fills five eighths");
+        for (int i = 0; i < 100; ++i) big += Diesel::fill(fuel, .1F, false, money, owed, 2);
+        check(fuel > .999F && big >= 2 * Diesel::tank_price - 1 && big <= 2 * Diesel::tank_price, "double tanks cost double");
     }
     Trucking t;
     t.seed(7);

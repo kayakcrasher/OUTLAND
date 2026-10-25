@@ -289,8 +289,12 @@ float graded(float x, float z, float height, HeightFn natural, HeightFn pad) {
         blend = t * t * (3 - 2 * t);
     }
     if (nearest <= grade_flat) return road;   // the roadbed itself is always level across
-    // Well inside a building pad, the pad's level ground stands (the road runs at nearly its height anyway).
-    const float levelled = std::clamp((pad(x, z) - .9F) / .1F, 0.0F, 1.0F);
+    // Well inside a building pad, the pad's level ground stands (the road runs at nearly its height
+    // anyway). Where the roadbed runs well below or above the pad, a short bank (pad_bank) eases
+    // between them by the shoulder instead: no cliff, and the pad stays level beyond it.
+    const float apart = std::clamp(1.6F - std::abs(road - height), 0.0F, 1.0F);
+    const float bank = std::clamp((nearest - grade_flat) / pad_bank, 0.0F, 1.0F);
+    const float levelled = std::clamp((pad(x, z) - .9F) / .1F, 0.0F, 1.0F) * std::max(apart, bank * bank * (3 - 2 * bank));
     blend = std::max(blend, levelled * levelled * (3 - 2 * levelled));
     return road * (1 - blend) + height * blend;
 }

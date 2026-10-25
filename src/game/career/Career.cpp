@@ -632,12 +632,7 @@ void Career::offer(const CareerFrame& frame) {
         // strike at the depot for a better rate.
         const float roll = random();
         if (roll < .45F && frame.depot_known && state_.union_raise < raise_max - 1e-4F) {
-            job.kind = JobKind::Strike;
-            job.target = frame.depot;
-            job.needed = 1;
-            job.detail = "The brotherhood is striking for a better rate: park a big rig at Verda Transporto's gate and hold it there " +
-                         std::to_string(static_cast<int>(strike_seconds)) + " s";
-            job.pay = 500; job.respect = 10; job.deadline = frame.now + 900;
+            job = strike_job(frame.now);
         } else if (!frame.docks.empty() && !frame.yards.empty()) {
             const auto& dock = frame.docks[std::min(frame.docks.size() - 1, static_cast<std::size_t>(random() * static_cast<float>(frame.docks.size())))];
             const TownSpot* yard = nullptr;
@@ -658,7 +653,31 @@ void Career::offer(const CareerFrame& frame) {
     say((state_.side == Side::Police ? "CALL: " : state_.side == Side::Trucker ? "ON THE CB: " : "THE WORD: ") + job.detail);
 }
 
+Job Career::strike_job(double now) const {
+    Job job;
+    job.kind = JobKind::Strike;
+    job.target = depot_;
+    job.needed = static_cast<int>(strike_seconds);
+    job.detail = "Strike at Verda Transporto for a better rate: drive a big rig (trailer or not) into the depot's gate - the marker - "
+                 "and keep it there " + std::to_string(static_cast<int>(strike_seconds)) +
+                 " s, in the cab or on the picket line beside it. Leave and the clock stops until you're back. Win: +5% on every load, for good";
+    job.pay = 500; job.respect = 10; job.deadline = now + 900;
+    return job;
+}
+
+bool Career::call_strike(double now, std::string& why) {
+    if (!trucker()) { why = "Brothers only"; return false; }
+    if (state_.union_raise >= raise_max - 1e-4F) { why = "We've won all the company will give - for now"; return false; }
+    if (job_.kind != JobKind::None) { why = job_.kind == JobKind::Strike ? "The strike's on - get a rig in that gate" : "Finish the job you've got first"; return false; }
+    if (!depot_known_) { why = "Not today"; return false; }
+    job_ = strike_job(now);
+    job_.title = job_name(JobKind::Strike);
+    say("ON THE CB: " + job_.detail);
+    return true;
+}
+
 void Career::update(const CareerFrame& frame) {
+    if (frame.depot_known) { depot_ = frame.depot; depot_known_ = true; }
     if (state_.side == Side::Civilian) { job_ = {}; return; }
     if (state_.side == Side::Gang && state_.gang < 0) { quit(); return; }
     if (job_.kind == JobKind::HitChief && frame.chief_known) job_.target = frame.chief;
@@ -762,16 +781,34 @@ void Career::update(const CareerFrame& frame) {
             }
             if (job_.taken && frame.driving_rig && flat(frame.player, job_.target) < arrive_radius) { job_.done = 1; finish(true, ""); return; }
             break;
-        case JobKind::Strike:
-            // The rig at the gate, held there: the company gives in.
-            if (frame.driving_rig && flat(frame.player, job_.target) < arrive_radius) {
-                if (job_.held_since < 0) { job_.held_since = frame.now; say("STRIKE: the gate is blocked - hold it"); }
-                if (frame.now - job_.held_since >= strike_seconds) { job_.done = 1; finish(true, ""); return; }
+        case JobKind::Strike: {
+            // A rig in the gate, held there: the company gives in. The clock only runs while the
+            // gate is held, and stops (it doesn't start again) while it's open.
+            if (frame.depot_known) job_.target = frame.depot;
+            if (frame.rig_at_gate) {
+                const float before = job_.held;
+                if (job_.held_since < 0) {
+                    say(before <= 0 ? "STRIKE: the gate is blocked and the brothers are on the picket line - hold it " +
+                                          std::to_string(static_cast<int>(strike_seconds)) + " s"
+                                    : "STRIKE: the gate is blocked again - " + std::to_string(static_cast<int>(std::ceil(strike_seconds - before))) + " s to go");
+                } else {
+                    job_.held += static_cast<float>(std::clamp(frame.now - job_.held_since, 0.0, 1.0));
+                }
+                job_.held_since = frame.now;
+                job_.done = std::min(job_.needed, static_cast<int>(job_.held));
+                job_.deadline = std::max(job_.deadline, frame.now + 120);   // a strike on the go doesn't run out
+                const auto crossed = [&](float at) { return before < at && job_.held >= at; };
+                if (crossed(15)) say(std::string(depot_boss) + ": \"Move that rig! I've got loads waiting for the ship!\"");
+                if (crossed(30)) say("STRIKE: 30 s to go - the yard's backing up, the drivers are walking out with you");
+                if (crossed(45)) say(std::string(depot_boss) + ": \"All right, all right! Give me a minute - we'll talk.\"");
+                if (job_.held >= strike_seconds) { finish(true, ""); return; }
             } else if (job_.held_since >= 0) {
                 job_.held_since = -1;
-                say("STRIKE: you left the gate - get back and block it");
+                say("STRIKE: the gate's open - get a rig back across it (" + std::to_string(static_cast<int>(std::ceil(strike_seconds - job_.held))) +
+                    " s to go; the clock waits)");
             }
             break;
+        }
         case JobKind::RobStore:
             // The till in hand: home with it, on foot or in a car.
             if (job_.taken) {

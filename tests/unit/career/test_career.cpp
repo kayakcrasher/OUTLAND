@@ -540,12 +540,21 @@ int main() {
             t.update(f);
             const auto kind = t.job().kind;
             if (kind == JobKind::Strike && !strike) {
-                f.player = {3, 0, 0}; f.driving = "vehicle_spawn_semi_depot_1"; f.driving_rig = true;
+                // A rig in the gate (trailer or not): the clock runs while it's held, waits while
+                // it's open, and the company gives in after a minute held in all.
+                f.player = {3, 0, 0}; f.rig_at_gate = true;
                 const float before = t.haul_rate();
                 f.now = now += 1; t.update(f);
-                check(t.job().kind == JobKind::Strike && t.job().held_since >= 0, "the gate is blocked");
-                f.now = now += Career::strike_seconds + 1; t.update(f);
+                check(t.job().kind == JobKind::Strike && t.striking() && t.job().needed == static_cast<int>(Career::strike_seconds), "the gate is blocked");
+                for (int s = 0; s < 30; ++s) { f.now = now += 1; t.update(f); }
+                check(t.job().done == 30, "half a minute held");
+                f.rig_at_gate = false;
+                for (int s = 0; s < 20; ++s) { f.now = now += 1; t.update(f); }
+                check(t.strike_on() && !t.striking() && t.job().done == 30, "the gate open: the clock waits");
+                f.rig_at_gate = true;
+                for (int s = 0; s < 31 && t.strike_on(); ++s) { f.now = now += 1; t.update(f); }
                 check(t.job().kind == JobKind::None && t.haul_rate() > before, "strike won: the rate goes up");
+                f.rig_at_gate = false;
                 strike = true;
             } else if (kind == JobKind::Contraband && !run) {
                 f.player = {1000, 0, 3}; f.driving = "vehicle_spawn_semi_depot_1"; f.driving_rig = true;
@@ -559,6 +568,17 @@ int main() {
             } else if (kind != JobKind::None) { f.now = now += 5000; t.update(f); }
         }
         check(strike && run, "the brotherhood's work comes up");
+        // Ivo calls a strike when asked (nothing else on, a raise still to win).
+        {
+            Career b;
+            b.join_truckers(why);
+            CareerFrame g;
+            g.depot = {10, 0, 20}; g.depot_known = true; g.player = {5000, 0, 5000}; g.now = 1;
+            b.update(g);
+            if (b.job().kind != JobKind::None) { g.now = 6000; b.update(g); }
+            check(b.call_strike(g.now, why) && b.strike_on() && b.job().target.x == 10, "Ivo calls a strike");
+            check(!b.call_strike(g.now, why), "one strike at a time");
+        }
         Career back;
         check(back.parse(t.serialise()) && back.trucker() && back.haul_rate() == t.haul_rate(), "a brother saved and loaded");
         t.quit();

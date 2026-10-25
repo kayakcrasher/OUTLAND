@@ -69,7 +69,8 @@ struct Diesel {
     static constexpr int tank_price = 300;           // kr for a full tank, off the company's account
     // Fills `fuel` (0..1) for `dt` seconds; `owed` carries part-kronoj between frames. Returns the
     // kronoj taken from `money` (none on the company's account; it stops when the cash runs out).
-    static std::int64_t fill(float& fuel, float dt, bool company, std::int64_t& money, float& owed);
+    // `tanks`: the rig's tank size against the factory's (bigger tanks take longer and cost more).
+    static std::int64_t fill(float& fuel, float dt, bool company, std::int64_t& money, float& owed, float tanks = 1);
 };
 
 enum class TruckEvent : std::uint8_t { None, CallCattle, LoadCattle, ShipCattle, Loaded, Delivered };

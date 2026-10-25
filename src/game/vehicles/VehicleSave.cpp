@@ -21,7 +21,7 @@ bool VehicleSystem::save_state(const world::VerdaRegion &region, const std::stri
         error = "Vehicle state is not writable";
         return false;
     }
-    out << std::setprecision(9) << "OUTLAND_VEHICLES 3\n";
+    out << std::setprecision(9) << "OUTLAND_VEHICLES 4\n";
     for (const auto &v : vehicles_)
         if (const auto *a = asset(region, v.id)) {
             const auto &p = a->vehicle;
@@ -32,7 +32,7 @@ bool VehicleSystem::save_state(const world::VerdaRegion &region, const std::stri
                 << ' ' << p.engine << ' ' << p.fuel << ' ' << p.enabled << ' ' << p.destroyed;
             for (float tire : p.tires)
                 out << ' ' << tire;
-            // Version 2: a mechanic's work (game::autos); 3: and the depot's (plating, roof gun).
+            // Version 2: a mechanic's work (game::autos); 3: and the depot's (plating, roof gun); 4: a rig's tanks.
             for (int mod : p.mods)
                 out << ' ' << mod;
             out << '\n';
@@ -57,7 +57,7 @@ bool VehicleSystem::load_state(world::VerdaRegion &region, const std::string &pa
     std::ifstream in(path);
     std::string magic;
     int version = 0;
-    if (!(in >> magic >> version) || magic != "OUTLAND_VEHICLES" || (version < 1 || version > 3)) {
+    if (!(in >> magic >> version) || magic != "OUTLAND_VEHICLES" || (version < 1 || version > 4)) {
         error = "Invalid vehicle state header";
         return false;
     }
@@ -93,7 +93,7 @@ bool VehicleSystem::load_state(world::VerdaRegion &region, const std::string &pa
             }
         if (version >= 2) {
             autos::Mods mods;
-            if (!(in >> mods.paint >> mods.engine >> mods.tires >> mods.bumper) || (version >= 3 && !(in >> mods.plating >> mods.gun)) ||
+            if (!(in >> mods.paint >> mods.engine >> mods.tires >> mods.bumper) || (version >= 3 && !(in >> mods.plating >> mods.gun)) || (version >= 4 && !(in >> mods.tank)) ||
                 !autos::valid(mods)) {
                 error = "Invalid vehicle mods";
                 return false;

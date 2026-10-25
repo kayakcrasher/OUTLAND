@@ -51,6 +51,7 @@ enum class JobKind : std::uint8_t { None, KillRivals, RobRig, DriveBy, Patrol, R
 // camp's range, report back for the badge and the Interceptor, then serve (calls).
 enum class PoliceStage : std::uint8_t { Report, Training, Graduated, Serving };
 inline constexpr const char* chief_name = "Ĉefo Marko Forta";
+inline constexpr const char* depot_boss = "Tomaso Rado";   // Verda Transporto's boss (a STRIKE is against him)
 const char* job_name(JobKind kind);
 
 struct CrewSpot {                // a gang crew's hideout
@@ -98,6 +99,9 @@ struct CareerFrame {
     bool driving_rig{false};
     Vector3 depot{};
     bool depot_known{false};
+    // A STRIKE: the big rig the player brought (trailer on or not) standing in the depot's gate, the player at
+    // it (at the wheel, or on the picket line beside it).
+    bool rig_at_gate{false};
     std::vector<TownSpot> yards;
 };
 
@@ -112,7 +116,8 @@ struct Job {
     int ranch{-1};                 // Extort: the family's ranch
     int turf{-1};                  // TakeTurf: the town
     double deadline{0};
-    double held_since{-1};         // STRIKE: since when the rig has held the gate (-1: not there)
+    double held_since{-1};         // STRIKE: when the gate was last seen held (-1: not held now)
+    float held{0};                 // ...and for how long in all (the clock stops while it's open)
     int pay{0};
     float respect{0};
 };
@@ -156,7 +161,11 @@ public:
     // The brotherhood's rate: what a member's load pays against the company's (1 + union_rate +
     // the raises won on strike, up to raise_max).
     static constexpr float union_rate = .25F, strike_raise = .05F, raise_max = .25F;
-    static constexpr double strike_seconds = 60;   // a STRIKE: the gate held this long
+    static constexpr double strike_seconds = 60;   // a STRIKE: the gate held this long (in all)
+    // Ivo calls a strike when a brother asks (nothing else on, a raise still to win). False with why.
+    bool call_strike(double now, std::string& why);
+    [[nodiscard]] bool strike_on() const { return job_.kind == JobKind::Strike; }
+    [[nodiscard]] bool striking() const { return strike_on() && job_.held_since >= 0; }
     [[nodiscard]] float haul_rate() const { return trucker() ? 1 + union_rate + state_.union_raise : 1; }
     // A load delivered for Verda Transporto: a member earns respect for it.
     void haul_done();
@@ -322,6 +331,9 @@ private:
     bool occupied_{false};
     void build_authority(float amount);
     Vector3 contraband_drop_{};      // a CONTRABAND RUN's freight yard
+    Vector3 depot_{};                // Verda Transporto's gate, as last seen (a strike called by Ivo)
+    bool depot_known_{false};
+    [[nodiscard]] Job strike_job(double now) const;
     int chief_talks_{0};             // the Chief varies what he says
     double capital_warned_{-1e9};
     int campaign_left_{-1};

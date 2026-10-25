@@ -26,7 +26,7 @@ inline constexpr std::array<Park, 5> parks{{
     {3, "south_haven", {180, 0, 1586}},
     {4, "west_roka", {-1708, 0, 686}},
 }};
-inline constexpr float flat_radius = 74, flat_blend = 30;   // the level pad
+inline constexpr float flat_radius = 80, flat_blend = 70;   // the level pad (eased out wide: an even climb to the gate)
 
 inline std::string model(int team) { return "assets/verda/city/civic/ballpark_" + std::to_string(team) + ".glb"; }
 

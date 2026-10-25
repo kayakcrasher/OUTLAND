@@ -749,7 +749,14 @@ void Renderer::run() {
     std::string trucking_path,trucking_saved;
     struct DepotBoss { Vector3 at{}; float yaw{180}; bool placed{false}; } depot_boss;
     constexpr int depot_boss_bot=930001;
-    constexpr const char* depot_boss_name="Tomaso Rado";
+    constexpr const char* depot_boss_name=game::career::depot_boss;
+    // A STRIKE at the depot's gate: the player within this of it (in the cab or on the picket
+    // line), and the brothers who come out to picket with signs (hidden the rest of the time).
+    constexpr float strike_picket_reach=40,strike_gate_reach=14;
+    std::string strike_rig;   // the last big rig the player drove: the one that can block the gate
+    constexpr int picket_bot=933000,picket_size=4;
+    bool picket_out=false;
+    std::array<Vector3,picket_size> picket_spots{};std::array<float,picket_size> picket_yaws{};bool picket_placed=false;
     // La Frateco de Kamionistoj, the outlaw truckers' brotherhood: its man at the depot's diesel
     // lane (Ivo Kovač, first) and a trucker at a pub in every town (bodies under their own ids),
     // and the brothers who answer a member's CB call (game::career::Backup, set_truckers).
@@ -758,7 +765,7 @@ void Renderer::run() {
     constexpr int kamionisto_bot=932000;
     constexpr const char* brotherhood_man="Ivo Kovač";
     game::career::Backup cb_backup;
-    int trucker_talks=0;double brotherhood_offer=-1;
+    int trucker_talks=0;double brotherhood_offer=-1,strike_offer=-1;   // USE again: leave the brotherhood, or call a strike
     // A secure Verda's last word: La Verda Mano, the last of the gangs, lay down their guns at their
     // Verda City bar and become La Verda Mano Kultura Societo - the language, the songs, the flag.
     struct Society { bool open{false}; Vector3 at{}; float yaw{0}; } society;
@@ -834,7 +841,7 @@ void Renderer::run() {
     std::string store_status,store_prompt;
     // The motor trade (game::autos): Marnafto's pumps, the Meĥanikejo bays, the car lot's desk.
     game::autos::AutoMenu motor_menu;
-    enum class MotorScreen{None,Pump,Workshop,Paint,Engine,Tires,Bumper,Dealer,Depot,Plating,Gun};
+    enum class MotorScreen{None,Pump,Workshop,Paint,Engine,Tires,Bumper,Dealer,Depot,Plating,Gun,Tanks};
     MotorScreen motor_screen=MotorScreen::None;
     std::vector<world::motor::Site> motor_sites;
     int motor_site=-1,motor_served=-1;   // the site in use; one whose menu was closed (not again till the car leaves it)
@@ -1202,6 +1209,22 @@ void Renderer::run() {
         if(!garage_here || !garage_site.over(p,1.5F)) return std::numeric_limits<float>::quiet_NaN();
         return world::physics::WorldCollision::ground_height({p.x,from,p.z},from,verda_region,1.0F);
     });
+    // Off the roads and paved ground (the towns' and yards' level pads count as paved): rough.
+    {
+        auto offroad_graph=std::make_shared<std::unique_ptr<world::roads::RoadGraph>>();
+        auto offroad_roads=std::make_shared<std::size_t>(0);
+        vehicles.bind_offroad([&,offroad_graph,offroad_roads](Vector3 p) {
+            if(game_mode!=game::GameMode::Explore) return 0.0F;
+            std::size_t roads=0;
+            for(const auto& town:verda_region.settlements()) roads+=town.roads.size();
+            if(!*offroad_graph || roads!=*offroad_roads) {*offroad_graph=std::make_unique<world::roads::RoadGraph>(verda_region);*offroad_roads=roads;}
+            const auto spot=(*offroad_graph)->nearest(p);
+            const float verge=spot.edge>=0 ? spot.distance-spot.width*.5F : 1e9F;
+            const float road=std::clamp((verge-1.5F)/6.0F,0.0F,1.0F);   // easing off the verge
+            const float paved=std::clamp((world::terrain::TerrainHeight::pad_weight(p.x,p.z)-.5F)*2.0F,0.0F,1.0F);
+            return road*(1-paved);
+        });
+    }
     vehicles.reconcile(verda_region);
     const std::string vehicle_state_path=map_path+".vehicles";
     bool vehicle_save_protected=false,vehicle_dirty=false;
@@ -1483,7 +1506,9 @@ void Renderer::run() {
         if(game_mode!=game::GameMode::Explore) return 0.0F;
         const auto* a=vehicles.asset(verda_region,id);
         // A big rig's tank goes four times as far (game::freight::Diesel).
-        if(a && a->model_path.find("semi_body")!=std::string::npos) return metres/(game::freight::Diesel::range_km*1000);
+        // Bigger tanks go further; a bigger diesel drinks a little more.
+        if(a && a->model_path.find("semi_body")!=std::string::npos)
+            return metres/(game::freight::Diesel::range_km*1000*a->vehicle.range)*(1+(std::max(1.0F,a->vehicle.power)-1)*.25F);
         return metres/25000.0F*(a ? std::max(1.0F,a->vehicle.power) : 1.0F);
     });
     const auto gang_name=[](int faction) -> std::string {
@@ -2278,7 +2303,32 @@ void Renderer::run() {
                         }
                         if(depot) {
                             const world::roads::RoadGraph graph(verda_region);
-                            haul_world.depot=graph.nearest(world::layout::freight_depot_gate).point;
+                            const auto gate=graph.nearest(world::layout::freight_depot_gate);
+                            haul_world.depot=gate.point;
+                            // The picket line for a strike: two brothers either side of the gate, on
+                            // the verge facing the road (out of a rig's way), hidden till a strike.
+                            picket_placed=false;
+                            if(game::rules_for(game_mode).civilian_life && gate.edge>=0) {
+                                const Vector3 side{gate.direction.z,0,-gate.direction.x};
+                                const float off=gate.width*.5F+2.2F;
+                                for(int k=0;k<picket_size;++k) {
+                                    const float s_=k<2 ? -1.0F : 1.0F,along=(k%2==0 ? -1.6F : 1.6F);
+                                    Vector3 at=Vector3Add(Vector3Add(gate.point,Vector3Scale(side,s_*off)),Vector3Scale(gate.direction,along));
+                                    const float top=world::terrain::TerrainHeight::sample(at.x,at.z)+2;
+                                    at.y=world::physics::WorldCollision::ground_height({at.x,top,at.z},top,verda_region);
+                                    picket_spots[static_cast<std::size_t>(k)]=at;
+                                    std::string body="character_05";
+                                    for(std::uint64_t n=0;n<40;++n)
+                                        if(const auto* d=character_registry.choose(characters::CharacterPool::Civilian,session_seed+1801+static_cast<std::uint64_t>(k)*41+n);
+                                           d && d->id.find("police")==std::string::npos && d->id.find("doctor")==std::string::npos) {body=d->id;break;}
+                                    // Facing the road (the side of the gate it stands on).
+                                    const float yaw=std::atan2(-side.x*s_,-side.z*s_)*RAD2DEG;
+                                    npcs.spawn_bot(picket_bot+k,body,at,yaw);
+                                    npcs.set_bot_hidden(picket_bot+k,true);
+                                    picket_yaws[static_cast<std::size_t>(k)]=yaw;
+                                }
+                                picket_placed=true;picket_out=false;
+                            }
                             haul_world.cargo_quay=graph.nearest(world::layout::cargo_loading).point;
                             if(ranches.cattle_quay().found)
                                 haul_world.cattle_quay=graph.nearest(ranches.cattle_quay().frame.at(world::ranches::cattle_quay_chute.x,-3)).point;
@@ -3128,7 +3178,23 @@ void Renderer::run() {
                         career.quit();
                         return ivo+"\"Going it alone? Out there? ...Your call, brother. The door's open if you come back.\"";
                     }
-                    brotherhood_offer=match_time+5;
+                    if(match_time<strike_offer) {
+                        strike_offer=-1;
+                        std::string why;
+                        if(career.call_strike(match_time,why))
+                            return ivo+"\"That's the spirit. Get a big rig into the company's gate - your own, one off the park, trailer or no - and keep it there a minute. "
+                                       "The brothers will be on the picket line with you. Tomaso will shout. Let him.\"";
+                        return ivo+"\""+why+"\"";
+                    }
+                    // Nothing on and a raise still to win: he'll call a strike if asked (every other
+                    // time he talks it's the door instead).
+                    if(career.job().kind==game::career::JobKind::None && career.haul_rate()<1+game::career::Career::union_rate+game::career::Career::raise_max-1e-3F &&
+                       line%2==0) {
+                        strike_offer=match_time+5;
+                        return ivo+"\"The company's had it easy too long. Want to call a strike? A rig in their gate for a minute and every load pays 5% more, for good.\""
+                                   " (USE again to call it)";
+                    }
+                    brotherhood_offer=match_time+5;strike_offer=-1;
                     static constexpr const char* lines[]{
                         "\"The company pays what it can get away with. Together, we make it pay what a load is worth.\"",
                         "\"Every town on the island has a brother in it. Call on the CB and they come.\"",
@@ -3678,12 +3744,14 @@ void Renderer::run() {
                     rows.push_back({"Engine",autos::engines[static_cast<std::size_t>(mods.engine)].name,""});
                     rows.push_back({"Armour plating",autos::platings[static_cast<std::size_t>(mods.plating)].name,""});
                     rows.push_back({"Roof gun",autos::guns[static_cast<std::size_t>(mods.gun)].name,""});
+                    rows.push_back({"Fuel tanks",autos::tanks[static_cast<std::size_t>(mods.tank)].name,""});
                     rows.push_back({"Paint",mods.paint>=0 ? autos::paints[static_cast<std::size_t>(mods.paint)].name : "Factory colour",""});
                     rows.push_back({"Front bumper",autos::bumpers[static_cast<std::size_t>(mods.bumper)].name,""});
                     break;
                 }
                 case MotorScreen::Plating: title="KIRASO";subtitle="Steel against bullets";part_rows(autos::platings,mods.plating);break;
                 case MotorScreen::Gun: title="TEGMENTA PAFILO";subtitle="A gun on the roof - gangs think twice";part_rows(autos::guns,mods.gun);break;
+                case MotorScreen::Tanks: title="BENZINUJOJ";subtitle="More road between the diesel lanes";part_rows(autos::tanks,mods.tank);break;
                 case MotorScreen::Workshop: {
                     title="MEĤANIKEJO";subtitle="What can we do for you?";back="LEAVE";
                     const int repair=car ? autos::repair_cost(car->vehicle) : 0;
@@ -3702,7 +3770,17 @@ void Renderer::run() {
                         rows.push_back({autos::paints[i].name,"",on ? "Fitted" : kr(autos::paints[i].price),!on,on});
                     }
                     break;
-                case MotorScreen::Engine: title="MOTORO";subtitle="More power";part_rows(autos::engines,mods.engine);break;
+                case MotorScreen::Engine: {
+                    // Petrol engines for a car, diesels for a big rig (cheapest first).
+                    const bool diesel=car && car->vehicle.definition=="semi";
+                    title="MOTORO";subtitle=diesel ? "More pull for the hills and the heavy loads" : "More power";
+                    for(const int i:autos::engine_choices(diesel)) {
+                        const auto& e=autos::engines[static_cast<std::size_t>(i)];
+                        const bool on=i==mods.engine;
+                        rows.push_back({e.name,e.detail,on ? "Fitted" : e.price>0 ? kr(e.price) : "Free",!on,on});
+                    }
+                    break;
+                }
                 case MotorScreen::Tires: title="PNEŬOJ";subtitle="Bigger or smaller wheels";part_rows(autos::tires,mods.tires);break;
                 case MotorScreen::Bumper: title="BUFROJ";subtitle="Something on the front";part_rows(autos::bumpers,mods.bumper);break;
                 case MotorScreen::Dealer:
@@ -3748,7 +3826,7 @@ void Renderer::run() {
                     else if(rig->vehicle.fuel<.999F) {
                         const bool company=trucking.hired() && game::freight::Trucking::company_rig(driven->id);
                         const auto before=rig->vehicle.fuel;
-                        const auto paid=game::freight::Diesel::fill(rig->vehicle.fuel,dt,company,wallet.money,diesel_owed);
+                        const auto paid=game::freight::Diesel::fill(rig->vehicle.fuel,dt,company,wallet.money,diesel_owed,rig->vehicle.range);
                         diesel_paid+=paid;vehicle_dirty=true;
                         if(paid>0) loot_session.changed();
                         interaction_message=rig->vehicle.fuel<=before ? std::string("DIZELO - not enough kronoj") :
@@ -3794,9 +3872,9 @@ void Renderer::run() {
                 const auto mods=car ? autos::mods_of(car->vehicle) : autos::Mods{};
                 if(act.back) {
                     if(at_depot && (motor_screen==MotorScreen::Paint || motor_screen==MotorScreen::Engine || motor_screen==MotorScreen::Bumper ||
-                                    motor_screen==MotorScreen::Plating || motor_screen==MotorScreen::Gun))
+                                    motor_screen==MotorScreen::Plating || motor_screen==MotorScreen::Gun || motor_screen==MotorScreen::Tanks))
                         open_motor(MotorScreen::Depot,motor_screen==MotorScreen::Engine ? 1 : motor_screen==MotorScreen::Plating ? 2 : motor_screen==MotorScreen::Gun ? 3 :
-                                                      motor_screen==MotorScreen::Paint ? 4 : 5);
+                                                      motor_screen==MotorScreen::Tanks ? 4 : motor_screen==MotorScreen::Paint ? 5 : 6);
                     else if(motor_screen==MotorScreen::Paint || motor_screen==MotorScreen::Engine || motor_screen==MotorScreen::Tires || motor_screen==MotorScreen::Bumper)
                         open_motor(MotorScreen::Workshop,motor_screen==MotorScreen::Paint ? 0 : motor_screen==MotorScreen::Engine ? 1 : motor_screen==MotorScreen::Tires ? 2 : 3);
                     else leave_motor();
@@ -3818,11 +3896,13 @@ void Renderer::run() {
                             if(cost>0 && pay(cost)) {autos::repair(car->vehicle);car->vehicle.fuel=1;vehicle_dirty=true;motor_menu.set_status("Serviced: good as new, tank full");}
                             open_motor(MotorScreen::Depot,0);
                         } else if((chosen==2 || chosen==3) && !rig) motor_menu.set_status("Plating and roof guns are for working trucks - a rig or a pickup");
+                        else if(chosen==4 && car->vehicle.definition!="semi") motor_menu.set_status("Long-range tanks are for big rigs");
                         else open_motor(chosen==1 ? MotorScreen::Engine : chosen==2 ? MotorScreen::Plating : chosen==3 ? MotorScreen::Gun :
-                                        chosen==4 ? MotorScreen::Paint : MotorScreen::Bumper,0);
+                                        chosen==4 ? MotorScreen::Tanks : chosen==5 ? MotorScreen::Paint : MotorScreen::Bumper,0);
                         break;
                     }
                     case MotorScreen::Plating: {auto m=mods;m.plating=chosen;fit(m,autos::platings[static_cast<std::size_t>(chosen)].price,chosen ? "Plated - let them shoot" : "The plating comes off");open_motor(MotorScreen::Plating,chosen);break;}
+                    case MotorScreen::Tanks: {auto m=mods;m.tank=chosen;fit(m,autos::tanks[static_cast<std::size_t>(chosen)].price,chosen ? "The new tanks are in - more road between fills" : "Back to the factory tanks");open_motor(MotorScreen::Tanks,chosen);break;}
                     case MotorScreen::Gun: {auto m=mods;m.gun=chosen;fit(m,autos::guns[static_cast<std::size_t>(chosen)].price,chosen ? "The gun is on the roof - FIRE at the wheel works it" : "The gun comes off");open_motor(MotorScreen::Gun,chosen);break;}
                     case MotorScreen::Workshop:
                         if(chosen<4) {open_motor(chosen==0 ? MotorScreen::Paint : chosen==1 ? MotorScreen::Engine : chosen==2 ? MotorScreen::Tires : MotorScreen::Bumper,0);break;}
@@ -3835,7 +3915,12 @@ void Renderer::run() {
                         open_motor(MotorScreen::Paint,chosen);
                         break;
                     }
-                    case MotorScreen::Engine: {auto m=mods;m.engine=chosen;fit(m,autos::engines[static_cast<std::size_t>(chosen)].price,"The new engine is in");open_motor(MotorScreen::Engine,chosen);break;}
+                    case MotorScreen::Engine: {
+                        const auto choices=autos::engine_choices(car->vehicle.definition=="semi");
+                        if(chosen>=static_cast<int>(choices.size())) break;
+                        auto m=mods;m.engine=choices[static_cast<std::size_t>(chosen)];
+                        fit(m,autos::engines[static_cast<std::size_t>(m.engine)].price,"The new engine is in");open_motor(MotorScreen::Engine,chosen);break;
+                    }
                     case MotorScreen::Tires: {auto m=mods;m.tires=chosen;fit(m,autos::tires[static_cast<std::size_t>(chosen)].price,"New tyres on");open_motor(MotorScreen::Tires,chosen);break;}
                     case MotorScreen::Bumper: {auto m=mods;m.bumper=chosen;fit(m,autos::bumpers[static_cast<std::size_t>(chosen)].price,"Bolted on");open_motor(MotorScreen::Bumper,chosen);break;}
                     case MotorScreen::Dealer: {
@@ -5698,11 +5783,55 @@ void Renderer::run() {
                     work.driving_rig=(game::freight::Trucking::company_rig(work.driving) || (!work.driving.empty() && work.driving==trucking.own_rig())) &&
                                      freight.hitched(work.driving);
                     work.depot=haul_world.depot;work.depot_known=depot_boss.placed;
+                    // A strike: the big rig the player brought (the last one driven, its trailer on
+                    // or not) standing in the gate, the player at its wheel or on the picket line
+                    // beside it. (The rigs parked in the truck park don't count.)
+                    if(const auto* d=vehicles.driver())
+                        if(const auto* a=vehicles.asset(verda_region,d->id);a && a->vehicle.definition=="semi") strike_rig=d->id;
+                    if(career.strike_on() && depot_boss.placed && !strike_rig.empty() &&
+                       std::hypot(player.position.x-haul_world.depot.x,player.position.z-haul_world.depot.z)<strike_picket_reach)
+                        if(const auto* a=vehicles.asset(verda_region,strike_rig);a && !a->vehicle.destroyed &&
+                           std::hypot(a->position.x-haul_world.depot.x,a->position.z-haul_world.depot.z)<strike_gate_reach)
+                            work.rig_at_gate=true;
                     for(const auto& t:haul_world.towns) if(t.name!="Verda") work.yards.push_back({t.name,t.point});
                     // The Chief stands at his post; the range runs its drill (counting the shots fired).
                     if(chief.placed) npcs.set_bot(chief_bot,chief.at,chief.yaw,100,characters::NpcState::Idle);
                     for(std::size_t i=0;i<kamionistoj.size();++i)
                         npcs.set_bot(kamionisto_bot+static_cast<int>(i),kamionistoj[i].at,kamionistoj[i].yaw,100,characters::NpcState::Idle);
+                    // The picket line: out at the gate while a strike is on, signs planted beside them.
+                    {
+                        const bool picket=picket_placed && career.strike_on() &&
+                                          std::hypot(player.position.x-haul_world.depot.x,player.position.z-haul_world.depot.z)<300;
+                        if(picket!=picket_out) {
+                            picket_out=picket;
+                            auto signage=sign_renderer.signage();
+                            std::erase_if(signage.signs,[](const game::culture::Sign& sign){return sign.place.starts_with("picket_");});
+                            for(int k=0;k<picket_size;++k) {
+                                npcs.set_bot_hidden(picket_bot+k,!picket);
+                                if(!picket) continue;
+                                const auto& at=picket_spots[static_cast<std::size_t>(k)];
+                                const float yaw=picket_yaws[static_cast<std::size_t>(k)]*DEG2RAD;
+                                const Vector3 aside{std::cos(yaw)*.8F,0,-std::sin(yaw)*.8F};   // at his right hand
+                                game::culture::Sign sign;
+                                sign.kind=game::culture::SignKind::Homemade;
+                                sign.place="picket_"+std::to_string(k);
+                                sign.position={at.x+aside.x,at.y+2.05F,at.z+aside.z};
+                                sign.yaw=picket_yaws[static_cast<std::size_t>(k)];
+                                sign.max_width=1.1F;
+                                static constexpr const char* words[picket_size][2]{{"STRIKO!","LA FRATECO"},{"JUSTA SALAJRO","POR ĈIU ŜARĜO"},
+                                                                                   {"STRIKO!","NI NE MOVIĜOS"},{"KAMIONISTOJ","KUNE"}};
+                                sign.front={{words[k][0],.2F},{words[k][1],.12F}};
+                                sign.back=sign.front;
+                                sign.board=Color{240,236,226,255};sign.ink=Color{176,28,30,255};
+                                sign.post=1.65F;
+                                signage.signs.push_back(std::move(sign));
+                            }
+                            sign_renderer.set(std::move(signage));
+                        }
+                        if(picket_out)
+                            for(int k=0;k<picket_size;++k)
+                                npcs.set_bot(picket_bot+k,picket_spots[static_cast<std::size_t>(k)],picket_yaws[static_cast<std::size_t>(k)],100,characters::NpcState::Idle);
+                    }
                     for(const auto& g:gun_men) npcs.set_bot(gun_man_bot+g.gang,g.at,g.yaw,100,characters::NpcState::Idle);
                     // A secure Verda: the last of the gangs gone, the Green Hand's bar opens as a cultural society.
                     static const bool dev_secure=[]{const char* v=std::getenv("OUTLAND_DEV_SECURE");return v && *v=='1';}();   // dev: the society opens at once
@@ -5957,6 +6086,23 @@ void Renderer::run() {
                         }
                     }
                     career.update(work);
+#ifdef OUTLAND_DEV_TOOLS
+                    // OUTLAND_DEV_STRIKE=1: a brother calls a strike as soon as the depot is known.
+                    if(static bool dev_strike=[]{const char* v=std::getenv("OUTLAND_DEV_STRIKE");return v && *v=='1';}();dev_strike && career.trucker() && work.depot_known) {
+                        std::string why;
+                        dev_strike=!career.call_strike(match_time,why);
+                    }
+#endif
+                    // A strike on: a line on screen says where it stands (the bag has the rest).
+                    if(career.strike_on() && (interaction_remaining<.3F || interaction_message.starts_with("STRIKE"))) {
+                        const auto& job=career.job();
+                        const int left=std::max(0,job.needed-job.done);
+                        const float far=std::hypot(player.position.x-job.target.x,player.position.z-job.target.z);
+                        interaction_message=career.striking() ? TextFormat("STRIKE  -  the gate is blocked: hold it %d:%02d more",left/60,left%60) :
+                            far<strike_picket_reach+30 ? TextFormat("STRIKE  -  park a big rig in the gate (the marker), then hold it %d s",left) :
+                            far<600 ? TextFormat("STRIKE  -  bring a big rig to Verda Transporto's gate: %.0f m",far) : std::string();
+                        if(!interaction_message.empty()) interaction_remaining=.6F;
+                    }
 #ifdef OUTLAND_DEV_TOOLS
                     if(static game::career::JobKind logged=game::career::JobKind::None;career.job().kind!=logged) {
                         logged=career.job().kind;

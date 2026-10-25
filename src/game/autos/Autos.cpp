@@ -10,19 +10,29 @@ namespace outland::game::autos {
 bool valid(const Mods& m) {
     return m.paint >= -1 && m.paint < static_cast<int>(paints.size()) && m.engine >= 0 && m.engine < static_cast<int>(engines.size()) &&
            m.tires >= 0 && m.tires < static_cast<int>(tires.size()) && m.bumper >= 0 && m.bumper < static_cast<int>(bumpers.size()) &&
-           m.plating >= 0 && m.plating < static_cast<int>(platings.size()) && m.gun >= 0 && m.gun < static_cast<int>(guns.size());
+           m.plating >= 0 && m.plating < static_cast<int>(platings.size()) && m.gun >= 0 && m.gun < static_cast<int>(guns.size()) &&
+           m.tank >= 0 && m.tank < static_cast<int>(tanks.size());
+}
+
+std::vector<int> engine_choices(bool rig) {
+    std::vector<int> out;
+    for (std::size_t i = 0; i < engines.size(); ++i)
+        if (i == 0 || engines[i].diesel == rig) out.push_back(static_cast<int>(i));
+    std::stable_sort(out.begin(), out.end(), [](int a, int b) { return engines[static_cast<std::size_t>(a)].price < engines[static_cast<std::size_t>(b)].price; });
+    return out;
 }
 
 Tuning tuning(const Mods& m) {
     Tuning t;
     if (!valid(m)) return t;
-    static constexpr std::array<float, 3> power{1, 1.3F, 1.65F}, top{1, 1.05F, 1.15F};
     static constexpr std::array<float, 4> wheel{.85F, 1, 1.25F, 1.6F}, slope{-2, 0, 6, 14}, grip{1.15F, 1, .95F, .85F};
     static constexpr std::array<float, 3> armour{1, .65F, .4F};
-    t.power = power[static_cast<std::size_t>(m.engine)];
-    t.top = top[static_cast<std::size_t>(m.engine)];
+    const auto& engine = engines[static_cast<std::size_t>(m.engine)];
+    t.power = engine.power;
+    t.top = engine.top;
     t.wheel = wheel[static_cast<std::size_t>(m.tires)];
-    t.slope = slope[static_cast<std::size_t>(m.tires)];
+    t.slope = slope[static_cast<std::size_t>(m.tires)] + engine.climb;
+    t.range = tank_range[static_cast<std::size_t>(m.tank)];
     t.grip = grip[static_cast<std::size_t>(m.tires)];
     static constexpr std::array<float, 3> plating{1, .5F, .25F};
     t.plating = plating[static_cast<std::size_t>(m.plating)];
@@ -34,29 +44,29 @@ Tuning tuning(const Mods& m) {
 void apply(const Mods& m, world::VehiclePlacementState& car) {
     if (!valid(m)) return;
     const auto t = tuning(m);
-    car.mods = {m.paint, m.engine, m.tires, m.bumper, m.plating, m.gun};
+    car.mods = {m.paint, m.engine, m.tires, m.bumper, m.plating, m.gun, m.tank};
     car.power = t.power; car.top = t.top; car.wheel = t.wheel; car.armour = t.armour; car.grip = t.grip; car.slope = t.slope;
-    car.plating = t.plating; car.gun = t.gun;
+    car.plating = t.plating; car.gun = t.gun; car.range = t.range;
     car.painted = m.paint >= 0;
     if (car.painted) car.paint = paints[static_cast<std::size_t>(m.paint)].color;
 }
 
 Mods mods_of(const world::VehiclePlacementState& car) {
-    Mods m{car.mods[0], car.mods[1], car.mods[2], car.mods[3], car.mods[4], car.mods[5]};
+    Mods m{car.mods[0], car.mods[1], car.mods[2], car.mods[3], car.mods[4], car.mods[5], car.mods[6]};
     return valid(m) ? m : Mods{};
 }
 
 std::string serialise(const Mods& m) {
     return std::to_string(m.paint) + ' ' + std::to_string(m.engine) + ' ' + std::to_string(m.tires) + ' ' + std::to_string(m.bumper) + ' ' +
-           std::to_string(m.plating) + ' ' + std::to_string(m.gun);
+           std::to_string(m.plating) + ' ' + std::to_string(m.gun) + ' ' + std::to_string(m.tank);
 }
 
 bool parse(std::string_view text, Mods& out) {
     std::istringstream in{std::string(text)};
     Mods m;
     if (!(in >> m.paint >> m.engine >> m.tires >> m.bumper)) return false;
-    // (Older saves stop at the bumper: no plating, no gun.)
-    if (in >> m.plating) in >> m.gun;
+    // (Older saves stop at the bumper: no plating, no gun; or at the gun: factory tanks.)
+    if (in >> m.plating && in >> m.gun) in >> m.tank;
     if (!valid(m)) return false;
     out = m;
     return true;
@@ -97,8 +107,9 @@ bool parse(std::string_view text, OwnedCar& out) {
     OwnedCar c;
     std::vector<std::string> words;
     for (std::string w; in >> w;) words.push_back(w);
-    // definition, the mods (4 in older saves; 6 with the depot's plating and roof gun), where, fuel.
-    if (words.size() != 10 && words.size() != 12) return false;
+    // definition, the mods (4 in older saves; 6 with the depot's plating and roof gun; 7 with its
+    // tanks), where, fuel.
+    if (words.size() != 10 && words.size() != 12 && words.size() != 13) return false;
     std::istringstream fields;
     {
         std::string joined;
@@ -107,7 +118,8 @@ bool parse(std::string_view text, OwnedCar& out) {
     }
     c.definition = words[0];
     if (!(fields >> c.mods.paint >> c.mods.engine >> c.mods.tires >> c.mods.bumper)) return false;
-    if (words.size() == 12 && !(fields >> c.mods.plating >> c.mods.gun)) return false;
+    if (words.size() >= 12 && !(fields >> c.mods.plating >> c.mods.gun)) return false;
+    if (words.size() == 13 && !(fields >> c.mods.tank)) return false;
     if (!(fields >> c.at.x >> c.at.y >> c.at.z >> c.yaw >> c.fuel)) return false;
     if (c.definition.empty() || c.definition.size() > 64 || !valid(c.mods) || !std::isfinite(c.at.x) || !std::isfinite(c.at.y) ||
         !std::isfinite(c.at.z) || !std::isfinite(c.yaw) || !std::isfinite(c.fuel) || c.fuel < 0 || c.fuel > 1)

@@ -374,11 +374,21 @@ bool WorldCollision::blocked_impl(
             // Buildings you drive into (a filling station's canopy, a workshop's bays, the car lot, the
             // truck depot's shed, the parking garage's decks and ramps):
             // a car meets their real shape - columns, pumps, walls - not their bounding box.
-            if(vehicle && asset.collision && (asset.model_path.ends_with("civic/gas_station.glb") ||
+            // So do the big ones (a ballpark and its car park, a town square, the prison yard): their
+            // box would be a wall round open ground.
+            const bool drive_in=asset.model_path.ends_with("civic/gas_station.glb") ||
                asset.model_path.ends_with("civic/mechanic_shop.glb") || asset.model_path.ends_with("civic/car_lot.glb") ||
-               asset.model_path.ends_with("civic/truck_depot.glb") || asset.model_path.ends_with("civic/parking_garage.glb"))) {
+               asset.model_path.ends_with("civic/truck_depot.glb") || asset.model_path.ends_with("civic/parking_garage.glb");
+            if(vehicle && asset.collision && asset.vehicle.definition.empty() && !asset.model_path.empty() &&
+               (drive_in || std::max(asset.size.x,asset.size.z)>=large_model)) {
+                const float far=asset.size.x+asset.size.z+player_radius;
+                if(std::abs(position.x-asset.position.x)>far || std::abs(position.z-asset.position.z)>far) return false;
                 const auto* mesh=MeshCollisionLibrary::get(asset.model_path);
-                if(!mesh) return false;
+                if(!mesh && drive_in) return false;
+                if(!mesh) {
+                    const float dx=position.x-asset.position.x,dz=position.z-asset.position.z,yaw=asset.rotation_y*DEG2RAD;
+                    return circle_hits_box(dx*std::cos(yaw)-dz*std::sin(yaw),dx*std::sin(yaw)+dz*std::cos(yaw),player_radius,0,0,asset.size.x*.5F,asset.size.z*.5F);
+                }
                 const float dx=position.x-asset.position.x,dz=position.z-asset.position.z,yaw=asset.rotation_y*DEG2RAD;
                 const Vector3 local{dx*std::cos(yaw)-dz*std::sin(yaw),0,dx*std::sin(yaw)+dz*std::cos(yaw)};
                 const float base=position.y-asset.position.y;

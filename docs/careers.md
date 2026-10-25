@@ -192,11 +192,24 @@ Verda's trucking is a tough grind, so the truckers stick together. They are Espe
 
 | Job | What | Pay | Respect |
 |---|---|---|---|
-| **STRIKE** | Park a big rig at Verda Transporto's gate and hold it there 60 s. Leave the gate and the clock starts again. Win and the brotherhood's rate goes up 5% for good (up to +25% from strikes). | 500 | 10 |
+| **STRIKE** | Bring a big rig into Verda Transporto's gate and keep it there for 60 s in all. See [the strike](#the-strike) below. Win and the brotherhood's rate goes up 5% for good (up to +25% from strikes). | 500 | 10 |
 | **CONTRABAND RUN** | Unmarked crates at a smugglers' jetty: pick them up in a big rig, and somebody talks (2 stars, the Ŝosea Patrolo is out). Run them to a freight yard across the island. | 2200 | 14 |
 
+### The strike
+
+A strike comes over the CB now and then. You can also call one yourself: talk to Ivo with nothing else on, and he offers one (USE again to call it).
+
+1. **Bring a big rig to the gate.** The gate is where the yard road meets Verda Transporto's depot, marked on the compass. Any big rig you drive there counts: your own, one off the truck park or the company drivers' rigs, with its trailer on or not. The rigs parked in the truck park don't count on their own.
+2. **Hold it.** Stop the rig across the gate (within 14 m of the marker) and stay with it. You can stay in the cab, or get out and stand on the picket line (within 40 m). Four brothers come out to picket either side of the gate, with signs (STRIKO!, JUSTA SALAJRO).
+3. **Watch the clock.** A line on screen counts down ("the gate is blocked: hold it 0:42 more"). The bag shows how many of the 60 seconds are held.
+   - Halfway through, Tomaso Rado comes out shouting. Let him.
+   - If you drive away, the clock stops and waits for you to come back. It doesn't start again from zero.
+4. **Win.** After 60 s held in all, the company gives in: 500 kr, +10 respect, and every load pays 5% more for good.
+
+A strike under way doesn't time out. Once you've won all five raises (+25%), Ivo says the company has given all it will.
+
 - **Your own rig:** a brother of rank Ŝoforo or higher is given a rig of his own, parked by the diesel lane (Ivo says so). It is saved with your cars and can haul any of the company's loads except cattle.
-- **The depot's service bays:** Verda Transporto's shed is a drive-in garage. Drive in through either open door and stop in a bay for **VERDA TRANSPORTO · SERVO**: service (repair and fill up), engine, **armour plating** (steel 6000 kr, fortress 15 000 kr; the cab takes a half or a quarter of the damage, and fortress plating stops bullets reaching the driver), a **roof gun** (12 000 kr), paint and a bumper. Plating and the roof gun fit rigs and trucks only. Brothers pay 70%.
+- **The depot's service bays:** Verda Transporto's shed is a drive-in garage. Drive in through either open door and stop in a bay for **VERDA TRANSPORTO · SERVO**: service (repair and fill up), engine (the diesels, see [trucking](trucking.md#engines-and-tanks)), **long-range tanks**, **armour plating** (steel 6000 kr, fortress 15 000 kr; the cab takes a half or a quarter of the damage, and fortress plating stops bullets reaching the driver), a **roof gun** (12 000 kr), paint and a bumper. Plating and the roof gun fit rigs and trucks only. Brothers pay 70%.
 - **The trailer:** the shed only takes a rig without its trailer. A rig with its trailer hitched is stopped at the doors ("drop it out here first"). With the rig stopped, J (touch: HITCH) drops the trailer where it stands. Back the rig up to it, lined up, and J again to hitch it. A load only counts with the trailer on.
 - **The roof gun:** at the wheel of a rig with one fitted, look to aim and fire (LMB / FIRE). It fires rifle rounds along your view.
 - **Hijackers:** gangs sometimes send two or three men in a car after a loaded rig. A plated rig with a roof gun is the answer.
@@ -253,6 +266,7 @@ The career is saved beside the Explore loot profile (`<profile>.career`): side, 
 
 - `OUTLAND_DEV_CAREER=gang:N`, `police` or `trucker` starts the session in a gang, on the force or in the brotherhood.
 - `OUTLAND_DEV_SECURE=1` opens the Green Hand's cultural society at once.
+- `OUTLAND_DEV_STRIKE=1` (with `OUTLAND_DEV_CAREER=trucker`) has Ivo call a strike at once.
 - Dev builds log every crew door and police station.
 - `outland_training_camp_tests`: a drill starts from the line, targets take real traces and head shots, leaving the line stops it, retries, movers and graduation.
 - `outland_career_tests` covers:

@@ -105,7 +105,47 @@ the terminal "the crane swings a container onto the rig".
 
 ## The depot
 
-The shed at Verda Transporto is a drive-in garage: two roll-up doors on the yard side, an inspection pit, a gantry and benches inside. Drop the trailer outside first (J): a rig with its trailer on is stopped at the doors. Stop a vehicle in one of the two bays for the service menu (see [careers](careers.md#the-outlaw-truckers-la-frateco-de-kamionistoj)): repairs, fuel, engine, armour plating, a roof gun, paint and a bumper.
+The shed at Verda Transporto is a drive-in garage: two roll-up doors on the yard side, an inspection pit, a gantry and benches inside. Drop the trailer outside first (J): a rig with its trailer on is stopped at the doors. Stop a vehicle in one of the two bays for the service menu (see [careers](careers.md#the-outlaw-truckers-la-frateco-de-kamionistoj)): repairs, fuel, engine (diesels for a rig, see [engines and tanks](#engines-and-tanks)), long-range tanks, armour plating, a roof gun, paint and a bumper.
+
+## Engines and tanks
+
+The workshops (Meĥanikejo) and the depot's service bays fit engines. A car gets petrol engines and a big rig gets diesels. The menu lists only the ones that fit, cheapest first.
+
+| Engine | For | Does | Price |
+|---|---|---|---|
+| Tuned engine | cars | +30% power | 2 500 |
+| Turbocharged | cars | +45% power, +8% top speed | 4 200 |
+| V8 big block | cars | +65% power, +15% top speed, climbs 1° steeper | 7 000 |
+| Supercharged V8 | cars | +95% power, +22% top speed, climbs 2° steeper | 13 000 |
+| Racing engine | cars | +130% power, +30% top speed, climbs 2° steeper | 26 000 |
+| Big-bore diesel | rigs | +40% pull, +8% top speed, climbs 2° steeper | 5 000 |
+| Twin-turbo diesel | rigs | +80% pull, +15% top speed, climbs 4° steeper | 11 000 |
+| Road-train diesel | rigs | +130% pull, +22% top speed, climbs 6° steeper | 22 000 |
+
+A bigger diesel drinks a little more: up to about a third more per km for the road-train diesel.
+
+At the depot a rig can also have its fuel tanks changed:
+
+| Tanks | Range on a fill | Price |
+|---|---|---|
+| Factory tanks | about 100 km | - |
+| Long-range tanks | about 170 km | 3 500 |
+| Road-train tanks | about 260 km | 8 000 |
+
+Bigger tanks take longer to fill at a diesel lane and cost more for a full fill: 300 kr for each factory tank's worth. Brothers pay 30% less for the fit-out.
+
+Code: `game::autos::engines` / `engine_choices` / `tanks` (`Autos.hpp`), `Diesel::fill`'s `tanks`. The tanks are the 7th saved mod (vehicle save version 4); older saves load with factory tanks, and the first three engines keep their saved numbers.
+
+## Driving: slopes, steps and the rough
+
+- **Slopes are not walls.** Gravity pulls along the grade: a vehicle slows uphill and runs on downhill. On ground steeper than it can climb, its driven wheels spin and it slides back. The climb limit is the definition's `max_slope`, plus bigger tyres and a bigger engine. A rig and a bus climb 22°, a car 28°, a pickup 32°, the side-by-side 38°. Stopped with no throttle on ground it can stand on, the brakes hold it.
+- **Only something solid, or a sheer step, stops a vehicle.** A sheer step is a rise of more than 0.45 m at the leading bumper in one move, like a wall's foot or a quay's edge. Kerbs and banks are driven over.
+- **Big models meet a car with their real shape** (`WorldCollision::large_model`, 24 m or more across). That covers a ballpark and its car park, a town square, the prison and the depot, not their bounding boxes. Smaller props and buildings still use their boxes.
+- **The rough.** Off the roads and paved pads (`VehicleSystem::bind_offroad`), the player's vehicle loses top speed and pull, by how far it is built for it. The side-by-side loses nothing, a pickup about 9%, a road car about 15% and a big rig about 23%. All-terrain tyres win back 10% and monster tyres 24%. It eases in over the 6 m past a road's verge.
+- **The ground under the roads:**
+  - Where a highway's roadbed runs below or above a town pad, a 10 m bank past the shoulder eases between them (`highways::pad_bank`). There's no cliff at the shoulder, and the pad stays level beyond the bank.
+  - The ballparks' level pads reach 80 m with a 70 m blend, so the access roads climb evenly to the gate.
+- `outland_road_audit_tests` also drives a big rig down every lane. `outland_vehicle_tests` checks that slopes are gravity, not walls, and that a quay's edge still stops a vehicle.
 
 ## Crashes
 
@@ -115,7 +155,7 @@ The shed at Verda Transporto is a drive-in garage: two roll-up doors on the yard
 
 ## The truckers' brotherhood
 
-Verda Transporto's drivers aren't alone: La Frateco de Kamionistoj, the outlaw truckers' brotherhood, has a man at the yard's diesel lane (Ivo Kovač) and a trucker in every town. Members drive the same loads for the union rate, strike at the gate for raises and run contraband. See [careers](careers.md#the-outlaw-truckers-la-frateco-de-kamionistoj).
+Verda Transporto's drivers aren't alone: La Frateco de Kamionistoj, the outlaw truckers' brotherhood, has a man at the yard's diesel lane (Ivo Kovač) and a trucker in every town. Members drive the same loads for the union rate, strike at the gate for raises and run contraband. [The strike](careers.md#the-strike) is explained step by step there. See [careers](careers.md#the-outlaw-truckers-la-frateco-de-kamionistoj).
 
 ## Driving for Verda Transporto
 Talk to the boss (**USE** next to him). The first time, he offers work; **USE again** to sign

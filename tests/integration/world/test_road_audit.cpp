@@ -124,7 +124,7 @@ int main() {
             }
         }
     check(blocked == 0, "nothing solid on a carriageway: " + std::to_string(blocked));
-    // 4. Drivable: a car (and a pickup) set down anywhere in either lane or kerbside, facing along
+    // 4. Drivable: a car (and a pickup, and a big rig) set down anywhere in either lane or kerbside, facing along
     // the road, runs into nothing - no invisible box (a lamp's arms, a parking lot's slab, a tree on
     // the kerb).
     std::string error;
@@ -134,7 +134,7 @@ int main() {
     vehicles.set_training_structure(false);
     int stuck = 0;
     std::vector<Vector3> reported;
-    for (const char* id : {"hatchback", "truck"}) {
+    for (const char* id : {"hatchback", "truck", "semi"}) {
         const auto* car = catalog.find(id);
         if (!car) { check(false, std::string("vehicle ") + id); continue; }
         for (const auto& road : roads) {

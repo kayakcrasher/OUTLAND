@@ -25,6 +25,8 @@ inline constexpr float barrier_length = 2.48F;
 // The roadbed: level over the whole width, then blending back into the land.
 inline constexpr float grade_flat = paved_half + verge + 1.2F;
 inline constexpr float grade_band = 28;
+// A pad standing well above or below the roadbed meets it in a bank this wide past the shoulder.
+inline constexpr float pad_bank = 10;
 // Wider than this, a road is a highway for traffic (lanes) and placement.
 inline constexpr float min_width = 17;   // (downtown's 16 m streets are streets)
 

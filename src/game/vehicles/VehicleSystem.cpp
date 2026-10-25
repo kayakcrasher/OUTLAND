@@ -413,6 +413,29 @@ float VehicleSystem::ground(Vector3 p, float from) const {
 bool VehicleSystem::blocked(const world::VerdaRegion &r, Vector3 p, float yaw,
                             const VehicleDefinition &d, float scale,
                             std::string_view ignore) const {
+    if (solid(r, p, yaw, d, scale, ignore)) return true;
+    float heights[3][3]{};
+    int row = 0;
+    for (float x : {-d.width * .5F, 0.0F, d.width * .5F}) {
+        int column = 0;
+        for (float z : {-d.length * .5F, 0.0F, d.length * .5F})
+            heights[row][column++] = ground(world_point({x, 0, z}, p, yaw, scale), p.y);
+        ++row;
+    }
+    const float front = (heights[0][2] + heights[2][2]) * .5F,
+                rear = (heights[0][0] + heights[2][0]) * .5F;
+    const float pitch = (front - rear) / (d.length * scale),
+                roll = (heights[2][1] - heights[0][1]) / (d.width * scale);
+    return std::atan(std::hypot(pitch, roll)) * RAD2DEG > d.max_slope;
+}
+float VehicleSystem::offroad_pace(const VehicleDefinition &d, float wheel) {
+    // What it was built to climb says what it was built for: a side-by-side (38 deg) loses
+    // nothing, a pickup a little, a road car more, a big rig most. Bigger tyres win some back.
+    return std::clamp(.45F + d.max_slope * .0145F + (wheel - 1) * .4F, .7F, 1.0F);
+}
+bool VehicleSystem::solid(const world::VerdaRegion &r, Vector3 p, float yaw,
+                          const VehicleDefinition &d, float scale,
+                          std::string_view ignore) const {
     // The existing central inspection structure is solid to a vehicle footprint.
     // Its conservative broad phase runs only near the capital's origin.
     if (training_structure_ && std::abs(p.x) < 2 + d.length * scale && std::abs(p.z) < 2 + d.length * scale) {
@@ -423,23 +446,14 @@ bool VehicleSystem::blocked(const world::VerdaRegion &r, Vector3 p, float yaw,
             std::abs(origin.z) < d.length * .5F + 2 / scale)
             return true;
     }
-    float heights[3][3]{};
-    int row = 0;
-    for (float x : {-d.width * .5F, 0.0F, d.width * .5F}) {
-        int column = 0;
+    for (float x : {-d.width * .5F, 0.0F, d.width * .5F})
         for (float z : {-d.length * .5F, 0.0F, d.length * .5F}) {
             auto point = world_point({x, 0, z}, p, yaw, scale);
-            point.y = heights[row][column++] = ground(point, p.y);
+            point.y = ground(point, p.y);
             if (world::physics::WorldCollision::vehicle_blocked(point, r, .2F, ignore))
                 return true;
         }
-        ++row;
-    }
-    const float front = (heights[0][2] + heights[2][2]) * .5F,
-                rear = (heights[0][0] + heights[2][0]) * .5F;
-    const float pitch = (front - rear) / (d.length * scale),
-                roll = (heights[2][1] - heights[0][1]) / (d.width * scale);
-    return std::atan(std::hypot(pitch, roll)) * RAD2DEG > d.max_slope;
+    return false;
 }
 
 int VehicleSystem::vehicle_hit(const world::VerdaRegion &r, Vector3 p, float yaw, const VehicleDefinition &d, float scale,
@@ -535,14 +549,32 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         // Battle-royale handling: strong pull off the line that tapers toward top speed, a boost,
         // air drag, and a car whose momentum carries it sideways until the tyres bite.
         v.boosting = controls.boost && throttle > .1F && a->vehicle.fuel > 0;
+        // Off the road the player's vehicle goes as it was built to (offroad_pace), easing in.
+        const float rough = driving && offroad_ ? std::clamp(offroad_(a->position), 0.0F, 1.0F) : 0.0F;
+        const float pace = 1 - rough * (1 - offroad_pace(*d, a->vehicle.wheel));
         // A mechanic's work (game::autos): a bigger engine pulls harder and runs faster.
-        const float top = d->top_speed * performance * a->vehicle.top * (v.boosting ? 1.12F : 1.0F);
+        const float top = d->top_speed * performance * a->vehicle.top * pace * (v.boosting ? 1.12F : 1.0F);
         const float pull = std::max(.2F, 1 - .75F * (v.speed / std::max(1.0F, top)) * (v.speed / std::max(1.0F, top)));
-        float acceleration = throttle * d->acceleration * performance * a->vehicle.power * (throttle > 0 ? pull : 1.0F) * (v.boosting ? 1.45F : 1.0F);
+        float acceleration = throttle * d->acceleration * performance * a->vehicle.power * (throttle > 0 ? pull : 1.0F) * (v.boosting ? 1.45F : 1.0F) *
+                             (.5F + .5F * pace);
         if (a->vehicle.fuel <= 0)
             acceleration = 0;
         if (opposing)
             acceleration = throttle * d->brake;
+        // The grade under the wheels. Past what the vehicle can climb (bigger tyres climb more) the
+        // driven wheels spin and it slides back; gravity slows it uphill and runs it on downhill.
+        // Stopped (or crawling) with no throttle on ground it can stand on, the brakes hold it.
+        {
+            const float run = std::max(.5F, (d->front_z - d->rear_z) * scale);
+            const float grade = std::atan2(ground(world_point({0, 0, d->front_z}, a->position, v.yaw, scale), a->position.y) -
+                                           ground(world_point({0, 0, d->rear_z}, a->position, v.yaw, scale), a->position.y), run) * RAD2DEG;
+            const float limit = d->max_slope + a->vehicle.slope;
+            const float heading = std::abs(v.speed) > .1F ? v.speed : throttle;
+            const float climbing = heading >= 0 ? grade : -grade;
+            if (!opposing && climbing > limit) acceleration *= std::clamp(1 - (climbing - limit) / 6, 0.0F, 1.0F);
+            const bool hold = std::abs(throttle) < .05F && std::abs(v.speed) < 1.5F && std::abs(grade) <= limit;
+            if (!hold && std::isfinite(grade)) acceleration -= gravity * std::sin(grade * DEG2RAD);
+        }
         v.speed += acceleration * dt;
         const float resistance = d->drag + v.speed * v.speed * .0011F + std::abs(v.speed) * .01F +
                                  (controls.brake ? d->brake * .6F : 0) +
@@ -571,13 +603,24 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         VehicleDefinition tuned;
         const VehicleDefinition* shape = d;
         if (a->vehicle.slope != 0) { tuned = *d; tuned.max_slope += a->vehicle.slope; shape = &tuned; }
-        if (v.escape <= 0 && std::abs(v.speed) > .001F && blocked(r, a->position, a->rotation_y, *shape, scale, a->id))
+        if (v.escape <= 0 && std::abs(v.speed) > .001F && solid(r, a->position, a->rotation_y, *shape, scale, a->id))
             v.escape = d->length * scale + .5F;
+        // A sheer rise at the leading bumper (a wall's foot, a quay's edge) is met like a wall.
+        const auto sheer = [&](Vector3 from, float from_yaw, Vector3 to) {
+            const float end = v.speed >= 0 ? d->length * .5F : -d->length * .5F;
+            for (const float x : {-d->width * .5F, 0.0F, d->width * .5F}) {
+                const float before = ground(world_point({x, 0, end}, from, from_yaw, scale), from.y);
+                const float after = ground(world_point({x, 0, end}, to, yaw, scale), from.y);
+                if (after - before > ledge) return true;
+            }
+            return false;
+        };
         for (int step = 0; step < steps; ++step) {
             auto p = world_point({v.slip * dt / steps, 0, v.speed * dt / steps}, a->position, yaw);
             p.y = ground(p, a->position.y);
             if (v.escape > 0) v.escape -= travel * dt / steps;
-            else if (blocked(r, p, yaw, *shape, scale, a->id) || (barrier_ && barrier_(v.id, a->position, p, yaw))) {
+            else if (solid(r, p, yaw, *shape, scale, a->id) || sheer(a->position, a->rotation_y, p) ||
+                     (barrier_ && barrier_(v.id, a->position, p, yaw))) {
                 // Another vehicle in the way: momentum goes into it. A heavy one (a rig, a bus)
                 // shoves a car aside and barely slows; a car into a rig mostly stops. The one
                 // struck is woken and slides off along the push.

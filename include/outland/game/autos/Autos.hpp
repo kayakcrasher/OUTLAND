@@ -24,11 +24,15 @@ namespace outland::game::autos {
 struct Mods {
     int paint{-1}, engine{0}, tires{1}, bumper{0};
     int plating{0}, gun{0};     // the depot's work on a big rig: armour plating, a roof gun
+    int tank{0};                // and its fuel tanks (game::freight::Diesel::range_km, times tanks[])
     friend bool operator==(const Mods&, const Mods&) = default;
 };
 
 struct Paint { const char* name; Color color; int price; };
 struct Part { const char* name; const char* detail; int price; };
+// An engine: what it does (power and top speed multipliers, degrees more slope it can pull up) and
+// what it goes in - petrol for the workshops' cars, diesel for the depot's big rigs.
+struct Engine { const char* name; const char* detail; int price; float power, top, climb; bool diesel; };
 
 inline constexpr int paint_price = 1200;
 // The street colours, then the five ball clubs' (game::sports::teams: their buses wear them).
@@ -50,11 +54,20 @@ inline constexpr std::array<Paint, 15> paints{{
     {"Ardeoj teal", {0, 124, 126, 255}, paint_price},
     {"Ministoj charcoal", {40, 40, 44, 255}, paint_price},
 }};
-inline constexpr std::array<Part, 3> engines{{
-    {"Factory engine", "as it left the works", 0},
-    {"Tuned engine", "+30% power", 2500},
-    {"V8 big block", "+65% power, +15% top speed", 7000},
+// (The first three keep their places: saves store the index.)
+inline constexpr std::array<Engine, 9> engines{{
+    {"Factory engine", "as it left the works", 0, 1, 1, 0, false},
+    {"Tuned engine", "+30% power", 2500, 1.3F, 1.05F, 0, false},
+    {"V8 big block", "+65% power, +15% top speed", 7000, 1.65F, 1.15F, 1, false},
+    {"Turbocharged", "+45% power, +8% top speed", 4200, 1.45F, 1.08F, 0, false},
+    {"Supercharged V8", "+95% power, +22% top speed", 13000, 1.95F, 1.22F, 2, false},
+    {"Racing engine", "+130% power, +30% top speed", 26000, 2.3F, 1.3F, 2, false},
+    {"Big-bore diesel", "+40% pull, +8% top speed, climbs 2 deg steeper", 5000, 1.4F, 1.08F, 2, true},
+    {"Twin-turbo diesel", "+80% pull, +15% top speed, climbs 4 deg steeper", 11000, 1.8F, 1.15F, 4, true},
+    {"Road-train diesel", "+130% pull, +22% top speed, climbs 6 deg steeper", 22000, 2.3F, 1.22F, 6, true},
 }};
+// The engines a vehicle can take, cheapest first (the factory one first): diesels for a big rig.
+[[nodiscard]] std::vector<int> engine_choices(bool rig);
 inline constexpr std::array<Part, 4> tires{{
     {"Low-profile tyres", "smaller wheels, sits low, quick to turn", 800},
     {"Factory tyres", "as it left the works", 0},
@@ -74,6 +87,13 @@ inline constexpr std::array<Part, 3> platings{{
     {"Steel plating", "half the damage from rounds and crashes", 6000},
     {"Fortress plating", "a quarter of the damage, bullet-proof glass", 15000},
 }};
+// More range for a big rig: its tanks (a full tank's distance times `range`).
+inline constexpr std::array<Part, 3> tanks{{
+    {"Factory tanks", "about 100 km on a fill", 0},
+    {"Long-range tanks", "about 170 km on a fill", 3500},
+    {"Road-train tanks", "about 260 km on a fill", 8000},
+}};
+inline constexpr std::array<float, 3> tank_range{1, 1.7F, 2.6F};
 inline constexpr std::array<Part, 2> guns{{
     {"No roof gun", "as it left the works", 0},
     {"Roof gun", "a machine gun on the cab roof - fire it from the wheel", 12000},
@@ -88,13 +108,14 @@ struct Tuning {
     float grip{1};              // cornering grip multiplier
     float plating{1};           // damage from rounds (and crashes) multiplier
     bool gun{false};            // a roof gun
+    float range{1};             // fuel range multiplier (a rig's tanks)
 };
 [[nodiscard]] Tuning tuning(const Mods& mods);
 [[nodiscard]] bool valid(const Mods& mods);
 // Fit the mods to a car: its placement state carries the tuning and the paint from now on.
 void apply(const Mods& mods, world::VehiclePlacementState& car);
 [[nodiscard]] Mods mods_of(const world::VehiclePlacementState& car);
-[[nodiscard]] std::string serialise(const Mods& mods);       // "paint engine tires bumper plating gun"
+[[nodiscard]] std::string serialise(const Mods& mods);       // "paint engine tires bumper plating gun tank"
 [[nodiscard]] bool parse(std::string_view text, Mods& out);
 
 // A repair: a few kronoj a point of damage (body, engine and tyres).

@@ -377,6 +377,45 @@ int main() {
     assert(fleet.vehicles().size() == VehicleSystem::max_vehicles);
     assert(!fleet.spawn(bounded, {25, 0, 25}, 0));
     assert(!fleet.reconcile(bounded));
+    // Slopes are gravity and grip, not walls; a sheer step still stops a car. A made-up ground
+    // (bind_surface) far out on the empty pad: flat, a 10 degree climb, a 40 degree bank, a wall.
+    {
+        auto hills = world::VerdaRegion{};
+        VehicleSystem rides(registry);
+        assert(rides.spawn(hills, {0, 0, 0}, 0));
+        const std::string id = rides.last_spawned();
+        const int index = rides.find(id);
+        auto *ride = rides.asset(hills, id);
+        float grade = 0, wall_at = 1e9F;
+        rides.bind_surface([&](Vector3 p, float) {
+            const float rise = p.z > 0 ? p.z * std::tan(grade * DEG2RAD) : 0;
+            return rise + (p.z > wall_at ? 1.2F : 0);
+        });
+        const auto drive = [&](Vector3 at, float yaw, float throttle, float seconds) {
+            at.y = rides.ground(at, 0);
+            assert(rides.place(hills, id, at, yaw));
+            Vector3 feet = ride->position;
+            if (!rides.driver()) assert(rides.enter(hills, index, feet));
+            for (int f = 0; f < static_cast<int>(seconds * 60); ++f) rides.update(1 / 60.0F, {throttle, 0}, hills, feet);
+            const float moved = ride->position.z - at.z;
+            Vector3 out;
+            rides.exit(hills, out, true);
+            return moved;
+        };
+        const float flat = drive({1500, 0, -200}, 0, 1, 4);
+        grade = 10;
+        const float climb = drive({1500, 0, 5}, 0, 1, 4);
+        assert(climb > 15 && climb < flat);                      // up a 10 degree hill: slower, but up it
+        assert(std::abs(drive({1500, 0, 30}, 0, 0, 3)) < .2F);   // stopped on it, the brakes hold
+        grade = 40;                                              // past what a hatchback climbs (28)
+        assert(drive({1500, 0, 20}, 0, 1, 3) < 0);               // the wheels spin: it slides back down
+        assert(drive({1500, 0, 20}, 180, .3F, 2) < -3);          // and drives down it freely
+        grade = 0; wall_at = -150;                               // a 1.2 m wall across the flat
+        const float stopped = drive({1500, 0, -175}, 0, 1, 4);
+        assert(stopped < 25 - def->length * .5F + .5F);          // its bumper meets the wall
+        assert(VehicleSystem::offroad_pace(*registry.find("sxs"), 1) == 1 && VehicleSystem::offroad_pace(*def, 1) < .9F &&
+               VehicleSystem::offroad_pace(*def, 1.6F) > VehicleSystem::offroad_pace(*def, 1));   // built for the rough, or bigger tyres
+    }
     fs::remove_all(dir);
     std::cout << "[PASS] Vehicle definitions, scale, anchors, marker reconciliation, driving, "
                  "exit, sleep, cover, glass penetration, damage, fuel hook and persistence\n";

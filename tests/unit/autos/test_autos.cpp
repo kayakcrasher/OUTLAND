@@ -34,7 +34,7 @@ int main() {
     check(autos::mods_of(car) == big, "the car remembers what was fitted");
     autos::apply(autos::Mods{}, car);
     check(!car.painted && car.power == 1 && car.wheel == 1, "back to factory");
-    check(!autos::valid(autos::Mods{static_cast<int>(autos::paints.size()), 0, 1, 0}) && !autos::valid(autos::Mods{-1, 3, 1, 0}) && !autos::valid(autos::Mods{-1, 0, 4, 0}),
+    check(!autos::valid(autos::Mods{static_cast<int>(autos::paints.size()), 0, 1, 0}) && !autos::valid(autos::Mods{-1, static_cast<int>(autos::engines.size()), 1, 0}) && !autos::valid(autos::Mods{-1, 0, 4, 0}),
           "no such parts");
     autos::Mods back;
     check(autos::parse(autos::serialise(big), back) && back == big, "mods survive a save");
@@ -48,6 +48,23 @@ int main() {
     world::VehiclePlacementState plated;
     autos::apply(armed, plated);
     check(plated.gun && plated.plating == .25F && autos::mods_of(plated) == armed, "the rig remembers its fit-out");
+    // More engines: petrol for the cars, diesels for the rigs, cheapest first, each pulling harder
+    // than the one before; the saved indices of the first three stay put.
+    check(std::string(autos::engines[2].name) == "V8 big block" && autos::engines[2].power == 1.65F, "the V8 keeps its place in old saves");
+    for (const bool rig : {false, true}) {
+        const auto choices = autos::engine_choices(rig);
+        check(choices.size() >= 4 && choices.front() == 0, std::string(rig ? "diesels" : "petrol engines") + " on offer, the factory one first");
+        for (std::size_t i = 1; i < choices.size(); ++i) {
+            const auto& e = autos::engines[static_cast<std::size_t>(choices[i])], &prev = autos::engines[static_cast<std::size_t>(choices[i - 1])];
+            check(e.diesel == rig && e.price > prev.price && e.power > prev.power, std::string("each dearer engine pulls harder: ") + e.name);
+        }
+    }
+    check(autos::tuning({-1, 8, 1, 0}).power > 2 && autos::tuning({-1, 8, 1, 0}).slope >= 6, "the road-train diesel pulls up steeper ground");
+    // Long-range tanks for a rig, saved (older lines have the factory tanks).
+    autos::Mods tanked{-1, 7, 1, 0, 1, 0, 2};
+    check(autos::valid(tanked) && autos::tuning(tanked).range > 2 && autos::parse(autos::serialise(tanked), back) && back == tanked, "road-train tanks, saved");
+    check(autos::parse("-1 1 1 0 2 1", back) && back.tank == 0, "an older save: factory tanks");
+    check(!autos::valid(autos::Mods{-1, 0, 1, 0, 0, 0, 3}), "no such tanks");
     // Smaller tyres sit low and grip; bigger ones lift the car.
     check(autos::tuning({-1, 0, 0, 0}).wheel < 1 && autos::tuning({-1, 0, 0, 0}).grip > 1, "low-profile tyres");
 
@@ -80,6 +97,8 @@ int main() {
     check(autos::parse("semi 0 0 1 0 1 2 3 4 1", loaded) && loaded.definition == "semi" && loaded.mods.plating == 0, "an older car line still loads");
     autos::OwnedCar rig{"semi", "", {-1, 0, 1, 0, 1, 1}, {1, 2, 3}, 0, 1};
     check(autos::parse(autos::serialise(rig), loaded) && loaded.mods == rig.mods, "an armed rig's save line");
+    autos::OwnedCar long_haul{"semi", "", {-1, 8, 2, 0, 2, 1, 1}, {1, 2, 3}, 0, 1};
+    check(autos::parse(autos::serialise(long_haul), loaded) && loaded.mods == long_haul.mods, "a long-haul rig's save line");
     check(!autos::parse("tr uck 0 0 1 0 1 2 3 4 1", loaded) && !autos::parse("truck 0 0 1 0 1 2 3 4 2", loaded), "bad car lines are refused");
 
     if (failures == 0) std::cout << "autos ok\n";

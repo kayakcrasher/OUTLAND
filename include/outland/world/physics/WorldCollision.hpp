@@ -30,7 +30,9 @@ public:
 
     // For vehicles: like blocked(), but light street furniture (fences, bins, cones, benches,
     // pallets) does not stop a car - it is brushed aside. Walls, trees, posts, bollards, barriers
-    // and other vehicles still do.
+    // and other vehicles still do. A model this big or bigger (a ballpark, a square) meets a car
+    // with its real shape, not its box.
+    static constexpr float large_model = 24;
     static bool vehicle_blocked(
         Vector3 position,
         const VerdaRegion& region,

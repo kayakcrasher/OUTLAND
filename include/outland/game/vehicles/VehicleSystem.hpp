@@ -57,9 +57,18 @@ class VehicleSystem {
     combat::BulletHit trace(const world::VerdaRegion &region, Vector3 start, Vector3 end,
                             bool occupants = true) const;
     void damage(world::VerdaRegion &region, const combat::BulletHit &hit, float amount);
+    // Something solid in the footprint, or ground too steep to stand a vehicle on (placing one).
     bool blocked(const world::VerdaRegion &region, Vector3 position, float yaw,
                  const VehicleDefinition &definition, float scale,
                  std::string_view ignore = {}) const;
+    // Only something solid in the footprint. A moving vehicle meets slopes as gravity and grip
+    // (it slows uphill, and slides back down what is too steep for it), not as a wall; only a
+    // sheer step (a kerb wall, a quay edge) stops it like one.
+    bool solid(const world::VerdaRegion &region, Vector3 position, float yaw,
+               const VehicleDefinition &definition, float scale,
+               std::string_view ignore = {}) const;
+    static constexpr float gravity = 9.81F * .75F;   // the pull along a grade (softened a little)
+    static constexpr float ledge = .45F;             // a rise this sheer at the bumper is a wall
     const VehicleDefinition *definition(const world::WorldAsset &asset) const {
         return registry_.find(asset.vehicle.definition);
     }
@@ -93,6 +102,12 @@ class VehicleSystem {
     // otherwise (a parking garage's decks and ramps). Unbound: the terrain.
     void bind_surface(std::function<float(Vector3, float)> surface) { surface_ = std::move(surface); }
     [[nodiscard]] float ground(Vector3 p, float from) const;
+    // Off the road (grass, fields, the wild): how well a vehicle goes there, from 0 to 1 (0: on a
+    // road or a paved lot). The player's vehicle loses top speed and pull there, by how much it is
+    // built for it - a side-by-side barely at all, a road car more, a big rig most; bigger tyres
+    // win some of it back. Unbound: everywhere is road.
+    void bind_offroad(std::function<float(Vector3)> rough) { offroad_ = std::move(rough); }
+    [[nodiscard]] static float offroad_pace(const VehicleDefinition &d, float wheel);
     // Index into vehicles(), or -1.
     int find(std::string_view id) const;
     // Move a vehicle to a new pose at rest (off-screen traffic, parking it home). Refused while
@@ -131,6 +146,7 @@ class VehicleSystem {
     VehicleEvents events_{};
     std::function<void(float)> occupant_damage_;
     std::function<float(const std::string &, float)> fuel_hook_;
+    std::function<float(Vector3)> offroad_;
     unsigned spawn_counter_{0};
     std::string last_spawned_;
     world::VerdaRegion *owner_{nullptr};

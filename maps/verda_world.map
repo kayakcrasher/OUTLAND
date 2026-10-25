@@ -4966,7 +4966,7 @@ ASSET "creator_transit_concrete_kit3" 5 "assets/verda/transit/concrete.glb" -3.0
 ASSET "creator_transit_concrete_kit4" 5 "assets/verda/transit/concrete.glb" 1.0999999 6 -1752.80005 2 0.0599999987 0.810000002 180 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_bus_stop_sign_kit1" 9 "assets/verda/transit/bus_stop_sign.glb" 3 6 -1753.30005 0.5 2.6400001 0.0700000003 270 255 255 255 255 80 80 80 255 1
 ASSET "creator_transit_lamppost_kit1" 9 "assets/verda/transit/lamppost.glb" -7.5 6 -1751.69995 1.04999995 10.5200005 3.47000003 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_transit_bus_stop_kit2" 9 "assets/verda/transit/bus_stop.glb" 1033.4978 15.3788652 -1069.0813 4.17000008 3.19000006 1.36000001 136.249954 255 255 255 255 80 80 80 255 1
+ASSET "creator_transit_bus_stop_kit2" 9 "assets/verda/transit/bus_stop.glb" 1033.4978 14.9909601 -1069.0813 4.17000008 3.19000006 1.36000001 136.249954 255 255 255 255 80 80 80 255 1
 ASSET "creator_transit_concrete_kit5" 5 "assets/verda/transit/concrete.glb" 1033.43298 14.9420872 -1072.05042 2 0.0599999987 0.810000002 136.249954 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_concrete_kit6" 5 "assets/verda/transit/concrete.glb" 1036.46692 14.8825655 -1069.14612 2 0.0599999987 0.810000002 136.249954 255 255 255 255 80 80 80 255 0
 ASSET "creator_transit_bus_stop_sign_kit2" 9 "assets/verda/transit/bus_stop_sign.glb" 1038.18518 14.8547974 -1068.19336 0.5 2.6400001 0.0700000003 226.249954 255 255 255 255 80 80 80 255 1
@@ -7661,7 +7661,7 @@ MARKER "vehicle_spawn_truck_roka_1" 3 -1648 14.0573664 394 2 1.60000002 4.400000
 MARKER "vehicle_spawn_truck_roka_2" 3 -1692 14.0573664 474 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_truck_roka_3" 3 -1648 14.0573664 554 2 1.60000002 4.4000001 270 1
 MARKER "vehicle_spawn_truck_roka_4" 3 -1910 14.0573664 442 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_police_west_roka_1" 3 -1745 14.0573664 577.799988 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_police_west_roka_1" 3 -1745 14.0573654 577.799988 2 1.60000002 4.4000001 90 1
 MARKER "loot_spawn_general_bldg_65" 0 -1816 14.207366 436 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_66" 0 -1816 14.207366 466 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_67" 0 -1726 14.4073658 390 0.5 0.5 0.5 0 1
