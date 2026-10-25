@@ -26,7 +26,8 @@ struct WorldClock {
 };
 
 enum class PlaceKind : std::uint8_t {
-    Home, Garage, Industrial, Dock, Shop, Pub, Church, Police, Clinic, Office, Farm, Square
+    Home, Garage, Industrial, Dock, Shop, Pub, Church, Police, Clinic, Office, Farm, Square,
+    Ballpark    // a county's ballpark (world::ballpark): in at the gate, out of the world in the stands
 };
 const char* place_name(PlaceKind kind);
 
@@ -54,7 +55,8 @@ enum class Faction : std::uint8_t { None, Police, Krimulo, GreenStar };
 const char* faction_name(Faction faction);
 
 enum class Activity : std::uint8_t {
-    Sleep, Home, Work, Lunch, Socialize, Worship, Shopping, Visit, Stroll, Patrol, FactionMeet, Shelter
+    Sleep, Home, Work, Lunch, Socialize, Worship, Shopping, Visit, Stroll, Patrol, FactionMeet, Shelter,
+    Ballgame    // off to watch the town's team (LifeSimulation::attend)
 };
 const char* activity_name(Activity activity);
 
@@ -111,6 +113,9 @@ struct Resident {
     // In prison (game::law::JailTerms): off the street until let out, then out of the prison gate.
     double jail_until{-1};
     Vector3 jail_at{};
+    // Going to a ball game (LifeSimulation::attend): the ballpark from `game_from` till `game_until`.
+    int game_place{-1};
+    double game_from{-1}, game_until{-1};
     std::string full_name() const { return first_name+" "+family_name; }
 };
 

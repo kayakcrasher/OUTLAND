@@ -71,6 +71,7 @@
 #include "outland/game/economy/SkyMansion.hpp"
 #include "outland/world/ParkingGarage.hpp"
 #include "outland/world/Ballparks.hpp"
+#include "outland/game/sports/BallGame.hpp"
 #include "outland/game/sports/League.hpp"
 #include "outland/game/economy/Homes.hpp"
 #include "outland/game/sound/SoundBus.hpp"
@@ -655,12 +656,15 @@ void Renderer::run() {
     std::array<world::ballpark::Site,5> parks{};
     std::string league_path,league_saved;
     std::array<double,5> park_fight_until{},park_cheer_home{},park_cheer_away{};   // (match_time)
+    // Who's going to each game (island life's residents): their seat in the home or visitors' stand.
+    struct GameFan { int resident; bool home; int seat; };
+    std::map<int,std::vector<GameFan>> game_fans;   // by fixture, this season
     constexpr int rioter_base=970000;
     std::vector<int> rioters;
     int riot_park=-1,riot_team=0;
     double league_bus_sync=0;
     struct StandSeat { bool on{false}; Vector3 at{}; float yaw{0}; } stand_seat;   // the player sitting in the stands
-    characters::AnimationController crowd_pose,cheer_pose,brawl_pose,field_pose;
+    characters::AnimationController crowd_pose,cheer_pose,brawl_pose,field_pose,run_pose,walk_pose;
     // The nearest free seat in a park's stands within reach of `feet` (false: none).
     const auto stand_seat_near=[&](Vector3 feet,Vector3& seat,float& yaw) {
         float best=2.6F;   // from the foot of the stand, or a row up
@@ -672,7 +676,7 @@ void Renderer::run() {
                     for(int place=0;place<world::ballpark::seats_per_row;++place) {
                         const Vector3 s=site.seat(home,row,place);
                         const float d=std::hypot(s.x-feet.x,s.z-feet.z);
-                        if(d<best && std::abs(s.y-feet.y)<1.6F) {best=d;seat=s;yaw=site.yaw;found=true;}
+                        if(d<best && std::abs(s.y-feet.y)<1.6F) {best=d;seat=s;yaw=site.seat_yaw(home);found=true;}
                     }
         }
         return found;
@@ -2240,9 +2244,10 @@ void Renderer::run() {
                         if(!loaded) league.start(island_life.clock().day(),session_seed);
                     }
                     for(const int id:rioters) npcs.despawn_resident(id);
-                    rioters.clear();riot_park=-1;stand_seat={};park_fight_until={};
+                    rioters.clear();riot_park=-1;stand_seat={};park_fight_until={};game_fans.clear();
 #ifdef OUTLAND_DEV_TOOLS
-                    // OUTLAND_DEV_LEAGUE=game|final|riot[:park]: a game at that park (or the final, at that park) about to start, or the riot on.
+                    // OUTLAND_DEV_LEAGUE=game|gates|final|riot[:park]: a game at that park about to start (or its gates about to open; or
+                    // the final, at that park), or the riot on.
                     if(const char* dev=std::getenv("OUTLAND_DEV_LEAGUE");dev && *dev) {
                         std::string what=dev;
                         int park=-1;
@@ -2251,13 +2256,13 @@ void Renderer::run() {
                         std::uint64_t seed=session_seed;
                         league.start(today,seed);
                         // The final is at the leader's park: try seasons till it falls at that one.
-                        if(what!="game" && park>=0)
+                        if(what!="game" && what!="gates" && park>=0)
                             for(int i=0;i<500 && league.fixtures().back().home!=park;++i) league.start(today,seed+=2);   // (the seed is made odd)
-                        int fixture=what=="game" ? 0 : static_cast<int>(league.fixtures().size())-1;
-                        if(what=="game" && park>=0) for(int i=0;i<static_cast<int>(league.fixtures().size());++i) if(league.fixtures()[static_cast<std::size_t>(i)].home==park) {fixture=i;break;}
+                        int fixture=what=="game" || what=="gates" ? 0 : static_cast<int>(league.fixtures().size())-1;
+                        if((what=="game" || what=="gates") && park>=0) for(int i=0;i<static_cast<int>(league.fixtures().size());++i) if(league.fixtures()[static_cast<std::size_t>(i)].home==park) {fixture=i;break;}
                         league.start(today-league.fixtures()[static_cast<std::size_t>(fixture)].day,seed);
                         const double pitch=league.first_pitch_at(fixture);
-                        const double at=what=="riot" ? pitch+league.linescore(fixture).length+2 : pitch-(what=="game" ? 8 : 3);
+                        const double at=what=="riot" ? pitch+league.linescore(fixture).length+2 : what=="gates" ? pitch-game::sports::League::pregame-20 : pitch-(what=="game" ? 8 : 3);
                         island_life.set_clock(game::life::WorldClock{at});
                         const auto& f=league.fixtures()[static_cast<std::size_t>(fixture)];
                         TraceLog(LOG_INFO,"OUTLAND league dev: %s at park %d (%s v %s)",what.c_str(),f.home,game::sports::teams[static_cast<std::size_t>(f.home)].nick,game::sports::teams[static_cast<std::size_t>(f.away)].nick);
@@ -6111,15 +6116,72 @@ void Renderer::run() {
                         using namespace game::sports;
                         const double now=island_life.clock().minutes;
                         const auto nick=[](int team){return std::string(teams[static_cast<std::size_t>(team)].nick);};
+                        // The town turns out: ahead of each game its fans set off for the park - the
+                        // home crowd from town, the visitors' followers across the island (by car if
+                        // they have one) - and go home after it.
+                        if(!island_life.empty())
+                            for(int i=0;i<static_cast<int>(league.fixtures().size());++i) {
+                                if(game_fans.count(i)) continue;
+                                const double pitch=league.first_pitch_at(i);
+                                if(now<pitch-League::pregame-90 || now>pitch+60) continue;
+                                const auto& g=league.fixtures()[static_cast<std::size_t>(i)];
+                                const int venue=island_life.ballpark(g.home);
+                                auto& fans=game_fans[i];
+                                if(venue<0) continue;
+                                const auto& island=island_life.island();
+                                const auto town_of=[&](int team) {
+                                    Vector3 c{};
+                                    for(const auto& site:world::layout::sites) if(std::string_view(site.id)==teams[static_cast<std::size_t>(team)].site) c=site.center;
+                                    int best=-1;float d=1e9F;
+                                    for(std::size_t k=0;k<island.settlement_centers.size();++k) {
+                                        const float e=std::hypot(island.settlement_centers[k].x-c.x,island.settlement_centers[k].z-c.z);
+                                        if(e<d) {d=e;best=static_cast<int>(k);}
+                                    }
+                                    return best;
+                                };
+                                const double until=pitch+league.linescore(i).length+League::postgame*.5;
+                                const int seats=world::ballpark::rows*world::ballpark::seats_per_row;
+                                for(const bool home_side:{true,false}) {
+                                    const int town=town_of(home_side ? g.home : g.away);
+                                    std::vector<std::pair<std::uint64_t,int>> order;
+                                    int people=0;
+                                    for(const auto& r:island.residents) {
+                                        if(r.settlement!=town || !r.alive || r.occupation==game::life::Occupation::PoliceOfficer ||
+                                           r.occupation==game::life::Occupation::Doctor) continue;
+                                        ++people;
+                                        // The travelling fans are the ones with a car first.
+                                        const std::uint64_t h=(static_cast<std::uint64_t>(r.id)*0x9e3779b97f4a7c15ULL)^(static_cast<std::uint64_t>(i+league.season()*31)*0xc2b2ae3d27d4eb4fULL);
+                                        order.push_back({(home_side || r.car<0 ? h|(1ULL<<63) : h&~(1ULL<<63)),r.id});
+                                    }
+                                    std::sort(order.begin(),order.end());
+                                    const int want=home_side ? std::min(70,std::max(8,people*3/10))
+                                                             : std::min(40,static_cast<int>(static_cast<float>(std::min(70,std::max(8,people*3/10)))*league.travelling(i)));
+                                    int taken=0;
+                                    for(const auto& [h,id]:order) {
+                                        if(taken>=want) break;
+                                        const double stagger=static_cast<double>(h%40);
+                                        const double leave=home_side ? pitch-League::pregame+stagger : pitch-League::pregame-60+stagger;
+                                        if(!island_life.attend(id,venue,leave,until+static_cast<double>((h>>8)%20))) continue;
+                                        fans.push_back({id,home_side,(taken*37+i*11)%seats});
+                                        ++taken;
+                                    }
+                                }
+                                TraceLog(LOG_INFO,"OUTLAND ballgame %d: %zu fans on their way to the %s park",i,fans.size(),teams[static_cast<std::size_t>(g.home)].nick);
+                            }
                         for(const auto& e:league.update(now)) {
-                            if(e.kind==EventKind::NewSeason) {gang_news=TextFormat("BASBALLIGO: season %d begins - five clubs, one cup",league.season());gang_news_time=6;continue;}
+                            if(e.kind==EventKind::NewSeason) {gang_news=TextFormat("BASBALLIGO: season %d begins - five clubs, one cup",league.season());gang_news_time=6;game_fans.clear();continue;}
                             if(e.fixture<0 || e.fixture>=static_cast<int>(league.fixtures().size())) continue;
                             const auto& g=league.fixtures()[static_cast<std::size_t>(e.fixture)];
                             const auto& site=parks[static_cast<std::size_t>(g.home)];
                             const bool here=site.team>=0 && std::hypot(feet.x-site.origin.x,feet.z-site.origin.z)<320;
                             const auto score=league.live_fixture(e.fixture,now);
                             switch(e.kind) {
-                                case EventKind::GameOn:
+                                case EventKind::GameOn: {
+                                    int seated=0;
+                                    for(const auto& fan:game_fans[e.fixture])
+                                        seated+=island_life.in_the_stands(island_life.residents()[static_cast<std::size_t>(fan.resident)]);
+                                    TraceLog(LOG_INFO,"OUTLAND ballgame %d: first pitch, %d of %zu fans in their seats",e.fixture,seated,game_fans[e.fixture].size());
+                                }
                                     gang_news=(g.final ? "THE FINAL: " : "PLAY BALL: ")+nick(g.home)+" host the "+nick(g.away)+" at "+teams[static_cast<std::size_t>(g.home)].town;gang_news_time=6;
                                     break;
                                 case EventKind::Run:
@@ -6615,6 +6677,8 @@ void Renderer::run() {
             cheer_pose.advance(characters::AnimationAction::Walk,dt,.6F);
             brawl_pose.advance(characters::AnimationAction::Attack,dt,0);
             field_pose.advance(characters::AnimationAction::Idle,dt,0);
+            run_pose.advance(characters::AnimationAction::Run,dt,7.0F);
+            walk_pose.advance(characters::AnimationAction::Walk,dt,1.5F);
             const auto jersey=[&](int team){return team>=0 && team<5 ? outfits.team[static_cast<std::size_t>(team)].id : 0U;};
             for(int p=0;p<5;++p) {
                 const auto& site=parks[static_cast<std::size_t>(p)];
@@ -6625,78 +6689,65 @@ void Renderer::run() {
                 const int fixture=live.fixture>=0 ? live.fixture : static_cast<int>(league.fixtures().size())-1;
                 const auto& g=league.fixtures()[static_cast<std::size_t>(fixture)];
                 const float facing=site.yaw;
-                // The crowd: the home turnout and the travelling support, in the stands.
+                // The crowd: the town's own people who came to watch (island life), in their seats -
+                // the home crowd by first base, the visitors' followers by third.
                 if(live.phase!=Phase::Quiet) {
-                    // Fewer bodies from further off (a phone draws every one of them).
+                    const auto it=game_fans.find(fixture);
                     const float off=Vector3Distance(site.origin,camera.position);
-                    const int home_n=(live.phase==Phase::Pregame ? 24 : 56)/(off>120 ? 2 : 1);
-                    const int away_n=static_cast<int>(static_cast<float>(home_n)*league.travelling(fixture));
-                    for(const bool home_side:{true,false}) {
-                        const int n=home_side ? home_n : away_n;
-                        const bool cheering=(home_side ? park_cheer_home : park_cheer_away)[static_cast<std::size_t>(p)]>match_time;
-                        for(int k=0;k<n;++k) {
-                            const int slot=(k*37+fixture*11)%(BP::rows*BP::seats_per_row);
-                            const int row=slot%BP::rows, place=slot/BP::rows;
-                            const Vector3 seat=site.seat(home_side,row,place);
+                    const int step=off>120 ? 2 : 1;   // fewer bodies from further off (a phone draws every one)
+                    if(it!=game_fans.end())
+                        for(int k=0;k<static_cast<int>(it->second.size());k+=step) {
+                            const auto& fan=it->second[static_cast<std::size_t>(k)];
+                            const auto& residents=island_life.residents();
+                            if(fan.resident<0 || fan.resident>=static_cast<int>(residents.size())) continue;
+                            const auto& r=residents[static_cast<std::size_t>(fan.resident)];
+                            if(!island_life.in_the_stands(r)) continue;
+                            const int row=fan.seat%BP::rows, place=fan.seat/BP::rows;
+                            const Vector3 seat=site.seat(fan.home,row,place);
                             if(Vector3DistanceSqr(seat,camera.position)>170*170 || !view.sphere(seat,1.2F)) continue;
                             if(stand_seat.on && Vector3DistanceSqr(seat,stand_seat.at)<.6F*.6F) continue;   // the player's seat
-                            const bool fan_shirt=(k*7+fixture)%10<7;
-                            std::string body=outfit_body;
-                            if(!fan_shirt) if(const auto* d=character_registry.choose(characters::CharacterPool::Civilian,static_cast<std::uint64_t>(9000+k*31+(home_side?0:500)))) body=d->id;
+                            const bool cheering=(fan.home ? park_cheer_home : park_cheer_away)[static_cast<std::size_t>(p)]>match_time;
                             characters::BodyPose pose;
-                            pose.outfit=fan_shirt ? jersey(home_side ? g.home : g.away) : 0U;
                             const bool up=cheering && (k%3!=0);
                             pose.seated=!up;
-                            const Vector3 at=up ? Vector3{seat.x,seat.y,seat.z} : Vector3{seat.x,seat.y-.42F,seat.z};
-                            character_renderer.draw(body,at,facing+static_cast<float>((k*29)%24)-12,1,up ? &cheer_pose : &crowd_pose,pose);
+                            const Vector3 at=up ? seat : Vector3{seat.x,seat.y-.42F,seat.z};
+                            character_renderer.draw(r.character_id,at,site.seat_yaw(fan.home)+static_cast<float>((k*29)%24)-12,1,up ? &cheer_pose : &crowd_pose,pose);
                         }
-                    }
                 }
-                // The teams: in the field and at bat; before the game, lined up by their dugouts.
-                if(live.phase==Phase::Playing || live.phase==Phase::Pregame) {
-                    const int fielding=live.phase==Phase::Pregame ? g.home : live.top ? g.home : g.away;
-                    const int batting=fielding==g.home ? g.away : g.home;
-                    const Vector3 plate=site.to_world(BP::plate);
-                    for(std::size_t i=0;i<BP::fielders.size();++i) {
-                        Vector3 spot=live.phase==Phase::Pregame ? Vector3{-6.0F-static_cast<float>(i)*1.4F,0,-30.0F+static_cast<float>(i)*.9F} : BP::fielders[i];
-                        const Vector3 at=site.to_world(spot);
-                        const float yaw=std::atan2(plate.x-at.x,plate.z-at.z)*RAD2DEG;
-                        characters::BodyPose pose;pose.outfit=jersey(fielding);
-                        character_renderer.draw(outfit_body,at,live.phase==Phase::Pregame ? facing+90 : yaw,1,&field_pose,pose);
-                    }
-                    if(live.phase==Phase::Pregame)
-                        for(int i=0;i<9;++i) {
-                            const Vector3 at=site.to_world({6.0F+static_cast<float>(i)*1.4F,0,-30.0F+static_cast<float>(i)*.9F});
-                            characters::BodyPose pose;pose.outfit=jersey(batting);
-                            character_renderer.draw(outfit_body,at,facing-90,1,&field_pose,pose);
+                // The game itself (game::sports::scene): the pitch, the swing, the ball in play, the
+                // throw, the runners - and the teams lined up before it and celebrating after.
+                if(Vector3DistanceSqr(site.origin,camera.position)<200*200) {
+                    const auto line=league.linescore(fixture);
+                    const auto sc=game::sports::scene(g,line,now-league.first_pitch_at(fixture),60.0F/std::max(1.0F,island_life.config().time_scale));
+                    for(const auto& f:sc.figures) {
+                        Vector3 feet=site.to_world(f.at);
+                        if(Vector3DistanceSqr(feet,camera.position)>170*170 || !view.sphere(Vector3Add(feet,{0,1,0}),1.3F)) continue;
+                        characters::BodyPose pose;
+                        pose.outfit=f.role==Role::Umpire ? 0U : jersey(f.home ? g.home : g.away);
+                        pose.play_phase=f.phase;
+                        characters::AnimationController* anim=&field_pose;
+                        switch(f.motion) {
+                            case Motion::Run:anim=&run_pose;break;
+                            case Motion::Walk:anim=&walk_pose;break;
+                            case Motion::Sit:pose.seated=true;anim=&crowd_pose;feet.y+=.03F;break;
+                            case Motion::Ready:pose.play=characters::BodyPlay::Ready;break;
+                            case Motion::Squat:pose.play=characters::BodyPlay::Squat;break;
+                            case Motion::Stance:pose.play=characters::BodyPlay::Stance;break;
+                            case Motion::Swing:pose.play=characters::BodyPlay::Swing;break;
+                            case Motion::Pitch:pose.play=characters::BodyPlay::Pitch;break;
+                            case Motion::Throw:pose.play=characters::BodyPlay::Throw;break;
+                            case Motion::Catch:pose.play=characters::BodyPlay::Catch;break;
+                            case Motion::Scoop:pose.play=characters::BodyPlay::Scoop;break;
+                            case Motion::Cheer:pose.play=characters::BodyPlay::Cheer;feet.y+=.35F*std::abs(std::sin(f.phase*2*PI));break;
+                            default:break;
                         }
-                    else {
-                        const Vector3 box=site.to_world({1.1F,0,BP::plate.z});
-                        characters::BodyPose pose;pose.outfit=jersey(batting);
-                        character_renderer.draw(outfit_body,box,facing-90,1,&field_pose,pose);
-                        // The rest of the batting side on their dugout's bench.
-                        const Vector3 dug=batting==g.home ? BP::home_dugout : BP::away_dugout;
-                        characters::BodyPose sit;sit.seated=true;sit.outfit=jersey(batting);
-                        for(int i=0;i<5;++i) character_renderer.draw(outfit_body,site.to_world({dug.x-4.0F+static_cast<float>(i)*2,-.45F,dug.z-.85F}),facing,1,&crowd_pose,sit);
-                        // The ball: pitched, then now and then hit out into the field.
-                        if(Vector3DistanceSqr(plate,camera.position)<170*170) {
-                            const double cycle=std::fmod(match_time+p*1.7,7.0);
-                            const auto lerp=[](Vector3 a,Vector3 b,float u){return Vector3Lerp(a,b,u);};
-                            const Vector3 mound=site.to_world({0,1.9F,-17.4F}),catcher=site.to_world({0,1.0F,-37.4F});
-                            Vector3 ball{};bool shown=false;
-                            if(cycle>1.0 && cycle<1.5) {ball=lerp(mound,catcher,static_cast<float>((cycle-1.0)/.5));shown=true;}
-                            const int pitch=static_cast<int>((match_time+p*1.7)/7.0);
-                            if(cycle>=1.5 && cycle<4.2 && (pitch*7919)%10<4) {
-                                const float u=static_cast<float>((cycle-1.5)/2.7);
-                                const float a=(static_cast<float>((pitch*131)%90)-45)*DEG2RAD, r=25.0F+static_cast<float>((pitch*17)%55);
-                                const Vector3 land=site.to_world({std::sin(a)*r,1.0F,BP::plate.z+std::cos(a)*r});
-                                ball=lerp(site.to_world({.3F,1.0F,BP::plate.z+.5F}),land,u);
-                                ball.y+=std::sin(u*PI)*(6.0F+static_cast<float>((pitch*7)%14));
-                                shown=true;
-                            }
-                            if(shown) DrawSphere(ball,.11F,RAYWHITE);
-                        }
+                        character_renderer.draw(f.role==Role::Umpire ? std::string("character_18_police") : outfit_body,feet,site.yaw+f.yaw,1,anim,pose);
                     }
+                    for(const auto& bat:sc.bats) {
+                        const Vector3 a=site.to_world(bat.grip),b=site.to_world(bat.tip);
+                        if(Vector3DistanceSqr(a,camera.position)<120*120) DrawCylinderEx(a,b,.018F,.034F,6,Color{196,160,112,255});
+                    }
+                    if(sc.ball) DrawSphere(site.to_world(sc.ball_at),.09F,RAYWHITE);
                 }
                 // A brawl: fans of both clubs at it on the concourse between the stands and the gate.
                 const bool brawl=park_fight_until[static_cast<std::size_t>(p)]>match_time || riot;
@@ -8202,9 +8253,20 @@ void Renderer::run() {
                         DrawTextEx(font,TextFormat("%s  %d",away.nick,score.away_runs),{x+28,y+32},22,1,RAYWHITE);
                         DrawRectangle(static_cast<int>(x+12),static_cast<int>(y+60),10,22,home.primary);
                         DrawTextEx(font,TextFormat("%s  %d",home.nick,score.home_runs),{x+28,y+60},22,1,RAYWHITE);
-                        const char* state=riot ? "RIOT!" : live.phase==Phase::Pregame ? "First pitch 14:00" : live.phase==Phase::Over ? "FINAL" :
-                            TextFormat("%s %d",live.top ? "TOP" : "BOTTOM",live.inning);
-                        DrawTextEx(font,state,{x+210,y+46},20,1,riot ? RED : GOLD);
+                        const int pitch_minute=static_cast<int>(League::first_pitch);
+                        const char* state=riot ? "RIOT!" : live.phase==Phase::Pregame ? TextFormat("%02d:%02d start",pitch_minute/60,pitch_minute%60) :
+                            live.phase==Phase::Over ? "FINAL" : TextFormat("%s %d",live.top ? "TOP" : "BOT",live.inning);
+                        DrawTextEx(font,state,{x+200,y+34},20,1,riot ? RED : GOLD);
+                        if(live.phase==Phase::Playing && !riot) {
+                            // The outs, and a little diamond with the runners on.
+                            DrawTextEx(font,TextFormat("%d OUT",std::min(live.outs,2)),{x+200,y+62},18,1,RAYWHITE);
+                            const Vector2 c{x+305,y+62};
+                            const std::array<Vector2,3> bag{{{c.x+11,c.y},{c.x,c.y-11},{c.x-11,c.y}}};
+                            for(int k=0;k<3;++k) {
+                                const bool on=(live.bases>>k)&1;
+                                DrawPoly(bag[static_cast<std::size_t>(k)],4,6,45,on ? GOLD : Fade(RAYWHITE,.25F));
+                            }
+                        }
                         if(table) {
                             DrawTextEx(font,TextFormat("Season %d table",league.season()),{x+12,y+96},16,1,GOLD);
                             int row=0;

@@ -52,7 +52,7 @@ BALL_TEAMS = [((18, 118, 58), (228, 182, 40)), ((104, 66, 38), (240, 122, 24)), 
               ((0, 124, 126), (236, 236, 226)), ((40, 40, 44), (196, 42, 30))]
 BALL_PLATE_Z = -36.0
 BALL_FENCE = 88.0
-BALL_STANDS = (22.0, 46.0, -41.0, .45, .8, 6)    # |x| from, |x| to, front z, row rise, row depth, rows
+BALL_STANDS = (9.0, 34.0, 12.5, .45, .8, 6)      # along the line from, to; front's distance out; row rise, row depth, rows
 BALL_LOCKER = (-44.0, -30.0, -62.0, -52.0)
 
 
@@ -1746,27 +1746,123 @@ def ballpark(team):
     for x in (-16.0, 16.0):                                                       # the bus bays, in the team's colour
         for dx in (-2.0, 2.0):
             b.solid((x + dx - .08, .05, -74), (x + dx + .08, .06, -62), "trim")
-    # ---- the infield: the dirt skin (a fan round the plate), the grass square, base paths, bases, mound
+    # ---- the frame of the diamond: from the plate, t metres down a base line (side -1 first base,
+    # +1 third) and d metres out from it into foul ground.
+    S = math.sqrt(.5)
+
+    def at(side, t, d):
+        return (side * S * t + side * S * d, pz + S * t - S * d)
+
+    def flat_quad(material, pts, y):
+        """A flat quad on (or above) the ground, turned to face up."""
+        q = [(x, y, z) for x, z in pts]
+        e1, e2 = (q[1][0] - q[0][0], q[1][2] - q[0][2]), (q[2][0] - q[0][0], q[2][2] - q[0][2])
+        if e1[1] * e2[0] - e1[0] * e2[1] < 0:
+            q = [q[0], q[3], q[2], q[1]]
+        tu, tv = b.materials[material][1], b.materials[material][2]
+        b.raw(material, q, (0, 1, 0), [(x / tu, z / tv) for x, _, z in q])
+
+    def wall(material, a, c, y0, y1, out):
+        """A vertical quad from ground point a to c, facing `out`."""
+        dx, dz = c[0] - a[0], c[1] - a[1]
+        q = [(a[0], y0, a[1]), (c[0], y0, c[1]), (c[0], y1, c[1]), (a[0], y1, a[1])]
+        if -dz * out[0] + dx * out[1] < 0:
+            q = [q[1], q[0], q[3], q[2]]
+        n = math.hypot(*out)
+        length = math.hypot(dx, dz)
+        tu, tv = b.materials[material][1], b.materials[material][2]
+        b.raw(material, q, (out[0] / n, 0, out[1] / n), [(0, y0 / tv), (length / tu, y0 / tv), (length / tu, y1 / tv), (0, y1 / tv)])
+
+    def obox(side, t0, t1, d0, d1, y0, y1, faces):
+        """A box along a base line. Faces: top, bottom, field (the d0 side), back (d1), home (t0), far (t1)."""
+        q = [at(side, t, d) for t, d in ((t0, d0), (t1, d0), (t1, d1), (t0, d1))]
+        ux, uz, nx, nz = side * S, S, side * S, -S
+        if 'top' in faces:
+            flat_quad(faces['top'], q, y1)
+        if 'bottom' in faces:
+            pts = [(x, y0, z) for x, z in q]
+            e1, e2 = (pts[1][0] - pts[0][0], pts[1][2] - pts[0][2]), (pts[2][0] - pts[0][0], pts[2][2] - pts[0][2])
+            if e1[1] * e2[0] - e1[0] * e2[1] > 0:
+                pts = [pts[0], pts[3], pts[2], pts[1]]
+            b.raw(faces['bottom'], pts, (0, -1, 0), [(0, 0), (1, 0), (1, 1), (0, 1)])
+        if 'field' in faces:
+            wall(faces['field'], q[0], q[1], y0, y1, (-nx, -nz))
+        if 'back' in faces:
+            wall(faces['back'], q[3], q[2], y0, y1, (nx, nz))
+        if 'home' in faces:
+            wall(faces['home'], q[0], q[3], y0, y1, (-ux, -uz))
+        if 'far' in faces:
+            wall(faces['far'], q[1], q[2], y0, y1, (ux, uz))
+
+    def osolid(side, t0, t1, d0, d1, y0, y1, material):
+        obox(side, t0, t1, d0, d1, y0, y1, {f: material for f in ('top', 'bottom', 'field', 'back', 'home', 'far')})
+
+    def stripe(a, c, w=.08, y=.05, material="chalk"):
+        dx, dz = c[0] - a[0], c[1] - a[1]
+        length = math.hypot(dx, dz)
+        px, qz = -dz / length * w / 2, dx / length * w / 2
+        flat_quad(material, [(a[0] + px, a[1] + qz), (c[0] + px, c[1] + qz), (c[0] - px, c[1] - qz), (a[0] - px, a[1] - qz)], y)
+
+    def disc(material, cx, cz, r, y, steps=28):
+        for k in range(steps):
+            t0, t1 = 2 * math.pi * k / steps, 2 * math.pi * (k + 1) / steps
+            q = [(cx, y, cz), (cx, y, cz), (cx + r * math.sin(t1), y, cz + r * math.cos(t1)), (cx + r * math.sin(t0), y, cz + r * math.cos(t0))]
+            b.raw(material, q, (0, 1, 0), [(0, 0), (0, 0), (1, 1), (0, 1)])
+
+    def circle_line(cx, cz, r, y=.05, steps=24):
+        for k in range(steps):
+            t0, t1 = 2 * math.pi * k / steps, 2 * math.pi * (k + 1) / steps
+            stripe((cx + r * math.sin(t0), cz + r * math.cos(t0)), (cx + r * math.sin(t1), cz + r * math.cos(t1)), .07, y)
+
     def fan(material, cx, cz, r, a0, a1, y, steps=18):
         for k in range(steps):
             t0, t1 = a0 + (a1 - a0) * k / steps, a0 + (a1 - a0) * (k + 1) / steps
-            p = [(cx, y, cz), (cx, y, cz), (cx + r * math.sin(t1), y, cz + r * math.cos(t1)), (cx + r * math.sin(t0), y, cz + r * math.cos(t0))]
-            b.raw(material, p, (0, 1, 0), [(0, 0), (0, 0), (1, 1), (0, 1)])
-    fan("dirt", 0, pz, 29.0, -math.pi / 4 - .05, math.pi / 4 + .05, .03, 24)
-    d = 27.43 / math.sqrt(2)                                                       # the infield grass: a square on its point
-    inset = 2.6
-    sq = [(0, .04, pz + inset * 1.4), (-(d - inset), .04, pz + d), (0, .04, pz + 2 * d - inset * 1.4), ((d - inset), .04, pz + d)]
-    b.raw("grass", [sq[0], sq[1], sq[2], sq[3]], (0, 1, 0), [(0, 0), (1, 0), (1, 1), (0, 1)])
+            q = [(cx, y, cz), (cx, y, cz), (cx + r * math.sin(t1), y, cz + r * math.cos(t1)), (cx + r * math.sin(t0), y, cz + r * math.cos(t0))]
+            b.raw(material, q, (0, 1, 0), [(0, 0), (0, 0), (1, 1), (0, 1)])
+
+    # ---- the infield, to the rule book: 90 ft base paths, the rubber 60 ft 6 in from the plate,
+    # the skin's grass line 95 ft round the mound, a 13 ft circle round the plate.
+    mound_z = pz + 18.44
+    skin = 28.96
+    t_hit = 18.44 * S + math.sqrt((18.44 * S) ** 2 - 18.44 ** 2 + skin * skin)    # where the arc meets the lines
+    hit = {side: at(side, t_hit, 0) for side in (-1, 1)}
+    a_hit = math.atan2(hit[1][0], hit[1][1] - mound_z)
+    fan("dirt", 0, mound_z, skin, -a_hit, a_hit, .03, 40)
+    for side in (-1, 1):                                                          # the skin back to the plate
+        flat_quad("dirt", [(0, pz), hit[side], (0, mound_z), (0, mound_z)], .03)
+        flat_quad("dirt", [at(side, 0, 0), at(side, t_hit, 0), at(side, t_hit, .95), at(side, 0, .95)], .031)   # the path's foul half
+    d = 27.43 * S
+    g = .95 * math.sqrt(2)                                                        # the infield grass, inside the paths
+    flat_quad("grass", [(0, pz + g), (-d + g, pz + d), (0, pz + 2 * d - g), (d - g, pz + d)], .04)
+    disc("dirt", 0, pz, 3.96, .045)                                               # the circle round the plate
     for k in range(10):                                                           # the mound, raised in steps
         r = 2.7 * (1 - k / 10)
         b.ring("dirt", 0, -17.56, r, r, .03 + k * .025, .055 + k * .025, 16, top_cap=True)
     b.solid((-.3, .28, -17.66), (.3, .3, -17.46), "chalk")                        # the rubber
     for bx, bz in ((-19.4, -16.6), (0, 2.8), (19.4, -16.6)):
         b.solid((bx - .2, .04, bz - .2), (bx + .2, .12, bz + .2), "chalk")
-    b.solid((-.22, .04, pz - .22), (.22, .06, pz + .22), "chalk")                 # home plate
-    for side in (-1, 1):                                                          # the batter's boxes
-        b.solid((side * .55 - .06, .04, pz - .9), (side * .55 + .06, .05, pz + .9), "chalk")
-        b.solid((side * 1.75 - .06, .04, pz - .9), (side * 1.75 + .06, .05, pz + .9), "chalk")
+    hp = .216                                                                     # home plate: 17 in, its point to the catcher
+    flat_quad("chalk", [(-hp, pz + hp), (hp, pz + hp), (hp, pz), (-hp, pz)], .055)
+    flat_quad("chalk", [(-hp, pz), (hp, pz), (0, pz - hp), (0, pz - hp)], .055)
+    for side in (-1, 1):                                                          # the batter's boxes: 4 x 6 ft, 6 in off the plate
+        x0, x1 = side * (hp + .152), side * (hp + .152 + 1.22)
+        z0, z1 = pz - .915, pz + .915
+        for a, c in (((x0, z0), (x1, z0)), ((x1, z0), (x1, z1)), ((x1, z1), (x0, z1)), ((x0, z1), (x0, z0))):
+            stripe(a, c, .07, .052)
+        stripe((side * .546, z0), (side * .546, z0 - 2.44), .07, .052)          # the catcher's box
+    stripe((-.546, pz - 3.355), (.546, pz - 3.355), .07, .052)
+    stripe(at(-1, 13.7, .91), at(-1, 27.43, .91), .07, .052)                     # the running lane to first
+    stripe(at(-1, 13.7, 0), at(-1, 13.7, .91), .07, .052)
+    for side in (-1, 1):
+        q = [at(side, 20.4, 4.57), at(side, 26.5, 4.57), at(side, 26.5, 7.62), at(side, 20.4, 7.62)]   # the coaches' boxes
+        for k in range(4):
+            stripe(q[k], q[(k + 1) % 4], .07, .052)
+        c = at(side, 5.5, 9.5)                                                    # the on-deck circles, in the club's colour
+        disc("pad", c[0], c[1], .76, .046, 20)
+        circle_line(c[0], c[1], .76, .05, 20)
+    for k in range(32):                                                           # the warning track inside the fence
+        t0, t1 = -math.pi / 4 + math.pi / 2 * k / 32, -math.pi / 4 + math.pi / 2 * (k + 1) / 32
+        flat_quad("dirt", [(r * math.sin(a), pz + r * math.cos(a)) for r, a in ((BALL_FENCE - 4.6, t0), (BALL_FENCE - 4.6, t1), (BALL_FENCE, t1), (BALL_FENCE, t0))], .028)
     # Foul lines, out to the fence.
     for side in (-1, 1):
         L = BALL_FENCE
@@ -1793,30 +1889,51 @@ def ballpark(team):
     for side in (-1, 1):
         x, z = side * BALL_FENCE * math.sin(math.pi / 4), pz + BALL_FENCE * math.cos(math.pi / 4)
         b.solid((x - .15, 0, z - .15), (x + .15, 12, z + .15), "yellow")
-    # ---- the backstop and the dugouts
-    b.solid((-9, 0, pz - 12.2), (9, 6, pz - 12), "mesh")
+    # ---- the backstop: netting behind the plate, angled in toward the lines
+    for a, c in (((-8.0, pz - 12), (8.0, pz - 12)), ((-8.0, pz - 12), (-12.5, pz - 6.5)), ((8.0, pz - 12), (12.5, pz - 6.5))):
+        mx, mz = (a[0] + c[0]) / 2, (a[1] + c[1]) / 2
+        for out in ((-mx, pz - mz), (mx, mz - pz)):
+            wall("mesh", a, c, 1.0, 6.5, out)
+            wall("pad", a, c, 0, 1.0, out)
+    for x, z in ((-12.5, pz - 6.5), (-8.0, pz - 12), (8.0, pz - 12), (12.5, pz - 6.5)):
+        b.solid((x - .08, 0, z - .08), (x + .08, 6.7, z + .08), "steel")
+    sx0, sx1, sd0, rise, depth, rows = BALL_STANDS
     for side in (-1, 1):
-        x0, x1 = (min(side * 9.0, side * 20.5), max(side * 9.0, side * 20.5))
-        z0 = pz - 6.2
-        b.solid((x0, -.6, z0), (x1, 0, z0 + 2.4), "concrete")                     # sunk a little
-        b.box((x0, 0, z0 - .2), (x1, 2.5, z0), {'+z': "block", '-z': "block", '+y': "block"})          # back wall
-        b.box((x0 - .2, 0, z0 - .2), (x0, 2.5, z0 + 2.4), {s: "block" for s in ALL_SIDES})
-        b.box((x1, 0, z0 - .2), (x1 + .2, 2.5, z0 + 2.4), {s: "block" for s in ALL_SIDES})
-        b.box((x0 - .2, 2.5, z0 - .2), (x1 + .2, 2.7, z0 + 2.6), {'+y': "pad", '-y': "concrete", '+z': "trim", '-z': "pad", '+x': "pad", '-x': "pad"})
-        b.solid((x0 + .3, 0, z0 + .1), (x1 - .3, .45, z0 + .55), "wood")            # the bench
-        b.solid((x0, 0, z0 + 2.3), (x1, .9, z0 + 2.45), "pad")                    # the rail at the front
-    # ---- the stands: stepped aluminium bleachers, solid underneath (walk up them), a rail behind
-    sx0, sx1, sz, rise, depth, rows = BALL_STANDS
-    for side in (-1, 1):
-        x0, x1 = (min(side * sx0, side * sx1), max(side * sx0, side * sx1))
+        # ---- the dugouts, along the lines in foul ground (the home club's by first): block walls,
+        # a roof in the club's colour, the bench and the rail; open to the field.
+        obox(side, 10, 22, 10.4, 10.6, 0, 2.5, {'field': "block", 'back': "block", 'top': "block"})
+        osolid(side, 9.8, 10, 8, 10.6, 0, 2.5, "block")
+        osolid(side, 22, 22.2, 8, 10.6, 0, 2.5, "block")
+        obox(side, 9.8, 22.2, 7.8, 10.6, 2.5, 2.7, {'top': "pad", 'bottom': "concrete", 'field': "trim", 'back': "pad", 'home': "pad", 'far': "pad"})
+        osolid(side, 10.3, 21.7, 9.85, 10.35, 0, .45, "wood")
+        osolid(side, 10, 22, 7.85, 8.0, 0, .9, "pad")
+        # ---- the fence between the field and the stands
+        for t0, t1 in ((sx0 - .5, 9.8), (22.2, sx1 + .5)):
+            q0, q1 = at(side, t0, 11.6), at(side, t1, 11.6)
+            wall("mesh", q0, q1, 0, 1.3, (-side * S, S))
+            wall("mesh", q0, q1, 0, 1.3, (side * S, -S))
+        # ---- the stands: stepped aluminium bleachers along the line facing the diamond, solid
+        # underneath (walk up them), a rail behind and the club's banner board
         for k in range(rows):
-            z1 = sz - k * depth
-            b.box((x0, 0, z1 - depth), (x1, (k + 1) * rise, z1), {'+y': "alu", '+z': "trim" if k == 0 else "alu", '-x': "alu", '+x': "alu"})
-        back = sz - rows * depth
-        b.box((x0, 0, back - .1), (x1, rows * rise + 1.1, back), {'+z': "alu", '-z': "pad", '+y': "trim", '+x': "alu", '-x': "alu"})
-        for end in (x0, x1):
-            b.solid((end - .05, rows * rise, back), (end + .05, rows * rise + 1.0, sz), "steel")
-        b.solid((x0, (rows + 2.2) * rise, back - .4), (x1, (rows + 2.2) * rise + .5, back - .1), "pad")   # the club's banner board
+            d0 = sd0 + k * depth
+            obox(side, sx0, sx1, d0, d0 + depth, 0, (k + 1) * rise, {'top': "alu", 'field': "trim" if k == 0 else "alu", 'home': "alu", 'far': "alu"})
+        back = sd0 + rows * depth
+        obox(side, sx0, sx1, back, back + .1, 0, rows * rise + 1.1, {'field': "alu", 'back': "pad", 'top': "trim", 'home': "alu", 'far': "alu"})
+        for t in (sx0, sx1):
+            osolid(side, t - .05, t + .05, sd0, back, rows * rise, rows * rise + 1.0, "steel")
+        top = (rows + 2.2) * rise
+        obox(side, sx0, sx1, back + .1, back + .4, top, top + .5, {f: "pad" for f in ('top', 'bottom', 'field', 'back', 'home', 'far')})
+        for t in (sx0 + .4, (sx0 + sx1) / 2, sx1 - .4):
+            osolid(side, t - .06, t + .06, back + .1, back + .25, 0, top, "steel")
+        # ---- the bullpen down the line: a mound and a plate 60 ft 6 in apart, and a bench
+        obox(side, 30.5, 52.5, 4.6, 8.2, .025, .03, {'top': "dirt"})
+        c = at(side, 50.5, 6.4)
+        for k in range(5):
+            r = 1.6 * (1 - k / 5)
+            b.ring("dirt", c[0], c[1], r, r, .03 + k * .04, .07 + k * .04, 14, top_cap=True)
+        p = at(side, 50.5 - 18.44, 6.4)
+        disc("chalk", p[0], p[1], .2, .05, 5)
+        osolid(side, 53.5, 58, 8.6, 9.1, 0, .45, "wood")
     # ---- the home team's locker room (Vestejo): block walls, a door to the car park, lockers inside
     lx0, lx1, lz0, lz1 = BALL_LOCKER
     h = 3.4
@@ -1850,7 +1967,7 @@ def ballpark(team):
     for row in range(3):
         for col in range(10):
             b.solid((-6.6 + col * 1.3, 6.0 + row * 1.2, 59.36), (-6.0 + col * 1.3, 6.6 + row * 1.2, 59.4), "lamp")
-    for x, z in ((-50, -48), (50, -48), (-58, 30), (58, 30)):
+    for x, z in ((-50, -50), (50, -50), (-62, 36), (62, 36)):
         b.solid((x - .3, 0, z - .3), (x + .3, 18, z + .3), "steel")
         b.box((x - 1.6, 18, z - .4), (x + 1.6, 19.6, z + .4), {'+y': "steel", '-y': "lamp", '+z': "lamp", '-z': "lamp", '+x': "steel", '-x': "steel"})
     return b

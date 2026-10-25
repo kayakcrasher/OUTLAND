@@ -43,7 +43,8 @@ private:
         return a.action==b.action && a.cycle==b.cycle && a.speed==b.speed && a.elapsed==b.elapsed && a.metres==b.metres &&
             p.hold==q.hold && p.style==q.style && p.aim_pitch==q.aim_pitch && p.crouch==q.crouch && p.stock==q.stock &&
             p.support==q.support && p.seated==q.seated && p.skydive==q.skydive && p.hang==q.hang && p.body_pitch==q.body_pitch &&
-            p.body_roll==q.body_roll && p.hands_up==q.hands_up && p.cuffed==q.cuffed && p.downed==q.downed;
+            p.body_roll==q.body_roll && p.hands_up==q.hands_up && p.cuffed==q.cuffed && p.downed==q.downed &&
+            p.play==q.play && p.play_phase==q.play_phase;
     }
     std::unordered_map<const Model*,PoseKey> last_pose_;
     const CharacterRegistry& registry_;

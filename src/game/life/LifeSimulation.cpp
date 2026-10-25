@@ -1,4 +1,6 @@
 #include "outland/game/life/LifeSimulation.hpp"
+#include "outland/world/Ballparks.hpp"
+#include "outland/world/VerdaLayout.hpp"
 #include "outland/world/Building.hpp"
 #include "outland/game/sound/SoundBus.hpp"
 #include "outland/characters/NpcSystem.hpp"
@@ -30,6 +32,7 @@ float outdoor_share(Activity activity,PlaceKind kind) {
         case Activity::Shopping:return .25F;
         case Activity::Visit:return .2F;
         case Activity::FactionMeet:return .5F;
+        case Activity::Ballgame:return 0;   // in the stands
         case Activity::Work:
             switch(kind) {
                 case PlaceKind::Garage:return .55F;case PlaceKind::Industrial:return .25F;
@@ -61,6 +64,30 @@ void LifeConfig::sanitize() {
 
 void LifeSimulation::build(const world::VerdaRegion& region,const characters::CharacterRegistry* registry,PopulationOptions options) {
     island_=build_island(region,registry,options);
+    // The ballparks: a sealed venue each - fans go in at the gate (and are drawn in the stands).
+    ballparks_.fill(-1);
+    for(const auto& site:world::ballpark::find(region)) {
+        if(site.team<0 || island_.settlement_centers.empty()) continue;
+        Place park;
+        park.id="ballpark_"+std::to_string(site.team);
+        park.kind=PlaceKind::Ballpark;
+        Vector3 gate=site.to_world({world::ballpark::gate.x,0,world::ballpark::gate.z-4});
+        gate.y=world::terrain::TerrainHeight::sample(gate.x,gate.z);
+        park.door=gate;
+        park.interior=site.to_world({0,0,world::ballpark::gate.z+3});
+        park.building_yaw=site.yaw;
+        park.indoor=true;park.sealed=true;
+        // It belongs to its club's town (not whatever ranch is nearest).
+        Vector3 town=site.origin;
+        for(const auto& place:world::layout::sites) if(std::string_view(place.id)==world::ballpark::parks[static_cast<std::size_t>(site.team)].site) town=place.center;
+        float best=std::numeric_limits<float>::max();
+        for(std::size_t i=0;i<island_.settlement_centers.size();++i) {
+            const float d=flat_distance(island_.settlement_centers[i],town);
+            if(d<best) {best=d;park.settlement=static_cast<int>(i);}
+        }
+        ballparks_[static_cast<std::size_t>(site.team)]=static_cast<int>(island_.places.size());
+        island_.places.push_back(std::move(park));
+    }
     registry_=registry;
     roads_.build(region);
     cars_.assign(island_.cars.size(),{});
@@ -109,6 +136,20 @@ void LifeSimulation::reset(characters::NpcSystem& npcs,WorldClock start) {
     reset_cars();
 }
 
+bool LifeSimulation::attend(int resident,int place,double from,double until) {
+    if(resident<0 || static_cast<std::size_t>(resident)>=island_.residents.size() || place<0 ||
+       static_cast<std::size_t>(place)>=island_.places.size() || !(until>from)) return false;
+    auto& r=island_.residents[static_cast<std::size_t>(resident)];
+    if(!r.alive || r.responding || in_hospital(r) || in_jail(r)) return false;
+    r.game_place=place;r.game_from=from;r.game_until=until;
+    return true;
+}
+
+bool LifeSimulation::in_the_stands(const Resident& r) const {
+    return r.alive && !r.physical && r.activity==Activity::Ballgame && r.place>=0 && r.place==r.game_place &&
+           r.trip==Trip::Walk && clock_.minutes>=r.arrive;
+}
+
 int LifeSimulation::resolve(const Resident& r,Activity activity) const {
     const auto square=[&](int settlement) {
         for(std::size_t i=0;i<island_.places.size();++i)
@@ -123,6 +164,7 @@ int LifeSimulation::resolve(const Resident& r,Activity activity) const {
         case Activity::Worship:return either(r.church);
         case Activity::Shopping:return either(r.shop);
         case Activity::Visit:return r.visit_home>=0 ? r.visit_home : square(r.settlement);
+        case Activity::Ballgame:return r.game_place>=0 ? r.game_place : r.home;
         case Activity::Stroll:return square(r.settlement);
         case Activity::FactionMeet:return either(r.hangout);
         case Activity::Patrol: {
@@ -197,7 +239,9 @@ void LifeSimulation::replan(Resident& r) {
         r.place=-1;r.from=r.hospital_at;r.depart=r.arrive=clock_.minutes;r.trip=Trip::Walk;
     }
     if(r.shelter_until>=0 && r.shelter_until<=clock_.minutes) {r.shelter_until=-1;r.fear=0;}
-    const Activity activity=r.shelter_until>clock_.minutes ? Activity::Shelter :
+    if(r.game_place>=0 && clock_.minutes>=r.game_until) {r.game_place=-1;r.game_from=r.game_until=-1;}   // the game's over
+    const bool at_game=r.game_place>=0 && clock_.minutes>=r.game_from;
+    const Activity activity=r.shelter_until>clock_.minutes ? Activity::Shelter : at_game ? Activity::Ballgame :
         planned_activity(r,clock_.weekday(),clock_.minute_of_day());
     const int place=resolve(r,activity);
     if(activity==r.activity && place==r.place) return;

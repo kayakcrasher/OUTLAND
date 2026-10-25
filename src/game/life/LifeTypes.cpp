@@ -31,6 +31,7 @@ const char* place_name(PlaceKind kind) {
         case PlaceKind::Church:return "church";case PlaceKind::Police:return "police station";
         case PlaceKind::Clinic:return "clinic";case PlaceKind::Office:return "town hall";
         case PlaceKind::Farm:return "fields";case PlaceKind::Square:return "square";
+        case PlaceKind::Ballpark:return "ballpark";
     }
     return "place";
 }
@@ -59,6 +60,7 @@ const char* activity_name(Activity activity) {
         case Activity::Shopping:return "shopping";case Activity::Visit:return "visiting family";
         case Activity::Stroll:return "out for a walk";case Activity::Patrol:return "on patrol";
         case Activity::FactionMeet:return "out late";case Activity::Shelter:return "sheltering";
+        case Activity::Ballgame:return "at the ball game";
     }
     return "about";
 }

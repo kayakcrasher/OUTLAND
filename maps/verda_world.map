@@ -5882,11 +5882,11 @@ ASSET "creator_city_container_stack_kit10" 4 "assets/verda/city/civic/container_
 ASSET "creator_city_diesel_island_kit6" 4 "assets/verda/city/civic/diesel_island.glb" -1363.62219 2.33562827 422.827759 4 8.60000038 12 -76.3527985 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit11" 4 "assets/verda/city/civic/container_stack.glb" -1343.07373 7.49380493 448.123657 10.5 7.80000019 37.5 -76.3527832 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_container_stack_kit12" 4 "assets/verda/city/civic/container_stack.glb" -1370.2832 3.47131681 454.730042 10.5 7.80000019 37.5 -76.3527832 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_ballpark_0_kit1" 0 "assets/verda/city/civic/ballpark_0.glb" 600 7.3839941 46 136 19.6000004 140 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_ballpark_1_kit1" 0 "assets/verda/city/civic/ballpark_1.glb" -250.004425 5.4000001 -1755.23059 136 19.6000004 140 -87.7974014 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_ballpark_2_kit1" 0 "assets/verda/city/civic/ballpark_2.glb" 1630 5.4000001 -192 136 19.6000004 140 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_ballpark_3_kit1" 0 "assets/verda/city/civic/ballpark_3.glb" 180 5.4000001 1592 136 19.6000004 140 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_ballpark_4_kit1" 0 "assets/verda/city/civic/ballpark_4.glb" -1708.10913 13.457366 680.000977 136 19.6000004 140 1.04162657 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_ballpark_0_kit1" 0 "assets/verda/city/civic/ballpark_0.glb" 600 7.68399382 46 136 19.6000004 140 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_ballpark_1_kit1" 0 "assets/verda/city/civic/ballpark_1.glb" -250.004425 5.69999981 -1755.23059 136 19.6000004 140 -87.7974014 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_ballpark_2_kit1" 0 "assets/verda/city/civic/ballpark_2.glb" 1630 5.69999981 -192 136 19.6000004 140 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_ballpark_3_kit1" 0 "assets/verda/city/civic/ballpark_3.glb" 180 5.69999981 1592 136 19.6000004 140 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_ballpark_4_kit1" 0 "assets/verda/city/civic/ballpark_4.glb" -1708.10913 13.7573662 680.000977 136 19.6000004 140 1.04162657 255 255 255 255 80 80 80 255 1
 MARKER "creator_marker_loot_spawn_general_training" 0 4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 0.5 0.5 0.5 0 1

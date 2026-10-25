@@ -5,6 +5,10 @@ namespace outland::characters {
 // How a body carries itself on top of its gait: what it holds, where it aims, how low it is.
 enum class BodyHold : unsigned char { None, Pistol, Shouldered };
 enum class BodyStyle : unsigned char { Person, Zombie };
+// Ball games (game::sports): a fielder's crouch, the catcher's squat, the batting stance and the
+// swing, the pitch, a throw, a catch high or low, a cheer. BodyPose::play_phase runs 0..1 through
+// the moving ones. A right-hander's, every one.
+enum class BodyPlay : unsigned char { None, Ready, Squat, Stance, Swing, Pitch, Throw, Catch, Scoop, Cheer };
 struct BodyPose {
     BodyHold hold{BodyHold::None};
     BodyStyle style{BodyStyle::Person};
@@ -26,6 +30,8 @@ struct BodyPose {
     float downed{0};
     // Clothes: a texture drawn in place of the body's own (0 keeps its own) - same UV layout.
     unsigned int outfit{0};
+    BodyPlay play{BodyPlay::None};
+    float play_phase{0};
 };
 // Authored procedural fallback, not a claim that source GLBs contain walk clips.
 // Deforms each body's own bind skeleton; unknown rigs keep their bind pose.

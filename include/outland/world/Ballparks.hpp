@@ -39,16 +39,31 @@ inline constexpr Vector3 mound{0, .25F, -17.56F};
 inline constexpr std::array<Vector3, 9> fielders{{
     {0, .25F, -17.4F}, {0, 0, -37.6F}, {-17.5F, 0, -12.5F}, {-7.0F, 0, -2.0F}, {7.0F, 0, -2.0F},
     {17.5F, 0, -12.5F}, {30.0F, 0, 22.0F}, {0, 0, 34.0F}, {-30.0F, 0, 22.0F}}};
-// The stands: home (first-base side, -X) and visitors (third-base side, +X), stepped rows facing
-// the field (+Z). Row k's seat is at height (k + 1) * row_rise, z = stands_z - k * row_depth.
-inline constexpr float stands_x0 = 22.0F, stands_x1 = 46.0F;   // |x| span of each side's stand
-inline constexpr float stands_z = -41.0F, row_rise = .45F, row_depth = .8F;
+// Along a base line: t metres down it from the plate (first base's line is `first`) and d metres
+// out from it into foul ground.
+[[nodiscard]] inline Vector3 along(bool first, float t, float d, float y = 0) {
+    constexpr float s = .70710678F;
+    const float side = first ? -1.0F : 1.0F;
+    return {side * s * (t + d), y, plate.z + s * (t - d)};
+}
+// The model yaw of something facing the diamond square-on from beside a line.
+[[nodiscard]] inline float facing_field(bool first) { return first ? 45.0F : -45.0F; }
+// The stands: stepped bleachers along each line facing the diamond, home by first base, visitors
+// by third. Row k's seat is (k + 1) * row_rise up, k rows back from the front.
+inline constexpr float stand_t0 = 9.0F, stand_t1 = 34.0F, stand_d0 = 12.5F;
+inline constexpr float row_rise = .45F, row_depth = .8F;
 inline constexpr int rows = 6;
 inline constexpr float seat_spacing = .7F;
-// The dugouts (home on the first-base side) and the home team's locker room behind its stand.
-inline constexpr Vector3 home_dugout{-14.75F, 0, -41.0F}, away_dugout{14.75F, 0, -41.0F};
+inline constexpr int seats_per_row = static_cast<int>((stand_t1 - stand_t0 - .8F) / seat_spacing);
+// The dugouts along the lines (home by first), their benches; the home club's locker room behind.
+inline constexpr float dugout_t0 = 10.0F, dugout_t1 = 22.0F, bench_d = 10.1F;
+inline const Vector3 home_dugout = along(true, 16, 9.3F), away_dugout = along(false, 16, 9.3F);
 inline constexpr float locker_x0 = -44, locker_x1 = -30, locker_z0 = -62, locker_z1 = -52;
 inline constexpr Vector3 locker_door{-37, 0, -62.6F};
+// The on-deck circles and the coaches' boxes (batting side's), the plate umpire.
+inline const Vector3 home_on_deck = along(true, 5.5F, 9.5F), away_on_deck = along(false, 5.5F, 9.5F);
+inline const Vector3 first_coach = along(true, 23.5F, 6.0F), third_coach = along(false, 23.5F, 6.0F);
+inline constexpr Vector3 umpire{0, 0, -38.9F};
 // The bus bays in the car park (home, visitors) and the gate.
 inline constexpr Vector3 home_bus{-16, 0, -68}, away_bus{16, 0, -68};
 inline constexpr Vector3 gate{0, 0, -52};
@@ -69,16 +84,18 @@ struct Site {
     }
     // A seat in a stand: `home` side, row (0 front), place along it (0..seats_per_row).
     [[nodiscard]] Vector3 seat(bool home, int row, int place) const {
-        const float x = (stands_x0 + .4F + place * seat_spacing) * (home ? -1.0F : 1.0F);
-        return to_world({x, (row + 1) * row_rise, stands_z - row * row_depth - row_depth * .5F});
+        return to_world(along(home, stand_t0 + .4F + static_cast<float>(place) * seat_spacing,
+                              stand_d0 + static_cast<float>(row) * row_depth + row_depth * .5F, static_cast<float>(row + 1) * row_rise));
     }
-    [[nodiscard]] float facing() const { return yaw; }   // the stands face +Z (local yaw 0)
+    // The way a seat in the home (or visitors') stand faces, in world yaw.
+    [[nodiscard]] float seat_yaw(bool home) const { return yaw + facing_field(home); }
+    // A place on a dugout's bench (k from the plate end), facing the field.
+    [[nodiscard]] Vector3 bench(bool home, int k) const { return to_world(along(home, dugout_t0 + .8F + static_cast<float>(k) * 1.15F, bench_d)); }
 };
-inline constexpr int seats_per_row = static_cast<int>((stands_x1 - stands_x0 - .8F) / seat_spacing);
 
 // The model's bounds (tools/generate_city_kit.py ballpark()): the renderer centres a model on
 // them, so the world kit stores a park at the bounds' centre, not at its design origin.
-inline constexpr Vector3 model_min{-68, -.6F, -76}, model_max{68, 19.6F, 64};
+inline constexpr Vector3 model_min{-68, -.3F, -76}, model_max{68, 19.6F, 64};
 
 // The parks on the map (by their models), in team order; a missing one has team -1.
 inline std::array<Site, 5> find(const VerdaRegion& region) {

@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <cstdint>
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/world/roads/RoadGraph.hpp"
@@ -91,6 +92,13 @@ public:
     bool imprison(int resident,Vector3 gate,double until);
     void set_free(int resident);
     bool in_jail(const Resident& resident) const {return resident.jail_until>clock_.minutes;}
+    // The ballparks (one per club, world::ballpark::parks order): places; -1 not on the map.
+    int ballpark(int team) const {return team>=0 && team<5 ? ballparks_[static_cast<std::size_t>(team)] : -1;}
+    // Off to a ball game at `place` (a ballpark): leaving at `from`, home again after `until`
+    // (island minutes). False for someone who can't go (dead, in hospital or jail, on a call).
+    bool attend(int resident,int place,double from,double until);
+    // In the stands now (arrived, not a body in the world).
+    bool in_the_stands(const Resident& resident) const;
     LifeStats stats() const;
 
     // Cars: bind the world's vehicles (Explore) before reset(); nullptr unbinds. Without them,
@@ -130,6 +138,7 @@ private:
     Anchor physical_anchor(const Resident& resident,Vector3 body) const;
     void sync_bodies(Vector3 player,characters::NpcSystem& npcs);
     Island island_;
+    std::array<int,5> ballparks_{{-1,-1,-1,-1,-1}};
     const characters::CharacterRegistry* registry_{nullptr};
     LifeConfig config_{};
     WorldClock clock_{};

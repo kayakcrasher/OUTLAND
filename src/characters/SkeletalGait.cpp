@@ -75,7 +75,32 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
     if(dying) speed=0;
     const float cadence=AnimationController::gait_cadence(speed);
     const float run=std::clamp((speed-2.6F)/2.4F,0.0F,1.0F);     // 0 walk .. 1 run blend
-    const float crouch=dying ? 0 : std::clamp(body.crouch,0.0F,1.0F);
+    // A ball game's motions (BodyPlay): how low, how far over, how the chest is turned.
+    const bool playing=body.play!=BodyPlay::None && !dying && !zombie && body.hold==BodyHold::None;
+    const float pp=std::clamp(body.play_phase,0.0F,1.0F);
+    float play_crouch=0,play_lean=0,twist=0;
+    if(playing) switch(body.play) {
+        case BodyPlay::Ready:play_crouch=.3F;play_lean=.22F;break;
+        case BodyPlay::Squat:play_crouch=1;play_lean=-.12F;break;
+        case BodyPlay::Scoop:play_crouch=.55F;play_lean=.5F;break;
+        case BodyPlay::Stance:play_crouch=.18F;play_lean=.1F;twist=.35F;break;
+        case BodyPlay::Swing:
+            play_crouch=.18F*(1-pp);play_lean=.1F;
+            twist=pp<.3F ? .35F+.5F*pp : .5F-1.6F*(pp-.3F)/.7F;   // coiled, then round through the ball
+            break;
+        case BodyPlay::Pitch:
+            play_lean=pp>.55F ? .5F*std::min(1.0F,(pp-.55F)/.2F) : -.05F;
+            twist=pp<.55F ? .45F*std::min(1.0F,pp/.35F) : .45F-1.25F*std::min(1.0F,(pp-.55F)/.25F);
+            play_crouch=pp>.6F ? .25F*std::min(1.0F,(pp-.6F)/.2F) : 0;
+            break;
+        case BodyPlay::Throw:
+            play_lean=pp>.5F ? .35F : 0;
+            twist=pp<.45F ? .4F*pp/.45F : .4F-1.1F*std::min(1.0F,(pp-.45F)/.3F);
+            break;
+        case BodyPlay::Cheer:play_lean=-.1F;play_crouch=.25F*std::abs(std::sin(pp*2*PI));break;
+        default:break;
+    }
+    const float crouch=dying ? 0 : std::clamp(std::max(body.crouch,play_crouch),0.0F,1.0F);
     // Running covers ground in flight, so its thigh swing is shorter than the stride implies.
     const float swing=std::clamp(std::asin(std::min(1.0F,speed/(3.6F*cadence))),0.0F,.62F-.14F*run)*(1-.35F*crouch);
     const float reach=.12F*run; // runners drive the knee forward more than they extend behind
@@ -91,6 +116,59 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
     const bool armed=body.hold!=BodyHold::None && !dying && !zombie;
     const float pitch=armed ? std::clamp(body.aim_pitch,-1.2F,1.2F) : 0;
     if(armed) lean=.08F*run+.32F*crouch+.06F; // shooters lean into the gun
+    lean+=play_lean;
+    // Each arm's way in a ball game's motion (upper arm direction, elbow bend); false: none.
+    const auto play_arm=[&](bool left_arm,Vector3& dir,float& fore)->bool {
+        if(!playing) return false;
+        const float side=left_arm ? -1.0F : 1.0F;
+        const auto v=[&](float f,float u,float r){return Vector3Normalize(Vector3Add(Vector3Add(Vector3Scale(forward,f),Vector3Scale(up,u)),Vector3Scale(lateral,r)));};
+        const auto blend=[&](Vector3 a,Vector3 b,float k){return Vector3Normalize(Vector3Lerp(a,b,std::clamp(k,0.0F,1.0F)));};
+        // The throwing arm: the ball at the belt, back and up, over the top, down across.
+        const auto hurl=[&](float k,float set_until,float back_at,float top_at) {
+            const Vector3 set=v(.55F,-.75F,.15F),back=v(-.75F,.3F,.6F),high=v(.6F,.8F,.15F),across=v(.45F,-.75F,-.45F);
+            if(k<set_until) {dir=set;fore=1.5F;}
+            else if(k<back_at) {dir=blend(set,back,(k-set_until)/(back_at-set_until));fore=1.4F;}
+            else if(k<top_at) {dir=blend(back,high,(k-back_at)/(top_at-back_at));fore=1.0F-.8F*(k-back_at)/(top_at-back_at);}
+            else {dir=blend(high,across,(k-top_at)/(1-top_at));fore=.25F;}
+        };
+        switch(body.play) {
+            case BodyPlay::Ready:dir=v(.75F,-.6F,side*.18F);fore=.35F;return true;
+            case BodyPlay::Squat:
+                if(left_arm) {dir=v(.95F,.05F,-.1F);fore=.25F;} else {dir=v(.25F,-.9F,.3F);fore=.2F;}
+                return true;
+            case BodyPlay::Stance:
+                // Hands together by the back shoulder, the front arm across the chest.
+                if(left_arm) {dir=v(.55F,-.45F,.55F);fore=1.3F;} else {dir=v(-.2F,-.55F,.65F);fore=2.0F;}
+                return true;
+            case BodyPlay::Swing: {
+                const Vector3 coiled=left_arm ? v(.55F,-.45F,.55F) : v(-.2F,-.55F,.65F);
+                const Vector3 through=v(.95F,-.25F,left_arm ? .05F : -.05F),finish=v(.35F,.55F,-.65F);
+                dir=pp<.45F ? blend(coiled,through,pp/.45F) : blend(through,finish,(pp-.45F)/.55F);
+                fore=pp<.45F ? (left_arm ? 1.3F : 2.0F)*(1-pp/.45F)+.1F : .1F+.9F*(pp-.45F)/.55F;
+                return true;
+            }
+            case BodyPlay::Pitch:
+                if(left_arm) {
+                    // The glove: with the ball through the leg kick, out at the plate, then tucked in.
+                    const Vector3 set=v(.55F,-.75F,.1F),aim=v(.9F,.25F,-.25F),tuck=v(.3F,-.6F,-.5F);
+                    dir=pp<.35F ? set : pp<.65F ? blend(set,aim,(pp-.35F)/.3F) : blend(aim,tuck,(pp-.65F)/.35F);
+                    fore=pp<.35F ? 1.5F : .5F;
+                } else hurl(pp,.35F,.55F,.68F);
+                return true;
+            case BodyPlay::Throw:
+                if(left_arm) {dir=v(.9F,.2F,-.2F);fore=.4F;} else hurl(pp,.05F,.4F,.6F);
+                return true;
+            case BodyPlay::Catch:
+                if(left_arm) dir=v(.55F,.8F,-.15F); else dir=v(.45F,.75F,.25F);
+                fore=.25F;return true;
+            case BodyPlay::Scoop:dir=v(.6F,-.8F,side*.08F);fore=.2F;return true;
+            case BodyPlay::Cheer: {
+                const float wave=.15F*std::sin(pp*2*PI*2+(left_arm ? 0 : 1.5F));
+                dir=v(.1F,.95F,side*(.3F+wave));fore=.15F;return true;
+            }
+            default:return false;
+        }
+    };
 
     // Per leg: thigh angle forward, knee flexion (>=0), for phase offset 0 (left) or PI (right).
     const auto leg=[&](float offset,float limp,float& thigh,float& knee) {
@@ -102,6 +180,15 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
     };
     float left_thigh,left_flex,right_thigh,right_flex;
     leg(0,1,left_thigh,left_flex);leg(PI,zombie ? .55F : 1,right_thigh,right_flex);
+    if(playing && body.play==BodyPlay::Pitch) {
+        // The leg kick, the stride to the plate, the back leg coming through.
+        const float kick=pp<.35F ? std::sin(pp/.35F*PI/2) : pp<.55F ? 1-(pp-.35F)/.2F : 0;
+        const float stride=pp>.45F ? std::min(1.0F,(pp-.45F)/.2F) : 0, finish=pp>.72F ? (pp-.72F)/.28F : 0;
+        left_thigh+=1.3F*kick+.55F*stride*(1-kick);left_flex+=1.4F*kick;
+        right_thigh-=.5F*finish;right_flex+=1.0F*finish;
+    }
+    if(playing && body.play==BodyPlay::Throw) {left_thigh+=.45F*std::sin(pp*PI);right_flex+=.3F*std::sin(pp*PI);}
+    if(playing && (body.play==BodyPlay::Stance || body.play==BodyPlay::Swing)) {left_thigh+=.14F;right_thigh-=.1F;}
     const bool seated=body.seated && !dying;
     if(seated) {
         // Sitting at a wheel: thighs level, shins down to the pedals, a slight lean back.
@@ -269,6 +356,8 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
                 const float hands_up=dying ? 0 : std::clamp(body.hands_up,0.0F,1.0F),cuffed=dying ? 0 : std::clamp(body.cuffed,0.0F,1.0F);
                 if(hands_up>0) hang_to=Vector3Normalize(Vector3Lerp(hang_to,Vector3Normalize(Vector3Add(Vector3Scale(lateral,side*.42F),Vector3Scale(up,.9F))),hands_up));
                 if(cuffed>0) hang_to=Vector3Normalize(Vector3Lerp(hang_to,Vector3Normalize(Vector3Add(Vector3Scale(up,-1),Vector3Scale(lateral,side*.05F))),cuffed));
+                Vector3 play_dir{};float play_fore=0;
+                if(play_arm(left_upper,play_dir,play_fore)) hang_to=play_dir;
                 if(Vector3LengthSqr(direction)>.00001F)out.rotation=QuaternionMultiply(QuaternionFromVector3ToVector3(Vector3Normalize(direction),hang_to),out.rotation);
             }
         }
@@ -318,6 +407,10 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
                 if(left_upper || right_upper) angle=angle*(1-c)-.45F*c;
                 if(left_lower || right_lower) angle=angle*(1-c)+.7F*c;
             }
+            // A ball game's motion: the upper arm points the way (above); the elbow bends so far.
+            Vector3 play_dir{};float play_fore=0;
+            if((left_upper || right_upper) && play_arm(left_upper,play_dir,play_fore)) angle=0;
+            if((left_lower || right_lower) && play_arm(left_lower,play_dir,play_fore)) angle=play_fore;
         }
         if(angle!=0)out.rotation=QuaternionNormalize(QuaternionMultiply(QuaternionFromAxisAngle(lateral,angle*forward_sign),out.rotation));
         // Hips sway with the stride and the chest counters it; a rifle stance turns the chest.
@@ -326,6 +419,11 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
         if(named(bone,"Spine1"))turn=-.09F*std::sin(phase)*moving*(1-.5F*run);
         if(named(bone,"Spine2") && armed && body.hold==BodyHold::Shouldered)turn=.32F;
         if(named(bone,"Neck") && armed && body.hold==BodyHold::Shouldered)turn=-.28F;
+        if(playing) {
+            if(named(bone,"Hips"))turn+=twist*.25F;
+            if(named(bone,"Spine1") || named(bone,"Spine2"))turn+=twist*.45F;
+            if(named(bone,"Neck"))turn-=twist*.6F;   // eyes stay on the ball
+        }
         if(turn!=0)out.rotation=QuaternionNormalize(QuaternionMultiply(QuaternionFromAxisAngle(up,turn*twist_sign),out.rotation));
         done[i]=2;return true;
     };

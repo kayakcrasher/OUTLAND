@@ -1,4 +1,6 @@
 #include "outland/game/sports/League.hpp"
+#include "outland/world/Ballparks.hpp"
+#include <raymath.h>
 #include <algorithm>
 #include <cmath>
 #include <sstream>
@@ -29,6 +31,173 @@ int runs_in_half(Rng& rng, float bat, float pitch) {
     for (std::size_t k = 0; k < p.size(); ++k) { sum += p[k]; if (u < sum) return static_cast<int>(k); }
     return 5;
 }
+
+// One half-inning, plate appearance by plate appearance, bringing in exactly `need` runs: three
+// outs (or, for a walk-off, until the winning run is in). `edge`: batters over pitchers.
+std::vector<Play> plan_half(Rng& rng, int need, bool walkoff, float edge, int& order, bool home, int inning, double start) {
+    std::vector<Play> out;
+    constexpr std::array<Outcome, 8> kinds{Outcome::Strikeout, Outcome::Walk, Outcome::Groundout, Outcome::Flyout,
+                                            Outcome::Single, Outcome::Double, Outcome::Triple, Outcome::HomeRun};
+    const float hit = 1 + 2 * edge, miss = 1 - edge;
+    const std::array<float, 8> base{.21F * miss, .08F, .30F * miss, .23F * miss, .12F * hit, .04F * hit, .006F * hit, .025F * hit};
+    int outs = 0, runs = 0;
+    std::uint8_t bases = 0;
+    while (outs < 3 && !(walkoff && runs >= need)) {
+        const int n = static_cast<int>(out.size());
+        std::array<float, 8> w{};
+        float total = 0;
+        for (std::size_t k = 0; k < kinds.size(); ++k) {
+            const auto a = advance(bases, kinds[k], outs);
+            bool ok = runs + a.runs <= need;
+            if (a.out && outs == 2 && runs < need) ok = false;     // the half isn't over till its runs are in
+            if (!a.out && runs >= need && n >= 7) ok = false;      // ...and once they are, it winds up
+            float weight = base[k];
+            if (runs < need && n >= 8) { if (a.out) ok = false; else if (a.runs > 0) weight *= 25; }
+            w[k] = ok && n < 16 ? weight : 0;
+            total += w[k];
+        }
+        Outcome pick = Outcome::Strikeout;
+        if (total > 0) {
+            float u = rng.next() * total;
+            for (std::size_t k = 0; k < kinds.size(); ++k) { if (u < w[k]) { pick = kinds[k]; break; } u -= w[k]; pick = kinds[k]; }
+        } else if (runs < need) {
+            // The most it can bring in without going past.
+            int best = -1;
+            for (const auto k : {Outcome::HomeRun, Outcome::Triple, Outcome::Double, Outcome::Single, Outcome::Walk}) {
+                const int r = advance(bases, k, outs).runs;
+                if (runs + r <= need && r > best) { best = r; pick = k; }
+            }
+        }
+        const auto a = advance(bases, pick, outs);
+        Play p;
+        p.home = home; p.inning = inning; p.batter = order; p.outcome = pick; p.outs = outs;
+        p.bases = bases; p.after = a.after; p.runs = a.runs;
+        // Where the ball goes and who gets to it (angles + toward third base).
+        const auto infielder = [](float angle) { return angle < -24 ? 2 : angle < -3 ? 3 : angle < 20 ? 4 : 5; };
+        const auto outfielder = [](float angle) { return angle < -15 ? 8 : angle > 15 ? 6 : 7; };
+        const auto spread = [&](float lo, float hi) { return lo + (hi - lo) * rng.next(); };
+        const float sign = rng.next() < .5F ? -1.0F : 1.0F;
+        switch (pick) {
+            case Outcome::Strikeout: case Outcome::Walk: p.fielder = 1; break;
+            case Outcome::Groundout:
+                if (rng.next() < .08F) { p.angle = spread(-6, 6); p.depth = 15; p.fielder = 0; }
+                else { p.angle = spread(-40, 40); p.fielder = infielder(p.angle); p.depth = p.fielder == 2 || p.fielder == 5 ? 26 : 31; }
+                break;
+            case Outcome::Flyout:
+                if (rng.next() < .25F) { p.angle = spread(-35, 35); p.depth = spread(18, 32); p.fielder = infielder(p.angle); }
+                else { p.angle = spread(-40, 40); p.depth = spread(58, 80); p.fielder = outfielder(p.angle); }
+                break;
+            case Outcome::Single: p.angle = spread(-38, 38); p.depth = spread(48, 62); p.fielder = outfielder(p.angle); break;
+            case Outcome::Double:
+                p.angle = rng.next() < .6F ? sign * spread(28, 42) : sign * spread(12, 24);
+                p.depth = spread(76, 82); p.fielder = outfielder(p.angle); break;
+            case Outcome::Triple: p.angle = sign * spread(34, 43); p.depth = 82; p.fielder = outfielder(p.angle); break;
+            case Outcome::HomeRun: p.angle = spread(-38, 38); p.depth = spread(96, 112); p.fielder = outfielder(p.angle); break;
+        }
+        out.push_back(p);
+        outs += a.out ? 1 : 0;
+        runs += a.runs;
+        bases = a.after;
+        order = (order + 1) % 9;
+    }
+    // The clock: after the change-over, each in turn, as long as its running takes.
+    double t = start + League::change_over;
+    for (auto& p : out) {
+        int furthest = 0;
+        const auto a = advance(p.bases, p.outcome, p.outs);
+        for (int k = 0; k <= 3; ++k) {
+            const int to = a.to[static_cast<std::size_t>(k)];
+            if (to > k && (k == 0 || ((p.bases >> (k - 1)) & 1))) furthest = std::max(furthest, to - k);
+        }
+        double weight = 1.4 + .9 * furthest;   // a hit: the ball run down, the runners round
+        switch (p.outcome) {
+            case Outcome::Strikeout: weight = 1.0; break;
+            case Outcome::Walk: weight = 2.0; break;
+            case Outcome::Groundout: weight = 2.2 + .5 * furthest; break;
+            case Outcome::Flyout: weight = 1.8 + .6 * furthest; break;
+            case Outcome::HomeRun: weight = 3.6; break;
+            default: break;
+        }
+        // Then back to their places: the fielder who ran the ball down jogs back (and an outfield
+        // hit brings the cut-off man out too).
+        namespace BP = world::ballpark;
+        const float angle = p.angle * DEG2RAD;
+        const Vector3 dir{std::sin(angle), 0, std::cos(angle)};
+        const auto from_plate = [&](float metres) { return Vector3Add({BP::plate.x, 0, BP::plate.z}, Vector3Scale(dir, metres)); };
+        Vector3 chased = from_plate(p.depth);
+        if (p.outcome == Outcome::Single) chased = from_plate(p.depth + 4);
+        if (p.outcome == Outcome::Double || p.outcome == Outcome::Triple || p.outcome == Outcome::HomeRun) chased = from_plate(BP::fence_radius - 2.5F);
+        const Vector3 spot = BP::fielders[static_cast<std::size_t>(std::clamp(p.fielder, 0, 8))];
+        float back = p.outcome == Outcome::Strikeout || p.outcome == Outcome::Walk ? 0 : Vector3Distance({spot.x, 0, spot.z}, chased);
+        if (p.fielder >= 6 && p.outcome != Outcome::Flyout) back = std::max(back, 22.0F);
+        p.at = t;
+        p.action = League::plate_appearance * weight;
+        p.length = p.action + (std::max(back / 6.5F, 2.0F) + 1.0) / League::real_seconds_per_minute;   // (and the next man up from the on-deck circle)
+        t += p.length;
+    }
+    return out;
+}
+}
+
+const char* outcome_name(Outcome outcome) {
+    switch (outcome) {
+        case Outcome::Strikeout: return "strikes out"; case Outcome::Walk: return "walks";
+        case Outcome::Groundout: return "grounds out"; case Outcome::Flyout: return "flies out";
+        case Outcome::Single: return "singles"; case Outcome::Double: return "doubles";
+        case Outcome::Triple: return "triples"; case Outcome::HomeRun: return "homers";
+    }
+    return "";
+}
+
+Advance advance(std::uint8_t bases, Outcome outcome, int outs) {
+    Advance a;
+    const auto on = [&](int base) { return (bases >> (base - 1)) & 1; };
+    for (int k = 1; k <= 3; ++k) if (on(k)) a.to[static_cast<std::size_t>(k)] = k;
+    const auto move = [&](int base, int by) { if (on(base)) a.to[static_cast<std::size_t>(base)] = std::min(4, base + by); };
+    switch (outcome) {
+        case Outcome::Strikeout: a.out = true; break;
+        case Outcome::Walk:
+            a.to[0] = 1;
+            if (on(1)) { a.to[1] = 2; if (on(2)) { a.to[2] = 3; if (on(3)) a.to[3] = 4; } }
+            break;
+        case Outcome::Groundout:
+            a.out = true;
+            if (outs < 2) for (int k = 3; k >= 1; --k) move(k, 1);   // a productive out: everyone moves up
+            break;
+        case Outcome::Flyout:
+            a.out = true;
+            if (outs < 2) move(3, 1);                                // the sacrifice fly
+            break;
+        case Outcome::Single: a.to[0] = 1; move(1, 1); move(2, 2); move(3, 1); break;
+        case Outcome::Double: a.to[0] = 2; move(1, 2); move(2, 2); move(3, 1); break;
+        case Outcome::Triple: a.to[0] = 3; move(1, 3); move(2, 2); move(3, 1); break;
+        case Outcome::HomeRun: a.to[0] = 4; move(1, 3); move(2, 2); move(3, 1); break;
+    }
+    for (const int to : a.to) {
+        if (to == 4) ++a.runs;
+        else if (to >= 1) a.after |= static_cast<std::uint8_t>(1 << (to - 1));
+    }
+    return a;
+}
+
+int Linescore::play_at(double t) const {
+    for (int i = 0; i < static_cast<int>(plays.size()); ++i) {
+        const auto& p = plays[static_cast<std::size_t>(i)];
+        if (t >= p.at && t < p.at + p.length) return i;
+        if (p.at > t) break;
+    }
+    return -1;
+}
+
+int Linescore::half_at(double t) const {
+    if (halves.empty() || t < halves.front()) return -1;
+    const auto it = std::upper_bound(halves.begin(), halves.end(), t);
+    return static_cast<int>(it - halves.begin()) - 1;
+}
+
+double Linescore::half_end(int half) const {
+    if (half < 0) return 0;
+    return half + 1 < static_cast<int>(halves.size()) ? halves[static_cast<std::size_t>(half) + 1] : length;
 }
 
 int Linescore::total(bool home_team) const {
@@ -89,22 +258,35 @@ Linescore League::linescore(int fixture) const {
     const auto& home = teams[static_cast<std::size_t>(f.home)];
     const auto& away = teams[static_cast<std::size_t>(f.away)];
     const float edge = .03F;   // home field
-    int h = 0, a = 0;
+    int h = 0, a = 0, away_order = 0, home_order = 0;
+    const auto half = [&](int inning, bool home_bats, int need, bool walkoff, double start) {
+        Rng plays{mix(static_cast<std::uint64_t>(fixture) + 1, 1000 + static_cast<std::uint64_t>(inning) * 2 + (home_bats ? 1 : 0))};
+        const float lean = home_bats ? home.strength + edge - away.strength : away.strength - home.strength - edge;
+        const auto list = plan_half(plays, need, walkoff, lean, home_bats ? home_order : away_order, home_bats, inning, start);
+        for (const auto& p : list) {
+            for (int k = 0; k < p.runs; ++k) out.runs.emplace_back(p.run_time(), home_bats);
+            out.plays.push_back(p);
+        }
+        out.halves.push_back(start);
+        return list.empty() ? start + League::change_over : list.back().at + list.back().length;
+    };
+    double clock = 0;
     for (int inning = 1;; ++inning) {
-        const double top_start = (inning - 1) * 2 * half_inning, bottom_start = top_start + half_inning;
         int r = runs_in_half(rng, away.strength, home.strength + edge);
-        if (inning >= 15 && r == 0 && h == a) r = rng.next() < .5F ? 1 : 0;   // the long night ends
+        if (inning >= innings + 5 && r == 0 && h == a) r = rng.next() < .5F ? 1 : 0;   // the long night ends
         out.away.push_back(r);
-        for (int k = 0; k < r; ++k) out.runs.emplace_back(top_start + half_inning * (k + 1) / (r + 1), false);
+        clock = half(inning, false, r, false, clock) + wind_down;
         a += r;
-        if (inning >= 9 && h > a) { out.home.push_back(-1); out.length = bottom_start; break; }   // no need for the bottom half
+        if (inning >= innings && h > a) { out.home.push_back(-1); out.length = clock; break; }   // no need for the bottom half
         r = runs_in_half(rng, home.strength + edge, away.strength);
-        if (inning >= 15 && h + r == a) r += 1;
-        if (inning >= 9 && h + r > a) r = std::min(r, a - h + 1);   // the winning run ends it
+        if (inning >= innings + 5 && h + r == a) r += 1;
+        const bool walkoff = inning >= innings && h + r > a;
+        if (walkoff) r = std::min(r, a - h + 1);   // the winning run ends it
         out.home.push_back(r);
-        for (int k = 0; k < r; ++k) out.runs.emplace_back(bottom_start + half_inning * (k + 1) / (r + 1), true);
+        const double end = half(inning, true, r, walkoff, clock);
+        clock = end + wind_down;
         h += r;
-        if (inning >= 9 && h != a) { out.length = bottom_start + half_inning; break; }
+        if (inning >= innings && h != a) { out.length = walkoff ? end + 1.0 : clock; break; }
     }
     std::sort(out.runs.begin(), out.runs.end());
     return out;
@@ -126,9 +308,16 @@ Live League::live_fixture(int fixture, double now) const {
         return live;
     }
     live.phase = Phase::Playing;
-    const int half = static_cast<int>(t / half_inning);
+    const int half = std::max(0, line.half_at(t));
     live.inning = half / 2 + 1;
     live.top = half % 2 == 0;
+    for (const auto& p : line.plays) {
+        if (p.at > t) break;
+        if (p.inning != live.inning || p.home == live.top) continue;
+        const bool done = t >= p.at + p.action * Play::scored;
+        live.outs = p.outs + (done && p.out() ? 1 : 0);
+        live.bases = done ? p.after : p.bases;
+    }
     return live;
 }
 

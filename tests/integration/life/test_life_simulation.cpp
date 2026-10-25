@@ -202,6 +202,24 @@ int main() {
     npcs.reset_session();life.reset(npcs);
     check(walker->alive && npcs.actors().empty(),"new session restores the island");
 
+    // Off to a ball game (LifeSimulation::attend): the day's plan waits; they go, they're there,
+    // and home again after it.
+    {
+        LifeSimulation fans;fans.build(region,&registry);characters::NpcSystem none;fans.configure({});fans.reset(none,WorldClock::at(2,11,0));
+        check(fans.ballpark(0)==-1,"no ballparks on the test island");
+        int venue=-1;
+        for(std::size_t i=0;i<fans.places().size();++i) if(fans.places()[i].kind==PlaceKind::Square) {venue=static_cast<int>(i);break;}
+        const auto& fan=fans.residents()[3];
+        check(venue>=0 && fans.attend(fan.id,venue,fans.clock().minutes+10,fans.clock().minutes+130),"off to the game");
+        check(!fans.attend(fan.id,-1,0,10) && !fans.attend(fan.id,venue,50,40),"no game at no place, or that ends before it starts");
+        for(int i=0;i<4*60;++i) fans.update(.25F,far_away,none);         // half an island hour
+        check(fan.activity==Activity::Ballgame && fan.place==venue,"at the ball game: "+fans.describe(fan));
+        for(int i=0;i<4*60*2;++i) fans.update(.25F,far_away,none);       // an hour on
+        check(fans.in_the_stands(fan),"in the stands");
+        for(int i=0;i<4*60*3;++i) fans.update(.25F,far_away,none);       // and after it
+        check(fan.activity!=Activity::Ballgame && fan.game_place<0 && !fans.in_the_stands(fan),"home again after the game");
+    }
+
     // Directed wandering: travel to a far anchor without the six-second wander timeout.
     characters::NpcInstance traveller;traveller.directed=true;traveller.anchor_radius=1;traveller.spawn_position={30,0,0};
     characters::NpcTuning tuning;characters::NpcContext context;context.player_position={0,0,-500};

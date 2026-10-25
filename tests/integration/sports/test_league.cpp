@@ -3,11 +3,13 @@
 // championship and its riot, a new season, and the save. And the parks on the published map,
 // where the game finds them (world::ballpark::find: their design origins, not the bounds' centres).
 #include "outland/creator/CreatorMapIO.hpp"
+#include "outland/game/sports/BallGame.hpp"
 #include "outland/game/sports/League.hpp"
 #include "outland/world/Ballparks.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
 #include <cmath>
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <set>
@@ -45,9 +47,81 @@ int main() {
     // A game: settled by the seed, the same every time; nine innings or more, never a tie.
     for (int i = 0; i < static_cast<int>(games.size()); ++i) {
         const auto line = league.linescore(i);
-        check(line.away.size() >= 9 && line.total(true) != line.total(false), "a real ball game");
-        check(line.length > 200 && line.length < 420, "two to six hours of island time");
+        check(line.away.size() >= League::innings && line.total(true) != line.total(false), "a real ball game");
+        check(line.length > 120 && line.length < 900, "a few hours of island time: " + std::to_string(line.length));
+        // Every run comes from a plate appearance; every half is three outs (bar a walk-off) and its
+        // runs add up to the line score; the batting order turns over.
+        for (std::size_t inning = 1; inning <= line.away.size(); ++inning)
+            for (const bool home : {false, true}) {
+                const int want = (home ? line.home : line.away)[inning - 1];
+                if (want < 0) continue;
+                int runs = 0, outs = 0;
+                std::uint8_t bases = 0;
+                for (const auto& p : line.plays) {
+                    if (p.inning != static_cast<int>(inning) || p.home != home) continue;
+                    check(p.bases == bases && p.outs == outs, "each plate appearance picks up where the last left off");
+                    const auto a = advance(p.bases, p.outcome, p.outs);
+                    check(a.after == p.after && a.runs == p.runs, "runners move by the rules");
+                    runs += p.runs; outs += p.out() ? 1 : 0; bases = p.after;
+                    check(p.action >= League::plate_appearance * .9 - 1e-6 && p.action <= League::plate_appearance * 4.1 + 1e-6 && p.length > p.action && p.length < p.action + 10, "a plate appearance takes a few island minutes");
+                }
+                check(runs == want, "the plays bring in the half's runs");
+                const bool walkoff = home && static_cast<int>(inning) == static_cast<int>(line.away.size()) && line.total(true) > line.total(false);
+                check(outs == 3 || (walkoff && outs < 3), "three outs a half (or a walk-off)");
+            }
+        for (std::size_t k = 1; k < line.plays.size(); ++k)
+            check(line.plays[k].at >= line.plays[k - 1].at + line.plays[k - 1].length - 1e-9, "one at a time");
+        int scored = 0;
+        for (const auto& p : line.plays) scored += p.runs;
+        check(scored == static_cast<int>(line.runs.size()), "each run has its play");
     }
+    // The game as it is played: nine fielders and a batter all through a plate appearance; the
+    // ball leaves the pitcher's hand, reaches the plate, and (put in play) lands where the play says;
+    // every runner on base is out there; the teams line up before and celebrate after.
+    {
+        const auto line = league.linescore(0);
+        const auto& fixture = games[0];
+        int checked = 0, pitches = 0, in_play = 0, runners_seen = 0, cracks = 0;
+        for (const auto& p : line.plays) {
+            for (const double u : {.05, .2, .33, .45, .6, .8, .95, 1.1}) {
+                const auto sc = scene(fixture, line, p.at + std::min(p.action * u, p.length - .01));
+                int fielders = 0, batters = 0, runners = 0;
+                for (const auto& f : sc.figures) {
+                    fielders += f.role == Role::Fielder;
+                    batters += f.role == Role::Batter;
+                    runners += f.role == Role::Runner;
+                    check(std::abs(f.at.x) < 68 && f.at.z > -76 && f.at.z < 64, "everyone inside the park");
+                    check(std::isfinite(f.speed) && f.speed < 16, "nobody runs faster than a man can: " + std::to_string(f.speed));
+                }
+                check(fielders == 9 && (u > 1 || (sc.play >= 0 && batters == 1)), "nine fielders and a batter");
+                if (u < .3) check(runners == __builtin_popcount(p.bases), "every runner on base");
+                runners_seen += runners;
+                if (u > .3 && u < .37) { check(sc.ball && sc.ball_at.z < -17 && sc.ball_at.z > -37, "the pitch on its way"); ++pitches; }
+                if (sc.ball) check(std::abs(sc.ball_at.x) < 110 && sc.ball_at.y > -.1F && sc.ball_at.y < 40, "the ball somewhere it can be");
+                ++checked;
+            }
+            if (!p.out() || p.outcome == Outcome::Groundout || p.outcome == Outcome::Flyout)
+                if (p.outcome != Outcome::Walk && p.outcome != Outcome::Strikeout) {
+                    ++in_play;
+                    cracks += crack(line, p.at, p.at + p.length);
+                }
+        }
+        check(checked > 100 && pitches == static_cast<int>(line.plays.size()) && cracks == in_play, "pitched, hit and fielded");
+        (void)runners_seen;
+        int lined_up = 0;
+        for (const auto& f : scene(fixture, line, -10).figures) lined_up += f.role == Role::Bench;
+        check(lined_up == 18, "both teams lined up before first pitch");
+        int cheering = 0;
+        for (const auto& f : scene(fixture, line, line.length + 5).figures) cheering += f.motion == Motion::Cheer;
+        check(cheering == 9, "the winners mob the mound");
+        check(scene(fixture, line, -League::pregame - 5).figures.empty() && scene(fixture, line, line.length + League::postgame + 5).figures.empty(), "an empty field otherwise");
+    }
+    // The rules of the bases.
+    check(advance(0b111, Outcome::Walk, 0).runs == 1 && advance(0b111, Outcome::Walk, 0).after == 0b111, "a bases-loaded walk forces one in");
+    check(advance(0b101, Outcome::Walk, 1).after == 0b111 && advance(0b101, Outcome::Walk, 1).runs == 0, "a walk with first and third loads them");
+    check(advance(0b111, Outcome::HomeRun, 2).runs == 4 && advance(0b111, Outcome::HomeRun, 2).after == 0, "a grand slam");
+    check(advance(0b100, Outcome::Flyout, 1).runs == 1 && advance(0b100, Outcome::Flyout, 2).runs == 0, "a sacrifice fly, but not with two out");
+    check(advance(0b011, Outcome::Double, 0).after == 0b110 && advance(0b011, Outcome::Double, 0).runs == 1, "a double: second scores, first to third");
     const auto first = league.linescore(0), again = league.linescore(0);
     check(first.runs == again.runs, "the same game every time it is asked for");
 
@@ -57,7 +131,7 @@ int main() {
     check(league.live_fixture(0, pitch - 200).phase == Phase::Quiet, "nothing in the morning");
     check(league.live_fixture(0, pitch - 30).phase == Phase::Pregame, "the gates open");
     const auto mid = league.live_fixture(0, pitch + first.length / 2);
-    check(mid.phase == Phase::Playing && mid.inning >= 4, "under way");
+    check(mid.phase == Phase::Playing && mid.inning >= 4 && mid.outs >= 0 && mid.outs <= 3, "under way");
     const auto over = league.live_fixture(0, pitch + first.length + 5);
     check(over.phase == Phase::Over && over.home_runs == first.total(true) && over.away_runs == first.total(false), "the final score");
     check(league.live(games[0].home, pitch + 10).fixture == 0 && league.live(games[0].away, pitch + 10).phase == Phase::Quiet,
@@ -76,7 +150,7 @@ int main() {
     check(runs == first.total(true) + first.total(false) + league.linescore(1).total(true) + league.linescore(1).total(false), "every run reported");
 
     // The table and the final.
-    const double end = league.first_pitch_at(19) + league.linescore(19).length + 1;
+    const double end = std::max(league.first_pitch_at(18) + league.linescore(18).length, league.first_pitch_at(19) + league.linescore(19).length) + 1;
     const auto table = league.standings(end);
     int wins = 0, losses = 0;
     for (const auto& s : table) { wins += s.wins; losses += s.losses; check(s.wins + s.losses == 8, "eight games each"); }

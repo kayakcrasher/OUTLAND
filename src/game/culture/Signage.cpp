@@ -100,7 +100,7 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
     const auto& towns = region.settlements();
     for (std::size_t i = 0; i < island.places.size(); ++i) {
         const auto& place = island.places[i];
-        if (place.kind == PlaceKind::Home || place.kind == PlaceKind::Square) continue;
+        if (place.kind == PlaceKind::Home || place.kind == PlaceKind::Square || place.kind == PlaceKind::Ballpark) continue;
         const auto s = static_cast<std::size_t>(std::max(0, place.settlement));
         const Vector3 centre = s < towns.size() ? towns[s].center : place.interior;
         const bool capital = s < towns.size() && towns[s].id.find("capital") != std::string::npos;
