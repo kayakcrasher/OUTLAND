@@ -8,6 +8,7 @@
 #include "outland/world/Ballparks.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
+#include <raymath.h>
 #include <cmath>
 #include <algorithm>
 #include <cstdlib>
@@ -125,6 +126,27 @@ int main() {
         for (const auto& f : scene(fixture, line, line.length + 5).figures) cheering += f.motion == Motion::Cheer;
         check(cheering == 9, "the winners mob the mound");
         check(scene(fixture, line, -League::pregame - 5).figures.empty() && scene(fixture, line, line.length + League::postgame + 5).figures.empty(), "an empty field otherwise");
+        // The tracer: a ball in play leaves a line from the bat that grows with its flight; none
+        // before contact, none on a strikeout or a walk.
+        bool traced = true, quiet = true;
+        int balls = 0;
+        for (const auto& p : line.plays) {
+            const auto before = scene(fixture, line, p.at + p.action * .3);
+            quiet = quiet && before.trail.empty();
+            const auto mid = scene(fixture, line, p.at + p.action * .45), late = scene(fixture, line, p.at + p.action * .9);
+            if (p.outcome == Outcome::Strikeout || p.outcome == Outcome::Walk) { quiet = quiet && mid.trail.empty() && late.trail.empty(); continue; }
+            ++balls;
+            // (From the plate: a grounder's line starts on the ground there, a ball in the air at the bat.)
+            if (late.trail.size() < 2 || std::hypot(late.trail.front().x, late.trail.front().z + 35.6F) > .5F) traced = false;
+            else {
+                const float reach = Vector3Distance(late.trail.front(), late.trail.back());
+                const float early = mid.trail.size() > 1 ? Vector3Distance(mid.trail.front(), mid.trail.back()) : 0;
+                if (reach + .01F < early) traced = false;
+                for (const auto& q : late.trail) if (!std::isfinite(q.x) || q.y < -.1F || q.y > 45) traced = false;
+            }
+        }
+        check(balls > 0 && traced, "every ball in play leaves a tracer from the bat");
+        check(quiet, "no tracer before contact, or on a strikeout or a walk");
     }
     // Real baseball out of the simulation: over many games, the numbers of high-school ball - and
     // the better club wins more often, but not always.
@@ -163,7 +185,7 @@ int main() {
         check(k_rate > .1 && k_rate < .3 && bb_rate > .04 && bb_rate < .16, "strikeouts and walks");
         check(per_game > 5 && per_game < 16, "runs");
         check(hr > 0 && dp > 0 && errors > 0, "home runs, double plays, errors all happen");
-        check(wins[0] > wins[3], "the strongest club (the Leonoj) wins more than the weakest (the Ardeoj)");
+        check(wins[0] > wins[3], "the strongest club (Verda City) wins more than the weakest (Suda Haveno)");
         check(wins[3] > 0, "...but the weakest wins some");
     }
     const auto first = league.linescore(0), again = league.linescore(0);
@@ -178,6 +200,29 @@ int main() {
     check(mid.phase == Phase::Playing && mid.inning >= 4 && mid.outs >= 0 && mid.outs <= 3, "under way");
     const auto over = league.live_fixture(0, pitch + first.length + 5);
     check(over.phase == Phase::Over && over.home_runs == first.total(true) && over.away_runs == first.total(false), "the final score");
+    // The scoreboard agrees with the score at every minute, and at the end with the line score.
+    {
+        bool agrees = true, innings = true;
+        for (std::size_t f = 0; f < league.fixtures().size() && f < 20; ++f) {
+            const auto line = league.linescore(static_cast<int>(f));
+            const double at = league.first_pitch_at(static_cast<int>(f));
+            for (double t = -5; t < line.length + 10; t += 1.5) {
+                const auto box = line.box(t);
+                const auto live = league.live_fixture(static_cast<int>(f), at + t);
+                if (t >= 0 && (box.runs[0] != live.away_runs || box.runs[1] != live.home_runs)) agrees = false;
+                int away = 0, home = 0;
+                for (const int r : box.away) away += std::max(0, r);
+                for (const int r : box.home) home += std::max(0, r);
+                if (away != box.runs[0] || home != box.runs[1]) innings = false;
+            }
+            const auto end = line.box(line.length + 1);
+            if (end.runs[0] != line.total(false) || end.runs[1] != line.total(true)) agrees = false;
+            for (std::size_t k = 0; k < line.away.size(); ++k)
+                if (std::max(0, end.away[k]) != std::max(0, line.away[k]) || (k < line.home.size() && std::max(0, end.home[k]) != std::max(0, line.home[k]))) innings = false;
+        }
+        check(agrees, "the scoreboard shows the score as it stands, minute by minute");
+        check(innings, "the scoreboard's innings add up to its runs and match the line score");
+    }
     check(league.live(games[0].home, pitch + 10).fixture == 0 && league.live(games[0].away, pitch + 10).phase == Phase::Quiet,
           "the game is at the home team's park");
 

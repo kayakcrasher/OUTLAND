@@ -369,6 +369,39 @@ void action(Scene& s, const Play& play, double u, bool batting_home, float secon
     }
     s.ball = ball_shown;
     s.ball_at = ball;
+
+    // ---- the tracer: where the batted ball went, from the bat to where it came down (or was caught)
+    if (in_play && u >= Play::contact) {
+        double end = 0;
+        const auto flight = [&](double v) -> Vector3 {
+            switch (p.outcome) {
+                case Outcome::Groundout: return bouncing(contact, {land.x, .3F, land.z}, span(v, Play::contact, .50));
+                case Outcome::Flyout:
+                    return arc(contact, {land.x, 1.8F, land.z}, span(v, Play::contact, .62), p.apex > 1 ? p.apex : p.depth > 40 ? 26.0F : 16.0F);
+                case Outcome::Single: {
+                    const Vector3 rolled = Vector3Add(land, Vector3Scale(dir, 4));
+                    if (v < .52) return arc(contact, {land.x, .3F, land.z}, span(v, Play::contact, .52), 2.5F);
+                    return Vector3Lerp({land.x, .15F, land.z}, {rolled.x, .12F, rolled.z}, span(v, .52, .64));
+                }
+                case Outcome::Double: case Outcome::Triple:
+                    if (v < .55) return arc(contact, {land.x, 1.0F, land.z}, span(v, Play::contact, .55), 9.0F);
+                    return bouncing({land.x, 1.0F, land.z}, {wall.x, .2F, wall.z}, span(v, .55, .62));
+                case Outcome::HomeRun: return arc(contact, {land.x, 4.0F, land.z}, span(v, Play::contact, .62), 30.0F);
+                default: return contact;
+            }
+        };
+        switch (p.outcome) {
+            case Outcome::Groundout: end = .50; break;
+            case Outcome::Single: end = .64; break;
+            case Outcome::Flyout: case Outcome::Double: case Outcome::Triple: case Outcome::HomeRun: end = .62; break;
+            default: break;
+        }
+        if (end > Play::contact) {
+            constexpr int samples = 32;
+            const double upto = std::min(u, end);
+            for (int k = 0; k <= samples; ++k) s.trail.push_back(flight(Play::contact + (upto - Play::contact) * k / samples));
+        }
+    }
 }
 
 // Where someone in `from` ends up in `to`: the same man (a runner by the base he reached; the man
@@ -483,7 +516,11 @@ Scene raw_scene(const Fixture& fixture, const Linescore& line, double t, float s
     common(next, batting_home, t);
     if (current < last) action(next, line.plays[static_cast<std::size_t>(current) + 1], 0, batting_home, seconds_per_minute);
     else off_the_field(next, batting_home, p.after);
-    s = regroup(ended, reached, next, static_cast<float>((t - p.at - p.action) * seconds_per_minute), batting_home);
+    const float since = static_cast<float>((t - p.at - p.action) * seconds_per_minute);
+    s = regroup(ended, reached, next, since, batting_home);
+    // The tracer lingers a few seconds after the play, fading.
+    constexpr float linger = 6;
+    if (since < linger) { s.trail = ended.trail; s.trail_fade = 1 - since / linger; }
     if (current < last) s.play = current;
     bats(s, nullptr, 0);
     (void)first;

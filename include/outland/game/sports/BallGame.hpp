@@ -49,6 +49,10 @@ struct Scene {
     std::vector<Bat> bats;
     bool ball{false};
     Vector3 ball_at{};
+    // The tracer: the batted ball's flight from the bat (in the park's frame), as far as it has
+    // got; kept to the end of the play, then fading (trail_fade 1 to 0).
+    std::vector<Vector3> trail;
+    float trail_fade{1};
     int play{-1};               // the plate appearance under way (Linescore::plays), -1 none
 };
 

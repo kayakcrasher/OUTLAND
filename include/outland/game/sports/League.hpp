@@ -25,8 +25,8 @@
 namespace outland::game::sports {
 
 struct Team {
-    const char* name;       // in full
-    const char* nick;       // what the fans shout
+    const char* name;       // in full: the club is named for its city
+    const char* nick;       // on the scoreboard and in the news (the city too)
     const char* town;       // its home town
     const char* site;       // world::layout site id of the town (its ballpark is in that county)
     const char* county;     // world::zones zone name
@@ -36,11 +36,11 @@ struct Team {
 };
 
 inline constexpr std::array<Team, 5> teams{{
-    {"Verdaj Leonoj", "Leonoj", "Verda", "capital_verda", "Verdkerno", {18, 118, 58, 255}, {228, 182, 40, 255}, .56F, .35F},
-    {"Altverdaj Ursoj", "Ursoj", "Espera", "village_espera", "Altverdo", {104, 66, 38, 255}, {240, 122, 24, 255}, .50F, .55F},
-    {"Lumaj Mevoj", "Mevoj", "Porto Luma", "port_luma", "Lumamaro", {26, 46, 108, 255}, {118, 190, 240, 255}, .52F, .40F},
-    {"Marĉaj Ardeoj", "Ardeoj", "Suda Haveno", "south_haven", "Marĉfluo", {0, 124, 126, 255}, {236, 236, 226, 255}, .46F, .45F},
-    {"Feraj Ministoj", "Ministoj", "Roka", "west_roka", "Ferarbaro", {40, 40, 44, 255}, {196, 42, 30, 255}, .50F, .65F},
+    {"Verda City", "Verda City", "Verda", "capital_verda", "Verdkerno", {18, 118, 58, 255}, {228, 182, 40, 255}, .56F, .35F},
+    {"Espera", "Espera", "Espera", "village_espera", "Altverdo", {104, 66, 38, 255}, {240, 122, 24, 255}, .50F, .55F},
+    {"Porto Luma", "Porto Luma", "Porto Luma", "port_luma", "Lumamaro", {26, 46, 108, 255}, {118, 190, 240, 255}, .52F, .40F},
+    {"Suda Haveno", "Suda Haveno", "Suda Haveno", "south_haven", "Marĉfluo", {0, 124, 126, 255}, {236, 236, 226, 255}, .46F, .45F},
+    {"Roka", "Roka", "Roka", "west_roka", "Ferarbaro", {40, 40, 44, 255}, {196, 42, 30, 255}, .50F, .65F},
 }};
 inline constexpr int team_count = static_cast<int>(teams.size());
 
@@ -99,6 +99,13 @@ struct Play {
     [[nodiscard]] double run_time() const { return at + action * scored; }
 };
 
+// The scoreboard at some minute of a game: runs per inning so far (-1: that half not started),
+// and runs, hits and errors for each side (index 0 the visitors, 1 the home team).
+struct BoxScore {
+    std::vector<int> away, home;
+    std::array<int, 2> runs{}, hits{}, errors{};
+};
+
 // One game's runs: per half-inning, and the minute (from first pitch) each run crosses the plate;
 // every plate appearance that makes them.
 struct Linescore {
@@ -113,6 +120,9 @@ struct Linescore {
     // The half-inning under way at `t` (0 the top of the first; -1 before first pitch), and when it ends.
     [[nodiscard]] int half_at(double t) const;
     [[nodiscard]] double half_end(int half) const;
+    // The scoreboard `t` minutes after first pitch: a run counts as it crosses the plate (the same
+    // moment as `runs`), a hit or an error as the ball is put in play.
+    [[nodiscard]] BoxScore box(double t) const;
 };
 
 struct Standing { int team{0}, wins{0}, losses{0}, runs_for{0}, runs_against{0}; };

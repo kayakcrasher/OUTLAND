@@ -115,6 +115,7 @@
 #include <rlgl.h>
 
 #include <algorithm>
+#include <cctype>
 #include <limits>
 #include <cstring>
 #include <cstdio>
@@ -656,6 +657,14 @@ void Renderer::run() {
     std::array<world::ballpark::Site,5> parks{};
     std::string league_path,league_saved;
     std::array<double,5> park_fight_until{},park_cheer_home{},park_cheer_away{};   // (match_time)
+    // Each park's scoreboard in centre field: the line score drawn into a texture (redrawn when it
+    // changes), shown on the board's face while a game is on.
+    struct ParkBoards {
+        std::array<RenderTexture2D,5> face{};
+        std::array<std::string,5> shows{};
+        std::array<bool,5> on{};
+        ~ParkBoards() { for(auto& f:face) if(f.id) UnloadRenderTexture(f); }
+    } park_boards;
     // Who's going to each game (island life's residents): their seat in the home or visitors' stand.
     struct GameFan { int resident; bool home; int seat; };
     std::map<int,std::vector<GameFan>> game_fans;   // by fixture, this season
@@ -6409,7 +6418,7 @@ void Renderer::run() {
                                         seated+=island_life.in_the_stands(island_life.residents()[static_cast<std::size_t>(fan.resident)]);
                                     TraceLog(LOG_INFO,"OUTLAND ballgame %d: first pitch, %d of %zu fans in their seats",e.fixture,seated,game_fans[e.fixture].size());
                                 }
-                                    gang_news=(g.final ? "THE FINAL: " : "PLAY BALL: ")+nick(g.home)+" host the "+nick(g.away)+" at "+teams[static_cast<std::size_t>(g.home)].town;gang_news_time=6;
+                                    gang_news=(g.final ? "THE FINAL: " : "PLAY BALL: ")+nick(g.away)+" at "+nick(g.home);gang_news_time=6;
                                     break;
                                 case EventKind::Run:
                                     (e.team==g.home ? park_cheer_home : park_cheer_away)[static_cast<std::size_t>(g.home)]=match_time+5;
@@ -6425,18 +6434,18 @@ void Renderer::run() {
                                     }
                                     break;
                                 case EventKind::GameOver:
-                                    gang_news=TextFormat("FINAL at %s: %s %d, %s %d",teams[static_cast<std::size_t>(g.home)].town,nick(g.home).c_str(),score.home_runs,nick(g.away).c_str(),score.away_runs);gang_news_time=7;
+                                    gang_news=TextFormat("FINAL: %s %d, %s %d",nick(g.home).c_str(),score.home_runs,nick(g.away).c_str(),score.away_runs);gang_news_time=7;
                                     break;
                                 case EventKind::Fight:
                                     park_fight_until[static_cast<std::size_t>(g.home)]=match_time+45;
                                     if(here) {interaction_message="A fight breaks out between the "+nick(g.home)+" and "+nick(g.away)+" fans!";interaction_remaining=5;}
-                                    else {gang_news="BRAWL in the stands at "+std::string(teams[static_cast<std::size_t>(g.home)].town)+": "+nick(g.home)+" and "+nick(g.away)+" fans";gang_news_time=6;}
+                                    else {gang_news="BRAWL in the stands at the "+nick(g.home)+" ballpark: "+nick(g.home)+" and "+nick(g.away)+" fans";gang_news_time=6;}
                                     break;
                                 case EventKind::Champion:
                                     gang_news="ĈAMPIONOJ! The "+std::string(teams[static_cast<std::size_t>(e.team)].name)+" win the Basballigo!";gang_news_time=9;
                                     break;
                                 case EventKind::Riot:
-                                    gang_news="RIOT at "+std::string(teams[static_cast<std::size_t>(g.home)].town)+": the "+nick(e.team)+" fans won't take it - police on the way";gang_news_time=9;
+                                    gang_news="RIOT at the "+nick(g.home)+" ballpark: the "+nick(e.team)+" fans won't take it - police on the way";gang_news_time=9;
                                     riot_team=e.team;
                                     if(site.team>=0 && services.active()) services.respond(site.to_world(world::ballpark::gate),3,match_time+game::sports::League::riot_minutes*60.0/30.0,vehicles);
                                     break;
@@ -6800,6 +6809,89 @@ void Renderer::run() {
             prison_tour.eye=Vector3Lerp(prison_tour.eye,eye,k);prison_tour.look=Vector3Lerp(prison_tour.look,look,k);
             camera.position=prison_tour.eye;camera.target=prison_tour.look;
         }
+        // The parks' scoreboards: the line score as it stands (Linescore::box - the same runs as the
+        // panel's), drawn into each board's texture before the scene.
+        park_boards.on.fill(false);
+        if(game::rules_for(game_mode).civilian_life && !league.fixtures().empty()) {
+            using namespace game::sports;
+            const double now=island_life.clock().minutes;
+            for(int p=0;p<5;++p) {
+                const auto& site=parks[static_cast<std::size_t>(p)];
+                if(site.team<0 || Vector3DistanceSqr(site.origin,camera.position)>260*260) continue;
+                const auto live=league.live(p,now);
+                auto& face=park_boards.face[static_cast<std::size_t>(p)];
+                if(face.id==0) face=LoadRenderTexture(640,200);
+                park_boards.on[static_cast<std::size_t>(p)]=face.id!=0;
+                if(face.id==0) continue;
+                const Font& font=sign_renderer.font();
+                const auto cell=[&](const std::string& text,float x,float y,float size,Color ink){
+                    const float w=MeasureTextEx(font,text.c_str(),size,1).x;
+                    DrawTextEx(font,text.c_str(),{x-w/2,y},size,1,ink);
+                };
+                const Color amber{255,206,84,255},white{238,240,232,255},dim{120,140,128,255};
+                const auto upper=[](std::string n){for(auto& c:n) c=static_cast<char>(std::toupper(static_cast<unsigned char>(c)));return n;};
+                // No game on: the home club's name and the league.
+                if(live.phase==Phase::Quiet || live.fixture<0) {
+                    const std::string key="idle";
+                    if(park_boards.shows[static_cast<std::size_t>(p)]==key) continue;
+                    park_boards.shows[static_cast<std::size_t>(p)]=key;
+                    const auto& club=teams[static_cast<std::size_t>(site.team)];
+                    BeginTextureMode(face);
+                    ClearBackground(Color{14,30,22,255});
+                    DrawRectangle(0,0,640,14,club.primary);DrawRectangle(0,186,640,14,club.secondary);
+                    cell(upper(club.name),320,52,56,white);
+                    cell("LA VERDA BASBALLIGO",320,124,28,amber);
+                    EndTextureMode();
+                    continue;
+                }
+                const auto& g=league.fixtures()[static_cast<std::size_t>(live.fixture)];
+                const auto line=league.linescore(live.fixture);
+                const double t=now-league.first_pitch_at(live.fixture);
+                const auto box=line.box(t);
+                // Seven innings on the board; extra ones as they start.
+                int started=0;
+                for(int k=0;k<static_cast<int>(box.away.size());++k) if(box.away[static_cast<std::size_t>(k)]>=0) started=k+1;
+                const int columns=std::max(League::innings,started);
+                const auto name=[&](int team){return upper(teams[static_cast<std::size_t>(team)].nick);};
+                const std::string state=live.phase==Phase::Pregame ? TextFormat("FIRST PITCH %02d:%02d",static_cast<int>(League::first_pitch)/60,static_cast<int>(League::first_pitch)%60) :
+                    live.phase==Phase::Over ? std::string(g.final ? "FINAL - LA FINALO" : "FINAL") :
+                    TextFormat("%s %d   %d OUT",live.top ? "TOP" : "BOT",live.inning,std::min(live.outs,2));
+                // What it shows, as text: redrawn only when that changes.
+                std::string key=state+"|"+std::to_string(g.away)+"|"+std::to_string(g.home);
+                for(const int r:box.away) key+=","+std::to_string(r);
+                for(const int r:box.home) key+=";"+std::to_string(r);
+                for(int k=0;k<2;++k) key+=TextFormat("/%d.%d.%d",box.runs[k],box.hits[k],box.errors[k]);
+                if(park_boards.shows[static_cast<std::size_t>(p)]==key) continue;
+                park_boards.shows[static_cast<std::size_t>(p)]=key;
+                BeginTextureMode(face);
+                ClearBackground(Color{14,30,22,255});
+                const float name_w=214,col_w=std::min(40.0F,(640-name_w-150)/static_cast<float>(columns));
+                for(int c=0;c<columns;++c) cell(std::to_string(c+1),name_w+col_w*(static_cast<float>(c)+.5F),6,28,dim);
+                const float tx=name_w+col_w*static_cast<float>(columns)+4;
+                cell("R",tx+23,6,28,amber);cell("H",tx+69,6,28,dim);cell("E",tx+115,6,28,dim);
+                for(int row=0;row<2;++row) {
+                    const bool home_row=row==1;
+                    const float y=44+static_cast<float>(row)*54;
+                    const auto& team=teams[static_cast<std::size_t>(home_row ? g.home : g.away)];
+                    DrawRectangle(8,static_cast<int>(y),12,40,team.primary);
+                    // The city's name, made to fit its column.
+                    const std::string city=name(home_row ? g.home : g.away);
+                    float size=38;
+                    while(size>18 && MeasureTextEx(font,city.c_str(),size,1).x>name_w-34) size-=1;
+                    DrawTextEx(font,city.c_str(),{26,y+20-size/2},size,1,white);
+                    const auto& runs=home_row ? box.home : box.away;
+                    for(int c=0;c<columns && c<static_cast<int>(runs.size());++c)
+                        if(runs[static_cast<std::size_t>(c)]>=0) cell(std::to_string(runs[static_cast<std::size_t>(c)]),name_w+col_w*(static_cast<float>(c)+.5F),y+1,38,white);
+                    const std::size_t k=home_row ? 1 : 0;
+                    cell(std::to_string(box.runs[k]),tx+23,y+1,38,amber);
+                    cell(std::to_string(box.hits[k]),tx+69,y+1,38,white);
+                    cell(std::to_string(box.errors[k]),tx+115,y+1,38,white);
+                }
+                DrawRectangle(0,152,640,2,dim);
+                cell(state,320,160,34,amber);
+                EndTextureMode();
+            }
+        }
         BeginTextureMode(scene_target);
 
         // The sky is drawn before the world, pre-divided by the ambient multiply that follows.
@@ -6919,6 +7011,23 @@ void Renderer::run() {
             for(int p=0;p<5;++p) {
                 const auto& site=parks[static_cast<std::size_t>(p)];
                 if(site.team<0 || Vector3DistanceSqr(site.origin,camera.position)>280*280) continue;
+                // The scoreboard's face: the line score (or the club's name), on the board beyond centre field (facing the plate).
+                if(park_boards.on[static_cast<std::size_t>(p)]) {
+                    const auto& face=park_boards.face[static_cast<std::size_t>(p)];
+                    const Vector3 tl=site.to_world({7.7F,9.75F,59.3F}),tr=site.to_world({-7.7F,9.75F,59.3F});
+                    const Vector3 br=site.to_world({-7.7F,5.25F,59.3F}),bl=site.to_world({7.7F,5.25F,59.3F});
+                    rlDisableBackfaceCulling();
+                    rlSetTexture(face.texture.id);
+                    rlBegin(RL_QUADS);
+                    rlColor4ub(255,255,255,255);
+                    rlTexCoord2f(0,1);rlVertex3f(tl.x,tl.y,tl.z);
+                    rlTexCoord2f(0,0);rlVertex3f(bl.x,bl.y,bl.z);
+                    rlTexCoord2f(1,0);rlVertex3f(br.x,br.y,br.z);
+                    rlTexCoord2f(1,1);rlVertex3f(tr.x,tr.y,tr.z);
+                    rlEnd();
+                    rlSetTexture(0);
+                    rlEnableBackfaceCulling();
+                }
                 const auto live=league.live(p,now);
                 const bool riot=league.rioting(p,now);
                 if(live.phase==Phase::Quiet && !riot) continue;
@@ -6984,13 +7093,22 @@ void Renderer::run() {
                         if(Vector3DistanceSqr(a,camera.position)<120*120) DrawCylinderEx(a,b,.018F,.034F,6,Color{196,160,112,255});
                     }
                     if(sc.ball) DrawSphere(site.to_world(sc.ball_at),.09F,RAYWHITE);
+                    // The tracer: a bright line along the batted ball's flight, so you see where it went.
+                    if(sc.trail.size()>1 && Vector3DistanceSqr(site.origin,camera.position)<180*180) {
+                        const Color glow=Fade(Color{255,240,120,255},sc.trail_fade);
+                        for(std::size_t k=1;k<sc.trail.size();++k) {
+                            const Vector3 a=site.to_world(sc.trail[k-1]),b=site.to_world(sc.trail[k]);
+                            if(Vector3DistanceSqr(a,b)<1e-4F) continue;
+                            DrawCylinderEx(a,b,.11F,.11F,6,glow);
+                        }
+                    }
                 }
-                // A brawl: fans of both clubs at it on the concourse between the stands and the gate.
+                // A brawl: fans of both clubs at it in the car park behind the grandstand, by the gate.
                 const bool brawl=park_fight_until[static_cast<std::size_t>(p)]>match_time || riot;
                 if(brawl) {
                     const int pairs=riot ? 8 : 3;
                     for(int k=0;k<pairs;++k) {
-                        const Vector3 c{static_cast<float>(k-pairs/2)*3.2F,0,-49.0F+static_cast<float>(k%2)*2.4F};
+                        const Vector3 c{static_cast<float>(k-pairs/2)*3.2F,0,-63.0F-static_cast<float>(k%2)*2.4F};
                         const Vector3 a=site.to_world({c.x-.45F,0,c.z}),b=site.to_world({c.x+.45F,0,c.z});
                         characters::BodyPose home_pose;home_pose.outfit=jersey(g.home);
                         characters::BodyPose away_pose;away_pose.outfit=jersey(g.away);
@@ -8481,21 +8599,24 @@ void Renderer::run() {
                         const auto& away=teams[static_cast<std::size_t>(g.away)];
                         const auto score=league.live_fixture(fixture,now);
                         const Font& font=sign_renderer.font();
-                        const float x=static_cast<float>(screen_width-360),y=250;
+                        const float x=static_cast<float>(screen_width-400),y=250;
                         const bool table=stand_seat.on;
-                        DrawRectangle(static_cast<int>(x),static_cast<int>(y),340,table ? 236 : 96,Fade(BLACK,.7F));
+                        DrawRectangle(static_cast<int>(x),static_cast<int>(y),380,table ? 236 : 96,Fade(BLACK,.7F));
                         DrawTextEx(font,g.final ? "BASBALLIGO - LA FINALO" : "BASBALLIGO",{x+12,y+8},16,1,GOLD);
                         DrawRectangle(static_cast<int>(x+12),static_cast<int>(y+32),10,22,away.primary);
-                        DrawTextEx(font,TextFormat("%s  %d",away.nick,score.away_runs),{x+28,y+32},22,1,RAYWHITE);
+                        // The city, then its runs in a column of their own (the names are long).
+                        DrawTextEx(font,away.nick,{x+28,y+32},22,1,RAYWHITE);
+                        DrawTextEx(font,TextFormat("%d",score.away_runs),{x+190,y+32},22,1,GOLD);
                         DrawRectangle(static_cast<int>(x+12),static_cast<int>(y+60),10,22,home.primary);
-                        DrawTextEx(font,TextFormat("%s  %d",home.nick,score.home_runs),{x+28,y+60},22,1,RAYWHITE);
+                        DrawTextEx(font,home.nick,{x+28,y+60},22,1,RAYWHITE);
+                        DrawTextEx(font,TextFormat("%d",score.home_runs),{x+190,y+60},22,1,GOLD);
                         const int pitch_minute=static_cast<int>(League::first_pitch);
                         const char* state=riot ? "RIOT!" : live.phase==Phase::Pregame ? TextFormat("%02d:%02d start",pitch_minute/60,pitch_minute%60) :
                             live.phase==Phase::Over ? "FINAL" : TextFormat("%s %d",live.top ? "TOP" : "BOT",live.inning);
-                        DrawTextEx(font,state,{x+200,y+34},20,1,riot ? RED : GOLD);
+                        DrawTextEx(font,state,{x+232,y+34},20,1,riot ? RED : GOLD);
                         if(live.phase==Phase::Playing && !riot) {
                             // The outs, and a little diamond with the runners on.
-                            DrawTextEx(font,TextFormat("%d OUT",std::min(live.outs,2)),{x+200,y+62},18,1,RAYWHITE);
+                            DrawTextEx(font,TextFormat("%d OUT",std::min(live.outs,2)),{x+232,y+62},18,1,RAYWHITE);
                             // Who's up, the count, and who's pitching (and how many he's thrown).
                             if(live.play>=0) {
                                 const auto line=league.linescore(live.fixture);
@@ -8505,11 +8626,11 @@ void Renderer::run() {
                                 int thrown=0;
                                 for(const auto& q:line.plays) if(q.home==pl.home && q.pitcher==pl.pitcher && q.at<=pl.at) thrown+=q.pitches;
                                 const float yb=y+(table ? 240.0F : 100.0F);
-                                DrawRectangle(static_cast<int>(x),static_cast<int>(yb),340,46,Fade(BLACK,.7F));
+                                DrawRectangle(static_cast<int>(x),static_cast<int>(yb),380,46,Fade(BLACK,.7F));
                                 DrawTextEx(font,TextFormat("AB  %s  %d-%d",batting.lineup[static_cast<std::size_t>(pl.batter)].name.c_str(),pl.balls,pl.strikes),{x+12,yb+4},16,1,RAYWHITE);
                                 DrawTextEx(font,TextFormat("P   %s  (%d)",pitching.staff[static_cast<std::size_t>(pl.pitcher)].name.c_str(),thrown),{x+12,yb+24},16,1,Fade(RAYWHITE,.8F));
                             }
-                            const Vector2 c{x+305,y+62};
+                            const Vector2 c{x+345,y+62};
                             const std::array<Vector2,3> bag{{{c.x+11,c.y},{c.x,c.y-11},{c.x-11,c.y}}};
                             for(int k=0;k<3;++k) {
                                 const bool on=(live.bases>>k)&1;

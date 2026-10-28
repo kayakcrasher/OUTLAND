@@ -101,6 +101,31 @@ int Linescore::total(bool home_team) const {
     return n;
 }
 
+BoxScore Linescore::box(double t) const {
+    BoxScore out;
+    for (std::size_t h = 0; h < halves.size(); ++h) {
+        const bool home_half = h % 2 == 1;
+        (home_half ? out.home : out.away).push_back(t >= halves[h] ? 0 : -1);
+    }
+    while (out.home.size() < out.away.size()) out.home.push_back(-1);
+    for (const auto& p : plays) {
+        const int side = p.home ? 1 : 0;
+        const std::size_t inning = static_cast<std::size_t>(std::max(1, p.inning) - 1);
+        auto& row = p.home ? out.home : out.away;
+        if (t >= p.run_time() && p.runs > 0 && inning < row.size()) {
+            row[inning] = std::max(0, row[inning]) + p.runs;
+            out.runs[static_cast<std::size_t>(side)] += p.runs;
+        }
+        if (t < p.at + p.action * Play::contact) continue;
+        switch (p.outcome) {
+            case Outcome::Single: case Outcome::Double: case Outcome::Triple: case Outcome::HomeRun: ++out.hits[static_cast<std::size_t>(side)]; break;
+            case Outcome::Error: ++out.errors[static_cast<std::size_t>(1 - side)]; break;   // charged to the fielding side
+            default: break;
+        }
+    }
+    return out;
+}
+
 std::uint64_t League::mix(std::uint64_t a, std::uint64_t b) const {
     std::uint64_t h = seed_ ^ (a * 0x9e3779b97f4a7c15ULL) ^ (b * 0xc2b2ae3d27d4eb4fULL) ^ (static_cast<std::uint64_t>(season_) * 0x165667b19e3779f9ULL);
     h ^= h >> 33; h *= 0xff51afd7ed558ccdULL; h ^= h >> 33; h *= 0xc4ceb9fe1a85ec53ULL; h ^= h >> 33;

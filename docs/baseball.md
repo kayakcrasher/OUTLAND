@@ -1,20 +1,20 @@
 # La Verda Basballigo: the ballparks and the league
 
 Explore only. Every county has a high-school-sized ballpark near its main town, and a team in its
-colours. The five teams play each other through the season on the island clock. The games are
+colours, named for its city. The five teams play each other through the season on the island clock. The games are
 played out on the field, pitch by pitch, and the towns' own people come to watch.
 
 ## The teams and their parks
 
-| Team | Town (county) | Colours | Park, centre (x, z) |
+| Team | County | Colours | Park, centre (x, z) |
 |---|---|---|---|
-| Verdaj Leonoj | Verda City (Verdkerno) | green and gold | east of Orienta (606, 46) |
-| Altverdaj Ursoj | Espera (Altverdo) | brown and orange | west of town (−256, −1755) |
-| Lumaj Mevoj | Porto Luma (Lumamaro) | navy and sky blue | (1630, −186) |
-| Marĉaj Ardeoj | Suda Haveno (Marĉfluo) | teal and white | (180, 1586) |
-| Feraj Ministoj | Roka (Ferarbaro) | charcoal and red | (−1708, 686) |
+| Verda City | Verdkerno | green and gold | east of Orienta (606, 46) |
+| Espera | Altverdo | brown and orange | west of town (−256, −1755) |
+| Porto Luma | Lumamaro | navy and sky blue | (1630, −186) |
+| Suda Haveno | Marĉfluo | teal and white | (180, 1586) |
+| Roka | Ferarbaro | charcoal and red | (−1708, 686) |
 
-The map marks each one as `<NICK> BALLPARK`. On a game day the compass shows `PLAY BALL` over
+The map marks each one as `<CITY> BALLPARK`. On a game day the compass shows `PLAY BALL` over
 the park where a game is on.
 
 ## The ballpark (modular, one model per team)
@@ -31,22 +31,33 @@ front toward the nearest road, and lays an access road to it. The terrain is lev
     base paths;
   - a 13 ft dirt circle round a pentagon home plate;
   - chalked batter's boxes (4 × 6 ft) and a catcher's box;
+  - **the field is drawn over:** the ground is laid in layers well apart (the pad's grass, the
+    dirt, the infield grass, the circle round the plate), and the chalk sits on top of them all,
+    12 cm wide (the foul lines 15 cm), so the lines show from the stands and don't flicker. Every
+    disc and fan of dirt faces up (the skin, the mound, the circles);
   - the running lane to first, the coaches' boxes, and on-deck circles in the team's colour.
 - **The outfield:** an 88 m fence, padded in the team's colour with a yellow cap, a dirt warning
   track inside it, foul lines and foul poles.
-- **A backstop:** netting behind the plate, angled in toward the lines.
-- **Dugouts** along the lines in foul ground, facing the diamond, the home team's by first base.
-  Each has block walls, a roof in the team's colour, the bench and a rail.
-- **The stands:** two stepped aluminium bleachers along the first- and third-base lines behind
-  the dugouts, six rows each, angled square-on to the diamond. The home crowd sits by first and
+- **A backstop:** behind the plate, angled in toward the lines: a padded wall waist high and a
+  see-through net above it (thin posts, light cables, a top rail), so the grandstand behind it
+  watches the game through it.
+- **Dugouts** along the lines in foul ground (16–28 m from the plate), facing the diamond, the
+  home team's by first base. Each has block walls, a roof in the team's colour, the bench and a
+  rail. They sit clear of the grandstand's view of the infield.
+- **The grandstand:** covered, behind the plate and the backstop, like a high-school park's main
+  stand. Two wings of stepped aluminium seats, eight rows each: the home crowd on the first-base
+  side, the visitors on the third-base side. A concrete aisle runs up the middle and one at each
+  end, with a low padded wall in front (open at the middle aisle). A rail runs along the back, a
+  roof on steel posts covers it all, and the press box sits at the top of the middle aisle with
+  its window on the field. It is solid underneath: walk up the rows. The home crowd sits by first and
   the visitors by third. A low fence separates them from the field, and each has a rail behind
   it and the club's banner board.
 - **Bullpens** down each line: a mound and a plate 60 ft 6 in apart, and a bench.
-- **The locker room** (Vestejo) behind the home stand. You can go in: there are lockers in the
+- **The locker room** (Vestejo) by the car park on the home side, beyond the grandstand's end. You can go in: there are lockers in the
   club's colours, benches, a crest and the showers. Its door is on the car park.
 - **The car park** at the front, with two bus bays in the team's colour (home and visitors) and
-  the gate.
-- **A scoreboard** beyond centre field and four light towers.
+  the gate, behind the grandstand.
+- **A scoreboard** beyond centre field (see [the scoreboard](#the-scoreboard)) and four light towers.
 
 The frame (the plate, the bases, the fielders' spots, the seats, the bays) is in
 `include/outland/world/Ballparks.hpp`. `ballpark::find` reads the parks off the map. The kit
@@ -113,6 +124,20 @@ The town bus line doesn't use them.
   inning, the outs, a little diamond with the runners on, who's at bat with the count, who's
   pitching with his pitch count, and LA FINALO for the final.
 
+### The scoreboard
+
+The board beyond centre field shows the game as it stands (`Linescore::box`):
+
+- each side's runs inning by inning (seven columns, more for extra innings as they start; a
+  half not yet begun is left blank);
+- R, H and E (runs, hits, errors charged to the fielding side);
+- the inning and the outs, or FIRST PITCH before the game and FINAL after it.
+
+A run goes up the moment the runner crosses the plate: the same moment as on the panel and in the
+news, so the board, the panel and the field always agree. A hit or an error counts as the ball is
+put in play. Between games the board shows the home club's name. The board is drawn into a
+texture only when what it shows changes (`ParkBoards` in the renderer).
+
 ## The game on the field
 
 `game::sports::scene` (`src/game/sports/BallGame.cpp`) reads off the plays where everyone is at any
@@ -124,6 +149,10 @@ moment, and the renderer draws it. A right-handed batting order throughout.
   - **At the plate:** the batter waits in his stance and swings (the bat is drawn round). He takes
     ball four, or swings through strike three into the catcher's mitt, and the catcher lobs it
     back to the mound.
+  - **The tracer:** once the ball is hit, a bright yellow line follows its flight from the bat:
+    the arc of a fly ball or a home run, the bounces of a grounder, a single dropping in and
+    rolling, a double to the wall. It stays to the end of the play, then fades over six seconds
+    (`Scene::trail`).
   - **Ball in play:** grounders bounce out to an infielder, who scoops and throws to first, with
     the first baseman on the bag. Fly balls arc up and an outfielder runs under them and makes
     the catch. Hits drop in or run to the wall: the outfielder chases them down and throws to the
@@ -153,13 +182,14 @@ moment, and the renderer draws it. A right-handed batting order throughout.
   - Near the player you see them walk (or drive) up and go in at the gate. From there they sit in
     their own seat in the home stand, in their own clothes.
   - They stand up to cheer when their team scores.
+  - Seats face out over the backstop, turned a little toward the plate.
   - Police officers and doctors stay on duty.
 - **Travelling fans:** the visitors' followers come from their own town across the island. Those
   with a car drive, and they leave an hour earlier. They sit in the visitors' stand. How many
-  come depends on the team (the Ministoj travel most) and on the rivalry.
+  come depends on the team (Roka's travel most) and on the rivalry.
 - **Rivalries:** they grow with every game between two teams, and most of all with a final.
 - **Fights:** now and then a fight breaks out between the two sets of fans, more often between
-  rivals. Pairs brawl on the concourse behind the stands, and the news reports it.
+  rivals. Pairs brawl in the car park behind the grandstand, and the news reports it.
 - **Riots:** the championship final always boils over. When the final ends, the beaten side's
   fans riot at the park for two island hours. Fires burn on the field. If you are near, a dozen
   rioters in their club's shirts go for anyone close, including you. The police send cars to the
@@ -167,7 +197,7 @@ moment, and the renderer draws it. A right-handed batting order throughout.
 
 ### Sitting down
 
-Walk up to either stand and press **E** / **USE** to take a seat. Press USE again (or move) to
+Walk up to the grandstand (either wing) and press **E** / **USE** to take a seat. Press USE again (or move) to
 get up. While you're seated the panel also shows the season table.
 
 ## Testing
@@ -187,6 +217,10 @@ get up. While you're seated the panel also shows the season table.
 `outland_league_tests` also checks:
 
 - the plays: three outs a half (bar a walk-off), the runs adding up, the base rules;
+- the scoreboard: minute by minute it shows the score the panel shows, and its innings add up to
+  its runs and match the line score;
+- the tracer: every ball in play leaves one from the bat, and none appears before contact or on a
+  strikeout or a walk;
 - the game on the field: nine fielders and a batter, every runner, the pitch, the ball in play,
   nobody faster than 16 m/s, the line-ups and the celebration.
 

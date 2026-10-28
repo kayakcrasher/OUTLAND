@@ -333,7 +333,7 @@ int main() {
         else if (road.start.z == -84 && road.end.z == -84 && road.start.x == -476 && road.end.x < world::layout::freight_x1) ++freight_roads;
         // Verda Transporto's freight yards off the spokes (a 16 m road in, a 14 m loop), far out of town.
         else if (std::hypot(road.start.x, road.start.z) > 1000 && (road.width == 16 || road.width == 14)) continue;
-        // The Leonoj's ballpark: an 8 m road from its gate to the street.
+        // Verda City's ballpark: an 8 m road from its gate to the street.
         else if (road.width == 8 && std::hypot(road.start.x - world::ballpark::parks[0].centre.x, road.start.z - world::ballpark::parks[0].centre.z) < 90) continue;
         else check(world::roads::turnaround_road(road.width), "a capital road that is neither street, highway nor bus turnaround");
     }
@@ -602,7 +602,7 @@ int main() {
                 check(!(asset.collision && asset.model_path != world::ballpark::model(0) && asset.id.find("bus_team_0") == std::string::npos &&
                         std::abs(asset.position.x - dev::stadium_reserve.x) < dev::stadium_half &&
                         std::abs(asset.position.z - dev::stadium_reserve.z) < dev::stadium_half),
-                      "nothing but the Leonoj's ballpark (and their bus) on the stadium ground: " + asset.id);
+                      "nothing but Verda City's ballpark (and their bus) on the stadium ground: " + asset.id);
         check(staffed + static_cast<int>(report.gang_houses.size()) == kit_places, "people live or work in every part-built building: " + std::to_string(staffed));
         // Stela Turo: downtown, every floor walkable, both stair cores
         // climbable, the penthouse and the roof reachable.

@@ -48,16 +48,18 @@ inline constexpr std::array<Vector3, 9> fielders{{
 }
 // The model yaw of something facing the diamond square-on from beside a line.
 [[nodiscard]] inline float facing_field(bool first) { return first ? 45.0F : -45.0F; }
-// The stands: stepped bleachers along each line facing the diamond, home by first base, visitors
-// by third. Row k's seat is (k + 1) * row_rise up, k rows back from the front.
-inline constexpr float stand_t0 = 9.0F, stand_t1 = 34.0F, stand_d0 = 12.5F;
+// The grandstand: covered, behind the plate and the backstop netting, facing the field (+Z). Two
+// wings of stepped seats either side of a middle aisle - the home crowd on the first-base side
+// (-X), the visitors on the third-base side - with a roof over them and the press box at the top
+// of the aisle. Row k's seat is (k + 1) * row_rise up, k rows back from the front.
+inline constexpr float stand_front = -49.6F, wing_x0 = 3.4F, wing_x1 = 25.6F;
 inline constexpr float row_rise = .45F, row_depth = .8F;
-inline constexpr int rows = 6;
+inline constexpr int rows = 8;
 inline constexpr float seat_spacing = .7F;
-inline constexpr int seats_per_row = static_cast<int>((stand_t1 - stand_t0 - .8F) / seat_spacing);
+inline constexpr int seats_per_row = static_cast<int>((wing_x1 - wing_x0 - .7F) / seat_spacing);
 // The dugouts along the lines (home by first), their benches; the home club's locker room behind.
-inline constexpr float dugout_t0 = 10.0F, dugout_t1 = 22.0F, bench_d = 10.1F;
-inline const Vector3 home_dugout = along(true, 16, 9.3F), away_dugout = along(false, 16, 9.3F);
+inline constexpr float dugout_t0 = 16.0F, dugout_t1 = 28.0F, bench_d = 10.1F;   // (clear of the grandstand's view of the infield)
+inline const Vector3 home_dugout = along(true, 22, 9.3F), away_dugout = along(false, 22, 9.3F);
 inline constexpr float locker_x0 = -44, locker_x1 = -30, locker_z0 = -62, locker_z1 = -52;
 inline constexpr Vector3 locker_door{-37, 0, -62.6F};
 // The on-deck circles and the coaches' boxes (batting side's), the plate umpire.
@@ -66,7 +68,7 @@ inline const Vector3 first_coach = along(true, 23.5F, 6.0F), third_coach = along
 inline constexpr Vector3 umpire{0, 0, -38.9F};
 // The bus bays in the car park (home, visitors) and the gate.
 inline constexpr Vector3 home_bus{-16, 0, -68}, away_bus{16, 0, -68};
-inline constexpr Vector3 gate{0, 0, -52};
+inline constexpr Vector3 gate{0, 0, -60};   // behind the grandstand, on the car park
 inline constexpr Vector3 scoreboard{0, 6.5F, 60};
 
 struct Site {
@@ -84,11 +86,13 @@ struct Site {
     }
     // A seat in a stand: `home` side, row (0 front), place along it (0..seats_per_row).
     [[nodiscard]] Vector3 seat(bool home, int row, int place) const {
-        return to_world(along(home, stand_t0 + .4F + static_cast<float>(place) * seat_spacing,
-                              stand_d0 + static_cast<float>(row) * row_depth + row_depth * .5F, static_cast<float>(row + 1) * row_rise));
+        const float side = home ? -1.0F : 1.0F;
+        return to_world({side * (wing_x0 + .35F + static_cast<float>(place) * seat_spacing), static_cast<float>(row + 1) * row_rise,
+                         stand_front - static_cast<float>(row) * row_depth - row_depth * .5F});
     }
-    // The way a seat in the home (or visitors') stand faces, in world yaw.
-    [[nodiscard]] float seat_yaw(bool home) const { return yaw + facing_field(home); }
+    // The way a seat faces, in world yaw: out over the backstop at the field (turned a little in
+    // toward the plate from the far ends of the wings).
+    [[nodiscard]] float seat_yaw(bool home) const { return yaw + (home ? 8.0F : -8.0F); }
     // A place on a dugout's bench (k from the plate end), facing the field.
     [[nodiscard]] Vector3 bench(bool home, int k) const { return to_world(along(home, dugout_t0 + .8F + static_cast<float>(k) * 1.15F, bench_d)); }
 };

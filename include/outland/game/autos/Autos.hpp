@@ -48,11 +48,11 @@ inline constexpr std::array<Paint, 15> paints{{
     {"Gunmetal grey", {92, 98, 104, 255}, paint_price},
     {"Plum purple", {104, 48, 120, 255}, paint_price},
     {"Sky teal", {40, 160, 164, 255}, paint_price},
-    {"Leonoj green", {18, 118, 58, 255}, paint_price},
-    {"Ursoj brown", {104, 66, 38, 255}, paint_price},
-    {"Mevoj navy", {26, 46, 108, 255}, paint_price},
-    {"Ardeoj teal", {0, 124, 126, 255}, paint_price},
-    {"Ministoj charcoal", {40, 40, 44, 255}, paint_price},
+    {"Verda City green", {18, 118, 58, 255}, paint_price},
+    {"Espera brown", {104, 66, 38, 255}, paint_price},
+    {"Porto Luma navy", {26, 46, 108, 255}, paint_price},
+    {"Suda Haveno teal", {0, 124, 126, 255}, paint_price},
+    {"Roka charcoal", {40, 40, 44, 255}, paint_price},
 }};
 // (The first three keep their places: saves store the index.)
 inline constexpr std::array<Engine, 9> engines{{
