@@ -162,6 +162,9 @@ public:
     // the raises won on strike, up to raise_max).
     static constexpr float union_rate = .25F, strike_raise = .05F, raise_max = .25F;
     static constexpr double strike_seconds = 60;   // a STRIKE: the gate held this long (in all)
+    // The brotherhood's work only comes when a brother asks Ivo for it (nothing else on).
+    // A CONTRABAND RUN comes over the CB at the next update; false (with why) when he can't.
+    bool ask_for_run(std::string& why);
     // Ivo calls a strike when a brother asks (nothing else on, a raise still to win). False with why.
     bool call_strike(double now, std::string& why);
     [[nodiscard]] bool strike_on() const { return job_.kind == JobKind::Strike; }
@@ -332,6 +335,7 @@ private:
     void build_authority(float amount);
     Vector3 contraband_drop_{};      // a CONTRABAND RUN's freight yard
     Vector3 depot_{};                // Verda Transporto's gate, as last seen (a strike called by Ivo)
+    JobKind asked_{JobKind::None};   // a brother asked Ivo for this work (the brotherhood's jobs are voluntary)
     bool depot_known_{false};
     [[nodiscard]] Job strike_job(double now) const;
     int chief_talks_{0};             // the Chief varies what he says

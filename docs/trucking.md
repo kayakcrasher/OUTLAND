@@ -18,11 +18,19 @@ ramps, the quay and the berth), `dev::build_verda_towns` (`cargo_terminal()`, `f
   where the Roka highway leaves, and the terminal road into the cargo terminal. The terminal road
   narrows to 13 m between the ramp's walls. The homes on the z = -84 road stand 3 m further back.
 - **Freight yards.** Espera, Porto Luma, Suda Haveno and Roka each have one of Verda
-  Transporto's yards just off the highway, before it narrows into town. A 16 m road leads in from
-  the highway (with a median opening) to a 14 m loop round a gravel yard: drive in, go round, stop
+  Transporto's yards just off the highway, before it narrows into town, at fixed spots
+  (`world::layout::freight_yards`). The terrain levels a 48 m pad under each one, and the yard is
+  paved: a 16 m road leads in from the highway (with a median opening) to a 14 m loop round a
+  concrete apron: drive in, go round, stop
   to unload, and head back out the way you came. Containers stand beyond the loop.
   Deliveries to those towns are dropped there, not in the town's streets
   (`dev::freight_yards`, marker `freight_yard_<town>`).
+- **Verda City's avenue.** The east-west boulevard (z = 0) that carries the Roka and Porto Luma
+  highways into town stays 16 m wide right through the west and east suburbs, instead of
+  narrowing to a 10 m suburban street. Its lamps, benches, trees and parked cars stand back with
+  the kerb.
+- **Cattle pickups.** At each ranch the cattle truck loads on the farm's own dirt loop behind the
+  pasture, not on the highway (see [vakeroj](vakeroj.md)).
 - **The camera.** Driving a rig (or a bus) the camera looks from over the cab, a little ahead of
   its middle. With a trailer hitched it rides further back and higher, over the trailer, so the
   road ahead stays in view (`VehicleRenderer::set_trailer`).

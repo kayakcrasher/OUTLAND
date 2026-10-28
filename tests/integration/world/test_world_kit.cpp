@@ -105,6 +105,44 @@ int main() {
     }
     check(two_storey >= 30, "many multi-storey buildings: " + std::to_string(two_storey));
 
+    // The one-storey civic buildings with a front door - the police stations, the Ŝosea Patrolo
+    // outposts, the radio stations, the gun shops - walked into from the street through it (no
+    // plinth step at the door too high to climb).
+    {
+        struct Door { const char* model; float x, d; };
+        const Door doors[]{{"civic/police_station.glb", 0, 6}, {"civic/patrol_outpost.glb", -2.8F, 3},
+                           {"civic/radio_station_", -3.9F, 4.5F}, {"civic/gun_shop.glb", 0, 4.5F}};
+        int buildings = 0, entered = 0;
+        for (const auto& settlement : region.settlements()) for (const auto& asset : settlement.assets)
+            for (const auto& door : doors) {
+                if (asset.model_path.find(door.model) == std::string::npos) continue;
+                const auto* mesh = world::physics::MeshCollisionLibrary::get(asset.model_path);
+                if (!mesh) continue;
+                ++buildings;
+                // The kit stores a city model at its bounds' centre: back to the design origin.
+                const float cx = (mesh->source_min.x + mesh->source_max.x) * .5F, cz = (mesh->source_min.z + mesh->source_max.z) * .5F;
+                const float a = asset.rotation_y * DEG2RAD;
+                const auto local = [&](float x, float z) {
+                    x -= cx; z -= cz;
+                    return Vector3{asset.position.x + x * std::cos(a) + z * std::sin(a), asset.position.y, asset.position.z - x * std::sin(a) + z * std::cos(a)};
+                };
+                Vector3 p = local(door.x, -door.d - 3);
+                p.y = WorldCollision::ground_height(p, p.y + 1, region);
+                const Vector3 inside = local(door.x, -door.d + 1.2F);
+                for (int i = 0; i < 400; ++i) {
+                    const float dx = inside.x - p.x, dz = inside.z - p.z, l = std::sqrt(dx * dx + dz * dz);
+                    if (l < .05F) break;
+                    const float st = std::min(.05F, l);
+                    p = WorldCollision::resolve_body_movement(p, {p.x + dx / l * st, p.y, p.z + dz / l * st}, p.y, region, .35F);
+                    p.y = WorldCollision::ground_height(p, p.y, region);
+                }
+                if (std::hypot(p.x - inside.x, p.z - inside.z) < .25F) ++entered;
+                else std::cerr << "  could not walk into " << asset.model_path << " at " << asset.position.x << "," << asset.position.z << ": stopped " << std::hypot(p.x - inside.x, p.z - inside.z) << " m short, at " << p.x << "," << p.y << "," << p.z << '\n';
+            }
+        check(buildings >= 12, "civic buildings with a front door: " + std::to_string(buildings));
+        check(entered == buildings, "walk in at every one's front door: " + std::to_string(entered) + "/" + std::to_string(buildings));
+    }
+
     // Sovaĝejo's trailer park (twelve mobile homes), Ruldomaro's (eight) and the three highway
     // hamlets' (six each): every one walkable from the lane through its door.
     {

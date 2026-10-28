@@ -144,7 +144,7 @@ bool Freight::build(const world::VerdaRegion& region, const vehicles::VehicleSys
             all.push_back(stop(std::string(world::ranches::stockyard_name), ranches->stockyard().frame.at(world::ranches::stockyard_chute.x, -3), stop_stockyard));
         for (std::size_t i = 0; i < ranches->ranches().size(); ++i) {
             const auto& r = ranches->ranches()[i];
-            all.push_back(stop(std::string(r.spec->name), r.frame.at(world::ranches::chute.x, -3), static_cast<int>(i)));
+            all.push_back(stop(std::string(r.spec->name), world::ranches::load_frame(r.frame).at(world::ranches::chute.x, -3), static_cast<int>(i)));
         }
         // The order of calls: fewest turnabouts on the road (a rig cannot turn on the spot), then
         // the shortest run.

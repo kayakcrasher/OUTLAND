@@ -765,7 +765,7 @@ void Renderer::run() {
     constexpr int kamionisto_bot=932000;
     constexpr const char* brotherhood_man="Ivo Kovač";
     game::career::Backup cb_backup;
-    int trucker_talks=0;double brotherhood_offer=-1,strike_offer=-1;   // USE again: leave the brotherhood, or call a strike
+    int trucker_talks=0;
     // A secure Verda's last word: La Verda Mano, the last of the gangs, lay down their guns at their
     // Verda City bar and become La Verda Mano Kultura Societo - the language, the songs, the flag.
     struct Society { bool open{false}; Vector3 at{}; float yaw{0}; } society;
@@ -1312,7 +1312,16 @@ void Renderer::run() {
     game::combat::WeaponSystem roof_gun;
     bool roof_gun_ready=false,roof_gun_on=false;
     // The Policio's desk and armory, and the gangs' gun men (game::career::Armory): one list on screen.
-    enum class GearScreen{None,Desk,Armory,GunMan};
+    enum class GearScreen{None,Desk,Armory,GunMan,Talk,Confirm};
+    // Talking to a gang's boss, Ivo or a station's front desk opens a short menu: what you can do
+    // there, and leaving (a gang, the brotherhood, the force) only ever behind a second "yes".
+    enum class TalkWith{None,OwnBoss,GangBoss,Ivo,IvoJoin,Station};
+    enum class Pending{None,LeaveGang,LeaveBrotherhood,HandInBadge};
+    TalkWith talk_with=TalkWith::None;
+    Pending pending=Pending::None;
+    int talk_crew=-1;                 // the boss's crew
+    std::string talk_car;             // the station's patrol car (joining the Policio)
+    bool talk_open=false;             // asked for this frame
     GearScreen gear_screen=GearScreen::None;
     game::autos::AutoMenu gear_menu;
     int gear_gang=-1;                 // whose gun man
@@ -2344,7 +2353,7 @@ void Renderer::run() {
                             }
                             for(std::size_t i=0;i<ranches.ranches().size();++i) {
                                 const auto& r=ranches.ranches()[i];
-                                haul_world.ranches.push_back({std::string(r.spec->name),graph.nearest(r.frame.at(world::ranches::chute.x,-3)).point,static_cast<int>(i)});
+                                haul_world.ranches.push_back({std::string(r.spec->name),graph.nearest(world::ranches::load_frame(r.frame).at(world::ranches::chute.x,-3)).point,static_cast<int>(i)});
                             }
                             const Vector3 b=world::layout::freight_boss;
                             depot_boss={{b.x,world::terrain::TerrainHeight::sample(b.x,b.z)+.1F,b.z},180,true};
@@ -3168,50 +3177,19 @@ void Renderer::run() {
         const auto trucker_talk=[&](int k) -> std::string {
             const int line=trucker_talks++;
             if(kamionistoj[static_cast<std::size_t>(k)].rep) {
+                // Ivo's word (joining, the work and leaving are in his menu).
                 const std::string ivo=std::string(brotherhood_man)+": ";
-                const bool confirming=match_time<brotherhood_offer;
-                brotherhood_offer=-1;
                 if(career.on_duty()) return ivo+"\"No badges at the diesel lane, officer. The brotherhood looks after its own.\"";
                 if(career.trucker()) {
-                    if(confirming) {
-                        if(cb_backup.active()) cb_backup.dismiss(br_bots,match_time);
-                        career.quit();
-                        return ivo+"\"Going it alone? Out there? ...Your call, brother. The door's open if you come back.\"";
-                    }
-                    if(match_time<strike_offer) {
-                        strike_offer=-1;
-                        std::string why;
-                        if(career.call_strike(match_time,why))
-                            return ivo+"\"That's the spirit. Get a big rig into the company's gate - your own, one off the park, trailer or no - and keep it there a minute. "
-                                       "The brothers will be on the picket line with you. Tomaso will shout. Let him.\"";
-                        return ivo+"\""+why+"\"";
-                    }
-                    // Nothing on and a raise still to win: he'll call a strike if asked (every other
-                    // time he talks it's the door instead).
-                    if(career.job().kind==game::career::JobKind::None && career.haul_rate()<1+game::career::Career::union_rate+game::career::Career::raise_max-1e-3F &&
-                       line%2==0) {
-                        strike_offer=match_time+5;
-                        return ivo+"\"The company's had it easy too long. Want to call a strike? A rig in their gate for a minute and every load pays 5% more, for good.\""
-                                   " (USE again to call it)";
-                    }
-                    brotherhood_offer=match_time+5;strike_offer=-1;
                     static constexpr const char* lines[]{
                         "\"The company pays what it can get away with. Together, we make it pay what a load is worth.\"",
                         "\"Every town on the island has a brother in it. Call on the CB and they come.\"",
-                        "\"The Ŝosea Patrolo grows by the month. Fine - we know every back road on Verda.\""};
-                    return ivo+lines[line%3]+" (USE again to leave the brotherhood)";
+                        "\"The Ŝosea Patrolo grows by the month. Fine - we know every back road on Verda.\"",
+                        "\"No brother gets sent anywhere he didn't ask to go. Want work? You know where I am.\""};
+                    return ivo+lines[line%4];
                 }
-                if(confirming) {
-                    std::string why;
-                    if(career.join_truckers(why)) {
-                        gun_audio.kill_confirm();
-                        return ivo+"\"Welcome, brother. The union rate on every load, the CB when you need us. Sign on with "+depot_boss_name+" for loads.\"";
-                    }
-                    return ivo+"\""+why+"\"";
-                }
-                brotherhood_offer=match_time+5;
                 return ivo+"\"Verda's trucking is a tough grind - that's why truckers stick together. Esperantistoj, working class, every town on the island, "
-                           "one rate for all of us and a higher one every year. Join La Frateco de Kamionistoj?\" (USE again to join)";
+                           "one rate for all of us and a higher one every year.\"";
             }
             const std::string who="Kamionisto ("+kamionistoj[static_cast<std::size_t>(k)].town+"): ";
             if(career.trucker()) {
@@ -3260,8 +3238,9 @@ void Renderer::run() {
         const auto station_desk=[&](Vector3 feet) -> const game::services::Unit* {
             if(!services.active() || vehicles.driver() || game_mode!=game::GameMode::Explore || career_path.empty()) return nullptr;
             for(const auto& place:island_life.places())
-                if(place.kind==game::life::PlaceKind::Police && std::hypot(place.door.x-feet.x,place.door.z-feet.z)<3.2F &&
-                   std::abs(place.door.y-feet.y)<2.0F)
+                // At the front door, or anywhere inside up to the counter.
+                if(place.kind==game::life::PlaceKind::Police && std::abs(place.door.y-feet.y)<2.0F &&
+                   (std::hypot(place.door.x-feet.x,place.door.z-feet.z)<4.5F || std::hypot(place.interior.x-feet.x,place.interior.z-feet.z)<5.0F))
                     return services.station_near(place.door,40);
             return nullptr;
         };
@@ -3286,79 +3265,15 @@ void Renderer::run() {
                 interaction_message="The boss won't talk to a cop - hand in your badge at a station first";
                 interaction_remaining=3;input_system.player().interact=false;
             } else if(crew>=0 && career.in_gang(mafio.crews()[static_cast<std::size_t>(crew)].gang)) {
-                // Your own boss: USE twice to walk away from the gang.
-                if(confirming) {
-                    for(const int id:player_crew.dismiss(br_bots)) mafio.lend(id,false,br_bots,feet);
-                    career.quit();mafio.set_player_gang(-1);island_ruled=false;join_offer={};
-                    interaction_message=career.state().record ? "You walked away - your record stays" : "You walked away with your honour - your record is clean";
-                } else {
-                    // A word from the boss first (how the gang sees Verda), then the way out.
-                    join_offer={crew,{},match_time+5};
-                    const int gang=mafio.crews()[static_cast<std::size_t>(crew)].gang;
-                    const bool dario=!campaign_path.empty() && mafio.casino()==&mafio.crews()[static_cast<std::size_t>(crew)] && gang==0;
-                    chief_line=std::string(dario ? "Uncle Dario: " : "Boss: ")+
-                        game::career::Career::boss_talk(gang,true,island_ruled,endgame.phase()==game::mafia::EndPhase::Occupied,boss_talks++);
-                    chief_line_time=9;
-                    interaction_message="USE again to walk away from "+std::string(game::mafia::gangs[static_cast<std::size_t>(gang)].name);
-                }
-                interaction_remaining=4;input_system.player().interact=false;
+                // Your own boss: a word, or (behind a "yes") walking away.
+                talk_with=TalkWith::OwnBoss;talk_crew=crew;talk_open=true;
+                input_system.player().interact=false;
             } else if(crew>=0 && !mafio.provoked(mafio.crews()[static_cast<std::size_t>(crew)].gang,match_time)) {
-                const int gang=mafio.crews()[static_cast<std::size_t>(crew)].gang;
-                const std::string name(game::mafia::gangs[static_cast<std::size_t>(gang)].name);
-                // At the Green Hand's bar in Verda City the boss is family: Uncle Dario.
-                const bool dario=!campaign_path.empty() && mafio.casino()==&mafio.crews()[static_cast<std::size_t>(crew)] && gang==0;
-                if(confirming) {
-                    std::string why;
-                    if(career.join_gang(gang,name,why)) {
-                        mafio.set_player_gang(gang);services.assign_player_car({});gun_audio.kill_confirm();interaction_message.clear();
-                        loot_session.edit_inventory().add(item_registry,"spray_paint",4);loot_session.changed();   // cans to mark your turf
-                        island_ruled=territory.rules_island(gang);
-                        if(gang==0 && own_dario_flat()) {
-                            chief_line="Uncle Dario: \"Welcome to the family, nevo. Here - the keys to a flat just down from the bar. Your hideout. "
-                                       "Ron doesn't need to know everything.\"";chief_line_time=9;
-                        }
-                    }
-                    else interaction_message=why;
-                    join_offer={};
-                } else {
-                    join_offer={crew,{},match_time+5};
-                    interaction_message=dario ? std::string("Uncle Dario: \"Nevo! Ron said you were back. The Green Hand looks after its own - family first.\" USE again to join") :
-                        "Boss of "+name+": "+game::career::Career::boss_talk(gang,false,false,endgame.phase()==game::mafia::EndPhase::Occupied,0)+" USE again to join";
-                    if(dario) {
-                        chief_line="Uncle Dario: "+game::career::Career::boss_talk(0,false,false,endgame.phase()==game::mafia::EndPhase::Occupied,0);
-                        chief_line_time=9;
-                    }
-                }
-                interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
-            } else if(station && career.on_duty()) {
-                // Handing in the badge.
-                if(confirming) {
-                    career.quit();services.assign_player_car({});lights_car.clear();join_offer={};
-                    if(backup.active()) backup.dismiss(br_bots,match_time);
-                    player_crew.dismiss_partner(br_bots);
-                } else {
-                    join_offer={-1,station->vehicle,match_time+5};
-                    interaction_message="USE again to hand in your badge";
-                }
-                interaction_remaining=4;input_system.player().interact=false;
+                talk_with=TalkWith::GangBoss;talk_crew=crew;talk_open=true;
+                input_system.player().interact=false;
             } else if(station) {
-                if(career.state().record) {interaction_message="The Policio checked your record: no criminals on the force";join_offer={};}
-                else if(career.state().side==game::career::Side::Gang) {interaction_message="You still run with a gang - tell your boss you're out first";join_offer={};}
-                else if(confirming) {
-                    std::string why;
-                    if(career.join_police(station->vehicle,why)) {
-                        services.assign_player_car(station->vehicle);mafio.set_player_gang(-1);gun_audio.kill_confirm();interaction_message.clear();
-                        // Issued: a sidearm and two magazines.
-                        auto& bag=loot_session.edit_inventory();
-                        if(!bag.owns_weapon(item_registry,game::combat::WeaponId::Pistol)) bag.add(item_registry,"pistol",1);
-                        bag.add(item_registry,"pistol_ammo",30);loot_session.changed();
-                    } else interaction_message=why;
-                    join_offer={};
-                } else {
-                    join_offer={-1,station->vehicle,match_time+5};
-                    interaction_message="USE again to join the Policio de Verda - you get a patrol car and radio calls";
-                }
-                interaction_remaining=interaction_message.empty() ? 0.0F : 4.0F;input_system.player().interact=false;
+                talk_with=TalkWith::Station;talk_car=station->vehicle;talk_open=true;
+                input_system.player().interact=false;
             }
         }
         if(controls.interact && at_table && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !mode_session.terminal()) {
@@ -3438,7 +3353,9 @@ void Renderer::run() {
                 chief_line=trucking.talk(career.on_duty(),match_time,haul_world);chief_line_time=9;
                 input_system.player().interact=false;
             } else if(const int k=trucker_near(feet);k>=0) {
-                chief_line=trucker_talk(k);chief_line_time=9;
+                if(kamionistoj[static_cast<std::size_t>(k)].rep && !career.on_duty()) {
+                    talk_with=career.trucker() ? TalkWith::Ivo : TalkWith::IvoJoin;talk_open=true;
+                } else {chief_line=trucker_talk(k);chief_line_time=9;}
                 input_system.player().interact=false;
             } else if(const int g=gun_man_near(feet);g>=0) {
                 if(career.in_gang(g)) {gear_gang=g;gear_open_gun_man=true;}
@@ -3555,6 +3472,58 @@ void Renderer::run() {
                                         may ? "Free" : "Rank",may,owned});
                     }
                     break;
+                case GearScreen::Talk: {
+                    back="LEAVE";
+                    const auto gang_of=[&]{return talk_crew>=0 && talk_crew<static_cast<int>(mafio.crews().size()) ? mafio.crews()[static_cast<std::size_t>(talk_crew)].gang : 0;};
+                    const bool dario=talk_crew>=0 && !campaign_path.empty() && mafio.casino()==&mafio.crews()[static_cast<std::size_t>(talk_crew)] && gang_of()==0;
+                    switch(talk_with) {
+                    case TalkWith::OwnBoss:
+                        title=gang_name(gang_of());subtitle=dario ? "Uncle Dario" : "The boss";
+                        rows.push_back({"Talk","hear what he has to say",""});
+                        rows.push_back({"Leave the gang","walk away - your crew goes home (you'll be asked to be sure)",""});
+                        break;
+                    case TalkWith::GangBoss:
+                        title=gang_name(gang_of());subtitle=dario ? "Uncle Dario - family first" : "The boss looks you over";
+                        rows.push_back({"Join "+gang_name(gang_of()),"run with the crew: the boss's jobs, respect, a cut - and the gang's enemies",""});
+                        rows.push_back({"Talk","hear what he has to say",""});
+                        break;
+                    case TalkWith::Ivo: {
+                        std::string why;
+                        const bool raise=career.haul_rate()<1+game::career::Career::union_rate+game::career::Career::raise_max-1e-3F;
+                        const bool free=career.job().kind==game::career::JobKind::None;
+                        title="LA FRATECO DE KAMIONISTOJ";subtitle=std::string(brotherhood_man)+" - the brotherhood's work is yours to ask for";
+                        rows.push_back({"Talk","shop talk",""});
+                        rows.push_back({"Call a strike",!raise ? "the company has given all it will - for now" : !free ? "finish the job you've got first" :
+                                        "a rig in the depot's gate for a minute: +5% on every load for good","500 kr",raise && free});
+                        rows.push_back({"A contraband run",!free ? "finish the job you've got first" : "crates from a smugglers' jetty to a freight yard - the patrol will hear","2200 kr",free});
+                        rows.push_back({"Leave the brotherhood","go it alone (you'll be asked to be sure)",""});
+                        break;
+                    }
+                    case TalkWith::IvoJoin:
+                        title="LA FRATECO DE KAMIONISTOJ";subtitle=std::string(brotherhood_man)+" - Verda's truckers stick together";
+                        rows.push_back({"Join the brotherhood","the union rate on every load, brothers on the CB, the brotherhood's work when you ask",""});
+                        rows.push_back({"Talk","what the brotherhood is",""});
+                        break;
+                    case TalkWith::Station: {
+                        const std::string why=career.state().record ? "no criminals on the force - you have a record" :
+                            career.state().side==game::career::Side::Gang ? "you still run with a gang - tell your boss you're out first" :
+                            career.trucker() ? "you ride with the brotherhood - leave it first" : "a patrol car, a sidearm and radio calls";
+                        const bool may=!career.state().record && career.state().side==game::career::Side::Civilian;
+                        title="POLICIO DE VERDA";subtitle="The front desk";
+                        rows.push_back({"Join the Policio de Verda",why,"",may});
+                        break;
+                    }
+                    default: return;
+                    }
+                    break;
+                }
+                case GearScreen::Confirm:
+                    title="ARE YOU SURE?";back="NO";
+                    subtitle=pending==Pending::LeaveGang ? "Walk away from "+gang_name(talk_crew>=0 ? mafio.crews()[static_cast<std::size_t>(talk_crew)].gang : 0) :
+                             pending==Pending::LeaveBrotherhood ? std::string("Leave La Frateco de Kamionistoj") : std::string("Hand in your badge");
+                    rows.push_back({pending==Pending::HandInBadge ? "Yes - hand in my badge" : "Yes - I'm out",
+                                    pending==Pending::HandInBadge ? "your car and calls go back to the Policio" : "you can come back another day",""});
+                    break;
                 case GearScreen::GunMan:
                     title="PAFILISTO";subtitle=gang_name(gear_gang)+" - for the family, no questions";back="LEAVE";
                     for(std::size_t i=0;i<armory::armory.size();++i) {
@@ -3587,12 +3556,14 @@ void Renderer::run() {
                 return got>0;
             };
             if(gear_open_desk) {gear_open_desk=false;open_gear(GearScreen::Desk,0);}
+            if(talk_open) {talk_open=false;pending=Pending::None;open_gear(GearScreen::Talk,0);}
             if(gear_open_gun_man) {gear_open_gun_man=false;open_gear(GearScreen::GunMan,0);}
             if(gear_menu.is_open()) {
                 if(!player_health.alive() || vehicles.driver()) {gear_menu.close();gear_screen=GearScreen::None;}
                 const auto act=gear_menu.is_open() ? gear_menu.input(screen_width,screen_height,IsWindowFocused()) : game::autos::MenuAction{};
                 if(act.back) {
                     if(gear_screen==GearScreen::Armory) open_gear(GearScreen::Desk,1);
+                    else if(gear_screen==GearScreen::Confirm) open_gear(pending==Pending::HandInBadge ? GearScreen::Desk : GearScreen::Talk,0);
                     else {gear_menu.close();gear_screen=GearScreen::None;input_system.cancel_controls();}
                 } else if(act.chosen>=0) {
                     const auto feet=Vector3{player.position.x,player.position.y-1,player.position.z};
@@ -3604,13 +3575,100 @@ void Renderer::run() {
                                 "Desk sergeant: \"Officer Novak rides with you from now on.\"" : "You already have a partner");
                             open_gear(GearScreen::Desk,0);
                         } else if(act.chosen==1) open_gear(GearScreen::Armory,0);
-                        else {
+                        else {pending=Pending::HandInBadge;open_gear(GearScreen::Confirm,0);}
+                        break;
+                    case GearScreen::Talk: {
+                        const auto done=[&]{gear_menu.close();gear_screen=GearScreen::None;input_system.cancel_controls();};
+                        const int gang=talk_crew>=0 && talk_crew<static_cast<int>(mafio.crews().size()) ? mafio.crews()[static_cast<std::size_t>(talk_crew)].gang : 0;
+                        const bool dario=talk_crew>=0 && !campaign_path.empty() && mafio.casino()==&mafio.crews()[static_cast<std::size_t>(talk_crew)] && gang==0;
+                        const bool occupied=endgame.phase()==game::mafia::EndPhase::Occupied;
+                        switch(talk_with) {
+                        case TalkWith::OwnBoss:
+                            if(act.chosen==0) {
+                                chief_line=std::string(dario ? "Uncle Dario: " : "Boss: ")+game::career::Career::boss_talk(gang,true,island_ruled,occupied,boss_talks++);
+                                chief_line_time=9;done();
+                            } else {pending=Pending::LeaveGang;open_gear(GearScreen::Confirm,0);}
+                            break;
+                        case TalkWith::GangBoss:
+                            if(act.chosen==0) {
+                                std::string why;
+                                const std::string name=gang_name(gang);
+                                if(career.join_gang(gang,name,why)) {
+                                    mafio.set_player_gang(gang);services.assign_player_car({});gun_audio.kill_confirm();
+                                    loot_session.edit_inventory().add(item_registry,"spray_paint",4);loot_session.changed();   // cans to mark your turf
+                                    island_ruled=territory.rules_island(gang);
+                                    if(gang==0 && own_dario_flat()) {
+                                        chief_line="Uncle Dario: \"Welcome to the family, nevo. Here - the keys to a flat just down from the bar. Your hideout. "
+                                                   "Ron doesn't need to know everything.\"";chief_line_time=9;
+                                    } else {chief_line="You run with "+name+" now - the boss will have work for you";chief_line_time=5;}
+                                    done();
+                                } else gear_menu.set_status(why);
+                            } else {
+                                chief_line=std::string(dario ? "Uncle Dario: " : "Boss of "+gang_name(gang)+": ")+game::career::Career::boss_talk(gang,false,false,occupied,boss_talks++);
+                                chief_line_time=9;done();
+                            }
+                            break;
+                        case TalkWith::Ivo: {
+                            std::string why;
+                            if(act.chosen==0) {chief_line=trucker_talk(0);chief_line_time=9;done();}
+                            else if(act.chosen==1) {
+                                if(career.call_strike(match_time,why)) {
+                                    chief_line=std::string(brotherhood_man)+": \"That's the spirit. Get a big rig into the company's gate - your own, one off the park, trailer or no - "
+                                               "and keep it there a minute. The brothers will be on the picket line with you.\"";chief_line_time=9;done();
+                                } else gear_menu.set_status(why);
+                            } else if(act.chosen==2) {
+                                if(career.ask_for_run(why)) {chief_line=std::string(brotherhood_man)+": \"Crates came in last night. Listen to the CB - and watch for the patrol.\"";chief_line_time=7;done();}
+                                else gear_menu.set_status(why);
+                            } else {pending=Pending::LeaveBrotherhood;open_gear(GearScreen::Confirm,0);}
+                            break;
+                        }
+                        case TalkWith::IvoJoin:
+                            if(act.chosen==0) {
+                                std::string why;
+                                if(career.join_truckers(why)) {
+                                    gun_audio.kill_confirm();
+                                    chief_line=std::string(brotherhood_man)+": \"Welcome, brother. The union rate on every load, the CB when you need us. Sign on with "+
+                                               depot_boss_name+" for loads - and come to me when you want the brotherhood's work.\"";chief_line_time=9;done();
+                                } else gear_menu.set_status(why);
+                            } else {chief_line=trucker_talk(0);chief_line_time=9;done();}
+                            break;
+                        case TalkWith::Station: {
+                            std::string why;
+                            if(career.join_police(talk_car,why)) {
+                                services.assign_player_car(talk_car);mafio.set_player_gang(-1);gun_audio.kill_confirm();
+                                // Issued: a sidearm and two magazines.
+                                auto& bag=loot_session.edit_inventory();
+                                if(!bag.owns_weapon(item_registry,game::combat::WeaponId::Pistol)) bag.add(item_registry,"pistol",1);
+                                bag.add(item_registry,"pistol_ammo",30);loot_session.changed();
+                                chief_line="Desk sergeant: \"Welcome to the Policio de Verda. Your car's out front - report to "+std::string(game::career::chief_name)+" at Verda City HQ.\"";
+                                chief_line_time=9;done();
+                            } else gear_menu.set_status(why);
+                            break;
+                        }
+                        default: done(); break;
+                        }
+                        break;
+                    }
+                    case GearScreen::Confirm: {
+                        const auto feet2=Vector3{player.position.x,player.position.y-1,player.position.z};
+                        if(pending==Pending::LeaveGang) {
+                            for(const int id:player_crew.dismiss(br_bots)) mafio.lend(id,false,br_bots,feet2);
+                            career.quit();mafio.set_player_gang(-1);island_ruled=false;join_offer={};
+                            chief_line=career.state().record ? "You walked away - your record stays" : "You walked away with your honour - your record is clean";
+                        } else if(pending==Pending::LeaveBrotherhood) {
+                            if(cb_backup.active()) cb_backup.dismiss(br_bots,match_time);
+                            career.quit();
+                            chief_line=std::string(brotherhood_man)+": \"Going it alone? Out there? ...Your call, brother. The door's open if you come back.\"";
+                        } else if(pending==Pending::HandInBadge) {
                             career.quit();services.assign_player_car({});lights_car.clear();join_offer={};
                             if(backup.active()) backup.dismiss(br_bots,match_time);
                             player_crew.dismiss_partner(br_bots);
-                            gear_menu.close();gear_screen=GearScreen::None;input_system.cancel_controls();
+                            chief_line="You handed in your badge";
                         }
+                        chief_line_time=5;pending=Pending::None;
+                        gear_menu.close();gear_screen=GearScreen::None;input_system.cancel_controls();
                         break;
+                    }
                     case GearScreen::Armory:
                         if(armory::police_may_draw(career.rank(),static_cast<std::size_t>(act.chosen))) {
                             gear_menu.set_status(issue(static_cast<std::size_t>(act.chosen)) ? "Signed out - bring it back in one piece" : "Your bag is full");

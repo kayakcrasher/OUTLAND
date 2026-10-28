@@ -1298,6 +1298,10 @@ void vehicle_marker(world::Settlement& town, const std::string& id, Vector3 at, 
 // on the boulevard. Houses are procedural buildings (cheap to draw, enterable) owned by the capital.
 constexpr float suburb_east_x = -grid_edge_x, suburb_mid_x = -330, suburb_west_x = -476;
 constexpr float truck_road = 14;   // the main trucking routes' width (rigs pulling 13 m trailers)
+// The avenue on z = 0 through both suburbs: the highways from Roka and Porto Luma arrive at its
+// ends and it runs on into downtown at downtown's own width - a main road all the way, not a
+// suburban street between the highway and the city.
+constexpr float avenue = 16;
 
 // One detached house facing a street (`facing`: +1 the street is at larger z, -1 smaller z).
 bool suburban_house(Kit& kit, world::Settlement& capital, Vector3 at, int facing, std::uint32_t seed, int& cars) {
@@ -1353,7 +1357,7 @@ void west_suburbs(Kit& kit, world::VerdaRegion& region) {
                 if (other.x < suburb_west_x) {kit.forget_road(road); *end = {suburb_west_x, end->y, 0};}
             }
     // Streets: the boulevard on z = 0, the downtown streets carried west, two cross streets.
-    capital->roads.push_back({{suburb_east_x, 0, 0}, {suburb_west_x, 0, 0}, 10, world::RoadType::Asphalt});
+    capital->roads.push_back({{suburb_east_x, 0, 0}, {suburb_west_x, 0, 0}, avenue, world::RoadType::Asphalt});
     // z = -84 is the truckers' road (Verda Transporto's yard is at its west end, and the Roka
     // highway leaves from the boulevard's west end): 14 m, and so is the link up to the boulevard.
     for (const float z : {-168.0F, -84.0F, 84.0F, 168.0F})
@@ -1378,7 +1382,7 @@ void west_suburbs(Kit& kit, world::VerdaRegion& region) {
         for (int i = 0; i < 6; ++i) {
             constexpr float lights[]{-196, -240, -284, -344, -392, -440};
             const float x = lights[i], side = i % 2 ? 1.0F : -1.0F;
-            kit.put(urban + "Traffic lights/street_light.glb", {x, 0, street_z + side * (street_z == 0 ? 6.4F : street_z == -84 ? truck_road * .5F + 1.4F : 5.4F)}, side > 0 ? 0.0F : 180.0F);
+            kit.put(urban + "Traffic lights/street_light.glb", {x, 0, street_z + side * (street_z == 0 ? avenue * .5F + 1.4F : street_z == -84 ? truck_road * .5F + 1.4F : 5.4F)}, side > 0 ? 0.0F : 180.0F);
         }
     // On the boulevard: the park (north-east), shops (south-east), a church and a clinic (west).
     for (int i = 0; i < 5; ++i) for (int j = 0; j < 3; ++j) {
@@ -1386,13 +1390,13 @@ void west_suburbs(Kit& kit, world::VerdaRegion& region) {
         kit.tree({-196 - i * 27.0F + static_cast<float>(r % 7), 0, -18 - j * 14.0F - static_cast<float>((r / 7) % 5)});
     }
     for (int i = 0; i < 4; ++i)
-        kit.put(urban + "Bus stops/busstop_bench.glb", {-210 - i * 32.0F, 0, -9}, 180);
+        kit.put(urban + "Bus stops/busstop_bench.glb", {-210 - i * 32.0F, 0, -(avenue * .5F + 1.6F)}, 180);
     modular_building(kit, {-212, 0, 20}, 0, 8, 4, "stuco", 1, 7601, world::BuildingPurpose::Shop);
     modular_building(kit, {-270, 0, 20}, 0, 8, 4, "brick", 1, 7602, world::BuildingPurpose::Shop);
     modular_building(kit, {-376, 0, -20}, 180, 4, 4, "fancy_brick", 1, 7603, world::BuildingPurpose::Church);
     modular_building(kit, {-420, 0, 20}, 0, 8, 4, "stuco", 1, 7604, world::BuildingPurpose::Clinic);
     for (int i = 0; i < 3; ++i)
-        vehicle_marker(*capital, "vehicle_spawn_hatchback_okcidento_shops_" + std::to_string(i + 1), {-226 - i * 22.0F, 0, 9.3F}, 270);
+        vehicle_marker(*capital, "vehicle_spawn_hatchback_okcidento_shops_" + std::to_string(i + 1), {-226 - i * 22.0F, 0, avenue * .5F + 1.6F}, 270);
     capital->survivors += kit.report.houses; // west homes (built first)
 }
 
@@ -1541,7 +1545,7 @@ void east_suburbs(Kit& kit, world::VerdaRegion& region) {
                 const auto& other = end == &road.start ? road.end : road.start;
                 if (other.x > east_far_x) {kit.forget_road(road); *end = {east_far_x, end->y, 0};}
             }
-    capital->roads.push_back({{east_near_x, 0, 0}, {east_far_x, 0, 0}, 10, world::RoadType::Asphalt});
+    capital->roads.push_back({{east_near_x, 0, 0}, {east_far_x, 0, 0}, avenue, world::RoadType::Asphalt});
     for (const float z : {-168.0F, -84.0F, 84.0F, 168.0F})
         capital->roads.push_back({{east_near_x, 0, z}, {east_far_x, 0, z}, 8, world::RoadType::Asphalt});
     for (const float x : {east_mid_x, east_far_x})
@@ -1567,15 +1571,15 @@ void east_suburbs(Kit& kit, world::VerdaRegion& region) {
         for (const float side : {-1.0F, 1.0F}) {
             if (side > 0 && x > 340 && x < 420) continue; // clubhouse frontage
             if (std::abs(x - east_mid_x) < 8) continue;    // the cross street
-            kit.tree({x, 0, side * 8.5F});
+            kit.tree({x, 0, side * (avenue * .5F + 2.5F)});
         }
     for (float x = east_near_x + 22; x < east_far_x - 8; x += 40)
-        kit.put("assets/verda/transit/lamppost_01.glb", {x, 0, static_cast<int>(x) % 80 < 40 ? 6.4F : -6.4F}, static_cast<int>(x) % 80 < 40 ? 0.0F : 180.0F);
+        kit.put("assets/verda/transit/lamppost_01.glb", {x, 0, static_cast<int>(x) % 80 < 40 ? avenue * .5F + 1.4F : -(avenue * .5F + 1.4F)}, static_cast<int>(x) % 80 < 40 ? 0.0F : 180.0F);
     for (int i = 0; i < 4; ++i) for (int j = 0; j < 2; ++j) {
         const auto r = hash(8500U + static_cast<std::uint32_t>(i * 2 + j));
         kit.tree({196 + i * 32.0F + static_cast<float>(r % 7), 0, -24 - j * 16.0F - static_cast<float>((r / 7) % 4)});
     }
-    for (int i = 0; i < 4; ++i) kit.put(urban + "Bus stops/busstop_clean_bench.glb", {210 + i * 32.0F, 0, -13}, 180);
+    for (int i = 0; i < 4; ++i) kit.put(urban + "Bus stops/busstop_clean_bench.glb", {210 + i * 32.0F, 0, -(avenue * .5F + 4.5F)}, 180);
     modular_building(kit, {380, 0, 24}, 0, 8, 4, "fancy_brick", 2, 8601, world::BuildingPurpose::Pub); // clubhouse
     capital->survivors += (kit.report.houses - before) * 3; // a family in every home
 }
@@ -1962,7 +1966,7 @@ namespace {
 // ------------------------------------------------------------------ Vakero ranches
 // Five family ranches, one in each county, each beside a highway on level open land (see
 // world/Ranches.hpp for the layout): a farmhouse, a red barn, grain bins, a windmill, a fenced
-// pasture, a corral with a loading chute by the road, a corn field and a wheat field, and the
+// pasture, a corral with a loading chute behind it on the farm's own dirt loop, a corn field and a wheat field, and the
 // family's side-by-side in the yard. And the stockyard of Porto Luma, where the cattle truck unloads
 // and the two big rigs are parked.
 namespace rr = world::ranches;
@@ -2036,6 +2040,12 @@ void ranches(Kit& kit, world::VerdaRegion& region) {
         // onto the highway.
         ranch.roads.push_back({f.gate, f.at(rr::yard), 5, world::RoadType::Gravel});
         ranch.roads.push_back({highway_point(region, f.gate), f.gate, 5, world::RoadType::Gravel});
+        // The cattle track: a dirt loop round the back of the farm past the chute, out onto the
+        // highway again beyond the pasture.
+        for (std::size_t k = 0; k + 1 < std::size(rr::cattle_track); ++k)
+            ranch.roads.push_back({f.at(rr::cattle_track[k]), f.at(rr::cattle_track[k + 1]), 6, world::RoadType::Dirt});
+        ranch.roads.push_back({f.at(rr::cattle_track[std::size(rr::cattle_track) - 1]),
+                               highway_point(region, f.at(rr::cattle_track[std::size(rr::cattle_track) - 1])), 6, world::RoadType::Dirt});
         kit.add_roads(ranch.roads);
         const std::uint32_t seed = 9100U + static_cast<std::uint32_t>(r) * 97U;
         // Farmhouse (door toward the track), barn (doors up and down the track), bins, windmill.
@@ -2046,13 +2056,15 @@ void ranches(Kit& kit, world::VerdaRegion& region) {
         kit.purpose(f.at(rr::barn.x, rr::barn.y - 10.6F), yaw + 180, world::BuildingPurpose::Farm);
         for (const auto& bin : rr::bins) kit.put(ranch_dir + "grain_bin.glb", f.at(bin), yaw);
         kit.put(ranch_dir + "windmill.glb", f.at(rr::windmill), yaw + 90);
-        // Pasture and corral (open between them), the chute at the corral's road side.
-        fence_box(kit, f, rr::pasture, seed + 1, {{0, rr::lane.u0, rr::lane.u1}});
-        fence_box(kit, f, rr::corral, seed + 2, {{1, rr::lane.u0, rr::lane.u1}, {0, rr::chute.x - 2, rr::chute.x + 2}});
-        kit.put(ranch_dir + "loading_chute.glb", f.at(rr::chute.x, rr::chute.y + 2.2F), yaw + 180);
+        // Pasture and corral (open between them), the chute at the corral's back, by the cattle track.
+        const rr::Frame load = rr::load_frame(f);
+        const float chute_u = f.local(load.gate).x;
+        fence_box(kit, f, rr::pasture, seed + 1, {{1, rr::lane.u0, rr::lane.u1}});
+        fence_box(kit, f, rr::corral, seed + 2, {{0, rr::lane.u0, rr::lane.u1}, {1, chute_u - 2, chute_u + 2}});
+        kit.put(ranch_dir + "loading_chute.glb", load.at(rr::chute.x, rr::chute.y + 2.2F), load.yaw() + 180);
         kit.put(ranch_dir + "feed_bunk.glb", f.at(-48, 40), yaw + 90);
         kit.put(ranch_dir + "water_trough.glb", f.at(-40, 46), yaw);
-        kit.put(ranch_dir + "water_trough.glb", f.at(-30, 12), yaw);
+        kit.put(ranch_dir + "water_trough.glb", f.at(-44, 112), yaw + 90);
         for (int i = 0; i < 4; ++i) kit.put(ranch_dir + "hay_bale.glb", f.at(38.5F + (i % 2) * 1.7F, 60 + (i / 2) * 1.8F), yaw + 90);
         // Fields: corn 3 x 3 tiles, wheat 3 x 2.
         for (float u = rr::corn.u0 + 6; u < rr::corn.u1; u += 12)
@@ -2475,11 +2487,53 @@ void freight_yards(Kit& kit, world::VerdaRegion& region) {
                     if (const float d = std::hypot(p.x - town->center.x, p.z - town->center.z); d < best) { best = d; end = p; in = &road; owner = &t; }
             }
         if (!in || !owner) continue;
-        // Walk back along the highway, past where it narrows, to a stretch with room beside it.
+        // The yard: the stem in from the highway, the loop, a paved apron over the whole yard, the
+        // drop point beyond the loop, a diesel lane inside it and containers.
+        const auto build_yard = [&](Vector3 junction, Vector3 stem_end, Vector3 centre, Vector3 out) {
+                    owner->roads.push_back({junction, stem_end, 16, world::RoadType::Asphalt});
+                    for (int k = 0; k < 12; ++k) {
+                        const auto corner = [&](int i) {
+                            const float a = std::atan2(-out.z, -out.x) + static_cast<float>(i) * PI / 6;   // corner 0 on the stem
+                            return Vector3{centre.x + std::cos(a) * ring, 0, centre.z + std::sin(a) * ring};
+                        };
+                        owner->roads.push_back({corner(k), corner(k + 1), lane, world::RoadType::Asphalt});
+                    }
+                    kit.add_roads(std::vector<world::Road>(owner->roads.end() - 13, owner->roads.end()));
+                    // Beyond the loop: the yard's drop point (facing the yard) and the containers.
+                    const float yaw = std::atan2(-out.x, -out.z) * RAD2DEG;   // facing back toward the highway
+                    const Vector3 shed{centre.x + out.x * (ring + lane + 4), 0, centre.z + out.z * (ring + lane + 4)};
+                    kit.purpose({shed.x - out.x * 4, world::terrain::TerrainHeight::sample(shed.x, shed.z) + .1F, shed.z - out.z * 4}, yaw,
+                                world::BuildingPurpose::Industrial, std::string("freight_yard_") + id);
+                    const Vector3 across{-out.z, 0, out.x};
+                    // A Marnafto diesel lane inside the loop, on its far side: pull up beside it going round.
+                    // (Its centre 4.5 m inside the loop's inner edge: 2.5 m clear of the lane.)
+                    const float diesel = ring - lane * .5F - 4.5F;
+                    kit.put(city + "civic/diesel_island.glb", {centre.x + out.x * diesel, 0, centre.z + out.z * diesel}, std::atan2(across.x, across.z) * RAD2DEG);
+                    for (const float s : {-14.0F, 14.0F})
+                        kit.put(city + "civic/container_stack.glb", {shed.x + across.x * s, world::terrain::TerrainHeight::sample(shed.x + across.x * s, shed.z + across.z * s),
+                                                                      shed.z + across.z * s}, yaw + 90, false);
+                    kit.report.freight_yards.push_back(centre);
+            const float apron = world::terrain::TerrainHeight::sample(centre.x, centre.z);
+            kit.put(city + "ground/parking_lot_68.glb", {centre.x, apron, centre.z}, std::atan2(out.x, out.z) * RAD2DEG, false);
+        };
+        // Walk back along the highway, past where it narrows, to a stretch with room beside it -
+        // or, for the four towns' yards, straight to its spot in the layout (on its level pad).
+        const world::layout::FreightYard* pinned = nullptr;
+        for (const auto& yard : world::layout::freight_yards) if (std::string_view(yard.town) == id) pinned = &yard;
         bool built = false;
         for (const float back : {210.0F, 250.0F, 290.0F, 330.0F, 380.0F})
             for (const float side : {1.0F, -1.0F}) {
                 if (built) break;
+                if (pinned) {
+                    if (back != 210.0F || side != 1.0F) continue;
+                    const Vector3 out = pinned->out, centre = pinned->centre;
+                    const Vector3 stem_end{centre.x - out.x * ring, 0, centre.z - out.z * ring};
+                    const Vector3 junction{stem_end.x - out.x * (world::highways::paved_half + stem), 0, stem_end.z - out.z * (world::highways::paved_half + stem)};
+                    kit.claim(centre, ring + lane * .5F + 2, ring + lane * .5F + 2, std::atan2(out.x, out.z) * RAD2DEG);
+                    build_yard(junction, stem_end, centre, out);
+                    built = true;
+                    continue;
+                }
                 // The highway point `back` metres from the end, following the chain of pieces.
                 Vector3 at = end, heading{};
                 float left = back;
@@ -2524,29 +2578,7 @@ void freight_yards(Kit& kit, world::VerdaRegion& region) {
                     }
                 }
                 if (!open || !kit.claim(centre, ring + lane * .5F + 2, ring + lane * .5F + 2, std::atan2(out.x, out.z) * RAD2DEG)) continue;
-                owner->roads.push_back({junction, stem_end, 16, world::RoadType::Asphalt});
-                for (int k = 0; k < 12; ++k) {
-                    const auto corner = [&](int i) {
-                        const float a = std::atan2(-out.z, -out.x) + static_cast<float>(i) * PI / 6;   // corner 0 on the stem
-                        return Vector3{centre.x + std::cos(a) * ring, 0, centre.z + std::sin(a) * ring};
-                    };
-                    owner->roads.push_back({corner(k), corner(k + 1), lane, world::RoadType::Asphalt});
-                }
-                kit.add_roads(std::vector<world::Road>(owner->roads.end() - 13, owner->roads.end()));
-                // Beyond the loop: the yard's drop point (facing the yard) and the containers.
-                const float yaw = std::atan2(-out.x, -out.z) * RAD2DEG;   // facing back toward the highway
-                const Vector3 shed{centre.x + out.x * (ring + lane + 4), 0, centre.z + out.z * (ring + lane + 4)};
-                kit.purpose({shed.x - out.x * 4, world::terrain::TerrainHeight::sample(shed.x, shed.z) + .1F, shed.z - out.z * 4}, yaw,
-                            world::BuildingPurpose::Industrial, std::string("freight_yard_") + id);
-                const Vector3 across{-out.z, 0, out.x};
-                // A Marnafto diesel lane inside the loop, on its far side: pull up beside it going round.
-                // (Its centre 4.5 m inside the loop's inner edge: 2.5 m clear of the lane.)
-                const float diesel = ring - lane * .5F - 4.5F;
-                kit.put(city + "civic/diesel_island.glb", {centre.x + out.x * diesel, 0, centre.z + out.z * diesel}, std::atan2(across.x, across.z) * RAD2DEG);
-                for (const float s : {-14.0F, 14.0F})
-                    kit.put(city + "civic/container_stack.glb", {shed.x + across.x * s, world::terrain::TerrainHeight::sample(shed.x + across.x * s, shed.z + across.z * s),
-                                                                  shed.z + across.z * s}, yaw + 90, false);
-                kit.report.freight_yards.push_back(centre);
+                build_yard(junction, stem_end, centre, out);
                 built = true;
             }
     }
@@ -2572,6 +2604,18 @@ void street_lighting(Kit& kit, world::VerdaRegion& region) {
         }
         return true;
     };
+    // Off the civic buildings' forecourts (stations, shops, the radio stations): no post in front of a door.
+    std::vector<const world::WorldAsset*> civic;
+    for (const auto& town : region.settlements())
+        for (const auto& a : town.assets) if (a.model_path.find("/city/civic/") != std::string::npos) civic.push_back(&a);
+    const auto clear_of_doors = [&](Vector3 p) {
+        for (const auto* a : civic) {
+            const float yaw = a->rotation_y * DEG2RAD, dx = p.x - a->position.x, dz = p.z - a->position.z;
+            const float lx = dx * std::cos(yaw) - dz * std::sin(yaw), lz = dx * std::sin(yaw) + dz * std::cos(yaw);
+            if (std::abs(lx) < a->size.x * .5F + 3 && std::abs(lz) < a->size.z * .5F + 3) return false;
+        }
+        return true;
+    };
     std::vector<world::Road> streets;
     for (const auto& town : region.settlements()) {
         if (town.id.starts_with("ranch_")) continue;
@@ -2589,7 +2633,7 @@ void street_lighting(Kit& kit, world::VerdaRegion& region) {
                             road.start.z + dir.z * along + normal.z * side * (road.width * .5F + 1.3F)};
             if (world::terrain::TerrainHeight::sample(p.x, p.z) <= world::layout::sea_level + .5F) continue;
             if (std::any_of(lit.begin(), lit.end(), [&](Vector3 q) { return std::hypot(q.x - p.x, q.z - p.z) < street_light_spacing * .5F; })) continue;
-            if (!clear_of_roads(p) || world::physics::WorldCollision::blocked({p.x, world::terrain::TerrainHeight::sample(p.x, p.z), p.z}, region, 1.0F)) continue;
+            if (!clear_of_roads(p) || !clear_of_doors(p) || world::physics::WorldCollision::blocked({p.x, world::terrain::TerrainHeight::sample(p.x, p.z), p.z}, region, 1.0F)) continue;
             // The arm (the model's +x) reaches out over the road.
             const float yaw = std::atan2(normal.z * side, -normal.x * side) * RAD2DEG;
             if (kit.put(light, p, yaw)) {lit.push_back(p); ++kit.report.street_lights;}

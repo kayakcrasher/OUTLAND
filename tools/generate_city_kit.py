@@ -806,6 +806,25 @@ def stela_turo():
 
 
 # ---------------------------------------------------------------- civic buildings
+def plinth_skirt(b, w, d, height, material, front_doors=(), back_doors=(), side_doors=()):
+    """A plinth round a one-storey building: a band skirting the outside of its walls, `height`
+    high, broken at the doorways (door spans along the wall: (lo, hi)). Not a solid block under
+    the whole floor: that left a step at every door too high to walk up."""
+    e = .05
+    def run(lo, hi, gaps):
+        cuts = sorted(gaps)
+        x = lo
+        for g0, g1 in cuts:
+            if g0 > x: yield x, g0
+            x = max(x, g1)
+        if hi > x: yield x, hi
+    for x0, x1 in run(-w - e, w + e, front_doors): b.solid((x0, 0, -d - e), (x1, height, -d), material)
+    for x0, x1 in run(-w - e, w + e, back_doors): b.solid((x0, 0, d), (x1, height, d + e), material)
+    for z0, z1 in run(-d, d, side_doors):
+        b.solid((-w - e, 0, z0), (-w, height, z1), material)
+        b.solid((w, 0, z0), (w + e, height, z1), material)
+
+
 def police_station():
     """Modular Policio station (one storey, enterable): white render over a navy base, a glass
     entrance with a blue lamp, a public counter and two barred cells inside, a radio mast, and a
@@ -831,7 +850,7 @@ def police_station():
     b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
     b.box((-w, height - .2, -d), (w, height, d), {'+y': "roof", '-y': "plaster", '+x': "navy", '-x': "navy", '+z': "navy", '-z': "navy"})
     # Navy plinth and a navy fascia band (the sign goes on it), parapet.
-    b.solid((-w - .05, 0, -d - .05), (w + .05, .6, d + .05), "navy")
+    plinth_skirt(b, w, d, .6, "navy", front_doors=[(-1.1, 1.1)], back_doors=[(-.5, .5)])
     b.solid((-w - .1, height - .9, -d - .15), (w + .1, height - .2, -d), "navy")
     for lo, hi in (((-w, height, -d), (w, height + .5, -d + .2)), ((-w, height, d - .2), (w, height + .5, d)),
                    ((-w, height, -d), (-w + .2, height + .5, d)), ((w - .2, height, -d), (w, height + .5, d))):
@@ -881,7 +900,7 @@ def patrol_outpost():
     wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, [(-1.2, 1.2, slab, 2.3)], "render", "plaster", +1)  # door to the carport
     b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
     b.box((-w, height - .2, -d), (w, height, d), {'+y': "roof", '-y': "plaster", '+x': "brown", '-x': "brown", '+z': "brown", '-z': "brown"})
-    b.solid((-w - .05, 0, -d - .05), (w + .05, .45, d + .05), "brown")
+    plinth_skirt(b, w, d, .45, "brown", front_doors=[(-3.4, -2.2)])
     b.solid((-w - .1, height - .75, -d - .15), (w + .1, height - .2, -d), "orange")       # the fascia (sign band)
     for lo, hi in (((-w, height, -d), (w, height + .35, -d + .15)), ((-w, height, d - .15), (w, height + .35, d)),
                    ((-w, height, -d), (-w + .15, height + .35, d)), ((w - .15, height, -d), (w, height + .35, d))):
@@ -2052,7 +2071,7 @@ def radio_station(style):
     wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, sides, "walls", "plaster", +1)
     b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
     b.box((-w, height - .2, -d), (w, height, d), {'+y': "roof", '-y': "plaster", '+x': "accent", '-x': "accent", '+z': "accent", '-z': "accent"})
-    b.solid((-w - .05, 0, -d - .05), (w + .05, .45, d + .05), "accent")
+    plinth_skirt(b, w, d, .45, "accent", front_doors=[(-4.6, -3.2)])
     b.solid((-w - .1, height - .85, -d - .15), (w + .1, height - .2, -d), "accent")     # the sign band
     for lo, hi in (((-w, height, -d), (w, height + .4, -d + .15)), ((-w, height, d - .15), (w, height + .4, d)),
                    ((-w, height, -d), (-w + .15, height + .4, d)), ((w - .15, height, -d), (w, height + .4, d))):
@@ -2112,7 +2131,7 @@ def gun_shop():
     wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, [(-.5, .5, slab, 2.3)], "render", "plaster", +1)   # the back door
     b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
     b.box((-w, height - .2, -d), (w, height, d), {'+y': "roof", '-y': "plaster", '+x': "plinth", '-x': "plinth", '+z': "plinth", '-z': "plinth"})
-    b.solid((-w - .05, 0, -d - .05), (w + .05, .5, d + .05), "plinth")
+    plinth_skirt(b, w, d, .5, "plinth", front_doors=[(-1.0, 1.0)], side_doors=[(-.5, .5)])
     b.solid((-w - .1, height - .9, -d - .15), (w + .1, height - .2, -d), "brass")           # the sign band
     for lo, hi in (((-w, height, -d), (w, height + .4, -d + .15)), ((-w, height, d - .15), (w, height + .4, d)),
                    ((-w, height, -d), (-w + .15, height + .4, d)), ((w - .15, height, -d), (w, height + .4, d))):

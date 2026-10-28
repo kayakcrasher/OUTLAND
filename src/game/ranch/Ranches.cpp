@@ -206,8 +206,8 @@ void Ranches::call_cattle(int ranch, int count) {
         if (count <= 0) break;
         if (cow.state != CowState::Grazing && cow.state != CowState::Walking) continue;
         cow.state = CowState::ToCorral;
-        cow.path = {on_ground(r.frame.at(lane_u, rr::pasture.v0 + 4)), on_ground(r.frame.at(lane_u, rr::lane.v0 - 3)),
-                    on_ground(r.frame.at(rr::corral.u0 + 3 + random() * (rr::corral.u1 - rr::corral.u0 - 6), rr::corral.v0 + 3 + random() * 9))};
+        cow.path = {on_ground(r.frame.at(lane_u, rr::pasture.v1 - 4)), on_ground(r.frame.at(lane_u, rr::lane.v1 + 3)),
+                    on_ground(r.frame.at(rr::corral.u0 + 3 + random() * (rr::corral.u1 - rr::corral.u0 - 6), rr::corral.v0 + 3 + random() * 7))};
         --count;
     }
 }
@@ -226,11 +226,12 @@ int Ranches::load_cattle(int ranch, int max) {
         if (loaded >= max) break;
         if (cow.state != CowState::InCorral) continue;
         cow.state = CowState::Loading;
-        const Vector3 foot = on_ground(r.frame.at(rr::chute.x, chute_foot_v + 1.5F));
-        const Vector3 base = on_ground(r.frame.at(rr::chute.x, chute_foot_v));
-        Vector3 top = on_ground(r.frame.at(rr::chute.x, chute_top_v));
+        const rr::Frame load = rr::load_frame(r.frame);
+        const Vector3 foot = on_ground(load.at(rr::chute.x, chute_foot_v + 1.5F));
+        const Vector3 base = on_ground(load.at(rr::chute.x, chute_foot_v));
+        Vector3 top = on_ground(load.at(rr::chute.x, chute_top_v));
         top.y += chute_height;
-        Vector3 in = on_ground(r.frame.at(rr::chute.x, -2.5F));
+        Vector3 in = on_ground(load.at(rr::chute.x, -2.5F));
         in.y = top.y;
         cow.path = {foot, base, top, in};
         cow.pause = static_cast<float>(loaded) * 2.5F; // single file up the chute
@@ -362,7 +363,7 @@ void Ranches::update_herd(RanchState& r, int index, float dt, const world::Verda
         cow.position.z += step.z;
         cow.stride += Vector3Length(step);
         // On the chute the cow climbs with the ramp; elsewhere it walks on the ground.
-        const Vector2 local = r.frame.local(cow.position);
+        const Vector2 local = rr::load_frame(r.frame).local(cow.position);
         float y = world::terrain::TerrainHeight::sample(cow.position.x, cow.position.z);
         if (cow.state == CowState::Loading && std::abs(local.x - rr::chute.x) < 1.2F && local.y < chute_foot_v)
             y += chute_height * std::clamp((chute_foot_v - local.y) / (chute_foot_v - chute_top_v), 0.0F, 1.0F);
@@ -398,12 +399,12 @@ void Ranches::update_family(RanchState& r, const RanchFrame& frame, ai::BattleRo
         else if (lunch) { centre = r.frame.at(rr::house.x + 9, rr::house.y); radius = 4; }
         else switch (v.role) {
             case Role::Herd: centre = r.frame.at((rr::pasture.u0 + rr::pasture.u1) * .5F, (rr::pasture.v0 + rr::pasture.v1) * .5F); radius = 22; break;
-            case Role::Fields: centre = r.frame.at(24, 104); radius = 16; break;
+            case Role::Fields: centre = r.frame.at(48, 102); radius = 16; break;
             case Role::Driver: centre = r.frame.at(rr::yard.x + 6, rr::yard.y + 2); radius = 5; break;
             case Role::Barn: centre = r.frame.at(-16, 30); radius = 14; break;
         }
         // While the truck is coming the herder works the corral.
-        if (!night && r.calling && v.role == Role::Herd) { centre = r.frame.at((rr::corral.u0 + rr::corral.u1) * .5F, rr::corral.v1 + 2); radius = 6; }
+        if (!night && r.calling && v.role == Role::Herd) { centre = r.frame.at((rr::corral.u0 + rr::corral.u1) * .5F, rr::corral.v0 - 2); radius = 6; }
         centre = on_ground(centre);
         if (hostile) {
             bots.set_asleep(v.bot, false);

@@ -23,8 +23,11 @@ rigs). Models: `tools/generate_ranch_models.py`. Tests: `outland_ranch_tests`.
 
 Each ranch has a farm track off the highway to the yard, a two-storey farmhouse (home), a red
 gambrel barn (open at both ends, with a hayloft, stalls and hay), two grain bins, a windmill
-over a stock tank, a fenced pasture with a feed bunk and troughs, and a corral by the road with a
-loading chute. There is a 3 x 3 corn field (2.2 m corn you can walk through) and a 3 x 2 wheat
+over a stock tank, a fenced pasture with a feed bunk and troughs, and a corral behind the
+pasture with a loading chute. The cattle truck never stops on the highway: a dirt **cattle
+track** leaves the farm track at the yard, runs up between the wheat and the barn, along the
+back of the farm past the chute, and down the far side of the pasture onto the highway again,
+so a rig drives round without backing up (`ranches::cattle_track`, `ranches::load_frame`). There is a 3 x 3 corn field (2.2 m corn you can walk through) and a 3 x 2 wheat
 field, hay bales, the family's side-by-side in the yard, and loot in the barn and the house.
 The terrain levels a pad around each farm. Each ranch is its own settlement on the map, with a
 welcome sign.
@@ -57,7 +60,7 @@ morning. Far from the player (420 m) they sleep and cost nothing.
 Each ranch runs ten head of Hereford and Angus. They graze, wander the pasture, turn and walk
 with a sway, and keep a little apart. A shot cow drops. Calves are born each morning, up to four,
 bringing the herd back up to ten. When the cattle truck is coming, three head are driven through
-the lane into the corral. When it pulls up, they go single file up the chute into the trailer.
+the lane at the back of the pasture into the corral. When it pulls up, they go single file up the chute into the trailer.
 At the cattle quay they come off down the chute into the pen. A little later they walk single
 file across the quay and up the gangway into the ship, and they are gone: shipped. The ranch is
 paid **450 kr a head** (`Ranches::cattle_price`; a line on screen says who was paid what, and

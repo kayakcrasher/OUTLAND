@@ -628,12 +628,11 @@ void Career::offer(const CareerFrame& frame) {
             job.pay = 480; job.respect = 9; job.deadline = frame.now + 420;
         }
     } else if (state_.side == Side::Trucker) {
-        // The brotherhood's work, between the company's loads: contraband past the patrol, and a
-        // strike at the depot for a better rate.
-        const float roll = random();
-        if (roll < .45F && frame.depot_known && state_.union_raise < raise_max - 1e-4F) {
-            job = strike_job(frame.now);
-        } else if (!frame.docks.empty() && !frame.yards.empty()) {
+        // The brotherhood's work is voluntary: nothing comes over the CB unless the brother asked
+        // Ivo for it (a strike is called on the spot, call_strike; a run waits here for the docks).
+        const bool run = asked_ == JobKind::Contraband;
+        asked_ = JobKind::None;
+        if (run && !frame.docks.empty() && !frame.yards.empty()) {
             const auto& dock = frame.docks[std::min(frame.docks.size() - 1, static_cast<std::size_t>(random() * static_cast<float>(frame.docks.size())))];
             const TownSpot* yard = nullptr;
             for (const auto& y : frame.yards) if (!yard || flat(y.centre, dock.point) > flat(yard->centre, dock.point)) yard = &y;
@@ -663,6 +662,14 @@ Job Career::strike_job(double now) const {
                  " s, in the cab or on the picket line beside it. Leave and the clock stops until you're back. Win: +5% on every load, for good";
     job.pay = 500; job.respect = 10; job.deadline = now + 900;
     return job;
+}
+
+bool Career::ask_for_run(std::string& why) {
+    if (!trucker()) { why = "Brothers only"; return false; }
+    if (job_.kind != JobKind::None) { why = "Finish the job you've got first"; return false; }
+    asked_ = JobKind::Contraband;
+    next_offer_ = 0;   // at once
+    return true;
 }
 
 bool Career::call_strike(double now, std::string& why) {

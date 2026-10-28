@@ -535,8 +535,15 @@ int main() {
         f.yards.push_back({"Roka", {-1000, 0, 0}});
         double now = 0;
         bool strike = false, run = false;
+        // The brotherhood's work is voluntary: nothing comes over the CB unasked.
+        for (int i = 0; i < 50; ++i) { f.now = now += 20; f.player = {5000, 0, 5000}; t.update(f); }
+        check(t.job().kind == JobKind::None, "no brotherhood work unasked");
         for (int i = 0; i < 400 && !(strike && run); ++i) {
             f.now = now += 20; f.player = {5000, 0, 5000}; f.driving.clear(); f.driving_rig = false;
+            if (t.job().kind == JobKind::None) {
+                if (!strike) t.call_strike(f.now, why);
+                else check(t.ask_for_run(why), "asking Ivo for a run");
+            }
             t.update(f);
             const auto kind = t.job().kind;
             if (kind == JobKind::Strike && !strike) {

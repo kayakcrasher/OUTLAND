@@ -5,12 +5,12 @@ In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. E
 ## Joining
 
 - **A gang:**
-  - Talk to the crew's **boss**: the man standing by the hideout door (any town). Press **USE** beside him, and again within 5 s to confirm.
+  - Talk to the crew's **boss**: the man standing by the hideout door (any town). Press **USE** beside him and a menu opens: **Join** or **Talk**. Nothing happens until you pick a row.
   - The turf panel says "talk to their boss at the door to join".
   - You can't join while that gang is shooting at you, nor while you wear the badge ("hand it in at a station first").
 - **The police:**
-  - Walk up to a police station's front door and press **USE** twice (USE near its parked patrol car just gets you in the car).
-  - An officer hands the badge back the same way: USE twice at any station's front door.
+  - Walk into any police station (the doors are level with the street now) and press **USE** at the front door or the desk. A menu opens: **Join the Policio**. If you can't join, the row says why (a record, a gang, the brotherhood). USE near its parked patrol car just gets you in the car.
+  - An officer hands the badge back at any station's desk: **Hand in your badge**, then **Yes** on the confirm screen.
   - You are sworn in as a Kadeto and issued a pistol and two magazines, then sent to the Chief (the questline below).
   - That station's patrol car becomes yours until the Interceptor replaces it. It leaves the AI dispatch and nobody reports it stolen.
 - **Honour and the record:**
@@ -18,7 +18,7 @@ In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. E
   - Gang members *can* hurt and kill civilians and cops, and the gang won't call you dishonoured for it. But every reported crime (assault, murder, attacking an officer) goes on your **record** for good, and your **NOTORIETY** (0–100) rises: +8 for a serious crime, +3 for a minor one, +30 for the Chief. Notoriety shows on the respect meter in place of HONOURABLE.
   - The more notorious you are, the longer you do in prison (+0.6 s a point).
   - An honourable gang's towns win back their hold twice as fast. Every rival gangster you take down on your own gang's turf counts as defending the town: +2 respect and +4 hold.
-  - **Leaving:** tell your boss you're out (USE twice beside him) to walk away from the gang.
+  - **Talking to your boss is safe.** USE beside him opens **Talk** and **Leave the gang**. Leaving asks again on a confirm screen (**Yes, I'm out** / **No**), so you can't quit by accident.
   - The Policio turns away anyone with a record ("no criminals on the force"), and anyone still running with a gang.
 - **No gang takes a cop:** an officer hands in the badge first. A crime on duty (assaulting or killing a resident, or attacking an officer) ends the career on the force and leaves a record. Bystanders hit in a gunfight with a gang (on a gang's turf, or while a gang is shooting) are crossfire: expected, and no crime, no wanted level, no lost respect (`Career::stray_round`). Murder is another story: three bystanders dead by your gun before your next job is done, and the badge goes. Outside a gang fight, hurting a resident is a crime as before.
 - Joining a different gang starts your respect again from zero.
@@ -183,12 +183,12 @@ The goal of the police questline is to get rid of the gangs. Once you serve, abo
 
 Verda's trucking is a tough grind, so the truckers stick together. They are Esperantistoj, working class, in every town on the island, and they hold out for a higher rate. The brotherhood is the third road, beside the gangs and the Policio.
 
-- **Joining:** talk to **Ivo Kovač**, the brotherhood's man at the diesel lane in Verda Transporto's yard (USE, then USE again). Anyone but a cop or a gangster can join (they leave their side first, and a brother leaves the brotherhood before joining one). Talk to him again (USE twice) to leave.
+- **Joining:** talk to **Ivo Kovač**, the brotherhood's man at the diesel lane in Verda Transporto's yard (USE opens a menu: **Join** or **Talk**). Anyone but a cop or a gangster can join (they leave their side first, and a brother leaves the brotherhood before joining one). A brother's menu has **Talk**, **Call a strike**, **A contraband run** and **Leave the brotherhood** (which asks again before you go).
 - **Ranks:** Novulo, Ŝoforo, Veterano, Ŝosea Lupo, Reĝo de la Vojo.
 - **The union rate:** every Verda Transporto load pays a brother 25% more than the company rate, plus every raise won on strike (up to +50% in all). Each load is also +3 respect. The pay message shows both rates.
 - **Truckers in every town:** a Kamionisto stands outside a pub (or the shop) in every town. They talk shop with a brother, and point anyone else to Ivo.
 - **The CB (BACKUP / Z):** two brothers come from the nearest truck stop in a pickup to fight beside you, the same way an officer's backup does. They stay a few minutes, longer while there's shooting.
-- **The brotherhood's work** ("ON THE CB"), between the company's loads:
+- **The brotherhood's work is voluntary.** Nothing comes over the CB on its own: ask Ivo for a strike or a contraband run when you want one, and he sends it ("ON THE CB").
 
 | Job | What | Pay | Respect |
 |---|---|---|---|
@@ -197,7 +197,7 @@ Verda's trucking is a tough grind, so the truckers stick together. They are Espe
 
 ### The strike
 
-A strike comes over the CB now and then. You can also call one yourself: talk to Ivo with nothing else on, and he offers one (USE again to call it).
+A strike only happens when you call it: talk to Ivo with nothing else on and pick **Call a strike**.
 
 1. **Bring a big rig to the gate.** The gate is where the yard road meets Verda Transporto's depot, marked on the compass. Any big rig you drive there counts: your own, one off the truck park or the company drivers' rigs, with its trailer on or not. The rigs parked in the truck park don't count on their own.
 2. **Hold it.** Stop the rig across the gate (within 14 m of the marker) and stay with it. You can stay in the cab, or get out and stand on the picket line (within 40 m). Four brothers come out to picket either side of the gate, with signs (STRIKO!, JUSTA SALAJRO).

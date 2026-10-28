@@ -46,6 +46,17 @@ inline constexpr bool in_downtown(float x, float z) { return x > -downtown_half_
 // Ŝtata Malliberejo, Verda's only state prison: alone on a level pad outside the ring road to the
 // south-east, a kilometre from the nearest town; its gate faces the ring (yaw 45: the model's
 // front, -Z, toward the island's centre), and an access road runs out to it from the ring.
+// Verda Transporto's freight yards beside the highway outside the four county towns (the world
+// kit's freight_yards()): the loop's centre and the way out from the highway to it. Each stands on
+// its own level pad (TerrainHeight), paved over, so the loop and the yard read as a real yard.
+struct FreightYard { const char* town; Vector3 centre; Vector3 out; };
+inline constexpr FreightYard freight_yards[]{
+    {"village_espera", {-61.4F, 0, -1430}, {-1, 0, 0}},
+    {"port_luma", {1368.23F, 0, -410.74F}, {-.3473F, 0, -.9377F}},
+    {"south_haven", {301.66F, 0, 1383.58F}, {.9795F, 0, -.2016F}},
+    {"west_roka", {-1366.57F, 0, 410.68F}, {.2359F, 0, .9718F}},
+};
+inline constexpr float freight_yard_flat_radius = 48, freight_yard_blend = 40;
 inline constexpr Vector3 prison_center{1290, 0, 1290};
 inline constexpr float prison_yaw = 45;
 inline constexpr float prison_flat_radius = 64;
