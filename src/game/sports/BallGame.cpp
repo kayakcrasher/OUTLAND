@@ -173,7 +173,8 @@ void action(Scene& s, const Play& play, double u, bool batting_home, float secon
         Vector3 at = spot(i);
         float yaw = spot_yaw(i);
         Motion motion = i == 1 ? Motion::Squat : Motion::Ready;
-        float phase = 0;
+        // The fielders get set as the pitch comes in (lower, weight forward), then ease up.
+        float phase = i >= 2 ? (u < .36 ? ease(span(u, .2, .36)) : 1 - ease(span(u, .45, .7))) : 0;
         if (i == 0) {   // the pitcher: the wind-up and the pitch
             if (u >= .08 && u < .42) { motion = Motion::Pitch; phase = span(u, .08, .42); }
             else motion = u < .08 ? Motion::Stand : Motion::Ready;

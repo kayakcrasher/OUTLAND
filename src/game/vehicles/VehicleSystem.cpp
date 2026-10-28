@@ -47,9 +47,38 @@ Vector3 VehicleSystem::world_point(Vector3 local, Vector3 origin, float yaw, flo
     return Vector3Add(
         origin, Vector3RotateByAxisAngle(Vector3Scale(local, scale), {0, 1, 0}, yaw * DEG2RAD));
 }
+void VehicleSystem::index_assets(world::VerdaRegion &region) const {
+    assets_.clear();
+    asset_layout_.clear();
+    for (auto &s : region.runtime_settlements()) {
+        asset_layout_.emplace_back(static_cast<const void *>(s.assets.data()), s.assets.size());
+        for (auto &a : s.assets)
+            if (!a.vehicle.definition.empty())
+                assets_.emplace(a.id, &a);
+    }
+}
+bool VehicleSystem::index_current(const world::VerdaRegion &region) const {
+    const auto &sites = region.settlements();
+    if (sites.size() != asset_layout_.size()) return false;
+    for (std::size_t k = 0; k < sites.size(); ++k)
+        if (sites[k].assets.data() != asset_layout_[k].first || sites[k].assets.size() != asset_layout_[k].second) return false;
+    return true;
+}
+// A cached asset still where the index found it: inside one of the lists as they are now, and
+// still the one asked for (an erase and an add can leave a list the same size, its entries moved).
+static bool still_there(const world::VerdaRegion &region, const world::WorldAsset *a, std::string_view id) {
+    for (const auto &s : region.settlements())
+        if (!s.assets.empty() && a >= s.assets.data() && a < s.assets.data() + s.assets.size()) return a->id == id;
+    return false;
+}
 world::WorldAsset *VehicleSystem::asset(world::VerdaRegion &r, std::string_view id) const {
+    if (owner_ == &r && !index_current(r)) index_assets(r);
     if (owner_ == &r) {
         auto found = assets_.find(std::string(id));
+        if (found != assets_.end() && !still_there(r, found->second, id)) {
+            index_assets(r);
+            found = assets_.find(std::string(id));
+        }
         return found == assets_.end() ? nullptr : found->second;
     }
     for (auto &s : r.runtime_settlements())
@@ -60,8 +89,13 @@ world::WorldAsset *VehicleSystem::asset(world::VerdaRegion &r, std::string_view 
 }
 const world::WorldAsset *VehicleSystem::asset(const world::VerdaRegion &r,
                                               std::string_view id) const {
+    if (owner_ == &r && !index_current(r)) index_assets(*owner_);
     if (owner_ == &r) {
         auto found = assets_.find(std::string(id));
+        if (found != assets_.end() && !still_there(r, found->second, id)) {
+            index_assets(*owner_);
+            found = assets_.find(std::string(id));
+        }
         return found == assets_.end() ? nullptr : found->second;
     }
     for (const auto &s : r.settlements())
@@ -289,11 +323,7 @@ bool VehicleSystem::reconcile(world::VerdaRegion &region) {
     for (const auto &v : vehicles_)
         previous.emplace(v.id, v);
     owner_ = &region;
-    assets_.clear();
-    for (auto &s : region.runtime_settlements())
-        for (auto &a : s.assets)
-            if (!a.vehicle.definition.empty())
-                assets_.emplace(a.id, &a);
+    index_assets(region);
     vehicles_.clear();
     for (const auto &s : region.settlements())
         for (const auto &a : s.assets)

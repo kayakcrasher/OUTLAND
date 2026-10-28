@@ -150,7 +150,13 @@ class VehicleSystem {
     unsigned spawn_counter_{0};
     std::string last_spawned_;
     world::VerdaRegion *owner_{nullptr};
-    std::unordered_map<std::string, world::WorldAsset *> assets_;
+    // The vehicles' assets by id: pointers into the settlements' asset lists. Anything that adds
+    // or erases assets elsewhere (a build, the patrol outposts) moves them, so the lists' layout
+    // when it was made is kept and the index is made again when it no longer matches.
+    mutable std::unordered_map<std::string, world::WorldAsset *> assets_;
+    mutable std::vector<std::pair<const void *, std::size_t>> asset_layout_;
+    void index_assets(world::VerdaRegion &region) const;
+    [[nodiscard]] bool index_current(const world::VerdaRegion &region) const;
     std::unordered_map<std::string, VehicleInput> autopilot_;
     std::unordered_set<std::string> kinematic_;
     std::unordered_set<std::string> held_;

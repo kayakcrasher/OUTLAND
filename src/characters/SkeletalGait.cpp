@@ -80,10 +80,10 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
     const float pp=std::clamp(body.play_phase,0.0F,1.0F);
     float play_crouch=0,play_lean=0,twist=0;
     if(playing) switch(body.play) {
-        case BodyPlay::Ready:play_crouch=.3F;play_lean=.22F;break;
+        case BodyPlay::Ready:play_crouch=.22F+.16F*pp;play_lean=.16F+.12F*pp;break;   // getting set as the pitch comes
         case BodyPlay::Squat:play_crouch=1;play_lean=-.12F;break;
         case BodyPlay::Scoop:play_crouch=.55F;play_lean=.5F;break;
-        case BodyPlay::Stance:play_crouch=.18F;play_lean=.1F;twist=.35F;break;
+        case BodyPlay::Stance:play_crouch=.18F;play_lean=.1F;twist=.35F+.06F*std::sin(time*2*PI*.7F);break;   // the bat waggles
         case BodyPlay::Swing:
             play_crouch=.18F*(1-pp);play_lean=.1F;
             twist=pp<.3F ? .35F+.5F*pp : .5F-1.6F*(pp-.3F)/.7F;   // coiled, then round through the ball

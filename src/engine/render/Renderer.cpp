@@ -674,6 +674,10 @@ void Renderer::run() {
     double league_bus_sync=0;
     struct StandSeat { bool on{false}; Vector3 at{}; float yaw{0}; } stand_seat;   // the player sitting in the stands
     characters::AnimationController crowd_pose,cheer_pose,brawl_pose,field_pose,run_pose,walk_pose;
+    // Each ballplayer's own gait and facing (by park, side, role and index): strides that match how
+    // fast he is really going and fall out of step with the next man's, and turns that take a moment.
+    struct FieldBody { characters::AnimationController gait; float yaw{0}; double seen{-1e9}; };
+    std::unordered_map<std::uint64_t,FieldBody> field_bodies;
     // The nearest free seat in a park's stands within reach of `feet` (false: none).
     const auto stand_seat_near=[&](Vector3 feet,Vector3& seat,float& yaw) {
         float best=2.6F;   // from the foot of the stand, or a row up
@@ -7070,10 +7074,28 @@ void Renderer::run() {
                         characters::BodyPose pose;
                         pose.outfit=f.role==Role::Umpire ? 0U : jersey(f.home ? g.home : g.away);
                         pose.play_phase=f.phase;
-                        characters::AnimationController* anim=&field_pose;
+                        // His own gait: running or walking at the speed he is really covering ground
+                        // (each man out of step with the next), standing still otherwise; and his
+                        // facing turning to where he's going rather than snapping round.
+                        const std::uint64_t key=static_cast<std::uint64_t>(p)*1000000ULL+(f.home ? 100000ULL : 0ULL)+
+                            static_cast<std::uint64_t>(f.role)*1000ULL+static_cast<std::uint64_t>(f.index+100);
+                        auto& body=field_bodies[key];
+                        const float target_yaw=site.yaw+f.yaw;
+                        const bool moving=(f.motion==Motion::Run || f.motion==Motion::Walk) && f.speed>.3F;
+                        const auto action=moving ? (f.motion==Motion::Run && f.speed>2.6F ? characters::AnimationAction::Run : characters::AnimationAction::Walk)
+                                                 : characters::AnimationAction::Idle;
+                        const float pace=moving ? std::min(f.speed,9.0F) : 0.0F;
+                        if(match_time-body.seen>1.0) {
+                            body.yaw=target_yaw;
+                            body.gait.advance(action,static_cast<float>(key%97)*.011F,pace);   // a step of his own
+                        }
+                        body.seen=match_time;
+                        body.gait.advance(action,dt,pace);
+                        const float turn=std::remainder(target_yaw-body.yaw,360.0F);
+                        body.yaw+=turn*std::min(1.0F,dt*(moving ? 9.0F : 12.0F));
+                        characters::AnimationController* anim=&body.gait;
                         switch(f.motion) {
-                            case Motion::Run:anim=&run_pose;break;
-                            case Motion::Walk:anim=&walk_pose;break;
+                            case Motion::Run:case Motion::Walk:break;
                             case Motion::Sit:pose.seated=true;anim=&crowd_pose;feet.y+=.03F;break;
                             case Motion::Ready:pose.play=characters::BodyPlay::Ready;break;
                             case Motion::Squat:pose.play=characters::BodyPlay::Squat;break;
@@ -7086,8 +7108,10 @@ void Renderer::run() {
                             case Motion::Cheer:pose.play=characters::BodyPlay::Cheer;feet.y+=.35F*std::abs(std::sin(f.phase*2*PI));break;
                             default:break;
                         }
-                        character_renderer.draw(f.role==Role::Umpire ? std::string("character_18_police") : outfit_body,feet,site.yaw+f.yaw,1,anim,pose);
+                        character_renderer.draw(f.role==Role::Umpire ? std::string("character_18_police") : outfit_body,feet,body.yaw,1,anim,pose);
                     }
+                    // Forget the players of plays long gone.
+                    if(field_bodies.size()>400) std::erase_if(field_bodies,[&](const auto& kv){return match_time-kv.second.seen>10;});
                     for(const auto& bat:sc.bats) {
                         const Vector3 a=site.to_world(bat.grip),b=site.to_world(bat.tip);
                         if(Vector3DistanceSqr(a,camera.position)<120*120) DrawCylinderEx(a,b,.018F,.034F,6,Color{196,160,112,255});

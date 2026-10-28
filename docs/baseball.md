@@ -172,6 +172,12 @@ moment, and the renderer draws it. A right-handed batting order throughout.
 - **The body motions** are procedural (`characters::BodyPlay` in `SkeletalGait`): a fielder's
   crouch, the catcher's squat, the stance and swing, the pitch, a throw, a catch high or low, a
   cheer.
+- **Each player moves on his own:** every man on the field has his own gait (by park, side, role
+  and number). He runs or walks at the speed he is really covering ground, so his feet keep pace
+  and nobody strides in step with the next man. His facing turns toward where he's going over a
+  moment instead of snapping round.
+- **Getting set:** as the pitch comes in the fielders sink lower with their weight forward, then
+  ease up once the ball is dead. The batter's bat waggles in his stance.
 
 ## The fans
 
