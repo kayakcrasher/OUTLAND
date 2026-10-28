@@ -8,16 +8,17 @@
 // The pause menu, as in other games: ESC (or the MENU button) stops play and offers RESUME,
 // SETTINGS (look sensitivity, aiming, touch controls, sound, graphics), CONTROLS (every key and
 // mouse button, rebindable), SAVE GAME, RESTART (tap twice: saves, then starts the mode afresh),
-// QUIT TO MENU and, on a PC, QUIT GAME.
+// QUIT TO MENU and, on a PC, QUIT GAME. In Explore, a member of a gang, the Policio or the
+// truckers' brotherhood also gets a LEAVE button (tap twice, like RESTART).
 namespace outland::game {
 
 class PauseMenu {
 public:
     enum class Page { Main, Settings, Controls };
-    enum class Result { None, Resume, SettingsChanged, Save, Restart, QuitHome, QuitGame, EditTouchLayout };
+    enum class Result { None, Resume, SettingsChanged, Save, Restart, QuitHome, QuitGame, EditTouchLayout, Leave };
     // The settings rows, top to bottom.
     enum class Row {
-        Mouse, Touch, AimSensitivity, InvertY, AimToggle, AimAssist, TouchControls, ButtonSize, TouchLayout, Vibration, Volume, RadioVolume, Sound, Graphics,
+        Mouse, Touch, AimSensitivity, InvertY, AimToggle, AimAssist, TouchControls, ButtonSize, TouchLayout, Vibration, Volume, RadioVolume, Footsteps, Sound, Graphics,
         Count
     };
     static constexpr int row_count = static_cast<int>(Row::Count);
@@ -28,6 +29,8 @@ public:
     [[nodiscard]] Page page() const { return page_; }
     [[nodiscard]] bool capturing() const { return capturing_ >= 0; }
     void set_status(std::string status, float seconds = 2.5F) { status_ = std::move(status); status_time_ = seconds; }
+    // The LEAVE button's words ("LEAVE THE GANG", ...); empty hides it.
+    void set_leave(std::string label) { leave_ = std::move(label); }
 
     // The top bar's MENU button (where AUDIO was), for touch screens and mice alike.
     static Rectangle menu_button(int width, int height);
@@ -39,7 +42,7 @@ public:
 
     // Layout (screen space), shared by drawing, hit testing and tests.
     static Rectangle panel(int width, int height, Page page);
-    static Rectangle main_button(int index, int width, int height);   // 0 resume .. 4 restart .. 6 quit game
+    static Rectangle main_button(int index, int width, int height);   // 0 resume .. 4 restart .. 6 quit game, then leave
     static Rectangle row_button(Row row, int side, int width, int height); // side 0 "-", 1 "+" (or the toggle as 1)
     static Rectangle slot(int action, int slot, int width, int height);
     static Rectangle footer_button(int index, Page page, int width, int height); // 0 back, 1 reset
@@ -52,6 +55,8 @@ private:
     std::string status_;
     float status_time_{0};
     float restart_armed_{0};   // RESTART was tapped once; a second tap within this time restarts
+    float leave_armed_{0};     // the same for LEAVE
+    std::string leave_;
     std::unordered_set<int> previous_;
 };
 

@@ -34,6 +34,7 @@ bool GameSettings::load(const std::string& path) {
         else if (key == "aim_toggle") flag(in, read.aim_toggle);
         else if (key == "aim_assist") flag(in, read.aim_assist);
         else if (key == "vibration") flag(in, read.vibration);
+        else if (key == "footsteps") flag(in, read.footsteps);
         else if (key == "graphics") { int v = 0; in >> v; read.graphics = static_cast<Graphics>(std::clamp(v, 0, 2)); }
         else if (key == "touch_controls") { int v = 0; in >> v; read.touch_controls = static_cast<TouchControls>(std::clamp(v, 0, 2)); }
         else if (key == "touch") {
@@ -68,7 +69,7 @@ bool GameSettings::save(const std::string& path) const {
     std::ofstream output(path, std::ios::trunc);
     output << "touch_sensitivity " << look_sensitivity << "\nmouse_sensitivity " << mouse_sensitivity
            << "\naim_sensitivity " << aim_sensitivity << "\ninvert_y " << invert_y << "\naim_toggle " << aim_toggle
-           << "\naim_assist " << aim_assist << "\nvibration " << vibration << "\ntouch_controls " << static_cast<int>(touch_controls)
+           << "\naim_assist " << aim_assist << "\nvibration " << vibration << "\nfootsteps " << footsteps << "\ntouch_controls " << static_cast<int>(touch_controls)
            << "\nbutton_size " << button_size << "\nvolume " << volume << "\nmuted " << (muted ? 1 : 0)
            << "\nradio_volume " << radio_volume << "\nradio_station " << radio_station
            << "\ngraphics " << static_cast<int>(graphics) << '\n';

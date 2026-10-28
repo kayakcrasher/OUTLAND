@@ -121,6 +121,7 @@ ESC goes back a page, and from the first page resumes.
 | On-screen controls | AUTO / ON / OFF | AUTO |
 | Touch button size | 70–140% | 100% |
 | Vibration | on / off (phones) | on |
+| Footsteps | on / off: the sound of your own feet (soft, short footfalls) | on |
 | Volume, Sound | 10% steps; on / off | 80%, on |
 | Car radio | the radio's volume (on top of Volume), 10% steps | 70% |
 | Graphics | AUTO / FAST / SHARP | AUTO |

@@ -27,7 +27,7 @@ int main() {
         const Rectangle screen{0, 0, static_cast<float>(w), static_cast<float>(h)};
         const auto main = Menu::panel(w, h, Menu::Page::Main);
         check(inside(main, screen), "main panel on screen" + at);
-        for (int i = 0; i < 7; ++i) {
+        for (int i = 0; i < 8; ++i) {
             check(inside(Menu::main_button(i, w, h), main), "main button in its panel" + at);
             for (int j = 0; j < i; ++j) check(!CheckCollisionRecs(Menu::main_button(i, w, h), Menu::main_button(j, w, h)), "main buttons apart" + at);
         }

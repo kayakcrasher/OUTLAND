@@ -39,27 +39,27 @@ def wind():
 
 
 def footstep(surface, variant):
+    # A soft footfall, not a hiss: a short low heel thud and a brief, heavily smoothed scuff
+    # (gravel adds a few faint crunches). Quiet, and over in about a tenth of a second.
     rng = random.Random(930+variant+{"grass":0,"dirt":10,"gravel":20}[surface])
-    count = round(RATE*(.23+variant*.016))
-    smooth = 0
+    count = round(RATE*(.11+variant*.008))
+    smooth = smoother = 0
     samples = []
-    crackles = [rng.randrange(round(count*.7)) for _ in range(14)]
+    crackles = [rng.randrange(round(count*.5)) for _ in range(5)]
     for i in range(count):
         t = i/RATE
         noise = rng.uniform(-1,1)
-        smooth = smooth*.83+noise*.17
-        attack = min(1,t/.003)
-        envelope = attack*math.exp(-t*24)*(1-i/count)**2
-        thump = math.sin(2*math.pi*(95+variant*8)*t)*math.exp(-t*35)*.32
-        texture = smooth*.8 if surface=="dirt" else noise*.20
-        if surface=="grass":
-            texture += smooth*.20*math.sin(t*290)
+        smooth = smooth*.93+noise*.07
+        smoother = smoother*.9+smooth*.1
+        attack = min(1,t/.004)
+        fade = (1-i/count)**2
+        thump = math.sin(2*math.pi*(72+variant*6)*t)*math.exp(-t*55)
+        scuff = smoother*6*math.exp(-t*40)*{"grass":.5,"dirt":.8,"gravel":.6}[surface]
         if surface=="gravel":
-            texture += sum(.5*math.exp(-(i-c)/28) for c in crackles if 0 <= i-c < 150)
-        samples.append((thump+texture*envelope)*attack)
+            scuff += sum(.12*smooth*math.exp(-(i-c)/40) for c in crackles if 0 <= i-c < 120)
+        samples.append((thump+scuff)*attack*fade)
     peak = max(abs(v) for v in samples)
-    return [v*.72/max(peak,.01) for v in samples]
-
+    return [v*.4/max(peak,.01) for v in samples]
 
 def combat_sound(kind):
     rng = random.Random(101+sum(ord(c) for c in kind))

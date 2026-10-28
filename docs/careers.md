@@ -2,6 +2,8 @@
 
 In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. Each side gives work, pays for it, and keeps score in **respect**. Logic: `game::career::Career`. Wiring: `Renderer.cpp`.
 
+**Leaving from the menu:** any time in Explore (out of prison), the pause menu (ESC / MENU) has a red button at the bottom: **LEAVE THE GANG**, **HAND IN YOUR BADGE** or **LEAVE THE BROTHERHOOD**. Tap it twice ("TAP AGAIN TO ...") to leave. You don't have to go back to the boss, the desk or Ivo.
+
 ## Joining
 
 - **A gang:**

@@ -56,6 +56,7 @@ constexpr Words english{
      {"Vibration", "phones: shots, hits, crashes and blasts"},
      {"Volume", nullptr},
      {"Car radio", "music at the wheel; O or RADIO changes the station"},
+     {"Footsteps", "the sound of your own feet"},
      {"Sound", nullptr},
      {"Graphics", "AUTO adapts resolution to keep play smooth"}},
     "ON", "OFF", "TOGGLE", "HOLD",
@@ -68,7 +69,7 @@ constexpr Words english{
 bool toggle_row(PauseMenu::Row row) {
     using R = PauseMenu::Row;
     return row == R::TouchLayout || row == R::InvertY || row == R::AimToggle || row == R::AimAssist || row == R::TouchControls || row == R::Vibration ||
-           row == R::Sound || row == R::Graphics;
+           row == R::Footsteps || row == R::Sound || row == R::Graphics;
 }
 int rows_per_column() { return static_cast<int>((input::action_count + 1) / 2); }
 } // namespace
@@ -79,6 +80,7 @@ void PauseMenu::open() {
     page_ = Page::Main;
     capturing_ = -1;
     restart_armed_ = 0;
+    leave_armed_ = 0;
 }
 
 Rectangle PauseMenu::menu_button(int width, int) {
@@ -93,8 +95,8 @@ bool PauseMenu::tapped_menu_button(int width, int height, bool focused) {
 
 Rectangle PauseMenu::panel(int width, int height, Page page) {
     const float s = scale_of(width, height), w = static_cast<float>(width), h = static_cast<float>(height);
-    float pw = 420 * s, ph = 530 * s;
-    if (page == Page::Settings) { pw = 760 * s; ph = (150 + row_count * 40) * s; }
+    float pw = 420 * s, ph = 590 * s;
+    if (page == Page::Settings) { pw = 760 * s; ph = (150 + row_count * 36) * s; }
     if (page == Page::Controls) { pw = 1120 * s; ph = (175 + rows_per_column() * 36) * s; }
     pw = std::min(pw, w - 16);
     ph = std::min(ph, h - 16);
@@ -110,7 +112,7 @@ Rectangle PauseMenu::main_button(int index, int width, int height) {
 Rectangle PauseMenu::row_button(Row row, int side, int width, int height) {
     const float s = scale_of(width, height);
     const auto p = panel(width, height, Page::Settings);
-    const float y = p.y + 66 * s + static_cast<float>(static_cast<int>(row)) * 40 * s, right = p.x + p.width - 24 * s;
+    const float y = p.y + 66 * s + static_cast<float>(static_cast<int>(row)) * 36 * s, right = p.x + p.width - 24 * s;
     if (toggle_row(row)) return {right - 170 * s, y, 170 * s, 34 * s};
     return side == 0 ? Rectangle{right - 170 * s, y, 46 * s, 34 * s} : Rectangle{right - 46 * s, y, 46 * s, 34 * s};
 }
@@ -154,6 +156,7 @@ std::vector<Vector2> PauseMenu::clicks(bool focused) {
 PauseMenu::Result PauseMenu::update(GameSettings& settings, int width, int height, bool focused, float dt, bool can_quit_game) {
     status_time_ = std::max(0.0F, status_time_ - dt);
     restart_armed_ = std::max(0.0F, restart_armed_ - dt);
+    leave_armed_ = std::max(0.0F, leave_armed_ - dt);
     if (!open_) return Result::None;
     // Rebinding: the next key or mouse button (not the click that chose the slot) takes the slot.
     if (capturing_ >= 0) {
@@ -197,6 +200,11 @@ PauseMenu::Result PauseMenu::update(GameSettings& settings, int width, int heigh
                 default: result = Result::QuitGame; break;
                 }
             }
+            if (!leave_.empty() && CheckCollisionPointRec(p, main_button(can_quit_game ? 7 : 6, width, height))) {
+                // Twice, so nobody leaves by accident.
+                if (leave_armed_ > 0) { result = Result::Leave; leave_armed_ = 0; }
+                else leave_armed_ = 3;
+            }
             continue;
         }
         if (CheckCollisionPointRec(p, footer_button(0, page_, width, height))) { page_ = Page::Main; continue; }
@@ -229,6 +237,7 @@ PauseMenu::Result PauseMenu::update(GameSettings& settings, int width, int heigh
                 case Row::AimToggle: settings.aim_toggle = !settings.aim_toggle; changed(); break;
                 case Row::AimAssist: settings.aim_assist = !settings.aim_assist; changed(); break;
                 case Row::Vibration: settings.vibration = !settings.vibration; changed(); break;
+                case Row::Footsteps: settings.footsteps = !settings.footsteps; changed(); break;
                 case Row::Sound: settings.muted = !settings.muted; changed(); break;
                 case Row::TouchLayout: result = Result::EditTouchLayout; break;
                 case Row::TouchControls:
@@ -245,7 +254,7 @@ PauseMenu::Result PauseMenu::update(GameSettings& settings, int width, int heigh
         }
     }
     if (result == Result::Restart) restart_armed_ = 0;
-    if (result == Result::Resume || result == Result::Restart || result == Result::QuitHome || result == Result::QuitGame) close();
+    if (result == Result::Resume || result == Result::Restart || result == Result::Leave || result == Result::QuitHome || result == Result::QuitGame) close();
     return result;
 }
 
@@ -268,6 +277,14 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
         for (int i = 0; i < (can_quit_game ? 7 : 6); ++i)
             button(main_button(i, width, height), i == 4 && restart_armed_ > 0 ? w.restart_again : w.main[i], i == 0 || (i == 4 && restart_armed_ > 0),
                    font, s, 20);
+        if (!leave_.empty()) {
+            const auto r = main_button(can_quit_game ? 7 : 6, width, height);
+            DrawRectangleRounded(r, .25F, 6, leave_armed_ > 0 ? hot : Color{92, 40, 36, 255});
+            const std::string label = leave_armed_ > 0 ? "TAP AGAIN TO " + leave_ : leave_;
+            float fit = 20 * s;
+            while (fit > 9 && measure(font, label.c_str(), fit) > r.width - 10 * s) fit -= 1;
+            centred(font, label.c_str(), {r.x + r.width / 2, r.y + r.height / 2}, fit, ink);
+        }
         centred(font, w.resumes, {p.x + p.width / 2, p.y + p.height - 22 * s}, 14 * s, dim);
         return;
     }
@@ -296,6 +313,7 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
             case Row::AimToggle: on = settings.aim_toggle; button(r, on ? w.toggle : w.hold, on, font, s); break;
             case Row::AimAssist: on = settings.aim_assist; button(r, on ? w.on : w.off, on, font, s); break;
             case Row::Vibration: on = settings.vibration; button(r, on ? w.on : w.off, on, font, s); break;
+            case Row::Footsteps: on = settings.footsteps; button(r, on ? w.on : w.off, on, font, s); break;
             case Row::Sound: on = !settings.muted; button(r, on ? w.on : w.off, on, font, s); break;
             case Row::TouchLayout: button(r, w.edit, !settings.touch_layout.empty(), font, s); break;
             case Row::TouchControls:

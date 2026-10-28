@@ -20,6 +20,7 @@ struct GameSettings {
     bool aim_toggle{false};         // mouse: a click on AIM toggles the sights instead of holding
     bool aim_assist{true};          // touch only: the look slows and drifts onto enemies
     bool vibration{true};           // phones: shots, hits, crashes, blasts
+    bool footsteps{true};           // your own footsteps
     TouchControls touch_controls{TouchControls::Auto};
     float button_size{1.0F};        // touch buttons
     float volume{.8F};

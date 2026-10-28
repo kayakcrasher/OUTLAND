@@ -20,6 +20,7 @@ public:
     void toggle_mute();
     void play_combat(game::combat::WeaponId weapon, const game::combat::WeaponEvents& events);
     [[nodiscard]] bool muted() const { return muted_; }
+    void set_footsteps(bool on) { footsteps_ = on; }
     [[nodiscard]] bool ready() const { return ready_; }
     [[nodiscard]] float volume() const { return volume_; }
 
@@ -34,6 +35,7 @@ private:
     bool was_grounded_{false};
     Vector3 previous_{};
     float stride_distance_{0.0F};
+    bool footsteps_{true};
     float volume_{0.65F};
     unsigned int step_number_{0};
 };

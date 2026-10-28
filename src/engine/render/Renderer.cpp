@@ -1291,6 +1291,7 @@ void Renderer::run() {
         input_system.set_button_size(settings.button_size);
         input_system.layout()=input::customised(settings.touch_layout);   // the player's own button layout
         haptics.set_enabled(settings.vibration);
+        environment_audio.set_footsteps(settings.footsteps);
         environment_audio.set_volume(settings.volume);
         if(environment_audio.muted()!=settings.muted) environment_audio.toggle_mute();
         render_scale.set_mode(static_cast<int>(settings.graphics));
@@ -2790,6 +2791,34 @@ void Renderer::run() {
                 else if(escape || lost_mouse || menu_tapped) {pause_menu.open();input_system.cancel_controls();}
             }
         }
+        // Leaving a side, from the boss's / Ivo's / the desk's confirm screen or the pause menu's LEAVE.
+        const auto leave_side=[&](Pending what) {
+            const auto feet2=Vector3{player.position.x,player.position.y-1,player.position.z};
+            if(what==Pending::LeaveGang) {
+                for(const int id:player_crew.dismiss(br_bots)) mafio.lend(id,false,br_bots,feet2);
+                career.quit();mafio.set_player_gang(-1);island_ruled=false;join_offer={};
+                chief_line=career.state().record ? "You walked away - your record stays" : "You walked away with your honour - your record is clean";
+            } else if(what==Pending::LeaveBrotherhood) {
+                if(cb_backup.active()) cb_backup.dismiss(br_bots,match_time);
+                career.quit();
+                chief_line=std::string(brotherhood_man)+": \"Going it alone? Out there? ...Your call, brother. The door's open if you come back.\"";
+            } else if(what==Pending::HandInBadge) {
+                career.quit();services.assign_player_car({});lights_car.clear();join_offer={};
+                if(backup.active()) backup.dismiss(br_bots,match_time);
+                player_crew.dismiss_partner(br_bots);
+                chief_line="You handed in your badge";
+            }
+            chief_line_time=5;
+        };
+        const auto side_to_leave=[&] {
+            if(!game::rules_for(game_mode).civilian_life || career.in_prison()) return Pending::None;
+            switch(career.state().side) {
+            case game::career::Side::Gang: return Pending::LeaveGang;
+            case game::career::Side::Police: return Pending::HandInBadge;
+            case game::career::Side::Trucker: return Pending::LeaveBrotherhood;
+            default: return Pending::None;
+            }
+        };
         if(pause_menu.is_open()) {
             settings.volume=environment_audio.volume();settings.muted=environment_audio.muted();
             // The touch layout editor, opened from SETTINGS, takes the screen until DONE or CANCEL.
@@ -2797,11 +2826,20 @@ void Renderer::run() {
                 if(touch_editor.update(settings,screen_width,screen_height,IsWindowFocused())==game::TouchLayoutEditor::Result::Done) {apply_settings();store_settings();}
                 if(!touch_editor.is_open()) input_system.cancel_controls();
             }
+            {
+                const auto side=side_to_leave();
+                pause_menu.set_leave(side==Pending::LeaveGang ? "LEAVE THE GANG" : side==Pending::HandInBadge ? "HAND IN YOUR BADGE" :
+                                     side==Pending::LeaveBrotherhood ? "LEAVE THE BROTHERHOOD" : "");
+            }
             const auto result=touch_editor.is_open() ? game::PauseMenu::Result::None :
                 pause_menu.update(settings,screen_width,screen_height,IsWindowFocused(),GetFrameTime(),can_quit_game);
             if(result==game::PauseMenu::Result::EditTouchLayout) touch_editor.open(settings);
             if(result==game::PauseMenu::Result::SettingsChanged) {apply_settings();store_settings();}
             if(result==game::PauseMenu::Result::Resume) input_system.cancel_controls();
+            if(result==game::PauseMenu::Result::Leave) {
+                if(gear_menu.is_open()) {gear_menu.close();gear_screen=GearScreen::None;}
+                leave_side(side_to_leave());pending=Pending::None;input_system.cancel_controls();
+            }
             if(result==game::PauseMenu::Result::Save) {
                 bool saved=game_mode==game::GameMode::DevLab || loot_session.save(weapons) || !loot_session.can_persist();
                 saved=save_campaign(false) && saved;
@@ -3650,22 +3688,7 @@ void Renderer::run() {
                         break;
                     }
                     case GearScreen::Confirm: {
-                        const auto feet2=Vector3{player.position.x,player.position.y-1,player.position.z};
-                        if(pending==Pending::LeaveGang) {
-                            for(const int id:player_crew.dismiss(br_bots)) mafio.lend(id,false,br_bots,feet2);
-                            career.quit();mafio.set_player_gang(-1);island_ruled=false;join_offer={};
-                            chief_line=career.state().record ? "You walked away - your record stays" : "You walked away with your honour - your record is clean";
-                        } else if(pending==Pending::LeaveBrotherhood) {
-                            if(cb_backup.active()) cb_backup.dismiss(br_bots,match_time);
-                            career.quit();
-                            chief_line=std::string(brotherhood_man)+": \"Going it alone? Out there? ...Your call, brother. The door's open if you come back.\"";
-                        } else if(pending==Pending::HandInBadge) {
-                            career.quit();services.assign_player_car({});lights_car.clear();join_offer={};
-                            if(backup.active()) backup.dismiss(br_bots,match_time);
-                            player_crew.dismiss_partner(br_bots);
-                            chief_line="You handed in your badge";
-                        }
-                        chief_line_time=5;pending=Pending::None;
+                        leave_side(pending);pending=Pending::None;
                         gear_menu.close();gear_screen=GearScreen::None;input_system.cancel_controls();
                         break;
                     }

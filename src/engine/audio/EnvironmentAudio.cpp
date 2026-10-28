@@ -54,7 +54,7 @@ void EnvironmentAudio::set_volume(float volume) {
     if (!ready_) return;
     if (IsMusicValid(wind_)) SetMusicVolume(wind_, effective * 0.30F);
     for (auto& surface : steps_) {
-        for (Sound sound : surface) if (IsSoundValid(sound)) SetSoundVolume(sound, effective * 0.65F);
+        for (Sound sound : surface) if (IsSoundValid(sound)) SetSoundVolume(sound, effective * 0.35F);
     }
     for (Sound sound : {reload_, hit_, dry_}) if (IsSoundValid(sound)) SetSoundVolume(sound, effective * 0.55F);
 }
@@ -95,7 +95,7 @@ void EnvironmentAudio::update(Vector3 position, bool grounded, bool active,
             const auto surface = static_cast<std::size_t>(world::assets::ground_surface(position, region));
             const std::size_t variant = step_number_++ % 3;
             Sound sound = steps_[surface][variant];
-            if (!muted_ && IsSoundValid(sound)) {
+            if (!muted_ && footsteps_ && IsSoundValid(sound)) {
                 SetSoundPitch(sound, 0.97F + static_cast<float>(variant) * 0.03F);
                 PlaySound(sound);
             }
