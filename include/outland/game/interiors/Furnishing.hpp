@@ -6,9 +6,10 @@
 
 // Furniture inside Verda's buildings (models from tools/generate_furniture.py). Every pub is
 // furnished - a bar with stools and a back bar of bottles, tables, a booth, a jukebox, a
-// dartboard and, in the wide ones, a pool table - and about one home in four (a kitchen, a
-// dining table, a sofa and the television, a bed, a wardrobe), never all of them. The choice
-// is fixed by the building, so a furnished home stays furnished.
+// dartboard and, in the wide ones, a pool table - and every home somebody lives in (a kitchen,
+// a dining table, a sofa and the television, a bed, a wardrobe; houses laid out one way or its
+// mirror, some with a lamp or a plant more, by the building). Homes nobody lives in (for sale)
+// stand empty.
 //
 // Two shells are known: the Main Street rows (open floors, stairs along the +X wall, the front
 // doors in alternate bays and a back door) and the detached houses (one open room, the door in
@@ -36,11 +37,13 @@ int storeys_of(const life::Place& place);   // a Main Street building's floors (
 // Floor heights above the place's base (`interior.y`; a house's base is the ground).
 float floor_height(const life::Place& place, int storey);
 
-// About one home in four, by the building's id; every pub.
+// A home with a known shell (the ones furnished when somebody lives there); every pub.
 bool furnished_home(const life::Place& place);
 // Every furnished place's pieces, `ground(x, z)` giving a house's ground height. The store's
-// building (`skip`) is left for clothing_store.
-std::vector<Piece> furnish(const std::vector<life::Place>& places, float (*ground)(float, float), const std::string& skip = {});
+// building (`skip`) is left for clothing_store. `lived_in` (by place index): a home is furnished
+// only if somebody lives there; without it every home is.
+std::vector<Piece> furnish(const std::vector<life::Place>& places, float (*ground)(float, float), const std::string& skip = {},
+                           const std::vector<bool>* lived_in = nullptr);
 std::vector<Piece> furnish_pub(const life::Place& place, float base);
 std::vector<Piece> furnish_home(const life::Place& place, float base);
 

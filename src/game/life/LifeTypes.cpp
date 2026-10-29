@@ -61,7 +61,17 @@ const char* activity_name(Activity activity) {
         case Activity::Stroll:return "out for a walk";case Activity::Patrol:return "on patrol";
         case Activity::FactionMeet:return "out late";case Activity::Shelter:return "sheltering";
         case Activity::Ballgame:return "at the ball game";
+        case Activity::Cruise:return "cruising around";case Activity::Party:return "at a party";
+        case Activity::BarHop:return "bar hopping";
     }
     return "about";
+}
+const char* lifestyle_name(Lifestyle lifestyle) {
+    switch(lifestyle) {
+        case Lifestyle::Ordinary:return "keeps regular hours";case Lifestyle::NightShift:return "works nights";
+        case Lifestyle::Cruiser:return "cruises at night";case Lifestyle::PartyGoer:return "parties at weekends";
+        case Lifestyle::BarHopper:return "goes round the pubs";
+    }
+    return "";
 }
 }

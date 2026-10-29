@@ -70,21 +70,32 @@ int main() {
         check(pool, "a wide pub has a pool table");
     }
     {
-        // About one home in four, never all; the same ones every time.
-        int furnished = 0, total = 0;
-        for (int i = 1; i <= 400; ++i) {
-            const auto h = house("capital_verda:home:verda_okcidento_house_" + std::to_string(i), 180);
-            ++total;
-            furnished += interiors::furnished_home(h);
-            check(interiors::furnished_home(h) == interiors::furnished_home(h), "the choice is fixed");
+        // Every home somebody lives in is furnished; one nobody lives in (for sale) stands empty.
+        std::vector<life::Place> street;
+        for (int i = 1; i <= 40; ++i) {
+            street.push_back(house("capital_verda:home:verda_okcidento_house_" + std::to_string(i), 180));
+            street.back().interior.x += static_cast<float>(i) * 30;   // along the street
         }
-        check(furnished > total / 6 && furnished < total / 3, "about a quarter of the homes are furnished");
-        // A furnished house: kitchen, table, sofa and television, bed, wardrobe; all inside.
-        life::Place h;
-        for (int i = 1; i <= 400 && h.id.empty(); ++i) {
-            const auto c = house("capital_verda:home:verda_okcidento_house_" + std::to_string(i), 180);
-            if (interiors::furnished_home(c)) h = c;
+        std::vector<bool> lived_in(street.size(), true);
+        lived_in[3] = lived_in[17] = false;
+        const auto all = interiors::furnish(street, nullptr, {}, &lived_in);
+        int furnished_houses = 0;
+        for (std::size_t k = 0; k < street.size(); ++k) {
+            bool any = false;
+            for (const auto& piece : all) any = any || interiors::inside(street[k], piece.at, 0);
+            furnished_houses += any;
+            if (!lived_in[k]) check(!any, "a home nobody lives in stands empty");
         }
+        check(furnished_houses == 38, "every lived-in home is furnished");
+        // Houses differ: laid out both ways round.
+        std::set<std::string> layouts;
+        for (const auto& c : street) {
+            const auto p = interiors::furnish_home(c, 0);
+            for (const auto& piece : p)
+                if (piece.model.ends_with("bed_double.glb")) layouts.insert(local(c, piece.at).x > 0 ? "right" : "left");
+        }
+        check(layouts.size() == 2, "the houses are laid out one way or its mirror");
+        life::Place h = street[0];
         const auto pieces = interiors::furnish_home(h, 3.0F);
         std::set<std::string> models;
         bool inside = true, door = true;

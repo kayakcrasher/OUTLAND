@@ -58,6 +58,47 @@ int main() {
         check(a.full_name()==b.full_name() && a.occupation==b.occupation && a.work==b.work && a.character_id==b.character_id,"deterministic resident");
     }
     const auto& residents=life.residents();const auto& places=life.places();
+    // Daily routines. Most people keep modest hours: in bed by half past midnight on a working
+    // night at the latest (most well before). A few have nights of their own: night shifts at
+    // work through the small hours, cruisers out on the roads, party goers out late on Friday and
+    // Saturday, bar hoppers round the pubs; and some work in another town and commute.
+    {
+        int ordinary=0,late=0,nights=0,night_ok=0,cruisers=0,party=0,party_ok=0,hoppers=0,hop_ok=0,commuters=0,commute_ok=0;
+        for(const auto& r:residents) {
+            if(r.faction!=Faction::None || r.occupation==Occupation::Publican || r.occupation==Occupation::PoliceOfficer) continue;
+            switch(r.lifestyle) {
+                case Lifestyle::Ordinary:
+                    ++ordinary;
+                    for(const auto day:{Weekday::Monday,Weekday::Tuesday,Weekday::Wednesday})
+                        late+=planned_activity(r,day,30)!=Activity::Sleep || planned_activity(r,day,4*60)!=Activity::Sleep;
+                    break;
+                case Lifestyle::NightShift:
+                    ++nights;night_ok+=planned_activity(r,Weekday::Tuesday,2*60)==Activity::Work && planned_activity(r,Weekday::Tuesday,10*60)==Activity::Sleep;
+                    break;
+                case Lifestyle::Cruiser:
+                    ++cruisers;check(r.car>=0,"a cruiser has a car");
+                    check(planned_activity(r,Weekday::Wednesday,21*60)==Activity::Cruise,"cruising of an evening");
+                    break;
+                case Lifestyle::PartyGoer:
+                    ++party;party_ok+=planned_activity(r,Weekday::Saturday,60)==Activity::Party && planned_activity(r,Weekday::Saturday,22*60+30)==Activity::Party &&
+                                       planned_activity(r,Weekday::Tuesday,60)==Activity::Sleep;
+                    break;
+                case Lifestyle::BarHopper:
+                    ++hoppers;hop_ok+=planned_activity(r,Weekday::Thursday,21*60)==Activity::BarHop && planned_activity(r,Weekday::Friday,2*60)==Activity::Sleep;
+                    break;
+            }
+            if(r.commuter) {
+                ++commuters;
+                commute_ok+=r.work>=0 && places[static_cast<std::size_t>(r.work)].settlement!=r.settlement;
+            }
+        }
+        std::cout<<"routines: "<<ordinary<<" ordinary ("<<late<<" late nights), "<<nights<<" night shift, "<<cruisers<<" cruisers, "<<party
+                 <<" party goers, "<<hoppers<<" bar hoppers, "<<commuters<<" commuters\n";
+        check(ordinary>static_cast<int>(residents.size())/2 && late==0,"most people keep modest hours, in bed on working nights");
+        check(nights==night_ok && party==party_ok && hoppers==hop_ok,"night owls keep their own hours");
+        check(party+hoppers>0,"some go out at night");
+        check(commuters>0 && commute_ok==commuters,"some work in another town");
+    }
     std::cout<<"population "<<residents.size()<<", places "<<places.size()<<'\n';
     check(residents.size()>=60,"populated island");
     const auto place_in=[&](PlaceKind kind,const std::string& town){

@@ -99,3 +99,22 @@ The island clock appears top-centre (`MON 07:30`; the default is 30× real time,
 | `src/characters/NpcBehavior.cpp` | Directed actors travel to a far anchor without the wander timeout, linger 1–6 s, and run when hurrying. Marker NPC behaviour is unchanged. |
 | `src/engine/render/Renderer.cpp` | Build/reset life on entering Explore, feed gunfire, update after NPCs, clock and resident HUD. |
 | `CMakeLists.txt` | Life sources and `outland_life_tests`. |
+
+## Daily routines, night owls and commuters (update)
+
+- **Modest bedtimes.** Ordinary residents are home and asleep by about 23:00 on weeknights; the
+  unemployed no longer stay up until 01:00. Each resident's day still has a little personal
+  jitter so the street doesn't empty at the same minute.
+- **Lifestyles** (`Resident::lifestyle`, never for faction members, pastors or the retired):
+  - *Night shift* (some factory workers, dockworkers and doctors): work 21:30–06:15, sleep
+    07:15–14:30, then errands.
+  - *Cruisers* (car owners only): drive between squares, shops, pubs and garages from 20:00, and
+    until 01:30 on Friday and Saturday nights.
+  - *Party goers*: Friday and Saturday 21:00–03:00, at a friend's house or the busiest town's pub.
+  - *Bar hoppers* (pub regulars): Monday–Saturday 19:30–00:30, moving between the town's pubs
+    every hour or so.
+  - Baseball fans still go to games as before.
+- **Commuters.** About one worker in seven takes a job in another town at least 350 m away. They
+  leave 45 minutes earlier and get home 40 minutes later; the HUD says
+  *"working at … (commutes from Espera)"*.
+- Tests: the routines block in `outland_life_simulation_tests`.

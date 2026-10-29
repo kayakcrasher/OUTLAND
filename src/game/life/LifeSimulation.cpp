@@ -33,6 +33,9 @@ float outdoor_share(Activity activity,PlaceKind kind) {
         case Activity::Visit:return .2F;
         case Activity::FactionMeet:return .5F;
         case Activity::Ballgame:return 0;   // in the stands
+        case Activity::Cruise:return .6F;   // out by the car
+        case Activity::Party:return .3F;
+        case Activity::BarHop:return .35F;
         case Activity::Work:
             switch(kind) {
                 case PlaceKind::Garage:return .55F;case PlaceKind::Industrial:return .25F;
@@ -60,6 +63,21 @@ void LifeConfig::sanitize() {
     car_radius=bound(car_radius,0,2000,160);
     car_release=std::max(bound(car_release,0,3000,230),car_radius+10);
     max_driven=std::clamp(max_driven,0,64);
+}
+
+void LifeSimulation::index_nightlife() {
+    cruise_spots_.clear();town_pubs_.assign(island_.settlement_centers.size(),{});party_pub_=-1;
+    std::vector<int> population(island_.settlement_centers.size(),0);
+    for(const auto& r:island_.residents) if(r.settlement>=0 && r.settlement<static_cast<int>(population.size())) ++population[static_cast<std::size_t>(r.settlement)];
+    int biggest=-1;
+    for(std::size_t i=0;i<island_.places.size();++i) {
+        const auto& place=island_.places[i];
+        if(place.kind==PlaceKind::Square || place.kind==PlaceKind::Shop || place.kind==PlaceKind::Pub || place.kind==PlaceKind::Garage)
+            cruise_spots_.push_back(static_cast<int>(i));
+        if(place.kind!=PlaceKind::Pub || place.settlement<0 || place.settlement>=static_cast<int>(town_pubs_.size())) continue;
+        town_pubs_[static_cast<std::size_t>(place.settlement)].push_back(static_cast<int>(i));
+        if(party_pub_<0 || population[static_cast<std::size_t>(place.settlement)]>biggest) {party_pub_=static_cast<int>(i);biggest=population[static_cast<std::size_t>(place.settlement)];}
+    }
 }
 
 void LifeSimulation::build(const world::VerdaRegion& region,const characters::CharacterRegistry* registry,PopulationOptions options) {
@@ -90,6 +108,7 @@ void LifeSimulation::build(const world::VerdaRegion& region,const characters::Ch
     }
     registry_=registry;
     roads_.build(region);
+    index_nightlife();
     cars_.assign(island_.cars.size(),{});
     cursor_=0;replan_budget_=bridge_clock_=0;
 }
@@ -167,6 +186,24 @@ int LifeSimulation::resolve(const Resident& r,Activity activity) const {
         case Activity::Ballgame:return r.game_place>=0 ? r.game_place : r.home;
         case Activity::Stroll:return square(r.settlement);
         case Activity::FactionMeet:return either(r.hangout);
+        case Activity::Cruise: {
+            // Somewhere new every forty minutes or so, anywhere on the island.
+            if(cruise_spots_.empty()) return square(r.settlement);
+            const auto period=static_cast<std::uint64_t>(std::max(0.0,clock_.minutes/40));
+            return cruise_spots_[static_cast<std::size_t>(mix(period*0x9e3779b97f4a7c15ULL+static_cast<std::uint64_t>(r.id))%cruise_spots_.size())];
+        }
+        case Activity::Party:
+            // A house party at friends' (one in three), else the big town's pub.
+            if(r.id%3==0 && r.visit_home>=0) return r.visit_home;
+            return party_pub_>=0 ? party_pub_ : either(r.pub);
+        case Activity::BarHop: {
+            // Round the town's pubs, about an hour in each.
+            const auto town=static_cast<std::size_t>(r.settlement);
+            if(town>=town_pubs_.size() || town_pubs_[town].empty()) return either(r.pub);
+            const auto& pubs=town_pubs_[town];
+            const auto period=static_cast<std::uint64_t>(std::max(0.0,(clock_.minutes+static_cast<double>(r.id%60))/55));
+            return pubs[static_cast<std::size_t>((period+static_cast<std::uint64_t>(r.id))%pubs.size())];
+        }
         case Activity::Patrol: {
             // Officers walk a beat through every public place in their assigned town.
             std::vector<int> beat;
@@ -445,7 +482,7 @@ std::string LifeSimulation::describe(const Resident& r) const {
     if(r.trip==Trip::ToCar) return text+" - going to the car, for "+where;
     const bool moving=r.physical ? flat_distance(r.body,place.door)>8 && !inside_footprint(place,r.body) : travelling(r);
     if(moving) return text+" - on the way to "+where;
-    if(r.activity==Activity::Work) return text+" - working at "+where;
+    if(r.activity==Activity::Work) return text+" - working at "+where+(r.commuter ? " (commutes from "+island_.settlement_names[static_cast<std::size_t>(r.settlement)]+")" : std::string());
     return text+" - "+activity_name(r.activity)+" ("+where+")";
 }
 

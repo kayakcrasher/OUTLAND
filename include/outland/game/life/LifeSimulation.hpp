@@ -41,6 +41,7 @@ struct CarState {
     Vector3 park{};                 // where this trip ends
     float park_yaw{0};
     float stuck{0}, reverse{0}, waiting{0};
+    float passing{0};               // seconds left going round something standing in the lane
     int attempts{0};
 };
 struct LifeStats { int population{0}, alive{0}, physical{0}, travelling{0}, indoors{0}, sheltering{0}; };
@@ -139,6 +140,12 @@ private:
     void sync_bodies(Vector3 player,characters::NpcSystem& npcs);
     Island island_;
     std::array<int,5> ballparks_{{-1,-1,-1,-1,-1}};
+    // Nightlife: where cruisers stop (squares, shops, pubs and garages all over the island), each
+    // town's pubs (bar hoppers go round them), and the pub in the biggest town (the party).
+    std::vector<int> cruise_spots_;
+    std::vector<std::vector<int>> town_pubs_;
+    int party_pub_{-1};
+    void index_nightlife();
     const characters::CharacterRegistry* registry_{nullptr};
     LifeConfig config_{};
     WorldClock clock_{};

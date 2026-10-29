@@ -56,9 +56,17 @@ const char* faction_name(Faction faction);
 
 enum class Activity : std::uint8_t {
     Sleep, Home, Work, Lunch, Socialize, Worship, Shopping, Visit, Stroll, Patrol, FactionMeet, Shelter,
-    Ballgame    // off to watch the town's team (LifeSimulation::attend)
+    Ballgame,   // off to watch the town's team (LifeSimulation::attend)
+    Cruise,     // driving round the island of an evening, stopping here and there
+    Party,      // a Friday or Saturday night out (a friend's house or the big town's pub)
+    BarHop      // round the town's pubs, one after another
 };
 const char* activity_name(Activity activity);
+
+// How someone spends their nights. Most keep modest hours (in bed by half past eleven); a few
+// work nights, cruise the roads, party at the weekend or go round the pubs.
+enum class Lifestyle : std::uint8_t { Ordinary, NightShift, Cruiser, PartyGoer, BarHopper };
+const char* lifestyle_name(Lifestyle lifestyle);
 
 // One block of a day: from `minute` until the next block's minute.
 struct Block { int minute; Activity activity; };
@@ -90,6 +98,9 @@ struct Resident {
     std::vector<int> household;        // resident ids sharing this home (including self)
     int visit_home{-1};                // relatives' or a friend's home
     bool churchgoer{false}, pub_regular{false}, works_weekends{false};
+    Lifestyle lifestyle{Lifestyle::Ordinary};
+    bool commuter{false};              // works in another town (sets off earlier, home later)
+    int jitter{0};                     // minutes their day runs early or late
     int car{-1};                       // Island::cars index this resident drives, or -1
     std::array<std::vector<Block>,7> days; // indexed by Weekday
 

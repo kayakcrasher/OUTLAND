@@ -122,3 +122,15 @@ Households now claim parked cars within 95 m (`car_claim_radius`), up to two eac
 over 110 m when their car is within 320 m. Up to 14 cars are driven for real near the player
 (inside 220 m, handed back beyond 290 m). On the published map 99 of 119 cars have owners and 68
 residents drive on a weekday morning (was 96 and 57; at most 6 cars were driven for real).
+
+## Smoother driving (update)
+
+Autopiloted cars near the player now:
+- **follow the car ahead at a gap** (5 m plus a metre per m/s) instead of stopping dead whenever
+  anything is in front, matching its speed;
+- **pass a parked or stalled car** after a short wait (2.5 s for a parked car, 10 s for one that
+  is stopped in traffic) when the other lane is clear for 45 m, swinging out 3.2 m at no more than
+  6 m/s and back in after;
+- **take turns at a standoff**: when two cars block each other, the one with the lower id goes
+  first after 3 s and the other creeps after its own 7–12 s, so jams clear instead of locking.
+People on the road still stop a car outright. Code: `LifeTraffic::drive`.

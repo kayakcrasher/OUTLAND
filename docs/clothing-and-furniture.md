@@ -41,10 +41,11 @@ also in the Creator under Props).
   - a booth and the jukebox by the stairs;
   - a pool table in the wide pubs, another table in the narrow ones;
   - a plant in the window.
-- **Some homes, about one in four, never all.** The choice is fixed per building.
+- **Every home somebody lives in.** Empty homes (nobody assigned to them by island life) stay bare.
   - A detached house gets a kitchen with a fridge, a dining table and chairs, a sofa facing the
     television across a rug and a coffee table, a double bed with nightstands, a wardrobe, a
-    bookshelf and a plant.
+    bookshelf and a plant. Half the houses use the mirrored layout, and some add a floor lamp or
+    a second plant, so neighbouring houses don't look identical. The choice is fixed per building.
   - A Main Street flat gets the same on its ground floor.
 - **Kept clear:** the doors, the middle of the room (residents walk there) and the stairs.
 - **Not furnished:** buildings put together in the Creator (no known shell) and shops.

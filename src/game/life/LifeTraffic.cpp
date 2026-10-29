@@ -237,8 +237,22 @@ void LifeSimulation::drive(int index, float dt, Vector3 player, const characters
         if (std::abs(speed) < .3F) {park_car(index, true); leave_car(r, false);}
         return;
     }
-    // Pure pursuit on the lane-offset route.
-    const Vector3 target = world::roads::route_point(car.route, car.progress + 4.5F + std::abs(speed) * .7F);
+    // Who is in the lane ahead. People: stop and wait for them. Cars: keep a gap, following at
+    // the speed that holds it rather than stopping dead and pulling away again (that is how a
+    // queue turns into a jam), and go round one standing in the road - parked, broken down, or a
+    // queue that has not moved for a long while - once the other lane is clear.
+    const Vector3 forward{std::sin(runtime.yaw * DEG2RAD), 0, std::cos(runtime.yaw * DEG2RAD)};
+    const Vector3 left{forward.z, 0, -forward.x};
+    if (car.passing > 0) car.passing -= dt;
+    const float shift = car.passing > 0 ? 3.2F : 0.0F;   // the lane being driven in: ours, or the other one while passing
+    const auto relative = [&](Vector3 p, float& ahead, float& side) {
+        const float x = p.x - runtime.position.x, z = p.z - runtime.position.z;
+        ahead = x * forward.x + z * forward.z;
+        side = x * left.x + z * left.z;
+    };
+    // Pure pursuit on the lane-offset route (over in the other lane while passing).
+    Vector3 target = world::roads::route_point(car.route, car.progress + 4.5F + std::abs(speed) * .7F);
+    target = Vector3Add(target, Vector3Scale(left, shift));
     const float want = std::atan2(target.x - runtime.position.x, target.z - runtime.position.z) * RAD2DEG;
     const float error = std::remainder(want - runtime.yaw, 360.0F);
     input.steer = std::clamp(error / 25.0F, -1.0F, 1.0F);
@@ -248,29 +262,58 @@ void LifeSimulation::drive(int index, float dt, Vector3 player, const characters
     world::roads::route_point(car.route, car.progress + 22, &far_yaw);
     if (std::abs(std::remainder(far_yaw - near_yaw, 360.0F)) > 25) limit = 5;
     if (std::abs(error) > 45) limit = std::min(limit, 3.5F);
+    if (car.passing > 0) limit = std::min(limit, 6.0F);
     // Pulling out of and into a parking space, gently.
     const float first_leg = car.route.points.size() > 1 ? flat(car.route.points[0], car.route.points[1]) : 0;
     const float last_leg = car.route.points.size() > 1 ? flat(car.route.points[car.route.points.size() - 2], car.route.points.back()) : 0;
     if (car.progress < first_leg + 3 || remaining < last_leg + 3) limit = std::min(limit, 4.0F);
     limit = std::min(limit, std::max(1.5F, std::sqrt(2 * 2.5F * remaining)));
-    // Anyone or anything in the lane ahead: stop and wait.
-    const Vector3 forward{std::sin(runtime.yaw * DEG2RAD), 0, std::cos(runtime.yaw * DEG2RAD)};
     const float reach = 4.0F + std::abs(speed) * 1.3F + 2.5F;
     const auto in_lane = [&](Vector3 p) {
-        const float x = p.x - runtime.position.x, z = p.z - runtime.position.z;
-        const float ahead = x * forward.x + z * forward.z, lateral = std::abs(x * forward.z - z * forward.x);
-        return ahead > 1.5F && ahead < reach && lateral < 1.6F;
+        float ahead = 0, side = 0;
+        relative(p, ahead, side);
+        return ahead > 1.5F && ahead < reach && std::abs(side - shift) < 1.6F;
     };
     bool blocked = in_lane(player);
     for (const auto& actor : npcs.actors()) if (actor.active && actor.state != characters::NpcState::Dead) blocked = blocked || in_lane(actor.position);
-    // Cars in the way. Two or three cars nosing into the same junction can each wait for another
-    // for ever: after a few seconds the one with the right of way (the lowest id) goes, slowly.
-    bool cars = false, give_way = false;
-    for (const auto& other : vehicles_->vehicles())
-        if (other.id != info.vehicle && in_lane(other.position)) {cars = true; give_way |= other.id < info.vehicle;}
-    const bool priority = cars && !blocked && !give_way && car.waiting > 3;
-    if (priority) {limit = std::min(limit, 3.0F); car.waiting += dt;}
-    else if (blocked || cars) {limit = 0; car.waiting += dt;}
+    // The car ahead in the lane, and whether the other lane is clear to pass.
+    float gap = 1e9F, lead_speed = 0;
+    bool lead_standing = false, lead_parked = false, give_way = false, other_lane_clear = true;
+    for (const auto& other : vehicles_->vehicles()) {
+        if (other.id == info.vehicle) continue;
+        float ahead = 0, side = 0;
+        relative(other.position, ahead, side);
+        if (side > 1.8F && side < 5.2F && ahead > -8 && ahead < 45) other_lane_clear = false;
+        if (ahead <= 1.5F || ahead > 40 || std::abs(side - shift) > 1.7F) continue;
+        if (ahead < gap) {
+            gap = ahead;
+            const float along = std::sin(other.yaw * DEG2RAD) * forward.x + std::cos(other.yaw * DEG2RAD) * forward.z;
+            lead_speed = std::max(0.0F, other.speed * along);
+            lead_standing = std::abs(other.speed) < .3F;
+            lead_parked = lead_standing && !vehicles_->autopiloted(other.id) && !(vehicles_->driver() && vehicles_->driver()->id == other.id);
+            give_way = other.id < info.vehicle;
+        }
+    }
+    const bool following = gap < 40;
+    if (following) {
+        // Two seconds' headway (five metres standing), closing gently on a slower car.
+        const float safe = 5.0F + std::abs(speed) * 1.0F;
+        limit = std::min(limit, gap < 5.5F ? 0.0F : std::max(0.0F, lead_speed + (gap - safe) * .8F));
+    }
+    // Something standing in our lane: go round it when the way is clear (sooner for a parked car).
+    if (car.passing <= 0 && following && lead_standing && gap < 16 && !blocked && other_lane_clear && remaining > gap + 15 &&
+        car.waiting > (lead_parked ? 2.5F : 10.0F))
+        car.passing = 3.0F + (gap + 10) / 4.0F;
+    if (car.passing > 0 && !other_lane_clear && shift > 0) limit = std::min(limit, 2.0F);
+    // Standoffs (two or three cars nosing into the same junction, each waiting on another): after
+    // a few seconds the one with the right of way (the lowest id) creeps on; after longer, each
+    // takes its turn by its id, so no ring of cars waits for ever.
+    const bool stopped_for_car = following && limit < .5F;
+    const float turn = 7.0F + static_cast<float>(std::hash<std::string>{}(info.vehicle) % 50) * .1F;
+    const bool priority = stopped_for_car && !blocked && gap > 3.5F && ((!give_way && car.waiting > 3) || car.waiting > turn);
+    if (priority) {limit = 2.5F; car.waiting += dt;}
+    else if (blocked) {limit = 0; car.waiting += dt;}
+    else if (stopped_for_car) car.waiting += dt;
     else car.waiting = 0;
     // Wedged against something: back off and try again; after a few tries, park and walk.
     if (car.reverse > 0) {

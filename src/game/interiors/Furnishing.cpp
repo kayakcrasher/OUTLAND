@@ -41,7 +41,9 @@ struct Layout {
     std::vector<Piece>& out;
     // `turn`: 0 back to the +Z wall (facing the front), 180 back to the front, -90 back to the
     // -X wall (facing +X), 90 back to the +X wall.
+    bool mirror{false};   // the room laid out the other way round (x -> -x)
     void put(const char* model, float x, float z, float turn = 0, bool solid = true) const {
+        if (mirror) { x = -x; turn = -turn; }
         out.push_back({dir + model, frame.at(x, z), frame.yaw + turn, solid});
     }
 };
@@ -80,7 +82,7 @@ float floor_height(const life::Place& place, int storey) {
 }
 
 bool furnished_home(const life::Place& place) {
-    return place.kind == life::PlaceKind::Home && shell_of(place) != Shell::None && hash(place.building_id) % 4 == 1;
+    return place.kind == life::PlaceKind::Home && shell_of(place) != Shell::None;
 }
 
 bool inside(const life::Place& place, Vector3 at, float margin) {
@@ -137,27 +139,36 @@ std::vector<Piece> furnish_home(const life::Place& place, float base) {
         l.put("bookshelf.glb", w - wall - .17F, 3.4F, 90);
         l.put("house_plant.glb", window_bay(place), -d + wall + .7F);
     } else {
+        // Houses differ: the room one way or its mirror (the door is in the middle of the front),
+        // and some have a reading lamp by the sofa or a plant by the bed.
+        const auto h = hash(place.building_id);
+        const Layout m{l.frame, out, (h >> 12) % 2 == 1};
         const float w = place.building_size.x * .5F - .35F, d = place.building_size.z * .5F - .35F;
+        if ((h >> 16) % 3 == 0) m.put("floor_lamp.glb", -w + .35F, -d + 3.6F);
+        if ((h >> 20) % 3 == 1) m.put("house_plant.glb", w - .3F, d - 3.3F);
         // Kitchen and table at the back left, the bed at the back right, the sitting room at the
         // front left; the door (middle of the front) and the middle of the room stay clear.
-        l.put("kitchen_run.glb", -w + 1.7F, d - .33F);
-        l.put("dining_set.glb", -w + 1.8F, d - 2.3F);
-        l.put("bed_double.glb", w - 1.1F, d - 1.6F, 90);
-        l.put(sofa, -w + .45F, -d + 2.2F, -90);
-        l.put("rug.glb", -w + 2.1F, -d + 2.2F, 90, false);
-        l.put("coffee_table.glb", -w + 1.85F, -d + 2.2F, 90);
-        l.put("tv_stand.glb", -w + 3.6F, -d + 2.2F, 90);
-        l.put("wardrobe.glb", w - .3F, -d + 1.6F, 90);
-        l.put("bookshelf.glb", .5F, d - .17F);
-        l.put("house_plant.glb", -1.3F, -d + .4F);
+        m.put("kitchen_run.glb", -w + 1.7F, d - .33F);
+        m.put("dining_set.glb", -w + 1.8F, d - 2.3F);
+        m.put("bed_double.glb", w - 1.1F, d - 1.6F, 90);
+        m.put(sofa, -w + .45F, -d + 2.2F, -90);
+        m.put("rug.glb", -w + 2.1F, -d + 2.2F, 90, false);
+        m.put("coffee_table.glb", -w + 1.85F, -d + 2.2F, 90);
+        m.put("tv_stand.glb", -w + 3.6F, -d + 2.2F, 90);
+        m.put("wardrobe.glb", w - .3F, -d + 1.6F, 90);
+        m.put("bookshelf.glb", .5F, d - .17F);
+        m.put("house_plant.glb", -1.3F, -d + .4F);
     }
     return out;
 }
 
-std::vector<Piece> furnish(const std::vector<life::Place>& places, float (*ground)(float, float), const std::string& skip) {
+std::vector<Piece> furnish(const std::vector<life::Place>& places, float (*ground)(float, float), const std::string& skip,
+                           const std::vector<bool>* lived_in) {
     std::vector<Piece> out;
-    for (const auto& place : places) {
+    for (std::size_t k = 0; k < places.size(); ++k) {
+        const auto& place = places[k];
         if (place.id == skip || shell_of(place) == Shell::None) continue;
+        if (place.kind == life::PlaceKind::Home && lived_in && (k >= lived_in->size() || !(*lived_in)[k])) continue;   // for sale: empty
         const float base = shell_of(place) == Shell::House && ground ? ground(place.interior.x, place.interior.z) : place.interior.y;
         std::vector<Piece> pieces;
         if (place.kind == life::PlaceKind::Pub) pieces = furnish_pub(place, base);

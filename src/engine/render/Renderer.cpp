@@ -1156,7 +1156,7 @@ void Renderer::run() {
         signed_world=world_size();
     };
     wardrobe_catalogue.build(character_registry);
-    // The pubs' and some homes' furniture, and Vestaĵejo Verda, as ordinary world assets
+    // The pubs' and the lived-in homes' furniture, and Vestaĵejo Verda, as ordinary world assets
     // ("furnish_*"; they collide like any prop). Rebuilt with island life each session.
     const auto furnish_island=[&]{
         for(auto& town:verda_region.runtime_settlements())
@@ -1167,7 +1167,10 @@ void Renderer::run() {
         int capital=-1;
         for(std::size_t t=0;t<towns.size();++t) if(towns[t].id=="capital_verda") capital=static_cast<int>(t);
         const auto* site=capital>=0 ? game::interiors::store_site(places,capital,towns[static_cast<std::size_t>(capital)].center) : nullptr;
-        auto pieces=game::interiors::furnish(places,[](float x,float z){return world::terrain::TerrainHeight::sample(x,z);},site ? site->id : std::string());
+        // Every home somebody lives in is furnished; homes for sale stand empty.
+        std::vector<bool> lived_in(places.size(),false);
+        for(const auto& r:island_life.residents()) if(r.home>=0 && r.home<static_cast<int>(places.size())) lived_in[static_cast<std::size_t>(r.home)]=true;
+        auto pieces=game::interiors::furnish(places,[](float x,float z){return world::terrain::TerrainHeight::sample(x,z);},site ? site->id : std::string(),&lived_in);
         if(site) {
             clothing_store=game::interiors::clothing_store(*site,std::max(0,static_cast<int>(wardrobe_catalogue.looks().size())-1));
             pieces.insert(pieces.end(),clothing_store->pieces.begin(),clothing_store->pieces.end());
@@ -1178,10 +1181,11 @@ void Renderer::run() {
             pieces.insert(pieces.end(),furniture.begin(),furniture.end());
         }
         int pubs=0,homes=0;
-        for(const auto& place:places) {
+        for(std::size_t k=0;k<places.size();++k) {
+            const auto& place=places[k];
             if(site && place.id==site->id) continue;
             if(place.kind==game::life::PlaceKind::Pub && game::interiors::shell_of(place)!=game::interiors::Shell::None) ++pubs;
-            else if(game::interiors::furnished_home(place)) {
+            else if(game::interiors::furnished_home(place) && lived_in[k]) {
                 if(++homes<=2 || game::interiors::shell_of(place)==game::interiors::Shell::House)
                     TraceLog(LOG_INFO,"OUTLAND furnished home %s at %.0f %.0f",place.id.c_str(),place.interior.x,place.interior.z);
             }

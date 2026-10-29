@@ -150,7 +150,8 @@ int main() {
     int commuters = 0, parked_at_work = 0;
     for (std::size_t i = 0; i < cars.size(); ++i) {
         const auto& r = life.residents()[static_cast<std::size_t>(cars[i].owner)];
-        if (r.work < 0 || r.activity != Activity::Work || life.cars()[i].lost) continue;
+        // (Those already at work when the morning began - a farmer's day starts at 05:30 - never drove.)
+        if (r.work < 0 || r.activity != Activity::Work || life.cars()[i].lost || !drove[static_cast<std::size_t>(r.id)]) continue;
         const auto& work = life.places()[static_cast<std::size_t>(r.work)];
         if (flat(work.door, cars[i].spot) < 400) continue;
         ++commuters;
@@ -170,7 +171,7 @@ int main() {
     for (const bool drive : {true, false})
         for (std::size_t i = 0; i < cars.size() && pick < 0; ++i) {
             const auto& r = life.residents()[static_cast<std::size_t>(cars[i].owner)];
-            if (r.work >= 0 && flat(life.places()[static_cast<std::size_t>(r.work)].door, cars[i].spot) > 400 &&
+            if (r.work >= 0 && r.activity != Activity::Work && flat(life.places()[static_cast<std::size_t>(r.work)].door, cars[i].spot) > 400 &&
                 graph.nearest(cars[i].spot).distance < 40 && (!drive || cars[i].vehicle.find("_drive_") != std::string::npos)) pick = static_cast<int>(i);
         }
     check(pick >= 0, "a long-distance commuter with a car at home");

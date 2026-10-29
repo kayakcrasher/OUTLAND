@@ -300,7 +300,7 @@ std::vector<Block> day_plan(const Resident& r,Weekday day,int jitter) {
             break;
         case Occupation::Unemployed:
             if(sunday) {rest_sunday();break;}
-            plan={{0,A::Home},{60,A::Sleep},{570,A::Home},{690,A::Stroll},{780,A::Home},{960,evening},{1200,A::Home}};
+            plan={{0,A::Sleep},{570,A::Home},{690,A::Stroll},{780,A::Home},{960,evening},{1200,A::Home},{1380,A::Sleep}};
             break;
         default: // mechanic, factory worker, clerk
             if(weekday) plan={{0,A::Sleep},{390,A::Home},{450,A::Work},{720,A::Lunch},{780,A::Work},{1020,evening},{1140,A::Home},{1350,A::Sleep}};
@@ -318,6 +318,50 @@ std::vector<Block> day_plan(const Resident& r,Weekday day,int jitter) {
         for(auto& block:plan) if(block.minute==0) block.activity=A::FactionMeet;
         if(std::none_of(plan.begin(),plan.end(),[](const Block& b){return b.minute==150;})) plan.push_back({150,A::Sleep});
         std::erase_if(plan,[](const Block& b){return b.minute>0 && b.minute<150;});
+    }
+    // Commuters work in another town: out of the door earlier, home later.
+    if(r.commuter && std::any_of(plan.begin(),plan.end(),[](const Block& b){return b.activity==A::Work;})) {
+        std::size_t first=plan.size(),last=0;
+        for(std::size_t k=0;k<plan.size();++k) if(plan[k].activity==A::Work) {first=std::min(first,k);last=k;}
+        if(plan[first].minute>0) plan[first].minute=std::max(plan[first].minute-45,first>0 ? plan[first-1].minute+15 : 1);
+        if(last+1<plan.size()) plan[last+1].minute=std::min(plan[last+1].minute+40,last+2<plan.size() ? plan[last+2].minute-15 : 1439);
+    }
+    // Lifestyles. Ordinary folk keep modest hours; the rest have nights of their own.
+    const auto evening_out=[&](int from,Activity activity,bool to_bed) {
+        std::erase_if(plan,[&](const Block& b){return b.minute>=from;});
+        plan.push_back({from,activity});
+        if(to_bed) plan.push_back({1410,A::Sleep});
+    };
+    // The night before carried on past midnight: out until `until`, then to bed.
+    const auto after_midnight=[&](Activity activity,int until) {
+        std::erase_if(plan,[&](const Block& b){return b.minute>0 && b.minute<=until;});
+        if(!plan.empty() && plan.front().minute==0) plan.front().activity=activity; else plan.insert(plan.begin(),{0,activity});
+        plan.push_back({until,A::Sleep});
+    };
+    const bool weekend_night=day==Weekday::Friday || saturday;
+    const auto yesterday=static_cast<Weekday>((static_cast<int>(day)+6)%7);
+    const bool after_weekend_night=yesterday==Weekday::Friday || yesterday==Weekday::Saturday;
+    switch(r.lifestyle) {
+        case Lifestyle::NightShift:
+            // Nights through the working week: in at 21:30, home at dawn, asleep through the morning.
+            if(weekday) plan={{0,A::Work},{375,A::Home},{435,A::Sleep},{870,A::Home},{960,A::Shopping},{1050,A::Home},{1290,A::Work}};
+            else if(day==Weekday::Saturday) after_midnight(A::Work,375);
+            break;
+        case Lifestyle::Cruiser:
+            // Out on the roads every evening; late on Friday and Saturday nights.
+            evening_out(weekend_night ? 1230 : 1200,A::Cruise,!weekend_night);
+            if(after_weekend_night) after_midnight(A::Cruise,90);
+            break;
+        case Lifestyle::PartyGoer:
+            if(weekend_night) evening_out(1260,A::Party,false);
+            if(after_weekend_night) after_midnight(A::Party,180);
+            break;
+        case Lifestyle::BarHopper:
+            // Round the pubs every night but Sunday, home a little after midnight.
+            if(!sunday) evening_out(1170,A::BarHop,false);
+            if(yesterday!=Weekday::Sunday) after_midnight(A::BarHop,30);
+            break;
+        default:break;
     }
     std::sort(plan.begin(),plan.end(),[](const Block& a,const Block& b){return a.minute<b.minute;});
     // Personal timing so a town does not move in lockstep; midnight blocks stay anchored.
@@ -468,16 +512,21 @@ Island build_island(const world::VerdaRegion& region,const characters::Character
             if(best>=0) {hire(i,best);staffed[place]=true;}
         }
     }
-    // Everyone else of working age takes the nearest open job; a few are out of work.
-    for(const auto& resident:island.residents) {
+    // Everyone else of working age takes the nearest open job; a few are out of work, and about
+    // one in seven works in another town (the nearest open job there) and commutes.
+    for(auto& resident:island.residents) {
         if(employed[static_cast<std::size_t>(resident.id)] || resident.occupation==Occupation::Retired || random.chance(.07F)) continue;
+        const bool commute=random.chance(.14F);
         int best=-1;float best_distance=std::numeric_limits<float>::max();
         for(std::size_t i=0;i<slots.size();++i) {
             if(taken[i]) continue;
-            const float d=flat_distance(home_door(resident),island.places[static_cast<std::size_t>(slots[i].place)].door);
+            const auto& place=island.places[static_cast<std::size_t>(slots[i].place)];
+            if(commute && place.settlement==resident.settlement) continue;
+            const float d=flat_distance(home_door(resident),place.door);
+            if(commute && d<350) continue;   // another town is a drive away, not next door
             if(d<best_distance) {best_distance=d;best=static_cast<int>(i);}
         }
-        if(best>=0) hire(static_cast<std::size_t>(best),resident.id);
+        if(best>=0) {hire(static_cast<std::size_t>(best),resident.id);resident.commuter=commute;}
     }
     int police=0;
     for(auto& r:island.residents) {
@@ -503,6 +552,16 @@ Island build_island(const world::VerdaRegion& region,const characters::Character
         if(r.occupation==Occupation::PoliceOfficer) {
             r.faction=Faction::Police;r.shift=police%3;
             r.patrol_settlement=static_cast<int>(police%std::max<std::size_t>(1,settlements.size()));++police;
+        }
+        // Nights of their own: night shifts at the works, the docks and the hospital; a few who
+        // cruise the roads (if they have a car - see below), party at the weekend or go round the pubs.
+        if(r.faction==Faction::None && r.occupation!=Occupation::Pastor && r.occupation!=Occupation::Retired) {
+            const bool shifts=r.occupation==Occupation::FactoryWorker || r.occupation==Occupation::Dockworker || r.occupation==Occupation::Doctor;
+            const float roll=random.unit();
+            if(shifts && roll<.18F) r.lifestyle=Lifestyle::NightShift;
+            else if(roll<.25F) r.lifestyle=Lifestyle::Cruiser;
+            else if(roll<.36F) r.lifestyle=Lifestyle::PartyGoer;
+            else if(r.pub_regular && roll<.48F) r.lifestyle=Lifestyle::BarHopper;
         }
         const auto town=identity(settlements[static_cast<std::size_t>(r.settlement)].id);
         const bool candidate=r.occupation==Occupation::Dockworker || r.occupation==Occupation::FactoryWorker ||
@@ -548,9 +607,9 @@ Island build_island(const world::VerdaRegion& region,const characters::Character
         }
     }
     for(auto& r:island.residents) {
-        if(r.faction==Faction::Krimulo) r.hangout=hangout;
-        const int jitter=random.range(-25,25);
-        for(int d=0;d<7;++d) r.days[static_cast<std::size_t>(d)]=day_plan(r,static_cast<Weekday>(d),jitter);
+        if(r.faction==Faction::Krimulo) {r.hangout=hangout;r.lifestyle=Lifestyle::Ordinary;}
+        r.jitter=random.range(-25,25);
+        for(int d=0;d<7;++d) r.days[static_cast<std::size_t>(d)]=day_plan(r,static_cast<Weekday>(d),r.jitter);
         if(registry) if(const auto* model=choose_model(*registry,r.occupation,random)) {
             r.character_id=model->id;r.female=model->name.find("Female")!=std::string::npos;
             r.first_name=r.female ? pick(female_names,random) : pick(male_names,random);
@@ -558,6 +617,12 @@ Island build_island(const world::VerdaRegion& region,const characters::Character
         r.place=r.home;r.from=r.body=island.places[static_cast<std::size_t>(r.home)].interior;
     }
     assign_cars(island,region);
+    // Cruising needs a car: those without one keep ordinary hours.
+    for(auto& r:island.residents)
+        if(r.lifestyle==Lifestyle::Cruiser && r.car<0) {
+            r.lifestyle=Lifestyle::Ordinary;
+            for(int d=0;d<7;++d) r.days[static_cast<std::size_t>(d)]=day_plan(r,static_cast<Weekday>(d),r.jitter);
+        }
     return island;
 }
 
@@ -605,8 +670,8 @@ int add_household(Island& island,const world::Building& building,int settlement,
             r.character_id=model->id;r.female=model->name.find("Female")!=std::string::npos;
             r.first_name=r.female ? pick(female_names,random) : pick(male_names,random);
         }
-        const int jitter=random.range(-25,25);
-        for(int d=0;d<7;++d) r.days[static_cast<std::size_t>(d)]=day_plan(r,static_cast<Weekday>(d),jitter);
+        r.jitter=random.range(-25,25);
+        for(int d=0;d<7;++d) r.days[static_cast<std::size_t>(d)]=day_plan(r,static_cast<Weekday>(d),r.jitter);
         r.place=r.home;r.from=r.body=home.interior;
         island.residents.push_back(std::move(r));
     }
