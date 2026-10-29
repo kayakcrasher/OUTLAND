@@ -1,0 +1,90 @@
+#pragma once
+#include <array>
+#include <cstdint>
+#include <string_view>
+
+// Engine sound, synthesised: no recordings, so every vehicle gets its own voice and it follows
+// the engine exactly. A four-stroke fires each cylinder once every two turns of the crank; each
+// firing is a pulse of pressure into the exhaust, which rings at its own pitch (the body of the
+// note) and hisses at the top (the rasp). The pitch of the note is the firing rate, so it follows
+// the revs; the revs follow the gearbox (an automatic: it shifts up as the revs climb and down as
+// they fall). Uneven firing makes a V8's lope; diesels clatter; turbos whistle and blow off;
+// straight pipes pop on the overrun. Wind, road rumble and tyre squeal ride on top.
+namespace outland::game::vehicles {
+
+struct EngineProfile {
+    int cylinders{4};
+    float idle{850}, redline{6500};
+    int gears{5};
+    bool diesel{false};
+    bool cvt{false};          // no gears: the revs ride the throttle (a side-by-side's belt)
+    float lope{0};            // uneven firing, 0..1 (a cross-plane V8's burble)
+    float body_hz{110};       // the exhaust's ring at idle
+    float rasp{.5F};          // the hiss at the top, 0..1
+    float turbo{0};           // whistle and blow-off, 0..1
+    float whine{0};           // a supercharger's whine, 0..1
+    float gain{1};            // how loud (the exhaust)
+    bool pops{false};         // crackles and bangs on the overrun
+};
+
+// The voice for a vehicle type (game::vehicles definition id) with its fitted engine and exhaust
+// (game::autos::engines and exhausts indices).
+EngineProfile engine_profile(std::string_view definition, int engine = 0, int exhaust = 0);
+
+// The automatic gearbox: from road speed and throttle to the revs.
+class Gearbox {
+public:
+    // `speed`: road speed as a share of the vehicle's top speed; `throttle`: -1..1 (back is the brake).
+    float update(float dt, float speed, float throttle, const EngineProfile& profile);
+    [[nodiscard]] int gear() const { return gear_; }
+    [[nodiscard]] float rpm() const { return rpm_; }
+    [[nodiscard]] bool shifting() const { return shift_ > 0; }
+    void reset(const EngineProfile& profile) { gear_ = 1; rpm_ = profile.idle; shift_ = 0; }
+
+private:
+    int gear_{1};
+    float rpm_{0}, shift_{0};
+};
+
+class EngineSynth {
+public:
+    struct Params {
+        bool running{false};
+        float rpm{0};
+        float load{0};        // 0..1: how hard it's working (the throttle, in gear)
+        float speed{0};       // m/s on the road (wind and rumble)
+        float squeal{0};      // 0..1: tyres sliding
+        float volume{1};
+        bool limiter{false};  // bouncing off the rev limiter
+    };
+    explicit EngineSynth(int sample_rate = 22050) : rate_(static_cast<float>(sample_rate)) {}
+    void set_profile(const EngineProfile& profile);
+    void set(const Params& params) { params_ = params; }
+    [[nodiscard]] const EngineProfile& profile() const { return profile_; }
+    // Mono samples, -1..1.
+    void render(float* out, int frames);
+    void render(short* out, int frames);
+    [[nodiscard]] std::uint64_t firings() const { return firings_; }
+    [[nodiscard]] int pops() const { return pops_; }
+
+private:
+    struct Band {
+        float b0{0}, a1{0}, a2{0}, x1{0}, x2{0}, y1{0}, y2{0};
+        void tune(float hz, float q, float rate);
+        float run(float x);
+    };
+    float noise();
+    float rate_;
+    EngineProfile profile_{};
+    Params params_{};
+    std::array<float, 12> angle_{}, punch_{};   // each cylinder's firing point in the cycle, and its strength
+    float phase_{0}, kick_{0}, burst_{0}, clatter_{0}, lowpass_{0}, spool_{0}, blow_{0}, whistle_{0}, whine_phase_{0};
+    float rumble_{0}, wind_{0}, last_load_{0}, overrun_{0}, gain_{0};
+    int next_{0}, skip_{0}, pops_{0};
+    std::uint64_t firings_{0};
+    std::uint32_t seed_{0x9e3779b9U};
+    Band body_, rasp_, crack_, squeal_, hiss_;
+    int retune_{0};
+};
+
+} // namespace outland::game::vehicles

@@ -4909,7 +4909,7 @@ void Renderer::run() {
         // ====================================================
 
         environment_audio.update(player.position, player.grounded && !driving, !driving, verda_region);
-        vehicle_audio.update(vehicles,verda_region,dt,vehicle_paused || environment_audio.muted(),environment_audio.volume());
+        vehicle_audio.update(vehicles,verda_region,dt,vehicle_paused || environment_audio.muted(),environment_audio.volume(),&camera.position);
         {
             const bool radio_paused=vehicle_paused || pause_menu.is_open();
             if(!radio_paused) radio_clock+=dt;

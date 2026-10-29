@@ -509,6 +509,7 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         return false;
     dt = std::min(dt, .1F);
     bool changed = false;
+    input_ = input;
     events_.horn = input.horn;
     events_.parking = input.parking;
     for (auto &v : vehicles_) {

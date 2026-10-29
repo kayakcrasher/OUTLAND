@@ -91,6 +91,13 @@ class VehicleSystem {
     void set_autopilot(std::string_view id, VehicleInput input) { autopilot_[std::string(id)] = input; }
     void clear_autopilot(std::string_view id) { autopilot_.erase(std::string(id)); }
     bool autopiloted(std::string_view id) const { return autopilot_.contains(std::string(id)); }
+    // What an autopiloted vehicle's driver is asking for (nullptr: nobody), and what the player
+    // asked for at the last update (the engine's sound follows the throttle).
+    const VehicleInput *autopilot(std::string_view id) const {
+        const auto it = autopilot_.find(std::string(id));
+        return it == autopilot_.end() ? nullptr : &it->second;
+    }
+    const VehicleInput &driver_input() const { return input_; }
     void clear_autopilots() { autopilot_.clear(); }
     // Pulled over (the police have a driver stopped): an autopiloted vehicle brakes and stays put
     // whatever its driver asks for, until released.
@@ -158,6 +165,7 @@ class VehicleSystem {
     void index_assets(world::VerdaRegion &region) const;
     [[nodiscard]] bool index_current(const world::VerdaRegion &region) const;
     std::unordered_map<std::string, VehicleInput> autopilot_;
+    VehicleInput input_{};
     std::unordered_set<std::string> kinematic_;
     std::unordered_set<std::string> held_;
     std::function<bool(std::string_view, Vector3, Vector3, float)> barrier_;

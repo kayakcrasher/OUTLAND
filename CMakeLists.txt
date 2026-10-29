@@ -133,6 +133,7 @@ add_library(
     src/game/vehicles/VehicleSave.cpp
     src/game/vehicles/VehicleRenderer.cpp
     src/game/vehicles/VehicleAudio.cpp
+    src/game/vehicles/EngineSynth.cpp
     src/platform/Runtime.cpp
     src/platform/Haptics.cpp
     src/assets/ModelCache.cpp
@@ -650,11 +651,16 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_definitions(outland_vehicle_audio_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     target_link_options(outland_vehicle_audio_tests PRIVATE
         -Wl,--wrap=IsAudioDeviceReady -Wl,--wrap=FileExists -Wl,--wrap=GetApplicationDirectory
-        -Wl,--wrap=LoadMusicStream -Wl,--wrap=LoadSound -Wl,--wrap=UnloadMusicStream -Wl,--wrap=UnloadSound
-        -Wl,--wrap=SetMusicVolume -Wl,--wrap=SetSoundVolume -Wl,--wrap=SetMusicPitch
-        -Wl,--wrap=PlayMusicStream -Wl,--wrap=UpdateMusicStream -Wl,--wrap=StopMusicStream
-        -Wl,--wrap=IsSoundPlaying -Wl,--wrap=PlaySound -Wl,--wrap=StopSound)
+        -Wl,--wrap=LoadSound -Wl,--wrap=UnloadSound -Wl,--wrap=SetSoundVolume
+        -Wl,--wrap=IsSoundPlaying -Wl,--wrap=PlaySound -Wl,--wrap=StopSound
+        -Wl,--wrap=SetAudioStreamBufferSizeDefault -Wl,--wrap=LoadAudioStream -Wl,--wrap=UnloadAudioStream
+        -Wl,--wrap=UpdateAudioStream -Wl,--wrap=IsAudioStreamProcessed -Wl,--wrap=PlayAudioStream
+        -Wl,--wrap=StopAudioStream -Wl,--wrap=SetAudioStreamVolume)
     add_test(NAME outland_vehicle_audio_tests COMMAND outland_vehicle_audio_tests)
+    add_executable(outland_engine_synth_tests tests/unit/vehicles/test_engine_synth.cpp)
+    target_link_libraries(outland_engine_synth_tests PRIVATE outland_render)
+    target_compile_options(outland_engine_synth_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_engine_synth_tests COMMAND outland_engine_synth_tests)
     add_executable(outland_raylib6_pose_tests tests/integration/assets/test_raylib6_pose.cpp)
     target_link_libraries(outland_raylib6_pose_tests PRIVATE outland_render)
     target_compile_options(outland_raylib6_pose_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
