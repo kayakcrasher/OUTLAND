@@ -33,7 +33,6 @@ In Explore it is **for sale for 5,000 kronoj**: walk up the stairs, and anywhere
 have). Once it is yours (`game::economy::Penthouse`, kept with the Explore wallet as a `PROPERTY`
 in the profile):
 - **Sleep**: E / USE by the bed sleeps until 7:00 and mends you.
-- **Wake up at home**: when you die in Explore you wake in the penthouse instead of the hospital.
 - The map shows it as a gold house, **HOME - STELA TURO** (while for sale: **STELA TURO (FOR SALE)**).
 - The roof is yours too: the right-hand stairs go on up to the stair house on the roof.
 

@@ -6,7 +6,7 @@
 
 // The mansion on the roof of Parkumejo Centra (world::garage): three storeys and a private parking
 // bay at the door, for sale in Explore. Buy it inside (E / USE); then it is home - sleep in the
-// master bedroom till morning, wake up there when you die, and the gold-lined bay by the door is
+// master bedroom till morning, and the gold-lined bay by the door is
 // yours to park in. Ownership is kept with the Explore wallet (EconomyState::properties).
 namespace outland::game::economy {
 

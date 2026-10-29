@@ -147,6 +147,9 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_hospital", .name = "Hospitalo - hospital with ambulance bay", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/hospital.glb", .thumbnail_path = "", .footprint = {46.00F, 23.00F, 12.70F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_clinic", .name = "Kliniko - town clinic (one storey, enterable, roof cross)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/clinic.glb", .thumbnail_path = "", .footprint = {12.20F, 12.00F, 7.40F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_parliament", .name = "Registaro de Verda - domed parliament (enterable hall)", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/parliament.glb", .thumbnail_path = "", .footprint = {48.00F, 33.00F, 29.60F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

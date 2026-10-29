@@ -1,4 +1,5 @@
 #include "outland/characters/CharacterRegistry.hpp"
+#include "outland/game/economy/Stash.hpp"
 #include "outland/game/interiors/Furnishing.hpp"
 #include "outland/game/wardrobe/Wardrobe.hpp"
 #include <cmath>
@@ -95,6 +96,24 @@ int main() {
                 if (piece.model.ends_with("bed_double.glb")) layouts.insert(local(c, piece.at).x > 0 ? "right" : "left");
         }
         check(layouts.size() == 2, "the houses are laid out one way or its mirror");
+        // The hidden stash: a holdall in one of the empty houses (never a listed one), the same
+        // house every time; none when every home is lived in.
+        const auto stash = interiors::stash_site(street, lived_in, nullptr);
+        check(stash && (stash->place_id == street[3].id || stash->place_id == street[17].id), "the stash is in an empty house");
+        const std::size_t k = stash->place_id == street[3].id ? 3 : 17, other = k == 3 ? 17 : 3;
+        check(interiors::inside(street[k], stash->at, .3F) && stash->bag.model.ends_with("cash_bag.glb"), "a holdall inside the house");
+        check(interiors::stash_site(street, lived_in, nullptr)->place_id == stash->place_id, "the same house every session");
+        const auto moved = interiors::stash_site(street, lived_in, nullptr, {street[k].building_id});
+        check(moved && moved->place_id == street[other].id, "not in a home for sale");
+        check(!interiors::stash_site(street, std::vector<bool>(street.size(), true), nullptr), "no empty home, no stash");
+        {
+            economy::EconomyState wallet;
+            const auto before = wallet.money;
+            economy::Stash::take(wallet);
+            check(wallet.money == before + 1000000 && economy::Stash::taken(wallet), "a million kronoj, once");
+            economy::Stash::take(wallet);
+            check(wallet.money == before + 1000000 && economy::valid_state(wallet), "...and only once");
+        }
         life::Place h = street[0];
         const auto pieces = interiors::furnish_home(h, 3.0F);
         std::set<std::string> models;

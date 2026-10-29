@@ -7,8 +7,7 @@
 
 // The penthouse at the top of Stela Turo, Verda City's art deco skyscraper: in Explore it is for
 // sale. Walk up the stairs to the 17th floor and buy it (E / USE) for `price` kronoj; then it is
-// home: sleep in its bed till morning (healed), and when you die you wake up there instead of the
-// hospital. Ownership is kept with the Explore wallet (EconomyState::properties).
+// home: sleep in its bed till morning (healed). Ownership is kept with the Explore wallet (EconomyState::properties).
 namespace outland::game::economy {
 
 class Penthouse {

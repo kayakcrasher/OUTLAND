@@ -22,10 +22,13 @@ namespace outland::game::life { class LifeSimulation; }
 // two (they shoot). When the player drives off they get back in and the chase goes on. When the
 // search is called off the cars go home to their stations.
 //
-// Ambulances: anyone hurt or killed in the street (a resident or an officer) is collected by the
-// nearest free ambulance. Two paramedics go to them, they are loaded, and the ambulance drives
-// back to the hospital - lights and siren if the patient is alive. The wounded are treated and
-// walk out of the hospital door later (game::life); the dead go to the morgue.
+// Ambulances: three at Hospitalo de Verda and one at every town's Kliniko. Anyone hurt or killed in
+// the street (a resident or an officer) is collected by the nearest free ambulance. It drives up
+// (straight at them for the last stretch if the roads run out), two paramedics go to them - they
+// don't run from gunfire - they are loaded, the crew get back in, and the ambulance drives back
+// to its hospital or clinic, lights and siren if the patient is alive. The wounded are treated
+// and walk out of that door later (game::life); the dead go to the morgue. A unit that can't find
+// its way home tries again, and is only put back at its base once the player is out of sight.
 //
 // The Ŝosea Patrolo (game::services::HighwayPatrol): tan cruisers the game adds one per outpost.
 // They drive the ring road's beat round and round; one that finds a wanted player close by joins
@@ -64,6 +67,16 @@ struct Unit {
     float gap{0}, stalled{0};  // ...the closest it has come in the chase, and how long since it closed in
     double call_until{-1};     // called to a scene (a riot): there till then (ServicesFrame::now)
     Vector3 call_at{};
+    Vector3 base{};            // ambulance: the door of its hospital or clinic, where patients go
+    float approach{0};         // ambulance: time spent driving straight at a patient off the roads
+    int retries{0};            // going home: fresh routes tried
+};
+
+// Where the hurt are treated: Hospitalo de Verda and the towns' clinics.
+struct MedicalSite {
+    Vector3 door{};
+    std::string name;
+    bool hospital{false};
 };
 
 struct ServicesFrame {
@@ -105,6 +118,9 @@ public:
     [[nodiscard]] std::vector<Vector3> officers_on_foot(const characters::NpcSystem& npcs) const;
     [[nodiscard]] bool has_hospital() const { return hospital_found_; }
     [[nodiscard]] Vector3 hospital_door() const { return hospital_door_; }
+    // The hospital and every clinic, and the nearest of them to `feet` (null if there are none).
+    [[nodiscard]] const std::vector<MedicalSite>& medical_sites() const { return sites_; }
+    [[nodiscard]] const MedicalSite* nearest_medical(Vector3 feet) const;
     [[nodiscard]] int count(UnitKind kind, UnitState state) const;
     [[nodiscard]] const ServicesEvents& events() const { return events_; }
     // The player on the force (game::career): their patrol car leaves the dispatch, and its
@@ -147,6 +163,8 @@ private:
     void halt(Unit& u, vehicles::VehicleSystem& cars);
     void crew_out(Unit& u, int count, bool police, bool armed, vehicles::VehicleSystem& cars, world::VerdaRegion& region, characters::NpcSystem& npcs);
     bool crew_back(Unit& u, vehicles::VehicleSystem& cars, characters::NpcSystem& npcs, float dt, bool hurry_home);
+    // Returning: parked at home, or put there once the player is far; true once parked.
+    bool homeward(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region, float far);
     std::string character(bool police);
     float random();
 
@@ -155,6 +173,7 @@ private:
     const characters::CharacterRegistry* registry_{nullptr};
     Vector3 hospital_door_{};
     bool hospital_found_{false};
+    std::vector<MedicalSite> sites_;
     int next_crew_{0};
     std::vector<int> claimed_;   // patients an ambulance is on its way to
     ServicesEvents events_;

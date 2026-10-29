@@ -134,3 +134,11 @@ Autopiloted cars near the player now:
 - **take turns at a standoff**: when two cars block each other, the one with the lower id goes
   first after 3 s and the other creeps after its own 7–12 s, so jams clear instead of locking.
 People on the road still stop a car outright. Code: `LifeTraffic::drive`.
+
+## People at the wheel (update)
+
+Car glass is see-through, and somebody is now visible at the wheel of every moving car: residents
+in their own cars, police and ambulance crews on a call, anyone else driving an autopiloted car,
+and the player in their own car (seen from outside, not from the cab view), in their own clothes or
+uniform. Bus, rig and ranch drivers were already drawn. A sitting body is lowered to fit under each
+car's roof.

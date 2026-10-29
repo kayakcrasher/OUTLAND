@@ -1,6 +1,7 @@
 #pragma once
 #include "outland/game/life/LifeTypes.hpp"
 #include <raylib.h>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -46,6 +47,14 @@ std::vector<Piece> furnish(const std::vector<life::Place>& places, float (*groun
                            const std::vector<bool>* lived_in = nullptr);
 std::vector<Piece> furnish_pub(const life::Place& place, float base);
 std::vector<Piece> furnish_home(const life::Place& place, float base);
+
+// The hidden stash (game::economy::Stash): a holdall of cash in the back corner of one empty
+// detached house (nobody lives there, not `excluded` - the homes for sale), chosen by its building
+// so it is the same house every session; an empty Main Street flat if no house is empty. Null if
+// there is no empty home at all.
+struct StashSite { std::string place_id; Vector3 at{}; float yaw{0}; int settlement{0}; Piece bag; };
+std::optional<StashSite> stash_site(const std::vector<life::Place>& places, const std::vector<bool>& lived_in,
+                                    float (*ground)(float, float), const std::vector<std::string>& excluded = {});
 
 // Vestaĵejo Verda.
 struct Mannequin { Vector3 at{}; float yaw{0}; int storey{0}; };  // `at` on top of its plinth

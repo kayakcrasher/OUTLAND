@@ -60,7 +60,7 @@ Vector3 footprint(const std::string& model) {
         {"wardrobe.glb", 1.2F, 2.0F, .6F}, {"bookshelf.glb", 1.0F, 1.9F, .35F}, {"floor_lamp.glb", .45F, 1.65F, .45F},
         {"house_plant.glb", .4F, 1.1F, .4F}, {"clothes_rack.glb", 1.6F, 1.55F, .5F}, {"clothes_table.glb", 1.4F, .96F, .8F},
         {"mannequin_plinth.glb", .8F, .15F, .8F}, {"fitting_rooms.glb", 3.7F, 2.4F, 1.6F}, {"shop_counter.glb", 2.5F, 1.45F, .8F},
-        {"hat_stand.glb", .9F, 1.6F, .5F}, {"store_mirror.glb", .9F, 2.0F, .3F}};
+        {"hat_stand.glb", .9F, 1.6F, .5F}, {"store_mirror.glb", .9F, 2.0F, .3F}, {"cash_bag.glb", .8F, .53F, .4F}};
     for (const auto& size : sizes)
         if (model.size() >= std::char_traits<char>::length(size.file) && model.ends_with(size.file)) return {size.w, size.h, size.d};
     return {1, 1, 1};
@@ -176,6 +176,38 @@ std::vector<Piece> furnish(const std::vector<life::Place>& places, float (*groun
         out.insert(out.end(), pieces.begin(), pieces.end());
     }
     return out;
+}
+
+std::optional<StashSite> stash_site(const std::vector<life::Place>& places, const std::vector<bool>& lived_in,
+                                    float (*ground)(float, float), const std::vector<std::string>& excluded) {
+    const life::Place* best = nullptr;
+    std::uint64_t pick = 0;
+    for (std::size_t k = 0; k < places.size(); ++k) {
+        const auto& place = places[k];
+        if (place.kind != life::PlaceKind::Home || shell_of(place) == Shell::None) continue;
+        if (k < lived_in.size() && lived_in[k]) continue;
+        if (std::find(excluded.begin(), excluded.end(), place.building_id) != excluded.end()) continue;
+        // A house before any flat, then the building's hash: the same house every session.
+        const std::uint64_t h = (hash(place.building_id + "#stash") >> 1) | (shell_of(place) == Shell::House ? 0 : 1ULL << 63);
+        if (!best || h < pick) { best = &place; pick = h; }
+    }
+    if (!best) return std::nullopt;
+    const bool house = shell_of(*best) == Shell::House;
+    const float base = house && ground ? ground(best->interior.x, best->interior.z) : best->interior.y;
+    std::vector<Piece> out;
+    const Layout l{{best->interior, best->building_yaw, base + floor_height(*best, 0)}, out};
+    const float w = best->building_size.x * .5F, d = best->building_size.z * .5F;
+    // Back right corner of the room, tucked against the wall (a flat's stairs are on +X: the -X side).
+    if (house) l.put("cash_bag.glb", w - .35F - .6F, d - .35F - .45F, 20);
+    else l.put("cash_bag.glb", -w + wall + .7F, d - wall - 3.0F, -70);
+    StashSite site;
+    site.place_id = best->id;
+    site.settlement = best->settlement;
+    site.bag = out.front();
+    site.bag.solid = false;
+    site.at = site.bag.at;
+    site.yaw = site.bag.yaw;
+    return site;
 }
 
 const life::Place* store_site(const std::vector<life::Place>& places, int capital, Vector3 centre) {

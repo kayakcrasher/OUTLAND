@@ -1770,10 +1770,12 @@ void building_loot(Kit& kit, world::VerdaRegion& region) {
 // trailer hamlets by the highways), facing one of its streets on level ground near the centre,
 // with a patrol car in its carport (two in Verda City).
 // Verda City also gets Hospitalo de Verda near its station: the hospital with a drive-under
-// ambulance bay and three ambulances in it.
+// ambulance bay and three ambulances in it. Every other town gets a Kliniko near its centre,
+// with an ambulance at the kerb in front.
 struct CivicSpot { Vector3 origin; float yaw; };
 const std::string police_model = "assets/verda/city/civic/police_station.glb";
 const std::string hospital_model = "assets/verda/city/civic/hospital.glb";
+const std::string clinic_model = "assets/verda/city/civic/clinic.glb";
 
 bool civic_lot(Kit& kit, world::VerdaRegion& region, Vector3 near, float min_distance, float max_distance, float lot_x, float lot_z,
                float half_x, float half_z, float front, float apron, CivicSpot& out,
@@ -1879,6 +1881,26 @@ void emergency_services(Kit& kit, world::VerdaRegion& region) {
             capital_found = true;
         }
         ++kit.report.police_stations;
+        if (capital) continue;
+        // The town's clinic: 12 x 10 m with a 2 m canopy in front (model bounds x -6..6, z -7..5),
+        // its ambulance along the kerb with a clear run to pull out.
+        const auto ambulance_out = [&](const CivicSpot& at) {
+            const Vector3 from = to_world(at.origin, at.yaw, -3, 0, -10.2F), to = to_world(at.origin, at.yaw, 12, 0, -10.2F);
+            for (const auto& town : region.settlements()) for (const auto& asset : town.assets) {
+                if (!asset.collision || !asset.vehicle.definition.empty()) continue;
+                const float dx = to.x - from.x, dz = to.z - from.z, l2 = dx * dx + dz * dz;
+                const float t = std::clamp(((asset.position.x - from.x) * dx + (asset.position.z - from.z) * dz) / l2, 0.0F, 1.0F);
+                if (std::hypot(asset.position.x - from.x - dx * t, asset.position.z - from.z - dz * t) < 1.6F + std::max(asset.size.x, asset.size.z) * .5F) return false;
+            }
+            return true;
+        };
+        CivicSpot clinic;
+        if (!civic_lot(kit, region, centre, 15, 260, 0, -1, 7, 7, 7, 5, clinic, ambulance_out)) continue;
+        if (!kit.put(clinic_model, clinic.origin, clinic.yaw)) continue;
+        kit.purpose(to_world(clinic.origin, clinic.yaw, 0, .35F, -3.8F), clinic.yaw, world::BuildingPurpose::Clinic);
+        vehicle_marker(*settlement(region, id), "vehicle_spawn_ambulance_" + id + "_1", to_world(clinic.origin, clinic.yaw, 2, 0, -10.2F), clinic.yaw + 90);
+        ++kit.report.ambulances;
+        ++kit.report.clinics;
     }
     // Hospitalo de Verda near the capital's police station (model bounds x -28..18, z -13..10).
     if (!capital_found) return;

@@ -55,7 +55,6 @@ On the roof's west side stands a **three-storey Art Deco mansion**, the little s
   shows the price. Kept with the Explore wallet as a property.
 - Once it's yours:
   - **Sleep**: E / USE by the bed sleeps until 7:00 and mends you.
-  - **Wake up at home**: if it's the home you bought last, you wake there when you die.
   - **Your own parking bay**: the gold-lined bay right in front of the door, with gold bollards.
     Stop in it and the game says it's yours; a car you leave there stays on the roof.
     Anyone else stopping there is told it's PRIVATA.

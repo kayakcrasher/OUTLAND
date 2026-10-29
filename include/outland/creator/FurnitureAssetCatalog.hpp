@@ -81,5 +81,8 @@ inline void register_furniture_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "furniture_store_mirror", .name = "Standing mirror", .category = CreatorAssetCategory::Prop,
         .model_path = "assets/verda/furniture/store_mirror.glb", .thumbnail_path = "", .footprint = {0.90F, 0.30F, 2.00F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "furniture", "interior"}});
+    (void)registry.add({.id = "furniture_cash_bag", .name = "Holdall full of cash", .category = CreatorAssetCategory::Prop,
+        .model_path = "assets/verda/furniture/cash_bag.glb", .thumbnail_path = "", .footprint = {0.80F, 0.40F, 0.53F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "furniture", "interior"}});
 }
 }  // namespace outland::creator

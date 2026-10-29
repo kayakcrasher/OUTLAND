@@ -2521,6 +2521,57 @@ def hospital():
     return b
 
 
+def clinic():
+    """Kliniko: a town's one-storey clinic (12 x 10 m, enterable) in white render with a green
+    fascia, a glass entrance under a canopy, red crosses over the door and on a roof sign, and
+    inside a reception desk, three curtained beds and a treatment couch. Front faces -Z."""
+    b = Builder()
+    b.material("white", flat((238, 238, 234), 3), 3, 3)
+    b.material("plaster", flat((214, 218, 220), 3), 3, 3)
+    b.material("floor", flat((196, 204, 204), 4), 3, 3)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("red", flat((206, 28, 34), 0), 1, 1)
+    b.material("green", flat((0, 140, 70), 2), 1, 1)
+    b.material("steel", flat((150, 154, 160), 3), 3, 3)
+    b.material("bed", flat((240, 240, 236), 2), 1, 1)
+    b.material("curtain", flat((150, 196, 210), 3), 1, 1)
+    w, d, height, t, slab = 6.0, 5.0, 3.8, .3, .2
+    front = [(-1.0, 1.0, slab, 2.6), (-5.0, -2.4, 1.0, 2.5), (2.4, 5.0, 1.0, 2.5)]
+    back = [(-.5, .5, slab, 2.4), (-4.8, -2.8, 1.4, 2.5), (2.8, 4.8, 1.4, 2.5)]
+    sides = [(-2.5, -.5, 1.2, 2.5), (.5, 2.5, 1.2, 2.5)]
+    wall_with_openings(b, 'x', -d, (-w, w), height, t, front, "white", "plaster", -1)
+    wall_with_openings(b, 'x', d, (-w, w), height, t, back, "white", "plaster", +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), height, t, sides, "white", "plaster", -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, sides, "white", "plaster", +1)
+    b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
+    b.box((-w, height - .2, -d), (w, height, d), {'+y': "roof", '-y': "plaster", '+x': "white", '-x': "white", '+z': "white", '-z': "white"})
+    plinth_skirt(b, w, d, .4, "plaster", front_doors=[(-1.0, 1.0)], back_doors=[(-.5, .5)])
+    # Green fascia with a red cross over the door; parapet; canopy on two posts.
+    b.solid((-w - .1, height - .8, -d - .15), (w + .1, height - .2, -d), "green")
+    b.solid((-.9, height - .65, -d - .2), (.9, height - .35, -d - .15), "red")
+    b.solid((-.15, height - .8, -d - .2), (.15, height - .2, -d - .15), "red")
+    for lo, hi in (((-w, height, -d), (w, height + .4, -d + .2)), ((-w, height, d - .2), (w, height + .4, d)),
+                   ((-w, height, -d), (-w + .2, height + .4, d)), ((w - .2, height, -d), (w, height + .4, d))):
+        b.solid(lo, hi, "white")
+    b.solid((-2, 2.85, -d - 2), (2, 3.0, -d), "white")
+    for x in (-1.9, 1.7):
+        b.solid((x, 0, -d - 2), (x + .2, 2.85, -d - 1.8), "steel")
+    # A roof sign: a white board with a red cross both ways, on two legs.
+    for x in (-.9, .7):
+        b.solid((x, height, -.1), (x + .2, height + 1.0, .1), "steel")
+    b.box((-1.3, height + 1.0, -.1), (1.3, height + 3.6, .1), {s: "white" for s in ('+x', '-x', '+z', '-z', '+y')})
+    for z0, z1 in ((-.16, -.1), (.1, .16)):
+        b.solid((-1.0, height + 2.0, z0), (1.0, height + 2.6, z1), "red")
+        b.solid((-.3, height + 1.3, z0), (.3, height + 3.3, z1), "red")
+    # Inside: the reception desk by the door, three beds with curtain rails at the back, a couch.
+    b.solid((-3.6, slab, -2.6), (-1.6, 1.05, -2.0), "green")
+    for x in (-5.0, -2.6, 2.6):
+        b.solid((x, slab, 1.8), (x + 1.0, .75, 3.9), "bed")
+        b.solid((x - .35, slab, 1.6), (x - .3, 2.2, 4.4), "curtain")
+    b.solid((3.4, slab, -3.4), (5.2, .7, -2.6), "bed")
+    return b
+
+
 def flag(b, x, z, height, cloth, pole="steel"):
     """A flagpole with its flag flying toward +X."""
     b.solid((x - .07, 0, z - .07), (x + .07, height, z + .07), pole)
@@ -2787,6 +2838,7 @@ def kit():
     add("civic/car_lot.glb", car_lot(), "city_car_lot", "Aŭtovendejo Verda - car lot with sales office and bunting", "Building", 36, 26.62, 6.4)
     add("civic/oil_rig.glb", oil_rig(), "city_oil_rig", "Platformo Marnafto - offshore oil rig", "BuildingPart", 59.5, 30.6, 79.2)
     add("civic/hospital.glb", hospital(), "city_hospital", "Hospitalo - hospital with ambulance bay", "Building", 46, 23, 12.7)
+    add("civic/clinic.glb", clinic(), "city_clinic", "Kliniko - town clinic (one storey, enterable, roof cross)", "Building", 12.2, 12, 7.4)
     add("civic/parliament.glb", parliament(), "city_parliament", "Registaro de Verda - domed parliament (enterable hall)", "Building", 48, 33, 29.6)
     add("civic/town_hall.glb", town_hall(), "city_town_hall", "Urbodomo - county town hall with clock tower (enterable)", "Building", 23, 17, 17.0)
     add("towers/stela_turo.glb", stela_turo(), "city_stela_turo", "Stela Turo - art deco skyscraper, 17 floors, penthouse (enterable)", "Building", 30.6, 29.2, 86.2)

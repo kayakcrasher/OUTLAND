@@ -40,19 +40,31 @@ While the player is wanted:
 Officers out of the cars count for Justice: they keep the trail warm and can make the arrest.
 Hurting one is reported at once, because they saw it.
 
-## Ambulances
+## Clinics and ambulances
+
+Hospitalo de Verda has three ambulances. Every other town has a **Kliniko**, a one-storey clinic
+near its centre (`civic/clinic.glb`: red crosses over the door and on a roof sign, a reception
+desk and three beds inside), with its own ambulance at the kerb. The compass shows the nearest one
+as HOSPITAL or CLINIC.
 
 Anyone down in the street is collected by the nearest free ambulance. That means a resident
 with health under 60, a dead resident, or a fallen officer or paramedic.
 
-1. The ambulance drives there with lights and siren.
-2. Two paramedics get out and go to the patient.
-3. The patient is loaded, and the ambulance drives back to the hospital, with lights and siren if
-   the patient is alive.
+1. The ambulance drives there with lights and siren. If the roads run out short of the patient,
+   it drives straight at them for the last stretch rather than parking far away.
+2. Two paramedics get out and go to the patient. They don't run from gunfire while they work.
+3. The patient is loaded, the crew get back in, and the ambulance drives back to its own clinic or
+   the hospital, with lights and siren if the patient is alive.
+4. An ambulance (or patrol car) that can't find its way home tries fresh routes, then drives
+   straight for home. It is never parked in the street and left there: if it is still stuck, it
+   waits until the player has gone and is put back at its base.
 
-The wounded are treated for 90 island minutes (`LifeSimulation::hospitalise`) and then walk out
-of the hospital door back into their day. The dead go to the morgue. If the player dies in
-Explore and respawns, an ambulance has brought them in: they start outside the hospital's door.
+The wounded are treated for 90 island minutes (`LifeSimulation::hospitalise`) at that clinic or
+the hospital, then walk out of its door back into their day. The dead go to the morgue.
+
+**When the player dies** in Explore and respawns, an ambulance has brought them in: they wake up
+outside the nearest clinic or the hospital to where they fell, never at home
+(`EmergencyServices::nearest_medical`).
 
 ## Sound
 

@@ -63,8 +63,21 @@ int main() {
     int police = 0, ambulances = 0;
     for (const auto& u : services.units()) (u.kind == UnitKind::Police ? police : ambulances)++;
     std::cout << stations << " stations, " << police << " patrol cars, " << ambulances << " ambulances\n";
-    check(units == police + ambulances && police == stations + 1 && ambulances == 3, "a car per station (two in Verda City) and three ambulances");
+    int clinics = 0;
+    for (const auto& owner : region.settlements())
+        for (const auto& a : owner.assets) clinics += a.model_path.ends_with("civic/clinic.glb");
+    std::cout << clinics << " clinics\n";
+    check(units == police + ambulances && police == stations + 1 && ambulances == 3 + clinics, "a car per station (two in Verda City), three ambulances and one per clinic");
     check(services.has_hospital(), "Hospitalo de Verda");
+    // A clinic in every town but the capital (it has the hospital), each a place to be treated.
+    for (const auto& town : region.settlements()) {
+        if (town.id.starts_with("ranch_") || town.id.starts_with("hamlet_") || town.id == "capital_verda") continue;
+        const auto* site = services.nearest_medical(town.center);
+        check(site && !site->hospital && std::hypot(site->door.x - town.center.x, site->door.z - town.center.z) < 300, "a clinic in " + town.name);
+    }
+    check(services.medical_sites().size() == static_cast<std::size_t>(clinics + 1), "the hospital and every clinic");
+    for (const auto& u : services.units())
+        if (u.kind == UnitKind::Ambulance) check(std::hypot(u.base.x - u.home.x, u.base.z - u.home.z) < 40, "each ambulance brings patients to its own clinic or the hospital");
     const Vector3 hospital = services.hospital_door();
 
     const auto step = [&](game::services::ServicesFrame frame, float seconds, const std::function<bool()>& until = {}) {
@@ -147,15 +160,29 @@ int main() {
     check(admitted && npcs.find_resident(patient) < 0, "loaded into the ambulance");
     check(life.in_hospital(life.residents()[static_cast<std::size_t>(patient)]), "admitted to hospital");
     check(Vector3Distance(life.position(life.residents()[static_cast<std::size_t>(patient)]), hospital) < 1, "at the hospital");
-    step(frame, 90, [&] { return services.count(UnitKind::Ambulance, UnitState::Parked) == 3; });
+    // Driving home with the player looking on: never parked in the street and left there - it is
+    // back at its base, or still on its way.
+    const auto parked_away = [&] {
+        for (const auto& u : services.units())
+            if (u.kind == UnitKind::Ambulance && u.state == UnitState::Parked) {
+                const auto& car = cars.vehicles()[static_cast<std::size_t>(cars.find(u.vehicle))];
+                if (std::hypot(car.position.x - u.home.x, car.position.z - u.home.z) > 8) return true;
+            }
+        return false;
+    };
+    bool stranded = false;
+    step(frame, 90, [&] { stranded |= parked_away(); return services.count(UnitKind::Ambulance, UnitState::Parked) == ambulances; });
     for (const auto& u : services.units())
         if (u.kind == UnitKind::Ambulance && u.state != UnitState::Parked) {
             const auto& car = cars.vehicles()[static_cast<std::size_t>(cars.find(u.vehicle))];
-            std::cout << u.vehicle << ": " << game::services::unit_state_name(u.state) << " at " << car.position.x << "," << car.position.z
-                      << " home " << u.home.x << "," << u.home.z << " route " << u.progress << "/" << u.route.length << " attempts " << u.attempts
-                      << " crew " << u.crew.size() << '\n';
+            std::cout << u.vehicle << ": still " << game::services::unit_state_name(u.state) << " at " << car.position.x << "," << car.position.z
+                      << " home " << u.home.x << "," << u.home.z << '\n';
         }
-    check(services.count(UnitKind::Ambulance, UnitState::Parked) == 3, "the ambulance is back at the hospital");
+    check(!stranded, "an ambulance is never left parked in the street");
+    // The player walks off: every ambulance is home.
+    frame.player = {0, 0, 9000};
+    step(frame, 2, [&] { return services.count(UnitKind::Ambulance, UnitState::Parked) == ambulances; });
+    check(services.count(UnitKind::Ambulance, UnitState::Parked) == ambulances && !parked_away(), "the ambulance is back at the hospital");
     // A hit and run by somebody else: the nearest free unit goes after the car, catches it up,
     // pulls it over and makes the arrest.
     {

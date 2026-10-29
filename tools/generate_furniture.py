@@ -148,7 +148,7 @@ def mats(b, *names):
         "plant": lambda: flat((50, 120, 50), 18, 31), "pot": lambda: flat((170, 90, 60), 6, 32),
         "lamp": lambda: flat((250, 236, 190), 2, 33), "garments": lambda: garments(34), "garments2": lambda: garments(35),
         "stacks": lambda: stacks(36), "plinth": lambda: flat((236, 236, 232), 2, 37), "books": lambda: bottles(38),
-        "tile": lambda: flat((214, 214, 208), 3, 39),
+        "tile": lambda: flat((214, 214, 208), 3, 39), "cash": lambda: fabric((118, 168, 112), 40),
     }
     for name in names:
         b.material(name, table[name](), 1, 1)
@@ -500,6 +500,24 @@ def store_mirror():
     return b
 
 
+def cash_bag():
+    """An open holdall stuffed with banknote bricks, 0.8 x 0.4 m, on the floor."""
+    b = Builder()
+    mats(b, "black", "brass", "cash")
+    b.solid((-.4, 0, -.2), (.4, .3, .2), "black")
+    b.solid((-.4, .3, -.2), (.4, .34, -.16), "black")
+    b.solid((-.4, .3, .16), (.4, .34, .2), "black")
+    b.solid((-.36, .3, -.15), (.36, .4, .15), "cash")
+    for x in (-.24, .02):
+        b.solid((x, .4, -.12), (x + .22, .48, -.01), "cash")
+        b.solid((x + .04, .4, .02), (x + .26, .46, .13), "cash")
+    for x in (-.2, .17):
+        b.solid((x, .3, -.02), (x + .03, .52, .02), "black")
+    b.solid((-.2, .5, -.02), (.2, .53, .02), "black")
+    b.solid((-.02, .2, -.205), (.02, .3, -.2), "brass")
+    return b
+
+
 def pieces():
     """(file, builder, id, name, footprint w, d, h)"""
     return [
@@ -529,6 +547,7 @@ def pieces():
         ("shop_counter.glb", shop_counter(), "Shop counter with till", 2.5, .8, 1.45),
         ("hat_stand.glb", hat_stand(), "Hat display stand", .9, .5, 1.6),
         ("store_mirror.glb", store_mirror(), "Standing mirror", .9, .3, 2.0),
+        ("cash_bag.glb", cash_bag(), "Holdall full of cash", .8, .4, .53),
     ]
 
 

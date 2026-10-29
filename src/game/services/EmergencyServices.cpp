@@ -52,20 +52,35 @@ int EmergencyServices::start(vehicles::VehicleSystem& cars, world::VerdaRegion& 
         u.home_yaw = car.yaw;
         units_.push_back(std::move(u));
     }
-    // The hospital's door: its purpose marker (just inside the entrance, facing out), a few
-    // metres out into the street.
+    // The hospital's and each clinic's door: its purpose marker (just inside the entrance, facing
+    // out), a few metres out into the street.
     hospital_found_ = false;
+    sites_.clear();
     for (const auto& town : region.settlements())
         for (const auto& asset : town.assets) {
-            if (!asset.model_path.ends_with("civic/hospital.glb")) continue;
+            const bool hospital = asset.model_path.ends_with("civic/hospital.glb");
+            if (!hospital && !asset.model_path.ends_with("civic/clinic.glb")) continue;
+            const world::GameplayMarker* best = nullptr;
+            float nearest = hospital ? 30.0F : 12.0F;
             for (const auto& owner : region.settlements())
                 for (const auto& marker : owner.gameplay_markers) {
                     if (marker.type != world::GameplayMarkerType::BuildingPurpose || marker.purpose != world::BuildingPurpose::Clinic) continue;
-                    if (flat(marker.position, asset.position) > 30) continue;
-                    const float a = marker.rotation_y * DEG2RAD;
-                    hospital_door_ = {marker.position.x - std::sin(a) * 4.5F, marker.position.y, marker.position.z - std::cos(a) * 4.5F};
-                    hospital_found_ = true;
+                    if (const float d = flat(marker.position, asset.position); d < nearest) { nearest = d; best = &marker; }
                 }
+            if (!best) continue;
+            const float a = best->rotation_y * DEG2RAD;
+            MedicalSite site;
+            site.door = {best->position.x - std::sin(a) * 4.5F, best->position.y, best->position.z - std::cos(a) * 4.5F};
+            site.hospital = hospital;
+            site.name = hospital ? "Hospitalo de Verda" : "Kliniko de " + town.name;
+            if (hospital) { hospital_door_ = site.door; hospital_found_ = true; }
+            sites_.push_back(std::move(site));
+        }
+    // Each ambulance brings its patients to the hospital or clinic it is parked at.
+    for (auto& u : units_)
+        if (u.kind == UnitKind::Ambulance) {
+            const auto* site = nearest_medical(u.home);
+            u.base = site ? site->door : u.home;
         }
     return static_cast<int>(units_.size());
 }
@@ -81,6 +96,14 @@ void EmergencyServices::clear(vehicles::VehicleSystem& cars, characters::NpcSyst
     beat_.clear();
     units_.clear();
     claimed_.clear();
+}
+
+const MedicalSite* EmergencyServices::nearest_medical(Vector3 feet) const {
+    const MedicalSite* best = nullptr;
+    float nearest = 1e12F;
+    for (const auto& site : sites_)
+        if (const float d = flat(site.door, feet); d < nearest) { nearest = d; best = &site; }
+    return best;
 }
 
 const Unit* EmergencyServices::unit(std::string_view vehicle) const {
@@ -364,6 +387,41 @@ void EmergencyServices::dispatch(Unit& u, Vector3 target, bool siren, vehicles::
 void EmergencyServices::go_home(Unit& u, vehicles::VehicleSystem& cars) {
     dispatch(u, u.home, false, cars);
     u.state = UnitState::Returning;
+    u.retries = 0;
+}
+
+bool EmergencyServices::homeward(Unit& u, const ServicesFrame& frame, vehicles::VehicleSystem& cars, world::VerdaRegion& region, float far) {
+    const int v = cars.find(u.vehicle);
+    if (v < 0) return false;
+    const Vector3 at = cars.vehicles()[static_cast<std::size_t>(v)].position;
+    const float distance = flat(at, frame.player);
+    // Out of fresh routes: straight for home for a while, off the road it got itself onto.
+    const bool direct = u.retries >= 4 && u.approach < 40;
+    if (direct) { u.approach += frame.dt; chase(u, cars, u.home, {0, 0, 0}, frame.dt); }
+    const bool done = !direct && drive(u, cars, frame.dt);
+    const bool home = flat(at, u.home) < 8;
+    if (home || distance > far || (done && distance > 90)) {
+        cars.clear_autopilot(u.vehicle);
+        if (!home && distance > 90) cars.place(region, u.vehicle, u.home, u.home_yaw);
+        u.state = UnitState::Parked;
+        u.siren = false;
+        u.loaded = false;
+        u.approach = 0;
+        return true;
+    }
+    // Lost or stuck in sight of the player: never left in the street. A fresh route (a few
+    // times), then wait at the kerb until the player has gone and put it back at its base.
+    if (done) {
+        if (u.retries < 4) {
+            const int tries = u.retries + 1;
+            const bool siren = u.siren;
+            dispatch(u, u.home, siren, cars);
+            u.state = UnitState::Returning;
+            u.retries = tries;
+            if (tries == 4) u.approach = 0;
+        } else halt(u, cars);
+    }
+    return false;
 }
 
 bool EmergencyServices::drive(Unit& u, vehicles::VehicleSystem& cars, float dt) {
@@ -446,7 +504,7 @@ bool EmergencyServices::crew_back(Unit& u, vehicles::VehicleSystem& cars, charac
         npcs.arm_resident(id, false);
         const Vector3 door = v >= 0 ? cars.vehicles()[static_cast<std::size_t>(v)].position : actor.position;
         // At the car (its body is in the way of the very centre), or they have taken long enough.
-        if (v < 0 || flat(actor.position, door) < 4.5F || u.scene > (hurry_home ? 8.0F : 14.0F)) {
+        if (v < 0 || flat(actor.position, door) < 4.5F || u.scene > (hurry_home ? 8.0F : 22.0F)) {
             npcs.despawn_resident(id);
             return true;
         }
@@ -519,12 +577,7 @@ void EmergencyServices::police(Unit& u, const ServicesFrame& frame, vehicles::Ve
             break;
         }
         case UnitState::Returning:
-            if (drive(u, cars, frame.dt) || flat(car.position, u.home) < 8 || distance > 400) {
-                cars.clear_autopilot(u.vehicle);
-                if (distance > 90) cars.place(region, u.vehicle, u.home, u.home_yaw);
-                u.state = UnitState::Parked;
-                u.siren = false;
-            }
+            homeward(u, frame, cars, region, 400);
             break;
         default: break;
     }
@@ -542,11 +595,20 @@ void EmergencyServices::ambulance(Unit& u, const ServicesFrame& frame, vehicles:
             const Vector3 where = npcs.actors()[static_cast<std::size_t>(index)].position;
             u.replan -= frame.dt;
             if (u.replan <= 0 && flat(where, u.target) > 12) dispatch(u, where, true, cars);
-            const bool done = drive(u, cars, frame.dt);
-            if (done || flat(car.position, where) < 16) {
+            const bool close = flat(car.position, where) < 16;
+            bool done = !close && drive(u, cars, frame.dt);
+            // The roads ran out (or the route did) short of the patient: the last stretch straight
+            // at them, rather than parking far off and leaving the crew a long walk.
+            if (done && u.approach < 25) {
+                u.approach += frame.dt;
+                chase(u, cars, where, {0, 0, 0}, frame.dt);
+                done = false;
+            }
+            if (done || close) {
                 halt(u, cars);
                 u.state = UnitState::OnScene;
                 u.scene = 0;
+                u.approach = 0;
                 crew_out(u, 2, false, false, cars, region, npcs);
             }
             break;
@@ -557,10 +619,11 @@ void EmergencyServices::ambulance(Unit& u, const ServicesFrame& frame, vehicles:
             if (!u.loaded) {
                 if (index < 0) { unclaim(); u.loaded = true; u.patient_alive = false; break; }
                 const auto& patient = npcs.actors()[static_cast<std::size_t>(index)];
-                bool reached = u.scene > 16;
+                bool reached = u.scene > 30;
                 for (const int id : u.crew) {
                     const int p = npcs.find_resident(id);
                     if (p < 0) continue;
+                    npcs.calm_resident(id);   // paramedics stay with the patient, gunfire or not
                     if (flat(npcs.actors()[static_cast<std::size_t>(p)].position, patient.position) < 2.2F) reached = true;
                     npcs.direct_resident(id, patient.position, .8F, true);
                 }
@@ -569,7 +632,7 @@ void EmergencyServices::ambulance(Unit& u, const ServicesFrame& frame, vehicles:
                     u.patient_alive = patient.state != characters::NpcState::Dead && patient.health > 0;
                     npcs.despawn_resident(u.patient);
                     if (!crew_member(u.patient) && life) {
-                        if (u.patient_alive && life->hospitalise(u.patient, hospital_door_, treatment_minutes)) events_.hospitalised.push_back(u.patient);
+                        if (u.patient_alive && life->hospitalise(u.patient, u.base, treatment_minutes)) events_.hospitalised.push_back(u.patient);
                         else events_.morgue.push_back(u.patient);
                     }
                     for (auto& other : units_) std::erase(other.crew, u.patient); // a fallen officer
@@ -580,23 +643,17 @@ void EmergencyServices::ambulance(Unit& u, const ServicesFrame& frame, vehicles:
                 }
                 break;
             }
+            for (const int id : u.crew) npcs.calm_resident(id);
             if (crew_back(u, cars, npcs, frame.dt, false)) {
                 dispatch(u, u.home, u.patient_alive, cars);
                 u.state = UnitState::Returning;
+                u.retries = 0;
             }
             break;
         }
-        case UnitState::Returning: {
-            const float distance = flat(car.position, frame.player);
-            if (drive(u, cars, frame.dt) || flat(car.position, u.home) < 8 || distance > 450) {
-                cars.clear_autopilot(u.vehicle);
-                if (distance > 90) cars.place(region, u.vehicle, u.home, u.home_yaw);
-                u.state = UnitState::Parked;
-                u.siren = false;
-                u.loaded = false;
-            }
+        case UnitState::Returning:
+            homeward(u, frame, cars, region, 450);
             break;
-        }
         default: break;
     }
 }

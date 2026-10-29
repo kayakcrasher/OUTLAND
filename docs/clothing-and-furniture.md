@@ -70,7 +70,16 @@ sofa and the television, a bed and a wardrobe.
 
 At home:
 - **USE** by the bed sleeps till morning and heals you.
-- When you die, you wake up in the home you bought last (or the penthouse, if that was last).
+- When you die, you wake up at the nearest clinic or the hospital, not at home.
 
 Homes are kept with the Explore wallet. Code: `game::economy::Homes`. Tests:
 `outland_homes_for_sale_tests`.
+
+## The hidden stash
+
+Somebody left a holdall with **1,000,000 kronoj** in an empty home on the island: a house nobody
+lives in if there is one, otherwise an empty Main Street flat. It is the same home every session
+(`game::interiors::stash_site`), never a home for sale. Walk up to the holdall and press
+**E / USE** to take the money. It can be taken once per Explore wallet (`game::economy::Stash`).
+With the default map it is on the ground floor of an empty Main Street flat in Porto Luma, near
+(1816, -419).

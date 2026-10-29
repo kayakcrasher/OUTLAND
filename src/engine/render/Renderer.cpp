@@ -69,6 +69,7 @@
 #include "outland/game/aircraft/DropRenderer.hpp"
 #include "outland/game/economy/Penthouse.hpp"
 #include "outland/game/economy/SkyMansion.hpp"
+#include "outland/game/economy/Stash.hpp"
 #include "outland/world/ParkingGarage.hpp"
 #include "outland/world/Ballparks.hpp"
 #include "outland/game/sports/BallGame.hpp"
@@ -843,6 +844,7 @@ void Renderer::run() {
     game::services::HighwayPatrolArt patrol_art;
     // Furniture in the pubs and some homes; Vestaĵejo Verda, the clothing store, and what you wear.
     std::optional<game::interiors::ClothingStore> clothing_store;
+    std::optional<game::interiors::StashSite> stash;   // the holdall of a million kronoj (game::economy::Stash)
     game::wardrobe::Catalogue wardrobe_catalogue;
     game::wardrobe::StoreUI store_ui;
     // Whether anything is in reach of USE (the touch USE button shows only then).
@@ -873,6 +875,7 @@ void Renderer::run() {
     // Explore: the Policio's patrol cars and Hospitalo de Verda's ambulances.
     game::services::EmergencyServices services;
     bool respawn_at_hospital=false; // the player died in Explore: the ambulance took them in
+    Vector3 death_at{};             // ...from here, to the nearest clinic or the hospital
     // Explore: the Stela Turo penthouse, for sale; once bought, home (sleep there, wake there).
     game::economy::Penthouse penthouse;
     bool was_in_penthouse=false;
@@ -913,6 +916,7 @@ void Renderer::run() {
     game::ranch::Ranches ranches;
     game::freight::Freight freight;
     std::vector<characters::AnimationController> ranch_seats; // drivers' idle
+    characters::AnimationController car_seat_pose;            // everyone else at a wheel
     // Outsiders: Paul Acosta, the Vakeroj, and an officer's backup (against a gang at war with the officer).
     mafio.set_outsiders([&](int a,int b,double now){
         if(endgame.ours(a) || endgame.ours(b)) return endgame.hostile(a,b);   // the parliament's guard, the occupiers
@@ -1171,6 +1175,16 @@ void Renderer::run() {
         std::vector<bool> lived_in(places.size(),false);
         for(const auto& r:island_life.residents()) if(r.home>=0 && r.home<static_cast<int>(places.size())) lived_in[static_cast<std::size_t>(r.home)]=true;
         auto pieces=game::interiors::furnish(places,[](float x,float z){return world::terrain::TerrainHeight::sample(x,z);},site ? site->id : std::string(),&lived_in);
+        // The hidden stash, in an empty house, until the player has taken it.
+        {
+            std::vector<std::string> listed;
+            for(const auto& home:homes_for_sale) listed.push_back(home.building);
+            stash=game::interiors::stash_site(places,lived_in,[](float x,float z){return world::terrain::TerrainHeight::sample(x,z);},listed);
+            if(stash) {
+                TraceLog(LOG_INFO,"OUTLAND stash in %s at %.1f %.1f",stash->place_id.c_str(),stash->at.x,stash->at.z);
+                if(!game::economy::Stash::taken(loot_session.economy())) pieces.push_back(stash->bag);
+            }
+        }
         if(site) {
             clothing_store=game::interiors::clothing_store(*site,std::max(0,static_cast<int>(wardrobe_catalogue.looks().size())-1));
             pieces.insert(pieces.end(),clothing_store->pieces.begin(),clothing_store->pieces.end());
@@ -2643,40 +2657,18 @@ void Renderer::run() {
                     services.assign_player_car(career.on_duty() ? career.state().patrol_car : std::string());
                     // Back from the dead: out of the hospital's front door.
                     penthouse.locate(verda_region);was_in_penthouse=false;
-                    // Owners wake up at home: the one they bought last (a house, a flat or the penthouse).
-                    const game::economy::Listing* wake_home=nullptr;
-                    bool wake_mansion=false;
-                    {
-                        const auto& owned=loot_session.economy().properties;
-                        for(auto it=owned.rbegin();it!=owned.rend() && !wake_home;++it) {
-                            if(*it==game::economy::Penthouse::property_id) break;
-                            if(*it==game::economy::SkyMansion::property_id) {wake_mansion=garage_here;break;}
-                            for(const auto& home:homes_for_sale) if(home.id==*it) {wake_home=&home;break;}
+                    // Dead in Explore: an ambulance took them to the nearest clinic or the hospital,
+                    // and they come round there, patched up, by its front door.
+                    if(respawn_at_hospital)
+                        if(const auto* site=services.nearest_medical(death_at)) {
+                            const auto door=site->door;
+                            player.position={door.x,world::physics::WorldCollision::ground_height({door.x,door.y+1.2F,door.z},door.y+1.2F,verda_region)+1,door.z};
+                            interaction_message="You wake up at "+site->name+(site->hospital ? "" : " - the ambulance brought you in");interaction_remaining=5;
                         }
-                    }
-                    if(respawn_at_hospital && wake_mansion) {
-                        const auto bed=garage_site.to_world(world::garage::wake);
-                        player.position={bed.x,bed.y+1,bed.z};player.yaw=0;
-                        interaction_message="You wake up at home in the mansion on Parkumejo Centra";interaction_remaining=5;
-                    } else if(respawn_at_hospital && wake_home) {
-                        const Vector3 c=wake_home->centre;
-                        const float floor=world::physics::WorldCollision::ground_height({c.x,c.y+1.2F,c.z},c.y+1.2F,verda_region);
-                        player.position={c.x,floor+1,c.z};player.yaw=0;
-                        interaction_message="You wake up at home: "+wake_home->name;interaction_remaining=5;
-                    } else if(respawn_at_hospital && penthouse.found() && game::economy::Penthouse::owned(loot_session.economy())) {
-                        // Owners wake up at home, in the penthouse, mended.
-                        const auto bed=penthouse.to_world(game::economy::Penthouse::wake);
-                        player.position={bed.x,bed.y+1,bed.z};player.yaw=0;
-                        interaction_message="You wake up at home in the Stela Turo penthouse";interaction_remaining=5;
-                    } else if(respawn_at_hospital && services.has_hospital()) {
-                        const auto door=services.hospital_door();
-                        player.position={door.x,world::physics::WorldCollision::ground_height({door.x,door.y+1.2F,door.z},door.y+1.2F,verda_region)+1,door.z};
-                        interaction_message="An ambulance brought you to Hospitalo de Verda";interaction_remaining=5;
-                    }
                 }
                 // The campaign: where this slot is in the story. A fresh slot starts on the quay at
                 // Porto Luma, just off the ship, with Uncle Ron waiting by his truck; a slot already
-                // under way carries on where it was saved (or at home, after a hospital stay).
+                // under way carries on where it was saved (or at a clinic's door, after dying).
                 story=game::campaign::Story{};campaign={};uncle_ron={};ron_home=-1;autosave_wait=autosave_every;autosave_note=0;
                 campaign_path.clear();
                 if(game_mode==game::GameMode::Explore && !lan_match) {
@@ -2905,6 +2897,7 @@ void Renderer::run() {
                 } else {
                     queued_mode=action==game::ResultAction::Restart ? game_mode : game::GameMode::Home;
                     respawn_at_hospital=action==game::ResultAction::Restart && game_mode==game::GameMode::Explore && !player_health.alive();
+                    death_at=player.position;
                     if(lan_match) {
                         const bool again=action==game::ResultAction::Restart && lan.in_match();
                         if(again && game_mode!=game::GameMode::BattleRoyale) lan_restart=true; // back into the same world, with the others
@@ -3455,6 +3448,9 @@ void Renderer::run() {
             bool here=store_mannequin>=0 || at_store_counter || nearby_shop || at_table ||
                 vehicles.nearest(verda_region,feet)>=0 || loot_session.world().nearest(feet,2.8F)>=0 ||
                 (game::rules_for(game_mode).civilian_life && penthouse.inside(feet)) || home_here;
+            const bool at_stash=stash && game::rules_for(game_mode).civilian_life && !vehicles.driver() && !game::economy::Stash::taken(loot_session.economy()) &&
+                std::hypot(feet.x-stash->at.x,feet.z-stash->at.z)<1.8F && std::abs(feet.y-stash->at.y)<1.5F;
+            if(at_stash) {here=true;if(store_prompt.empty()) store_prompt=touch_ui ? "USE - Take the holdall" : "E - Take the holdall";}
             if(!here && game::rules_for(game_mode).civilian_life && !vehicles.driver()) {Vector3 s{};float y=0;here=stand_seat.on || stand_seat_near(feet,s,y);}
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
                 here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 || (career.on_duty() && callouts.to_cuff(feet,mafio,br_bots)>=0) ||
@@ -4289,6 +4285,14 @@ void Renderer::run() {
                 }
             }
             was_in_mansion=in_mansion;
+            // The hidden stash: USE by the holdall.
+            if(stash && game::rules_for(game_mode).civilian_life && !vehicles.driver() && !game::economy::Stash::taken(loot_session.economy()) &&
+               std::hypot(loot_feet.x-stash->at.x,loot_feet.z-stash->at.z)<1.8F && std::abs(loot_feet.y-stash->at.y)<1.5F &&
+               controls.interact && !home_used && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !inventory_open) {
+                interaction_message=game::economy::Stash::take(loot_session.economy());interaction_remaining=6;home_used=true;
+                loot_session.changed();gun_audio.kill_confirm();haptics.hit_given(true);
+                furnish_island();   // the holdall goes with the player
+            }
             // The ballparks' stands: USE to sit down and watch; USE (or walk off) to get up.
             if(game::rules_for(game_mode).civilian_life && !vehicles.driver()) {
                 if(stand_seat.on) {
@@ -7175,6 +7179,68 @@ void Renderer::run() {
                 if(crown.hat && seated[i].second.second) draw_cowboy_hat(crown);
             }
         }
+        // Everyone else at a wheel, drawn before the cars so the glass lies over them: residents
+        // driving their own cars, police and ambulance crews on the move, anyone else at the wheel
+        // of an autopiloted car (somebody from round here), and the player, seen from outside.
+        {
+            std::unordered_set<std::string> taken;
+            for(const auto& bus:bus_line.buses()) taken.insert(bus.vehicle);
+            for(const auto& d:ranches.drivers()) taken.insert(d.vehicle);
+            for(const auto& d:freight.drivers()) taken.insert(d.vehicle);
+            const std::string mine=vehicles.driver() ? vehicles.driver()->id : std::string();
+            car_seat_pose.advance(characters::AnimationAction::Idle,dt,0);
+            // Where a sitting body's hips go: the seat, low enough that the head clears the roof
+            // (a car's seat height is set for the driver's eyes and the camera, not a body).
+            const auto car_hips=[&](const world::WorldAsset& asset,const game::vehicles::VehicleDefinition& type) {
+                const float scale=asset.size.x/type.width;
+                Vector3 local=type.seat;
+                local.y=std::min(local.y,type.height-1.14F);
+                return game::vehicles::VehicleSystem::world_point(local,asset.position,asset.rotation_y,scale);
+            };
+            const auto sit=[&](const std::string& vehicle,const std::string& character) {
+                if(character.empty() || vehicle==mine || !taken.insert(vehicle).second) return;
+                const auto* asset=vehicles.asset(verda_region,vehicle);
+                const auto* type=asset ? vehicles.definition(*asset) : nullptr;
+                if(!asset || !type || asset->vehicle.destroyed || Vector3DistanceSqr(asset->position,camera.position)>90*90) return;
+                const auto seat=car_hips(*asset,*type);
+                characters::BodyPose sitting;sitting.seated=true;
+                character_renderer.draw(character,{seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y,1,&car_seat_pose,sitting);
+            };
+            if(game::rules_for(game_mode).civilian_life) {
+                const auto& owned=island_life.island().cars;
+                const auto& states=island_life.cars();
+                for(std::size_t k=0;k<states.size() && k<owned.size();++k) {
+                    if(!states[k].driving || !states[k].physical || states[k].lost) continue;
+                    const int owner=owned[k].owner;
+                    if(owner>=0 && owner<static_cast<int>(island_life.residents().size()))
+                        sit(owned[k].vehicle,island_life.residents()[static_cast<std::size_t>(owner)].character_id);
+                }
+                for(const auto& u:services.units()) {
+                    using game::services::UnitState;
+                    if(!u.crew.empty() || (u.state!=UnitState::Responding && u.state!=UnitState::Pursuit && u.state!=UnitState::Returning && u.state!=UnitState::Patrol)) continue;
+                    sit(u.vehicle,u.kind==game::services::UnitKind::Ambulance ? "character_25_doctor" :
+                        u.kind==game::services::UnitKind::Highway ? game::services::EmergencyServices::trooper_characters[0] : "character_18_police");
+                }
+            }
+            for(const auto& car:vehicles.vehicles()) {
+                if(!vehicles.autopiloted(car.id) || taken.contains(car.id)) continue;
+                if(const auto* who=character_registry.choose(characters::CharacterPool::Civilian,std::hash<std::string>{}(car.id))) sit(car.id,who->id);
+            }
+            // The player at the wheel, seen from outside (not from the cab), in their own clothes.
+            if(!mine.empty() && player.third_person && !vehicle_renderer.cab() && !riding_now) {
+                const auto* asset=vehicles.asset(verda_region,mine);
+                const auto* type=asset ? vehicles.definition(*asset) : nullptr;
+                if(asset && type) {
+                    const auto seat=car_hips(*asset,*type);
+                    const auto* look=game::wardrobe::wearing(loot_session.economy(),wardrobe_catalogue);
+                    const bool uniform=game_mode==game::GameMode::Explore && career.on_duty() && character_registry.find(police_uniform);
+                    character_renderer.set_player(uniform ? std::string(police_uniform) : look ? look->character : std::string());
+                    characters::BodyPose body;body.seated=true;
+                    body.outfit=uniform ? 0U : look ? outfit_texture(look->outfit) : 0U;
+                    character_renderer.draw_player({seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y*DEG2RAD,body);
+                }
+            }
+        }
         vehicle_renderer.draw(vehicles,verda_region,camera.position);
         // The big rigs' trailers, hitched to their tractors.
         for(const auto& trailer:freight.trailers()) {
@@ -8996,8 +9062,8 @@ void Renderer::run() {
                     for(const Vector3& at:points) if(const float f=flat(at);f<d) {d=f;best=&at;}
                     if(best) compass_marks.push_back({*best,glyph,colour,label,false});
                 };
-                if(services.has_hospital() && flat(services.hospital_door())<2500)
-                    compass_marks.push_back({services.hospital_door(),Glyph::Hospital,Color{220,50,50,255},"HOSPITAL",false});
+                if(const auto* site=services.nearest_medical(player.position);site && flat(site->door)<2500)
+                    compass_marks.push_back({site->door,Glyph::Hospital,Color{220,50,50,255},site->hospital ? "HOSPITAL" : "CLINIC",false});
                 if(prison_until>=0) {
                     if(const auto* mark=prison_yard.snitch()>=0 && career.state().side==game::career::Side::Gang && !in_shu ? prison_yard.find(prison_yard.snitch()) : nullptr)
                         compass_marks.push_back({prison_yard.world(*mark),Glyph::Objective,Color{255,90,80,255},"SNITCH",true});

@@ -275,4 +275,11 @@ void NpcSystem::arm_resident(int resident,bool armed) {
     actor.armed=armed;
     if(!armed && actor.state!=NpcState::Dead) {actor.threat_timer=0;actor.state=NpcState::Idle;actor.state_time=0;}
 }
+void NpcSystem::calm_resident(int resident) {
+    const int index=find_resident(resident);
+    if(index<0) return;
+    auto& actor=actors_[static_cast<std::size_t>(index)];
+    if(actor.state!=NpcState::Flee) return;
+    actor.threat_timer=0;actor.state=NpcState::Idle;actor.state_time=actor.idle_hold=1;
+}
 }

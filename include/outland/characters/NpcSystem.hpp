@@ -66,6 +66,9 @@ public:
     void direct_resident(int resident,Vector3 anchor,float radius,bool hurry);
     // Armed officers chase and shoot the player; disarming returns them to their anchor.
     void arm_resident(int resident,bool armed);
+    // Steady nerves (paramedics at work): a fleeing resident forgets the threat and goes back to
+    // their anchor.
+    void calm_resident(int resident);
     // Bot bodies are puppets: game::ai owns their brain, health and position; the system only
     // draws them, animates them and lets bullets find them.
     std::size_t spawn_bot(int bot,const std::string& character_id,Vector3 position,float yaw_degrees);

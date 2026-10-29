@@ -10,7 +10,7 @@
 // Homes for sale in Explore, besides the Stela Turo penthouse: fourteen empty houses and flats
 // round the island, each with a VENDATA board out front. Walk in and buy one (E / USE); it is
 // furnished the moment it is yours (game::interiors::furnish_home). At home: sleep in your bed
-// till morning (healed), and when you die you wake up in the home nearest to where you fell.
+// till morning (healed). (When you die you wake at the nearest clinic or the hospital.)
 //
 // The listings: detached houses in Okcidenta Verda, Verda City's west suburb, and Main Street
 // flats in the other towns (two in each that has the rows to spare, the ones furthest from the
