@@ -1,5 +1,6 @@
 #pragma once
 #include "outland/game/radio/RadioCatalog.hpp"
+#include "outland/game/radio/RadioVoices.hpp"
 #include <string>
 
 // Verda's radio: three stations, each from its own building in its own town -
@@ -9,6 +10,10 @@
 // - four or five instrumental songs each (tools/generate_radio_music.py), with the station's ident
 // between them. The stations are live: each plays ident, song, ident, song... round and round,
 // and what is on depends only on the clock, so tuning in drops you into whatever is playing.
+// The idents are spoken (tools/generate_radio_voice.py): "Vi aŭskultas ..." over the jingle, a
+// different one for the morning, the day, the evening and the night - and every other break, once
+// La Verda Basballigo has a result, the sports news ("Roka venkis, Espera perdis"). Radio
+// Sovaĝejo's announcer drawls.
 // The player hears the radio at the wheel; O (or the RADIO button) changes the station, and after
 // the last one switches it off.
 namespace outland::game::radio {
@@ -19,16 +24,23 @@ inline constexpr int station_count = static_cast<int>(stations.size());
 struct OnAir {
     int station{-1};
     int song{-1};
+    int slot{0};                // which break in the round (an ident before song `slot`)
+    bool news{false};           // the break is the sports news
     float offset{0};
     float length{0};
     const char* file{""};
 };
 
-// One round of a station: its songs, each after the ident, in seconds.
+// One round of a station: its songs, each after the ident (voice_slot long), in seconds.
 float loop_seconds(int station);
 OnAir on_air(int station, double clock);
 // "Dancu sur la Placo", or the station's name for an ident.
 const char* title(const OnAir& on);
+// The part of the day an ident is for: 0 morning (5-11), 1 day, 2 evening (17-22), 3 night.
+int occasion(int hour);
+// What a break says: the spoken ident for the hour, or (every other break, given a result: the
+// winner and loser, game::sports::teams indices; -1 none) the sports news.
+const char* break_clip(int station, int slot, int hour, int winner, int loser, bool* news = nullptr);
 
 // The radio in the player's car.
 class CarRadio {
@@ -42,6 +54,8 @@ public:
     void press();
     // Every frame: whether the player is at the wheel, the radio clock, the frame's time.
     void update(bool at_wheel, double clock, float dt);
+    // What the breaks talk about: the island's hour, and the league's latest result (-1 none).
+    void set_context(int hour, int winner, int loser) { hour_ = hour; winner_ = winner; loser_ = loser; }
 
     [[nodiscard]] bool at_wheel() const { return at_wheel_; }
     [[nodiscard]] bool playing() const { return at_wheel_ && station_ >= 0; }
@@ -57,6 +71,9 @@ public:
 private:
     void show() { note_ = note_seconds; }
     int station_{0};
+    int hour_{12}, winner_{-1}, loser_{-1};
+    const char* clip_{nullptr};   // this break's clip, chosen as it starts
+    bool clip_news_{false};
     bool at_wheel_{false}, tuned_{false};
     OnAir now_{};
     float note_{0};

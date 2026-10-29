@@ -4913,6 +4913,25 @@ void Renderer::run() {
         {
             const bool radio_paused=vehicle_paused || pause_menu.is_open();
             if(!radio_paused) radio_clock+=dt;
+            // What the breaks talk about: the island's hour, and La Verda Basballigo's latest result.
+            int winner=-1,loser=-1,radio_hour=12;
+            if(game_mode==game::GameMode::Explore && !island_life.empty()) {
+                const double now=island_life.clock().minutes;
+                radio_hour=static_cast<int>(island_life.clock().hour());
+                double latest=-1;
+                for(int i=0;i<static_cast<int>(league.fixtures().size());++i) {
+                    const double pitch=league.first_pitch_at(i);
+                    if(pitch>now) continue;
+                    const auto& line=league.linescore(i);
+                    if(pitch+line.length>now || pitch+line.length<latest) continue;
+                    const auto& f=league.fixtures()[static_cast<std::size_t>(i)];
+                    const int home=line.total(true),away=line.total(false);
+                    if(home==away) continue;
+                    latest=pitch+line.length;
+                    winner=home>away ? f.home : f.away;loser=home>away ? f.away : f.home;
+                }
+            }
+            car_radio.set_context(radio_hour,winner,loser);
             car_radio.update(vehicles.driver()!=nullptr && player_health.alive(),radio_clock,radio_paused ? 0.0F : dt);
             radio_audio.update(car_radio,radio_paused,environment_audio.muted() ? 0.0F : environment_audio.volume()*settings.radio_volume);
         }

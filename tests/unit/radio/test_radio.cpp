@@ -37,15 +37,15 @@ int main() {
     const auto& pop = stations[0];
     const float loop = loop_seconds(0);
     float round = 0;
-    for (const auto& song : pop.songs) round += pop.ident_seconds + song.seconds;
+    for (const auto& song : pop.songs) round += voice_slot + song.seconds;
     check(std::abs(loop - round) < .01F, "a round is the songs and idents");
     auto on = on_air(0, 1.0);
     check(on.song == -1 && std::abs(on.offset - 1) < 1e-3F && std::string(on.file) == pop.ident, "the ident first");
-    on = on_air(0, pop.ident_seconds + 10);
+    on = on_air(0, voice_slot + 10);
     check(on.song == 0 && std::abs(on.offset - 10) < 1e-3F && std::string(title(on)) == pop.songs[0].title, "then the first song, ten seconds in");
-    on = on_air(0, 2 * pop.ident_seconds + pop.songs[0].seconds + 3);
+    on = on_air(0, 2 * voice_slot + pop.songs[0].seconds + 3);
     check(on.song == 1 && std::abs(on.offset - 3) < 1e-3F, "then the ident and the second song");
-    on = on_air(0, loop + pop.ident_seconds + 10);
+    on = on_air(0, loop + voice_slot + 10);
     check(on.song == 0 && std::abs(on.offset - 10) < 1e-2F, "and round again");
     check(on_air(1, 5000).station == 1 && on_air(-1, 5).station == -1 && on_air(3, 5).station == -1, "only real stations");
     check(on_air(2, -30).song >= -1 && on_air(2, -30).offset >= 0, "a clock before zero is still a time of day");
@@ -73,13 +73,45 @@ int main() {
     CarRadio song;
     song.set_station(2);
     const auto& rock = stations[2];
-    song.update(true, rock.ident_seconds + rock.songs[0].seconds - 8, .1F);
-    for (int k = 0; k < 60; ++k) song.update(true, rock.ident_seconds + rock.songs[0].seconds - 8 + k * .1, .1F);
+    song.update(true, voice_slot + rock.songs[0].seconds - 8, .1F);
+    for (int k = 0; k < 60; ++k) song.update(true, voice_slot + rock.songs[0].seconds - 8 + k * .1, .1F);
     check(song.note() == 0 && song.now().song == 0, "the first song playing quietly");
-    for (int k = 0; k < 100; ++k) song.update(true, rock.ident_seconds + rock.songs[0].seconds - 2 + k * .1, .1F);
+    for (int k = 0; k < 100; ++k) song.update(true, voice_slot + rock.songs[0].seconds - 2 + k * .1, .1F);
     check(song.now().song == 1 && song.note() > 0 && song.note_title() == rock.songs[1].title, "the next song comes on and says so");
     song.set_station(9);
     check(song.station() == 2, "a station from the settings is kept in range");
+
+    // The breaks are spoken: an ident for the time of day, on disk, and the same length as the slot.
+    check(occasion(7) == 0 && occasion(13) == 1 && occasion(19) == 2 && occasion(23) == 3 && occasion(2) == 3, "morning, day, evening, night");
+    for (int s = 0; s < station_count; ++s)
+        for (int o = 0; o < occasions; ++o) {
+            const std::string clip = voice_idents[static_cast<std::size_t>(s)][static_cast<std::size_t>(o)];
+            check(std::filesystem::exists(std::string(OUTLAND_SOURCE_DIR) + "/" + clip), "spoken ident on disk: " + clip);
+        }
+    for (std::size_t i = 0; i < news_clips.size(); ++i) {
+        const bool same = i / 5 == i % 5;
+        check(same == (news_clips[i][0] == 0) && same == (news_clips_drawl[i][0] == 0), "a news clip for every pairing");
+        if (!same)
+            check(std::filesystem::exists(std::string(OUTLAND_SOURCE_DIR) + "/" + news_clips_drawl[i]), std::string("news on disk: ") + news_clips_drawl[i]);
+    }
+    check(drawl[1] && !drawl[0] && !drawl[2] && std::string(stations[1].name) == "Radio Sovaĝejo", "Radio Sovaĝejo drawls");
+    bool news = true;
+    check(std::string(break_clip(0, 1, 8, -1, -1, &news)) == voice_idents[0][0] && !news, "no result yet: the morning ident");
+    check(std::string(break_clip(0, 2, 20, 4, 1, &news)) == voice_idents[0][2] && !news, "even breaks: the ident");
+    check(std::string(break_clip(0, 1, 20, 4, 1, &news)) == news_clips[21] && news, "odd breaks: Roka venkis, Espera perdis");
+    check(std::string(break_clip(1, 3, 20, 4, 1)) == news_clips_drawl[21], "on Radio Sovaĝejo, drawled");
+    CarRadio night;
+    night.set_station(0);
+    night.set_context(23, 2, 0);
+    const float first = voice_slot + stations[0].songs[0].seconds;   // the second break (slot 1) starts here
+    night.update(true, first + 1, .1F);
+    check(night.now().song == -1 && night.now().news && std::string(night.now().file) == news_clips[10] && night.note_title() == "Sportaj novaĵoj",
+          "the news on air in the second break");
+    night.set_context(5, -1, -1);
+    night.update(true, first + 2, .1F);
+    check(std::string(night.now().file) == news_clips[10], "a break doesn't change its clip half way through");
+    night.update(true, 1, .1F);
+    check(std::string(night.now().file) == voice_idents[0][0], "the next break: the morning ident");
 
     if (failures == 0) std::cout << "radio tests passed\n";
     return failures == 0 ? 0 : 1;
