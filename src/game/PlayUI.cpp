@@ -73,9 +73,10 @@ ShopAction PlayUI::shop_input(const economy::Economy& economy,const economy::Sho
 }
 int PlayUI::draw_objective(const ModeSession& session,int width) {
     constexpr int font=16,top=108,line_height=20;
-    // Explore and Battle Royale need no standing banner (it only cluttered the screen - "be the
-    // last survivor" goes without saying); the space it took closes up.
-    if(session.mode()==GameMode::Explore || session.mode()==GameMode::BattleRoyale) return top-8;
+    // The play modes need no standing banner (it only cluttered the screen - "be the last
+    // survivor" goes without saying, and Zombie Survival has its story's objective); the space it
+    // took closes up.
+    if(session.mode()==GameMode::Explore || session.mode()==GameMode::BattleRoyale || session.mode()==GameMode::ZombieSurvival) return top-8;
     std::istringstream words(session.objective());std::string word,line;std::vector<std::string> lines;
     while(words>>word) {
         const auto candidate=line.empty() ? word : line+" "+word;
