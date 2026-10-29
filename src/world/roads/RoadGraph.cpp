@@ -44,12 +44,20 @@ int RoadGraph::node(Vector3 p) {
 
 void RoadGraph::build(const VerdaRegion& region) {
     nodes_.clear(); edges_.clear(); adjacent_.clear();
-    struct Segment { Vector3 a, b; float width; std::vector<float> cuts; bool one_way, ramp, highway; };
+    struct Segment { Vector3 a, b; float width; std::vector<float> cuts; bool one_way, ramp, highway, ring; };
     std::vector<Segment> segments;
     for (const auto& town : region.settlements()) for (const auto& road : town.roads)
         if (flat(road.start, road.end) > .5F && std::isfinite(road.start.x) && std::isfinite(road.end.x))
             segments.push_back({road.start, road.end, std::max(2.0F, road.width), {0, 1}, one_way(road.type), road.type == RoadType::Ramp,
-                                road.type == RoadType::Highway});
+                                road.type == RoadType::Highway,
+                                road.type == RoadType::Highway && std::abs(std::hypot(road.start.x, road.start.z) - 1500) < 2 &&
+                                    std::abs(std::hypot(road.end.x, road.end.z) - 1500) < 2});
+    // Where the ring rides over an interchange's roundabout on its bridge, nothing below meets it.
+    const auto bridged = [&](const Segment& s, const Segment& o, Vector3 at) {
+        if (!s.ring && !o.ring) return false;
+        return std::any_of(highways::interchanges().begin(), highways::interchanges().end(),
+                           [&](const highways::Interchange& x) { return flat(x.at, at) < highways::deck_half + 5; });
+    };
     for (std::size_t i = 0; i < segments.size(); ++i) for (std::size_t j = 0; j < segments.size(); ++j) {
         if (i == j) continue;
         auto& s = segments[i];
@@ -58,7 +66,7 @@ void RoadGraph::build(const VerdaRegion& region) {
         for (const Vector3 end : {o.a, o.b}) {
             float d = 0;
             const float t = project(end, s.a, s.b, d);
-            if (d < merge && t > 0 && t < 1) s.cuts.push_back(t);
+            if (d < merge && t > 0 && t < 1 && !bridged(s, o, end)) s.cuts.push_back(t);
         }
         // A proper crossing.
         const float rx = s.b.x - s.a.x, rz = s.b.z - s.a.z, qx = o.b.x - o.a.x, qz = o.b.z - o.a.z;
@@ -67,12 +75,7 @@ void RoadGraph::build(const VerdaRegion& region) {
         const float t = ((o.a.x - s.a.x) * qz - (o.a.z - s.a.z) * qx) / denominator;
         const float u = ((o.a.x - s.a.x) * rz - (o.a.z - s.a.z) * rx) / denominator;
         if (!(t > 0 && t < 1 && u >= 0 && u <= 1)) continue;
-        // (Where the ring bridges a spoke the two do not meet.)
-        if (s.highway && o.highway) {
-            const Vector3 at = Vector3Lerp(s.a, s.b, t);
-            if (std::any_of(highways::interchanges().begin(), highways::interchanges().end(),
-                            [&](const highways::Interchange& x) { return flat(x.at, at) < 30; })) continue;
-        }
+        if (bridged(s, o, Vector3Lerp(s.a, s.b, t))) continue;
         s.cuts.push_back(t);
     }
     for (auto& s : segments) {
@@ -158,7 +161,7 @@ Route RoadGraph::route(Vector3 from, Vector3 to) const {
         const auto& e = edge_at(out);
         if (in == out || (e.one_way && e.a != n)) return false;
         const auto& before = edge_at(in);
-        if (!before.ramp && !e.ramp) return true;
+        if (before.ramp == e.ramp) return true;   // (only joining or leaving a ramp)
         const int from = before.a == n ? before.b : before.a, to = e.a == n ? e.b : e.a;
         const Vector3 d_in = heading(from, n), d_out = heading(n, to);
         return d_out.x * -d_in.z + d_out.z * d_in.x > -.42F;   // straight on, or a right turn

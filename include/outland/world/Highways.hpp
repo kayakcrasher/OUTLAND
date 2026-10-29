@@ -57,6 +57,7 @@ inline constexpr float deck_half = 50;              // the ring's bridge over it
 inline constexpr float slip_offset = 22;            // the slip roads run this far out from the ring's centre line
 inline constexpr float slip_reach = 172;            // and leave it, or join it, this far from the crossing
 inline constexpr float slip_width = 7;
+inline constexpr float parapet = paved_half + verge * .5F;   // the bridge's parapet walls, out over the verges
 struct Slip {
     std::vector<Vector3> points;   // in driving order (one way)
     bool off{false};               // off the ring (else back onto it)

@@ -1,4 +1,5 @@
 #include "outland/game/vehicles/VehicleSystem.hpp"
+#include "outland/world/Highways.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <algorithm>
@@ -173,7 +174,10 @@ bool VehicleSystem::place(world::VerdaRegion &region, std::string_view id, Vecto
     const int index = find(id);
     if (!a || index < 0)
         return false;
-    position.y = ground(position, position.y);
+    // (Placed on a ring bridge heading along the ring: on its deck, not the roundabout beneath.)
+    const Vector3 heading{std::sin(yaw * DEG2RAD), 0, std::cos(yaw * DEG2RAD)};
+    float deck = 0;
+    position.y = world::highways::deck(position.x, position.z, deck, &heading) ? deck : ground(position, position.y);
     a->position = position;
     a->rotation_y = std::remainder(yaw, 360.0F);
     auto &v = vehicles_[static_cast<std::size_t>(index)];
@@ -196,7 +200,9 @@ bool VehicleSystem::glide(world::VerdaRegion &region, std::string_view id, Vecto
         return false;
     kinematic_.insert(std::string(id));
     const float scale = scale_of(*a, *d);
-    position.y = world::terrain::TerrainHeight::sample(position.x, position.z);
+    const Vector3 heading{std::sin(yaw * DEG2RAD), 0, std::cos(yaw * DEG2RAD)};
+    float deck = 0;
+    position.y = world::highways::deck(position.x, position.z, deck, &heading) ? deck : world::terrain::TerrainHeight::sample(position.x, position.z);
     a->position = position;
     a->rotation_y = std::remainder(yaw, 360.0F);
     auto &v = vehicles_[static_cast<std::size_t>(index)];
@@ -208,7 +214,7 @@ bool VehicleSystem::glide(world::VerdaRegion &region, std::string_view id, Vecto
     v.sleeping = false;
     if (std::isfinite(dt) && dt > 0 && d->wheel_radius > 0)
         v.wheel_angle = std::fmod(v.wheel_angle + speed * dt / (d->wheel_radius * scale) * RAD2DEG, 360.0F);
-    const auto height = [](Vector3 p) { return world::terrain::TerrainHeight::sample(p.x, p.z); };
+    const auto height = [&](Vector3 p) { return ground(p, a->position.y); };
     const auto front = world_point({0, 0, d->front_z}, a->position, v.yaw, scale),
                rear = world_point({0, 0, d->rear_z}, a->position, v.yaw, scale),
                left = world_point({-d->track * .5F, 0, 0}, a->position, v.yaw, scale),
@@ -438,6 +444,9 @@ float VehicleSystem::ground(Vector3 p, float from) const {
         const float y = surface_(p, from);
         if (std::isfinite(y)) return y;
     }
+    // A ring bridge's deck, for anything up on it (not the roundabout beneath).
+    float deck = 0;
+    if (world::highways::deck(p.x, p.z, deck) && from > deck - 2) return deck;
     return world::terrain::TerrainHeight::sample(p.x, p.z);
 }
 bool VehicleSystem::blocked(const world::VerdaRegion &r, Vector3 p, float yaw,

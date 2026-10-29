@@ -103,7 +103,7 @@ void box(Vector3 centre, Vector3 along, float length, float width, float y0, flo
     for (const bool flip : {false, true}) {
         const auto f = [&](Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float light) { if (flip) face(p3, p2, p1, p0, light); else face(p0, p1, p2, p3, light); };
         f(corner(-1, -1, y1), corner(-1, 1, y1), corner(1, 1, y1), corner(1, -1, y1), 1.0F);      // top
-        f(corner(-1, -1, y0), corner(1, -1, y0), corner(1, 1, y0), corner(-1, 1, y0), .55F);      // underside
+        f(corner(-1, -1, y0), corner(1, -1, y0), corner(1, 1, y0), corner(-1, 1, y0), .72F);      // underside
         f(corner(-1, -1, y0), corner(-1, -1, y1), corner(1, -1, y1), corner(1, -1, y0), .8F);
         f(corner(-1, 1, y0), corner(1, 1, y0), corner(1, 1, y1), corner(-1, 1, y1), .8F);
         f(corner(-1, -1, y0), corner(-1, 1, y0), corner(-1, 1, y1), corner(-1, -1, y1), .7F);
@@ -112,23 +112,67 @@ void box(Vector3 centre, Vector3 along, float length, float width, float y0, flo
     rlEnd();
 }
 
-// The ring's bridge over a spoke: the deck slab under the roadway, a parapet along each edge, the
-// abutments the deck rests on (holding back the embankments) and a pier in the spoke's median.
+// A ring bridge over an interchange's roundabout: the deck slab under the ring's roadway, a parapet
+// along each edge, an abutment at each end holding back the embankment, two piers on the island,
+// and the island itself (a kerb and a lawn); retaining walls between the climbing ring and the slip
+// roads beside it.
 void bridge(const hw::Interchange& x) {
-    const Color concrete{186, 182, 172, 255}, dark{150, 146, 138, 255};
+    const Color concrete{214, 210, 200, 255}, dark{178, 174, 166, 255}, kerb{206, 202, 194, 255}, lawn{86, 132, 66, 255};
     const Vector3 along = x.ring_forward, outward = Vector3Normalize({x.at.x, 0, x.at.z});
     float deck = 0;
     if (!hw::deck(x.at.x, x.at.z, deck, &along)) return;
     const float under = world::terrain::TerrainHeight::sample(x.at.x, x.at.z);
     const float span = 2 * hw::deck_half, width = 2 * (hw::paved_half + hw::verge);
-    box(x.at, along, span, width, deck - 1.1F, deck + lift - .02F, concrete);                  // the slab
-    for (const float side : {-1.0F, 1.0F}) {
-        const Vector3 edge = Vector3Add(x.at, Vector3Scale(outward, side * (hw::paved_half + .45F)));
-        box(edge, along, span, .5F, deck, deck + 1.05F, concrete);                             // parapets
-        const Vector3 face = Vector3Add(x.at, Vector3Scale(along, side * (hw::grade_flat + .6F)));
-        box(face, along, 1.2F, width + 6, under - .5F, deck - 1.0F, dark);                      // abutments
+    // (The ring curves gently over the 100 m: the slab in four pieces.)
+    const float radius = std::hypot(x.at.x, x.at.z), bearing = std::atan2(x.at.z, x.at.x);
+    const float sense = along.x * -std::sin(bearing) + along.z * std::cos(bearing) > 0 ? 1.0F : -1.0F;
+    const auto ring_point = [&](float s, float lateral) {
+        const float b = bearing + sense * s / radius, r = radius + lateral;
+        return Vector3{r * std::cos(b), 0, r * std::sin(b)};
+    };
+    const auto ring_along = [&](float s) { const float b = bearing + sense * s / radius; return Vector3{-std::sin(b) * sense, 0, std::cos(b) * sense}; };
+    for (int k = 0; k < 4; ++k) {
+        const float s = -hw::deck_half + span * (static_cast<float>(k) + .5F) / 4;
+        const Vector3 c = ring_point(s, 0), d = ring_along(s);
+        float y = deck;
+        hw::deck(c.x, c.z, y, &d);
+        box(c, d, span / 4 + .2F, width, y - 1.1F, y + lift - .02F, concrete);                     // the slab
+        for (const float side : {-1.0F, 1.0F})
+            box(ring_point(s, side * hw::parapet), d, span / 4 + .2F, .5F, y, y + 1.05F, concrete);   // parapets
     }
-    box(x.at, along, 1.2F, 6, under, deck - 1.1F, dark);                                        // the pier
+    for (const float side : {-1.0F, 1.0F}) {
+        const float s = side * (hw::roundabout_pad + .6F);
+        const Vector3 c = ring_point(s, 0), d = ring_along(s);
+        float y = deck;
+        hw::deck(c.x, c.z, y, &d);
+        box(c, d, 1.2F, 2 * hw::grade_flat + 2, under - .5F, y - 1.0F, dark);                      // abutments
+        box(ring_point(side * 20, 0), ring_along(side * 20), 2.4F, 5, under, deck - 1.1F, dark);   // piers
+        // Retaining walls: the ring's embankment beside each slip road while it climbs.
+        for (float t = hw::roundabout_pad + 2; t < hw::slip_reach - 10; t += 4)
+            for (const float lateral : {-1.0F, 1.0F}) {
+                const Vector3 top = ring_point(side * t, lateral * (hw::grade_flat + .8F)), foot = ring_point(side * t, lateral * (hw::grade_flat + 4.5F));
+                const float high = world::terrain::TerrainHeight::sample(top.x, top.z), low = world::terrain::TerrainHeight::sample(foot.x, foot.z);
+                if (high - low < .4F) continue;
+                box(ring_point(side * t, lateral * (hw::grade_flat + 1.6F)), ring_along(side * t), 4.1F, 1.0F, low - .3F, high + .15F, concrete);
+            }
+    }
+    // The island: a kerb and a lawn, under the bridge.
+    const float island = hw::roundabout_radius - hw::roundabout_width * .5F;
+    constexpr int pieces = 40;
+    rlSetTexture(0);
+    rlBegin(RL_TRIANGLES);
+    rlColor4ub(lawn.r, lawn.g, lawn.b, 255);
+    for (int k = 0; k < pieces; ++k) {
+        const float a0 = 2 * PI * k / pieces, a1 = 2 * PI * (k + 1) / pieces, r = island - .5F;
+        const Vector3 p0{x.at.x + std::cos(a0) * r, under + .32F, x.at.z + std::sin(a0) * r}, p1{x.at.x + std::cos(a1) * r, under + .32F, x.at.z + std::sin(a1) * r};
+        rlVertex3f(x.at.x, under + .32F, x.at.z); rlVertex3f(p1.x, p1.y, p1.z); rlVertex3f(p0.x, p0.y, p0.z);
+    }
+    rlEnd();
+    for (int k = 0; k < pieces; ++k) {
+        const float a = 2 * PI * (k + .5F) / pieces;
+        const Vector3 c{x.at.x + std::cos(a) * (island - .25F), 0, x.at.z + std::sin(a) * (island - .25F)};
+        box(c, {-std::sin(a), 0, std::cos(a)}, 2 * PI * island / pieces + .15F, .5F, under, under + .3F, kerb);
+    }
 }
 
 void barrier(const Model& model, Vector3 a, Vector3 b) {
@@ -255,6 +299,81 @@ void draw(const world::Road& road, const hw::RoadInfo& info, int begin, int end)
             barrier(r.barrier, point(middle - half), point(middle + half));
         }
     }
+}
+
+
+void draw_link(const world::Road& road, int begin, int end) {
+    const int segments = world::geometry::road_segments(road);
+    begin = std::max(0, begin); end = std::min(segments, end);
+    if (segments == 0 || begin >= end) return;
+    auto& r = resources();
+    const Color white{232, 232, 226, 255};
+    if (road.type == world::RoadType::Roundabout) {
+        // The piece of the ring it is: its interchange's centre, and the angles at its ends.
+        const hw::Interchange* at = nullptr;
+        for (const auto& x : hw::interchanges())
+            if (std::abs(std::hypot(road.start.x - x.at.x, road.start.z - x.at.z) - hw::roundabout_radius) < 1) at = &x;
+        if (!at) {world::geometry::road(road, begin, end); return;}
+        float a0 = std::atan2(road.start.z - at->at.z, road.start.x - at->at.x), a1 = std::atan2(road.end.z - at->at.z, road.end.x - at->at.x);
+        if (a1 - a0 > PI) a1 -= 2 * PI;
+        if (a0 - a1 > PI) a1 += 2 * PI;
+        const float f0 = static_cast<float>(begin) / segments, f1 = static_cast<float>(end) / segments;
+        const float b0 = a0 + (a1 - a0) * f0, b1 = a0 + (a1 - a0) * f1;
+        const auto ring = [&](float a, float radius, float above) {
+            const float x = at->at.x + std::cos(a) * radius, z = at->at.z + std::sin(a) * radius;
+            return Vector3{x, world::terrain::TerrainHeight::sample(x, z) + above, z};
+        };
+        const auto band = [&](float r0, float r1, float above, unsigned texture, Color tint) {
+            rlSetTexture(texture);
+            rlBegin(RL_TRIANGLES);
+            rlColor4ub(tint.r, tint.g, tint.b, tint.a);
+            const int steps = std::max(1, static_cast<int>(std::ceil(std::abs(b1 - b0) * hw::roundabout_radius / 2)));
+            for (int k = 0; k < steps; ++k) {
+                const float c0 = b0 + (b1 - b0) * k / steps, c1 = b0 + (b1 - b0) * (k + 1) / steps;
+                const Vector3 p00 = ring(c0, r0, above), p01 = ring(c0, r1, above), p10 = ring(c1, r0, above), p11 = ring(c1, r1, above);
+                const float u0 = c0 * hw::roundabout_radius / texture_along, u1 = c1 * hw::roundabout_radius / texture_along;
+                // (Either winding: the ring runs whichever way round.)
+                for (const bool flip : {false, true}) {
+                    const auto v = [&](Vector3 p, float u, float w) { rlTexCoord2f(u, w); rlVertex3f(p.x, p.y, p.z); };
+                    if (!flip) {v(p00, u0, 0); v(p11, u1, 1); v(p10, u1, 0); v(p00, u0, 0); v(p01, u0, 1); v(p11, u1, 1);}
+                    else {v(p00, u0, 0); v(p10, u1, 0); v(p11, u1, 1); v(p00, u0, 0); v(p11, u1, 1); v(p01, u0, 1);}
+                }
+            }
+            rlEnd();
+        };
+        const float half = hw::roundabout_width * .5F;
+        band(hw::roundabout_radius - half, hw::roundabout_radius + half, lift, r.plain.id, asphalt_tint);
+        band(hw::roundabout_radius + half - .45F, hw::roundabout_radius + half - .3F, lift + .01F, 0, white);
+        band(hw::roundabout_radius - half + .3F, hw::roundabout_radius - half + .45F, lift + .01F, 0, white);
+        rlSetTexture(0);
+        return;
+    }
+    // A slip road: asphalt between white edge lines.
+    const float length = std::hypot(road.end.x - road.start.x, road.end.z - road.start.z);
+    const Vector3 direction{(road.end.x - road.start.x) / length, 0, (road.end.z - road.start.z) / length};
+    const Vector3 cross{-direction.z, 0, direction.x};
+    const auto frame = [&](int i) {
+        const float s = length * static_cast<float>(i) / static_cast<float>(segments);
+        return Frame{{road.start.x + direction.x * s, 0, road.start.z + direction.z * s}, cross, direction};
+    };
+    const float half = road.width * .5F;
+    for (int pass = 0; pass < 2; ++pass) {
+        rlSetTexture(pass == 0 ? r.plain.id : 0);
+        rlBegin(RL_TRIANGLES);
+        const Color tint = pass == 0 ? asphalt_tint : white;
+        rlColor4ub(tint.r, tint.g, tint.b, tint.a);
+        rlNormal3f(0, 1, 0);
+        Frame a = frame(begin);
+        for (int i = begin; i < end; ++i) {
+            const Frame b = frame(i + 1);
+            const float sa = length * i / segments, sb = length * (i + 1) / segments;
+            if (pass == 0) strip(a, b, sa, sb, -half, half, -half / texture_across, half / texture_across, lift - .01F);
+            else for (const float edge : {-half + .3F, half - .45F}) strip(a, b, sa, sb, edge, edge + .15F, 0, 1, lift);
+            a = b;
+        }
+        rlEnd();
+    }
+    rlSetTexture(0);
 }
 
 }

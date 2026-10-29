@@ -299,10 +299,14 @@ void BusLine::update(float dt, world::VerdaRegion& region, vehicles::VehicleSyst
         // Looks as far ahead as it needs to stop, plus a margin.
         const float reach = 8.5F + bus.speed * bus.speed / (2 * config_.brake) + 8;
         float nearest = 1e9F;
+        // Along the road it will follow (round a bend, a slip road's curve), not just straight on.
+        std::vector<std::pair<float, Vector3>> lane_ahead;
+        for (float d = 5.5F; d < reach; d += 2) lane_ahead.emplace_back(d, world::roads::route_point(loop_, wrap(bus.progress + d)));
         const auto look = [&](Vector3 p) {
             const float x = p.x - bus.position.x, z = p.z - bus.position.z;
-            const float ahead = x * forward.x + z * forward.z, lateral = std::abs(x * forward.z - z * forward.x);
-            if (ahead > 5.5F && ahead < reach && lateral < 2.0F) nearest = std::min(nearest, ahead);
+            if (x * forward.x + z * forward.z < 0 || x * x + z * z > (reach + 3) * (reach + 3)) return;
+            for (const auto& [d, q] : lane_ahead)
+                if (flat(p, q) < 2.0F) {nearest = std::min(nearest, d); return;}
         };
         look(player);
         if (npcs) for (const auto& actor : npcs->actors())

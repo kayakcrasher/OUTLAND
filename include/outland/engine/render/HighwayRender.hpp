@@ -11,5 +11,8 @@ namespace outland::engine::highway {
 
 // Segments [begin, end) of the road (2 m each, as world::geometry::road_segments counts them).
 void draw(const world::Road& road, const world::highways::RoadInfo& info, int begin, int end);
+// A slip road (RoadType::Ramp: asphalt with white edge lines) or a piece of an interchange
+// roundabout's lane (RoadType::Roundabout: drawn as part of a smooth ring, edge lines both sides).
+void draw_link(const world::Road& road, int begin, int end);
 
 }

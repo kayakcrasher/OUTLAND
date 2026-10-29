@@ -14,6 +14,7 @@ constexpr float side_join = paved_half + 3;
 constexpr float taper = 150;         // the last stretch into a town narrows over this far (an easy blend)
 constexpr float town_half = 6.6F;    // to just wider than the town's 12 m street
 constexpr float town_apron = 45;     // plain asphalt (no lane lines, no barrier) over the end of it
+constexpr float roundabout_taper = 50, roundabout_half = 7.5F, roundabout_apron = 12;   // into an interchange's roundabout
 constexpr float crossover_every = 420, crossover_half = 11;   // median openings along the open road
 constexpr float boulevard_ease = 60;  // from a highway's full width to a city boulevard's, over this far
 
@@ -71,7 +72,7 @@ void Network::build(const VerdaRegion& region) {
     const auto& towns = region.settlements();
     roads_.resize(towns.size());
     std::vector<Piece> pieces;
-    struct Other { Vector2 a, b; float width; };
+    struct Other { Vector2 a, b; float width; RoadType type; };
     std::vector<Other> others;
     for (std::size_t s = 0; s < towns.size(); ++s) {
         roads_[s].resize(towns[s].roads.size());
@@ -80,7 +81,7 @@ void Network::build(const VerdaRegion& region) {
             const Vector2 a{road.start.x, road.start.z}, b{road.end.x, road.end.z};
             const float l = len(sub(b, a));
             if (!(l > .5F) || !std::isfinite(l)) continue;
-            if (road.type != RoadType::Highway) {others.push_back({a, b, road.width}); continue;}
+            if (road.type != RoadType::Highway) {others.push_back({a, b, road.width, road.type}); continue;}
             const Vector2 d = unit(sub(b, a));
             pieces.push_back({s, r, a, b, d, right_of(d), l, road.width < min_width});
         }
@@ -154,21 +155,32 @@ void Network::build(const VerdaRegion& region) {
     }
     for (std::size_t i = 0; i < pieces.size(); ++i) if (!seen[i]) walk(i, true);   // the ring (and loners)
     std::vector<std::vector<Span>> extra_gaps(pieces.size()), extra_plain(pieces.size());
+    // A highway's end at an interchange's roundabout (not a town's street): a short taper to the
+    // roundabout's entry and exit lanes.
+    const auto at_roundabout = [&](Vector2 p) {
+        return std::any_of(interchanges().begin(), interchanges().end(), [&](const Interchange& x) {
+            return std::hypot(p.x - x.at.x, p.y - x.at.z) < roundabout_radius + 2; });
+    };
     for (const auto& chain : chains) {
+        const auto first = chain.pieces.front(), last = chain.pieces.back();
+        const bool round_start = chain.open_start && at_roundabout(forward[first] ? pieces[first].a : pieces[first].b);
+        const bool round_end = chain.open_end && at_roundabout(forward[last] ? pieces[last].b : pieces[last].a);
+        const float taper_start = round_start ? roundabout_taper : taper, taper_end = round_end ? roundabout_taper : taper;
+        const float apron_start = round_start ? roundabout_apron : town_apron, apron_end = round_end ? roundabout_apron : town_apron;
         // Where the chain runs through a city as a boulevard (its distances along the chain).
         std::vector<Span> city;
         for (const auto i : chain.pieces)
             if (pieces[i].boulevard) city.push_back({along[i], along[i] + pieces[i].length});
         city = merged(city);
         const auto half_at = [&](float s) {
-            float from_end = 1e9F;
-            if (chain.open_start) from_end = std::min(from_end, s);
-            if (chain.open_end) from_end = std::min(from_end, chain.length - s);
             float half = paved_half;
-            if (from_end < taper) {
-                const float t = std::clamp(from_end / taper, 0.0F, 1.0F), eased = t * t * (3 - 2 * t);
-                half = town_half + (paved_half - town_half) * eased;
-            }
+            const auto narrow = [&](float from_end, float over, float to) {
+                if (from_end >= over) return;
+                const float t = std::clamp(from_end / over, 0.0F, 1.0F), eased = t * t * (3 - 2 * t);
+                half = std::min(half, to + (paved_half - to) * eased);
+            };
+            if (chain.open_start) narrow(s, taper_start, round_start ? roundabout_half : town_half);
+            if (chain.open_end) narrow(chain.length - s, taper_end, round_end ? roundabout_half : town_half);
             // Easing down to a boulevard's width as it comes into a city.
             float to_city = 1e9F;
             for (const auto& c : city) to_city = std::min(to_city, s < c.from ? c.from - s : s > c.to ? s - c.to : 0.0F);
@@ -190,8 +202,8 @@ void Network::build(const VerdaRegion& region) {
                 const float la = local(a), lb = local(b);
                 return Span{std::clamp(std::min(la, lb), 0.0F, pieces[i].length), std::clamp(std::max(la, lb), 0.0F, pieces[i].length)};
             };
-            if (chain.open_start && s0 < taper) {extra_gaps[i].push_back(span(0, taper)); extra_plain[i].push_back(span(0, town_apron));}
-            if (chain.open_end && s1 > chain.length - taper) {extra_gaps[i].push_back(span(chain.length - taper, chain.length)); extra_plain[i].push_back(span(chain.length - town_apron, chain.length));}
+            if (chain.open_start && s0 < taper_start) {extra_gaps[i].push_back(span(0, taper_start)); extra_plain[i].push_back(span(0, apron_start));}
+            if (chain.open_end && s1 > chain.length - taper_end) {extra_gaps[i].push_back(span(chain.length - taper_end, chain.length)); extra_plain[i].push_back(span(chain.length - apron_end, chain.length));}
             // Crossovers along the open road.
             for (float c = crossover_every * .5F; c < chain.length; c += crossover_every)
                 if (c + crossover_half > s0 && c - crossover_half < s1) extra_gaps[i].push_back(span(c - crossover_half, c + crossover_half));
@@ -218,8 +230,17 @@ void Network::build(const VerdaRegion& region) {
         }
     // Other roads that join or cross a highway: a median opening (and, where a street crosses, no
     // lines across its way).
-    for (const auto& o : others)
+    for (const auto& o : others) {
+        if (o.type == RoadType::Ramp) continue;   // slip roads join the carriageway, not across the median
         for (const auto& p : pieces) {
+            // (Under the ring's bridge over a roundabout, nothing meets the ring.)
+            const bool over = [&] {
+                for (const auto& x : interchanges())
+                    if (std::hypot((p.a.x + p.b.x) * .5F - x.at.x, (p.a.y + p.b.y) * .5F - x.at.z) < deck_half + p.length &&
+                        std::abs(p.d.x * x.ring_forward.x + p.d.y * x.ring_forward.z) > .8F && o.type == RoadType::Roundabout) return true;
+                return false;
+            }();
+            if (over) continue;
             for (const Vector2 end : {o.a, o.b}) {
                 const float along = dot(sub(end, p.a), p.d), aside = std::abs(dot(sub(end, p.a), p.right));
                 if (along > -2 && along < p.length + 2 && aside < side_join) junctions.push_back({end, 0, o.width * .5F + 7});
@@ -231,6 +252,7 @@ void Network::build(const VerdaRegion& region) {
             if (t < 0 || t > 1 || u <= .02F || u >= .98F) continue;   // (at a piece's end too)
             junctions.push_back({{p.a.x + r.x * t, p.a.y + r.y * t}, o.width * .5F + 2, o.width * .5F + 7});
         }
+    }
     junctions_ = junctions.size();
     // Each junction marks every highway piece that passes through it.
     for (std::size_t i = 0; i < pieces.size(); ++i) {
@@ -274,7 +296,7 @@ void Network::build(const VerdaRegion& region) {
             for (int k = 0; k < 8; ++k) {
                 const auto point = [&](int i) {
                     const float along = -deck_half + 2 * deck_half * static_cast<float>(i) / 8;
-                    const float r = std::hypot(x.at.x, x.at.z) + side * (paved_half + .45F);
+                    const float r = std::hypot(x.at.x, x.at.z) + side * parapet;
                     const float bearing = std::atan2(x.at.z, x.at.x) + along / std::hypot(x.at.x, x.at.z) * (x.ring_forward.x * -x.at.z + x.ring_forward.z * x.at.x > 0 ? 1.0F : -1.0F);
                     return Vector2{r * std::cos(bearing), r * std::sin(bearing)};
                 };
@@ -284,6 +306,19 @@ void Network::build(const VerdaRegion& region) {
                 const float mx = (a.x + b.x) * .5F, mz = (a.y + b.y) * .5F;
                 if (deck(mx - side * 1.0F * mx / std::hypot(mx, mz), mz - side * 1.0F * mz / std::hypot(mx, mz), y, &heading)) add_run({a, b, y, true});
             }
+    islands();
+}
+
+// Each roundabout's island: a kerb all round it (at the roundabout's level, under the ring's bridge).
+void Network::islands() {
+    for (const auto& x : interchanges()) {
+        const float r = roundabout_radius - roundabout_width * .5F - .4F, y = terrain::TerrainHeight::sample(x.at.x, x.at.z);
+        constexpr int pieces = 32;
+        for (int k = 0; k < pieces; ++k) {
+            const float a0 = 2 * PI * static_cast<float>(k) / pieces, a1 = 2 * PI * static_cast<float>(k + 1) / pieces;
+            add_run({{x.at.x + r * std::cos(a0), x.at.z + r * std::sin(a0)}, {x.at.x + r * std::cos(a1), x.at.z + r * std::sin(a1)}, y, true});
+        }
+    }
 }
 
 void Network::add_run(Run run) {

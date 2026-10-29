@@ -23,7 +23,7 @@ inline constexpr std::array<Park, 5> parks{{
     {0, "capital_verda", {606, 0, 76}},       // Verda City: the plot kept for it east of Orienta
     {1, "village_espera", {-256, 0, -1755}},     // west of Espera, toward the hills
     {2, "port_luma", {1630, 0, -186}},
-    {3, "south_haven", {180, 0, 1586}},
+    {3, "south_haven", {50, 0, 1655}},       // (clear of the ring interchange's slip roads)
     {4, "west_roka", {-1708, 0, 686}},
 }};
 inline constexpr float flat_radius = 80, flat_blend = 70;   // the level pad (eased out wide: an even climb to the gate)

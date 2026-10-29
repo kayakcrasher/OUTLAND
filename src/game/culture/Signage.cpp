@@ -451,6 +451,7 @@ void town_roads(const world::VerdaRegion& region, const life::Island& island, Si
             if (qa < 1e-6F || disc <= 0) continue;
             const bool through = flat(road->start, c) >= R && flat(road->end, c) >= R;
             if (through && road->type != world::RoadType::Highway) continue;
+            if (world::one_way(road->type)) continue;   // (an interchange's slip roads and roundabout are not a way into town)
             for (const float sign : {-1.0F, 1.0F}) {
                 const float t = (-qb + sign * std::sqrt(disc)) / (2 * qa);
                 if (t <= 0 || t >= 1) continue;

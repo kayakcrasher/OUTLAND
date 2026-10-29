@@ -336,6 +336,8 @@ int main() {
         // The grid, and its south blocks (avenues on to a street along their far side).
         const auto grid = [](Vector3 p) { return std::abs(p.x) <= 180 && p.z >= -177 && p.z <= 261; };
         const bool inside = grid(road.start) && grid(road.end);
+        // The ring interchanges' roundabouts and slip roads (tests/integration/world/test_interchanges).
+        if (world::one_way(road.type)) continue;
         if (road.type == world::RoadType::Highway) {
             check(road.width == world::highways::width || road.width == world::highways::boulevard_width, "highways are divided highways (city boulevards narrower)");
             // The east-west highway runs right across the city on z = 0 (Roka to Porto Luma) as a

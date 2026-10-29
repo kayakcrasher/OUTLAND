@@ -49,6 +49,8 @@ public:
         const float r = std::max(building.size.x, building.size.z) * .5F + 3;
         return {building.position.x - r, building.position.z - r, building.position.x + r, building.position.z + r};
     }
+    // Reserve a lot outright (no checks): ground already spoken for, like a roundabout's island.
+    void reserve(Lot lot) { taken_.push_back(lot); }
     // Would claim() succeed? (Reserves nothing.)
     bool fits(Vector3 centre, float half_x, float half_z, float yaw) {
         const auto report_before = report.skipped_lots;
@@ -1255,6 +1257,12 @@ void driveways(Kit& kit, world::VerdaRegion& region) {
     }
 }
 // ------------------------------------------------------------------ La Verda Basballigo's ballparks
+// Each ballpark's plot, kept free from the start (whichever way the park ends up facing).
+Lot ballpark_plot(Vector3 centre) {
+    constexpr float reach = 76;   // (the model's half-length: a park facing along the grid, as they all do)
+    return {centre.x - reach, centre.z - reach, centre.x + reach, centre.z + reach};
+}
+
 // One in each county on its level pad (world::ballpark::parks): the front - the gate, the car park
 // and the bus bays - toward the nearest road, a road in to the gate, and the club's bus in its bay.
 void ballparks(Kit& kit, world::VerdaRegion& region) {
@@ -1266,7 +1274,7 @@ void ballparks(Kit& kit, world::VerdaRegion& region) {
         float best = 1e9F;
         for (const auto& t : region.settlements())
             for (const auto& road : t.roads) {
-                if (road.type == world::RoadType::Highway) continue;
+                if (road.type == world::RoadType::Highway || world::one_way(road.type)) continue;   // (a street, not a highway or its slip roads)
                 const Vector3 ab = Vector3Subtract(road.end, road.start);
                 const float length = ab.x * ab.x + ab.z * ab.z;
                 const float u = length > 0 ? std::clamp(((park.centre.x - road.start.x) * ab.x + (park.centre.z - road.start.z) * ab.z) / length, 0.0F, 1.0F) : 0;
@@ -1282,9 +1290,11 @@ void ballparks(Kit& kit, world::VerdaRegion& region) {
         // Its whole footprint (the model's bounds, off-centre toward the car park) clear of roads and lots.
         const Vector3 middle = to_world(origin, yaw, (B::model_min.x + B::model_max.x) * .5F, 0, (B::model_min.z + B::model_max.z) * .5F);
         // (Verda City's is built on the stadium ground kept for it.)
+        // (The others on the plots kept for them from the start: ballpark_plot.)
         const Lot reserve{stadium_reserve.x - stadium_half, stadium_reserve.z - stadium_half, stadium_reserve.x + stadium_half, stadium_reserve.z + stadium_half};
         const bool on_reserve = std::hypot(park.centre.x - stadium_reserve.x, park.centre.z - stadium_reserve.z) < 1;
-        if (!kit.claim(middle, (B::model_max.x - B::model_min.x) * .5F, (B::model_max.z - B::model_min.z) * .5F, yaw, on_reserve ? &reserve : nullptr)) continue;
+        const Lot plot = ballpark_plot(park.centre);
+        if (!kit.claim(middle, (B::model_max.x - B::model_min.x) * .5F, (B::model_max.z - B::model_min.z) * .5F, yaw, on_reserve ? &reserve : &plot)) continue;
         if (!kit.put(B::model(park.team), origin, yaw, false)) continue;
         kit.report.ballparks.push_back(origin);
         // The road in: from the gate out to the road.
@@ -2218,17 +2228,69 @@ void lay_highways(world::VerdaRegion& region) {
     auto* capital = settlement(region, "capital_verda");
     if (!capital) return;
     capital->roads.clear();
-    for (const auto& line : world::highways::lines()) {
+    namespace hw = world::highways;
+    for (const auto& line : hw::lines()) {
         const auto n = line.points.size();
         float along = 0;
         for (std::size_t i = 0; i + (line.loop ? 0 : 1) < n; ++i) {
-            const Vector3 a = line.points[i], b = line.points[(i + 1) % n];
+            Vector3 a = line.points[i], b = line.points[(i + 1) % n];
             const float l = std::hypot(b.x - a.x, b.z - a.z), middle = along + l * .5F;
+            along += l;
             // Through Verda City it is the city's main avenue: a boulevard, narrower.
             const bool city = middle > line.city_from && middle < line.city_to;
-            capital->roads.push_back({a, b, city ? world::highways::boulevard_width : world::highways::width, world::RoadType::Highway});
-            along += l;
+            // A highway crossing the ring runs into the interchange's roundabout from either side:
+            // cut back to the roundabout's lane.
+            bool gone = false;
+            if (!line.loop)
+                for (const auto& x : hw::interchanges()) {
+                    const auto inside = [&](Vector3 p) { return std::hypot(p.x - x.at.x, p.z - x.at.z) < hw::roundabout_radius; };
+                    if (inside(a) && inside(b)) {gone = true; break;}
+                    if (!inside(a) && !inside(b)) continue;
+                    // The point on the lane between them.
+                    Vector3& in = inside(a) ? a : b;
+                    const Vector3 out = inside(a) ? b : a;
+                    float lo = 0, hi = 1;
+                    for (int k = 0; k < 30; ++k) {
+                        const float mid = (lo + hi) * .5F;
+                        (inside(Vector3Lerp(out, in, mid)) ? hi : lo) = mid;
+                    }
+                    in = Vector3Lerp(out, in, lo);
+                }
+            if (gone) continue;
+            capital->roads.push_back({a, b, city ? hw::boulevard_width : hw::width, world::RoadType::Highway});
         }
+    }
+    // Where each road meets a roundabout's lane: a corner of the lane there, so the roads meet end to end.
+    const auto legs = [&](const hw::Interchange& x) {
+        std::vector<float> angles;
+        const auto meets = [&](Vector3 p) {
+            if (std::abs(std::hypot(p.x - x.at.x, p.z - x.at.z) - hw::roundabout_radius) < .05F) angles.push_back(std::atan2(p.z - x.at.z, p.x - x.at.x));
+        };
+        for (const auto& road : capital->roads) if (road.type == world::RoadType::Highway) {meets(road.start); meets(road.end);}
+        for (const auto& slip : x.slips) {meets(slip.points.front()); meets(slip.points.back());}
+        return angles;
+    };
+    // The interchanges: each roundabout's lane (anticlockwise on the map: traffic keeps right and
+    // turns right into it and out of it), and the slip roads off the ring and back on.
+    for (const auto& x : hw::interchanges()) {
+        // The corners: every 7.5 degrees, and every leg (dropping regular corners within a metre and a half of one).
+        constexpr int pieces = 48;
+        const auto joins = legs(x);
+        std::vector<float> corners(joins.begin(), joins.end());
+        for (int k = 0; k < pieces; ++k) {
+            const float a = std::remainder(2 * PI * static_cast<float>(k) / pieces, 2 * PI);
+            if (std::none_of(joins.begin(), joins.end(), [&](float j) { return std::abs(std::remainder(a - j, 2 * PI)) * hw::roundabout_radius < 1.5F; }))
+                corners.push_back(a);
+        }
+        // Anticlockwise on the map: the angle falling.
+        std::sort(corners.begin(), corners.end(), std::greater<>());
+        for (std::size_t k = 0; k < corners.size(); ++k) {
+            const auto at = [&](float a) { return Vector3{x.at.x + std::cos(a) * hw::roundabout_radius, 0, x.at.z + std::sin(a) * hw::roundabout_radius}; };
+            capital->roads.push_back({at(corners[k]), at(corners[(k + 1) % corners.size()]), hw::roundabout_width, world::RoadType::Roundabout});
+        }
+        for (const auto& slip : x.slips)
+            for (std::size_t k = 0; k + 1 < slip.points.size(); ++k)
+                capital->roads.push_back({slip.points[k], slip.points[k + 1], hw::slip_width, world::RoadType::Ramp});
     }
 }
 }
@@ -2739,6 +2801,14 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     wipe_downtown(region);
     lay_highways(region);
     Kit kit(region, catalog);
+    // The ballparks' plots (Verda City's is the stadium ground, kept in government()).
+    for (const auto& park : world::ballpark::parks)
+        if (std::hypot(park.centre.x - stadium_reserve.x, park.centre.z - stadium_reserve.z) > 1) kit.reserve(ballpark_plot(park.centre));
+    // The interchanges' roundabouts: nothing built on their islands.
+    for (const auto& x : world::highways::interchanges()) {
+        const float r = world::highways::roundabout_pad;
+        kit.reserve({x.at.x - r, x.at.z - r, x.at.x + r, x.at.z + r});
+    }
     downtown(kit, region);
     downtown_south(kit, region);
     roka_city(kit, region);

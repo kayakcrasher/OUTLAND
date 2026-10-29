@@ -38,6 +38,7 @@ private:
     // (`level`: the roadway it stands on): a car on the ring's deck passes over the spoke's.
     struct Run { Vector2 a, b; float y{0}; bool level{false}; };
     void add_run(Run run);
+    void islands();
     std::vector<std::vector<RoadInfo>> roads_;
     std::vector<Run> runs_;
     std::unordered_map<long long, std::vector<int>> grid_;

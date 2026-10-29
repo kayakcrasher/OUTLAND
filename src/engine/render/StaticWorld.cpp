@@ -82,6 +82,7 @@ void StaticWorld::draw(const world::VerdaRegion& region, Vector3 camera, const V
         const auto* highway = highways.info(chunk.settlement, chunk.index);
         const auto draw_road = [&] {
             if (highway) highway::draw(road, *highway, chunk.begin, chunk.end);
+            else if (road.type == world::RoadType::Ramp || road.type == world::RoadType::Roundabout) highway::draw_link(road, chunk.begin, chunk.end);
             else world::geometry::road(road, chunk.begin, chunk.end);
         };
         // Never record while lifted: rlgl bakes the current transform into the vertices, and the

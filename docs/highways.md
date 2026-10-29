@@ -40,8 +40,38 @@ apron at each crossing.
 - **Parliament** faces the boulevard from the open block south of the grid, its lawn and steps
   toward the highway.
 
-The highways cross the ring road at grade, at four junctions. The old two-lane links have been
-replaced, along with the spurs that ran from the ring road into each hub and doubled the spokes.
+## The ring's interchanges: the autobahn never stops
+
+The ring road is Verda's autobahn: it never stops, like a giant roundabout itself. Where the two
+highways cross it (four times) there is an interchange (`highways::interchanges()`), numbered
+clockwise from the north: **1 Espera, 2 Porto Luma, 3 Suda Haveno, 4 Roka**.
+
+- **The bridge.** The ring rides over the crossing on a 100 m bridge (`deck_half` 50), 7.5 m up
+  (`overpass_rise`): a concrete deck under the roadway, parapets along both edges, an abutment
+  at each end holding back the embankment, and two piers on the island below. The ring climbs to
+  it and down again at 7%.
+- **The roundabout.** Under the bridge, at the crossing highway's level, a roundabout 40 m across
+  its lane (`roundabout_radius`, an 8 m lane), anticlockwise on the map: traffic keeps right and
+  turns right into it and out of it. Its island has a kerb and a lawn. The crossing highway runs
+  into it from both sides, narrowing over its last 50 m to the entry and exit lanes.
+- **Slip roads.** Four per interchange, one way (`RoadType::Ramp`): each carriageway's exit leaves
+  the ring 172 m before the crossing, tapers off the outer lane, and runs beside the ring 22 m
+  out, below its embankment (a retaining wall between them), into the roundabout; the entry runs
+  back up beside it onto the ring 172 m beyond. Forward traffic (the way the ring's points run)
+  is inside the ring, the other way outside.
+- **Level ground.** The roundabout sits on a level pad at the crossing highway's height (raised
+  where a town's levelled ground is close beyond, so the highway can reach it within the grade);
+  the slip roads have roadbeds of their own, at the ring's height while still on it, then down
+  evenly to the pad.
+- **On the deck.** Cars on the ring (and people on foot) ride the deck (`highways::deck`); cars
+  on the roundabout beneath drive under it. Barriers and parapets count only at their own level,
+  and nothing standing on the ground under a deck is in the way of a car up on it.
+- **Moved for them.** Suda Haveno's ballpark moved to (50, 1655), clear of the slip roads; each
+  ballpark's plot is kept free from the start of the world build.
+
+Tests: `tests/integration/world/test_interchanges.cpp` (the layout, the deck and the pad, routes
+through the roundabout the right way round and on and off the ring by the slip roads, one-way
+roads only their way, and a car driving over each bridge both ways).
 
 ## Cross-section
 From the centre line outwards on each side:
@@ -66,16 +96,19 @@ drawn by `engine/render/HighwayRender` and recorded into static meshes like the 
 
 ## Junctions
 `HighwayNetwork` finds the junctions in the map's roads:
-- **Highway crossings** (ring × spoke). A plain asphalt apron: no lane lines and no barrier for
-  `paved_half / sin(angle) + 8` m either way along both roads.
+- **Highway crossings** (the two highways at Verda City's centre). A plain asphalt apron: no lane
+  lines and no barrier for `paved_half / sin(angle) + 8` m either way along both roads. (Where
+  they cross the ring there are interchanges instead, above.)
+- **Into a roundabout** (an interchange's). The last 50 m narrows to 15 m, the barrier stops, and
+  the last 12 m is plain asphalt.
 - **Ends** (a spoke running into a town's streets). The last 150 m tapers smoothly from the full
   18.8 m down to 13.2 m, just wider than the town's 12 m street, so the highway blends into the
   street instead of stepping down. The barrier stops where the taper begins, and the last 45 m
   is plain asphalt with no lane lines.
 - **Crossovers.** Out on the open road the median opens for 22 m every 420 m, so cars can turn
   across.
-- **Side roads** (farm tracks, hamlet spurs, streets) that join or cross a highway. The median
-  barrier opens for the side road's width plus 7 m either side, so traffic can turn across.
+- **Side roads** (farm tracks, hamlet spurs, streets) that join or cross a highway (not slip
+  roads, which join a carriageway). The median barrier opens for the side road's width plus 7 m either side, so traffic can turn across.
 
 ## Graded roadbed
 The terrain is cut and filled to the highways (`highways::graded`, called from

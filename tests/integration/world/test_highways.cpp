@@ -75,14 +75,19 @@ int main() {
             const Vector3 a = line.points[i], b = line.points[(i + 1) % n];
             const float l = flat(a, b);
             const Vector3 d{(b.x - a.x) / l, 0, (b.z - a.z) / l}, right{-d.z, 0, d.x};
+            // (Over a ring bridge, the deck.)
+            const auto roadway = [&](Vector3 p) { float y = 0; return hw::deck(p.x, p.z, y, &d) ? y : world::terrain::TerrainHeight::sample(p.x, p.z); };
             for (float s = 0; s < l; s += 4) {
                 const Vector3 p{a.x + d.x * s, 0, a.z + d.z * s}, q{p.x + d.x * 4, 0, p.z + d.z * 4};
-                const float h = world::terrain::TerrainHeight::sample(p.x, p.z);
-                const float grade = std::abs(world::terrain::TerrainHeight::sample(q.x, q.z) - h) / 4;
+                // (A highway's centre line through an interchange's roundabout is not a road there.)
+                if (!line.loop && std::any_of(hw::interchanges().begin(), hw::interchanges().end(), [&](const hw::Interchange& x) {
+                        return std::hypot(p.x - x.at.x, p.z - x.at.z) < hw::roundabout_radius + 2; })) continue;
+                const float h = roadway(p);
+                const float grade = std::abs(roadway(q) - h) / 4;
                 if (std::getenv("OUTLAND_HIGHWAY_PROFILE") && grade > .1F) std::cout << "  steep " << grade << " at " << p.x << "," << p.z << '\n';
                 steepest = std::max(steepest, grade);
-                const float left = world::terrain::TerrainHeight::sample(p.x - right.x * hw::paved_half, p.z - right.z * hw::paved_half);
-                const float across = world::terrain::TerrainHeight::sample(p.x + right.x * hw::paved_half, p.z + right.z * hw::paved_half);
+                const float left = roadway({p.x - right.x * hw::paved_half, 0, p.z - right.z * hw::paved_half});
+                const float across = roadway({p.x + right.x * hw::paved_half, 0, p.z + right.z * hw::paved_half});
                 if (std::getenv("OUTLAND_HIGHWAY_PROFILE") && std::abs(across - left) / hw::width > .03F) std::cout << "  tilted " << std::abs(across - left) / hw::width << " at " << p.x << "," << p.z << '\n';
                 tilt = std::max(tilt, std::abs(across - left) / hw::width);
             }
@@ -163,7 +168,7 @@ int main() {
         int hits = 0;
         for (float s = 0; s < route.length; s += 3) {
             const Vector3 p = world::roads::route_point(route, s);
-            hits += network.barrier_hit(p, 1.0F);
+            if (network.barrier_hit(p, 1.0F)) {++hits; if (std::getenv("OUTLAND_HIGHWAY_PROFILE")) std::cout << "  median hit at " << p.x << "," << p.z << '\n';}
             ++checked;
         }
         check(hits == 0, from + " to " + to + ": the car stays clear of the median (" + std::to_string(hits) + " hits)");

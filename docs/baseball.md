@@ -11,7 +11,7 @@ played out on the field, pitch by pitch, and the towns' own people come to watch
 | Verda City | Verdkerno | green and gold | east of Orienta (606, 76) |
 | Espera | Altverdo | brown and orange | west of town (−256, −1755) |
 | Porto Luma | Lumamaro | navy and sky blue | (1630, −186) |
-| Suda Haveno | Marĉfluo | teal and white | (180, 1586) |
+| Suda Haveno | Marĉfluo | teal and white | (50, 1655) |
 | Roka | Ferarbaro | charcoal and red | (−1708, 686) |
 
 The map marks each one as `<CITY> BALLPARK`. On a game day the compass shows `PLAY BALL` over

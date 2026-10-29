@@ -13,7 +13,6 @@ constexpr float fillet = 240;        // corner radius of the spokes
 constexpr float arc_step = 3 * pi / 180;
 constexpr float longest = 60;        // straights split into pieces no longer than this
 constexpr float city_edge = 476;     // Verda City's suburbs end at x = +-476 (their outer streets)
-constexpr bool interchanges_open = false;   // (being built)
 constexpr float city_corner = 530;   // where the east-west highway turns off z = 0 (its curve clear of the stadium)
 
 struct V2 { float x, z; };
@@ -246,8 +245,9 @@ Index build(HeightFn natural, HeightFn pad) {
                 const float rise = p.height[j] - p.height[k], excess = std::abs(rise) - most;
                 // (Two holds side by side stay as they are, unless both are a pad's: on a pad's edge,
                 // where the land is still easing up, the grade wins.)
-                const bool pads = p.locked[k] == soft && p.locked[j] == soft;
-                const bool fixed_k = p.locked[k] && !pads, fixed_j = p.locked[j] && !pads;
+                // (A pad's hold gives way to the grade beside another pad's or beside a hard hold.)
+                const bool fixed_k = p.locked[k] == hard || (p.locked[k] == soft && !p.locked[j]);
+                const bool fixed_j = p.locked[j] == hard || (p.locked[j] == soft && !p.locked[k]);
                 if (excess <= 1e-4F || (fixed_k && fixed_j)) continue;
                 steep = true;
                 const float toward = rise > 0 ? 1.0F : -1.0F;   // k up, j down
@@ -272,14 +272,23 @@ Index build(HeightFn natural, HeightFn pad) {
     for (const auto& c : crossings) {
         auto& pa = index.profiles[static_cast<std::size_t>(c.a)];
         auto& pb = index.profiles[static_cast<std::size_t>(c.b)];
-        if (interchanges_open && pa.loop != pb.loop) {
+        if (pa.loop != pb.loop) {
             // A highway under the ring: it stays at its own level, held flat across the interchange's
             // roundabout and a little beyond; the ring climbs to a bridge over it.
             auto& spoke = pa.loop ? pb : pa;
             auto& ring = pa.loop ? pa : pb;
             const float ss = pa.loop ? c.sb : c.sa, rs = pa.loop ? c.sa : c.sb;
-            const float level = profile_height(spoke, ss);
-            const float flat = roundabout_pad + 30;
+            const float flat = roundabout_pad + 10;
+            // Its level: the land at the crossing, or as near it as the holds round about (a town's
+            // pad just beyond) can be reached from within the grade.
+            float lo = -1e9F, hi = 1e9F;
+            for (std::size_t k = 0; k < spoke.height.size(); ++k) {
+                if (!spoke.locked[k]) continue;
+                const float slack = max_grade * std::max(0.0F, distance_along(spoke, k, ss) - flat);
+                lo = std::max(lo, spoke.height[k] - slack);
+                hi = std::min(hi, spoke.height[k] + slack);
+            }
+            const float level = lo <= hi ? std::clamp(profile_height(spoke, ss), lo, hi) : (lo + hi) * .5F;
             for (std::size_t k = 0; k < spoke.height.size(); ++k)
                 if (distance_along(spoke, k, ss) <= flat) {spoke.height[k] = level; spoke.locked[k] = hard;}
             for (std::size_t k = 0; k < ring.height.size(); ++k)
@@ -325,7 +334,6 @@ const std::vector<Line>& lines() {
 const std::vector<Interchange>& interchanges() {
     static const std::vector<Interchange> all = [] {
         std::vector<Interchange> out;
-        if (!interchanges_open) return out;
         const Line* ring = nullptr;
         for (const auto& line : lines()) if (line.loop) ring = &line;
         if (!ring) return out;
@@ -363,9 +371,11 @@ const std::vector<Interchange>& interchanges() {
                                 return Vector3{r * std::cos(b), 0, r * std::sin(b)};
                             };
                             const float enter = std::sqrt(roundabout_radius * roundabout_radius - slip_offset * slip_offset);
-                            const auto lateral = [](float from_ring, float side) {
-                                // Off the carriageway's outer lane and out to slip_offset over 60 m.
-                                const float t = std::clamp((slip_reach - 2 - from_ring) / 60.0F, 0.0F, 1.0F);
+                            // Off the carriageway's outer lane in a long taper (22 m: traffic keeps to its
+                            // lane while it leaves), then out to slip_offset over 60 m.
+                            constexpr float taper = 22;
+                            const auto lateral = [&](float from_ring, float side) {
+                                const float t = std::clamp((slip_reach - taper - from_ring) / 60.0F, 0.0F, 1.0F);
                                 return side * (slow_lane + (slip_offset - slow_lane) * t * t * (3 - 2 * t));
                             };
                             for (const bool inside : {true, false})
@@ -375,8 +385,11 @@ const std::vector<Interchange>& interchanges() {
                                     const float side = inside ? -1.0F : 1.0F, way = inside == off ? -1.0F : 1.0F;
                                     Slip slip;
                                     slip.off = off; slip.inside = inside;
+                                    // (On the ring's centre line, where it joins the ring; then at once clear of the
+                                    // median barrier, in the carriageway.)
                                     slip.points.push_back(point(way * slip_reach, 0));
-                                    for (float d = slip_reach - 2; d > enter + .5F; d -= 10) slip.points.push_back(point(way * d, lateral(d, side)));
+                                    slip.points.push_back(point(way * (slip_reach - 6), side * 4.6F));
+                                    for (float d = slip_reach - taper; d > enter + .5F; d -= 10) slip.points.push_back(point(way * d, lateral(d, side)));
                                     slip.points.push_back(point(way * enter, side * slip_offset));
                                     if (!off) std::reverse(slip.points.begin(), slip.points.end());
                                     x.slips.push_back(std::move(slip));
@@ -435,7 +448,7 @@ float graded(float x, float z, float height, HeightFn natural, HeightFn pad) {
     }
     // An interchange's roundabout sits on a level pad at the crossing highway's height, and its slip
     // roads on roadbeds of their own, from the ring's height where they leave it to the pad's.
-    struct Slipway { std::vector<V2> points; std::vector<float> at; float from, to; };
+    struct Slipway { std::vector<V2> points; std::vector<float> height; };
     static const auto levels = [&] {
         std::vector<std::pair<float, std::vector<Slipway>>> out;
         const Profile* ring = nullptr;
@@ -444,25 +457,40 @@ float graded(float x, float z, float height, HeightFn natural, HeightFn pad) {
             float level = 0;
             for (std::size_t l = 0; l < lines().size(); ++l)
                 if (lines()[l].name == i.spoke) level = profile_height(index.profiles[l], i.spoke_s);
+            const float radius = std::hypot(i.at.x, i.at.z), bearing = std::atan2(i.at.z, i.at.x);
+            const float sense = i.ring_forward.x * -std::sin(bearing) + i.ring_forward.z * std::cos(bearing) > 0 ? 1.0F : -1.0F;
             std::vector<Slipway> ways;
             for (const auto& slip : i.slips) {
+                // From the ring: at the ring's height while it is still on the ring's roadbed (its taper
+                // off the carriageway), then down at an even grade to the roundabout's level.
+                std::vector<Vector3> points = slip.points;
+                if (!slip.off) std::reverse(points.begin(), points.end());   // (from the ring end)
                 Slipway w;
-                for (const auto& q : slip.points) w.points.push_back({q.x, q.z});
-                w.at.push_back(0);
-                for (std::size_t k = 1; k < w.points.size(); ++k) w.at.push_back(w.at.back() + length(w.points[k] - w.points[k - 1]));
-                // (Its end on the ring: at the ring's height there.)
-                const V2 end = slip.off ? w.points.front() : w.points.back();
-                const float along = (end.x - i.at.x) * i.ring_forward.x + (end.z - i.at.z) * i.ring_forward.z;
-                const float ring_height = ring ? profile_height(*ring, i.ring_s + along) : level;
-                w.from = slip.off ? ring_height : level;
-                w.to = slip.off ? level : ring_height;
+                std::size_t k = 0;
+                for (; k < points.size(); ++k) {
+                    const Vector3 q = points[k];
+                    if (std::abs(std::hypot(q.x, q.z) - radius) > grade_flat + 1 || !ring) break;
+                    const float s_ = sense * std::remainder(std::atan2(q.z, q.x) - bearing, 2 * pi) * radius;
+                    w.points.push_back({q.x, q.z});
+                    w.height.push_back(profile_height(*ring, i.ring_s + s_));
+                }
+                const float start = w.height.empty() ? level : w.height.back();
+                float run = 0, total = 0;
+                for (std::size_t j = std::max<std::size_t>(k, 1); j < points.size(); ++j) total += std::hypot(points[j].x - points[j - 1].x, points[j].z - points[j - 1].z);
+                for (; k < points.size(); ++k) {
+                    if (k > 0 && !w.points.empty()) run += std::hypot(points[k].x - points[k - 1].x, points[k].z - points[k - 1].z);
+                    w.points.push_back({points[k].x, points[k].z});
+                    w.height.push_back(start + (level - start) * (total > 0 ? std::clamp(run / total, 0.0F, 1.0F) : 1.0F));
+                }
                 ways.push_back(std::move(w));
             }
             out.emplace_back(level, std::move(ways));
         }
         return out;
     }();
-    float pad_level = 0, pad_weight = 0;
+    float pad_level = 0, pad_weight = 0, ring_distance = 1e9F;
+    for (std::size_t l = 0; l < index.profiles.size() && l < line_distance.size(); ++l)
+        if (index.profiles[l].loop) ring_distance = line_distance[l];
     for (std::size_t k = 0; k < interchanges().size() && k < levels.size(); ++k) {
         const Vector3 c = interchanges()[k].at;
         const float d = std::hypot(x - c.x, z - c.z);
@@ -478,10 +506,10 @@ float graded(float x, float z, float height, HeightFn natural, HeightFn pad) {
                 const float l2 = dd.x * dd.x + dd.z * dd.z;
                 const float t = l2 < 1e-6F ? 0 : std::clamp(((x - a.x) * dd.x + (z - a.z) * dd.z) / l2, 0.0F, 1.0F);
                 const float distance = std::hypot(x - (a.x + dd.x * t), z - (a.z + dd.z * t));
-                if (distance > slip_width * .5F + 2) continue;
-                const float f = (w.at[j] + t * std::sqrt(l2)) / std::max(1.0F, w.at.back());
-                lowest = std::min(lowest, w.from + (w.to - w.from) * f);
-                if (distance < nearest) {nearest = distance; road = w.from + (w.to - w.from) * f;}
+                if (distance > slip_width * .5F + 2 || ring_distance <= paved_half + verge + .5F) continue;   // (the ring's own roadway is the ring's)
+                const float h = w.height[j] + (w.height[j + 1] - w.height[j]) * t;
+                lowest = std::min(lowest, h);
+                if (distance < nearest) {nearest = distance; road = h;}
             }
     }
     const auto with_pads = [&](float h) { return h * (1 - pad_weight) + pad_level * pad_weight; };
@@ -507,6 +535,7 @@ bool deck(float x, float z, float& y, const Vector3* heading) {
     if (!ring) return false;
     for (const auto& i : interchanges()) {
         const float dx = x - i.at.x, dz = z - i.at.z;
+        if (std::abs(dx) > deck_half + 20 || std::abs(dz) > deck_half + 20) continue;   // (this interchange's, not one across the island)
         const float along = dx * i.ring_forward.x + dz * i.ring_forward.z;
         if (std::abs(along) > deck_half + 1) continue;
         // (The ring curves gently: its centre line is a 1,500 m circle.)

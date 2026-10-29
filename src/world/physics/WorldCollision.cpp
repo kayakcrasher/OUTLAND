@@ -1,5 +1,6 @@
 #include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/roads/HighwayNetwork.hpp"
+#include "outland/world/Highways.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -431,8 +432,12 @@ bool WorldCollision::blocked_impl(
     // ----------------------------------------------------
     // WORLD ASSETS (only those near: spatial index)
     // ----------------------------------------------------
+    // Up on a ring bridge's deck, nothing standing on the ground beneath it is in the way.
+    float deck_y=0;
+    const bool on_deck=vehicle && highways::deck(position.x,position.z,deck_y) && position.y>deck_y-1.5F;
     const auto check = [&](const WorldAsset& asset) -> bool {
             if(asset.id==ignore_asset)return false;
+            if(on_deck && asset.vehicle.definition.empty())return false;
             if(vehicle && light_prop(asset))return false;
             // Paving, lots and pads (a few centimetres high) are driven over, not into.
             if(vehicle && asset.vehicle.definition.empty() && asset.size.y<.35F)return false;
@@ -612,6 +617,8 @@ float WorldCollision::ground_height(
     const float step
 ) {
     float ground = terrain::TerrainHeight::sample(position.x, position.z);
+    // A ring bridge's deck, for someone up on it.
+    if (float deck = 0; highways::deck(position.x, position.z, deck) && feet_y + step >= deck - .3F) ground = std::max(ground, deck);
     any_asset_near(region, position.x, position.z, [&](const WorldAsset& asset) {
         // Anything model-backed can be stood on (road pieces, floor slabs), whatever its blocker flag.
         if (asset.model_path.empty() || !asset.vehicle.definition.empty()) return false;
