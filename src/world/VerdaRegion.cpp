@@ -172,7 +172,7 @@ void draw_road(
     const int segments=std::max(1,static_cast<int>(std::ceil(length/2.0F)));
     const int begin=std::max(0,static_cast<int>(std::floor((projection-340.0F/length)*segments)));
     const int end=std::min(segments,static_cast<int>(std::ceil((projection+340.0F/length)*segments)));
-    const Color color=road.type==RoadType::Asphalt || road.type==RoadType::Highway ? Color{76,80,77,255} :
+    const Color color=road.type!=RoadType::Gravel && road.type!=RoadType::Dirt ? Color{76,80,77,255} :
         road.type==RoadType::Gravel ? Color{157,151,127,255} : Color{161,128,83,255};
     // CPU ribbon samples keyed by geometry: camera movement no longer resamples terrain.
     // Replacing/moving a Creator road naturally selects a new key; bound old entries.
@@ -253,7 +253,7 @@ void road(const Road& road, int begin, int end) {
     if (segments == 0) return;
     const float dx = road.end.x - road.start.x, dz = road.end.z - road.start.z, length = std::sqrt(dx * dx + dz * dz);
     const float side_x = dz / length * road.width * .5F, side_z = -dx / length * road.width * .5F;
-    const Color color = road.type == RoadType::Asphalt || road.type == RoadType::Highway ? Color{76, 80, 77, 255} :
+    const Color color = road.type != RoadType::Gravel && road.type != RoadType::Dirt ? Color{76, 80, 77, 255} :
         road.type == RoadType::Gravel ? Color{157, 151, 127, 255} : Color{161, 128, 83, 255};
     const auto edge = [&](int i) {
         const float t = static_cast<float>(i) / segments;

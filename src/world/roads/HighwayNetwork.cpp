@@ -1,6 +1,7 @@
 #include "outland/world/roads/HighwayNetwork.hpp"
 #include "outland/world/Highways.hpp"
 #include "outland/world/VerdaRegion.hpp"
+#include "outland/world/terrain/TerrainHeight.hpp"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -14,11 +15,13 @@ constexpr float taper = 150;         // the last stretch into a town narrows ove
 constexpr float town_half = 6.6F;    // to just wider than the town's 12 m street
 constexpr float town_apron = 45;     // plain asphalt (no lane lines, no barrier) over the end of it
 constexpr float crossover_every = 420, crossover_half = 11;   // median openings along the open road
+constexpr float boulevard_ease = 60;  // from a highway's full width to a city boulevard's, over this far
 
 struct Piece {
     std::size_t settlement, road;
     Vector2 a, b, d, right;
     float length;
+    bool boulevard;    // through a city: narrower (highways::boulevard_width)
 };
 Vector2 sub(Vector2 a, Vector2 b) { return {a.x - b.x, a.y - b.y}; }
 float dot(Vector2 a, Vector2 b) { return a.x * b.x + a.y * b.y; }
@@ -79,7 +82,7 @@ void Network::build(const VerdaRegion& region) {
             if (!(l > .5F) || !std::isfinite(l)) continue;
             if (road.type != RoadType::Highway) {others.push_back({a, b, road.width}); continue;}
             const Vector2 d = unit(sub(b, a));
-            pieces.push_back({s, r, a, b, d, right_of(d), l});
+            pieces.push_back({s, r, a, b, d, right_of(d), l, road.width < min_width});
         }
     }
     // Joins: a piece that runs on into exactly one other at an end is mitred there.
@@ -152,13 +155,28 @@ void Network::build(const VerdaRegion& region) {
     for (std::size_t i = 0; i < pieces.size(); ++i) if (!seen[i]) walk(i, true);   // the ring (and loners)
     std::vector<std::vector<Span>> extra_gaps(pieces.size()), extra_plain(pieces.size());
     for (const auto& chain : chains) {
+        // Where the chain runs through a city as a boulevard (its distances along the chain).
+        std::vector<Span> city;
+        for (const auto i : chain.pieces)
+            if (pieces[i].boulevard) city.push_back({along[i], along[i] + pieces[i].length});
+        city = merged(city);
         const auto half_at = [&](float s) {
             float from_end = 1e9F;
             if (chain.open_start) from_end = std::min(from_end, s);
             if (chain.open_end) from_end = std::min(from_end, chain.length - s);
-            if (from_end >= taper) return paved_half;
-            const float t = std::clamp(from_end / taper, 0.0F, 1.0F), eased = t * t * (3 - 2 * t);
-            return town_half + (paved_half - town_half) * eased;
+            float half = paved_half;
+            if (from_end < taper) {
+                const float t = std::clamp(from_end / taper, 0.0F, 1.0F), eased = t * t * (3 - 2 * t);
+                half = town_half + (paved_half - town_half) * eased;
+            }
+            // Easing down to a boulevard's width as it comes into a city.
+            float to_city = 1e9F;
+            for (const auto& c : city) to_city = std::min(to_city, s < c.from ? c.from - s : s > c.to ? s - c.to : 0.0F);
+            if (to_city < boulevard_ease) {
+                const float t = std::clamp(to_city / boulevard_ease, 0.0F, 1.0F), eased = t * t * (3 - 2 * t);
+                half = std::min(half, boulevard_width * .5F + (paved_half - boulevard_width * .5F) * eased);
+            }
+            return half;
         };
         for (const auto i : chain.pieces) {
             auto& info = roads_[pieces[i].settlement][pieces[i].road];
@@ -191,6 +209,9 @@ void Network::build(const VerdaRegion& region) {
             if (std::abs(den) < 1e-6F) continue;
             const float t = (w.x * s.y - w.y * s.x) / den, u = (w.x * r.y - w.y * r.x) / den;
             if (t <= 0 || t >= 1 || u <= 0 || u >= 1) continue;
+            // (Not where the ring bridges a spoke: neither stops there.)
+            const Vector2 at{p.a.x + r.x * t, p.a.y + r.y * t};
+            if (std::any_of(interchanges().begin(), interchanges().end(), [&](const Interchange& x) { return std::hypot(x.at.x - at.x, x.at.z - at.y) < 30; })) continue;
             const float sine = std::max(std::sin(25 * DEG2RAD), std::abs(p.d.x * q.d.y - p.d.y * q.d.x));
             const float reach = paved_half / sine + 8;
             junctions.push_back({{p.a.x + r.x * t, p.a.y + r.y * t}, reach, reach});
@@ -207,7 +228,7 @@ void Network::build(const VerdaRegion& region) {
             const float den = r.x * s.y - r.y * s.x;
             if (std::abs(den) < 1e-6F) continue;
             const float t = (w.x * s.y - w.y * s.x) / den, u = (w.x * r.y - w.y * r.x) / den;
-            if (t <= 0 || t >= 1 || u <= .02F || u >= .98F) continue;
+            if (t < 0 || t > 1 || u <= .02F || u >= .98F) continue;   // (at a piece's end too)
             junctions.push_back({{p.a.x + r.x * t, p.a.y + r.y * t}, o.width * .5F + 2, o.width * .5F + 7});
         }
     junctions_ = junctions.size();
@@ -230,13 +251,48 @@ void Network::build(const VerdaRegion& region) {
         for (const auto& span : info.barrier) {
             const Vector2 a{piece.a.x + piece.d.x * span.from, piece.a.y + piece.d.y * span.from};
             const Vector2 b{piece.a.x + piece.d.x * span.to, piece.a.y + piece.d.y * span.to};
-            const int index = static_cast<int>(runs_.size());
-            runs_.push_back({a, b});
-            for (int x = static_cast<int>(std::floor((std::min(a.x, b.x) - 4) / cell)); x <= static_cast<int>(std::floor((std::max(a.x, b.x) + 4) / cell)); ++x)
-                for (int z = static_cast<int>(std::floor((std::min(a.y, b.y) - 4) / cell)); z <= static_cast<int>(std::floor((std::max(a.y, b.y) + 4) / cell)); ++z)
-                    grid_[cell_key(x, z)].push_back(index);
+            // Near an interchange, in short runs that each know their level.
+            const bool near = std::any_of(interchanges().begin(), interchanges().end(), [&](const Interchange& x) {
+                return std::hypot(x.at.x - (a.x + b.x) * .5F, x.at.z - (a.y + b.y) * .5F) < span.to - span.from + 60; });
+            if (!near) {add_run({a, b}); continue;}
+            const int count = std::max(1, static_cast<int>(std::ceil((span.to - span.from) / 4)));
+            for (int k = 0; k < count; ++k) {
+                const Vector2 from{a.x + (b.x - a.x) * k / count, a.y + (b.y - a.y) * k / count};
+                const Vector2 to{a.x + (b.x - a.x) * (k + 1) / count, a.y + (b.y - a.y) * (k + 1) / count};
+                const float mx = (from.x + to.x) * .5F, mz = (from.y + to.y) * .5F;
+                const Vector3 heading{piece.d.x, 0, piece.d.y};
+                float y = 0;
+                if (deck(mx, mz, y, &heading)) add_run({from, to, y, true});                   // on the bridge
+                else if (deck(mx, mz, y)) add_run({from, to, terrain::TerrainHeight::sample(mx, mz), true});   // under it
+                else add_run({from, to});
+            }
         }
     }
+    // The bridges' parapets: a wall along each edge of the deck.
+    for (const auto& x : interchanges())
+        for (const float side : {-1.0F, 1.0F})
+            for (int k = 0; k < 8; ++k) {
+                const auto point = [&](int i) {
+                    const float along = -deck_half + 2 * deck_half * static_cast<float>(i) / 8;
+                    const float r = std::hypot(x.at.x, x.at.z) + side * (paved_half + .45F);
+                    const float bearing = std::atan2(x.at.z, x.at.x) + along / std::hypot(x.at.x, x.at.z) * (x.ring_forward.x * -x.at.z + x.ring_forward.z * x.at.x > 0 ? 1.0F : -1.0F);
+                    return Vector2{r * std::cos(bearing), r * std::sin(bearing)};
+                };
+                const Vector2 a = point(k), b = point(k + 1);
+                float y = 0;
+                const Vector3 heading = x.ring_forward;
+                const float mx = (a.x + b.x) * .5F, mz = (a.y + b.y) * .5F;
+                if (deck(mx - side * 1.0F * mx / std::hypot(mx, mz), mz - side * 1.0F * mz / std::hypot(mx, mz), y, &heading)) add_run({a, b, y, true});
+            }
+}
+
+void Network::add_run(Run run) {
+    const int index = static_cast<int>(runs_.size());
+    runs_.push_back(run);
+    const Vector2 a = run.a, b = run.b;
+    for (int x = static_cast<int>(std::floor((std::min(a.x, b.x) - 4) / cell)); x <= static_cast<int>(std::floor((std::max(a.x, b.x) + 4) / cell)); ++x)
+        for (int z = static_cast<int>(std::floor((std::min(a.y, b.y) - 4) / cell)); z <= static_cast<int>(std::floor((std::max(a.y, b.y) + 4) / cell)); ++z)
+            grid_[cell_key(x, z)].push_back(index);
 }
 
 const RoadInfo* Network::info(std::size_t settlement, std::size_t road) const {
@@ -251,6 +307,7 @@ bool Network::barrier_hit(Vector3 p, float radius) const {
     if (found == grid_.end()) return false;
     for (const int i : found->second) {
         const auto& run = runs_[static_cast<std::size_t>(i)];
+        if (run.level && std::abs(p.y - run.y) > 3) continue;   // above or below this one
         const Vector2 d = sub(run.b, run.a), q{p.x - run.a.x, p.z - run.a.y};
         const float l2 = dot(d, d);
         const float t = l2 < 1e-6F ? 0 : std::clamp(dot(q, d) / l2, 0.0F, 1.0F);

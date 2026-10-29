@@ -8,8 +8,13 @@ enum class RoadType {
     Dirt,
     Gravel,
     Asphalt,
-    Highway     // a divided highway (world/Highways.hpp)
+    Highway,    // a divided highway (world/Highways.hpp)
+    Ramp,       // a slip road off a highway or onto one: one way, start to end
+    Roundabout  // a piece of a roundabout's circulating lane: one way, start to end (anticlockwise on the map)
 };
+
+// One-way roads: traffic only runs from start to end.
+inline constexpr bool one_way(RoadType type) { return type == RoadType::Ramp || type == RoadType::Roundabout; }
 
 struct Road {
     Vector3 start{

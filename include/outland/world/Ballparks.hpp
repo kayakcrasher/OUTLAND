@@ -20,7 +20,7 @@ struct Park {
 };
 // Chosen clear of every road, building and ranch (in each county, off its main town).
 inline constexpr std::array<Park, 5> parks{{
-    {0, "capital_verda", {606, 0, 46}},       // Verda City: the plot kept for it east of Orienta
+    {0, "capital_verda", {606, 0, 76}},       // Verda City: the plot kept for it east of Orienta
     {1, "village_espera", {-256, 0, -1755}},     // west of Espera, toward the hills
     {2, "port_luma", {1630, 0, -186}},
     {3, "south_haven", {180, 0, 1586}},

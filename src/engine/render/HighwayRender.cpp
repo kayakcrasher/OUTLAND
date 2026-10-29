@@ -52,13 +52,22 @@ Resources& resources() {
 
 struct Frame {
     Vector3 centre, cross;   // cross: to the right, scaled for the mitre
+    Vector3 heading;         // unit, along the road
 };
+
+// The roadway's height at (x, z) for a road heading `heading`: the ring's bridge deck where it
+// crosses over a spoke, the graded land everywhere else.
+float roadway(float x, float z, Vector3 heading) {
+    float y = 0;
+    if (hw::deck(x, z, y, &heading)) return y;
+    return world::terrain::TerrainHeight::sample(x, z);
+}
 
 // One strip of the cross-section (offsets in metres, + to the right) between two frames.
 void strip(const Frame& a, const Frame& b, float sa, float sb, float o0, float o1, float v0, float v1, float above) {
     const auto at = [&](const Frame& f, float o) {
         const float x = f.centre.x + f.cross.x * o, z = f.centre.z + f.cross.z * o;
-        return Vector3{x, world::terrain::TerrainHeight::sample(x, z) + above, z};
+        return Vector3{x, roadway(x, z, f.heading) + above, z};
     };
     const Vector3 p00 = at(a, o0), p01 = at(a, o1), p10 = at(b, o0), p11 = at(b, o1);
     const float u0 = sa / texture_along, u1 = sb / texture_along;
@@ -73,6 +82,53 @@ void strip(const Frame& a, const Frame& b, float sa, float sb, float o0, float o
 
 bool inside(const std::vector<hw::Span>& spans, float s) {
     return std::any_of(spans.begin(), spans.end(), [&](const hw::Span& span) { return s >= span.from && s <= span.to; });
+}
+
+// A box with its bottom at y0 and top at y1, `length` along `along` and `width` across it (both
+// horizontal units), lit from above-ish.
+void box(Vector3 centre, Vector3 along, float length, float width, float y0, float y1, Color colour) {
+    const Vector3 side{-along.z, 0, along.x};
+    const auto corner = [&](float a, float s, float y) {
+        return Vector3{centre.x + along.x * a * length * .5F + side.x * s * width * .5F, y, centre.z + along.z * a * length * .5F + side.z * s * width * .5F};
+    };
+    const auto face = [&](Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float light) {
+        const auto c = [&](unsigned char v) { return static_cast<unsigned char>(std::clamp(v * light, 0.0F, 255.0F)); };
+        rlColor4ub(c(colour.r), c(colour.g), c(colour.b), colour.a);
+        rlVertex3f(p0.x, p0.y, p0.z); rlVertex3f(p1.x, p1.y, p1.z); rlVertex3f(p2.x, p2.y, p2.z);
+        rlVertex3f(p0.x, p0.y, p0.z); rlVertex3f(p2.x, p2.y, p2.z); rlVertex3f(p3.x, p3.y, p3.z);
+    };
+    rlSetTexture(0);
+    rlBegin(RL_TRIANGLES);
+    // (Both windings, so every face shows whichever way round it is seen.)
+    for (const bool flip : {false, true}) {
+        const auto f = [&](Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float light) { if (flip) face(p3, p2, p1, p0, light); else face(p0, p1, p2, p3, light); };
+        f(corner(-1, -1, y1), corner(-1, 1, y1), corner(1, 1, y1), corner(1, -1, y1), 1.0F);      // top
+        f(corner(-1, -1, y0), corner(1, -1, y0), corner(1, 1, y0), corner(-1, 1, y0), .55F);      // underside
+        f(corner(-1, -1, y0), corner(-1, -1, y1), corner(1, -1, y1), corner(1, -1, y0), .8F);
+        f(corner(-1, 1, y0), corner(1, 1, y0), corner(1, 1, y1), corner(-1, 1, y1), .8F);
+        f(corner(-1, -1, y0), corner(-1, 1, y0), corner(-1, 1, y1), corner(-1, -1, y1), .7F);
+        f(corner(1, -1, y0), corner(1, -1, y1), corner(1, 1, y1), corner(1, 1, y0), .7F);
+    }
+    rlEnd();
+}
+
+// The ring's bridge over a spoke: the deck slab under the roadway, a parapet along each edge, the
+// abutments the deck rests on (holding back the embankments) and a pier in the spoke's median.
+void bridge(const hw::Interchange& x) {
+    const Color concrete{186, 182, 172, 255}, dark{150, 146, 138, 255};
+    const Vector3 along = x.ring_forward, outward = Vector3Normalize({x.at.x, 0, x.at.z});
+    float deck = 0;
+    if (!hw::deck(x.at.x, x.at.z, deck, &along)) return;
+    const float under = world::terrain::TerrainHeight::sample(x.at.x, x.at.z);
+    const float span = 2 * hw::deck_half, width = 2 * (hw::paved_half + hw::verge);
+    box(x.at, along, span, width, deck - 1.1F, deck + lift - .02F, concrete);                  // the slab
+    for (const float side : {-1.0F, 1.0F}) {
+        const Vector3 edge = Vector3Add(x.at, Vector3Scale(outward, side * (hw::paved_half + .45F)));
+        box(edge, along, span, .5F, deck, deck + 1.05F, concrete);                             // parapets
+        const Vector3 face = Vector3Add(x.at, Vector3Scale(along, side * (hw::grade_flat + .6F)));
+        box(face, along, 1.2F, width + 6, under - .5F, deck - 1.0F, dark);                      // abutments
+    }
+    box(x.at, along, 1.2F, 6, under, deck - 1.1F, dark);                                        // the pier
 }
 
 void barrier(const Model& model, Vector3 a, Vector3 b) {
@@ -123,10 +179,11 @@ void draw(const world::Road& road, const hw::RoadInfo& info, int begin, int end)
         const float s = length * static_cast<float>(i) / static_cast<float>(segments);
         // Narrower where it tapers into a town: the whole cross-section scales with the paved width.
         const float t = s / length, half = info.start_half > 0 ? info.start_half + (info.end_half - info.start_half) * t : hw::paved_half;
-        return Frame{{road.start.x + direction.x * s, 0, road.start.z + direction.z * s}, Vector3Scale(hw::cross_at(info, direction, s, length), half / hw::paved_half)};
+        return Frame{{road.start.x + direction.x * s, 0, road.start.z + direction.z * s}, Vector3Scale(hw::cross_at(info, direction, s, length), half / hw::paved_half), direction};
     };
     const auto distance = [&](int i) { return length * static_cast<float>(i) / static_cast<float>(segments); };
     auto& r = resources();
+    const bool boulevard = road.width < hw::min_width;   // through a city (narrower, planted median)
     // Lanes (textured, or plain on a junction apron), then the plain asphalt, then the verges.
     struct Band { float o0, o1; };
     constexpr Band lanes[2]{{-hw::lanes_outer, -hw::median_half}, {hw::median_half, hw::lanes_outer}};
@@ -149,7 +206,7 @@ void draw(const world::Road& road, const hw::RoadInfo& info, int begin, int end)
             } else if (pass == 1) {
                 for (const auto& band : paved) strip(a, b, sa, sb, band.o0, band.o1, band.o0 / texture_across, band.o1 / texture_across, lift);
                 if (apron) for (const auto& band : lanes) strip(a, b, sa, sb, band.o0, band.o1, band.o0 / texture_across, band.o1 / texture_across, lift);
-            } else {
+            } else if (!boulevard) {   // (a city boulevard has pavements, not gravel)
                 for (const auto& band : verges) strip(a, b, sa, sb, band.o0, band.o1, 0, 1, lift - .03F);
             }
             a = b;
@@ -157,6 +214,12 @@ void draw(const world::Road& road, const hw::RoadInfo& info, int begin, int end)
         rlEnd();
     }
     rlSetTexture(0);
+    // The ring's bridges, drawn with the piece of ring that passes over each.
+    for (const auto& x : hw::interchanges()) {
+        const float along = (x.at.x - road.start.x) * direction.x + (x.at.z - road.start.z) * direction.z;
+        const float aside = std::abs((x.at.x - road.start.x) * -direction.z + (x.at.z - road.start.z) * direction.x);
+        if (aside < 1 && along >= distance(begin) && along < distance(end) && std::abs(direction.x * x.ring_forward.x + direction.z * x.ring_forward.z) > .9F) bridge(x);
+    }
     if (!r.barrier_loaded) return;
     // The median barrier: whole barriers spread evenly over each run, drawn by the chunk holding
     // their middle, each laid on the road's grade.
@@ -170,20 +233,20 @@ void draw(const world::Road& road, const hw::RoadInfo& info, int begin, int end)
             if (middle < from || middle >= to) continue;
             const auto point = [&](float s) {
                 const float x = road.start.x + direction.x * s, z = road.start.z + direction.z * s;
-                return Vector3{x, world::terrain::TerrainHeight::sample(x, z) + lift - .02F, z};
+                return Vector3{x, roadway(x, z, direction) + lift - .02F, z};
             };
             const float half = hw::barrier_length * .5F;
             const Vector3 mid = point(middle);
-            if (world::layout::in_downtown(mid.x, mid.z)) {
+            if (boulevard || world::layout::in_downtown(mid.x, mid.z)) {
                 // Through Verda City the median is a planted boulevard: a stone kerb, a lawn, and
                 // low clipped hedges (the barrier's collision stays the same).
                 const bool along_z = std::abs(direction.z) >= std::abs(direction.x);
-                const float run = spacing + .02F;
-                const Vector3 size = along_z ? Vector3{1.9F, .24F, run} : Vector3{run, .24F, 1.9F};
+                const float run = spacing + .02F, w = boulevard ? road.width / hw::width : 1.0F;   // (a boulevard's median is narrower)
+                const Vector3 size = along_z ? Vector3{1.9F * w, .24F, run} : Vector3{run, .24F, 1.9F * w};
                 DrawCubeV({mid.x, mid.y + .12F, mid.z}, size, Color{176, 172, 162, 255});
-                DrawCubeV({mid.x, mid.y + .25F, mid.z}, along_z ? Vector3{1.6F, .03F, run} : Vector3{run, .03F, 1.6F}, Color{78, 128, 62, 255});
+                DrawCubeV({mid.x, mid.y + .25F, mid.z}, along_z ? Vector3{1.6F * w, .03F, run} : Vector3{run, .03F, 1.6F * w}, Color{78, 128, 62, 255});
                 if (k % 3 == 1)
-                    DrawCubeV({mid.x, mid.y + .55F, mid.z}, along_z ? Vector3{1.1F, .6F, spacing * .7F} : Vector3{spacing * .7F, .6F, 1.1F}, Color{46, 96, 44, 255});
+                    DrawCubeV({mid.x, mid.y + .55F, mid.z}, along_z ? Vector3{1.1F * w, .6F, spacing * .7F} : Vector3{spacing * .7F, .6F, 1.1F * w}, Color{46, 96, 44, 255});
                 else if (k % 3 == 2)
                     for (const float f : {-.3F, .3F})
                         DrawCubeV({mid.x + (along_z ? f : 0), mid.y + .32F, mid.z + (along_z ? 0 : f)}, {.35F, .12F, .35F}, f < 0 ? Color{214, 72, 70, 255} : Color{236, 196, 60, 255});

@@ -27,13 +27,17 @@ class Network {
 public:
     void build(const VerdaRegion& region);
     [[nodiscard]] const RoadInfo* info(std::size_t settlement, std::size_t road) const;
-    // Would a vehicle (a circle of `radius` at p) touch the median barrier?
+    // Would a vehicle (a circle of `radius` at p, its wheels at p.y) touch the median barrier, or a
+    // bridge's parapet?
     [[nodiscard]] bool barrier_hit(Vector3 p, float radius) const;
     [[nodiscard]] std::size_t barrier_runs() const { return runs_.size(); }
     [[nodiscard]] std::size_t junctions() const { return junctions_; }
 
 private:
-    struct Run { Vector2 a, b; };
+    // A run of barrier. Over and under an interchange's bridge a run counts only at its own level
+    // (`level`: the roadway it stands on): a car on the ring's deck passes over the spoke's.
+    struct Run { Vector2 a, b; float y{0}; bool level{false}; };
+    void add_run(Run run);
     std::vector<std::vector<RoadInfo>> roads_;
     std::vector<Run> runs_;
     std::unordered_map<long long, std::vector<int>> grid_;

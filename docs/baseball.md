@@ -8,7 +8,7 @@ played out on the field, pitch by pitch, and the towns' own people come to watch
 
 | Team | County | Colours | Park, centre (x, z) |
 |---|---|---|---|
-| Verda City | Verdkerno | green and gold | east of Orienta (606, 46) |
+| Verda City | Verdkerno | green and gold | east of Orienta (606, 76) |
 | Espera | Altverdo | brown and orange | west of town (−256, −1755) |
 | Porto Luma | Lumamaro | navy and sky blue | (1630, −186) |
 | Suda Haveno | Marĉfluo | teal and white | (180, 1586) |

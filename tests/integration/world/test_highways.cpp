@@ -33,13 +33,19 @@ int main() {
     // The network: a closed ring, the north-south highway right through Verda City, and the east
     // and west spokes; each a run of short, gently turning pieces.
     const auto& lines = hw::lines();
-    check(lines.size() == 4, "the ring, the north-south highway and two spokes");
+    check(lines.size() == 3, "the ring, the north-south highway and the east-west highway");
     {
-        bool through = false;
+        bool through = false, across = false;
         for (const auto& line : lines)
-            for (const auto& p : line.points) through |= std::abs(p.x) < .5F && std::abs(p.z) < 31;
+            for (const auto& p : line.points) {
+                through |= std::abs(p.x) < .5F && std::abs(p.z) < 31;
+                across |= std::abs(p.z) < .5F && std::abs(p.x) < 31 && line.name == "east-west";
+            }
         check(through, "the main highway runs through downtown");
+        check(across, "and the east-west highway across it: the city's main avenue");
     }
+    for (const auto& line : lines)
+        if (line.name == "east-west") check(line.city_from < line.city_to && line.city_to - line.city_from > 900, "it is a boulevard from one side of Verda City to the other");
     for (const auto& line : lines) {
         const auto n = line.points.size();
         for (std::size_t i = 0; i + (line.loop ? 0 : 1) < n; ++i) {
@@ -56,7 +62,8 @@ int main() {
     for (const auto& town : region.settlements()) for (const auto& road : town.roads)
         if (road.type == world::RoadType::Highway) {
             ++highway_roads;
-            check(road.width == hw::width, "a highway is " + std::to_string(hw::width) + " m wide");
+            const bool city = std::abs(road.start.z) < .01F && std::abs(road.end.z) < .01F && std::abs(road.start.x) <= 476.01F && std::abs(road.end.x) <= 476.01F;
+            check(road.width == (city ? hw::boulevard_width : hw::width), "a highway is " + std::to_string(hw::width) + " m wide, a city boulevard " + std::to_string(hw::boulevard_width));
         }
     check(highway_roads > 250, "the highways are in the world map: " + std::to_string(highway_roads) + " pieces");
 
@@ -113,6 +120,11 @@ int main() {
         std::cout << openings << " median openings on the north spoke\n";
         check(openings >= 3, "crossovers in the median: " + std::to_string(openings));
     }
+    // Through Verda City the east-west highway's planted median stands between the crossings and
+    // narrows the road to the avenue's width; the lanes are clear of it.
+    check(network.barrier_hit({60, 0, 0}, .1F) && network.barrier_hit({-300, 0, 0}, .1F), "a median down the city boulevard");
+    check(!network.barrier_hit({60, 0, 2.4F}, 1.0F) && !network.barrier_hit({60, 0, -2.4F}, 1.0F), "the boulevard's lanes are clear of it");
+    check(!network.barrier_hit({87, 0, 0}, 1.5F) && !network.barrier_hit({-330, 0, 0}, 1.5F), "the cross streets cross it");
     // Into a town the highway tapers to a little more than a street's width, with no barrier.
     for (std::size_t s = 0; s < region.settlements().size(); ++s)
         for (std::size_t r = 0; r < region.settlements()[s].roads.size(); ++r) {

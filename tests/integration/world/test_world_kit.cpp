@@ -337,10 +337,10 @@ int main() {
         const auto grid = [](Vector3 p) { return std::abs(p.x) <= 180 && p.z >= -177 && p.z <= 261; };
         const bool inside = grid(road.start) && grid(road.end);
         if (road.type == world::RoadType::Highway) {
-            check(road.width == world::highways::width, "highways are divided highways");
-            // The east and west spokes leave from the boulevards' ends (Roka, Porto Luma); the
-            // north-south highway runs straight through downtown down x = 0.
-            if (std::abs(road.start.x) == 476 && road.start.z == 0) ++highways;
+            check(road.width == world::highways::width || road.width == world::highways::boulevard_width, "highways are divided highways (city boulevards narrower)");
+            // The east-west highway runs right across the city on z = 0 (Roka to Porto Luma) as a
+            // boulevard; the north-south highway runs straight through downtown down x = 0.
+            if (std::abs(road.start.z) < .01F && std::abs(road.end.z) < .01F && road.width == world::highways::boulevard_width) ++highways;
             if (std::abs(road.start.x) < .5F && std::abs(road.end.x) < .5F && std::abs(road.start.z) < 176 && std::abs(road.end.z) < 176) ++through;
         } else if (inside) { ++grid_streets; check(road.width == 16 && road.type == world::RoadType::Asphalt, "grid streets are 16 m asphalt"); }
         else if (in_suburbs(road.start) && in_suburbs(road.end)) ++suburb_streets;
@@ -352,8 +352,8 @@ int main() {
         else if (road.width == 8 && std::hypot(road.start.x - world::ballpark::parks[0].centre.x, road.start.z - world::ballpark::parks[0].centre.z) < 90) continue;
         else check(world::roads::turnaround_road(road.width), "a capital road that is neither street, highway nor bus turnaround");
     }
-    check(grid_streets == 9 + 5 && highways == 2 && through >= 4 && suburb_streets == 16, // + the south blocks' four avenues and one street; the west street in three (the truckers' link)
-          "grid, suburbs, the highway through and two spokes: " + std::to_string(grid_streets) + "/" + std::to_string(suburb_streets) + "/" +
+    check(grid_streets == 8 + 5 && highways >= 12 && through >= 4 && suburb_streets == 14, // + the south blocks' four avenues and one street; the west street in three (the truckers' link)
+          "grid, suburbs, and the two highways through: " + std::to_string(grid_streets) + "/" + std::to_string(suburb_streets) + "/" +
           std::to_string(highways) + "/" + std::to_string(through));
     check(freight_roads == 1, "the yard road into Verda Transporto's depot");
 

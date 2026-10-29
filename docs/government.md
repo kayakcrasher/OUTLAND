@@ -36,7 +36,7 @@ A dedicated government role (laws, taxes, elections and the like) is planned for
 
 ## Baseball stadium ground
 
-A 150 × 150 m block of flat land east of Orienta, beyond the highway, is kept free for a future baseball stadium. It is centred at (606, 46): `dev::stadium_reserve`, with a half-width of `dev::stadium_half`.
+A 150 × 150 m block of flat land east of Orienta, beyond the highway, is kept free for a future baseball stadium. It is centred at (606, 76): `dev::stadium_reserve`, with a half-width of `dev::stadium_half`.
 
 The world kit claims this block before it places the government buildings, so nothing placed then or later can take it. The world-kit test checks that nothing solid stands there.
 

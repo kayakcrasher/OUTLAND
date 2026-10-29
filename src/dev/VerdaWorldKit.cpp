@@ -362,6 +362,17 @@ void boulevard(Kit& kit, float ground) {
             } else kit.tree(at(0, z));
         }
     }
+    // The east-west highway's run through downtown the same way, down z = 0.
+    for (std::size_t i = 0; i + 1 < dt_street_x.size(); ++i) {
+        const float x0 = dt_street_x[i] + 20, x1 = dt_street_x[i + 1] - 20;
+        for (int k = 0; k <= 3; ++k) {
+            const float x = x0 + (x1 - x0) * static_cast<float>(k) / 3.0F;
+            if (k % 3 == 0) {
+                kit.put(urban + "Traffic lights/street_light.glb", at(x, 0), 0, false);
+                kit.put(urban + "Traffic lights/street_light.glb", at(x, 0), 180, false);
+            } else kit.tree(at(x, 0));
+        }
+    }
     // Lamps and trees on the verges too, the length of the run.
     for (std::size_t j = 0; j + 1 < dt_street_z.size(); ++j)
         for (const float side : {-1.0F, 1.0F})
@@ -380,9 +391,11 @@ void downtown(Kit& kit, world::VerdaRegion& region) {
     // and crosswalk plates where two streets cross (the highway lays its own apron).
     for (const float x : dt_street_x)
         if (x != 0) capital->roads.push_back({{x, 0, -grid_edge_z}, {x, 0, grid_edge_z}, dt_street, world::RoadType::Asphalt});
-    for (const float z : dt_street_z) capital->roads.push_back({{-grid_edge_x, 0, z}, {grid_edge_x, 0, z}, dt_street, world::RoadType::Asphalt});
+    // (z = 0 is the east-west highway: the city's main avenue, a boulevard.)
+    for (const float z : dt_street_z)
+        if (z != 0) capital->roads.push_back({{-grid_edge_x, 0, z}, {grid_edge_x, 0, z}, dt_street, world::RoadType::Asphalt});
     for (const float x : dt_street_x) for (const float z : dt_street_z)
-        if (x != 0) kit.put(city + "ground/intersection_16.glb", {x, ground, z}, 0, false);
+        if (x != 0 && z != 0) kit.put(city + "ground/intersection_16.glb", {x, ground, z}, 0, false);
     // Sixteen blocks, each a 68 m pad (sidewalks included). Inner/outer by column and row.
     enum class Zone { Tower, Square, MainStreet, Mixed, Parking };
     const auto zone = [](float bx, float bz) {
@@ -1371,7 +1384,7 @@ void west_suburbs(Kit& kit, world::VerdaRegion& region) {
                 if (other.x < suburb_west_x) {kit.forget_road(road); *end = {suburb_west_x, end->y, 0};}
             }
     // Streets: the boulevard on z = 0, the downtown streets carried west, two cross streets.
-    capital->roads.push_back({{suburb_east_x, 0, 0}, {suburb_west_x, 0, 0}, avenue, world::RoadType::Asphalt});
+    // (The avenue on z = 0 is the east-west highway, laid with the others.)
     // z = -84 is the truckers' road (Verda Transporto's yard is at its west end, and the Roka
     // highway leaves from the boulevard's west end): 14 m, and so is the link up to the boulevard.
     for (const float z : {-168.0F, -84.0F, 84.0F, 168.0F})
@@ -1560,7 +1573,6 @@ void east_suburbs(Kit& kit, world::VerdaRegion& region) {
                 const auto& other = end == &road.start ? road.end : road.start;
                 if (other.x > east_far_x) {kit.forget_road(road); *end = {east_far_x, end->y, 0};}
             }
-    capital->roads.push_back({{east_near_x, 0, 0}, {east_far_x, 0, 0}, avenue, world::RoadType::Asphalt});
     for (const float z : {-168.0F, -84.0F, 84.0F, 168.0F})
         capital->roads.push_back({{east_near_x, 0, z}, {east_far_x, 0, z}, 8, world::RoadType::Asphalt});
     for (const float x : {east_mid_x, east_far_x})
@@ -2208,8 +2220,15 @@ void lay_highways(world::VerdaRegion& region) {
     capital->roads.clear();
     for (const auto& line : world::highways::lines()) {
         const auto n = line.points.size();
-        for (std::size_t i = 0; i + (line.loop ? 0 : 1) < n; ++i)
-            capital->roads.push_back({line.points[i], line.points[(i + 1) % n], world::highways::width, world::RoadType::Highway});
+        float along = 0;
+        for (std::size_t i = 0; i + (line.loop ? 0 : 1) < n; ++i) {
+            const Vector3 a = line.points[i], b = line.points[(i + 1) % n];
+            const float l = std::hypot(b.x - a.x, b.z - a.z), middle = along + l * .5F;
+            // Through Verda City it is the city's main avenue: a boulevard, narrower.
+            const bool city = middle > line.city_from && middle < line.city_to;
+            capital->roads.push_back({a, b, city ? world::highways::boulevard_width : world::highways::width, world::RoadType::Highway});
+            along += l;
+        }
     }
 }
 }

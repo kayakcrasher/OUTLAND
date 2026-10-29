@@ -60,7 +60,7 @@ struct WorldKitReport {
 // ordinary Creator world asset, so the result is edited, saved and exported like hand-built work.
 // Lots that overlap existing buildings or assets are skipped. Deterministic.
 // Kept free in Verda City for a future baseball stadium: 150 x 150 m of flat land east of Orienta.
-inline constexpr Vector3 stadium_reserve{606, 0, 46};  // clear of the Porto Luma highway
+inline constexpr Vector3 stadium_reserve{606, 0, 76};  // clear of the east-west highway's curve out of the city
 inline constexpr float stadium_half = 75;
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog);
 }

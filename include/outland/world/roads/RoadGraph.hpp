@@ -35,10 +35,13 @@ public:
     RoadSpot nearest(Vector3 point) const;
     // Off-road start, onto the nearest road, along the shortest way, off to the goal. Driving is on
     // the right: road segments carry a lane offset (a quarter of a two-lane road's width; wide
-    // downtown streets keep a kerbside parking lane, so 15%).
+    // downtown streets keep a kerbside parking lane, so 15%; one-way roads, their middle). One-way
+    // roads are only driven their way, and a ramp is only turned onto or off to the right.
     Route route(Vector3 from, Vector3 to) const;
 
-    struct Edge { int a, b; float length, width; };
+    // `one_way`: traffic runs a to b only (a ramp, a roundabout's lane); `ramp`: a slip road, joined
+    // and left only by turning right or going straight on (no turning left across a highway's median).
+    struct Edge { int a, b; float length, width; bool one_way{false}, ramp{false}; };
     const std::vector<Vector3>& nodes() const { return nodes_; }
     const std::vector<Edge>& edges() const { return edges_; }
 

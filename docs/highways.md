@@ -1,14 +1,28 @@
 # Highways
 
 Verda's towns are joined by proper divided highways (`world/Highways.hpp`). The ring road circles
-the island at 1,500 m. The main highway runs north–south right through Verda City, and two spokes
-leave the city east and west:
+the island at 1,500 m. Two highways cross the island and run right through Verda City as its main
+avenues:
 
 | Highway | From | To |
 |---|---|---|
 | north–south | Espera's south edge street (0, −1680), straight down x = 0 through downtown | Suda Haveno's north edge street (300, 1680) |
-| east | the Orienta boulevard (476, 0) | Porto Luma's grid (1624, −440) |
-| west | the Okcidenta boulevard (−476, 0) | Roka's grid (−1624, 410) |
+| east–west | Porto Luma's grid (1624, −440) | Roka's grid (−1624, 410), straight through Verda City on z = 0 |
+
+## Through Verda City: the east–west boulevard
+
+The east–west highway is Verda City's main avenue from one side of the city to the other: from the
+east suburbs' edge, across downtown (crossing the north–south boulevard at the city's centre), to the
+west suburbs' edge. Just outside each edge it curves away to Porto Luma and Roka.
+
+- **Width.** In the city it is 16 m, the avenue it replaced (`boulevard_width`): two lanes each way
+  with a planted median, and pavements instead of gravel verges. It widens to the full 18.8 m over
+  the 60 m after it leaves the city.
+- **The median.** Planted, like the north–south boulevard: a kerb, a lawn and hedges, with plane trees
+  and double street lamps between the crossings downtown. Every street crosses it with an opening in
+  the median.
+- **The stadium.** Verda City's ballpark ground moved south to (606, 76), clear of the curve east
+  out of the city.
 
 ## Through downtown: the boulevard
 
@@ -26,7 +40,7 @@ apron at each crossing.
 - **Parliament** faces the boulevard from the open block south of the grid, its lawn and steps
   toward the highway.
 
-The spokes cross the ring road at grade, at four junctions. The old two-lane links have been
+The highways cross the ring road at grade, at four junctions. The old two-lane links have been
 replaced, along with the spurs that ran from the ring road into each hub and doubled the spokes.
 
 ## Cross-section
@@ -90,6 +104,16 @@ The terrain is cut and filled to the highways (`highways::graded`, called from
 `outland_highway_tests` checks that every highway stays under 12% grade (the network is built to
 7%) and level across (under 4% tilt).
 
+## One-way roads
+
+Two road types are one way, start to end: `RoadType::Ramp` (a slip road onto or off a highway) and
+`RoadType::Roundabout` (a piece of a roundabout's circulating lane). The road graph
+(`world/roads/RoadGraph`) routes over (edge, end) states, so traffic:
+- drives a one-way road only its way, in the middle of it;
+- never turns back along the road it has just driven;
+- joins and leaves a ramp only by turning right or going straight on (never left across a highway's
+  median).
+
 ## Traffic and collision
 - **Traffic.** Traffic drives on the right, in the outer (slow) lane, 6.25 m from the centre line
   (`RoadGraph::lane_of`). A route eases between lane offsets over 16 m either side of a corner, for
@@ -102,7 +126,7 @@ The terrain is cut and filled to the highways (`highways::graded`, called from
 ## What moved with it
 - The ranch gates moved out to the new verge, 12.5 m from the centre line (`world/Ranches.hpp`).
   The stockyard gate moved too.
-- The stadium ground moved 6 m east and north (606, 46), clear of the Porto Luma highway.
+- The stadium ground moved to (606, 76), clear of the east-west highway's curve out of the city.
 - Police stations take a lot only where their patrol cars have a clear run out. Verda City's
   station stands by the north highway again.
 - Paul Acosta parks on the hard shoulder of the town-bound carriageway.

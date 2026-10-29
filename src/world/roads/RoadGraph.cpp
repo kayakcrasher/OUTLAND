@@ -44,11 +44,12 @@ int RoadGraph::node(Vector3 p) {
 
 void RoadGraph::build(const VerdaRegion& region) {
     nodes_.clear(); edges_.clear(); adjacent_.clear();
-    struct Segment { Vector3 a, b; float width; std::vector<float> cuts; };
+    struct Segment { Vector3 a, b; float width; std::vector<float> cuts; bool one_way, ramp, highway; };
     std::vector<Segment> segments;
     for (const auto& town : region.settlements()) for (const auto& road : town.roads)
         if (flat(road.start, road.end) > .5F && std::isfinite(road.start.x) && std::isfinite(road.end.x))
-            segments.push_back({road.start, road.end, std::max(2.0F, road.width), {0, 1}});
+            segments.push_back({road.start, road.end, std::max(2.0F, road.width), {0, 1}, one_way(road.type), road.type == RoadType::Ramp,
+                                road.type == RoadType::Highway});
     for (std::size_t i = 0; i < segments.size(); ++i) for (std::size_t j = 0; j < segments.size(); ++j) {
         if (i == j) continue;
         auto& s = segments[i];
@@ -65,7 +66,14 @@ void RoadGraph::build(const VerdaRegion& region) {
         if (std::abs(denominator) < 1e-6F) continue;
         const float t = ((o.a.x - s.a.x) * qz - (o.a.z - s.a.z) * qx) / denominator;
         const float u = ((o.a.x - s.a.x) * rz - (o.a.z - s.a.z) * rx) / denominator;
-        if (t > 0 && t < 1 && u >= 0 && u <= 1) s.cuts.push_back(t);
+        if (!(t > 0 && t < 1 && u >= 0 && u <= 1)) continue;
+        // (Where the ring bridges a spoke the two do not meet.)
+        if (s.highway && o.highway) {
+            const Vector3 at = Vector3Lerp(s.a, s.b, t);
+            if (std::any_of(highways::interchanges().begin(), highways::interchanges().end(),
+                            [&](const highways::Interchange& x) { return flat(x.at, at) < 30; })) continue;
+        }
+        s.cuts.push_back(t);
     }
     for (auto& s : segments) {
         std::sort(s.cuts.begin(), s.cuts.end());
@@ -76,7 +84,7 @@ void RoadGraph::build(const VerdaRegion& region) {
                 const bool known = std::any_of(adjacent_[static_cast<std::size_t>(n)].begin(), adjacent_[static_cast<std::size_t>(n)].end(),
                     [&](int e) {return edges_[static_cast<std::size_t>(e)].a == previous || edges_[static_cast<std::size_t>(e)].b == previous;});
                 if (!known) {
-                    edges_.push_back({previous, n, flat(nodes_[static_cast<std::size_t>(previous)], nodes_[static_cast<std::size_t>(n)]), s.width});
+                    edges_.push_back({previous, n, flat(nodes_[static_cast<std::size_t>(previous)], nodes_[static_cast<std::size_t>(n)]), s.width, s.one_way, s.ramp});
                     adjacent_[static_cast<std::size_t>(previous)].push_back(static_cast<int>(edges_.size() - 1));
                     adjacent_[static_cast<std::size_t>(n)].push_back(static_cast<int>(edges_.size() - 1));
                 }
@@ -95,6 +103,7 @@ void RoadGraph::build(const VerdaRegion& region) {
     for (std::size_t n = 0; n < nodes_.size(); ++n) {
         if (adjacent_[n].size() != 1) continue;
         const auto& own = edges_[static_cast<std::size_t>(adjacent_[n].front())];
+        if (own.one_way) continue;   // (a ramp's or a roundabout's ends are laid where they join)
         const int neighbour = own.a == static_cast<int>(n) ? own.b : own.a;
         int best = -1;
         float best_distance = 15;
@@ -134,51 +143,65 @@ Route RoadGraph::route(Vector3 from, Vector3 to) const {
     const auto& ge = edges_[static_cast<std::size_t>(goal.edge)];
     add(from, 0);
     if (start.edge == goal.edge) {
-        add(start.point, 0); add(goal.point, lane_of(se.width)); add(to, 0);
+        add(start.point, 0); add(goal.point, se.one_way ? 0.0F : lane_of(se.width)); add(to, 0);
         route.complete = true;
         return route;
     }
-    std::vector<float> cost(nodes_.size(), std::numeric_limits<float>::max());
-    std::vector<int> via(nodes_.size(), -1);
+    // Shortest way over states (an edge, and the end of it arrived at): one-way roads only their
+    // way, no turning back along the edge just driven, and no turning left onto or off a ramp (that
+    // would be across a highway's median).
+    const auto edge_at = [&](int e) -> const Edge& { return edges_[static_cast<std::size_t>(e)]; };
+    const auto node_of = [&](int state) { const auto& e = edge_at(state / 2); return state % 2 ? e.b : e.a; };
+    const auto state_of = [&](int e, int node) { return e * 2 + (edge_at(e).b == node ? 1 : 0); };
+    const auto heading = [&](int from, int to) { return flat_dir(nodes_[static_cast<std::size_t>(from)], nodes_[static_cast<std::size_t>(to)]); };
+    const auto allowed = [&](int in, int n, int out) {
+        const auto& e = edge_at(out);
+        if (in == out || (e.one_way && e.a != n)) return false;
+        const auto& before = edge_at(in);
+        if (!before.ramp && !e.ramp) return true;
+        const int from = before.a == n ? before.b : before.a, to = e.a == n ? e.b : e.a;
+        const Vector3 d_in = heading(from, n), d_out = heading(n, to);
+        return d_out.x * -d_in.z + d_out.z * d_in.x > -.42F;   // straight on, or a right turn
+    };
+    const std::size_t states = edges_.size() * 2;
+    std::vector<float> cost(states, std::numeric_limits<float>::max());
+    std::vector<int> via(states, -1);
     using Item = std::pair<float, int>;
     std::priority_queue<Item, std::vector<Item>, std::greater<>> open;
-    for (const int n : {se.a, se.b}) {
-        const float c = flat(start.point, nodes_[static_cast<std::size_t>(n)]);
-        if (c < cost[static_cast<std::size_t>(n)]) {cost[static_cast<std::size_t>(n)] = c; open.emplace(c, n);}
-    }
+    const auto relax = [&](int state, float c, int previous) {
+        const auto i = static_cast<std::size_t>(state);
+        if (c < cost[i]) {cost[i] = c; via[i] = previous; open.emplace(c, state);}
+    };
+    for (const int n : {se.a, se.b})
+        if (!se.one_way || n == se.b) relax(state_of(start.edge, n), flat(start.point, nodes_[static_cast<std::size_t>(n)]), -1);
     while (!open.empty()) {
-        const auto [c, n] = open.top(); open.pop();
-        if (c > cost[static_cast<std::size_t>(n)]) continue;
-        for (const int e : adjacent_[static_cast<std::size_t>(n)]) {
-            const auto& edge = edges_[static_cast<std::size_t>(e)];
-            const int m = edge.a == n ? edge.b : edge.a;
-            if (c + edge.length < cost[static_cast<std::size_t>(m)]) {
-                cost[static_cast<std::size_t>(m)] = c + edge.length; via[static_cast<std::size_t>(m)] = n;
-                open.emplace(cost[static_cast<std::size_t>(m)], m);
-            }
+        const auto [c, state] = open.top(); open.pop();
+        if (c > cost[static_cast<std::size_t>(state)]) continue;
+        const int n = node_of(state);
+        for (const int out : adjacent_[static_cast<std::size_t>(n)]) {
+            if (!allowed(state / 2, n, out)) continue;
+            const auto& edge = edge_at(out);
+            relax(state_of(out, edge.a == n ? edge.b : edge.a), c + edge.length, state);
         }
     }
+    // Onto the goal's edge from an end it can be driven from.
     int last = -1;
     float best = std::numeric_limits<float>::max();
-    for (const int n : {ge.a, ge.b}) {
-        if (cost[static_cast<std::size_t>(n)] == std::numeric_limits<float>::max()) continue;
-        const float c = cost[static_cast<std::size_t>(n)] + flat(nodes_[static_cast<std::size_t>(n)], goal.point);
-        if (c < best) {best = c; last = n;}
+    for (std::size_t state = 0; state < states; ++state) {
+        if (cost[state] == std::numeric_limits<float>::max()) continue;
+        const int e = static_cast<int>(state / 2), n = node_of(static_cast<int>(state));
+        if ((n != ge.a && n != ge.b) || (ge.one_way && n != ge.a) || !allowed(e, n, goal.edge)) continue;
+        const float c = cost[state] + flat(nodes_[static_cast<std::size_t>(n)], goal.point);
+        if (c < best) {best = c; last = static_cast<int>(state);}
     }
     if (last < 0) {add(start.point, 0); add(to, 0); return route;} // islands of road: nothing joins them
     std::vector<int> chain;
-    for (int n = last; n >= 0; n = via[static_cast<std::size_t>(n)]) chain.push_back(n);
+    for (int state = last; state >= 0; state = via[static_cast<std::size_t>(state)]) chain.push_back(state);
     std::reverse(chain.begin(), chain.end());
+    const auto lane = [&](int e) { const auto& edge = edge_at(e); return edge.one_way ? 0.0F : lane_of(edge.width); };
     add(start.point, 0);
-    float width = se.width;
-    for (std::size_t k = 0; k < chain.size(); ++k) {
-        if (k > 0) for (const int e : adjacent_[static_cast<std::size_t>(chain[k])]) {
-            const auto& edge = edges_[static_cast<std::size_t>(e)];
-            if (edge.a == chain[k - 1] || edge.b == chain[k - 1]) width = edge.width;
-        }
-        add(nodes_[static_cast<std::size_t>(chain[k])], lane_of(width));
-    }
-    add(goal.point, lane_of(ge.width));
+    for (const int state : chain) add(nodes_[static_cast<std::size_t>(node_of(state))], lane(state / 2));
+    add(goal.point, ge.one_way ? 0.0F : lane_of(ge.width));
     add(to, 0);
     route.complete = true;
     return route;

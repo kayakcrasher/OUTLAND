@@ -434,7 +434,7 @@ bool CreatorMapIO::load(
         if(full_snapshot && record=="ROAD") {
             world::Road road;int type=0;
             input >> road.start.x >> road.start.y >> road.start.z >> road.end.x >> road.end.y >> road.end.z >> road.width >> type;
-            if(!input || road.width<=0 || type<0 || type>static_cast<int>(world::RoadType::Highway)) return false;
+            if(!input || road.width<=0 || type<0 || type>static_cast<int>(world::RoadType::Roundabout)) return false;
             road.type=static_cast<world::RoadType>(type);snapshot.back().roads.push_back(road);continue;
         }
         // ----------------------------------------------------
