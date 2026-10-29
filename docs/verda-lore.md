@@ -98,6 +98,12 @@ Ferarbaro is Verda's backcountry, and **Sovaĝejo** (the wild place) is its hear
   | FREŜAJ OVOJ | Fresh eggs |
   | ATENTU LA HUNDON! | Beware of the dog! |
 
+## Faith
+
+The west of the island is Baptist and the east Esperanto Orthodox; Verda City has both. La Verda
+Mano are Baptists. Verdan Baptists keep the saints and the Orthodox feasts and read the King James
+in Esperanto. See `docs/churches.md`.
+
 ## Language in the game
 
 - **The world is written in Esperanto:**

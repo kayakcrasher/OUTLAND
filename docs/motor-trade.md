@@ -40,12 +40,20 @@ time (LEAVE / ESC), or go through the list:
 | Engine | factory; tuned (+30% power); V8 big block (+65% power, +15% top speed) | 2,500 / 7,000 kr |
 | Tyres | low-profile (small, sits low, grips); factory; all-terrain (bigger, a lift, climbs 6° steeper); monster (huge, a big lift, climbs 14° steeper) | 800 / 1,500 / 4,000 kr |
 | Front bumper | factory; steel push bar (crashes do 35% less damage); bull bar (60% less) | 900 / 1,600 kr |
+| Exhaust | factory; sport (a deeper note, +4% power); straight pipes (loud, pops and bangs on the overrun, +8% power) | 1,100 / 2,400 kr |
+| Spoiler | none; ducktail (+5% grip); race wing (+12% grip, -3% top speed) | 700 / 1,800 kr |
+| Window tint | clear; smoked; limo (nobody can see who is inside) | 400 / 900 kr |
+| Rims | factory; chrome; black; gold (a hub of that colour on each wheel) | 1,200 / 900 / 2,200 kr |
+| Underglow | none; green, blue, pink or amber light under the sills | 1,500 kr |
 | Repair | body, engine and tyres back to new | 6 kr a point of damage |
 
 - **Paint** recolours the body's own paint and leaves the glass, chrome and lamps alone.
 - **Tyres** change the wheels' size and lift (or drop) the body with them.
-- **Bumpers** are drawn on the car's nose.
-- The work is saved with the car (`OUTLAND_VEHICLES 2`).
+- **Bumpers** are drawn on the car's nose; **spoilers** on its boot, in its paint (black on a
+  factory finish); **underglow** as a pool of light on the road and a strip under each sill.
+- **Exhausts** and **engines** change the engine's sound too (see `docs/engine-sound.md`).
+- With **limo tint** the driver and passengers are not drawn: nobody sees in.
+- The work is saved with the car (`OUTLAND_VEHICLES 5`; a bought car's save line has 12 mods).
 
 ## Aŭtovendejo Verda (the car lot)
 The car lot is in Verda City, west of downtown: a paved lot with bunting, two rows of bays, a sign
@@ -56,9 +64,20 @@ drive those off). To buy, walk up to the salesman's desk and press USE:
 |---|---|
 | Classic hatchback | 6,000 kr |
 | Vakero side-by-side | 8,500 kr |
+| Verda Familio (estate) | 9,500 kr |
 | Verda Sedano | 11,000 kr |
+| Verda Furgono (box van) | 12,500 kr |
 | Verda pickup | 14,000 kr |
+| Verda Platformo (flatbed) | 16,500 kr |
+| Verda Tempesto (muscle car) | 24,000 kr |
 | Verda Mano GT | 45,000 kr |
+
+The first five stand on the front row and the rest behind them.
+
+The Familio, Furgono, Platformo and Tempesto are built by `tools/generate_civilian_vehicles.py`
+(rows in `assets/verda/vehicles/vehicle_manifest.tsv`). They also park in the towns' streets and
+driveways among the hatchbacks, Roka's yards keep flatbeds, and the police calls' getaway cars
+can be any of them.
 
 The car waits at the lot's exit, nose to the street. It is yours: it comes back where you left
 it next time you play, with whatever the mechanic fitted and the fuel in its tank. You can own

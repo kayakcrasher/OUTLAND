@@ -1,3 +1,4 @@
+#include "outland/game/culture/Faith.hpp"
 #include "outland/game/economy/Penthouse.hpp"
 #include "outland/creator/CreatorAssetRegistry.hpp"
 #include "outland/creator/CreatorMapIO.hpp"
@@ -66,6 +67,20 @@ int main() {
     for (const auto& p : report.skipped) std::cout << "  skipped lot " << p.x << ", " << p.z << '\n';
     check(report.missing.empty(), "every kit model is in the catalog");
     check(report.buildings >= 40 && report.assets > 400, "towns dressed: " + std::to_string(report.buildings));
+    // A church in every town: Baptist chapels in the west, Orthodox churches in the east, both in Verda City.
+    check(report.baptist_churches >= 3 && report.orthodox_churches >= 4,
+          "churches: " + std::to_string(report.baptist_churches) + " Baptist, " + std::to_string(report.orthodox_churches) + " Orthodox");
+    {
+        const auto found = outland::game::culture::find_churches(region);
+        bool west_baptist = true, capital_both[2]{false, false}, green_hand = false;
+        for (const auto& c : found) {
+            if (c.settlement == "capital_verda") capital_both[static_cast<int>(c.denomination)] = true;
+            else west_baptist &= (c.centre.x < 0) == (c.denomination == outland::game::culture::Denomination::Baptist);
+            green_hand |= c.green_hand;
+        }
+        check(found.size() == static_cast<std::size_t>(report.baptist_churches + report.orthodox_churches) && west_baptist && capital_both[0] && capital_both[1] && green_hand,
+              "Baptists west, Orthodox east, Verda City both (La Verda Mano's chapel there)");
+    }
     check(count_assets(region) + static_cast<std::size_t>(report.cleared) == before + static_cast<std::size_t>(report.assets), "every piece is a world asset");
     world::VerdaRegion again(true);
     const auto repeat = make(again);

@@ -2572,6 +2572,206 @@ def clinic():
     return b
 
 
+def clapboard(color=(244, 242, 236), line=(206, 204, 198), seed=59):
+    """Painted weatherboard: horizontal boards, a shadow line under each."""
+    c = Canvas(color=color, seed=seed)
+    for y in range(0, TEX, 8):
+        c.rect(0, y + 6, TEX, y + 8, line, 3)
+    c.noise(2)
+    return c
+
+
+def stained_glass(seed=61):
+    """Leaded panes in jewel colours."""
+    c = Canvas(color=(30, 30, 40), seed=seed)
+    colours = [(170, 30, 40), (30, 70, 160), (210, 170, 40), (40, 130, 70), (120, 40, 140)]
+    for i in range(0, TEX, 16):
+        for j in range(0, TEX, 16):
+            c.rect(i + 1, j + 1, i + 15, j + 15, colours[(i // 16 * 3 + j // 16) % len(colours)], 10)
+    return c
+
+
+def gable(b, wall, roof, x0, x1, y0, height, z0, z1, overhang=.35):
+    """A pitched roof along Z (ridge over x0..x1's middle): wall-faced gable ends and two slopes."""
+    xm = (x0 + x1) / 2
+    for zz, nz in ((z0, -1), (z1, 1)):
+        tri = [(x0, y0, zz), (x1, y0, zz), (xm, y0 + height, zz), (xm, y0 + height, zz)]
+        if nz > 0:
+            tri = [tri[1], tri[0], tri[2], tri[3]]
+        tu, tv = b.materials[wall][1], b.materials[wall][2]
+        b.raw(wall, tri, (0, 0, nz), [(p[0] / tu, p[1] / tv) for p in tri])
+    run = (x1 - x0) / 2 + overhang
+    rise = height * run / ((x1 - x0) / 2)
+    length = math.hypot(run, rise)
+    tu, tv = b.materials[roof][1], b.materials[roof][2]
+    for side in (-1, 1):
+        edge = (x0 - overhang) if side < 0 else (x1 + overhang)
+        n = (side * rise / length, run / length, 0)
+        quad = [(edge, y0 + height - rise, z0 - overhang), (xm, y0 + height + .02, z0 - overhang),
+                (xm, y0 + height + .02, z1 + overhang), (edge, y0 + height - rise, z1 + overhang)]
+        if side > 0:
+            quad = [quad[1], quad[0], quad[3], quad[2]]
+        b.raw(roof, quad, n, [(0, 0), (length / tu, 0), (length / tu, (z1 - z0) / tv), (0, (z1 - z0) / tv)])
+        # (the underside, seen from inside and under the eaves)
+        under = [quad[1], quad[0], quad[3], quad[2]]
+        b.raw(roof, under, (-n[0], -n[1], 0), [(0, 0), (length / tu, 0), (length / tu, (z1 - z0) / tv), (0, (z1 - z0) / tv)])
+
+
+def onion(b, material, cx, cz, r, y0, height, sides=16):
+    """An onion dome: swelling out from its drum, then drawn up to a point."""
+    profile = [(0, .82), (.12, 1.0), (.3, 1.12), (.48, 1.0), (.64, .72), (.78, .42), (.9, .18), (1.0, .03)]
+    for (t0, k0), (t1, k1) in zip(profile, profile[1:]):
+        b.ring(material, cx, cz, r * k0, r * k1, y0 + height * t0, y0 + height * t1, sides)
+
+
+def cross(b, x, y, z, size, material, along_x=True):
+    """A cross standing on a point (a spire's or a dome's), its arms across X (or Z)."""
+    s = size
+    b.solid((x - .05 * s, y, z - .05 * s), (x + .05 * s, y + s, z + .05 * s), material)
+    if along_x:
+        b.solid((x - .32 * s, y + .62 * s, z - .05 * s), (x + .32 * s, y + .72 * s, z + .05 * s), material)
+    else:
+        b.solid((x - .05 * s, y + .62 * s, z - .32 * s), (x + .05 * s, y + .72 * s, z + .32 * s), material)
+
+
+def baptist_chapel():
+    """Baptista Preĝejo: the west's white clapboard chapel (10 x 18 m, enterable). A pitched
+    shingle roof, a little portico with a pediment over the green door, tall stained-glass windows
+    down both sides, and on the ridge at the front an open belfry under a white spire and a cross.
+    Inside: two banks of pews, the pulpit, the baptistry pool behind it, and the Esperanto King
+    James open on the lectern. Front faces -Z."""
+    b = Builder()
+    b.material("clapboard", clapboard(), 3, 3)
+    b.material("plaster", flat((236, 232, 222), 3), 3, 3)
+    b.material("floor", wood(), 2, 2)
+    b.material("shingle", flat((58, 62, 70), 8), 2, 2)
+    b.material("trim", flat((250, 250, 246), 2), 1, 1)
+    b.material("door", flat((24, 92, 56), 3), 1, 1)
+    b.material("pew", flat((112, 74, 44), 4), 1, 1)
+    b.material("water", flat((70, 140, 190), 6), 1, 1)
+    b.material("stained", stained_glass(), 1, 1)
+    b.material("bell", flat((176, 140, 60), 4), 1, 1)
+    w, d, height, t, slab = 5.0, 9.0, 5.2, .25, .2
+    windows = [(z, z + 1.1, 1.3, 4.0) for z in (-6.5, -3.0, .5, 4.0)]
+    wall_with_openings(b, 'x', -d, (-w, w), height, t, [(-.9, .9, slab, 2.8)], "clapboard", "plaster", -1)
+    wall_with_openings(b, 'x', d, (-w, w), height, t, [], "clapboard", "plaster", +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), height, t, windows, "clapboard", "plaster", -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, windows, "clapboard", "plaster", +1)
+    # Stained glass in the window openings, set back in the wall.
+    for side in (-1, 1):
+        for z0, z1, y0, y1 in windows:
+            b.solid((side * w - .03, y0, z0), (side * w + .03, y1, z1), "stained")
+    b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
+    plinth_skirt(b, w, d, .4, "plaster", front_doors=[(-.9, .9)])
+    gable(b, "clapboard", "shingle", -w, w, height, 3.4, -d, d)
+    # The ceiling under the roof (a flat plaster ceiling at the eaves, the roof space above it).
+    b.box((-w + t, height - .05, -d + t), (w - t, height, d - t), {'-y': "plaster"})
+    # Portico: a pediment on two square posts over the door, and the step.
+    for x in (-1.6, 1.4):
+        b.solid((x, 0, -d - 2.0), (x + .2, 3.4, -d - 1.8), "trim")
+    b.solid((-1.8, 3.4, -d - 2.1), (1.8, 3.6, -d), "trim")
+    gable(b, "trim", "shingle", -1.8, 1.8, 3.6, 1.1, -d - 2.1, -d, overhang=.1)
+    b.solid((-1.4, 0, -d - 1.2), (1.4, .18, -d), "plaster")
+    b.solid((-.9, slab, -d - .02), (-.05, 2.75, -d + .02), "door")      # the doors stand open
+    # The belfry on the ridge at the front, the spire and the cross.
+    bz0, bz1, bw = -d + .6, -d + 3.2, 1.3
+    top = height + 3.4
+    b.box((-bw, height + 1.2, bz0), (bw, top + .6, bz1), {s: "clapboard" for s in ('+x', '-x', '+z', '-z')})
+    for x0 in (-bw, bw - .25):
+        for z0 in (bz0, bz1 - .25):
+            b.solid((x0, top + .6, z0), (x0 + .25, top + 2.6, z0 + .25), "trim")
+    b.solid((-bw - .1, top + .6, bz0 - .1), (bw + .1, top + .75, bz1 + .1), "trim")
+    b.solid((-bw - .1, top + 2.6, bz0 - .1), (bw + .1, top + 2.8, bz1 + .1), "trim")
+    b.ring("bell", 0, (bz0 + bz1) / 2, .5, .25, top + .9, top + 1.9, 10, top_cap=True)
+    b.ring("trim", 0, (bz0 + bz1) / 2, bw * 1.25, .05, top + 2.8, top + 8.0, 8)
+    cross(b, 0, top + 8.0, (bz0 + bz1) / 2, 1.3, "trim")
+    # Inside: two banks of pews with an aisle, the pulpit on a dais, the baptistry behind.
+    for k in range(7):
+        z = -6.6 + k * 1.45
+        for x0, x1 in ((-w + .5, -.8), (.8, w - .5)):
+            b.solid((x0, slab, z), (x1, .65, z + .45), "pew")
+            b.solid((x0, .65, z + .38), (x1, 1.05, z + .48), "pew")
+    b.solid((-w + t, slab, 4.6), (w - t, .42, d - t), "floor")         # the dais, one low step up
+    b.solid((-.6, .42, 4.9), (.6, 1.55, 5.5), "pew")                     # the pulpit
+    b.solid((-.45, 1.55, 4.85), (.45, 1.61, 5.35), "trim")               # the open Bible
+    b.solid((-2.2, .42, 7.0), (2.2, 1.0, d - t), "plaster")             # the baptistry's rim
+    b.solid((-2.0, .8, 7.2), (2.0, .95, d - t - .2), "water")
+    b.solid((-.08, 2.2, d - t - .05), (.08, 4.4, d - t), "pew")         # the plain cross on the back wall
+    b.solid((-.7, 3.6, d - t - .05), (.7, 3.75, d - t), "pew")
+    return b
+
+
+def orthodox_church():
+    """Ortodoksa Preĝejo: the east's Esperanto Orthodox church (14 x 16 m, enterable). White
+    walls under a green tin roof, a gold onion dome on a tall drum over the crossing and four blue
+    onions on the corners, each with its cross; a porch with an icon over the arched door, and
+    round-headed windows. Inside it is open (the faithful stand): candle stands, benches along the
+    walls for the old, and the iconostasis across the east end, gold and red, with the royal doors
+    in the middle. Front faces -Z."""
+    b = Builder()
+    b.material("render", flat((242, 238, 226), 3), 3, 3)
+    b.material("plaster", flat((232, 222, 200), 3), 3, 3)
+    b.material("floor", flat((150, 120, 96), 5), 2, 2)
+    b.material("tin", flat((52, 120, 92), 5), 2, 2)
+    b.material("gold", flat((224, 180, 60), 6), 1, 1)
+    b.material("blue", flat((40, 80, 168), 5), 1, 1)
+    b.material("stone", flat((176, 170, 160), 5), 2, 2)
+    b.material("icon", flat((168, 40, 36), 6), 1, 1)
+    b.material("wood", flat((96, 60, 36), 4), 1, 1)
+    b.material("window", flat((40, 52, 72), 3), 1, 1)
+    w, d, height, t, slab = 7.0, 8.0, 7.0, .3, .25
+    windows = [(z, z + 1.0, 2.0, 4.6) for z in (-5.0, -1.5, 2.0, 5.0)]
+    wall_with_openings(b, 'x', -d, (-w, w), height, t, [(-1.0, 1.0, slab, 3.2), (-5.0, -4.0, 2.0, 4.6), (4.0, 5.0, 2.0, 4.6)], "render", "plaster", -1)
+    wall_with_openings(b, 'x', d, (-w, w), height, t, [(-.5, .5, 3.0, 5.2)], "render", "plaster", +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), height, t, windows, "render", "plaster", -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, windows, "render", "plaster", +1)
+    for side in (-1, 1):
+        for z0, z1, y0, y1 in windows:
+            b.solid((side * w - .03, y0, z0), (side * w + .03, y1, z1), "window")
+            b.ring("render", side * w, (z0 + z1) / 2, .55, .3, y1, y1 + .4, 8)     # the round heads
+    b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
+    plinth_skirt(b, w, d, .5, "stone", front_doors=[(-1.0, 1.0)])
+    b.box((-w - .3, height, -d - .3), (w + .3, height + .3, d + .3), {'+y': "tin", '-y': "plaster", '+x': "tin", '-x': "tin", '+z': "tin", '-z': "tin"})
+    # The cornice band in gold under the roof.
+    b.solid((-w - .05, height - .45, -d - .05), (w + .05, height - .25, d + .05), "gold")
+    # The crossing: a tall drum, the gold onion and its cross.
+    b.ring("render", 0, 0, 2.6, 2.6, height + .3, height + 4.2, 16, top_cap=True)
+    b.ring("tin", 0, 0, 2.8, 2.7, height + 4.2, height + 4.5, 16)
+    onion(b, "gold", 0, 0, 2.6, height + 4.5, 5.2)
+    cross(b, 0, height + 9.6, 0, 2.2, "gold")
+    b.solid((-.6, height + 11.0, -.05), (.6, height + 11.07, .05), "gold")   # the slanted foot-bar, near enough
+    # The four corner onions in blue.
+    for x in (-w + 1.6, w - 1.6):
+        for z in (-d + 1.6, d - 1.6):
+            b.ring("render", x, z, 1.0, 1.0, height + .3, height + 2.0, 12, top_cap=True)
+            onion(b, "blue", x, z, 1.05, height + 2.0, 2.4, 12)
+            cross(b, x, height + 4.35, z, 1.0, "gold")
+    # The porch: a little gabled roof on posts, the icon over the door.
+    for x in (-1.8, 1.6):
+        b.solid((x, 0, -d - 2.4), (x + .2, 3.6, -d - 2.2), "render")
+    b.solid((-2.0, 3.6, -d - 2.5), (2.0, 3.8, -d), "render")
+    gable(b, "render", "tin", -2.0, 2.0, 3.8, 1.2, -d - 2.5, -d, overhang=.1)
+    b.solid((-.5, 3.5, -d - .06), (.5, 4.6, -d), "gold")
+    b.solid((-.38, 3.62, -d - .08), (.38, 4.48, -d - .05), "icon")
+    b.solid((-1.6, 0, -d - 1.4), (1.6, .2, -d), "stone")
+    # Inside: the iconostasis across the east end with the royal doors, candle stands, benches.
+    z = d - 2.6
+    b.solid((-w + t, slab, z), (-1.0, 4.8, z + .25), "gold")
+    b.solid((1.0, slab, z), (w - t, 4.8, z + .25), "gold")
+    b.solid((-1.0, 3.0, z), (1.0, 4.8, z + .25), "gold")
+    for x in (-5.4, -3.6, -2.2, 1.6, 3.0, 4.8):
+        b.solid((x, 1.4, z - .03), (x + .9, 2.8, z), "icon")
+        b.solid((x + .15, 3.3, z - .03), (x + .75, 4.3, z), "blue")
+    for x in (-.95, .25):
+        b.solid((x, slab, z + .05), (x + .7, 2.6, z + .15), "wood")        # the royal doors, half open
+    for x, zz in ((-2.5, -3.0), (2.5, -3.0), (0, 1.0)):
+        b.ring("gold", x, zz, .12, .12, slab, 1.1, 6)
+        b.ring("gold", x, zz, .45, .4, 1.1, 1.2, 10, top_cap=True)
+    for side in (-1, 1):
+        b.solid((side * (w - t) - (.5 if side > 0 else 0), slab, -6.5), (side * (w - t) + (0 if side > 0 else .5), .65, 3.5), "wood")
+    return b
+
+
 def flag(b, x, z, height, cloth, pole="steel"):
     """A flagpole with its flag flying toward +X."""
     b.solid((x - .07, 0, z - .07), (x + .07, height, z + .07), pole)
@@ -2839,6 +3039,8 @@ def kit():
     add("civic/oil_rig.glb", oil_rig(), "city_oil_rig", "Platformo Marnafto - offshore oil rig", "BuildingPart", 59.5, 30.6, 79.2)
     add("civic/hospital.glb", hospital(), "city_hospital", "Hospitalo - hospital with ambulance bay", "Building", 46, 23, 12.7)
     add("civic/clinic.glb", clinic(), "city_clinic", "Kliniko - town clinic (one storey, enterable, roof cross)", "Building", 12.2, 12, 7.4)
+    add("civic/church_baptist.glb", baptist_chapel(), "city_church_baptist", "Baptista Preĝejo - white clapboard chapel with a spire (enterable)", "Building", 10.7, 20.6, 17.9)
+    add("civic/church_orthodox.glb", orthodox_church(), "city_church_orthodox", "Ortodoksa Preĝejo - Esperanto Orthodox church, onion domes (enterable)", "Building", 15.1, 18.9, 18.8)
     add("civic/parliament.glb", parliament(), "city_parliament", "Registaro de Verda - domed parliament (enterable hall)", "Building", 48, 33, 29.6)
     add("civic/town_hall.glb", town_hall(), "city_town_hall", "Urbodomo - county town hall with clock tower (enterable)", "Building", 23, 17, 17.0)
     add("towers/stela_turo.glb", stela_turo(), "city_stela_turo", "Stela Turo - art deco skyscraper, 17 floors, penthouse (enterable)", "Building", 30.6, 29.2, 86.2)

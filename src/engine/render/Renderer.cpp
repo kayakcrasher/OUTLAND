@@ -98,6 +98,7 @@
 #include "outland/world/physics/MeshCollision.hpp"
 
 #include "outland/game/culture/SignRenderer.hpp"
+#include "outland/game/culture/Faith.hpp"
 #include "outland/game/services/HighwayPatrol.hpp"
 #include "outland/game/interiors/Furnishing.hpp"
 #include "outland/game/wardrobe/StoreUI.hpp"
@@ -863,6 +864,9 @@ void Renderer::run() {
         MotorScreen::Exhaust,MotorScreen::Spoiler,MotorScreen::Tint,MotorScreen::Rims,MotorScreen::Glow};
     MotorScreen motor_screen=MotorScreen::None;
     std::vector<world::motor::Site> motor_sites;
+    // The churches (game::culture::Faith): a word about each the first time the player walks up.
+    std::vector<game::culture::Church> churches;
+    int church_seen=-1;
     int motor_site=-1,motor_served=-1;   // the site in use; one whose menu was closed (not again till the car leaves it)
     std::string motor_car;               // the car being served
     std::vector<game::autos::OwnedCar> owned_cars;   // the cars the player bought (this session's ids)
@@ -1967,6 +1971,8 @@ void Renderer::run() {
                 if(game::rules_for(game_mode).civilian_life) {
                     homes_for_sale=game::economy::plan_homes(verda_region);
                     motor_sites=world::motor::sites(verda_region);
+                    churches=game::culture::find_churches(verda_region);church_seen=-1;
+                    for(const auto& c:churches) TraceLog(LOG_INFO,"OUTLAND church: %s %s at %.0f %.0f%s",game::culture::denomination_name(c.denomination),c.settlement.c_str(),c.centre.x,c.centre.z,c.green_hand ? " (La Verda Mano)" : "");
                     vacated_homes=game::economy::vacate(verda_region,homes_for_sale);
                     TraceLog(LOG_INFO,"OUTLAND homes for sale: %d",static_cast<int>(homes_for_sale.size()));
                     for(const auto& home:homes_for_sale)
@@ -3502,6 +3508,22 @@ void Renderer::run() {
                     if(actor.state!=characters::NpcState::Dead && std::hypot(actor.position.x-door.x,actor.position.z-door.z)<1.8F) open=true;
                 }
                 building.door=open ? std::min(1.0F,building.door+step) : std::max(0.0F,building.door-step*.6F);
+            }
+        }
+        // Walking up to a church: who worships there, its saint, the next feast.
+        if(game::rules_for(game_mode).civilian_life && !vehicles.driver() && !churches.empty()) {
+            int near=-1;float best=8;
+            for(std::size_t i=0;i<churches.size();++i) {
+                const float d=std::hypot(player.position.x-churches[i].door.x,player.position.z-churches[i].door.z);
+                if(d<best) {best=d;near=static_cast<int>(i);}
+            }
+            if(near>=0 && near!=church_seen) {
+                church_seen=near;
+                interaction_message=game::culture::church_notice(churches[static_cast<std::size_t>(near)],island_life.empty() ? 0 : island_life.clock().day());
+                interaction_remaining=9;
+            } else if(church_seen>=0) {
+                const auto& c=churches[static_cast<std::size_t>(church_seen)];
+                if(std::hypot(player.position.x-c.door.x,player.position.z-c.door.z)>30) church_seen=-1;
             }
         }
         {
@@ -8795,8 +8817,26 @@ void Renderer::run() {
             DrawRectangle(static_cast<int>(screen_width/2-lw/2-12),screen_height-160,static_cast<int>(lw+24),26,Fade(BLACK,.55F));
             DrawTextEx(font,line.c_str(),{screen_width/2-lw/2,static_cast<float>(screen_height-155)},16,1,Color{150,220,255,255});
         }
-        if (interaction_remaining > 0)
-            DrawText(interaction_message.c_str(), screen_width / 2 - MeasureText(interaction_message.c_str(),18)/2, screen_height-205, 18, RAYWHITE);
+        if (interaction_remaining > 0) {
+            // Word-wrapped to most of the screen's width, the last line where a single one sits.
+            std::vector<std::string> lines;
+            std::string current;
+            const int room=static_cast<int>(screen_width*.82F);
+            std::size_t at=0;
+            while(at<interaction_message.size()) {
+                std::size_t end=interaction_message.find(' ',at);
+                if(end==std::string::npos) end=interaction_message.size();
+                const std::string word=interaction_message.substr(at,end-at);
+                const std::string tried=current.empty() ? word : current+" "+word;
+                if(!current.empty() && MeasureTextEx(sign_renderer.font(),tried.c_str(),18,1).x>room) {lines.push_back(current);current=word;}
+                else current=tried;
+                at=end+1;
+            }
+            if(!current.empty()) lines.push_back(current);
+            const int top=screen_height-205-static_cast<int>(lines.size()-1)*22;
+            for(std::size_t i=0;i<lines.size();++i)
+                DrawTextEx(sign_renderer.font(),lines[i].c_str(),{screen_width/2-MeasureTextEx(sign_renderer.font(),lines[i].c_str(),18,1).x/2,static_cast<float>(top+static_cast<int>(i)*22)},18,1,RAYWHITE);
+        }
 
         // MENU (pause, settings, controls, save, quit); N still mutes.
         DrawRectangleRec(audio_button, Fade(BLACK, 0.60F));
@@ -9231,6 +9271,19 @@ void Renderer::run() {
                     pole.base={foot.x,world::terrain::TerrainHeight::sample(foot.x,foot.z),foot.z};
                     pole.tip=Vector3Add(pole.base,{0,std::max(5.0F,flag.tip.y-flag.base.y-1.2F),0});
                     pole.fly=flag.fly;pole.width=std::max(2.0F,flag.width*.85F);
+                    banners.push_back(pole);
+                }
+                // La Verda Mano's own chapel flies its banner by the door, whoever holds the town.
+                for(const auto& church:churches) {
+                    if(!church.green_hand) continue;
+                    const float a=church.yaw*DEG2RAD;
+                    const Vector3 out{-std::sin(a),0,-std::cos(a)},side{std::cos(a),0,-std::sin(a)};
+                    const Vector3 foot=Vector3Add(church.door,Vector3Add(Vector3Scale(side,-4.6F),Vector3Scale(out,-.5F)));
+                    game::culture::FlagPole pole;
+                    pole.place="verda_mano:chapel";pole.design=game::culture::FlagDesign::VerdaMano;
+                    pole.base={foot.x,world::terrain::TerrainHeight::sample(foot.x,foot.z),foot.z};
+                    pole.tip=Vector3Add(pole.base,{0,7.5F,0});
+                    pole.fly=side;pole.width=2.2F;
                     banners.push_back(pole);
                 }
                 sign_renderer.set_banners(std::move(banners));

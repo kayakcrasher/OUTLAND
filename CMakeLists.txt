@@ -193,6 +193,7 @@ add_library(
     src/game/law/Justice.cpp
     src/game/law/PrisonYard.cpp
     src/game/culture/Esperanto.cpp
+    src/game/culture/Faith.cpp
     src/game/culture/Signage.cpp
     src/game/culture/SignRenderer.cpp
     src/game/sound/SoundBus.cpp
@@ -657,6 +658,10 @@ if(OUTLAND_BUILD_TESTS)
         -Wl,--wrap=UpdateAudioStream -Wl,--wrap=IsAudioStreamProcessed -Wl,--wrap=PlayAudioStream
         -Wl,--wrap=StopAudioStream -Wl,--wrap=SetAudioStreamVolume)
     add_test(NAME outland_vehicle_audio_tests COMMAND outland_vehicle_audio_tests)
+    add_executable(outland_faith_tests tests/unit/culture/test_faith.cpp)
+    target_link_libraries(outland_faith_tests PRIVATE outland_render)
+    target_compile_options(outland_faith_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_faith_tests COMMAND outland_faith_tests)
     add_executable(outland_engine_synth_tests tests/unit/vehicles/test_engine_synth.cpp)
     target_link_libraries(outland_engine_synth_tests PRIVATE outland_render)
     target_compile_options(outland_engine_synth_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

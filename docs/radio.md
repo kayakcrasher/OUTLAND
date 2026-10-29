@@ -22,6 +22,24 @@ its sound) between them. Every song is an original composition:
   (eighties synth-rock with a shuffle, chorused guitar and a synth lead) and *Nigra Minejo* (heavy
   metal: chugging palm-muted riffs, double kick, a guitar solo).
 
+## The voices
+
+Between the songs the stations talk (`tools/generate_radio_voice.py`, with espeak-ng):
+
+- **Spoken idents**, in Esperanto, over the station's jingle - a different one for the morning
+  (5-11), the day, the evening (17-22) and the night: "Bonan matenon, Verdo! Vi aŭskultas Verda
+  Popolko. Vekiĝu kaj dancu!", "Noktaj rokuloj, vi aŭskultas Espera Roko...". Each station has its
+  own announcer: a bright woman on Verda Popolko, a gravelly rock jock on Espera Roko.
+- **Radio Sovaĝejo drawls.** Its announcer is from the forest country: an American voice reading
+  the Esperanto as it sounds, slow and low, the stressed vowels drawn out.
+- **The sports news.** Every other break, once La Verda Basballigo has a result, the station reads
+  it: "Sportaj novaĵoj! Roka venkis, Espera perdis." There is a clip for every pairing of the five
+  clubs, in the newsreader's voice (drawled on Radio Sovaĝejo), after a two-note chime.
+
+Every clip is exactly as long as the break between songs (7.5 s), so the clock-driven schedule
+holds. What a break says is chosen as it starts: the hour turning half-way through doesn't swap
+it. The note beside the speedometer reads "Sportaj novaĵoj" during the news.
+
 ## In the car
 
 - The radio plays whenever you are at the wheel. It plays the last station you chose (Verda

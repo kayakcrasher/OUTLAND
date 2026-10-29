@@ -150,6 +150,12 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_clinic", .name = "Kliniko - town clinic (one storey, enterable, roof cross)", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/clinic.glb", .thumbnail_path = "", .footprint = {12.20F, 12.00F, 7.40F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_church_baptist", .name = "Baptista Preĝejo - white clapboard chapel with a spire (enterable)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/church_baptist.glb", .thumbnail_path = "", .footprint = {10.70F, 20.60F, 17.90F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_church_orthodox", .name = "Ortodoksa Preĝejo - Esperanto Orthodox church, onion domes (enterable)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/church_orthodox.glb", .thumbnail_path = "", .footprint = {15.10F, 18.90F, 18.80F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_parliament", .name = "Registaro de Verda - domed parliament (enterable hall)", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/civic/parliament.glb", .thumbnail_path = "", .footprint = {48.00F, 33.00F, 29.60F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

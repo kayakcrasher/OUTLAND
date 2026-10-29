@@ -1407,7 +1407,7 @@ void west_suburbs(Kit& kit, world::VerdaRegion& region) {
         kit.put(urban + "Bus stops/busstop_bench.glb", {-210 - i * 32.0F, 0, -(avenue * .5F + 1.6F)}, 180);
     modular_building(kit, {-212, 0, 20}, 0, 8, 4, "stuco", 1, 7601, world::BuildingPurpose::Shop);
     modular_building(kit, {-270, 0, 20}, 0, 8, 4, "brick", 1, 7602, world::BuildingPurpose::Shop);
-    modular_building(kit, {-376, 0, -20}, 180, 4, 4, "fancy_brick", 1, 7603, world::BuildingPurpose::Church);
+    // (The church on the boulevard is the city's Baptist chapel: churches() puts it there.)
     modular_building(kit, {-420, 0, 20}, 0, 8, 4, "stuco", 1, 7604, world::BuildingPurpose::Clinic);
     for (int i = 0; i < 3; ++i)
         vehicle_marker(*capital, "vehicle_spawn_hatchback_okcidento_shops_" + std::to_string(i + 1), {-226 - i * 22.0F, 0, avenue * .5F + 1.6F}, 270);
@@ -1852,6 +1852,41 @@ bool civic_lot(Kit& kit, world::VerdaRegion& region, Vector3 near, float min_dis
         return true;
     }
     return false;
+}
+
+// ------------------------------------------------------------------ Preĝejoj
+// A church in every town (game::culture::Faith): the west of the island is Baptist - white
+// clapboard chapels with a spire (city kit civic/church_baptist.glb) - and the east Esperanto
+// Orthodox, onion domes over white walls (civic/church_orthodox.glb). Verda City has both: the
+// Baptist chapel on the west boulevard (La Verda Mano's: they are Baptists) and the Orthodox
+// church in the east suburbs.
+const std::string baptist_model = "assets/verda/city/civic/church_baptist.glb";
+const std::string orthodox_model = "assets/verda/city/civic/church_orthodox.glb";
+
+void churches(Kit& kit, world::VerdaRegion& region) {
+    // Model bounds: the chapel x -5.35..5.35, z -11.2 (portico) ..9.35; the church x -7.55..7.55,
+    // z -10.6 (porch) ..8.3. Front (-Z) to the street.
+    // (A forest town's lanes are dirt: a chapel may face one.)
+    const auto build = [&](Vector3 near, float from, float to, bool baptist, bool dirt = false) {
+        CivicSpot spot;
+        const bool found = baptist ? civic_lot(kit, region, near, from, to, 0, -.9F, 5.9F, 10.6F, 11.4F, 3, spot, {}, dirt)
+                                   : civic_lot(kit, region, near, from, to, 0, -1.15F, 8.1F, 9.8F, 10.8F, 3, spot, {}, dirt);
+        if (!found || !kit.put(baptist ? baptist_model : orthodox_model, spot.origin, spot.yaw)) return false;
+        kit.purpose(to_world(spot.origin, spot.yaw, 0, .3F, baptist ? -6.5F : -5.5F), spot.yaw, world::BuildingPurpose::Church);
+        ++(baptist ? kit.report.baptist_churches : kit.report.orthodox_churches);
+        return true;
+    };
+    std::vector<std::pair<std::string, Vector3>> towns;
+    for (const auto& town : region.settlements())
+        if (!town.id.starts_with("hamlet_") && !town.id.starts_with("ranch_")) towns.emplace_back(town.id, town.center);
+    for (const auto& [id, centre] : towns) {
+        if (id == "capital_verda") {
+            build({-376, 0, -20}, 0, 140, true);       // the west boulevard
+            build({330, 0, 0}, 0, 200, false);         // the east suburbs
+            continue;
+        }
+        if (!build(centre, 20, 150, centre.x < 0, true)) build(centre, 20, 300, centre.x < 0, true);
+    }
 }
 
 void emergency_services(Kit& kit, world::VerdaRegion& region) {
@@ -2702,6 +2737,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     bus_stops(kit, region);
     trucks(kit, region);
     emergency_services(kit, region);
+    churches(kit, region);
     building_loot(kit, region);
     // Last again: the loot keeps its ids.
     government(kit, region);

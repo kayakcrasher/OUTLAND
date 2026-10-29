@@ -91,6 +91,15 @@ int main() {
         scenes.push_back({place.door, Vector3Normalize(out), "the shop", town.name, true});
     }
     check(!scenes.empty(), "Roka has shops");
+    // The shop furthest from any gang's door, so the getaway has a drive home.
+    std::stable_sort(scenes.begin(), scenes.end(), [&](const auto& a, const auto& b) {
+        const auto clear = [&](Vector3 p) {
+            float best = 1e9F;
+            for (const auto& crew : mafio.crews()) best = std::min(best, flat(p, crew.door));
+            return best;
+        };
+        return clear(a.door) > clear(b.door);
+    });
     game::career::Callouts calls;
     game::career::Callouts::Frame frame;
     frame.now = now;
