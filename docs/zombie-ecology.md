@@ -70,3 +70,11 @@ At the start of a match, infected within 70 m of the player's spawn move to othe
 - a kill counts once and the corpse stays, then is cleared;
 - respawn;
 - `clear()` removes every body.
+
+## The outbreak (update)
+
+The story of Zombie Survival (docs/outbreak.md) tunes the ecology:
+- `capital_nests` (22 in the outbreak, 8 by default) and `town_nests`: Verda City is ground zero.
+- `spawn_at`: one of the story's infected (the Garzas getting back up): awake, coming for the
+  player, never replaced once dead.
+- `set_safe`: holdouts and the hideout - their nests move out and nothing is replaced inside.

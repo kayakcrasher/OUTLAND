@@ -76,6 +76,7 @@ public:
     void set_bot(int bot,Vector3 position,float yaw_degrees,float health,NpcState state);
     void set_bot_weapon(int bot,int weapon);
     void set_bot_hidden(int bot,bool hidden);
+    bool despawn_bot(int bot);
     void clear_bots();
     // Routes for NPCs travelling or chasing; without one they walk straight (and slide on walls).
     void set_path_finder(world::navigation::PathFinder finder) { path_finder_=std::move(finder); }

@@ -182,6 +182,8 @@ add_library(
     src/game/freight/Freight.cpp
     src/game/freight/Trucking.cpp
     src/game/campaign/Campaign.cpp
+    src/game/outbreak/Outbreak.cpp
+    src/game/outbreak/OutbreakRun.cpp
     src/game/radio/Radio.cpp
     src/game/radio/RadioAudio.cpp
     src/game/life/LifeSimulation.cpp
@@ -860,6 +862,11 @@ if(OUTLAND_BUILD_TESTS)
     target_include_directories(outland_haptics_tests PRIVATE "${PROJECT_SOURCE_DIR}/include")
     target_compile_options(outland_haptics_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_haptics_tests COMMAND outland_haptics_tests)
+    add_executable(outland_outbreak_tests tests/integration/outbreak/test_outbreak.cpp)
+    target_link_libraries(outland_outbreak_tests PRIVATE outland_render)
+    target_compile_options(outland_outbreak_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_outbreak_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_outbreak_tests COMMAND outland_outbreak_tests)
     add_executable(outland_zombie_ecology_tests tests/integration/zombies/test_zombie_ecology.cpp)
     target_link_libraries(outland_zombie_ecology_tests PRIVATE outland_render)
     target_compile_options(outland_zombie_ecology_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

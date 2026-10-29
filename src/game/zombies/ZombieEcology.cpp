@@ -63,10 +63,10 @@ void ZombieEcology::build(const world::VerdaRegion& region, const characters::Ch
         if (town.id.starts_with("ranch_")) continue; // farms are not towns: no nests
         const bool capital = town.id.find("capital") != std::string::npos;
         const bool hamlet = town.id.starts_with("hamlet_"); // a few trailers: two nests
-        const int wanted = town.infected > 0 ? std::clamp(town.infected / 6, 2, 12) : capital ? 8 : hamlet ? 2 : 4;
-        const float reach = capital ? 150.0F : 90.0F;
+        const int wanted = town.infected > 0 ? std::clamp(town.infected / 6, 2, 12) : capital ? config_.capital_nests : hamlet ? 2 : config_.town_nests;
+        const float reach = capital ? (config_.capital_nests > 8 ? 260.0F : 150.0F) : 90.0F;
         int placed = 0;
-        for (int attempt = 0; attempt < 80 && placed < wanted; ++attempt) {
+        for (int attempt = 0; attempt < 80 + wanted * 10 && placed < wanted; ++attempt) {
             const float angle = random() * 2 * PI, radius = 25 + random() * reach;
             const Vector3 p{town.center.x + std::cos(angle) * radius, 0, town.center.z + std::sin(angle) * radius};
             if (!standable(p) || !apart(p, 25)) continue;
@@ -95,8 +95,9 @@ void ZombieEcology::build(const world::VerdaRegion& region, const characters::Ch
     if (sources_.empty()) return;
     // The population, spread over the nests.
     std::vector<const characters::CharacterDefinition*> looks;
+    looks_.clear();
     for (int k = 0; k < 6 && registry; ++k)
-        if (const auto* d = registry->choose(characters::CharacterPool::Creature, seed_ + static_cast<std::uint64_t>(k) * 7919)) looks.push_back(d);
+        if (const auto* d = registry->choose(characters::CharacterPool::Creature, seed_ + static_cast<std::uint64_t>(k) * 7919)) {looks.push_back(d); looks_.push_back(d->id);}
     for (int i = 0; i < config_.population; ++i) {
         Zombie z;
         z.id = i;
@@ -126,10 +127,12 @@ void ZombieEcology::reset(characters::NpcSystem& npcs) {
 
 void ZombieEcology::clear_area(Vector3 around, float radius) {
     std::vector<int> elsewhere;
-    for (std::size_t s = 0; s < sources_.size(); ++s) if (flat(sources_[s].position, around) > radius + 30) elsewhere.push_back(static_cast<int>(s));
+    for (std::size_t s = 0; s < sources_.size(); ++s)
+        if (flat(sources_[s].position, around) > radius + 30 && !sources_[s].story && !safe(sources_[s].position)) elsewhere.push_back(static_cast<int>(s));
     if (elsewhere.empty()) return;
     for (auto& z : zombies_) {
-        if (z.physical || flat(z.position, around) > radius) continue;
+        if (z.physical || z.state == ZombieState::Dead || flat(z.position, around) > radius) continue;
+        if (sources_[static_cast<std::size_t>(z.source)].story) continue;
         z.source = elsewhere[static_cast<std::size_t>(random() * static_cast<float>(elsewhere.size())) % elsewhere.size()];
         z.position = sources_[static_cast<std::size_t>(z.source)].position;
         z.horde = -1;
@@ -139,7 +142,34 @@ void ZombieEcology::clear_area(Vector3 around, float radius) {
 
 void ZombieEcology::clear(characters::NpcSystem& npcs) {
     for (const auto& z : zombies_) if (z.physical) npcs.despawn_resident(body_id_base + z.id);
-    zombies_.clear(); sources_.clear(); hordes_.clear();
+    zombies_.clear(); sources_.clear(); hordes_.clear(); safe_.clear();
+}
+
+int ZombieEcology::spawn_at(Vector3 at, const std::string& character) {
+    ZombieSource source{at, -1, 4, false, false, true};
+    sources_.push_back(source);
+    Zombie z;
+    z.id = static_cast<int>(zombies_.size());
+    z.source = static_cast<int>(sources_.size()) - 1;
+    z.position = z.target = at;
+    z.state = ZombieState::Investigate;
+    z.until = now_;
+    z.character_id = !character.empty() ? character : looks_.empty() ? std::string() : looks_[static_cast<std::size_t>(z.id) % looks_.size()];
+    zombies_.push_back(z);
+    return z.id;
+}
+
+bool ZombieEcology::dead(int id) const {
+    return id < 0 || id >= static_cast<int>(zombies_.size()) || zombies_[static_cast<std::size_t>(id)].state == ZombieState::Dead;
+}
+
+bool ZombieEcology::safe(Vector3 at) const {
+    return std::any_of(safe_.begin(), safe_.end(), [&](const auto& zone) {return flat(zone.first, at) < zone.second;});
+}
+
+void ZombieEcology::set_safe(std::vector<std::pair<Vector3, float>> zones) {
+    safe_ = std::move(zones);
+    for (const auto& [centre, radius] : safe_) clear_area(centre, radius);
 }
 
 float ZombieEcology::speed(ZombieState state) const {
@@ -153,6 +183,13 @@ float ZombieEcology::speed(ZombieState state) const {
 
 void ZombieEcology::wander_target(Zombie& z) {
     const auto& source = sources_[static_cast<std::size_t>(z.source)];
+    // The story's infected never settle: they come for the player.
+    if (source.story) {
+        z.state = ZombieState::Investigate;
+        z.target = player_;
+        z.until = now_ + 4;
+        return;
+    }
     const float angle = random() * 2 * PI, radius = random() * source.radius;
     z.target = {source.position.x + std::cos(angle) * radius, source.position.y, source.position.z + std::sin(angle) * radius};
     z.think_at = now_ + 20 + random() * 30;
@@ -166,6 +203,7 @@ void ZombieEcology::step_abstract(Zombie& z, float dt) {
         case ZombieState::Dead: {
             // The nest sends another, out of the player's sight.
             const auto& source = sources_[static_cast<std::size_t>(z.source)];
+            if (source.story || safe(source.position)) return;   // the story's dead stay dead; nothing comes back inside the walls
             if (now_ - z.died_at >= config_.respawn_seconds && flat(source.position, player_) > config_.respawn_clearance) {
                 z.position = source.position; z.horde = -1;
                 wander_target(z);

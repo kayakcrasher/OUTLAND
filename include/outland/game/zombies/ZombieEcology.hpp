@@ -39,12 +39,14 @@ struct ZombieConfig {
     float night_hearing{1.4F};       // sound radius multiplier at night
     float day{.5F};                  // daylight above this is day
     float night{.3F};                // daylight below this is night
+    int capital_nests{8};            // nests round Verda City (the outbreak's ground zero has more)
+    int town_nests{4};               // ...round every other town (more if the town is marked infected)
 };
 
 enum class ZombieState : std::uint8_t { Dormant, Wander, Investigate, Horde, Dead };
 const char* zombie_state_name(ZombieState state);
 
-struct ZombieSource { Vector3 position{}; int settlement{-1}; float radius{12}; bool authored{false}; bool roadside{false}; };
+struct ZombieSource { Vector3 position{}; int settlement{-1}; float radius{12}; bool authored{false}; bool roadside{false}; bool story{false}; };
 
 struct Zombie {
     int id{0};
@@ -89,6 +91,14 @@ public:
     void clear_area(Vector3 around, float radius);
     void clear(characters::NpcSystem& npcs);
     bool empty() const { return zombies_.empty(); }
+    // One of the story's infected, here and now (a rancher getting back up): awake, never
+    // replaced once dead. Returns its id.
+    int spawn_at(Vector3 at, const std::string& character = {});
+    [[nodiscard]] bool dead(int id) const;
+    // Places the living hold (a hideout, a holdout's walls): none of the dead are sent there - the
+    // nests inside move out, and nothing is replaced inside.
+    void set_safe(std::vector<std::pair<Vector3, float>> zones);
+    [[nodiscard]] bool safe(Vector3 at) const;
 
     void hear(const sound::SoundBus& sounds);
     void update(float dt, const ZombieFrame& frame, characters::NpcSystem& npcs);
@@ -119,6 +129,8 @@ private:
     std::vector<ZombieSource> sources_;
     std::vector<Zombie> zombies_;
     std::vector<Horde> hordes_;
+    std::vector<std::pair<Vector3, float>> safe_;
+    std::vector<std::string> looks_;
     std::uint64_t rng_{0x9e3779b97f4a7c15ULL}, seed_{1};
     std::uint64_t heard_up_to_{0};
     double now_{0}, horde_clock_{0};

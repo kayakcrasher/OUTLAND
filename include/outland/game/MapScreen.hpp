@@ -33,7 +33,7 @@ public:
         std::vector<Vector3> stops;                    // bus stops
         std::vector<std::pair<Vector3, float>> buses;  // buses on the line: where, and heading (degrees)
         std::vector<std::pair<Vector3, Color>> turf;    // Mafio hideouts: where, and the gang's colour
-        struct Base { Vector3 at{}; Color color{}; std::string name; };
+        struct Base { Vector3 at{}; Color color{}; std::string name; bool plain{false}; };   // plain: no " - BAZO"
         std::vector<Base> bases;                        // each gang's main base (its county's main town)
         std::vector<Vector3> cleared;                   // hideouts the Policio broke up
         // Verda's yin and yang (Explore): the law's share of the towns and the player's crew's,
@@ -50,6 +50,11 @@ public:
         std::vector<std::pair<std::string, Color>> standings;   // biggest first: "La Verda Mano  4 towns, 2 ranches"
         std::string gang_goal;                                    // "Take the island: 3 of 10 turfs" 
         bool home_owned{false};
+        // The outbreak (Zombie Survival's story): the island washed red - theirs - but for the
+        // clearings (round the player, the hideout, the holdouts found); a label over ground zero.
+        bool danger{false};
+        std::vector<std::pair<Vector3, float>> clear;
+        std::optional<Vector3> ground_zero;
         // The compass's marks (the job, the hospital, stations, shops...), drawn as on the compass.
         std::vector<hud::CompassMark> marks;
         const Font* font{nullptr};

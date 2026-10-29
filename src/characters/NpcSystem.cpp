@@ -282,4 +282,10 @@ void NpcSystem::calm_resident(int resident) {
     if(actor.state!=NpcState::Flee) return;
     actor.threat_timer=0;actor.state=NpcState::Idle;actor.state_time=actor.idle_hold=1;
 }
+bool NpcSystem::despawn_bot(int bot) {
+    const int index=find_bot(bot);
+    if(index<0) return false;
+    actors_.erase(actors_.begin()+index);
+    return true;
+}
 }

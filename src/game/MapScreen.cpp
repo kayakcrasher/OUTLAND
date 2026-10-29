@@ -263,6 +263,28 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
             DrawRectangleV({at.x - 2 * s, at.y - 2 * s}, {4 * s, 4 * s}, color);
         }
     }
+    // The outbreak: red everywhere but where the living are (soft at the edges of a clearing).
+    if (view.danger) {
+        constexpr int cells = 64;
+        const float step = 2 * extent / cells, cw = area.width / cells, ch = area.height / cells;
+        for (int i = 0; i < cells; ++i)
+            for (int j = 0; j < cells; ++j) {
+                const float x = -extent + (static_cast<float>(i) + .5F) * step, z = -extent + (static_cast<float>(j) + .5F) * step;
+                float open = 1e9F;
+                for (const auto& [c, r] : view.clear) open = std::min(open, std::hypot(x - c.x, z - c.z) - r);
+                const float alpha = std::clamp((open + step) / (2 * step), 0.0F, 1.0F) * .46F;
+                if (alpha <= .01F) continue;
+                // Whole pixels, edge to edge: no seams between the cells.
+                const int x0 = static_cast<int>(area.x + static_cast<float>(i) * cw), x1 = static_cast<int>(area.x + static_cast<float>(i + 1) * cw);
+                const int y0 = static_cast<int>(area.y + static_cast<float>(j) * ch), y1 = static_cast<int>(area.y + static_cast<float>(j + 1) * ch);
+                DrawRectangle(x0, y0, x1 - x0, y1 - y0, Fade(Color{170, 18, 18, 255}, alpha));
+            }
+        for (const auto& [c, r] : view.clear) DrawRing(to_map(area, c.x, c.z), pixels(r) - 1.5F * s, pixels(r), 0, 360, 48, Color{236, 226, 196, 90});
+        if (view.ground_zero) {
+            const auto at = to_map(area, view.ground_zero->x, view.ground_zero->z);
+            centred(font, "GROUND ZERO", {at.x, at.y + 16 * s}, 16 * s, Color{255, 120, 110, 235});
+        }
+    }
     for (const auto& town : region.settlements()) {
         const auto at = to_map(area, town.center.x, town.center.z);
         DrawCircleV(at, 6 * s, Color{250, 248, 236, 255});
@@ -305,7 +327,7 @@ void MapScreen::draw(const world::VerdaRegion& region, const View& view, const G
         DrawRing(at, 11 * s, 13 * s, 0, 360, 24, base.color);
         DrawPoly(at, 5, 9 * s, -90, BLACK);
         DrawPoly(at, 5, 7 * s, -90, base.color);
-        const std::string label = base.name + " - BAZO";
+        const std::string label = base.plain ? base.name : base.name + " - BAZO";
         const float w = measure(font, label.c_str(), 13 * s);
         DrawRectangleRounded({at.x + 15 * s, at.y - 9 * s, w + 8 * s, 17 * s}, .3F, 4, Fade(BLACK, .6F));
         text(font, label.c_str(), {at.x + 19 * s, at.y - 7 * s}, 13 * s, base.color);

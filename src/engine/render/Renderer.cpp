@@ -106,6 +106,7 @@
 #include "outland/world/MotorTrade.hpp"
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/game/zombies/ZombieEcology.hpp"
+#include "outland/game/outbreak/OutbreakRun.hpp"
 #include "outland/game/LanScreen.hpp"
 #include "outland/game/lan/LanPlay.hpp"
 #include "outland/game/lan/SquadRevive.hpp"
@@ -1047,6 +1048,11 @@ void Renderer::run() {
     game::life::LifeSimulation island_life;
     // Zombie Survival's infected: nests, hordes, noise; bodies near the player (NpcSystem).
     game::zombies::ZombieEcology zombies;
+    // The outbreak (Zombie Survival's story, game::outbreak): its cast and scenes, and its save.
+    game::outbreak::Run outbreak;
+    std::string outbreak_path;
+    float outbreak_autosave=0;
+    bool outbreak_respawn=false;   // died in the outbreak: back at the hideout (or the story again)
     std::uint64_t zombie_seed=0x2b7e1516U;
     // Esperanto signage and the flag. Rebuilt when a mode starts and after Creator edits.
     game::culture::SignRenderer sign_renderer;
@@ -1259,6 +1265,12 @@ void Renderer::run() {
     vehicles.reconcile(verda_region);
     const std::string vehicle_state_path=map_path+".vehicles";
     bool vehicle_save_protected=false,vehicle_dirty=false;
+    const auto save_outbreak=[&] {
+        if(outbreak_path.empty() || !outbreak.active()) return;
+        if(const auto* car=vehicles.driver();car && outbreak.has_hideout()) outbreak.state().position=car->position;
+        const auto text=game::outbreak::serialise(outbreak.state());
+        if(!SaveFileText(outbreak_path.c_str(),const_cast<char*>(text.c_str()))) TraceLog(LOG_WARNING,"OUTLAND outbreak: could not save %s",outbreak_path.c_str());
+    };
     std::vector<world::WorldAsset> match_fleet;
     bool match_fleet_active=false, fleet_was_dirty=false;
     const auto restore_match_fleet=[&]{
@@ -1982,10 +1994,46 @@ void Renderer::run() {
                     }
                 } else {island_life.clear(npcs);island_life.bind_vehicles(nullptr,nullptr);}
                 npc_reconcile_timer=.5F;
+                outbreak.clear(npcs);outbreak_path.clear();outbreak_autosave=0;
                 if(game::rules_for(game_mode).zombie_ecology) {
+                    // The outbreak's Verda City is ground zero: twice and more the nests of an ordinary day.
+                    const bool story_mode=game_mode==game::GameMode::ZombieSurvival && !lan_match;
+                    game::zombies::ZombieConfig zombie_config;
+                    if(story_mode) {zombie_config.capital_nests=22;zombie_config.population=260;}
+                    zombies.configure(zombie_config);
                     zombies.build(verda_region,&character_registry,++zombie_seed);zombies.reset(npcs);
+                    if(story_mode) {
+                        outbreak_path=game::inventory::LootSave::profile_path(map_path,game_mode)+".outbreak";
+                        game::outbreak::OutbreakState saved;
+                        if(FileExists(outbreak_path.c_str())) if(char* text=LoadFileText(outbreak_path.c_str())) {
+                            if(!game::outbreak::parse(text,saved)) saved={};
+                            UnloadFileText(text);
+                        }
+                        outbreak.start(saved,verda_region,npcs,vehicles,zombies,&character_registry,outbreak_respawn);
+                        // The filling stations hold what they hold (game::outbreak fuel): no attendants, no money.
+                        for(const auto& site:world::motor::sites(verda_region)) if(site.kind==world::motor::Kind::Gas) motor_sites.push_back(site);
+                        vehicle_dirty=true;
+                        if(!explicit_spawn) {
+                            player.position=Vector3Add(outbreak.start_feet(),{0,1,0});player.yaw=outbreak.start_yaw();player.vertical_velocity=0;
+                        }
+#ifdef OUTLAND_DEV_TOOLS
+                        // OUTLAND_DEV_OUTBREAK=farm: at the wheel with Ron, just short of the Garzas' farm.
+                        if(const char* skip=std::getenv("OUTLAND_DEV_OUTBREAK");skip && std::string(skip)=="farm") {
+                            const auto truck=outbreak.skip_to_farm(verda_region,npcs,vehicles);
+                            if(const int v=vehicles.find(truck);v>=0) {
+                                const Vector3 at=vehicles.vehicles()[static_cast<std::size_t>(v)].position;
+                                player.position=Vector3Add(at,{2,1,0});
+                                vehicles.enter(verda_region,v,at);
+                            }
+                        }
+#endif
+                        TraceLog(LOG_INFO,"OUTLAND outbreak: %s, %d people, %zu holdouts, tower %s",game::outbreak::stage_name(outbreak.story().stage()),
+                                 static_cast<int>(outbreak.people().size()),outbreak.holdouts().size(),outbreak.tower().found ? "found" : "missing");
+                        save_outbreak();
+                    }
                     zombies.clear_area({player.position.x,player.position.y-1,player.position.z},70); // a safe start
                 } else zombies.clear(npcs);
+                outbreak_respawn=false;
                 if(poker_open) {
                     loot_session.economy().money=std::max<std::int64_t>(0,loot_session.economy().money+poker.cash_out()-poker_buy_in);
                     poker_open=false;poker_buy_in=0;
@@ -2775,6 +2823,7 @@ void Renderer::run() {
                 interaction_message=loot_session.status();interaction_remaining=3;return false;
             }
             save_campaign(false);campaign_path.clear();
+            save_outbreak();outbreak.clear(npcs);outbreak_path.clear();
             restore_match_fleet();
             vehicles.leave_session();vehicle_audio.stop();radio_audio.stop();vehicle_renderer.reset_camera();
             shop_open=inventory_open=false;
@@ -2852,6 +2901,7 @@ void Renderer::run() {
             if(result==game::PauseMenu::Result::Save) {
                 bool saved=game_mode==game::GameMode::DevLab || loot_session.save(weapons) || !loot_session.can_persist();
                 saved=save_campaign(false) && saved;
+                save_outbreak();
                 if(vehicle_dirty && !vehicle_save_protected && vehicles.save_state(verda_region,vehicle_state_path,vehicle_error)) vehicle_dirty=false;
                 if(!builds_path.empty() && game::rules_for(game_mode).civilian_life) {
                     std::string builds_error;
@@ -2897,6 +2947,11 @@ void Renderer::run() {
                 } else {
                     queued_mode=action==game::ResultAction::Restart ? game_mode : game::GameMode::Home;
                     respawn_at_hospital=action==game::ResultAction::Restart && game_mode==game::GameMode::Explore && !player_health.alive();
+                    outbreak_respawn=action==game::ResultAction::Restart && game_mode==game::GameMode::ZombieSurvival && !player_health.alive();
+                    if(outbreak.active()) {
+                        if(!player_health.alive()) outbreak.state().has_position=false;   // back at the hideout, not where you fell
+                        save_outbreak();
+                    }
                     death_at=player.position;
                     if(lan_match) {
                         const bool again=action==game::ResultAction::Restart && lan.in_match();
@@ -3366,6 +3421,10 @@ void Renderer::run() {
             current_shop=nearby_shop;shop_open=true;shop_status="Select supplies, equipment or furniture. BUY / SELL transfers one item.";
             play_ui.opened();input_system.cancel_controls();
         }
+        // The outbreak: on with whoever is talking, or a word with whoever is near.
+        if(controls.interact && outbreak.active() && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) &&
+           !vehicles.driver() && player_health.alive() && outbreak.use({player.position.x,player.position.y-1,player.position.z}))
+            input_system.player().interact=false;
         // The Chief (talk), and the training camp's stand (start the next drill).
         if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !at_table && !vehicles.driver() &&
            game_mode==game::GameMode::Explore && !career_path.empty() && player_health.alive()) {
@@ -3448,6 +3507,9 @@ void Renderer::run() {
             bool here=store_mannequin>=0 || at_store_counter || nearby_shop || at_table ||
                 vehicles.nearest(verda_region,feet)>=0 || loot_session.world().nearest(feet,2.8F)>=0 ||
                 (game::rules_for(game_mode).civilian_life && penthouse.inside(feet)) || home_here;
+            if(outbreak.active() && !vehicles.driver()) if(const auto said=outbreak.prompt(feet);!said.empty()) {
+                here=true;if(store_prompt.empty()) store_prompt=touch_ui && said.rfind("E - ",0)==0 ? "USE - "+said.substr(4) : said;
+            }
             const bool at_stash=stash && game::rules_for(game_mode).civilian_life && !vehicles.driver() && !game::economy::Stash::taken(loot_session.economy()) &&
                 std::hypot(feet.x-stash->at.x,feet.z-stash->at.z)<1.8F && std::abs(feet.y-stash->at.y)<1.5F;
             if(at_stash) {here=true;if(store_prompt.empty()) store_prompt=touch_ui ? "USE - Take the holdall" : "E - Take the holdall";}
@@ -3825,6 +3887,15 @@ void Renderer::run() {
                 };
                 switch(screen) {
                 case MotorScreen::Pump: {
+                    if(outbreak.active() && motor_site>=0 && motor_site<static_cast<int>(motor_sites.size())) {
+                        // The outbreak: whatever is left in the station's tanks, free to whoever gets here.
+                        const float left=game::outbreak::fuel_left(outbreak.state(),motor_site,motor_sites[static_cast<std::size_t>(motor_site)].origin);
+                        title="MARNAFTO";subtitle=left<=.001F ? "Dry. This station is done" : TextFormat("%.1f tankfuls left in the ground",left);back="LEAVE";
+                        const bool full=car && car->vehicle.fuel>.995F;
+                        rows.push_back({"Fill up",TextFormat("%d%% in the tank",car ? static_cast<int>(car->vehicle.fuel*100+.5F) : 0),
+                                        left<=.001F ? "DRY" : full ? "Full" : "Take it",left>.001F && !full});
+                        break;
+                    }
                     title="MARNAFTO";subtitle="Nafto el niaj propraj platformoj";back="LEAVE";
                     const int cost=car ? autos::fill_cost(car->vehicle.fuel) : 0;
                     rows.push_back({"Fill up",TextFormat("%d%% in the tank",car ? static_cast<int>(car->vehicle.fuel*100+.5F) : 0),cost>0 ? kr(cost) : "Full",cost>0});
@@ -3975,6 +4046,17 @@ void Renderer::run() {
                 } else if(chosen>=0 && (car || motor_screen==MotorScreen::Dealer)) {
                     switch(motor_screen) {
                     case MotorScreen::Pump: {
+                        if(outbreak.active()) {
+                            const auto& site=motor_sites[static_cast<std::size_t>(motor_site)];
+                            const float got=game::outbreak::draw_fuel(outbreak.state(),motor_site,site.origin,std::max(0.0F,1-car->vehicle.fuel));
+                            car->vehicle.fuel=std::min(1.0F,car->vehicle.fuel+got);vehicle_dirty=true;save_outbreak();
+                            const float left=game::outbreak::fuel_left(outbreak.state(),motor_site,site.origin);
+                            motor_menu.set_status(got<=.001F ? "Nothing comes out. This station is done" :
+                                left<=.001F ? TextFormat("Pumped %d%% of a tank - and the pump runs dry. That's the last of it",static_cast<int>(got*100+.5F)) :
+                                TextFormat("Pumped %d%% of a tank. %.1f tankfuls left here",static_cast<int>(got*100+.5F),left));
+                            open_motor(MotorScreen::Pump,0);
+                            break;
+                        }
                         const float before=car->vehicle.fuel;
                         const auto money=wallet.money;
                         car->vehicle.fuel=autos::fill(before,wallet.money);
@@ -5294,6 +5376,30 @@ void Renderer::run() {
         if(!zombies.empty()) {
             zombies.hear(sound_bus);
             zombies.update(vehicle_paused ? 0.0F : dt,{npc_context.player_position,last_daylight,match_time},npcs);
+        }
+        // The outbreak's scenes, its cast holding their ground, and what the player comes across.
+        if(outbreak.active()) {
+            game::outbreak::RunFrame frame;
+            frame.dt=vehicle_paused ? 0.0F : dt;
+            frame.feet={player.position.x,player.position.y-1,player.position.z};
+            frame.alive=player_health.alive();
+            if(const auto* car=vehicles.driver()) frame.driving=car->id;
+            const auto& happened=outbreak.update(frame,verda_region,npcs,vehicles,zombies);
+            const Vector3 ear=Vector3Subtract(camera.target,camera.position);
+            for(const auto& shot:happened.shots) {
+                sound_bus.emit(game::sound::SoundKind::Gunshot,shot.from,game::sound::radius::pistol,-2,match_time);
+                police_tracers.push_back({shot.from,shot.to,.09F});
+                gun_audio.world_shot(static_cast<game::combat::WeaponId>(std::clamp(shot.weapon,0,static_cast<int>(game::combat::weapon_count)-1)),shot.from,camera.position,ear);
+            }
+            if(!happened.message.empty()) {interaction_message=happened.message;interaction_remaining=6;}
+            if(happened.rifle) {
+                auto& bag=loot_session.edit_inventory();
+                if(bag.count("hunting_rifle")==0) bag.add(item_registry,"hunting_rifle",1);
+                bag.add(item_registry,"rifle_ammo",30);loot_session.changed();
+                gun_audio.kill_confirm();haptics.hit_given(true);
+            }
+            if(happened.save) {save_outbreak();loot_session.save(weapons);}
+            if(outbreak.has_hideout() && (outbreak_autosave+=dt)>120) {outbreak_autosave=0;save_outbreak();}
         }
         hurt_player(npcs.events().player_damage);
         if(npcs.events().player_damage>0) {hurt_from=npcs.events().player_damage_from;hurt_directional=true;}
@@ -7226,6 +7332,19 @@ void Renderer::run() {
                 if(!vehicles.autopiloted(car.id) || taken.contains(car.id)) continue;
                 if(const auto* who=character_registry.choose(characters::CharacterPool::Civilian,std::hash<std::string>{}(car.id))) sit(car.id,who->id);
             }
+            // Uncle Ron riding along in the outbreak: in the passenger seat.
+            if(outbreak.active() && !outbreak.ron_car().empty())
+                if(const auto* asset=vehicles.asset(verda_region,outbreak.ron_car())) if(const auto* type=vehicles.definition(*asset)) {
+                    std::string body;
+                    for(const auto& p:outbreak.people()) if(p.name==game::outbreak::Story::ron) body=p.character;
+                    Vector3 local=type->seat;
+                    local.x=-local.x;
+                    local.y=std::min(local.y,type->height-1.14F);
+                    const auto seat=game::vehicles::VehicleSystem::world_point(local,asset->position,asset->rotation_y,asset->size.x/type->width);
+                    characters::BodyPose sitting;sitting.seated=true;
+                    if(!body.empty() && Vector3DistanceSqr(seat,camera.position)<90*90)
+                        character_renderer.draw(body,{seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y,1,&car_seat_pose,sitting);
+                }
             // The player at the wheel, seen from outside (not from the cab), in their own clothes.
             if(!mine.empty() && player.third_person && !vehicle_renderer.cab() && !riding_now) {
                 const auto* asset=vehicles.asset(verda_region,mine);
@@ -7242,6 +7361,14 @@ void Renderer::run() {
             }
         }
         vehicle_renderer.draw(vehicles,verda_region,camera.position);
+        // The outbreak: a red light blinking on the black tower's roof, night and day.
+        if(outbreak.active() && outbreak.tower().found) {
+            const auto& tower=outbreak.tower();
+            const bool on=std::fmod(GetTime(),1.8)<.3;
+            const Vector3 top{tower.centre.x,tower.centre.y+tower.size.y+.8F,tower.centre.z};
+            DrawSphere(top,on ? 1.1F : .6F,on ? Color{255,30,30,255} : Color{90,10,10,255});
+            if(on) DrawSphere(top,2.6F,Color{255,40,40,60});
+        }
         // The big rigs' trailers, hitched to their tractors.
         for(const auto& trailer:freight.trailers()) {
             if(Vector3DistanceSqr(trailer.centre,camera.position)>320*320) continue;
@@ -7448,6 +7575,9 @@ void Renderer::run() {
                 // Every gang in its colours: officers sharp, soldiers in the gang's shirt (the Green Hand's white).
                 if(actor.bot>=0 && actor.character_id==outfit_body && mafio.active())
                     if(const int gang=mafio.gang_of(actor.bot);gang>=0) body.outfit=gang_outfit(gang,mafio.officer(actor.bot));
+                // The outbreak's people: Dario in the Green Hand's suit, the gangs in their colours.
+                if(const auto* who=outbreak.active() ? outbreak.person(actor.bot) : nullptr;who && who->gang>=0 && actor.character_id==outfit_body)
+                    body.outfit=gang_outfit(who->gang,who->leader || who->name==game::outbreak::Story::dario);
                 // The occupiers in camouflage.
                 if(actor.bot>=0 && actor.character_id==outfit_body && endgame.soldier(actor.bot)) body.outfit=outfits.occupier.id;
                 // Rioters after the final: their club's shirt.
@@ -8563,6 +8693,55 @@ void Renderer::run() {
                 DrawText(line,screen_width/2-MeasureText(line,18)/2,screen_height-170,18,Color{120,230,150,255});
             }
         }
+        // The outbreak: names over the family and the holdouts' leaders, the line being said,
+        // and what to do next.
+        if(outbreak.active()) {
+            const Font& font=sign_renderer.font();
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            for(const auto& p:outbreak.people()) {
+                if(p.hidden || p.dead || (!p.leader && p.name!=game::outbreak::Story::ron && p.name!=game::outbreak::Story::dario)) continue;
+                if(Vector3Distance(p.at,camera.position)>18) continue;
+                const Vector3 over{p.at.x,p.at.y+2.3F,p.at.z};
+                if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))<=0) continue;
+                const Vector2 at=GetWorldToScreen(over,camera);
+                const std::string title=p.holdout>=0 ? p.name+"  ·  "+std::string(game::outbreak::holdouts[static_cast<std::size_t>(outbreak.holdouts()[static_cast<std::size_t>(p.holdout)].spec)].faction) : p.name;
+                const bool talkable=p.leader || outbreak.has_hideout();
+                const char* sub=talkable && Vector3Distance(p.at,feet)<game::outbreak::Run::talk_range ? "USE to talk" : p.holdout>=0 ? "Holding out" : "Family";
+                const float tw=MeasureTextEx(font,title.c_str(),16,1).x,sw=MeasureTextEx(font,sub,13,1).x,w=std::max(tw,sw);
+                DrawRectangle(static_cast<int>(at.x-w/2-6),static_cast<int>(at.y-18),static_cast<int>(w+12),36,Fade(BLACK,.55F));
+                DrawTextEx(font,title.c_str(),{at.x-tw/2,at.y-16},16,1,Color{255,214,120,255});
+                DrawTextEx(font,sub,{at.x-sw/2,at.y+2},13,1,Color{220,226,206,255});
+            }
+            if(const auto* line=outbreak.line()) {
+                const std::string said=line->text;
+                const float max_w=std::min(820.0F,screen_width-60.0F);
+                std::vector<std::string> rows;std::string row,word;
+                for(std::size_t i=0;i<=said.size();++i) {
+                    const char c=i<said.size() ? said[i] : ' ';
+                    if(c!=' ') {word+=c;continue;}
+                    const std::string trial=row.empty() ? word : row+" "+word;
+                    if(MeasureTextEx(font,trial.c_str(),19,1).x>max_w-36 && !row.empty()) {rows.push_back(row);row=word;}
+                    else row=trial;
+                    word.clear();
+                }
+                if(!row.empty()) rows.push_back(row);
+                const float h=58+22*static_cast<float>(rows.size()),x=screen_width/2-max_w/2,y=screen_height*.70F-h;
+                const Color edge=std::string(line->speaker)==game::outbreak::Story::rancher ? Color{230,90,70,255} : Color{255,214,120,255};
+                DrawRectangleRounded({x,y,max_w,h},.08F,8,Fade(Color{12,16,12,255},.82F));
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y+8),4,static_cast<int>(h-16),edge);
+                DrawTextEx(font,line->speaker,{x+18,y+10},18,1,edge);
+                for(std::size_t k=0;k<rows.size();++k) DrawTextEx(font,rows[k].c_str(),{x+18,y+34+22*static_cast<float>(k)},19,1,Color{236,240,226,255});
+                const char* more=outbreak.line_is_story() ? "USE - continue" : "USE - close";
+                const float mw=MeasureTextEx(font,more,14,1).x;
+                DrawTextEx(font,more,{x+max_w-mw-16,y+h-22},14,1,Color{170,190,150,255});
+            }
+            if(const auto goal=outbreak.story().objective(outbreak.infected_left());!goal.empty() && !map_screen.is_open()) {
+                const std::string text="> "+goal;
+                const float gw=MeasureTextEx(font,text.c_str(),19,1).x;
+                DrawRectangle(static_cast<int>(screen_width/2-gw/2-14),132,static_cast<int>(gw+28),32,Fade(BLACK,.55F));
+                DrawTextEx(font,text.c_str(),{screen_width/2-gw/2,138},19,1,Color{255,214,120,255});
+            }
+        }
         if(bus_ride>=0 && bus_ride<static_cast<int>(bus_line.buses().size()) && !map_screen.is_open()) {
             const auto& bus=bus_line.buses()[static_cast<std::size_t>(bus_ride)];
             const std::string line=std::string(bus.dwell>0 ? "LINIO 1  ·  at " : "LINIO 1  ·  next stop: ")+
@@ -9029,6 +9208,19 @@ void Renderer::run() {
             }
             if(career.job().kind!=game::career::JobKind::None && flat(career.job().target)>14)
                 compass_marks.push_back({career.job().target,Glyph::Objective,career.on_duty() ? Color{90,150,255,255} : Color{255,196,70,255},career.job().title,true});
+            if(outbreak.active()) {
+                if(const auto goal=outbreak.goal();goal && flat(*goal)>4)
+                    compass_marks.push_back({*goal,Glyph::Objective,Color{255,214,120,255},
+                        outbreak.story().stage()==game::outbreak::Stage::Drive || outbreak.story().stage()==game::outbreak::Stage::Clear ? "THE BARN" : "UNCLE RON",true});
+                if(outbreak.has_hideout()) compass_marks.push_back({outbreak.hideout(),Glyph::Hideout,Color{46,204,96,255},"HIDEOUT",false});
+                for(std::size_t k=0;k<outbreak.holdouts().size();++k) if(outbreak.found(static_cast<int>(k))) {
+                    const auto& h=outbreak.holdouts()[k];
+                    const auto& spec=game::outbreak::holdouts[static_cast<std::size_t>(h.spec)];
+                    if(flat(h.centre)<1800) compass_marks.push_back({h.centre,Glyph::Camp,spec.color,std::string(spec.faction),false});
+                }
+                if(outbreak.tower().found && outbreak.state().tower_seen && flat(outbreak.tower().centre)<1200)
+                    compass_marks.push_back({outbreak.tower().centre,Glyph::Zone,Color{200,40,40,255},"???",false});
+            }
             if(!campaign_path.empty() && !story.objective().empty() && uncle_ron.placed && flat(uncle_ron.at)>4)
                 compass_marks.push_back({uncle_ron.at,Glyph::Objective,Color{255,214,120,255},"UNCLE RON",true});
             // Uncle Dario at the Green Hand's bar: on the strip for a nephew with no road yet (close by for anyone else outside the law).
@@ -9223,6 +9415,19 @@ void Renderer::run() {
                     }
                 }
             }
+            // The outbreak: red but where the living are; the holdouts found, the hideout, the tower.
+            if(outbreak.active()) {
+                view.danger=true;
+                for(const auto& c:outbreak.clearings({player.position.x,player.position.y-1,player.position.z})) view.clear.push_back({c.centre,c.radius});
+                for(const auto& town:verda_region.settlements()) if(town.id=="capital_verda") view.ground_zero=town.center;
+                for(std::size_t k=0;k<outbreak.holdouts().size();++k) if(outbreak.found(static_cast<int>(k))) {
+                    const auto& h=outbreak.holdouts()[k];
+                    const auto& spec=game::outbreak::holdouts[static_cast<std::size_t>(h.spec)];
+                    view.bases.push_back({h.centre,spec.color,std::string(spec.faction),true});
+                }
+                if(outbreak.has_hideout()) view.bases.push_back({outbreak.hideout(),Color{46,204,96,255},"YOUR HIDEOUT",true});
+                if(outbreak.tower().found && outbreak.state().tower_seen) view.bases.push_back({outbreak.tower().centre,Color{200,40,40,255},"???",true});
+            }
             for(const auto& stop:bus_line.stops()) view.stops.push_back(stop.shelter);
             if(bus_line.running()) for(const auto& bus:bus_line.buses()) if(bus.running) view.buses.push_back({bus.position,bus.yaw});
             for(const auto& crew:mafio.crews()) {
@@ -9301,6 +9506,15 @@ void Renderer::run() {
             DrawText(line,screen_width/2-tw/2,screen_height/2-55,size,RAYWHITE);
         }
         // The drive home with Uncle Ron: the screen goes dark, and comes back at his house.
+        if(outbreak.active() && outbreak.dark()>0) {
+            DrawRectangle(0,0,screen_width,screen_height,Fade(BLACK,outbreak.dark()));
+            if(outbreak.dark()>.5F) {
+                const char* caption="Somebody is shaking you awake...";
+                const Font& f=sign_renderer.font();
+                const float cw=MeasureTextEx(f,caption,26,1).x;
+                DrawTextEx(f,caption,{screen_width/2-cw/2,screen_height/2-13.0F},26,1,Fade(Color{236,240,226,255},(outbreak.dark()-.5F)/.5F));
+            }
+        }
         if(!campaign_path.empty() && story.fade()>0) {
             DrawRectangle(0,0,screen_width,screen_height,Fade(BLACK,story.fade()));
             if(story.fade()>.6F) {
