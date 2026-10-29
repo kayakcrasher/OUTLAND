@@ -526,7 +526,8 @@ int main() {
               " (nearest: " + (found >= 0 ? cars.vehicles()[static_cast<std::size_t>(found)].id : std::string("none")) + ")");
         for (int f = 0; f < 120; ++f) { cars.begin_frame(); cars.update(.02F, {1, 0}, region, car->position); }
         check(Vector3Distance(start, car->position) > 8, "drive away: " + car->vehicle.marker + " moved " + std::to_string(Vector3Distance(start, car->position)));
-        for (int f = 0; f < 100; ++f) cars.update(.02F, {0, 0, true}, region, car->position);
+        // Brake to a stop (a muscle car gets going faster than a hatchback in the same time).
+        for (int f = 0; f < 300 && std::abs(cars.vehicles()[i].speed) > .5F; ++f) cars.update(.02F, {0, 0, true}, region, car->position);
         Vector3 out{};
         check(cars.exit(region, out), "get out of " + car->vehicle.marker);
     }

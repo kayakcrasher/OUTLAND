@@ -71,7 +71,7 @@ int main() {
         const auto* a = fleet.asset(region, fleet.vehicles()[i].id);
         check(a && std::abs(a->size.x - fleet.definition(*a)->width) < .01F, "every vehicle at its real size");
         trucks += a->vehicle.definition == "truck";
-        cars += a->vehicle.definition == "hatchback" || a->vehicle.definition == "sedan";   // the everyday cars
+        for (const char* everyday : {"hatchback", "sedan", "wagon", "van", "muscle"}) cars += a->vehicle.definition == everyday;   // the everyday cars
     }
     check(trucks >= 5 && cars >= 80, "trucks and cars parked: " + std::to_string(trucks) + "/" + std::to_string(cars));
     int index = -1;

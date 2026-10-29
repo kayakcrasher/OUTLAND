@@ -8255,8 +8255,9 @@ void Renderer::run() {
             // Aŭtovendejo Verda: a price on every car on show.
             for(const auto& site:motor_sites) {
                 if(site.kind!=world::motor::Kind::CarLot || Vector3Distance(site.origin,camera.position)>60) continue;
-                for(std::size_t i=0;i<game::autos::dealer.size() && i<world::motor::car_lot_spots.size();++i) {
-                    const Vector3 over=site.to_world({world::motor::car_lot_spots[i],2.4F,world::motor::car_lot_rows[0]});
+                for(std::size_t i=0;i<game::autos::dealer.size() && i<world::motor::car_lot_spots.size()*world::motor::car_lot_rows.size();++i) {
+                    const std::size_t lane=world::motor::car_lot_spots.size();
+                    const Vector3 over=site.to_world({world::motor::car_lot_spots[i%lane],2.4F,world::motor::car_lot_rows[i/lane]});
                     if(Vector3Distance(over,camera.position)>16 ||
                        Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))<=0) continue;
                     const Vector2 at=GetWorldToScreen(over,camera);

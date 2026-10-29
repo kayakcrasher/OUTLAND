@@ -6363,14 +6363,14 @@ MARKER "creator_marker_building_purpose_kit_39" 4 -87.5 6.30000019 -1895 1.20000
 MARKER "creator_marker_building_purpose_kit_40" 4 -87.5 6.30000019 -1865 1.20000005 2.20000005 1.20000005 90 1
 MARKER "creator_marker_building_purpose_kit_41" 4 -72.5 6.30000019 -1895 1.20000005 2.20000005 1.20000005 270 1
 MARKER "creator_marker_building_purpose_kit_42" 4 -72.5 6.30000019 -1865 1.20000005 2.20000005 1.20000005 270 1
-MARKER "vehicle_spawn_hatchback_espera_1" 3 -44.7999992 6 -1792 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_sedan_espera_1" 3 -44.7999992 6 -1792 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_espera_2" 3 -44.7999992 6 -1818 2 1.60000002 4.4000001 0 1
 MARKER "creator_marker_building_purpose_kit_43" 4 -67.5 6.25 -1734.69995 1.20000005 2.20000005 1.20000005 180 1
-MARKER "vehicle_spawn_hatchback_espera_3" 3 8 6 -1844.80005 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_van_espera_3" 3 8 6 -1844.80005 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_espera_4" 3 -18 6 -1844.80005 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_espera_5" 3 8 6 -1755.19995 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_muscle_espera_5" 3 8 6 -1755.19995 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_espera_6" 3 -18 6 -1755.19995 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_espera_7" 3 44.7999992 6 -1792 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_wagon_espera_7" 3 44.7999992 6 -1792 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_espera_8" 3 44.7999992 6 -1818 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_espera_lot_9" 3 88 6 -1732 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_espera_lot_10" 3 88 6 -1708 2 1.60000002 4.4000001 0 1
@@ -7295,21 +7295,21 @@ MARKER "vehicle_spawn_hatchback_garage_1_7" 3 -125.099998 3.45000005 -131 2 1.60
 MARKER "vehicle_spawn_hatchback_garage_2_5" 3 -113.099998 6.6500001 -125.800003 2 1.60000002 4.4000001 270 1
 MARKER "vehicle_spawn_hatchback_garage_2_2" 3 -125.099998 6.6500001 -118 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_downtown_1" 3 -121 0 -6.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_downtown_2" 3 -147 0 -6.79999924 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_sedan_downtown_2" 3 -147 0 -6.79999924 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_downtown_3" 3 -121 0 6.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_downtown_4" 3 -147 0 6.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_downtown_5" 3 -80.1999969 0 -118 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_wagon_downtown_4" 3 -147 0 6.79999924 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_van_downtown_5" 3 -80.1999969 0 -118 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_downtown_6" 3 -80.1999969 0 -144 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_downtown_7" 3 -80.1999969 0 134 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_muscle_downtown_7" 3 -80.1999969 0 134 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_downtown_8" 3 -80.1999969 0 108 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_downtown_9" 3 80.1999969 0 -118 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_sedan_downtown_9" 3 80.1999969 0 -118 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_downtown_10" 3 80.1999969 0 -144 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_downtown_11" 3 80.1999969 0 134 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_downtown_12" 3 80.1999969 0 108 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_wagon_downtown_11" 3 80.1999969 0 134 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_van_downtown_12" 3 80.1999969 0 108 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_downtown_13" 3 137 0 -6.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_downtown_14" 3 111 0 -6.79999924 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_muscle_downtown_14" 3 111 0 -6.79999924 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_downtown_15" 3 137 0 6.79999924 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_downtown_16" 3 111 0 6.79999924 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_sedan_downtown_16" 3 111 0 6.79999924 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_okcidento_1" 3 -301.100006 -0 -179.199997 2 1.60000002 4.4000001 360 1
 MARKER "vehicle_spawn_hatchback_okcidento_2" 3 -252.899994 -0 -156.800003 2 1.60000002 4.4000001 180 1
 MARKER "vehicle_spawn_hatchback_okcidento_3" 3 -258.100006 -0 -156.300003 2 1.60000002 4.4000001 180 1
@@ -7755,9 +7755,13 @@ MARKER "vehicle_spawn_semi_haul_2" 3 -594 -0 -100 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_semi_haul_3" 3 -608 -0 -100 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_forsale_1" 3 199 0 19.2999992 2 1.60000002 4.4000001 180 1
 MARKER "vehicle_spawn_sxs_forsale_2" 3 205 0 19.2999992 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_sedan_forsale_3" 3 211 0 19.2999992 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_truck_forsale_4" 3 217 0 19.2999992 2 1.60000002 4.4000001 180 1
-MARKER "vehicle_spawn_green_hand_gt_forsale_5" 3 223 0 19.2999992 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_wagon_forsale_3" 3 211 0 19.2999992 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_sedan_forsale_4" 3 217 0 19.2999992 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_van_forsale_5" 3 223 0 19.2999992 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_truck_forsale_6" 3 199 0 28.2999992 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_flatbed_forsale_7" 3 205 0 28.2999992 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_muscle_forsale_8" 3 211 0 28.2999992 2 1.60000002 4.4000001 180 1
+MARKER "vehicle_spawn_green_hand_gt_forsale_9" 3 217 0 28.2999992 2 1.60000002 4.4000001 180 1
 MARKER "vehicle_spawn_bus_team_0" 3 538 7.98399401 62.0000038 2.5999999 3.20000005 11 90 1
 PURPOSE "verda_okcidento_house_1" 1
 PURPOSE "verda_okcidento_house_2" 1
@@ -7873,13 +7877,13 @@ ROAD 1950 0 -470 2214 0 -470 13 2
 ROAD 1946 0 -360 2214 0 -360 13 2
 ROAD 2214 0 -522 2214 0 -360 14 2
 ROAD 1630 0 -262 1630 0 -274 8 2
-MARKER "vehicle_spawn_hatchback_porto_1" 3 1705.19995 6 -392 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_wagon_porto_1" 3 1705.19995 6 -392 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_porto_2" 3 1705.19995 6 -418 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_porto_3" 3 1758 6 -444.799988 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_sedan_porto_3" 3 1758 6 -444.799988 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_porto_4" 3 1732 6 -444.799988 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_porto_5" 3 1758 6 -355.200012 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_van_porto_5" 3 1758 6 -355.200012 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_porto_6" 3 1732 6 -355.200012 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_porto_7" 3 1794.80005 6 -392 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_muscle_porto_7" 3 1794.80005 6 -392 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_porto_8" 3 1794.80005 6 -418 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_truck_port_luma_1" 3 1936 6 -462 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_truck_port_luma_2" 3 1936 6 -338 2 1.60000002 4.4000001 180 1
@@ -7989,13 +7993,13 @@ ROAD 340 0 1926 340 0 2152 6 0
 ROAD 180 0 1662 180 0 1674 8 2
 MARKER "vehicle_spawn_hatchback_suda_lot_1" 3 214 6 1708 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_suda_lot_2" 3 228 6 1732 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_suda_3" 3 255.199997 6 1808 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_van_suda_3" 3 255.199997 6 1808 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_suda_4" 3 255.199997 6 1782 2 1.60000002 4.4000001 0 1
-MARKER "vehicle_spawn_hatchback_suda_5" 3 308 6 1755.19995 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_muscle_suda_5" 3 308 6 1755.19995 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_suda_6" 3 282 6 1755.19995 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_suda_7" 3 308 6 1844.80005 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_wagon_suda_7" 3 308 6 1844.80005 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_suda_8" 3 282 6 1844.80005 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_suda_9" 3 344.799988 6 1808 2 1.60000002 4.4000001 0 1
+MARKER "vehicle_spawn_sedan_suda_9" 3 344.799988 6 1808 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_hatchback_suda_10" 3 344.799988 6 1782 2 1.60000002 4.4000001 0 1
 MARKER "vehicle_spawn_police_south_haven_1" 3 313 6 1927.80005 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_ambulance_south_haven_1" 3 172.199997 6 1806 2 1.60000002 4.4000001 0 1
@@ -8096,12 +8100,12 @@ ROAD -1683 0 560 -1692.19238 0 556.192383 7.25 2
 ROAD -1692.19238 0 556.192383 -1696 0 547 7.25 2
 ROAD -1709.38159 0 610.012573 -1710 0 576 8 2
 MARKER "vehicle_spawn_hatchback_roka_1" 3 -1742 14.0573664 405.200012 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_roka_2" 3 -1768 14.0573664 405.200012 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_wagon_roka_2" 3 -1768 14.0573664 405.200012 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_hatchback_roka_3" 3 -1742 14.0573664 494.799988 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_hatchback_roka_4" 3 -1768 14.0573664 494.799988 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_sedan_roka_4" 3 -1768 14.0573664 494.799988 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_truck_roka_1" 3 -1648 14.0573664 394 2 1.60000002 4.4000001 270 1
 MARKER "vehicle_spawn_truck_roka_2" 3 -1692 14.0573664 474 2 1.60000002 4.4000001 90 1
-MARKER "vehicle_spawn_truck_roka_3" 3 -1648 14.0573664 554 2 1.60000002 4.4000001 270 1
+MARKER "vehicle_spawn_flatbed_roka_3" 3 -1648 14.0573664 554 2 1.60000002 4.4000001 270 1
 MARKER "vehicle_spawn_truck_roka_4" 3 -1910 14.0573664 442 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_police_west_roka_1" 3 -1745 14.0573654 577.799988 2 1.60000002 4.4000001 90 1
 MARKER "vehicle_spawn_ambulance_west_roka_1" 3 -1622.19995 14.0573664 444 2 1.60000002 4.4000001 180 1

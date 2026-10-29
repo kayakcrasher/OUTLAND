@@ -479,7 +479,10 @@ void downtown(Kit& kit, world::VerdaRegion& region) {
             const float curb = pad_size * .5F + 1.2F;   // tight to the kerb, clear of the traffic lane
             const Vector3 p = along_x ? Vector3{bx + (bx > 0 ? curb : -curb), ground, bz + along} : Vector3{bx + along, ground, bz + (bz > 0 ? -curb : curb)};
             world::GameplayMarker marker;
-            marker.id = "vehicle_spawn_hatchback_downtown_" + std::to_string(++parked);
+            // Mostly hatchbacks; a sedan, an estate, a van or a muscle car between them.
+            static constexpr std::array<const char*, 7> parked_kinds{"hatchback", "sedan", "hatchback", "wagon", "van", "hatchback", "muscle"};
+            marker.id = std::string("vehicle_spawn_") + parked_kinds[parked % parked_kinds.size()] + "_downtown_" + std::to_string(parked + 1);
+            ++parked;
             marker.type = world::GameplayMarkerType::VehicleSpawn;
             marker.position = p; marker.size = {2, 1.6F, 4.4F}; marker.rotation_y = along_x ? 0 : 90;
             capital->gameplay_markers.push_back(marker);
@@ -611,6 +614,12 @@ void downtown_south(Kit& kit, world::VerdaRegion& region) {
 // The highways from the capital and the ring road end at the grid's east edge.
 world::Settlement* settlement(world::VerdaRegion& region, std::string_view id);
 void vehicle_marker(world::Settlement& town, const std::string& id, Vector3 at, float yaw);
+// The island's everyday cars, the n-th parked one: mostly hatchbacks, with sedans, estates, vans
+// and the odd muscle car among them.
+const char* everyday_car(int n) {
+    static constexpr std::array<const char*, 8> kinds{"hatchback", "wagon", "hatchback", "sedan", "hatchback", "van", "hatchback", "muscle"};
+    return kinds[static_cast<std::size_t>(n) % kinds.size()];
+}
 void roka_city(Kit& kit, world::VerdaRegion& region) {
     auto* roka = settlement(region, "west_roka");
     auto* capital = settlement(region, "capital_verda");
@@ -637,7 +646,8 @@ void roka_city(Kit& kit, world::VerdaRegion& region) {
     const auto at = [&](float x, float z) { return Vector3{c.x + x, ground + pad_top, c.z + z}; };
     int parked = 0, trucks = 0;
     const auto truck = [&](Vector3 p, float yaw) {
-        vehicle_marker(*roka, "vehicle_spawn_truck_roka_" + std::to_string(++trucks), p, yaw);
+        vehicle_marker(*roka, std::string(trucks % 3 == 2 ? "vehicle_spawn_flatbed_roka_" : "vehicle_spawn_truck_roka_") + std::to_string(trucks + 1), p, yaw);
+        ++trucks;
     };
     const auto home_marker = [&](Vector3 p, float yaw) { kit.purpose({p.x, ground + .3F, p.z}, yaw, world::BuildingPurpose::Home); };
     for (const float bx : {-80.0F, 0.0F, 80.0F}) for (const float bz : {-80.0F, 0.0F, 80.0F}) {
@@ -702,7 +712,8 @@ void roka_city(Kit& kit, world::VerdaRegion& region) {
         }
         if (!square && bx == 0) for (const float along : {8.0F, -18.0F}) {
             const float curb = pad_size * .5F + 1.2F;   // tight to the kerb, clear of the traffic lane
-            vehicle_marker(*roka, "vehicle_spawn_hatchback_roka_" + std::to_string(++parked), {c.x + along, 0, c.z + bz + (bz > 0 ? -curb : curb)}, 90);
+            ++parked;
+            vehicle_marker(*roka, std::string("vehicle_spawn_") + everyday_car(parked - 1) + "_roka_" + std::to_string(parked), {c.x + along, 0, c.z + bz + (bz > 0 ? -curb : curb)}, 90);
         }
     }
     for (const float i : {-40.0F, 40.0F}) for (const float j : {-40.0F, 40.0F}) {
@@ -1166,7 +1177,8 @@ void county_town(Kit& kit, world::VerdaRegion& region, const TownPlan& plan) {
             const bool along_z = bz == 0;
             const float curb = pad_size * .5F + 1.2F;
             const Vector3 p = along_z ? Vector3{c.x + bx + (bx > 0 ? -curb : curb), 0, c.z + along} : Vector3{c.x + along, 0, c.z + bz + (bz > 0 ? -curb : curb)};
-            vehicle_marker(*town, "vehicle_spawn_hatchback_" + std::string(plan.tag) + "_" + std::to_string(++parked), p, along_z ? 0.0F : 90.0F);
+            ++parked;
+            vehicle_marker(*town, std::string("vehicle_spawn_") + everyday_car(parked + 2) + "_" + std::string(plan.tag) + "_" + std::to_string(parked), p, along_z ? 0.0F : 90.0F);
         }
     }
     for (const float i : {-40.0F, 40.0F}) for (const float j : {-40.0F, 40.0F}) {
@@ -1213,7 +1225,9 @@ void driveways(Kit& kit, world::VerdaRegion& region) {
                 Vector3 spot = to_world({house.position.x, terrain, house.position.z}, house.rotation_y, side * (house.size.x * .5F + 2.3F), 0, -house.size.z * .5F + 2.6F);
                 if (!kit.claim(spot, 1.3F, 2.6F, house.rotation_y, &own)) continue;
                 world::GameplayMarker car;
-                car.id = "vehicle_spawn_hatchback_" + town.id + "_drive_" + std::to_string(++parked);
+                // The family's car: mostly hatchbacks, some estates, the odd van or sedan.
+                static constexpr std::array<const char*, 6> drive_kinds{"hatchback", "wagon", "hatchback", "sedan", "hatchback", "van"};
+                car.id = std::string("vehicle_spawn_") + drive_kinds[(r / 4) % drive_kinds.size()] + "_" + town.id + "_drive_" + std::to_string(++parked);
                 car.type = world::GameplayMarkerType::VehicleSpawn;
                 spot.y = world::terrain::TerrainHeight::sample(spot.x, spot.z);
                 car.position = spot;
@@ -1471,7 +1485,8 @@ void porto_luma_city(Kit& kit, world::VerdaRegion& region) {
             const bool along_z = bz == 0;
             const float curb = pad_size * .5F + 1.2F;   // tight to the kerb, clear of the traffic lane
             const Vector3 p = along_z ? Vector3{c.x + bx + (bx > 0 ? -curb : curb), 0, c.z + along} : Vector3{c.x + along, 0, c.z + bz + (bz > 0 ? -curb : curb)};
-            vehicle_marker(*port, "vehicle_spawn_hatchback_porto_" + std::to_string(++parked), p, along_z ? 0.0F : 90.0F);
+            ++parked;
+            vehicle_marker(*port, std::string("vehicle_spawn_") + everyday_car(parked) + "_porto_" + std::to_string(parked), p, along_z ? 0.0F : 90.0F);
         }
     }
     for (const float i : {-40.0F, 40.0F}) for (const float j : {-40.0F, 40.0F}) {
@@ -2463,10 +2478,13 @@ void motor_trade(Kit& kit, world::VerdaRegion& region) {
             kit.report.car_lot_at = spot.origin;
             // The cars on show, noses to the street: one of each the lot sells.
             auto* capital = settlement(region, "capital_verda");
-            static constexpr std::array<const char*, 5> stock{"hatchback", "sxs", "sedan", "truck", "green_hand_gt"};
-            for (std::size_t i = 0; i < stock.size() && capital; ++i)
+            // (game::autos::dealer's order: the first five on the front row, the rest behind.)
+            static constexpr std::array<const char*, 9> stock{"hatchback", "sxs", "wagon", "sedan", "van", "truck", "flatbed", "muscle", "green_hand_gt"};
+            for (std::size_t i = 0; i < stock.size() && capital; ++i) {
+                const std::size_t row = i / M::car_lot_spots.size(), slot = i % M::car_lot_spots.size();
                 vehicle_marker(*capital, std::string("vehicle_spawn_") + stock[i] + "_forsale_" + std::to_string(i + 1),
-                               to_world(spot.origin, spot.yaw, M::car_lot_spots[i], 0, M::car_lot_rows[0]), spot.yaw + 180);
+                               to_world(spot.origin, spot.yaw, M::car_lot_spots[slot], 0, M::car_lot_rows[row]), spot.yaw + 180);
+            }
             // The workshop next to it.
             workshop(spot.origin, 30, 260, clear_of_downtown);
         }

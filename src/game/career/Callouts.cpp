@@ -21,7 +21,7 @@ std::uint64_t mix(std::uint64_t z) {
 }
 // The getaway cars: what the radio calls them.
 struct Getaway { const char* definition; const char* name; };
-constexpr Getaway getaways[]{{"sedan", "Sedano"}, {"hatchback", "hatchback"}, {"truck", "pickup"}};
+constexpr Getaway getaways[]{{"sedan", "Sedano"}, {"hatchback", "hatchback"}, {"truck", "pickup"}, {"wagon", "Familio estate"}, {"muscle", "Tempesto muscle car"}, {"van", "Furgono van"}};
 std::string lower(std::string text) {
     for (auto& c : text) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     return text;

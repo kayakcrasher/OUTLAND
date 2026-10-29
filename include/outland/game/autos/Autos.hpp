@@ -131,11 +131,15 @@ inline constexpr int litre_price = 2;   // kronoj
 
 // Aŭtovendejo Verda's stock.
 struct ForSale { const char* definition; const char* name; const char* detail; int price; };
-inline constexpr std::array<ForSale, 5> dealer{{
+inline constexpr std::array<ForSale, 9> dealer{{
     {"hatchback", "Classic hatchback", "small, cheap to run", 6000},
     {"sxs", "Vakero side-by-side", "goes anywhere off the road", 8500},
+    {"wagon", "Verda Familio", "the estate: room for the dog", 9500},
     {"sedan", "Verda Sedano", "the family car", 11000},
+    {"van", "Verda Furgono", "a box van for the trade", 12500},
     {"truck", "Verda pickup", "a working truck with a bed", 14000},
+    {"flatbed", "Verda Platformo", "a flatbed for the heavy stuff", 16500},
+    {"muscle", "Verda Tempesto", "a big V8 and not much sense", 24000},
     {"green_hand_gt", "Verda Mano GT", "the island's fastest car", 45000},
 }};
 
