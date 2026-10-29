@@ -52,4 +52,19 @@ int next_feast(int day, int& in_days);
 // What the player reads arriving at a church's door.
 std::string church_notice(const Church& church, int day);
 
+// Sundays and feast days. `sunday`: the island's weekday is Sunday; `day`: the island day;
+// `minute`: of the day.
+// The bells: on a Sunday before the service (9:10-9:30) and after it (11:30-11:45); on a feast at
+// noon (12:00-12:20); and on Pasko through the first half hour of the night.
+bool bells(bool sunday, int day, int minute);
+// Who stands outside a church: the faithful through the Sunday service (9:15-11:45) and all of a
+// feast day (10:00-18:00), with candles on Pasko night (0:00-1:30); on a Sunday, La Verda Mano's
+// men in their suits outside their chapel. No gathering: people 0.
+struct Gathering { int people{0}; int green_hand{0}; bool candles{false}; };
+Gathering gathering(const Church& church, bool sunday, int day, int minute);
+// A feast day is a day of peace: the gangs start no wars on it.
+inline bool day_of_peace(int day) { return feast_on(day) >= 0; }
+// The morning's word on a feast day ("" on other days).
+std::string feast_morning(int day);
+
 } // namespace outland::game::culture

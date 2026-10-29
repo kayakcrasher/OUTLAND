@@ -32,6 +32,12 @@ std::string serialise(const CampaignState& s) {
     if (!s.ron_truck.empty()) out << "ron_truck=" << s.ron_truck << "\n";
     out << "heard=" << s.heard_trucker << s.heard_cop << s.heard_gang << "\n";
     out << "ron=" << s.picked_up << s.ultimatum << s.kicked_out << "," << static_cast<long long>(s.ultimatum_left) << "\n";
+    if (!s.calls.empty()) {
+        out << "calls=";
+        for (std::size_t i = 0; i < s.calls.size(); ++i) out << (i ? "," : "") << s.calls[i];
+        out << "\n";
+    }
+    out << "races=" << s.races << "," << s.race_wins << "\n";
     return out.str();
 }
 
@@ -58,6 +64,19 @@ bool parse(const std::string& text, CampaignState& s) {
         else if (key == "saved") s.saved_at = std::max<long long>(0, std::atoll(value.c_str()));
         else if (key == "place") s.place = value;
         else if (key == "ron_truck") s.ron_truck = value;
+        else if (key == "calls") {
+            std::size_t from = 0;
+            while (from <= value.size()) {
+                const auto comma = value.find(',', from);
+                const auto topic = value.substr(from, comma == std::string::npos ? std::string::npos : comma - from);
+                if (!topic.empty() && topic.size() < 64) s.calls.push_back(topic);
+                if (comma == std::string::npos) break;
+                from = comma + 1;
+            }
+        } else if (key == "races") {
+            int r = 0, w = 0;
+            if (std::sscanf(value.c_str(), "%d,%d", &r, &w) == 2 && r >= 0 && w >= 0 && w <= r) { s.races = r; s.race_wins = w; }
+        }
         else if (key == "heard" && value.size() >= 3) {
             s.heard_trucker = value[0] == '1'; s.heard_cop = value[1] == '1'; s.heard_gang = value[2] == '1';
         } else if (key == "ron" && value.size() >= 3) {

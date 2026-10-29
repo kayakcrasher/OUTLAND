@@ -99,6 +99,10 @@
 
 #include "outland/game/culture/SignRenderer.hpp"
 #include "outland/game/culture/Faith.hpp"
+#include "outland/game/culture/Gossip.hpp"
+#include "outland/game/racing/StreetRace.hpp"
+#include "outland/game/campaign/Phone.hpp"
+#include "outland/world/Highways.hpp"
 #include "outland/game/services/HighwayPatrol.hpp"
 #include "outland/game/interiors/Furnishing.hpp"
 #include "outland/game/wardrobe/StoreUI.hpp"
@@ -867,6 +871,20 @@ void Renderer::run() {
     // The churches (game::culture::Faith): a word about each the first time the player walks up.
     std::vector<game::culture::Church> churches;
     int church_seen=-1;
+    // Word gets around (game::culture::Gossip): the island's news, and what it says about the player.
+    game::culture::Gossip gossip;std::string gossip_heard;
+    // Street racing on the ring at night (game::racing): Fulmo and the boys at the Marnafto station.
+    game::racing::StreetRace street_race;
+    constexpr int race_bot=986000;
+    bool race_cars_out=false,race_bots_out=false;
+    // Uncle Ron and Uncle Dario on the phone (the campaign, in free play).
+    game::campaign::Phone phone;
+    // Sundays and feasts: the bells, and the faithful outside the nearest church.
+    constexpr int crowd_bot=987000;
+    int crowd_church=-1,crowd_size=0,crowd_green=0;bool crowd_candles=false;
+    std::vector<Vector3> crowd_spots;
+    float bell_clock=0;int feast_said_day=-1;
+    Sound bell_sound{},ring_sound{};bool chimes_ready=false;
     int motor_site=-1,motor_served=-1;   // the site in use; one whose menu was closed (not again till the car leaves it)
     std::string motor_car;               // the car being served
     std::vector<game::autos::OwnedCar> owned_cars;   // the cars the player bought (this session's ids)
@@ -1972,6 +1990,20 @@ void Renderer::run() {
                     homes_for_sale=game::economy::plan_homes(verda_region);
                     motor_sites=world::motor::sites(verda_region);
                     churches=game::culture::find_churches(verda_region);church_seen=-1;
+                    gossip=game::culture::Gossip{};gossip_heard.clear();crowd_church=-1;crowd_size=0;feast_said_day=-1;
+
+                    // The street racers meet by the Marnafto station on the ring road.
+                    street_race=game::racing::StreetRace{};race_cars_out=race_bots_out=false;
+                    {
+                        std::vector<Vector3> ring;
+                        for(const auto& line:world::highways::lines()) if(line.loop) ring=line.points;
+                        const world::motor::Site* meet=nullptr;
+                        float off=200;
+                        for(const auto& site:motor_sites)
+                            if(site.kind==world::motor::Kind::Gas)
+                                if(const float d=std::abs(std::hypot(site.origin.x,site.origin.z)-1500);d<off) {off=d;meet=&site;}
+                        if(meet && street_race.setup(ring,meet->origin)) TraceLog(LOG_INFO,"OUTLAND street race meet at %.0f %.0f, %.0f m to the finish",meet->origin.x,meet->origin.z,street_race.length());
+                    }
                     for(const auto& c:churches) TraceLog(LOG_INFO,"OUTLAND church: %s %s at %.0f %.0f%s",game::culture::denomination_name(c.denomination),c.settlement.c_str(),c.centre.x,c.centre.z,c.green_hand ? " (La Verda Mano)" : "");
                     vacated_homes=game::economy::vacate(verda_region,homes_for_sale);
                     TraceLog(LOG_INFO,"OUTLAND homes for sale: %d",static_cast<int>(homes_for_sale.size()));
@@ -2742,6 +2774,10 @@ void Renderer::run() {
                     }
 #endif
                     story.start(campaign.stage);
+                    phone=game::campaign::Phone{};phone.set_done(campaign.calls);
+#ifdef OUTLAND_DEV_TOOLS
+                    if(const char* soon=std::getenv("OUTLAND_DEV_PHONE"); soon && *soon=='1') phone.ring_in(5);   // dev: a call within seconds
+#endif
                     // Uncle Ron's house: the first house in Okcidenta Verda on the list (not for sale - it's his).
                     for(std::size_t i=0;i<homes_for_sale.size();++i) if(homes_for_sale[i].house) {ron_home=static_cast<int>(i);break;}
                     if(ron_home>=0) {auto& home=homes_for_sale[static_cast<std::size_t>(ron_home)];home.name="Uncle Ron's house";home.price=0;}
@@ -3138,6 +3174,10 @@ void Renderer::run() {
             }
         }
         const input::PlayerInput& controls = input_system.player();
+        // On the phone: USE answers it, then each line (the last hangs up).
+        if(controls.interact && phone.on_call() && !inventory_open && !map_screen.is_open() && !pause_menu.is_open()) {
+            phone.next();input_system.player().interact=false;
+        }
         {
             // BUILD (K): lay roads, homes and bus stops in Explore, on foot.
             const bool can_build=game::rules_for(game_mode).civilian_life && !vehicles.driver() && !map_screen.is_open() &&
@@ -3510,6 +3550,246 @@ void Renderer::run() {
                 building.door=open ? std::min(1.0F,building.door+step) : std::max(0.0F,building.door-step*.6F);
             }
         }
+        // The island's life in Explore: word getting around, Sundays and feasts, the street races,
+        // and the family on the phone.
+        if(game_mode==game::GameMode::Explore && game::rules_for(game_mode).civilian_life && !island_life.empty() && !outbreak.active()) {
+#ifdef OUTLAND_DEV_TOOLS
+            // OUTLAND_DEV_CLOCK=day,hour: the island's clock, once (day 6 is a Sunday; feasts every 4th day).
+            static bool clock_set=false;
+            if(const char* when=std::getenv("OUTLAND_DEV_CLOCK"); when && *when && !clock_set) {
+                clock_set=true;
+                int d=0,h=12;
+                if(std::sscanf(when,"%d,%d",&d,&h)==2) island_life.set_clock(game::life::WorldClock::at(d,h,0));
+            }
+#endif
+            const auto clock=island_life.clock();
+            const int hour=static_cast<int>(clock.hour()),day=clock.day(),minute=clock.minute_of_day();
+            const bool sunday=clock.weekday()==game::life::Weekday::Sunday,saturday=clock.weekday()==game::life::Weekday::Saturday;
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            const auto* mine=vehicles.driver();
+            const Vector3 here=mine ? mine->position : feet;
+            const bool held=creator_active||inventory_open||shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()||poker_open||pause_menu.is_open();
+            // The nearest town to a point (its id): where a story happened.
+            const auto town_of=[&](Vector3 p) {
+                std::string id;float best=1e30F;
+                for(const auto& s:verda_region.settlements()) {
+                    if(s.id.starts_with("ranch_")) continue;
+                    if(const float d=std::hypot(s.center.x-p.x,s.center.z-p.z);d<best) {best=d;id=s.id;}
+                }
+                return id;
+            };
+            // The bells and the phone's ring, made once (a struck bell's partials; a phone's two tones).
+            if(!chimes_ready && IsAudioDeviceReady()) {
+                chimes_ready=true;
+                const auto make=[](int rate,float seconds,auto sample) {
+                    const int frames=static_cast<int>(static_cast<float>(rate)*seconds);
+                    auto* data=static_cast<short*>(MemAlloc(static_cast<unsigned>(frames)*sizeof(short)));
+                    for(int i=0;i<frames;++i) data[i]=static_cast<short>(std::clamp(sample(static_cast<float>(i)/static_cast<float>(rate)),-1.0F,1.0F)*26000);
+                    Wave w{static_cast<unsigned>(frames),static_cast<unsigned>(rate),16,1,data};
+                    Sound s=LoadSoundFromWave(w);
+                    UnloadWave(w);
+                    return s;
+                };
+                bell_sound=make(22050,3.2F,[](float t) {
+                    constexpr float f=220;
+                    constexpr float partials[][3]{{.5F,.6F,.9F},{1,1,1.4F},{1.19F,.5F,1.8F},{1.5F,.45F,2.4F},{2,.35F,3},{2.74F,.2F,4.2F}};
+                    float v=0;
+                    for(const auto& p:partials) v+=p[1]*std::sin(2*PI*f*p[0]*t)*std::exp(-t*p[2]);
+                    return v*.32F*std::min(1.0F,t*400);
+                });
+                ring_sound=make(22050,2.2F,[](float t) {
+                    const float burst=std::fmod(t,1.1F)<.42F && std::fmod(t*25,1.0F)<.5F ? 1.0F : 0.0F;
+                    return burst*.22F*(std::sin(2*PI*440*t)+std::sin(2*PI*480*t));
+                });
+            }
+            // Word gets around: every headline is heard by the island.
+            if(gang_news!=gossip_heard) {gossip_heard=gang_news;if(!gang_news.empty()) gossip.hear(gang_news,clock.minutes,town_of(here));}
+            // A feast day: the morning's word, and the gangs keep the peace.
+            if(day!=feast_said_day && minute>=7*60) {
+                feast_said_day=day;
+                if(const auto said=game::culture::feast_morning(day);!said.empty()) {gang_news=said;gang_news_time=9;gossip_heard=gang_news;}
+            }
+            if(game::culture::day_of_peace(day) && mafio.active()) mafio.set_next_war(std::max(mafio.next_war(),match_time+60));
+            // The bells of the nearest church.
+            int near_church=-1;float church_distance=1e9F;
+            for(std::size_t i=0;i<churches.size();++i)
+                if(const float d=std::hypot(churches[i].door.x-here.x,churches[i].door.z-here.z);d<church_distance) {church_distance=d;near_church=static_cast<int>(i);}
+            if(near_church>=0 && church_distance<520 && game::culture::bells(sunday,day,minute) && bell_sound.stream.buffer && !environment_audio.muted()) {
+                if((bell_clock-=dt)<=0) {
+                    bell_clock=churches[static_cast<std::size_t>(near_church)].denomination==game::culture::Denomination::Orthodox ? 1.3F : 2.4F;
+                    const float near=1-church_distance/520;
+                    SetSoundVolume(bell_sound,near*near*environment_audio.volume());
+                    SetSoundPitch(bell_sound,churches[static_cast<std::size_t>(near_church)].denomination==game::culture::Denomination::Orthodox ? .8F+.2F*static_cast<float>(GetRandomValue(0,3)) : 1.0F);
+                    PlaySound(bell_sound);
+                }
+            } else bell_clock=0;
+            // The faithful outside the nearest church with a gathering (Sunday, a feast, Pasko night).
+            {
+                int want=-1;game::culture::Gathering gather;
+                if(near_church>=0 && church_distance<170) {
+                    gather=game::culture::gathering(churches[static_cast<std::size_t>(near_church)],sunday,day,minute);
+                    if(gather.people>0) want=near_church;
+                }
+                if(want!=crowd_church || (want>=0 && gather.people!=crowd_size)) {
+                    for(int k=0;k<crowd_size;++k) npcs.despawn_bot(crowd_bot+k);
+                    crowd_church=want;crowd_size=0;crowd_green=0;crowd_spots.clear();
+                    if(want>=0) {
+                        const auto& church=churches[static_cast<std::size_t>(want)];
+                        Vector3 out=Vector3Subtract(church.door,church.centre);out.y=0;
+                        out=Vector3Length(out)>.1F ? Vector3Normalize(out) : Vector3{0,0,-1};
+                        const Vector3 side{-out.z,0,out.x};
+                        const float face=std::atan2(-out.x,-out.z)*RAD2DEG;   // toward the church
+                        for(int k=0;k<gather.people;++k) {
+                            const int row=k/6,col=k%6;
+                            const auto r=static_cast<std::uint32_t>(want*131+k*977);
+                            const float across=(static_cast<float>(col)-2.5F)*1.5F+static_cast<float>(r%7)*.08F;
+                            const Vector3 at=Vector3Add(church.door,Vector3Add(Vector3Scale(out,3.0F+static_cast<float>(row)*1.7F),Vector3Scale(side,across)));
+                            const float top=at.y+3;
+                            const Vector3 ground{at.x,world::physics::WorldCollision::ground_height({at.x,top,at.z},top,verda_region),at.z};
+                            const bool green=k<gather.green_hand;
+                            const auto* who=green ? nullptr : character_registry.choose(characters::CharacterPool::Civilian,r);
+                            const std::string body=green || !who ? std::string(outfit_body) : who->id;
+                            if(!character_registry.find(body)) continue;
+                            npcs.spawn_bot(crowd_bot+k,body,ground,face+static_cast<float>(r%21)-10);
+                            crowd_spots.push_back(ground);
+                            crowd_size=k+1;
+                        }
+                        crowd_green=gather.green_hand;
+                    }
+                }
+                crowd_candles=gather.candles;
+            }
+            // The street races: the boys' cars come out at night by the meet, and go home by day.
+            if(street_race.ready()) {
+                const float to_meet=std::hypot(street_race.meet().x-here.x,street_race.meet().z-here.z);
+                if(!race_cars_out && game::racing::StreetRace::night(hour) && to_meet<700) {
+                    struct Entry {const char* kind;const char* name;float pace;game::autos::Mods mods;};
+                    const Entry entries[]{{"muscle","Mira 'Ŝtormo' Kovač",40,{1,2,0,0,0,0,0,2,2,1,3,1}},
+                                          {"sedan","Tomas 'Pneŭo' Varga",37.5F,{8,1,0,0,0,0,0,1,1,2,2,3}},
+                                          {"hatchback","Niko 'Pulvo' Petrov",35,{5,1,0,0,0,0,0,2,1,1,1,2}}};
+                    std::vector<game::racing::Racer> field;
+                    for(std::size_t i=0;i<std::size(entries);++i) {
+                        world::roads::Route verge=street_race.track();
+                        verge.lane.assign(verge.lane.size(),world::highways::paved_half+3.2F);
+                        float yaw=0;
+                        const Vector3 spot=world::roads::route_point(verge,22.0F+9.0F*static_cast<float>(i),&yaw);
+                        if(!vehicles.spawn(verda_region,spot,yaw,entries[i].kind)) continue;
+                        game::racing::Racer r;
+                        r.vehicle=vehicles.last_spawned();r.name=entries[i].name;r.pace=entries[i].pace;r.parked=spot;r.parked_yaw=yaw;
+                        if(auto* a=vehicles.asset(verda_region,r.vehicle)) game::autos::apply(entries[i].mods,a->vehicle);
+                        vehicles.place(verda_region,r.vehicle,spot,yaw);
+                        bot_drivers.reserve(r.vehicle);
+                        field.push_back(r);
+                    }
+                    street_race.set_racers(field);
+                    race_cars_out=!field.empty();
+                } else if(race_cars_out && !game::racing::StreetRace::night(hour) && street_race.stage()==game::racing::Stage::Closed && to_meet>400) {
+                    for(const auto& r:street_race.racers()) vehicles.remove(verda_region,r.vehicle);
+                    street_race.set_racers({});
+                    race_cars_out=false;
+                }
+                // A racer's car taken by the player is out of the field.
+                if(mine) {
+                    auto& field=street_race.racers();
+                    std::erase_if(field,[&](const game::racing::Racer& r){return r.vehicle==mine->id;});
+                }
+#ifdef OUTLAND_DEV_TOOLS
+                // OUTLAND_DEV_RACE=1: at the wheel near the meet at night, the bet is on (spawn on the grid to race at once).
+                static const bool dev_race=[]{const char* v=std::getenv("OUTLAND_DEV_RACE");return v && *v=='1';}();
+                static bool dev_raced=false;
+                if(dev_race && !dev_raced && mine && race_cars_out && street_race.stage()==game::racing::Stage::Open) {
+                    dev_raced=true;
+                    bool paid=false;
+                    street_race.talk(1000000,paid);street_race.talk(1000000,paid);
+                    const Vector3 slot=street_race.grid(0);
+                    TraceLog(LOG_INFO,"OUTLAND dev race: the bet is on; the grid is at %.1f %.1f yaw %.0f",slot.x,slot.z,street_race.start_yaw());
+                }
+#endif
+                game::racing::Frame rf;
+                rf.dt=held ? 0.0F : dt;rf.hour=hour;rf.driving=mine!=nullptr;rf.car=here;rf.speed=mine ? mine->speed : 0;
+                rf.money=loot_session.economy().money;
+                street_race.update(rf,vehicles,verda_region);
+                const auto car_words=[&]{
+                    const auto* a=mine ? vehicles.asset(verda_region,mine->id) : nullptr;
+                    const auto* d=a ? vehicles.definition(*a) : nullptr;
+                    if(!d) return std::string("a car");
+                    const int paint=a->vehicle.painted ? a->vehicle.mods[0] : -1;
+                    return game::culture::Gossip::car(paint>=0 && paint<static_cast<int>(game::autos::paints.size()) ? game::autos::paints[static_cast<std::size_t>(paint)].name : "",d->name);
+                };
+                switch(street_race.take_result()) {
+                    case game::racing::Result::Won:
+                        loot_session.economy().money+=street_race.pot();loot_session.changed();
+                        ++campaign.races;++campaign.race_wins;
+                        gang_news="STREET RACE: first past the last flare - Fulmo's pot is yours, "+std::to_string(street_race.pot())+" kr";gang_news_time=8;gossip_heard=gang_news;
+                        gossip.hear("somebody in "+car_words()+" beat Fulmo's boys on the ring road",clock.minutes,town_of(here),true);
+                        gun_audio.kill_confirm();haptics.hit_given(true);
+                        break;
+                    case game::racing::Result::Lost:
+                        ++campaign.races;
+                        gang_news="STREET RACE: "+street_race.winner()+" takes the pot";gang_news_time=7;gossip_heard=gang_news;
+                        gossip.hear(street_race.winner()+" won on the ring road again - left "+car_words()+" in the dust",clock.minutes,town_of(here),true);
+                        break;
+                    case game::racing::Result::Forfeit:
+                        interaction_message="You left the race - the stake stays in the pot";interaction_remaining=4;
+                        break;
+                    default: break;
+                }
+                // Fulmo and the drivers by their cars while the meet is on.
+                const bool meet_on=race_cars_out && to_meet<220 && (street_race.stage()==game::racing::Stage::Open || street_race.stage()==game::racing::Stage::Offered);
+                if(meet_on && !race_bots_out) {
+                    race_bots_out=true;
+                    const auto stand=[&](int id,Vector3 at,float yaw,std::uint32_t seed) {
+                        if(const auto* who=character_registry.choose(characters::CharacterPool::Civilian,seed)) {
+                            const float top=at.y+3;
+                            npcs.spawn_bot(id,who->id,{at.x,world::physics::WorldCollision::ground_height({at.x,top,at.z},top,verda_region),at.z},yaw);
+                        }
+                    };
+                    stand(race_bot,street_race.organiser(),std::atan2(street_race.meet().x-street_race.organiser().x,street_race.meet().z-street_race.organiser().z)*RAD2DEG,4421);
+                    for(std::size_t i=0;i<street_race.racers().size();++i) {
+                        const auto& r=street_race.racers()[i];
+                        stand(race_bot+1+static_cast<int>(i),Vector3Add(r.parked,{std::cos(r.parked_yaw*DEG2RAD)*2.2F,0,-std::sin(r.parked_yaw*DEG2RAD)*2.2F}),r.parked_yaw+90,5101+static_cast<std::uint32_t>(i)*17);
+                    }
+                } else if(!meet_on && race_bots_out) {
+                    race_bots_out=false;
+                    for(int k=0;k<4;++k) npcs.despawn_bot(race_bot+k);
+                }
+            }
+            // Uncle Ron and Uncle Dario ring now and then (the campaign, in free play).
+            if(!campaign_path.empty() && story.stage()==game::campaign::Stage::Free) {
+                game::campaign::PhoneContext pc;
+                pc.played=campaign.played;pc.hour=hour;pc.saturday=saturday;pc.sunday=sunday;
+                pc.cop=career.on_duty();
+                pc.gang=career.state().side==game::career::Side::Gang;
+                pc.green_hand=player_gang()==0;
+                pc.owns_car=!owned_cars.empty();
+                pc.races=campaign.races;pc.race_wins=campaign.race_wins;
+                for(const auto& r:gossip.rumours())
+                    if(r.about_you && clock.minutes-r.at<24*60) pc.rumour="People are saying "+r.text+".";
+                pc.feast_tomorrow=game::culture::feast_on(day+1);
+                const auto stage=street_race.stage();
+                pc.busy=stage==game::racing::Stage::Lining || stage==game::racing::Stage::Countdown || stage==game::racing::Stage::Racing ||
+                        story.talking() || inventory_open || shop_open || store_open || motor_menu.is_open() || gear_menu.is_open() || poker_open || map_screen.is_open() ||
+                        (chief_line_time>0 && !phone.on_call()) || !player_health.alive();
+                if(street_race.ready()) pc.race_meet=street_race.meet();
+                for(const auto& c:churches) if(c.settlement=="capital_verda") {
+                    if(c.denomination==game::culture::Denomination::Orthodox) pc.orthodox_church=c.door;
+                    else pc.chapel=c.door;
+                }
+                if(uncle_ron.placed) pc.ron_home=uncle_ron.at;
+                if(const auto* home=mafio.active() ? mafio.casino() : nullptr) pc.hideout=home->door;
+                phone.update(held ? 0.0F : dt,pc);
+                if(phone.take_ring() && ring_sound.stream.buffer && !environment_audio.muted()) {SetSoundVolume(ring_sound,.8F*environment_audio.volume());PlaySound(ring_sound);haptics.hit_taken(6);}
+                if(phone.ringing()) {chief_line=phone.call()->caller+" is calling... (USE to answer)";chief_line_time=1.2F;}
+                else if(const auto said=phone.line();!said.empty()) {chief_line=said;chief_line_time=1.2F;}
+                if(auto ended=phone.take_ended()) {
+                    campaign.calls=phone.done();
+                    if(ended->target) {
+                        map_screen.set_pin(*ended->target);
+                        interaction_message="Waypoint: "+ended->target_name+" (on your map)";interaction_remaining=5;
+                    }
+                }
+            }
+        }
         // Walking up to a church: who worships there, its saint, the next feast.
         if(game::rules_for(game_mode).civilian_life && !vehicles.driver() && !churches.empty()) {
             int near=-1;float best=8;
@@ -3538,6 +3818,13 @@ void Renderer::run() {
             const bool at_stash=stash && game::rules_for(game_mode).civilian_life && !vehicles.driver() && !game::economy::Stash::taken(loot_session.economy()) &&
                 std::hypot(feet.x-stash->at.x,feet.z-stash->at.z)<1.8F && std::abs(feet.y-stash->at.y)<1.5F;
             if(at_stash) {here=true;if(store_prompt.empty()) store_prompt=touch_ui ? "USE - Take the holdall" : "E - Take the holdall";}
+            if(game::rules_for(game_mode).civilian_life && !vehicles.driver() && !here) {
+                if(street_race.ready() && race_bots_out && std::hypot(feet.x-street_race.organiser().x,feet.z-street_race.organiser().z)<game::racing::StreetRace::talk_range) {
+                    here=true;if(store_prompt.empty()) store_prompt=touch_ui ? "USE - Talk to Fulmo" : "E - Talk to Fulmo";
+                } else if(!island_life.empty() && island_life.nearest(feet,2.6F)) {
+                    here=true;if(store_prompt.empty()) store_prompt=touch_ui ? "USE - Talk" : "E - Talk";
+                }
+            }
             if(!here && game::rules_for(game_mode).civilian_life && !vehicles.driver()) {Vector3 s{};float y=0;here=stand_seat.on || stand_seat_near(feet,s,y);}
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
                 here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 || (career.on_duty() && callouts.to_cuff(feet,mafio,br_bots)>=0) ||
@@ -4419,6 +4706,42 @@ void Renderer::run() {
                 loot_session.changed();gun_audio.kill_confirm();haptics.hit_given(true);
                 furnish_island();   // the holdall goes with the player
             }
+            // Fulmo at the race meet: the stakes, then the bet.
+            if(street_race.ready() && game::rules_for(game_mode).civilian_life && !vehicles.driver() && controls.interact && !home_used &&
+               !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !inventory_open &&
+               std::hypot(loot_feet.x-street_race.organiser().x,loot_feet.z-street_race.organiser().z)<game::racing::StreetRace::talk_range) {
+                bool paid=false;
+                const auto said=street_race.talk(loot_session.economy().money,paid);
+                if(paid) {loot_session.economy().money-=game::racing::StreetRace::bet;loot_session.changed();}
+                if(!said.empty()) {chief_line=said;chief_line_time=7;}
+                home_used=true;input_system.player().interact=false;
+            }
+            // A word with a resident: what's going round, or the weather.
+            if(game::rules_for(game_mode).civilian_life && !vehicles.driver() && controls.interact && !home_used && !island_life.empty() &&
+               !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !inventory_open &&
+               vehicles.nearest(verda_region,loot_feet)<0 && loot_session.world().nearest(loot_feet,2.8F,reachable_pickup)<0)
+                if(const auto* resident=island_life.nearest(loot_feet,2.6F)) {
+                    const auto clock=island_life.clock();
+                    const int day=clock.day();
+                    int in=0;
+                    const int feast=game::culture::next_feast(day,in);
+                    std::string small;
+                    switch((resident->id+day)%4) {
+                        case 0: small=std::string(game::culture::feasts[static_cast<std::size_t>(feast)].name)+(in==1 ? " tomorrow" : " in "+std::to_string(in)+" days")+". My mother's baking already.";break;
+                        case 1: small=clock.night() ? "Late to be out. Mind the ring road - the young ones race there." : "Fine day. Too fine. Something's bound to happen.";break;
+                        case 2: {
+                            const auto table=league.standings(clock.minutes);
+                            small=table.empty() ? "Nothing much. Same as ever." : std::string(game::sports::teams[static_cast<std::size_t>(table.front().team)].name)+" are top of the Basballigo. Don't get me started.";
+                            break;
+                        }
+                        default: small="Quiet, thank God. Long may it last.";break;
+                    }
+                    const std::string town=resident->settlement>=0 && resident->settlement<static_cast<int>(verda_region.settlements().size()) ?
+                        verda_region.settlements()[static_cast<std::size_t>(resident->settlement)].id : std::string();
+                    chief_line=resident->first_name+" "+resident->family_name+": \""+gossip.tell(clock.minutes,town,static_cast<std::uint32_t>(resident->id*31+day),small)+"\"";
+                    chief_line_time=7;
+                    home_used=true;input_system.player().interact=false;
+                }
             // The ballparks' stands: USE to sit down and watch; USE (or walk off) to get up.
             if(game::rules_for(game_mode).civilian_life && !vehicles.driver()) {
                 if(stand_seat.on) {
@@ -5548,6 +5871,19 @@ void Renderer::run() {
                     interaction_message="The ambulance has them, and the police took your statement. You stayed - no charges";interaction_remaining=5;
                     break;
                 case game::law::HitAndRun::Outcome::Ran: {
+                    // Somebody saw the car.
+                    if(!island_life.empty()) {
+                        const auto* a=mine ? vehicles.asset(verda_region,mine->id) : nullptr;
+                        const auto* d=a ? vehicles.definition(*a) : nullptr;
+                        const int paint=a && a->vehicle.painted ? a->vehicle.mods[0] : -1;
+                        const std::string car=d ? game::culture::Gossip::car(paint>=0 && paint<static_cast<int>(game::autos::paints.size()) ? game::autos::paints[static_cast<std::size_t>(paint)].name : "",d->name) : "a car";
+                        std::string town="the road";float best=1e30F;
+                        for(const auto& s:verda_region.settlements()) {
+                            if(s.id.starts_with("ranch_")) continue;
+                            if(const float dd=std::hypot(s.center.x-feet.x,s.center.z-feet.z);dd<best) {best=dd;town=s.name;}
+                        }
+                        gossip.hear("somebody in "+car+" ran a man down in "+town+" and never stopped",island_life.clock().minutes,"",true);
+                    }
                     game::law::JusticeFrame tip;tip.now=match_time;tip.player=feet;
                     justice.tip_off(1,hit_and_run.scene(),tip,island_life,"HIT AND RUN - a pedestrian down and the driver gone. Busted, it's prison");
                     career.crime(false);
@@ -7648,6 +7984,8 @@ void Renderer::run() {
                 if(actor.resident>=rioter_base && actor.resident<rioter_base+40) {body.outfit=outfits.team[static_cast<std::size_t>(std::clamp(riot_team,0,4))].id;return;}
                 // A gang's gun man: the gang's colours, a rifle slung (in his hands).
                 if(actor.bot>=gun_man_bot && actor.bot<gun_man_bot+5) body.outfit=gang_outfit(actor.bot-gun_man_bot,true);
+                // La Verda Mano at their chapel on a Sunday: the suits.
+                if(actor.bot>=crowd_bot && actor.bot<crowd_bot+crowd_green) {body.outfit=actor.bot==crowd_bot ? outfits.kapo.id : outfits.soldato.id;return;}
                 // The Green Hand's cultural society: their colours, no guns.
                 if(actor.bot>=society_bot && actor.bot<society_bot+society_size) {body.outfit=actor.bot==society_bot ? outfits.kapo.id : outfits.soldato.id;return;}
                 // Another player knocked down (squad play): on their knees, no gun.
@@ -7763,6 +8101,32 @@ void Renderer::run() {
             EndBlendMode();
             DrawCircle3D({at.x,ground+.15F,at.z},game::freight::Trucking::stop_radius*.6F,{1,0,0},90,Fade(beam,.8F));
         }
+        // The street race: the grid's flare, then the next flare along the ring, burning red.
+        if(street_race.ready() && street_race.stage()!=game::racing::Stage::Closed && street_race.stage()!=game::racing::Stage::Open &&
+           street_race.stage()!=game::racing::Stage::Done) {
+            const float pulse=.7F+.3F*std::sin(static_cast<float>(GetTime())*7);
+            const auto flare=[&](Vector3 at,float height) {
+                const float ground=world::terrain::TerrainHeight::sample(at.x,at.z);
+                BeginBlendMode(BLEND_ADDITIVE);
+                DrawCylinder({at.x,ground,at.z},1.4F,1.4F,height,10,Fade(Color{255,70,40,255},.25F*pulse));
+                DrawCylinder({at.x,ground,at.z},.4F,.4F,height,8,Fade(Color{255,120,60,255},.55F*pulse));
+                DrawSphere({at.x,ground+.4F,at.z},.5F,Fade(Color{255,60,30,255},.9F*pulse));
+                EndBlendMode();
+            };
+            flare(street_race.target(),60);
+            if(street_race.stage()==game::racing::Stage::Racing) flare(street_race.finish(),120);
+        }
+        // Pasko night: a candle in every hand outside the church.
+        if(crowd_candles)
+            for(const auto& at:crowd_spots) {
+                if(Vector3DistanceSqr(at,camera.position)>80*80) continue;
+                const float flicker=.8F+.2F*std::sin(static_cast<float>(GetTime())*13+at.x);
+                DrawCylinder({at.x+.25F,at.y+1.0F,at.z},.025F,.025F,.22F,6,Color{236,226,196,255});
+                BeginBlendMode(BLEND_ADDITIVE);
+                DrawSphere({at.x+.25F,at.y+1.27F,at.z},.05F*flicker,Color{255,200,90,255});
+                DrawSphere({at.x+.25F,at.y+1.27F,at.z},.3F*flicker,Fade(Color{255,160,60,255},.3F));
+                EndBlendMode();
+            }
         // The waypoint set on the map: a pink column of light.
         if(const auto& pin=map_screen.pin();pin && std::hypot(pin->x-player.position.x,pin->z-player.position.z)>18) {
             const float ground=world::terrain::TerrainHeight::sample(pin->x,pin->z);
@@ -8497,6 +8861,28 @@ void Renderer::run() {
                 const float mw=MeasureTextEx(font,trucking.message().c_str(),18,1).x;
                 DrawRectangle(static_cast<int>(screen_width/2-mw/2-12),screen_height-389,static_cast<int>(mw+24),28,Fade(Color{10,40,24,255},.65F*alpha));
                 DrawTextEx(font,trucking.message().c_str(),{screen_width/2-mw/2,static_cast<float>(screen_height-384)},18,1,Fade(Color{170,240,190,255},alpha));
+            }
+            // The street race: lining up, the count, the place and the flares.
+            if(street_race.ready()) {
+                std::string status;Color tone{255,150,70,255};float size=22;
+                switch(street_race.stage()) {
+                    case game::racing::Stage::Lining: status="STREET RACE - line up at the flare and stop";break;
+                    case game::racing::Stage::Countdown: {
+                        const int n=static_cast<int>(std::ceil(street_race.countdown()));
+                        status=n>0 ? std::to_string(n) : "GO!";size=64;tone=n>0 ? Color{255,210,90,255} : Color{120,255,140,255};
+                        break;
+                    }
+                    case game::racing::Stage::Racing:
+                        status=TextFormat("P%d / %d   ·   FLARE %d / %d",street_race.position(),street_race.field(),
+                                          std::min(street_race.next_checkpoint()+1,static_cast<int>(street_race.checkpoints().size())),static_cast<int>(street_race.checkpoints().size()));
+                        break;
+                    default: break;
+                }
+                if(!status.empty()) {
+                    const float w=MeasureTextEx(font,status.c_str(),size,1).x;
+                    DrawRectangle(static_cast<int>(screen_width/2-w/2-14),118,static_cast<int>(w+28),static_cast<int>(size+14),Fade(BLACK,.5F));
+                    DrawTextEx(font,status.c_str(),{screen_width/2-w/2,125},size,1,tone);
+                }
             }
             if(chief_line_time>0 && !chief_line.empty()) {
                 // A dialogue box, wrapped to two or three lines.

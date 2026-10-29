@@ -83,6 +83,26 @@ saves carry on in slot 1, with the story behind them). Slots 2 and 3 are `explor
 `explore_3.loot`. Each slot has its own `.career`, `.career.trucking`, `.territory`,
 `.campaign` and `.builds` files.
 
+## Phone calls
+
+In free play Uncle Ron and Uncle Dario ring now and then (the first call after about four
+minutes, then about every nine). The phone rings, USE answers and moves the call on, and most
+calls end with a waypoint on the map. Each topic is said once and saved with the slot (`calls=`).
+In order of priority:
+- **Ron, what people say:** the island is gossiping about something the player did.
+- **Dario, the badge:** the player joined the Policio.
+- **Ron, a feast tomorrow:** come to the Orthodox church.
+- **Dario, Sunday chapel** (Sunday morning, not a cop): waypoint to the Baptist chapel.
+- **Ron, Sunday** (Saturday evening or Sunday morning): church with him.
+- **Dario, the race** (after winning a street race): come to La Verda Mano's bar.
+- **Ron, the race** (owns a car, never raced, evening): Fulmo's meet on the ring road.
+- **Dario, family** (joined La Verda Mano): chapel on Sunday.
+- **Ron, soup** (after half an hour): come by the house.
+
+The calls wait while the player is racing, paused or in a menu. Street races and wins are saved
+too (`races=raced,won`). Code: `game::campaign::Phone`; tests `tests/unit/campaign/test_phone.cpp`.
+Dev: `OUTLAND_DEV_PHONE=1` rings within five seconds.
+
 ## Saving
 - **Autosave:** every two minutes of free play, and at every step of the story. "Autosaved" shows
   at the bottom right. The career, territory and trucking also save themselves whenever they

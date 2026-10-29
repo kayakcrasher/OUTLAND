@@ -46,6 +46,8 @@ struct CampaignState {
     bool ultimatum{false};            // "leave the gang, or leave my house"
     float ultimatum_left{0};          // seconds of play before he means it
     bool kicked_out{false};           // he meant it: the house is no longer the player's
+    std::vector<std::string> calls;   // what Ron and Dario have rung about (game::campaign::Phone)
+    int races{0}, race_wins{0};       // street races on the ring (game::racing)
 };
 std::string serialise(const CampaignState& state);
 bool parse(const std::string& text, CampaignState& state);

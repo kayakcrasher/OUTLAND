@@ -236,6 +236,7 @@ public:
     [[nodiscard]] const std::string& message() const { return message_; }
     [[nodiscard]] float message_time() const { return message_time_; }
     void set_next_war(double at) { next_war_ = at; }
+    [[nodiscard]] double next_war() const { return next_war_; }
     // How safe Verda has become (the law's share, 0..1): gang wars come that much less often.
     void set_calm(float calm) { calm_ = calm < 0 ? 0 : calm > 1 ? 1 : calm; }
     // The player's own gang (game::career), or -1. Their crews never mind the player's gunfire

@@ -194,6 +194,9 @@ add_library(
     src/game/law/PrisonYard.cpp
     src/game/culture/Esperanto.cpp
     src/game/culture/Faith.cpp
+    src/game/culture/Gossip.cpp
+    src/game/racing/StreetRace.cpp
+    src/game/campaign/Phone.cpp
     src/game/culture/Signage.cpp
     src/game/culture/SignRenderer.cpp
     src/game/sound/SoundBus.cpp
@@ -658,6 +661,19 @@ if(OUTLAND_BUILD_TESTS)
         -Wl,--wrap=UpdateAudioStream -Wl,--wrap=IsAudioStreamProcessed -Wl,--wrap=PlayAudioStream
         -Wl,--wrap=StopAudioStream -Wl,--wrap=SetAudioStreamVolume)
     add_test(NAME outland_vehicle_audio_tests COMMAND outland_vehicle_audio_tests)
+    add_executable(outland_gossip_tests tests/unit/culture/test_gossip.cpp)
+    target_link_libraries(outland_gossip_tests PRIVATE outland_render)
+    target_compile_options(outland_gossip_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_gossip_tests COMMAND outland_gossip_tests)
+    add_executable(outland_phone_tests tests/unit/campaign/test_phone.cpp)
+    target_link_libraries(outland_phone_tests PRIVATE outland_render)
+    target_compile_options(outland_phone_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_phone_tests COMMAND outland_phone_tests)
+    add_executable(outland_street_race_tests tests/integration/racing/test_street_race.cpp)
+    target_link_libraries(outland_street_race_tests PRIVATE outland_render)
+    target_compile_options(outland_street_race_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_street_race_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_street_race_tests COMMAND outland_street_race_tests)
     add_executable(outland_faith_tests tests/unit/culture/test_faith.cpp)
     target_link_libraries(outland_faith_tests PRIVATE outland_render)
     target_compile_options(outland_faith_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

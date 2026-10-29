@@ -67,4 +67,28 @@ std::string church_notice(const Church& c, int day) {
     return text;
 }
 
+bool bells(bool sunday, int day, int minute) {
+    if (sunday && ((minute >= 9 * 60 + 10 && minute < 9 * 60 + 30) || (minute >= 11 * 60 + 30 && minute < 11 * 60 + 45))) return true;
+    const int feast = feast_on(day);
+    if (feast >= 0 && minute >= 12 * 60 && minute < 12 * 60 + 20) return true;
+    return feast == 2 && minute < 30;   // Pasko: the bells at midnight
+}
+
+Gathering gathering(const Church& church, bool sunday, int day, int minute) {
+    Gathering g;
+    const int feast = feast_on(day);
+    if (feast == 2 && minute < 90) { g.people = 14; g.candles = true; }                                // Pasko night
+    else if (feast >= 0 && minute >= 10 * 60 && minute < 18 * 60) g.people = feast == 1 && church.denomination == Denomination::Orthodox ? 16 : 12;
+    else if (sunday && minute >= 9 * 60 + 15 && minute < 11 * 60 + 45) g.people = 8;
+    if (g.people > 0 && church.green_hand && (sunday || feast >= 0)) g.green_hand = std::min(4, g.people / 2);
+    return g;
+}
+
+std::string feast_morning(int day) {
+    const int feast = feast_on(day);
+    if (feast < 0) return "";
+    return std::string("TODAY: ") + feasts[static_cast<std::size_t>(feast)].name + " - " + feasts[static_cast<std::size_t>(feast)].what +
+           ". The churches are full and the gangs keep the peace";
+}
+
 } // namespace outland::game::culture
