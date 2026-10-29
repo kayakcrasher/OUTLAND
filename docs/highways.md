@@ -70,7 +70,9 @@ The terrain is cut and filled to the highways (`highways::graded`, called from
 **Profile.** Each line's road profile is built once from the natural land along it:
 1. A ±110 m moving average of the land, with ground on building pads weighted 61×.
 2. **Holds.** Where a building pad has levelled the land (towns, hamlets, ranches, the stockyard),
-   the road sits at the pad's height. Each spoke's ends meet the town's land, level for 24 m.
+   the road sits at the pad's height. Each spoke's ends meet the town's land, level for 24 m: the
+   ground 24 m on into the town's streets, not the end point itself (often still part way up the
+   hill on the edge of the town's pad, which left a step of up to a metre down onto the streets).
 3. **Grade limit.** No piece is steeper than 7%: neighbours that differ by more meet in the
    middle (a cutting or an embankment), and holds stay put.
 4. **Crossings.** Where two highways cross, they share a 24 m level plateau. Its height is as
@@ -81,7 +83,9 @@ The terrain is cut and filled to the highways (`highways::graded`, called from
 - Within 12.4 m of a centre line (the whole width plus the verge), the land is the road's height:
   level across.
 - Over the next 28 m it eases back to the natural land.
-- Beyond the roadbed, deep inside a building pad, the pad keeps its own ground.
+- Beyond the roadbed, inside a building pad, the pad keeps its own ground past a bank by the
+  shoulder three times as wide as the road is above or below it (at most 10 m), so there is never
+  a step at the roadbed's edge.
 
 `outland_highway_tests` checks that every highway stays under 12% grade (the network is built to
 7%) and level across (under 4% tilt).
