@@ -40,6 +40,18 @@ public:
         std::string_view ignore_asset = {}
     );
     static bool light_prop(const WorldAsset& asset);
+    // For vehicles, alongside vehicle_blocked's points: a post, a tree or a bollard (anything
+    // slimmer than a car) inside the footprint - the rectangle `half_width` by `half_length` round
+    // `centre`, turned `yaw` degrees. The footprint's points are a metre or two apart, and a lamp
+    // post could slip between them into the body; the car was then stuck on it.
+    static bool vehicle_footprint_blocked(
+        Vector3 centre,
+        float yaw,
+        float half_width,
+        float half_length,
+        const VerdaRegion& region,
+        std::string_view ignore_asset = {}
+    );
 
     // Height-aware queries for walking bodies (player, NPCs). Model assets use their real
     // triangles (doorways, window openings, interiors); everything else matches blocked().

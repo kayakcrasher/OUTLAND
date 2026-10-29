@@ -483,7 +483,7 @@ bool VehicleSystem::solid(const world::VerdaRegion &r, Vector3 p, float yaw,
             if (world::physics::WorldCollision::vehicle_blocked(point, r, .2F, ignore))
                 return true;
         }
-    return false;
+    return world::physics::WorldCollision::vehicle_footprint_blocked(p, yaw, d.width * .5F * scale, d.length * .5F * scale, r, ignore);
 }
 
 int VehicleSystem::vehicle_hit(const world::VerdaRegion &r, Vector3 p, float yaw, const VehicleDefinition &d, float scale,

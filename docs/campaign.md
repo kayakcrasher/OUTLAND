@@ -86,7 +86,7 @@ saves carry on in slot 1, with the story behind them). Slots 2 and 3 are `explor
 ## Phone calls
 
 In free play Uncle Ron and Uncle Dario ring now and then (the first call after about four
-minutes, then about every nine). The phone rings, USE answers and moves the call on, and most
+minutes, then one an hour of real play at most). The phone rings, USE answers and moves the call on, and most
 calls end with a waypoint on the map. Each topic is said once and saved with the slot (`calls=`).
 In order of priority:
 - **Ron, what people say:** the island is gossiping about something the player did.

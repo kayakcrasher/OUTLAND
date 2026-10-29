@@ -39,6 +39,17 @@ int main() {
     const auto ended = phone.take_ended();
     check(ended && ended->topic == "ron_race" && ended->target && phone.said("ron_race"), "the call ends with the waypoint, said once");
     check(!phone.choose(c), "not again");
+    // The next call waits an hour of real play, however much there is to say.
+    c.sunday = true;
+    c.hour = 8;
+    for (float t = 0; t < 3590; t += 1) phone.update(1, c);
+    check(!phone.on_call(), "no call within the hour");
+    for (float t = 0; t < 200 && !phone.on_call(); t += 1) phone.update(1, c);
+    check(phone.on_call() && phone.call()->topic == "dario_chapel", "the next call an hour on");
+    while (phone.on_call()) phone.next();
+    phone.take_ended();
+    phone.set_done({"ron_race"});
+    c.sunday = false;
 
     // Sundays, feasts, the rumour, the badge, the family.
     c.sunday = true;

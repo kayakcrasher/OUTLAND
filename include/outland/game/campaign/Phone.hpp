@@ -37,7 +37,7 @@ struct Call {
 class Phone {
 public:
     static constexpr float first_call = 240;      // seconds of free play before anyone rings
-    static constexpr float gap = 540;             // between calls (plus a little)
+    static constexpr float gap = 3600;            // an hour of real time between calls (plus a little)
     static constexpr float ring_seconds = 2.5F;
     static constexpr float line_seconds = 6.5F;
 

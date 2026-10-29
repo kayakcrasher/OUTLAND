@@ -148,7 +148,72 @@ template <class F> bool any_asset_near(const VerdaRegion& region, float x, float
 }
 }
 
+namespace {
+// A lamp's or a signal's post: where its foot stands and how thick it is. The model is drawn
+// centred on its bounds, and a street light's bounds take in the arm reaching over the road, so
+// the post stands well off the asset's position (0.7 m for street_light.glb): found once per
+// model from the collision mesh's triangles near the ground.
+bool post_model(const WorldAsset& asset) {
+    return asset.model_path.find("lamppost") != std::string::npos || asset.model_path.find("street_light") != std::string::npos ||
+           asset.model_path.find("traffic_light") != std::string::npos;
+}
+struct Post { float x{0}, z{0}, radius{.3F}; };
+Post post_of(const WorldAsset& asset) {
+    static std::unordered_map<std::string, Post> posts;
+    auto found = posts.find(asset.model_path);
+    if (found == posts.end()) {
+        Post post;
+        if (const auto* mesh = MeshCollisionLibrary::get(asset.model_path)) {
+            float x0 = 1e9F, x1 = -1e9F, z0 = 1e9F, z1 = -1e9F;
+            for (const auto& t : mesh->triangles) {
+                if (std::max({t.a.y, t.b.y, t.c.y}) > mesh->min.y + 1.2F) continue;
+                for (const Vector3& v : {t.a, t.b, t.c}) {x0 = std::min(x0, v.x); x1 = std::max(x1, v.x); z0 = std::min(z0, v.z); z1 = std::max(z1, v.z);}
+            }
+            if (x1 >= x0) post = {(x0 + x1) * .5F, (z0 + z1) * .5F, std::clamp(std::max(x1 - x0, z1 - z0) * .5F, .15F, .5F)};
+        }
+        found = posts.emplace(asset.model_path, post).first;
+    }
+    // Into the world: the model's local frame turned by the asset's yaw.
+    const float yaw = asset.rotation_y * DEG2RAD, c = std::cos(yaw), s = std::sin(yaw);
+    const Post& local = found->second;
+    return {asset.position.x + local.x * c + local.z * s, asset.position.z - local.x * s + local.z * c, local.radius};
+}
+}
+
 void WorldCollision::invalidate_index() { ++index_generation; }
+
+bool WorldCollision::vehicle_footprint_blocked(
+    const Vector3 centre,
+    const float yaw,
+    const float half_width,
+    const float half_length,
+    const VerdaRegion& region,
+    const std::string_view ignore_asset
+) {
+    const float angle = yaw * DEG2RAD, c = std::cos(angle), s = std::sin(angle);
+    const auto slim = [&](const WorldAsset& asset) -> bool {
+        if (asset.id == ignore_asset || !asset.collision || !asset.vehicle.definition.empty()) return false;
+        float radius = 0, x = asset.position.x, z = asset.position.z;
+        if (asset.model_path.empty()) radius = asset.type == AssetType::Tree ? .55F : .75F;
+        else if (post_model(asset)) {const Post post = post_of(asset); x = post.x; z = post.z; radius = post.radius;}
+        else if (!light_prop(asset) && asset.size.y >= .35F && std::max(asset.size.x, asset.size.z) < 1.6F)
+            radius = std::max(asset.size.x, asset.size.z) * .5F;
+        else return false;
+        const float dx = x - centre.x, dz = z - centre.z;
+        return circle_hits_box(dx * c - dz * s, dx * s + dz * c, radius, 0, 0, half_width, half_length);
+    };
+    // Every index cell the footprint reaches (a rig is longer than a cell is wide).
+    const auto& index = asset_index(region);
+    const float reach = std::hypot(half_width, half_length);
+    const int x0 = static_cast<int>(std::floor((centre.x - reach) / AssetIndex::cell)), x1 = static_cast<int>(std::floor((centre.x + reach) / AssetIndex::cell));
+    const int z0 = static_cast<int>(std::floor((centre.z - reach) / AssetIndex::cell)), z1 = static_cast<int>(std::floor((centre.z + reach) / AssetIndex::cell));
+    for (int x = x0; x <= x1; ++x)
+        for (int z = z0; z <= z1; ++z)
+            if (const auto found = index.cells.find(AssetIndex::key(x, z)); found != index.cells.end())
+                for (const auto* asset : found->second)
+                    if (slim(*asset)) return true;
+    return false;
+}
 
 bool WorldCollision::blocked_impl(
     const Vector3 position,
@@ -397,9 +462,9 @@ bool WorldCollision::blocked_impl(
                 return false;
             }
             // Lamps and signals: a car hits the post, not the box round the arms reaching over the road.
-            if(vehicle && asset.collision && (asset.model_path.find("lamppost")!=std::string::npos ||
-               asset.model_path.find("street_light")!=std::string::npos || asset.model_path.find("traffic_light")!=std::string::npos)) {
-                const float dx=position.x-asset.position.x,dz=position.z-asset.position.z,reach=player_radius+.3F;
+            if(vehicle && asset.collision && post_model(asset)) {
+                const Post post=post_of(asset);
+                const float dx=position.x-post.x,dz=position.z-post.z,reach=player_radius+post.radius;
                 return dx*dx+dz*dz<reach*reach;
             }
             if(!asset.vehicle.definition.empty() || (!asset.model_path.empty() && asset.collision)) {

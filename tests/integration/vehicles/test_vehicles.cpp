@@ -4,6 +4,7 @@
 #include "outland/game/combat/WeaponSystem.hpp"
 #include "outland/game/vehicles/VehicleSystem.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
+#include "outland/world/physics/MeshCollision.hpp"
 #include <algorithm>
 #include <cassert>
 #include <filesystem>
@@ -413,6 +414,50 @@ int main() {
         grade = 0; wall_at = -150;                               // a 1.2 m wall across the flat
         const float stopped = drive({1500, 0, -175}, 0, 1, 4);
         assert(stopped < 25 - def->length * .5F + .5F);          // its bumper meets the wall
+        wall_at = 1e9F;
+        // A lamp post half a metre off the car's centre line - between the bumper's sample points.
+        // The car meets it with its bumper, not its back seat, and can back away from it.
+        {
+            world::WorldAsset post;
+            post.id = "test_post";
+            post.model_path = "assets/verda/urban/Traffic lights/street_light.glb";
+            post.position = {1500.5F, 0, -280};
+            post.size = {1.2F, 6, 3};
+            hills.runtime_settlements().front().assets.push_back(post);
+            ride = rides.asset(hills, id);   // (the assets may have moved)
+            world::physics::WorldCollision::invalidate_index();
+            // The model is drawn centred on its bounds, arm and all: the post itself stands 0.68 m
+            // toward -x, under the lamp's base, not at the asset's position out under the arm.
+            world::physics::MeshCollisionLibrary::add_root(root);
+            assert(world::physics::WorldCollision::vehicle_footprint_blocked({1499.2F, 0, -280}, 0, .8F, 2.2F, hills));
+            assert(!world::physics::WorldCollision::vehicle_footprint_blocked({1501.4F, 0, -280}, 0, 1, 2.2F, hills));
+            assert(!world::physics::WorldCollision::vehicle_blocked({1500.7F, 0, -280}, hills, .2F));
+            assert(world::physics::WorldCollision::vehicle_blocked({1500.1F, 0, -280}, hills, .2F));
+            const float met = drive({1499.6F, 0, -300}, 0, 1, 4);
+            assert(met < 20 - def->length * .5F + .2F);
+            const float backed = drive({1499.6F, 0, -300 + met}, 0, -1, 2);
+            assert(backed < -2);
+            // Swinging the tail past it - the post alongside, between the side's sample points - the
+            // body stops at the post instead of closing round it, and the car can still drive on.
+            const Vector3 beside{1499.82F - def->width * .5F - .5F, 0, -280.6F};
+            assert(rides.place(hills, id, beside, 0));
+            Vector3 feet = ride->position;
+            assert(rides.enter(hills, index, feet));
+            int inside = 0;
+            for (int f = 0; f < 240; ++f) {
+                rides.update(1 / 60.0F, {f < 120 ? -.6F : .8F, 1}, hills, feet);
+                const float a = ride->rotation_y * DEG2RAD, dx = 1499.82F - ride->position.x, dz = -280 - ride->position.z;
+                const float lx = dx * std::cos(a) - dz * std::sin(a), lz = dx * std::sin(a) + dz * std::cos(a);
+                if (std::abs(lx) < def->width * .5F * (ride->size.x / def->width) && std::abs(lz) < def->length * .5F * (ride->size.x / def->width)) ++inside;
+            }
+            std::cout << "  post: met " << met << " backed " << backed << " inside " << inside << "\n";
+            assert(inside == 0);
+            Vector3 out;
+            rides.exit(hills, out, true);
+            hills.runtime_settlements().front().assets.pop_back();
+            ride = rides.asset(hills, id);
+            world::physics::WorldCollision::invalidate_index();
+        }
         assert(VehicleSystem::offroad_pace(*registry.find("sxs"), 1) == 1 && VehicleSystem::offroad_pace(*def, 1) < .9F &&
                VehicleSystem::offroad_pace(*def, 1.6F) > VehicleSystem::offroad_pace(*def, 1));   // built for the rough, or bigger tyres
     }
