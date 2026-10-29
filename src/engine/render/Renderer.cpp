@@ -857,7 +857,10 @@ void Renderer::run() {
     std::string store_status,store_prompt;
     // The motor trade (game::autos): Marnafto's pumps, the Meĥanikejo bays, the car lot's desk.
     game::autos::AutoMenu motor_menu;
-    enum class MotorScreen{None,Pump,Workshop,Paint,Engine,Tires,Bumper,Dealer,Depot,Plating,Gun,Tanks};
+    enum class MotorScreen{None,Pump,Workshop,Paint,Engine,Tires,Bumper,Dealer,Depot,Plating,Gun,Tanks,Exhaust,Spoiler,Tint,Rims,Glow};
+    // The workshop's rows in order (then Repair).
+    static constexpr std::array<MotorScreen,9> workshop_rows{MotorScreen::Paint,MotorScreen::Engine,MotorScreen::Tires,MotorScreen::Bumper,
+        MotorScreen::Exhaust,MotorScreen::Spoiler,MotorScreen::Tint,MotorScreen::Rims,MotorScreen::Glow};
     MotorScreen motor_screen=MotorScreen::None;
     std::vector<world::motor::Site> motor_sites;
     int motor_site=-1,motor_served=-1;   // the site in use; one whose menu was closed (not again till the car leaves it)
@@ -3846,6 +3849,10 @@ void Renderer::run() {
                         vehicles.place(verda_region,id,feet,player.yaw*RAD2DEG);
                         const int index=vehicles.find(id);
                         if(index>=0) vehicles.enter(verda_region,index,feet);
+                        // OUTLAND_DEV_MODS="paint engine tires bumper plating gun tank exhaust spoiler tint rims glow": fitted.
+                        autos::Mods m;
+                        if(const char* fit=std::getenv("OUTLAND_DEV_MODS"); fit && autos::parse(fit,m))
+                            if(auto* car=vehicles.asset(verda_region,id)) autos::apply(m,car->vehicle);
                     }
                 }
 #endif
@@ -3924,6 +3931,11 @@ void Renderer::run() {
                     rows.push_back({"Engine",autos::engines[static_cast<std::size_t>(mods.engine)].name,""});
                     rows.push_back({"Tyres",autos::tires[static_cast<std::size_t>(mods.tires)].name,""});
                     rows.push_back({"Front bumper",autos::bumpers[static_cast<std::size_t>(mods.bumper)].name,""});
+                    rows.push_back({"Exhaust",autos::exhausts[static_cast<std::size_t>(mods.exhaust)].name,""});
+                    rows.push_back({"Spoiler",autos::spoilers[static_cast<std::size_t>(mods.spoiler)].name,""});
+                    rows.push_back({"Window tint",autos::tints[static_cast<std::size_t>(mods.tint)].name,""});
+                    rows.push_back({"Rims",autos::rims[static_cast<std::size_t>(mods.rims)].name,""});
+                    rows.push_back({"Underglow",autos::glows[static_cast<std::size_t>(mods.glow)].name,""});
                     rows.push_back({"Repair",repair>0 ? "body, engine and tyres" : "nothing to fix",repair>0 ? kr(repair) : "",repair>0});
                     break;
                 }
@@ -3948,6 +3960,11 @@ void Renderer::run() {
                 }
                 case MotorScreen::Tires: title="PNEŬOJ";subtitle="Bigger or smaller wheels";part_rows(autos::tires,mods.tires);break;
                 case MotorScreen::Bumper: title="BUFROJ";subtitle="Something on the front";part_rows(autos::bumpers,mods.bumper);break;
+                case MotorScreen::Exhaust: title="ELLASILO";subtitle="Let it be heard";part_rows(autos::exhausts,mods.exhaust);break;
+                case MotorScreen::Spoiler: title="SPOILERO";subtitle="Something on the back";part_rows(autos::spoilers,mods.spoiler);break;
+                case MotorScreen::Tint: title="FENESTROJ";subtitle="Darker glass";part_rows(autos::tints,mods.tint);break;
+                case MotorScreen::Rims: title="RADRINGOJ";subtitle="New wheels";part_rows(autos::rims,mods.rims);break;
+                case MotorScreen::Glow: title="SUBLUMO";subtitle="Lights under the car";part_rows(autos::glows,mods.glow);break;
                 case MotorScreen::Dealer:
                     title="AŬTOVENDEJO VERDA";subtitle="Drive it home today";back="LEAVE";
                     for(const auto& sale:autos::dealer) rows.push_back({sale.name,sale.detail,kr(sale.price),true});
@@ -4040,8 +4057,8 @@ void Renderer::run() {
                                     motor_screen==MotorScreen::Plating || motor_screen==MotorScreen::Gun || motor_screen==MotorScreen::Tanks))
                         open_motor(MotorScreen::Depot,motor_screen==MotorScreen::Engine ? 1 : motor_screen==MotorScreen::Plating ? 2 : motor_screen==MotorScreen::Gun ? 3 :
                                                       motor_screen==MotorScreen::Tanks ? 4 : motor_screen==MotorScreen::Paint ? 5 : 6);
-                    else if(motor_screen==MotorScreen::Paint || motor_screen==MotorScreen::Engine || motor_screen==MotorScreen::Tires || motor_screen==MotorScreen::Bumper)
-                        open_motor(MotorScreen::Workshop,motor_screen==MotorScreen::Paint ? 0 : motor_screen==MotorScreen::Engine ? 1 : motor_screen==MotorScreen::Tires ? 2 : 3);
+                    else if(const auto row=std::find(workshop_rows.begin(),workshop_rows.end(),motor_screen);row!=workshop_rows.end())
+                        open_motor(MotorScreen::Workshop,static_cast<int>(row-workshop_rows.begin()));
                     else leave_motor();
                 } else if(chosen>=0 && (car || motor_screen==MotorScreen::Dealer)) {
                     switch(motor_screen) {
@@ -4081,9 +4098,9 @@ void Renderer::run() {
                     case MotorScreen::Tanks: {auto m=mods;m.tank=chosen;fit(m,autos::tanks[static_cast<std::size_t>(chosen)].price,chosen ? "The new tanks are in - more road between fills" : "Back to the factory tanks");open_motor(MotorScreen::Tanks,chosen);break;}
                     case MotorScreen::Gun: {auto m=mods;m.gun=chosen;fit(m,autos::guns[static_cast<std::size_t>(chosen)].price,chosen ? "The gun is on the roof - FIRE at the wheel works it" : "The gun comes off");open_motor(MotorScreen::Gun,chosen);break;}
                     case MotorScreen::Workshop:
-                        if(chosen<4) {open_motor(chosen==0 ? MotorScreen::Paint : chosen==1 ? MotorScreen::Engine : chosen==2 ? MotorScreen::Tires : MotorScreen::Bumper,0);break;}
+                        if(chosen<static_cast<int>(workshop_rows.size())) {open_motor(workshop_rows[static_cast<std::size_t>(chosen)],0);break;}
                         if(pay(autos::repair_cost(car->vehicle))) {autos::repair(car->vehicle);vehicle_dirty=true;motor_menu.set_status("Good as new");}
-                        open_motor(MotorScreen::Workshop,4);
+                        open_motor(MotorScreen::Workshop,static_cast<int>(workshop_rows.size()));
                         break;
                     case MotorScreen::Paint: {
                         auto m=mods;m.paint=chosen-1;
@@ -4099,6 +4116,11 @@ void Renderer::run() {
                     }
                     case MotorScreen::Tires: {auto m=mods;m.tires=chosen;fit(m,autos::tires[static_cast<std::size_t>(chosen)].price,"New tyres on");open_motor(MotorScreen::Tires,chosen);break;}
                     case MotorScreen::Bumper: {auto m=mods;m.bumper=chosen;fit(m,autos::bumpers[static_cast<std::size_t>(chosen)].price,"Bolted on");open_motor(MotorScreen::Bumper,chosen);break;}
+                    case MotorScreen::Exhaust: {auto m=mods;m.exhaust=chosen;fit(m,autos::exhausts[static_cast<std::size_t>(chosen)].price,chosen ? "Give it a rev - hear that?" : "Quiet again");open_motor(MotorScreen::Exhaust,chosen);break;}
+                    case MotorScreen::Spoiler: {auto m=mods;m.spoiler=chosen;fit(m,autos::spoilers[static_cast<std::size_t>(chosen)].price,chosen ? "Bolted to the boot" : "The spoiler comes off");open_motor(MotorScreen::Spoiler,chosen);break;}
+                    case MotorScreen::Tint: {auto m=mods;m.tint=chosen;fit(m,autos::tints[static_cast<std::size_t>(chosen)].price,chosen ? "Tinted" : "Clear glass again");open_motor(MotorScreen::Tint,chosen);break;}
+                    case MotorScreen::Rims: {auto m=mods;m.rims=chosen;fit(m,autos::rims[static_cast<std::size_t>(chosen)].price,"New rims on");open_motor(MotorScreen::Rims,chosen);break;}
+                    case MotorScreen::Glow: {auto m=mods;m.glow=chosen;fit(m,autos::glows[static_cast<std::size_t>(chosen)].price,chosen ? "Lit up underneath" : "The lights come off");open_motor(MotorScreen::Glow,chosen);break;}
                     case MotorScreen::Dealer: {
                         const auto& sale=autos::dealer[static_cast<std::size_t>(chosen)];
                         if(owned_cars.size()>=autos::max_owned) {motor_menu.set_status("That's enough cars for anyone");break;}
@@ -7308,6 +7330,7 @@ void Renderer::run() {
                 const auto* asset=vehicles.asset(verda_region,vehicle);
                 const auto* type=asset ? vehicles.definition(*asset) : nullptr;
                 if(!asset || !type || asset->vehicle.destroyed || Vector3DistanceSqr(asset->position,camera.position)>90*90) return;
+                if(asset->vehicle.mods[9]>=2) return;   // limo tint: nobody sees in
                 const auto seat=car_hips(*asset,*type);
                 characters::BodyPose sitting;sitting.seated=true;
                 character_renderer.draw(character,{seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y,1,&car_seat_pose,sitting);
@@ -7349,7 +7372,7 @@ void Renderer::run() {
             if(!mine.empty() && player.third_person && !vehicle_renderer.cab() && !riding_now) {
                 const auto* asset=vehicles.asset(verda_region,mine);
                 const auto* type=asset ? vehicles.definition(*asset) : nullptr;
-                if(asset && type) {
+                if(asset && type && asset->vehicle.mods[9]<2) {
                     const auto seat=car_hips(*asset,*type);
                     const auto* look=game::wardrobe::wearing(loot_session.economy(),wardrobe_catalogue);
                     const bool uniform=game_mode==game::GameMode::Explore && career.on_duty() && character_registry.find(police_uniform);

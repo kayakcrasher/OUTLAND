@@ -99,6 +99,18 @@ int main() {
     check(autos::parse(autos::serialise(rig), loaded) && loaded.mods == rig.mods, "an armed rig's save line");
     autos::OwnedCar long_haul{"semi", "", {-1, 8, 2, 0, 2, 1, 1}, {1, 2, 3}, 0, 1};
     check(autos::parse(autos::serialise(long_haul), loaded) && loaded.mods == long_haul.mods, "a long-haul rig's save line");
+    // The workshop's bolt-ons: straight pipes, a race wing, limo tint, gold rims, pink underglow.
+    autos::Mods street{2, 1, 0, 0, 0, 0, 0, 2, 2, 2, 3, 3};
+    check(autos::valid(street) && autos::parse(autos::serialise(street), back) && back == street, "the bolt-ons survive a save");
+    check(autos::parse("1 2 3 2 0 0 1", back) && back.tank == 1 && back.exhaust == 0 && back.glow == 0, "an older save: no bolt-ons");
+    check(!autos::valid(autos::Mods{-1, 0, 1, 0, 0, 0, 0, 3}) && !autos::valid(autos::Mods{-1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 5}), "no such bolt-ons");
+    const auto loud = autos::tuning(street), plain = autos::tuning({2, 1, 0, 0});
+    check(loud.power > plain.power && loud.grip > plain.grip && loud.top < plain.top, "pipes add power, the wing grip (and drag)");
+    world::VehiclePlacementState dressed;
+    autos::apply(street, dressed);
+    check(autos::mods_of(dressed) == street && dressed.mods[11] == 3, "the car remembers its bolt-ons");
+    autos::OwnedCar show{"muscle", "", street, {4, 0, 5}, 90, .75F};
+    check(autos::parse(autos::serialise(show), loaded) && loaded.mods == street, "a dressed-up car's save line");
     check(!autos::parse("tr uck 0 0 1 0 1 2 3 4 1", loaded) && !autos::parse("truck 0 0 1 0 1 2 3 4 2", loaded), "bad car lines are refused");
 
     if (failures == 0) std::cout << "autos ok\n";

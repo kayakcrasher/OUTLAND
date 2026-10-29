@@ -26,7 +26,7 @@ OUT = ROOT / "assets/verda/vehicles/runtime"
 
 CHROME = (200, 202, 204)
 BLACK = (20, 20, 22)
-DARK = (34, 34, 36)
+DARK = (28, 28, 30)   # (under 90 in all: the repaint leaves it be)
 GLASS = (40, 56, 64, 120)
 SEAT = (150, 128, 100)
 LAMP = (255, 246, 214)
@@ -103,7 +103,7 @@ def wagon():
 def muscle():
     kit.boxes.clear()
     box = kit.box
-    paint, dark, stripe = (24, 42, 104), (16, 28, 72), (236, 236, 230)
+    paint, dark, stripe = (24, 42, 104), (20, 35, 87), (236, 236, 230)   # (dark close enough to repaint with it)
     w, front, rear = .94, 2.45, -2.3
     interior(box, w, .5, -1.4, .28, (-.5,))
     box(-w + .12, w - .12, .32, .6, -1.35, -.95, SEAT)                      # rear bench

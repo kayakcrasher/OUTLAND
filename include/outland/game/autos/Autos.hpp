@@ -25,6 +25,8 @@ struct Mods {
     int paint{-1}, engine{0}, tires{1}, bumper{0};
     int plating{0}, gun{0};     // the depot's work on a big rig: armour plating, a roof gun
     int tank{0};                // and its fuel tanks (game::freight::Diesel::range_km, times tanks[])
+    // The workshop's dress-up and bolt-ons: exhausts, spoilers, window tint, rims, underglow.
+    int exhaust{0}, spoiler{0}, tint{0}, rims{0}, glow{0};
     friend bool operator==(const Mods&, const Mods&) = default;
 };
 
@@ -94,6 +96,37 @@ inline constexpr std::array<Part, 3> tanks{{
     {"Road-train tanks", "about 260 km on a fill", 8000},
 }};
 inline constexpr std::array<float, 3> tank_range{1, 1.7F, 2.6F};
+// Exhausts: louder, a little more power, and the straight pipes crackle when you lift off.
+inline constexpr std::array<Part, 3> exhausts{{
+    {"Factory exhaust", "quiet, as it left the works", 0},
+    {"Sport exhaust", "a deeper note, +4% power", 1100},
+    {"Straight pipes", "loud, pops and bangs, +8% power", 2400},
+}};
+inline constexpr std::array<Part, 3> spoilers{{
+    {"No spoiler", "as it left the works", 0},
+    {"Ducktail", "a lip on the boot, +5% grip", 700},
+    {"Race wing", "a big wing, +12% grip, -3% top speed", 1800},
+}};
+inline constexpr std::array<Part, 3> tints{{
+    {"Clear glass", "as it left the works", 0},
+    {"Smoked windows", "a light tint", 400},
+    {"Limo tint", "nobody sees in", 900},
+}};
+struct Rim { const char* name; const char* detail; int price; Color color; };
+inline constexpr std::array<Rim, 4> rims{{
+    {"Factory rims", "as they left the works", 0, {200, 200, 204, 255}},
+    {"Chrome rims", "mirror bright", 1200, {240, 244, 250, 255}},
+    {"Black rims", "satin black", 900, {34, 34, 38, 255}},
+    {"Gold rims", "for the boss", 2200, {222, 176, 56, 255}},
+}};
+struct Glow { const char* name; const char* detail; int price; Color color; };
+inline constexpr std::array<Glow, 5> glows{{
+    {"No underglow", "as it left the works", 0, {0, 0, 0, 0}},
+    {"Green underglow", "Verda green, under the sills", 1500, {40, 255, 120, 255}},
+    {"Blue underglow", "cool blue, under the sills", 1500, {60, 140, 255, 255}},
+    {"Pink underglow", "hot pink, under the sills", 1500, {255, 80, 200, 255}},
+    {"Amber underglow", "warm amber, under the sills", 1500, {255, 170, 40, 255}},
+}};
 inline constexpr std::array<Part, 2> guns{{
     {"No roof gun", "as it left the works", 0},
     {"Roof gun", "a machine gun on the cab roof - fire it from the wheel", 12000},
@@ -115,7 +148,7 @@ struct Tuning {
 // Fit the mods to a car: its placement state carries the tuning and the paint from now on.
 void apply(const Mods& mods, world::VehiclePlacementState& car);
 [[nodiscard]] Mods mods_of(const world::VehiclePlacementState& car);
-[[nodiscard]] std::string serialise(const Mods& mods);       // "paint engine tires bumper plating gun tank"
+[[nodiscard]] std::string serialise(const Mods& mods);       // "paint engine tires bumper plating gun tank exhaust spoiler tint rims glow"
 [[nodiscard]] bool parse(std::string_view text, Mods& out);
 
 // A repair: a few kronoj a point of damage (body, engine and tyres).

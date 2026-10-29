@@ -1,4 +1,5 @@
 #include "outland/game/vehicles/VehicleRenderer.hpp"
+#include "outland/game/autos/Autos.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <unordered_map>
@@ -98,6 +99,29 @@ void draw_bumper(int kind, const VehicleDefinition& d) {
         DrawCube({0, low - .06F, z + .05F}, w * .5F, .12F, .12F, c);
     }
 }
+// A spoiler on the boot (local metres, before scale): a ducktail lip, or a race wing on uprights.
+void draw_spoiler(int kind, const VehicleDefinition& d, Color c) {
+    if (kind <= 0) return;
+    const float z = -d.length * .5F + .32F, deck = d.height * .66F, w = d.width * .86F;
+    if (kind == 1) {
+        DrawCube({0, deck + .05F, z}, w, .07F, .3F, c);
+        DrawCube({0, deck + .12F, z - .12F}, w, .08F, .08F, c);
+        return;
+    }
+    const Color dark{28, 28, 32, 255};
+    for (const float x : {-w * .36F, w * .36F}) DrawCube({x, deck + .17F, z}, .06F, .34F, .14F, dark);
+    DrawCube({0, deck + .36F, z - .04F}, w * 1.04F, .05F, .36F, c);
+    for (const float x : {-w * .53F, w * .53F}) DrawCube({x, deck + .3F, z - .04F}, .03F, .16F, .4F, c);
+}
+// Underglow: a pool of light on the road under the car and a bright strip under each sill.
+void draw_glow(Color c, const VehicleDefinition& d) {
+    if (c.a == 0) return;
+    BeginBlendMode(BLEND_ADDITIVE);
+    DrawCube({0, .03F, 0}, d.width * 1.25F, .01F, d.length * 1.05F, Color{c.r, c.g, c.b, 70});
+    DrawCube({0, .035F, 0}, d.width * .9F, .01F, d.length * .8F, Color{c.r, c.g, c.b, 60});
+    for (const float x : {-d.width * .42F, d.width * .42F}) DrawCube({x, .16F, 0}, .05F, .03F, d.length * .7F, c);
+    EndBlendMode();
+}
 }
 
 void VehicleRenderer::draw(const VehicleSystem &system, const world::VerdaRegion &region,
@@ -136,6 +160,19 @@ void VehicleRenderer::draw(const VehicleSystem &system, const world::VerdaRegion
             draw_bumper(a->vehicle.mods[3], *d);
             rlPopMatrix();
         }
+        if (a->vehicle.mods[8] > 0) {
+            rlPushMatrix();
+            rlTranslatef(0, lift, 0);
+            rlScalef(scale, scale, scale);
+            draw_spoiler(a->vehicle.mods[8], *d, a->vehicle.painted ? a->vehicle.paint : Color{30, 30, 34, 255});
+            rlPopMatrix();
+        }
+        if (const int glow = a->vehicle.mods[11]; glow > 0 && glow < static_cast<int>(autos::glows.size()) && !a->vehicle.destroyed) {
+            rlPushMatrix();
+            rlScalef(scale, scale, scale);
+            draw_glow(autos::glows[static_cast<std::size_t>(glow)].color, *d);
+            rlPopMatrix();
+        }
         if (!d->wheel.empty()) {
             // Cached at a 1 m diameter (vehicles share wheel models) and sized per vehicle below.
             auto *wheel = models_.load(d->wheel, [&](Model &model) {
@@ -151,6 +188,9 @@ void VehicleRenderer::draw(const VehicleSystem &system, const world::VerdaRegion
                 centered.transform = MatrixMultiply(centered.transform, MatrixTranslate(0, -.5F, 0));
                 const float wheel_scale = scale * d->wheel_radius * 2 * a->vehicle.wheel;
                 const auto anchors = d->anchors();
+                // Rims: the wheel tinted, with a hub disc of the rim's colour on its outer face.
+                const int rim = std::clamp(a->vehicle.mods[10], 0, static_cast<int>(autos::rims.size()) - 1);
+                const Color rim_color = autos::rims[static_cast<std::size_t>(rim)].color;
                 for (std::size_t i = 0; i < 4; ++i) {
                     auto p = Vector3Scale(anchors[i], scale);
                     p.y += lift;
@@ -168,6 +208,16 @@ void VehicleRenderer::draw(const VehicleSystem &system, const world::VerdaRegion
                     rlRotatef(v.wheel_angle, 1, 0, 0);
                     DrawModelEx(centered, {0, 0, 0}, {0, 1, 0}, 0, {wheel_scale, wheel_scale, wheel_scale},
                                 a->vehicle.tires[i] > 0 ? tint : Color{65, 65, 65, 255});
+                    if (rim > 0 && a->vehicle.tires[i] > 0) {
+                        const float side = p.x >= 0 ? 1.0F : -1.0F, face = wheel_scale * .265F, r = wheel_scale * .3F;   // (the wheel is .52 wide a metre across)
+                        DrawCylinderEx({side * face, 0, 0}, {side * (face + .02F), 0, 0}, r, r, 14, rim_color);
+                        for (int spoke = 0; spoke < 5; ++spoke) {
+                            const float a5 = static_cast<float>(spoke) * 72 * DEG2RAD;
+                            DrawCube({side * (face + .025F), std::sin(a5) * r * .55F, std::cos(a5) * r * .55F}, .02F, r * .22F, r * .22F,
+                                     Color{static_cast<unsigned char>(rim_color.r * .6F), static_cast<unsigned char>(rim_color.g * .6F),
+                                           static_cast<unsigned char>(rim_color.b * .6F), 255});
+                        }
+                    }
                     rlPopMatrix();
                 }
             }

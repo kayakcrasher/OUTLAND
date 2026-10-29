@@ -31,8 +31,9 @@ struct VehiclePlacementState {
     // A mechanic's work (game::autos): the fitted parts (paint, engine, tyres, bumper; paint -1
     // factory, tyres 1 factory) and what they do - multipliers on power, top speed, wheel size,
     // crash damage and grip, degrees more climbing - and the colour.
-    // (Then the depot's work on a big rig: armour plating, 0-2, a roof gun, 0-1, and its tanks, 0-2.)
-    std::array<int,7> mods{{-1,0,1,0,0,0,0}};
+    // (Then the depot's work on a big rig: armour plating, 0-2, a roof gun, 0-1, and its tanks, 0-2;
+    // then the workshop's bolt-ons: exhaust, spoiler, window tint, rims, underglow.)
+    std::array<int,12> mods{{-1,0,1,0,0,0,0,0,0,0,0,0}};
     float power{1}, top{1}, wheel{1}, armour{1}, grip{1}, slope{0};
     float plating{1};   // damage from rounds multiplier (armour plating)
     bool gun{false};    // a roof gun
