@@ -1,7 +1,35 @@
 # Engine sound
 
-The engines are synthesised (`game::vehicles::EngineSynth`), not recorded, so each vehicle has
-its own voice and it follows what the engine is doing exactly.
+The engines are real recordings (`assets/audio/engines`): a few seamless loops for each kind of
+engine, from idle up the revs, played back by `game::vehicles::EngineSynth` pitched to the revs
+and crossfaded from loop to loop as they climb. Everything riding on top (the turbo, the
+supercharger, pops, the jake brake, the air brakes, the intake roar, the road and the tyres) is
+synthesised, and so is the whole engine if the recordings are missing.
+
+## The recordings
+
+| Engine | Loops | Vehicles |
+|---|---|---|
+| Four | `four_0` (idle) … `four_3` (racing car) | hatchback, wagon, sedan, side-by-side, the GT and anything with the racing engine |
+| V8 | `v8_idle` or `v8_lope` (a lumpy cam: the muscle car, the big block), then `v8_high` | pickup truck, police cars, muscle car, any car with the big block or the supercharger |
+| Diesel | `diesel_idle`, `diesel_high` | van, ambulance, flatbed, semi, bus |
+
+- **Pitch.** The lowest loop plays at the engine's idle firing rate (held near its own: a big rig
+  plays it slower and deeper, a V10 quicker), and the pitch climbs with the revs, a little less
+  than in step so the top loop is never stretched thin. Each loop takes over (an equal-power
+  crossfade) as the pitch passes its own recorded firing rate.
+- **Load.** On the throttle it's louder and brighter; off it, duller and quieter, quieter still on
+  the overrun. Sport exhausts and straight pipes let more of the top through.
+- **Rev limiter.** Held at the redline it cuts out every third turn of the crank.
+- `tools/make_engine_loops.py` cuts the loops from the source recordings: it holds each stretch
+  to a steady pitch, trims it to a whole number of firings, crossfades the seam and levels it.
+  The loops are 16-bit WAV (Vorbis trimmed the ends and clicked at the seam). The sources and
+  their licences are in `assets/audio/engines/CREDITS.md`.
+
+## The synthesis
+
+Without the recordings, and for the effects on top, the synth follows what the engine is doing
+exactly.
 
 ## How it sounds
 

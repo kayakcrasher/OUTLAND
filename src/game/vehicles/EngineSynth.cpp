@@ -45,6 +45,30 @@ EngineProfile engine_profile(std::string_view d, int engine, int exhaust) {
     return p;
 }
 
+namespace {
+// The loops tools/make_engine_loops.py cuts, and the firing rate each was recorded at.
+struct LoopInfo { std::string_view name; float hz; };
+constexpr std::array<LoopInfo, 9> kEngineLoops{{
+    {"four_0", 42.82F}, {"four_1", 59.87F}, {"four_2", 70.28F}, {"four_3", 76.28F},
+    {"v8_idle", 53.01F}, {"v8_lope", 42.75F}, {"v8_high", 91.78F},
+    {"diesel_idle", 40.52F}, {"diesel_high", 81.99F},
+}};
+}
+
+float engine_loop_hz(std::string_view name) {
+    for (const auto& loop : kEngineLoops)
+        if (loop.name == name) return loop.hz;
+    return 50;
+}
+
+std::vector<std::string_view> engine_loops(std::string_view definition, int engine, int exhaust) {
+    const auto p = engine_profile(definition, engine, exhaust);
+    if (p.diesel) return {"diesel_idle", "diesel_high"};
+    // A V8 (a lumpy cam burbles at idle); anything that revs past 7500 sounds like the racing four.
+    if (p.cylinders >= 8 && p.redline < 7500) return {p.lope >= .5F ? "v8_lope" : "v8_idle", "v8_high"};
+    return {"four_0", "four_1", "four_2", "four_3"};
+}
+
 float Gearbox::update(float dt, float speed, float throttle, const EngineProfile& p) {
     if (rpm_ <= 0) rpm_ = p.idle;
     speed = std::clamp(std::abs(speed), 0.0F, 1.2F);
@@ -117,6 +141,13 @@ void EngineSynth::set_profile(const EngineProfile& profile) {
     retune_ = 0;
 }
 
+void EngineSynth::set_loops(const std::vector<const EngineLoop*>& loops) {
+    loops_.clear();
+    for (const auto* loop : loops)
+        if (loop && loop->pcm.size() > 4 && loop->hz > 0 && loops_.size() < read_.size()) loops_.push_back(loop);
+    read_.fill(0);
+}
+
 void EngineSynth::render(short* out, int frames) {
     std::array<float, 512> chunk{};
     for (int done = 0; done < frames;) {
@@ -128,6 +159,20 @@ void EngineSynth::render(short* out, int frames) {
 }
 
 namespace {
+// The recordings are levelled to -18 dBFS; this sits them where the synthesised engine was.
+constexpr float kLoopLevel = 3.2F;
+
+// A loop's sample at a fractional position (cubic Hermite, wrapping round).
+float loop_at(const std::vector<float>& pcm, double at) {
+    const auto size = static_cast<long>(pcm.size());
+    const auto i = static_cast<long>(at);
+    const auto t = static_cast<float>(at - static_cast<double>(i));
+    const auto x = [&](long k) { return pcm[static_cast<std::size_t>(((i + k) % size + size) % size)]; };
+    const float a = x(-1), b = x(0), c = x(1), d = x(2);
+    const float c1 = .5F * (c - a), c2 = a - 2.5F * b + 2 * c - .5F * d, c3 = .5F * (d - a) + 1.5F * (b - c);
+    return ((c3 * t + c2) * t + c1) * t + b;
+}
+
 // One exhaust pulse: a quick rise and a longer fall (peak 1 at 22% of its length).
 float pulse_shape(float u) {
     const float x = u / .22F;
@@ -172,6 +217,33 @@ void EngineSynth::render(float* out, int frames) {
     // that runs the output into its limiter.)
     const float radiate = rate_ / (2 * std::numbers::pi_v<float> * 220) * std::pow(std::max(1.0F, p.idle) / std::max(rpm, p.idle), .35F) * 1.6F;
     const float width = std::clamp(cycle * (p.diesel ? .16F : .13F) * (1.15F - .3F * load), .0012F, .03F) * rate_;
+    // The recordings: the lowest plays at the idle's firing rate (near its own), and the pitch
+    // climbs with the revs (a little less than in step, so the top loop is never stretched thin),
+    // handing over from loop to loop (equal power) as it passes each one's own rate.
+    std::array<float, 4> weight{}, speed_of{};
+    float tone_cut = 0;
+    if (!loops_.empty()) {
+        const float idle = std::max(1.0F, p.idle);
+        const float q0 = std::clamp(idle / 120 * static_cast<float>(n) / loops_[0]->hz, .7F, 1.3F);
+        const float hz = loops_[0]->hz * q0 * std::pow(std::max(rpm, idle * .5F) / idle, .75F);
+        const auto last = loops_.size() - 1;
+        if (hz <= loops_[0]->hz) weight[0] = 1;
+        else if (hz >= loops_[last]->hz) weight[last] = 1;
+        else
+            for (std::size_t i = 0; i < last; ++i)
+                if (hz < loops_[i + 1]->hz) {
+                    const float t = std::log(hz / loops_[i]->hz) / std::log(loops_[i + 1]->hz / loops_[i]->hz);
+                    weight[i] = std::cos(t * std::numbers::pi_v<float> / 2);
+                    weight[i + 1] = std::sin(t * std::numbers::pi_v<float> / 2);
+                    break;
+                }
+        for (std::size_t i = 0; i < loops_.size(); ++i) speed_of[i] = hz / loops_[i]->hz;
+        // Off the throttle it's dull; on it, it opens up (more again through a sport exhaust).
+        tone_cut = 1 - std::exp(-2 * std::numbers::pi_v<float> * std::min(rate_ * .45F, 650 * (1 + 2.2F * load) * (1 + rev)) / rate_);
+    }
+    const float bright = std::min(1.0F, .4F + .6F * load + through);
+    const float level = (.42F + .58F * load) * (1 - .4F * overrun_);
+    const bool chop = params_.limiter && (firings_ / static_cast<std::uint64_t>(n)) % 3 == 0;
     for (int s = 0; s < frames; ++s) {
         if (retune_-- <= 0) {
             retune_ = 64;
@@ -252,7 +324,24 @@ void EngineSynth::render(float* out, int frames) {
         const float sigh = air_.run(noise()) * sigh_ * (1 - std::exp(-(1 - sigh_) * 40)) * 1.3F;
         sigh_ *= sigh_fall;
         gain_ += ((params_.running ? 1.0F : 0.0F) - gain_) * gain_rate;
-        const float engine = (dc_out_ * 1.1F + body * .5F + intake_ * .6F + rasp * .6F + clat * .7F) * gain_ * p.gain + (turbo + whine) * gain_;
+        float engine;
+        if (loops_.empty()) {
+            engine = (dc_out_ * 1.1F + body * .5F + intake_ * .6F + rasp * .6F + clat * .7F) * gain_ * p.gain + (turbo + whine) * gain_;
+        } else {
+            float recorded = 0;
+            for (std::size_t i = 0; i < loops_.size(); ++i) {
+                const auto& pcm = loops_[i]->pcm;
+                if (weight[i] > 0) recorded += weight[i] * loop_at(pcm, read_[i]);
+                read_[i] += speed_of[i];
+                if (read_[i] >= static_cast<double>(pcm.size())) read_[i] -= static_cast<double>(pcm.size());
+            }
+            tone_ += (recorded - tone_) * tone_cut;
+            gate_ += ((chop ? .2F : 1.0F) - gate_) * gain_rate;
+            // The jake's bark and the pops still come from the synthesised exhaust; the intake roar
+            // and the rasp lift it under load. (A diesel's knock is in the recording.)
+            const float synth = (dc_out_ * 1.1F + body * .5F) * jake_ * .9F + intake_ * .35F + rasp * .3F + (p.diesel ? 0.0F : clat * .7F);
+            engine = ((tone_ + (recorded - tone_) * bright) * level * gate_ * kLoopLevel + synth) * gain_ * p.gain + (turbo + whine) * gain_;
+        }
         // The road: wind, tyre rumble, the tyres letting go.
         wind_ += (noise() - wind_) * wind_rate;
         rumble_ = rumble_ * .997F + noise() * .02F;

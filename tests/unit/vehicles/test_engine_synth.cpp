@@ -116,6 +116,43 @@ int main() {
         for (int i = 0; i < 120; ++i) belt.update(1.0F / 60, 0, 1, sxs);
         check(sxs.cvt && belt.rpm() > sxs.idle * 2, "a belt drive revs up with the throttle");
     }
+    // The recordings: each kind of engine its own loops, played pitched to the revs.
+    {
+        check(engine_loops("semi").front() == "diesel_idle" && engine_loops("muscle").front() == "v8_lope" &&
+                  engine_loops("police").front() == "v8_idle" && engine_loops("hatchback").size() == 4 &&
+                  engine_loops("hatchback", 2).front() == "v8_lope",
+              "diesels, V8s and fours each have their loops (and the big block is a V8)");
+        check(engine_loop_hz("v8_high") > engine_loop_hz("v8_idle"), "the loops are recorded up the revs");
+        // Two stand-in loops: a 40 Hz and an 80 Hz tone.
+        EngineLoop low, high;
+        low.hz = 40; high.hz = 80;
+        for (int i = 0; i < rate; ++i) {
+            low.pcm.push_back(.2F * std::sin(2 * 3.14159265F * 40 * static_cast<float>(i) / rate));
+            high.pcm.push_back(.2F * std::sin(2 * 3.14159265F * 80 * static_cast<float>(i) / rate));
+        }
+        const auto crossings = [](const std::vector<float>& s) {
+            int n = 0;
+            for (std::size_t i = 1; i < s.size(); ++i) n += (s[i - 1] < 0) != (s[i] < 0);
+            return n;
+        };
+        auto p = engine_profile("van");
+        p.rasp = 0; p.turbo = 0;
+        EngineSynth idle(rate), revving(rate);
+        for (auto* s : {&idle, &revving}) { s->set_profile(p); s->set_loops({&low, &high}); }
+        check(idle.recorded(), "the synth plays the recordings it is given");
+        idle.set({true, p.idle, 0, 0, 0, 1, false});
+        revving.set({true, p.idle * 3, 0, 0, 0, 1, false});
+        std::vector<float> a(rate), b(rate);
+        idle.render(a.data(), rate);
+        revving.render(b.data(), rate);
+        bool finite = true;
+        for (const float v : b) finite &= std::isfinite(v) && std::abs(v) <= 1;
+        check(finite && rms(a) > .02, "a recorded engine you can hear");
+        check(crossings(b) > crossings(a) * 1.8, "the recording's pitch climbs with the revs: " + std::to_string(crossings(a)) + " -> " + std::to_string(crossings(b)));
+        EngineSynth none(rate);
+        none.set_loops({nullptr});
+        check(!none.recorded(), "no recordings: synthesised");
+    }
     if (failures == 0) std::cout << "engine synth ok\n";
     return failures == 0 ? 0 : 1;
 }

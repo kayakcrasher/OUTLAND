@@ -22,6 +22,25 @@ void VehicleAudio::initialize() {
                 SetSoundVolume(sounds_[i], .5F);
         }
     }
+    // The engine recordings (mono, at the streams' rate).
+    for (const char *name : {"four_0", "four_1", "four_2", "four_3", "v8_idle", "v8_lope", "v8_high", "diesel_idle", "diesel_high"}) {
+        const std::string local = "assets/audio/engines/" + std::string(name) + ".wav";
+        const std::string packaged = std::string(GetApplicationDirectory()) + local;
+        const auto source = FileExists(packaged.c_str()) ? packaged : local;
+        if (!FileExists(source.c_str()))
+            continue;
+        Wave wave = LoadWave(source.c_str());
+        if (wave.data && wave.frameCount > 0) {
+            WaveFormat(&wave, sample_rate, 32, 1);
+            float *samples = LoadWaveSamples(wave);
+            EngineLoop loop;
+            loop.hz = engine_loop_hz(name);
+            loop.pcm.assign(samples, samples + wave.frameCount);
+            UnloadWaveSamples(samples);
+            loops_.emplace(name, std::move(loop));
+        }
+        UnloadWave(wave);
+    }
     // The engines: one stream each, fed a chunk at a time.
     SetAudioStreamBufferSizeDefault(chunk);
     for (auto &voice : voices_)
@@ -64,6 +83,15 @@ void VehicleAudio::tune(Voice &voice, const world::WorldAsset &a) {
     voice.vehicle = a.id;
     voice.profile = key;
     voice.synth.set_profile(engine_profile(a.vehicle.definition, engine, exhaust));
+    std::vector<const EngineLoop *> loops;
+    for (const auto name : engine_loops(a.vehicle.definition, engine, exhaust)) {
+        const auto found = loops_.find(name);
+        loops.push_back(found == loops_.end() ? nullptr : &found->second);
+    }
+    // All of them or none: a gap in the revs would be worse than the synthesised engine.
+    if (std::find(loops.begin(), loops.end(), nullptr) != loops.end())
+        loops.clear();
+    voice.synth.set_loops(loops);
     if (!same)
         voice.box.reset(voice.synth.profile());
 }

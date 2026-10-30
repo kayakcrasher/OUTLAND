@@ -2,9 +2,16 @@
 #include <array>
 #include <cstdint>
 #include <string_view>
+#include <vector>
 
-// Engine sound, synthesised: no recordings, so every vehicle gets its own voice and it follows
-// the engine exactly. A four-stroke fires each cylinder once every two turns of the crank. Each
+// Engine sound. The engine itself is real recordings (assets/audio/engines): a few seamless loops
+// for each kind of engine (a four, a V8, a diesel), from idle up the revs, played back pitched to
+// the revs and crossfaded from one to the next as they climb; the throttle makes it louder and
+// brighter. Without the recordings (or in tests) it is synthesised instead, and what rides on top
+// is synthesised either way: the turbo, the supercharger, pops, the jake brake, the air brakes,
+// the intake under load, the road and the tyres.
+//
+// The synthesis follows the engine exactly. A four-stroke fires each cylinder once every two turns of the crank. Each
 // firing blows a pulse of hot gas into the exhaust: a smooth pressure pulse as wide as the
 // exhaust valve's blowdown (about a sixth of a turn of the crank, so it narrows as the revs rise
 // and the note brightens). The pulses run down the pipe, which rings at its own lengths (the
@@ -40,6 +47,17 @@ struct EngineProfile {
 // (game::autos::engines and exhausts indices).
 EngineProfile engine_profile(std::string_view definition, int engine = 0, int exhaust = 0);
 
+// A recorded engine loop: mono samples at the synth's rate, and the firing rate it was recorded at.
+struct EngineLoop {
+    std::vector<float> pcm;
+    float hz{50};
+};
+
+// The recorded loops for a vehicle (names in assets/audio/engines, low revs to high), and each
+// one's firing rate.
+std::vector<std::string_view> engine_loops(std::string_view definition, int engine = 0, int exhaust = 0);
+float engine_loop_hz(std::string_view name);
+
 // The automatic gearbox: from road speed and throttle to the revs.
 class Gearbox {
 public:
@@ -70,6 +88,10 @@ public:
     explicit EngineSynth(int sample_rate = 22050) : rate_(static_cast<float>(sample_rate)) {}
     void set_profile(const EngineProfile& profile);
     void set(const Params& params) { params_ = params; }
+    // Play these recordings (low revs to high; null or empty to synthesise). Not owned: they must
+    // outlive the synth's use of them.
+    void set_loops(const std::vector<const EngineLoop*>& loops);
+    [[nodiscard]] bool recorded() const { return !loops_.empty(); }
     [[nodiscard]] const EngineProfile& profile() const { return profile_; }
     // Mono samples, -1..1.
     void render(float* out, int frames);
@@ -102,6 +124,9 @@ private:
     std::uint32_t seed_{0x9e3779b9U};
     Band body_, rasp_, crack_, squeal_, hiss_, roar_, air_;
     int retune_{0};
+    std::vector<const EngineLoop*> loops_;
+    std::array<double, 4> read_{};           // where each loop is playing
+    float tone_{0}, gate_{1};
 };
 
 } // namespace outland::game::vehicles
