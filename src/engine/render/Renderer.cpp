@@ -8211,6 +8211,7 @@ void Renderer::run() {
         world::sky::draw_sky_objects(sky,camera.position);
         world::sky::draw_lights(scene_lights,sky,camera.position,static_cast<float>(GetTime()));
         if(const auto* car=vehicles.driver()) world::sky::draw_headlights(car->position,car->yaw,sky);
+        render::draw_signals(island_life.signals(),island_life.signal_clock(),camera.position,true);
         if(services.active()) game::services::draw_light_bars(services,vehicles,camera.position,static_cast<float>(GetTime()));
         if(const int lit=lights_car.empty() ? -1 : vehicles.find(lights_car);lit>=0) {
             const auto& car=vehicles.vehicles()[static_cast<std::size_t>(lit)];
