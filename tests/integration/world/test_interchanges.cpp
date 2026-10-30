@@ -178,6 +178,36 @@ int main() {
             const auto back = graph.route(to, from);
             check(back.length > route.length + 50, "and not back against it: " + std::to_string(back.length) + " m");
         }
+    // La Ringo, the ring's bar and grills: each with a truck park of 18 bays on level ground beside
+    // its car park and bar; Okcidento is the truckers' brotherhood's home, its bays full of rigs.
+    for (const auto& rest : hw::rest_areas()) {
+        const std::string name = "La Ringo " + std::string(rest.name);
+        bool park = false, bar = false;
+        int rigs = 0;
+        for (const auto& town : region.settlements()) {
+            for (const auto& asset : town.assets)
+                if (asset.model_path.ends_with("ground/truck_park.glb") && flat(asset.position, rest.truck_park) < 2) park = true;
+            for (const auto& marker : town.gameplay_markers) {
+                if (marker.type == world::GameplayMarkerType::VehicleSpawn &&
+                    marker.id.starts_with("vehicle_spawn_semi_laringo_" + std::string(rest.name) + "_")) ++rigs;
+                if (marker.type == world::GameplayMarkerType::BuildingPurpose && marker.purpose == world::BuildingPurpose::Pub &&
+                    flat(marker.position, rest.building) < 14) bar = true;
+            }
+        }
+        check(park, name + ": a truck park");
+        check(bar, name + ": a bar and grill");
+        check(rigs == (rest.brotherhood ? 7 : 3), name + ": rigs parked in the bays: " + std::to_string(rigs));
+        // Level: every bay, the car park and the bar on the one pad.
+        const float level = world::terrain::TerrainHeight::sample(rest.lot.x, rest.lot.z);
+        float worst = 0;
+        for (int k = 0; k < hw::truck_bays; ++k) {
+            const Vector3 b = rest.bay(k);
+            worst = std::max(worst, std::abs(world::terrain::TerrainHeight::sample(b.x, b.z) - level));
+        }
+        worst = std::max(worst, std::abs(world::terrain::TerrainHeight::sample(rest.building.x, rest.building.z) - level));
+        check(worst < .3F, name + ": on level ground (" + std::to_string(worst) + " m)");
+    }
+    check(hw::brotherhood_home().name == "Okcidento", "the brotherhood's home is La Ringo Okcidento");
     if (failures) return 1;
     std::cout << "[PASS] ring interchanges\n";
     return 0;

@@ -778,8 +778,9 @@ void Renderer::run() {
     constexpr int picket_bot=933000,picket_size=4;
     bool picket_out=false;
     std::array<Vector3,picket_size> picket_spots{};std::array<float,picket_size> picket_yaws{};bool picket_placed=false;
-    // La Frateco de Kamionistoj, the outlaw truckers' brotherhood: its man at the depot's diesel
-    // lane (Ivo Kovač, first) and a trucker at a pub in every town (bodies under their own ids),
+    // La Frateco de Kamionistoj, the outlaw truckers' brotherhood: its man at its home, La Ringo on
+    // the ring road (Ivo Kovač, first), brothers there and at the depot's diesel lane, and a trucker
+    // at a pub in every town (bodies under their own ids),
     // and the brothers who answer a member's CB call (game::career::Backup, set_truckers).
     struct Kamionisto { Vector3 at{}; float yaw{0}; std::string town; bool rep{false}; };
     std::vector<Kamionisto> kamionistoj;
@@ -2487,8 +2488,9 @@ void Renderer::run() {
                             TraceLog(LOG_INFO,"OUTLAND Verda Transporto boss %s at %.1f %.1f",body.c_str(),depot_boss.at.x,depot_boss.at.z);
                         }
                     }
-                    // La Frateco de Kamionistoj: Ivo Kovač by the depot's diesel lane, and a trucker outside a
-                    // pub in every town (the brotherhood is everywhere a load goes).
+                    // La Frateco de Kamionistoj: at home at La Ringo on the ring road (Ivo Kovač at the bar's
+                    // door, brothers about it and among the rigs), a brother at the depot's diesel lane, and a
+                    // trucker outside a pub in every town (the brotherhood is everywhere a load goes).
                     kamionistoj.clear();society={};
                     if(game::rules_for(game_mode).civilian_life) {
                         const auto stand=[&](Vector3 c) -> std::optional<Vector3> {
@@ -2502,9 +2504,27 @@ void Renderer::run() {
                                 }
                             return std::nullopt;
                         };
+                        // Home: La Ringo Okcidento on the ring road. Ivo outside the bar's door, brothers about
+                        // the door and down among the rigs in the truck park.
+                        const auto& home=world::highways::brotherhood_home();
+                        const auto ground=[&](Vector3 p){p.y=world::terrain::TerrainHeight::sample(p.x,p.z);return p;};
+                        const Vector3 door=home.front_door(0),step=home.front_door(1);
+                        const float facing=std::atan2(step.x-door.x,step.z-door.z)*RAD2DEG;
+                        if(const auto at=stand(ground(home.front_door(2.4F,-2.2F))))
+                            kamionistoj.push_back({*at,facing,"La Ringo",true});
+                        for(const auto& [out,side]:std::initializer_list<std::pair<float,float>>{{3.2F,3.6F},{5.0F,4.8F}})
+                            if(const auto at=stand(ground(home.front_door(out,side)))) kamionistoj.push_back({*at,facing+150,"La Ringo"});
+                        // (In front of empty bays, out in the aisle, looking over the rigs.)
+                        for(const int bay:{2,9,16}) {
+                            const Vector3 b=home.bay(bay);
+                            const float a=home.bay_yaw()*DEG2RAD;
+                            if(const auto at=stand(ground({b.x+std::sin(a)*5.5F,0,b.z+std::cos(a)*5.5F})))
+                                kamionistoj.push_back({*at,home.bay_yaw()+180,"La Ringo"});
+                        }
+                        // A brother still at the company's diesel lane in Verda Transporto's yard.
                         const Vector3 lane=world::layout::depot_diesel;
                         if(const auto at=stand({lane.x,world::terrain::TerrainHeight::sample(lane.x,lane.z),lane.z+9}))
-                            kamionistoj.push_back({*at,0,"Verda Transporto's yard",true});
+                            kamionistoj.push_back({*at,0,"Verda Transporto's yard"});
                         std::vector<int> towns_done;
                         // A pub where the town has one, else its shop.
                         std::vector<const game::life::Place*> spots;
@@ -3332,7 +3352,7 @@ void Renderer::run() {
             if(kamionistoj[static_cast<std::size_t>(k)].rep) {
                 // Ivo's word (joining, the work and leaving are in his menu).
                 const std::string ivo=std::string(brotherhood_man)+": ";
-                if(career.on_duty()) return ivo+"\"No badges at the diesel lane, officer. The brotherhood looks after its own.\"";
+                if(career.on_duty()) return ivo+"\"No badges at La Ringo, officer. The brotherhood looks after its own.\"";
                 if(career.trucker()) {
                     static constexpr const char* lines[]{
                         "\"The company pays what it can get away with. Together, we make it pay what a load is worth.\"",
@@ -3355,7 +3375,7 @@ void Renderer::run() {
             }
             static constexpr const char* lines[]{
                 "\"Verda's trucking is a tough grind. That's why we stick together.\"",
-                "\"Every town, every road - Esperantistoj, working people. Ivo Kovač at the depot's diesel lane signs up new brothers.\"",
+                "\"Every town, every road - Esperantistoj, working people. Ivo Kovač signs up new brothers at La Ringo - our place on the ring road, the west side.\"",
                 "\"One rate for all of us, and we hold out for a higher one. That's the brotherhood.\""};
             return who+lines[line%3];
         };
@@ -4171,11 +4191,14 @@ void Renderer::run() {
             if(owned_ready && career.rig_due() && depot_boss.placed && player_health.alive()) {
                 autos::OwnedCar c;
                 c.definition="semi";
-                c.at={-626,world::terrain::TerrainHeight::sample(-626,-100),-100};c.yaw=0;
+                // The last bay in La Ringo's truck park, kept for him.
+                const auto& home=world::highways::brotherhood_home();
+                const Vector3 bay=home.bay(world::highways::truck_bays-1);
+                c.at={bay.x,world::terrain::TerrainHeight::sample(bay.x,bay.z),bay.z};c.yaw=home.bay_yaw();
                 if(owned_cars.size()<autos::max_owned && spawn_owned(c)) {
                     owned_cars.push_back(c);store_owned();
-                    chief_line=std::string(brotherhood_man)+": \"Every brother drives his own. Your rig's in the truck park at the depot - box trailer hitched, "
-                               "tank full. Take her into the shed for armour and a roof gun when you can afford it.\"";chief_line_time=10;
+                    chief_line=std::string(brotherhood_man)+": \"Every brother drives his own. Your rig's in the last bay out back, box trailer hitched, "
+                               "tank full. Take her into the company's shed for armour and a roof gun when you can afford it.\"";chief_line_time=10;
                 }
                 career.rig_issued();
             }
@@ -9922,6 +9945,9 @@ void Renderer::run() {
                 view.turf.push_back({crew.door,gang.color});
                 if(crew.base) view.bases.push_back({crew.door,gang.color,std::string(gang.name)});
             }
+            // The truckers' brotherhood's home: La Ringo Okcidento.
+            if(!outbreak.active() && game::rules_for(game_mode).civilian_life)
+                view.bases.push_back({world::highways::brotherhood_home().front_door(0),Color{232,140,40,255},"LA FRATECO - LA RINGO",true});
             // A gangster's map: who holds every town and ranch, the tags, the standings.
             if(const int mine=player_gang();mine>=0 && !territory.turfs().empty()) {
                 view.gang_map=true;

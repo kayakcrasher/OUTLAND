@@ -80,8 +80,9 @@ int main() {
         sxs += car.id.find("vehicle_spawn_sxs_") != std::string::npos && car.id.find("_forsale_") == std::string::npos;   // (not the car lot's)
         semis += car.id.find("vehicle_spawn_semi_") != std::string::npos;
     }
-    // The stockyard's two, and Verda Transporto's: four for hire and three of its own drivers'.
-    check(sxs == 5 && semis == 9, "a side-by-side on every ranch, nine big rigs (" + std::to_string(semis) + ")");
+    // The stockyard's two, Verda Transporto's (four for hire and three of its own drivers'), and the
+    // brothers' parked at La Ringo (seven at Okcidento, three at Oriento).
+    check(sxs == 5 && semis == 19, "a side-by-side on every ranch, nineteen big rigs (" + std::to_string(semis) + ")");
     const auto* sxs_type = types.find("sxs");
     const auto* semi_type = types.find("semi");
     check(sxs_type && semi_type && sxs_type->length < 3.5F && semi_type->length > 7, "the side-by-side and the tractor are vehicle types");
@@ -226,7 +227,7 @@ int main() {
     if (cattle) { std::cout << "cattle run: " << cattle->loop.length / 1000 << " km, " << freight.reversals() << " reversals:"; for (const auto& s : cattle->stops) std::cout << ' ' << s.name; std::cout << '\n'; }
     freight.start(region, cars);
     freight.follow_trailers(region, cars);
-    check(freight.trailers().size() == 9, "every tractor has its trailer");
+    check(freight.trailers().size() == 19, "every tractor has its trailer");
     int unloaded = 0, loads = 0, deliveries = 0, calls = 0;
     float worst_fold = 0;
     const int start_shipped = ranches.cattle_quay().shipped;

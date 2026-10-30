@@ -94,16 +94,26 @@ Two roadhouses stand beside the ring (`highways::rest_areas()`), each serving on
 **Oriento** inside it at 24° (east-north-east, for the clockwise one).
 
 - **Off and on.** A one-way slip road leaves the ring, tapering off the slow lane, into a 10 m
-  aisle through the car and truck park; another slip road joins the ring again beyond it.
-- **The lot.** A parking lot by the aisle, a Marnafto diesel island for the rigs, the bar and grill
-  (a one-storey pub, brick at Oriento, stucco at Okcidento) beyond, and trees round the pad. Each
-  stands on a level pad of its own (`rest_area_flat`, easing back to the land over
-  `rest_area_blend`).
+  aisle along the car park; another slip road joins the ring again beyond it.
+- **The car park** by the aisle, with a Marnafto diesel island for the rigs.
+- **The truck park** behind it (`ground/truck_park.glb`): 84 × 32 m, an aisle along the car park
+  and 18 drive-in bays for big rigs (4.6 m wide, 20 m deep: a tractor and its trailer), marked in
+  yellow. Rigs stand in the bays, nose out: seven at Okcidento, three at Oriento.
+- **The bar and grill** (a one-storey pub, brick at Oriento, stucco at Okcidento) stands on the car
+  park's upstream side, its door toward it. It's a working pub: two staff and twenty-odd regulars
+  from the nearby hamlet (Pinejo, Vojrando).
+- **Level ground.** All of it stands on one level pad (`rest_area_flat`, 68 m round, easing back to
+  the land over `rest_area_blend`).
 - **Signs.** A blue services board 1 km before and another at the slip road: "LA RINGO /
   TRINKEJO · KRADROSTEJO / DIZELO · PARKEJO" (bar · grill / diesel · parking), and a tall red
   two-faced pole sign by the ring, "LA RINGO / TRINKEJO KAJ KRADROSTEJO".
-- **In the kit.** Their ground is reserved at the start of the world build; the buildings
-  themselves are built last, so every older piece keeps its id.
+- **The truckers' brotherhood's home.** La Ringo Okcidento is La Frateco de Kamionistoj's home
+  (see [careers](careers.md#the-outlaw-truckers-la-frateco-de-kamionistoj)). Ivo Kovač is at the
+  bar's door, brothers stand about it and among the rigs, and a board by the door reads "LA
+  FRATECO / DE KAMIONISTOJ / NIA HEJMO · ĈIU ŜOFORO BONVENAS" (our home, every driver welcome).
+  The map marks it.
+- **In the kit.** Their ground is reserved at the start of the world build; the pieces are built
+  last, so every older piece keeps its id. (The island holds up to 240 vehicles now, for the rigs.)
 
 ## Traffic signals that work
 

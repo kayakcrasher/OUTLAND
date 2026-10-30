@@ -429,13 +429,19 @@ const std::vector<RestArea>& rest_areas() {
             };
             const Vector3 out_dir{std::cos(r.bearing) * side, 0, std::sin(r.bearing) * side};   // away from the ring
             const float tangent_yaw = std::atan2(-std::sin(r.bearing), std::cos(r.bearing)) * 180 / pi;
-            r.centre = point(0, 70);
+            // The car park by the aisle, the truck park behind it (away from the ring), and the bar
+            // and grill on the car park's upstream side, its front (-z) toward the car park.
+            r.centre = point(0, 84);
             r.lot = point(0, 66);
             r.lot_yaw = tangent_yaw;
-            r.building = point(0, 112);
-            r.building_yaw = std::atan2(-out_dir.x, -out_dir.z) * 180 / pi;   // its front (-z) toward the ring
+            r.building = point(-way * 48, 62);
+            const Vector3 toward_lot{r.lot.x - r.building.x, 0, r.lot.z - r.building.z};
+            r.building_yaw = std::atan2(-toward_lot.x, -toward_lot.z) * 180 / pi;
             r.diesel = point(way * 26, 48);
             r.diesel_yaw = tangent_yaw;
+            r.truck_park = point(0, 118);
+            r.truck_park_yaw = std::atan2(out_dir.x, out_dir.z) * 180 / pi;
+            r.brotherhood = name == "Okcidento";
             // Off before it (upstream: traffic runs `way`), on after it; the same lead-in clear of
             // the median as an interchange's slip roads.
             const float laterals[]{0, 4.6F, slow_lane, 18, 32, 38};
@@ -449,6 +455,34 @@ const std::vector<RestArea>& rest_areas() {
         return out;
     }();
     return all;
+}
+
+Vector3 RestArea::at(float along, float lateral) const {
+    const float side = inside ? -1.0F : 1.0F, way = inside ? 1.0F : -1.0F;
+    const float b = bearing + way * along / ring_radius, radius = ring_radius + side * lateral;
+    return {radius * std::cos(b), 0, radius * std::sin(b)};
+}
+
+namespace {
+Vector3 local_to_world(Vector3 origin, float yaw_degrees, float x, float z) {
+    const float a = yaw_degrees * pi / 180;
+    return {origin.x + x * std::cos(a) + z * std::sin(a), origin.y, origin.z - x * std::sin(a) + z * std::cos(a)};
+}
+}
+
+Vector3 RestArea::front_door(float out, float side) const {
+    // The bar is 8 x 4 modules (24 x 12 m), its door in the front (-z) wall at x = 1.5.
+    return local_to_world(building, building_yaw, 1.5F - side, -6 - out);
+}
+
+Vector3 RestArea::bay(int k) const {
+    const float x = -41.4F + (static_cast<float>(std::clamp(k, 0, truck_bays - 1)) + .5F) * 4.6F;
+    return local_to_world(truck_park, truck_park_yaw, x, -.5F);
+}
+
+const RestArea& brotherhood_home() {
+    for (const auto& r : rest_areas()) if (r.brotherhood) return r;
+    return rest_areas().front();
 }
 
 namespace {

@@ -174,6 +174,9 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_parking_lot_68", .name = "Parking Lot 68 m", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/ground/parking_lot_68.glb", .thumbnail_path = "", .footprint = {68.00F, 68.00F, 0.15F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_truck_park", .name = "Truck Park - 18 drive-in rig bays (84 x 32 m)", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/ground/truck_park.glb", .thumbnail_path = "", .footprint = {84.00F, 32.00F, 0.16F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_intersection_12", .name = "Street Intersection 12 m (crosswalks)", .category = CreatorAssetCategory::Road,
         .model_path = "assets/verda/city/ground/intersection_12.glb", .thumbnail_path = "", .footprint = {12.00F, 12.00F, 0.10F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

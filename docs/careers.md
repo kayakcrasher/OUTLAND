@@ -185,10 +185,11 @@ The goal of the police questline is to get rid of the gangs. Once you serve, abo
 
 Verda's trucking is a tough grind, so the truckers stick together. They are Esperantistoj, working class, in every town on the island, and they hold out for a higher rate. The brotherhood is the third road, beside the gangs and the Policio.
 
-- **Joining:** talk to **Ivo Kovač**, the brotherhood's man at the diesel lane in Verda Transporto's yard (USE opens a menu: **Join** or **Talk**). Anyone but a cop or a gangster can join (they leave their side first, and a brother leaves the brotherhood before joining one). A brother's menu has **Talk**, **Call a strike**, **A contraband run** and **Leave the brotherhood** (which asks again before you go).
+- **Home: La Ringo.** The brotherhood's home is La Ringo Okcidento, the bar and grill on the ring road's west side, with its truck park full of brothers' rigs (marked on the map: LA FRATECO - LA RINGO). See [highways](highways.md#la-ringo-the-rings-bar-and-grills).
+- **Joining:** talk to **Ivo Kovač**, at La Ringo's door (USE opens a menu: **Join** or **Talk**). Anyone but a cop or a gangster can join (they leave their side first, and a brother leaves the brotherhood before joining one). A brother's menu has **Talk**, **Call a strike**, **A contraband run** and **Leave the brotherhood** (which asks again before you go).
 - **Ranks:** Novulo, Ŝoforo, Veterano, Ŝosea Lupo, Reĝo de la Vojo.
 - **The union rate:** every Verda Transporto load pays a brother 25% more than the company rate, plus every raise won on strike (up to +50% in all). Each load is also +3 respect. The pay message shows both rates.
-- **Truckers in every town:** a Kamionisto stands outside a pub (or the shop) in every town. They talk shop with a brother, and point anyone else to Ivo.
+- **Truckers in every town:** brothers stand about La Ringo's door and among its rigs, one is at the diesel lane in Verda Transporto's yard, and a Kamionisto stands outside a pub (or the shop) in every town. They talk shop with a brother, and point anyone else to Ivo at La Ringo.
 - **The CB (BACKUP / Z):** two brothers come from the nearest truck stop in a pickup to fight beside you, the same way an officer's backup does. They stay a few minutes, longer while there's shooting.
 - **The brotherhood's work is voluntary.** Nothing comes over the CB on its own: ask Ivo for a strike or a contraband run when you want one, and he sends it ("ON THE CB").
 
@@ -210,7 +211,7 @@ A strike only happens when you call it: talk to Ivo with nothing else on and pic
 
 A strike under way doesn't time out. Once you've won all five raises (+25%), Ivo says the company has given all it will.
 
-- **Your own rig:** a brother of rank Ŝoforo or higher is given a rig of his own, parked by the diesel lane (Ivo says so). It is saved with your cars and can haul any of the company's loads except cattle.
+- **Your own rig:** a brother of rank Ŝoforo or higher is given a rig of his own, parked in the last bay of La Ringo's truck park (Ivo says so). It is saved with your cars and can haul any of the company's loads except cattle.
 - **The depot's service bays:** Verda Transporto's shed is a drive-in garage. Drive in through either open door and stop in a bay for **VERDA TRANSPORTO · SERVO**: service (repair and fill up), engine (the diesels, see [trucking](trucking.md#engines-and-tanks)), **long-range tanks**, **armour plating** (steel 6000 kr, fortress 15 000 kr; the cab takes a half or a quarter of the damage, and fortress plating stops bullets reaching the driver), a **roof gun** (12 000 kr), paint and a bumper. Plating and the roof gun fit rigs and trucks only. Brothers pay 70%.
 - **The trailer:** the shed only takes a rig without its trailer. A rig with its trailer hitched is stopped at the doors ("drop it out here first"). With the rig stopped, J (touch: HITCH) drops the trailer where it stands. Back the rig up to it, lined up, and J again to hitch it. A load only counts with the trailer on.
 - **The roof gun:** at the wheel of a rig with one fitted, look to aim and fire (LMB / FIRE). It fires rifle rounds along your view.

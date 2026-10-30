@@ -2812,19 +2812,41 @@ void street_lighting(Kit& kit, world::VerdaRegion& region) {
 Lot roadhouse_plot(const world::highways::RestArea& rest) {
     return {rest.centre.x - 75, rest.centre.z - 75, rest.centre.x + 75, rest.centre.z + 75};
 }
-void ring_roadhouses(Kit& kit) {
+void ring_roadhouses(Kit& kit, world::VerdaRegion& region) {
     for (const auto& rest : world::highways::rest_areas()) {
         kit.release(roadhouse_plot(rest));
-        kit.put(city + "ground/parking_lot_68.glb", {rest.lot.x, world::terrain::TerrainHeight::sample(rest.lot.x, rest.lot.z), rest.lot.z}, rest.lot_yaw, false);
+        // The car park and, behind it, the truck park (18 drive-in bays for rigs): paving on the
+        // level pad, sunk so it stands 2 cm proud of it, and nothing to collide with - wheels and
+        // feet run on the ground (a solid slab shoved parked rigs about and jack-knifed them).
+        const auto paving = [](Vector3 p) { return Vector3{p.x, world::terrain::TerrainHeight::sample(p.x, p.z) - .13F, p.z}; };
+        kit.put(city + "ground/parking_lot_68.glb", paving(rest.lot), rest.lot_yaw, false, false);
+        kit.put(city + "ground/truck_park.glb", paving(rest.truck_park), rest.truck_park_yaw, false, false);
         modular_building(kit, rest.building, rest.building_yaw, 8, 4, rest.inside ? "brick" : "stuco", 1,
                          rest.inside ? 9101U : 9102U, world::BuildingPurpose::Pub);
         kit.put(city + "civic/diesel_island.glb", rest.diesel, rest.diesel_yaw);
         const Vector3 out{rest.centre.x / std::hypot(rest.centre.x, rest.centre.z) * (rest.inside ? -1.0F : 1.0F), 0,
                           rest.centre.z / std::hypot(rest.centre.x, rest.centre.z) * (rest.inside ? -1.0F : 1.0F)};
         const Vector3 along{-out.z, 0, out.x};
-        for (const float a : {-46.0F, -30.0F, 30.0F, 46.0F})
-            for (const float o : {54.0F, 126.0F})
-                kit.tree({rest.centre.x + along.x * a + out.x * (o - 70), 0, rest.centre.z + along.z * a + out.z * (o - 70)});
+        const auto at = [&](float a, float lateral) {   // `lateral` out from the ring's centre line
+            return Vector3{rest.centre.x + along.x * a + out.x * (lateral - 84), 0, rest.centre.z + along.z * a + out.z * (lateral - 84)};
+        };
+        for (const float a : {-40.0F, -20.0F, 0.0F, 20.0F, 40.0F}) kit.tree(at(a, 142));
+        for (const float a : {-58.0F, 58.0F})
+            for (const float lateral : {98.0F, 120.0F}) kit.tree(at(a, lateral));
+        // Rigs parked in the bays, nose out to the aisle: the brotherhood's home is full of them.
+        world::Settlement* near = nullptr;
+        float best = 1e9F;
+        for (auto& town : region.runtime_settlements()) {
+            const float d = std::hypot(town.center.x - rest.centre.x, town.center.z - rest.centre.z);
+            if (d < best) { best = d; near = &town; }
+        }
+        if (!near) continue;
+        const int rigs = rest.brotherhood ? 7 : 3;
+        // (Bay 17, the last, is kept for a new brother's own rig.)
+        static constexpr std::array<int, 7> bays{1, 3, 4, 7, 10, 12, 15};
+        for (int k = 0; k < rigs; ++k)
+            vehicle_marker(*near, "vehicle_spawn_semi_laringo_" + std::string(rest.name) + "_" + std::to_string(k + 1),
+                           rest.bay(bays[static_cast<std::size_t>(k)]), rest.bay_yaw());
     }
 }
 
@@ -2887,7 +2909,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     // Last, round everything built: street lights wherever a town's street is dark.
     street_lighting(kit, region);
     // After the lights (new pieces only): the ring's bar and grills.
-    ring_roadhouses(kit);
+    ring_roadhouses(kit, region);
     return kit.report;
 }
 }

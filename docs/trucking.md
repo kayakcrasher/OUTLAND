@@ -163,7 +163,7 @@ Code: `game::autos::engines` / `engine_choices` / `tanks` (`Autos.hpp`), `Diesel
 
 ## The truckers' brotherhood
 
-Verda Transporto's drivers aren't alone: La Frateco de Kamionistoj, the outlaw truckers' brotherhood, has a man at the yard's diesel lane (Ivo Kovač) and a trucker in every town. Members drive the same loads for the union rate, strike at the gate for raises and run contraband. [The strike](careers.md#the-strike) is explained step by step there. See [careers](careers.md#the-outlaw-truckers-la-frateco-de-kamionistoj).
+Verda Transporto's drivers aren't alone: La Frateco de Kamionistoj, the outlaw truckers' brotherhood, has its home at La Ringo, the bar and grill on the ring road's west side (Ivo Kovač is at the door), a man at the yard's diesel lane and a trucker in every town. Members drive the same loads for the union rate, strike at the gate for raises and run contraband. [The strike](careers.md#the-strike) is explained step by step there. See [careers](careers.md#the-outlaw-truckers-la-frateco-de-kamionistoj).
 
 ## Driving for Verda Transporto
 Talk to the boss (**USE** next to him). The first time, he offers work; **USE again** to sign

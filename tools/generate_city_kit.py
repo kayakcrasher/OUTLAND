@@ -2979,6 +2979,34 @@ def intersection(size):
     return b
 
 
+def truck_park():
+    """La Ringo's truck park: an 84 x 32 m concrete-kerbed apron 0.15 m up, an aisle along its -z
+    side (where it meets the car park), and 18 drive-in bays for big rigs (4.6 m wide, 20 m deep,
+    a tractor and its 16 m trailer) behind it, marked out in yellow, with a white stop bar at the
+    back of each bay. Origin: the apron's centre."""
+    b = Builder()
+    b.material("asphalt", asphalt(), 4, 4)
+    b.material("curb", flat((150, 148, 142), 4), 3, 1)
+    b.material("yellow", flat((226, 190, 40), 3), 1, 1)
+    b.material("white", flat((232, 230, 220), 3), 1, 1)
+    hx, hz, top = 42, 16, .15
+    b.box((-hx, 0, -hz), (hx, top, hz), {'+x': "curb", '-x': "curb", '+z': "curb", '-z': "curb", '-y': "curb", '+y': "asphalt"})
+    line = top + .01
+    bays, width, aisle = 18, 4.6, 12.0
+    z0, z1 = -hz + aisle, hz - .6
+    x0 = -bays * width / 2
+    for k in range(bays + 1):
+        x = x0 + k * width
+        b.box((x - .08, top, z0), (x + .08, line, z1), {'+y': "yellow"})
+    for k in range(bays):
+        x = x0 + k * width
+        b.box((x + .4, top, z1 - .5), (x + width - .4, line, z1 - .2), {'+y': "white"})
+    # The aisle's centre line, dashed.
+    for x in range(-40, 40, 6):
+        b.box((x, top, -hz + aisle / 2 - .07), (x + 3, line, -hz + aisle / 2 + .07), {'+y': "white"})
+    return b
+
+
 # ---------------------------------------------------------------- the kit
 def kit():
     pieces = []  # (relative path, builder, id, name, category, footprint w, d, h)
@@ -3047,6 +3075,7 @@ def kit():
     add("ground/sidewalk_block_68.glb", pad(68, "sidewalk"), "city_sidewalk_block_68", "Sidewalk Block 68 m", "BuildingPart", 68, 68, .15)
     add("ground/courthouse_square_68.glb", pad(68, "park"), "city_courthouse_square_68", "Courthouse Square Park 68 m", "BuildingPart", 68, 68, 4.6)
     add("ground/parking_lot_68.glb", pad(68, "parking"), "city_parking_lot_68", "Parking Lot 68 m", "BuildingPart", 68, 68, .15)
+    add("ground/truck_park.glb", truck_park(), "city_truck_park", "Truck Park - 18 drive-in rig bays (84 x 32 m)", "BuildingPart", 84, 32, .16)
     add("ground/intersection_12.glb", intersection(12), "city_intersection_12", "Street Intersection 12 m (crosswalks)", "Road", 12, 12, .1)
     add("ground/intersection_16.glb", intersection(16), "city_intersection_16", "Street Intersection 16 m (crosswalks)", "Road", 16, 16, .1)
     return pieces

@@ -149,6 +149,10 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
         if (place.kind == PlaceKind::Shop && near_model("civic/gas_station.glb")) text = {"MARNAFTO", "BENZINO · DIZELO · MANĜAĴOJ"};
         if (place.kind == PlaceKind::Garage && near_model("civic/mechanic_shop.glb")) text = {"MEĤANIKEJO", "RIPAROJ · MOTOROJ · PNEŬOJ · FARBO"};
         if (place.kind == PlaceKind::Office && near_model("civic/car_lot.glb")) text = {"AŬTOVENDEJO VERDA", "NOVAJ KAJ UZITAJ AŬTOJ"};
+        // The ring's bar and grills: La Ringo (the truckers' brotherhood's home at Okcidento).
+        if (place.kind == PlaceKind::Pub)
+            for (const auto& rest : world::highways::rest_areas())
+                if (flat(place.door, rest.building) < 20) text = {"LA RINGO", rest.brotherhood ? "TRINKEJO · KRADROSTEJO · LA FRATECO" : "TRINKEJO · KRADROSTEJO"};
         // The radio stations' studios.
         if (place.kind == PlaceKind::Office && near_model("civic/radio_station_popolko.glb")) text = {"VERDA POPOLKO 98.1", "RADIO · POPMUZIKO KAJ POLKO"};
         if (place.kind == PlaceKind::Office && near_model("civic/radio_station_kantrio.glb")) text = {"RADIO SOVAĜEJO 102.5", "KANTRIO · BLUGRASO"};
@@ -722,6 +726,12 @@ void rest_area_signs(const world::VerdaRegion& region, Signage& out) {
         pole.position = {at.x, world::terrain::TerrainHeight::sample(at.x, at.z) + pole.post + 1.4F, at.z};
         pole.yaw = yaw_of(facing(0));
         out.signs.push_back(std::move(pole));
+        // The brotherhood's home: its board by the bar's door, facing the car park.
+        if (rest.brotherhood) {
+            const Vector3 door = rest.front_door(0), step = rest.front_door(1), spot = rest.front_door(1.2F, -7);
+            add(spot, {step.x - door.x, 0, step.z - door.z},
+                {{"LA FRATECO", .62F}, {"DE KAMIONISTOJ", .42F}, {"NIA HEJMO · ĈIU ŜOFORO BONVENAS", .26F}}, 1.6F, Color{96, 52, 24, 255});
+        }
     }
 }
 
