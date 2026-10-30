@@ -5,15 +5,27 @@ its own voice and it follows what the engine is doing exactly.
 
 ## How it sounds
 
-- **The firings.** A four-stroke fires each cylinder once every two turns of the crank. Each
-  firing is a pulse of pressure into the exhaust, which rings at its own pitch (the body of the
-  note) and hisses at the top (the rasp). The note's pitch is the firing rate: a four at 3,000 rpm
-  fires 100 times a second, a V8 200.
+- **The firings.** A four-stroke fires each cylinder once every two turns of the crank. The note's
+  pitch is the firing rate: a four at 3,000 rpm fires 100 times a second, a V8 200.
+- **The exhaust, modelled the way it works.** Each firing blows a smooth pulse of hot gas into the
+  exhaust, as wide as the valve's blowdown (about a sixth of a turn of the crank), so the pulses
+  narrow and the note brightens as the revs climb. The pulses run down the pipe, which rings at
+  its own lengths: the header's reflection, and the tailpipe's open end sending the wave back
+  inverted (each vehicle has its own pipe: 1.4 m on the side-by-side, 5 m up a rig's stacks).
+  Then the muffler takes the edge off: a stock one a lot, a sport exhaust less, straight pipes
+  hardly at all. What you hear from the tailpipe is the change in the flow, so idling is soft and
+  deep and pulling hard is loud and sharp. Every firing is a little different from the last.
+- **The intake** roars under load, breathing with the firings; the old version's constant hiss is
+  gone (it carried half the sound above 2 kHz; now the weight is in the note).
 - **Lope.** A cross-plane V8 fires its banks unevenly; the muscle car and the trucks burble.
-- **Diesels clatter**; **turbos** whistle as they spool and blow off when you lift; the
+- **Diesels clatter and knock**, loudest idling; **turbos** whistle as they spool and blow off when you lift; the
   **supercharged V8** whines.
 - **Straight pipes** (and the racing engine) crackle and bang on the overrun.
 - **The rev limiter** cuts firings when you hold it at the redline.
+- **The big rigs' engine brake.** The semi and the flatbed have a compression-release brake: off
+  the gas at speed it barks, each firing a hard sharp blast out of the stacks (louder than pulling,
+  harder still on the brake pedal). The semi, the flatbed and the bus **sigh** as their air brakes
+  set when they come to a stop.
 - **The road:** wind rising with speed, tyre rumble, and **tyre squeal** when the car slides
   sideways, on the handbrake at speed, or spinning its wheels pulling away in something big.
 

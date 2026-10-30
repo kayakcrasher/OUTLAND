@@ -135,6 +135,8 @@ void VehicleAudio::update(const VehicleSystem &system, const world::VerdaRegion 
         p.load = input.boost ? 1.0F : gas;
         p.speed = v->speed;
         p.limiter = gas > .5F && rpm >= mine.synth.profile().redline * .985F;
+        // The pedal the other way is the brake (a rig's engine brake bites harder with it).
+        p.brake = gas <= 0 && std::abs(v->speed) > .5F && input.throttle != 0 ? std::abs(input.throttle) : input.brake ? 1.0F : 0.0F;
         // Tyres: sliding sideways, the handbrake at speed, wheelspin pulling away in something big.
         float squeal = std::clamp((std::abs(v->slip) - 1.2F) / 3.0F, 0.0F, 1.0F);
         if (input.brake && std::abs(v->speed) > 4) squeal = std::max(squeal, .7F);
@@ -178,6 +180,7 @@ void VehicleAudio::update(const VehicleSystem &system, const world::VerdaRegion 
         p.rpm = rpm;
         p.load = gas;
         p.speed = near->speed;
+        p.brake = input && input->throttle < 0 ? std::min(1.0F, -input->throttle) : 0.0F;
         p.squeal = std::clamp((std::abs(near->slip) - 1.5F) / 3.0F, 0.0F, 1.0F);
         const float fade = 1 - best / hearing;
         feed(passing, p, .55F * fade * fade * volume_);

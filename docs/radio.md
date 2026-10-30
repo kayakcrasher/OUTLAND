@@ -24,7 +24,15 @@ its sound) between them. Every song is an original composition:
 
 ## The voices
 
-Between the songs the stations talk (`tools/generate_radio_voice.py`, with espeak-ng):
+Between the songs the stations talk (`tools/generate_radio_voice.py`). The voices are neural
+([Piper](https://github.com/rhasspy/piper)), not the old robot voice: espeak-ng works out how the
+Esperanto sounds and a natural voice speaks it. Esperanto sounds much like Italian, Polish and Czech,
+so the announcers are Italian, Polish and Czech voices: Verda Popolko's is Italian (Paola), Espera
+Roko's a deep Polish voice (Darkman) with a touch of grit, the newsreader Czech (Jirka). Radio
+Sovaĝejo's is American (Joe). The broadcast processing is light, so every word stays clear. (Checked
+with an Esperanto speech recogniser: it now gets most of the words, against well under half before.)
+The voice models download once into `~/.cache/outland/piper` when the tool runs; only the finished
+clips are kept in the repository.
 
 - **Spoken idents**, in Esperanto, over the station's jingle - a different one for the morning
   (5-11), the day, the evening (17-22) and the night: "Bonan matenon, Verdo! Vi aŭskultas Verda

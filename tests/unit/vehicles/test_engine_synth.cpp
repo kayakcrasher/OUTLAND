@@ -66,6 +66,32 @@ int main() {
         for (int i = 0; i < 4; ++i) synth.render(buffer.data(), rate);
         check(synth.pops() > 0, "straight pipes crackle on the overrun");
     }
+    // Idling is soft, pulling hard loud; a big rig's engine brake barks off the gas at speed, and
+    // its air brakes sigh when it stops.
+    {
+        const auto semi = engine_profile("semi");
+        check(semi.jake && semi.air_brakes && !engine_profile("hatchback").jake, "a big rig has an engine brake and air brakes");
+        EngineSynth idle(rate), hard(rate), coast(rate), barking(rate);
+        for (auto* s : {&idle, &hard, &coast, &barking}) s->set_profile(semi);
+        auto car = engine_profile("hatchback");
+        car.jake = false;
+        coast.set_profile(car);
+        idle.set({true, semi.idle, 0, 0, 0, 1, false});
+        hard.set({true, semi.redline * .9F, 1, 25, 0, 1, false});
+        barking.set({true, semi.redline * .75F, 0, 25, 0, 1, false, 1});
+        coast.set({true, car.redline * .6F, 0, 25, 0, 1, false});
+        std::vector<float> a(rate), b(rate), c(rate), e(rate);
+        for (int i = 0; i < 2; ++i) { idle.render(a.data(), rate); hard.render(b.data(), rate); barking.render(c.data(), rate); coast.render(e.data(), rate); }
+        check(rms(b) > rms(a) * 2.5, "a rig pulling hard is far louder than idling: " + std::to_string(rms(b)) + " / " + std::to_string(rms(a)));
+        check(rms(a) > .02, "you can hear a rig idle");
+        check(barking.jake() > .9F && rms(c) > rms(b), "the engine brake barks, louder than pulling");
+        check(rms(e) < rms(c) * .6, "a car coasting is nothing like it");
+        EngineSynth stopping(rate);
+        stopping.set_profile(semi);
+        std::vector<float> chunk(rate / 10);
+        for (float v = 12; v >= 0; v -= 1) { stopping.set({true, semi.idle, 0, v, 0, 1, false, 1}); stopping.render(chunk.data(), rate / 10); }
+        check(stopping.sighs() == 1, "the air brakes sigh once as it stops");
+    }
     // The gearbox: pulling away the revs rise, it shifts up through the gears as the speed climbs,
     // and comes back down as it slows; the revs never pass the redline.
     {

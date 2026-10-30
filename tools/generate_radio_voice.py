@@ -10,12 +10,18 @@ on Radio Sovaĝejo).
 
 Everything fits the radio's ident slot (VOICE_SLOT seconds), so the clock-driven schedule holds.
 
+The voices are neural (Piper, https://github.com/rhasspy/piper): espeak-ng turns the Esperanto into
+its sounds and a natural voice speaks them. Esperanto's sounds are close to Italian, Polish and
+Czech, so the announcers are Italian, Polish and Czech voices; the drawl is an American voice.
+The voice models are downloaded once into ~/.cache/outland/piper (not kept in the repository).
+
 Writes assets/audio/radio/voice/*.ogg and include/outland/game/radio/RadioVoices.hpp.
-Needs espeak-ng (with the Esperanto voice), numpy, scipy and ffmpeg (libvorbis).
+Needs piper-tts (pip install piper-tts), numpy, scipy and ffmpeg (libvorbis).
 """
 import argparse
 import subprocess
 import tempfile
+import urllib.request
 import wave
 from pathlib import Path
 
@@ -29,21 +35,22 @@ RATE = 32000
 VOICE_SLOT = 7.5
 
 # The stations (in RadioCatalog's order): how their announcer sounds, and what they say.
-# voice: espeak-ng voice; speed (words a minute), pitch (0-99); drawl: read in the Southern voice.
+# voice: Piper voice; pace: how slowly it speaks (1 = the voice's own pace); drawl: read in the
+# Southern voice.
 STATIONS = [
-    {"key": "popolko", "voice": "eo+f3", "speed": 165, "pitch": 62, "drawl": False, "lines": {
+    {"key": "popolko", "voice": "it_IT-paola-medium", "pace": 1.0, "drawl": False, "lines": {
         "morning": "Bonan matenon, Verdo! Vi aŭskultas Verda Popolko. Vekiĝu kaj dancu!",
         "day": "Vi aŭskultas Verda Popolko, naŭdek ok komo unu. Polko por la tuta insulo!",
         "evening": "Bonan vesperon! Vi aŭskultas Verda Popolko, naŭdek ok komo unu.",
         "night": "Ankoraŭ maldorma? Vi aŭskultas Verda Popolko, la tutan nokton.",
     }},
-    {"key": "kantrio", "voice": "en-us+m3", "speed": 112, "pitch": 30, "drawl": True, "lines": {
+    {"key": "kantrio", "voice": "en_US-joe-medium", "pace": 1.15, "drawl": True, "lines": {
         "morning": "Bonan matenon, amikoj! Vi aŭskultas Radion Sovaĝejo.",
         "day": "Vi aŭskultas Radion Sovaĝejo, cent du komo kvin. Kantrio el la arbaro.",
         "evening": "Bonan vesperon el la arbaro. Vi aŭskultas Radion Sovaĝejo.",
         "night": "Estas malfrue, amikoj. Vi aŭskultas Radion Sovaĝejo.",
     }},
-    {"key": "roko", "voice": "eo+m3", "speed": 172, "pitch": 26, "drawl": False, "grit": True, "lines": {
+    {"key": "roko", "voice": "pl_PL-darkman-medium", "pace": .95, "drawl": False, "grit": True, "lines": {
         "morning": "Vekiĝu, Espera! Vi aŭskultas Espera Roko. Laŭte!",
         "day": "Vi aŭskultas Espera Roko, cent kvin komo naŭ. Laŭte!",
         "evening": "Bonan vesperon, rokuloj! Vi aŭskultas Espera Roko.",
@@ -53,8 +60,11 @@ STATIONS = [
 OCCASIONS = ["morning", "day", "evening", "night"]
 # La Verda Basballigo's clubs (game::sports::teams, in order), as the announcers say them.
 TEAMS = ["Verda Siti", "Espera", "Porto Luma", "Suda Haveno", "Roka"]
-NEWSREADER = {"voice": "eo+m1", "speed": 160, "pitch": 44, "drawl": False}
-DRAWL_NEWS = {"voice": "en-us+m3", "speed": 112, "pitch": 30, "drawl": True}
+NEWSREADER = {"voice": "cs_CZ-jirka-medium", "pace": 1.0, "drawl": False}
+DRAWL_NEWS = {"voice": "en_US-joe-medium", "pace": 1.15, "drawl": True}
+VOICE_CACHE = Path.home() / ".cache" / "outland" / "piper"
+VOICE_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
+_voices = {}
 
 
 def drawl(text):
@@ -91,30 +101,49 @@ def drawl(text):
     return " ".join(out)
 
 
-def speak(text, voice, speed, pitch, is_drawl):
+def piper_voice(name):
+    """A Piper voice, downloaded the first time."""
+    if name not in _voices:
+        from piper import PiperVoice
+        lang, rest = name.split("-", 1)
+        speaker, quality = rest.rsplit("-", 1)
+        VOICE_CACHE.mkdir(parents=True, exist_ok=True)
+        for ext in ("onnx", "onnx.json"):
+            path = VOICE_CACHE / f"{name}.{ext}"
+            if not path.exists():
+                url = f"{VOICE_URL}/{lang.split('_')[0]}/{lang}/{speaker}/{quality}/{name}.{ext}"
+                print("downloading", url)
+                urllib.request.urlretrieve(url, path)
+        _voices[name] = PiperVoice.load(str(VOICE_CACHE / f"{name}.onnx"))
+    return _voices[name]
+
+
+def speak(text, voice, pace, is_drawl):
+    """The line in a neural voice: Esperanto's sounds (or, for the drawl, the American reading)."""
+    from piper import SynthesisConfig
+    v = piper_voice(voice)
     if is_drawl:
         text = drawl(text)
-    with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "v.wav"
-        args = ["espeak-ng", "-v", voice, "-s", str(speed), "-p", str(pitch), "-w", str(path)]
-        if is_drawl:
-            args += ["-g", "3"]   # a beat between the words
-        subprocess.run(args + [text], check=True)
-        with wave.open(str(path)) as w:
-            rate = w.getframerate()
-            x = np.frombuffer(w.readframes(w.getnframes()), dtype="<i2").astype(np.float64) / 32768
-    x = signal.resample_poly(x, RATE, rate)
-    # Trim the silence espeak leaves either side.
-    loud = np.nonzero(np.abs(x) > .01)[0]
-    return x[loud[0]:loud[-1] + 1] if len(loud) else x
+    v.config.espeak_voice = "en-us" if is_drawl else "eo"
+    pieces = []
+    for chunk in v.synthesize(text, SynthesisConfig(length_scale=pace, noise_scale=.6, noise_w_scale=.7)):
+        x = chunk.audio_float_array.astype(np.float64)
+        loud = np.nonzero(np.abs(x) > .01)[0]
+        if len(loud):
+            pieces += [x[loud[0]:loud[-1] + 1], np.zeros(int(v.config.sample_rate * .28))]
+    x = np.concatenate(pieces[:-1]) if pieces else np.zeros(1)
+    return signal.resample_poly(x, RATE, v.config.sample_rate)
 
 
 def on_air(x, grit=False):
-    """A broadcast voice: the lows and highs cut, squeezed (a rock jock: pushed into grit)."""
-    sos = signal.butter(2, [170, 5200], btype="bandpass", fs=RATE, output="sos")
+    """A broadcast voice: the rumble cut, a little presence, gently compressed (a rock jock: a touch
+    of grit). Kept clean enough to understand every word."""
+    sos = signal.butter(2, [90, 9000], btype="bandpass", fs=RATE, output="sos")
     x = signal.sosfilt(sos, x)
+    presence = signal.sosfilt(signal.butter(2, [2000, 5000], btype="bandpass", fs=RATE, output="sos"), x)
+    x = x + .35 * presence
     x = x / (np.max(np.abs(x)) + 1e-9)
-    drive = 4.0 if grit else 2.2
+    drive = 1.8 if grit else 1.2
     return np.tanh(drive * x) / np.tanh(drive)
 
 
@@ -149,13 +178,13 @@ def mix(voice, bed=None, start=.9):
 
 
 def fit(text, spec, start, grit=False):
-    """The voice, sped up a little if it would run past the slot."""
-    speed = spec["speed"]
+    """The voice, a little quicker if it would run past the slot."""
+    pace = spec["pace"]
     for _ in range(8):
-        voice = on_air(speak(text, spec["voice"], speed, spec["pitch"], spec["drawl"]), grit)
+        voice = on_air(speak(text, spec["voice"], pace, spec["drawl"]), grit)
         if start + len(voice) / RATE <= VOICE_SLOT - .45:
             return voice
-        speed = int(speed * 1.1)
+        pace *= .92
     raise SystemExit(f"too long for the slot: {text}")
 
 

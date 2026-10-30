@@ -4,12 +4,17 @@
 #include <string_view>
 
 // Engine sound, synthesised: no recordings, so every vehicle gets its own voice and it follows
-// the engine exactly. A four-stroke fires each cylinder once every two turns of the crank; each
-// firing is a pulse of pressure into the exhaust, which rings at its own pitch (the body of the
-// note) and hisses at the top (the rasp). The pitch of the note is the firing rate, so it follows
-// the revs; the revs follow the gearbox (an automatic: it shifts up as the revs climb and down as
-// they fall). Uneven firing makes a V8's lope; diesels clatter; turbos whistle and blow off;
-// straight pipes pop on the overrun. Wind, road rumble and tyre squeal ride on top.
+// the engine exactly. A four-stroke fires each cylinder once every two turns of the crank. Each
+// firing blows a pulse of hot gas into the exhaust: a smooth pressure pulse as wide as the
+// exhaust valve's blowdown (about a sixth of a turn of the crank, so it narrows as the revs rise
+// and the note brightens). The pulses run down the pipe, which rings at its own lengths (the
+// header and the tailpipe reflect them back), and out through the muffler, which takes the edge
+// off (less for a sport exhaust, hardly at all for straight pipes). The intake roars under load;
+// every firing differs a little. The pitch of the note is the firing rate, so it follows the revs;
+// the revs follow the gearbox (an automatic: it shifts up as the revs climb and down as they
+// fall). Uneven firing makes a V8's lope; diesels clatter and knock; turbos whistle and blow off;
+// straight pipes pop on the overrun; a big rig's engine brake barks and its air brakes sigh when
+// it stops. Wind, road rumble and tyre squeal ride on top.
 namespace outland::game::vehicles {
 
 struct EngineProfile {
@@ -25,6 +30,10 @@ struct EngineProfile {
     float whine{0};           // a supercharger's whine, 0..1
     float gain{1};            // how loud (the exhaust)
     bool pops{false};         // crackles and bangs on the overrun
+    float pipe{2.6F};         // metres of exhaust from the manifold to the tailpipe (the pipe's ring)
+    float muffler{900};       // Hz: where the muffler starts taking the edge off
+    bool jake{false};         // an engine (compression-release) brake: barks on the overrun
+    bool air_brakes{false};   // sighs when it comes to a stop
 };
 
 // The voice for a vehicle type (game::vehicles definition id) with its fitted engine and exhaust
@@ -56,6 +65,7 @@ public:
         float squeal{0};      // 0..1: tyres sliding
         float volume{1};
         bool limiter{false};  // bouncing off the rev limiter
+        float brake{0};       // 0..1: on the brakes (a big rig's engine brake bites harder)
     };
     explicit EngineSynth(int sample_rate = 22050) : rate_(static_cast<float>(sample_rate)) {}
     void set_profile(const EngineProfile& profile);
@@ -66,8 +76,11 @@ public:
     void render(short* out, int frames);
     [[nodiscard]] std::uint64_t firings() const { return firings_; }
     [[nodiscard]] int pops() const { return pops_; }
+    [[nodiscard]] float jake() const { return jake_; }      // how hard the engine brake is barking, 0..1
+    [[nodiscard]] int sighs() const { return sighs_; }      // air brake releases so far
 
 private:
+    struct Pulse { float at{0}, length{1}, strength{0}; };
     struct Band {
         float b0{0}, a1{0}, a2{0}, x1{0}, x2{0}, y1{0}, y2{0};
         void tune(float hz, float q, float rate);
@@ -80,10 +93,14 @@ private:
     std::array<float, 12> angle_{}, punch_{};   // each cylinder's firing point in the cycle, and its strength
     float phase_{0}, kick_{0}, burst_{0}, clatter_{0}, lowpass_{0}, spool_{0}, blow_{0}, whistle_{0}, whine_phase_{0};
     float rumble_{0}, wind_{0}, last_load_{0}, overrun_{0}, gain_{0};
-    int next_{0}, skip_{0}, pops_{0};
+    std::array<Pulse, 16> pulses_{};
+    std::array<float, 2048> tail_{}, header_{};          // the pipe's travelling waves
+    int tail_at_{0}, header_at_{0};
+    float muffle1_{0}, muffle2_{0}, dc_in_{0}, dc_out_{0}, intake_{0}, jake_{0}, sigh_{0}, rolling_{0}, held_{0};
+    int next_{0}, skip_{0}, pops_{0}, sighs_{0};
     std::uint64_t firings_{0};
     std::uint32_t seed_{0x9e3779b9U};
-    Band body_, rasp_, crack_, squeal_, hiss_;
+    Band body_, rasp_, crack_, squeal_, hiss_, roar_, air_;
     int retune_{0};
 };
 
