@@ -25,6 +25,7 @@ void LifeSimulation::bind_vehicles(vehicles::VehicleSystem* vehicles, world::Ver
         for (const auto& car : island_.cars) vehicles_->clear_autopilot(car.vehicle);
     vehicles_ = vehicles && region ? vehicles : nullptr;
     region_ = vehicles_ ? region : nullptr;
+    signals_ = region_ ? world::roads::find_signals(*region_) : std::vector<world::roads::Signal>{};
     cars_.assign(island_.cars.size(), {});
     for (std::size_t i = 0; i < cars_.size(); ++i) {cars_[i].position = island_.cars[i].spot; cars_[i].yaw = island_.cars[i].yaw;}
 }
@@ -294,6 +295,17 @@ void LifeSimulation::drive(int index, float dt, Vector3 player, const characters
             give_way = other.id < info.vehicle;
         }
     }
+    // The traffic signal ahead: stop at the line on red, and on amber when there's room to. Held
+    // at a light, nobody tries to go round the queue.
+    bool at_light = false;
+    world::roads::SignalAhead light;
+    if (!signals_.empty() && world::roads::signal_ahead(signals_, runtime.position, forward, signal_clock_, 60, light)) {
+        if (world::roads::must_stop(light, speed)) {
+            const float room = std::max(0.0F, light.distance - 2.5F);   // the front bumper on the line
+            limit = std::min(limit, room < .4F ? 0.0F : std::sqrt(2 * 3.0F * room));
+        }
+        at_light = light.aspect != world::roads::Aspect::Green;
+    }
     const bool following = gap < 40;
     if (following) {
         // Two seconds' headway (five metres standing), closing gently on a slower car.
@@ -301,7 +313,7 @@ void LifeSimulation::drive(int index, float dt, Vector3 player, const characters
         limit = std::min(limit, gap < 5.5F ? 0.0F : std::max(0.0F, lead_speed + (gap - safe) * .8F));
     }
     // Something standing in our lane: go round it when the way is clear (sooner for a parked car).
-    if (car.passing <= 0 && following && lead_standing && gap < 16 && !blocked && other_lane_clear && remaining > gap + 15 &&
+    if (car.passing <= 0 && !at_light && following && lead_standing && gap < 16 && !blocked && other_lane_clear && remaining > gap + 15 &&
         car.waiting > (lead_parked ? 2.5F : 10.0F))
         car.passing = 3.0F + (gap + 10) / 4.0F;
     if (car.passing > 0 && !other_lane_clear && shift > 0) limit = std::min(limit, 2.0F);
@@ -310,10 +322,10 @@ void LifeSimulation::drive(int index, float dt, Vector3 player, const characters
     // takes its turn by its id, so no ring of cars waits for ever.
     const bool stopped_for_car = following && limit < .5F;
     const float turn = 7.0F + static_cast<float>(std::hash<std::string>{}(info.vehicle) % 50) * .1F;
-    const bool priority = stopped_for_car && !blocked && gap > 3.5F && ((!give_way && car.waiting > 3) || car.waiting > turn);
+    const bool priority = stopped_for_car && !at_light && !blocked && gap > 3.5F && ((!give_way && car.waiting > 3) || car.waiting > turn);
     if (priority) {limit = 2.5F; car.waiting += dt;}
     else if (blocked) {limit = 0; car.waiting += dt;}
-    else if (stopped_for_car) car.waiting += dt;
+    else if (stopped_for_car && !at_light) car.waiting += dt;
     else car.waiting = 0;
     // Wedged against something: back off and try again; after a few tries, park and walk.
     if (car.reverse > 0) {
@@ -322,7 +334,7 @@ void LifeSimulation::drive(int index, float dt, Vector3 player, const characters
         vehicles_->set_autopilot(info.vehicle, input);
         return;
     }
-    if (!blocked && limit > 1 && std::abs(speed) < .25F) car.stuck += dt;
+    if (!blocked && !at_light && limit > 1 && std::abs(speed) < .25F) car.stuck += dt;
     else car.stuck = 0;
     if (car.stuck > 2) {
         car.stuck = 0; car.reverse = 1.4F;

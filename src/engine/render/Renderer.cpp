@@ -98,6 +98,7 @@
 #include "outland/world/physics/MeshCollision.hpp"
 
 #include "outland/game/culture/SignRenderer.hpp"
+#include "outland/engine/render/SignalRender.hpp"
 #include "outland/game/culture/Faith.hpp"
 #include "outland/game/culture/Gossip.hpp"
 #include "outland/game/racing/StreetRace.hpp"
@@ -7805,6 +7806,8 @@ void Renderer::run() {
         }
         double sub_t3=GetTime();
         sign_renderer.draw(camera.position,camera.target,static_cast<float>(GetTime()));
+        // The traffic signals' lamps, on island traffic's signal clock.
+        render::draw_signals(island_life.signals(),island_life.signal_clock(),camera.position);
         double sub_t4=GetTime();
         static double sub_avg[4]{};
         for(int k=0;k<4;++k) {const double t[]{sub_t0,sub_t1,sub_t2,sub_t3,sub_t4};sub_avg[k]=sub_avg[k]*.9+(t[k+1]-t[k])*1000*.1;}

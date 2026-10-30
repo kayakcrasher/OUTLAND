@@ -3,6 +3,7 @@
 #include <cstdint>
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/world/roads/RoadGraph.hpp"
+#include "outland/world/roads/Signals.hpp"
 #include <string_view>
 
 namespace outland::game::sound { class SoundBus; }
@@ -109,12 +110,17 @@ public:
     const world::roads::RoadGraph& roads() const {return roads_;}
     int car_of(std::string_view vehicle) const;           // Island::cars index, or -1
     bool car_moving(std::string_view vehicle) const;      // a resident is driving it
+    // The traffic signals island traffic obeys, and their clock (seconds of play).
+    const std::vector<world::roads::Signal>& signals() const {return signals_;}
+    double signal_clock() const {return signal_clock_;}
     struct Taken {int owner{-1};bool occupied{false};Vector3 where{};};
     // The player took this vehicle. It leaves island life; a driver inside is pulled out.
     Taken take_car(std::string_view vehicle);
 private:
     vehicles::VehicleSystem* vehicles_{nullptr};
     world::VerdaRegion* region_{nullptr};
+    std::vector<world::roads::Signal> signals_;
+    double signal_clock_{0};
     world::roads::RoadGraph roads_;
     std::vector<CarState> cars_;
     float traffic_clock_{0};

@@ -414,6 +414,7 @@ void LifeSimulation::update(float real_dt,Vector3 player,characters::NpcSystem& 
         !std::isfinite(player.x) || !std::isfinite(player.z)) return;
     real_dt=std::min(real_dt,.25F);
     clock_.advance(real_dt,config_.time_scale);
+    signal_clock_+=real_dt;
     // Round-robin re-planning: the whole island is revisited every replan_period seconds.
     const auto count=island_.residents.size();
     replan_budget_+=static_cast<float>(count)*real_dt/config_.replan_period;

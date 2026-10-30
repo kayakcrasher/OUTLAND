@@ -237,7 +237,9 @@ add_library(
     src/world/navigation/NavGrid.cpp
     src/world/roads/RoadGraph.cpp
     src/world/roads/HighwayNetwork.cpp
+    src/world/roads/Signals.cpp
     src/engine/render/HighwayRender.cpp
+    src/engine/render/SignalRender.cpp
     src/net/LanSocket.cpp
     src/net/LanProtocol.cpp
     src/net/LanSession.cpp
@@ -858,6 +860,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_interchange_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_interchange_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_interchange_tests COMMAND outland_interchange_tests)
+    add_executable(outland_signal_tests tests/integration/world/test_signals.cpp)
+    target_link_libraries(outland_signal_tests PRIVATE outland_render)
+    target_compile_options(outland_signal_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_signal_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_signal_tests COMMAND outland_signal_tests)
     add_executable(outland_clothing_and_furniture_tests tests/integration/interiors/test_clothing_and_furniture.cpp)
     target_link_libraries(outland_clothing_and_furniture_tests PRIVATE outland_render)
     target_compile_options(outland_clothing_and_furniture_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

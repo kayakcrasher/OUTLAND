@@ -105,6 +105,25 @@ Two roadhouses stand beside the ring (`highways::rest_areas()`), each serving on
 - **In the kit.** Their ground is reserved at the start of the world build; the buildings
   themselves are built last, so every older piece keeps its id.
 
+## Traffic signals that work
+
+Every signalled crossing (`world/roads/Signals`): downtown Verda City's nine and the four in the
+middle of each of the other towns, 25 in all. Each runs a real signal cycle,
+50 s round:
+- **Phases.** Green, then 3 s of amber, then 2 s of all-red so the junction clears before the
+  other road goes. Never green both ways at once.
+- **Priority.** On the boulevards the main road gets 26 s of green to the side street's 14 s;
+  where the two boulevards cross, it's 20 s each.
+- **Green wave.** The lights along each boulevard are offset, so a car at about 36 km/h meets one
+  green after another.
+- **Drivers obey them.** Island traffic stops with its front bumper on the line on red. On amber
+  it stops only if there's room to stop at a comfortable rate; otherwise it goes on through. A
+  car held at a light doesn't try to go round the queue.
+- **You can see them.** Each pole's head lights its lamp, and a second head on the pole faces the
+  cross street, so every approach has a light.
+
+Tests: `tests/integration/world/test_signals.cpp`.
+
 ## Cross-section
 From the centre line outwards on each side:
 
