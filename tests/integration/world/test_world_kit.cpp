@@ -350,6 +350,8 @@ int main() {
         else if (road.start.z == -84 && road.end.z == -84 && road.start.x == -476 && road.end.x < world::layout::freight_x1) ++freight_roads;
         // Verda Transporto's freight yards off the spokes (a 16 m road in, a 14 m loop), far out of town.
         else if (std::hypot(road.start.x, road.start.z) > 1000 && (road.width == 16 || road.width == 14)) continue;
+        // The ring's roadhouses (La Ringo): a 10 m aisle through the lot between their slip roads.
+        else if (road.width == 10 && std::abs(std::hypot(road.start.x, road.start.z) - 1500) < 120) continue;
         // Verda City's ballpark: an 8 m road from its gate to the street.
         else if (road.width == 8 && std::hypot(road.start.x - world::ballpark::parks[0].centre.x, road.start.z - world::ballpark::parks[0].centre.z) < 90) continue;
         else check(world::roads::turnaround_road(road.width), "a capital road that is neither street, highway nor bus turnaround");

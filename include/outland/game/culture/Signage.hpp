@@ -12,8 +12,9 @@ namespace outland::game::life { struct Island; }
 // SignRenderer draws it.
 namespace outland::game::culture {
 
-// Homemade: hand-painted boards along Ferarbaro's back roads.
-enum class SignKind : std::uint8_t { Shopfront, TownEntry, Distance, Street, BusStop, Notice, Homemade };
+// Homemade: hand-painted boards along Ferarbaro's back roads. Highway: the big green boards on the
+// ring road and at its interchanges (exits, distances, the way onto the ring).
+enum class SignKind : std::uint8_t { Shopfront, TownEntry, Distance, Street, BusStop, Notice, Homemade, Highway };
 
 struct SignLine {
     std::string text;   // UTF-8 Esperanto

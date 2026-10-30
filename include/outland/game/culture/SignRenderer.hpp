@@ -45,7 +45,9 @@ private:
     Texture2D flag_{}, apelacio_{}, verda_mano_{};
     bool loaded_{false};
     mutable engine::GeometryRecorder recorder_;
-    mutable engine::RecordedGeometry baked_;
+    // In chunks of signs, each well inside one recording (a recording that overflows loses what was
+    // drawn before the overflow without knowing it).
+    mutable std::vector<engine::RecordedGeometry> baked_;
     mutable bool baked_ready_{false}, bake_failed_{false};
 };
 }

@@ -201,6 +201,7 @@ float TerrainHeight::pad_weight(
     pad(c.x,c.z,ranches::stockyard_pad_radius,40);
     pad(layout::prison_center.x,layout::prison_center.z,layout::prison_flat_radius,45);
     for (const auto& yard:layout::freight_yards) pad(yard.centre.x,yard.centre.z,layout::freight_yard_flat_radius,layout::freight_yard_blend);
+    for (const auto& rest:highways::rest_areas()) pad(rest.centre.x,rest.centre.z,highways::rest_area_flat,highways::rest_area_blend);
     for (const auto& park:ballpark::parks) pad(park.centre.x,park.centre.z,ballpark::flat_radius,ballpark::flat_blend);
     return std::clamp(weight,0.0F,1.0F);
 }
@@ -343,6 +344,8 @@ float TerrainHeight::unpaved(
         level_pad(layout::prison_center,layout::prison_flat_radius,45);   // the state prison
         for (const auto& yard:layout::freight_yards)                      // the freight yards
             level_pad(yard.centre,layout::freight_yard_flat_radius,layout::freight_yard_blend);
+        for (const auto& rest:highways::rest_areas())                     // the ring's bar and grills
+            level_pad(rest.centre,highways::rest_area_flat,highways::rest_area_blend);
         // The ballparks: level with their towns' pads where they meet (Verda City's stands on its own).
         for (const auto& park:ballpark::parks) {
             const Vector3* town=nullptr;

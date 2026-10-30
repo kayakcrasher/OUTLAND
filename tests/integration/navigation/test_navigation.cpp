@@ -11,6 +11,7 @@
 #include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <raymath.h>
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
@@ -108,7 +109,8 @@ int main() {
 
     // ---- Around a building: the straight line is blocked, the path goes round ----
     {
-        const auto& b=kit.enterable.front();
+        // (One in Verda City: the ring's roadhouses come first in the kit.)
+        const auto& b=*std::find_if(kit.enterable.begin(),kit.enterable.end(),[](const auto& e){return std::hypot(e.origin.x,e.origin.z)<1000;});
         auto front=world_of(b,0,-b.depth*.5F-5);front.y=WorldCollision::ground_height(front,b.origin.y+.5F,region);
         auto back=world_of(b,0,b.depth*.5F+5);back.y=WorldCollision::ground_height(back,b.origin.y+.5F,region);
         NavPath p;

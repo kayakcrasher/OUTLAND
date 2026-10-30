@@ -2,6 +2,7 @@
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <algorithm>
 #include <array>
+#include <tuple>
 #include <cmath>
 #include <cstddef>
 
@@ -406,6 +407,45 @@ const std::vector<Interchange>& interchanges() {
         const auto bearing = [](const Interchange& x) { const float b = std::atan2(x.at.x, -x.at.z); return b < 0 ? b + 2 * pi : b; };
         std::sort(out.begin(), out.end(), [&](const Interchange& p, const Interchange& q) { return bearing(p) < bearing(q); });
         for (std::size_t i = 0; i < out.size(); ++i) out[i].number = static_cast<int>(i) + 1;
+        return out;
+    }();
+    return all;
+}
+
+const std::vector<RestArea>& rest_areas() {
+    static const std::vector<RestArea> all = [] {
+        std::vector<RestArea> out;
+        // Clear stretches of the ring, well away from the interchanges and the hamlets' roads.
+        for (const auto& [name, degrees, inside] : {std::tuple<std::string_view, float, bool>{"Okcidento", 207, false}, {"Oriento", 24, true}}) {
+            RestArea r;
+            r.name = name; r.inside = inside;
+            r.bearing = degrees * pi / 180;
+            r.ring_s = r.bearing * ring_radius;
+            // (s along the ring the way its points run, lateral out from its centre line.)
+            const float side = inside ? -1.0F : 1.0F, way = inside ? 1.0F : -1.0F;
+            const auto point = [&](float s_, float lateral) {
+                const float b = r.bearing + s_ / ring_radius, radius = ring_radius + side * lateral;
+                return Vector3{radius * std::cos(b), 0, radius * std::sin(b)};
+            };
+            const Vector3 out_dir{std::cos(r.bearing) * side, 0, std::sin(r.bearing) * side};   // away from the ring
+            const float tangent_yaw = std::atan2(-std::sin(r.bearing), std::cos(r.bearing)) * 180 / pi;
+            r.centre = point(0, 70);
+            r.lot = point(0, 66);
+            r.lot_yaw = tangent_yaw;
+            r.building = point(0, 112);
+            r.building_yaw = std::atan2(-out_dir.x, -out_dir.z) * 180 / pi;   // its front (-z) toward the ring
+            r.diesel = point(way * 26, 48);
+            r.diesel_yaw = tangent_yaw;
+            // Off before it (upstream: traffic runs `way`), on after it; the same lead-in clear of
+            // the median as an interchange's slip roads.
+            const float laterals[]{0, 4.6F, slow_lane, 18, 32, 38};
+            const float alongs[]{150, 144, 128, 90, 60, 40};
+            for (int k = 0; k < 6; ++k) r.off.push_back(point(-way * alongs[k], laterals[k]));
+            for (int k = 5; k >= 0; --k) r.on.push_back(point(way * alongs[k], laterals[k]));
+            r.aisle_from = r.off.back();
+            r.aisle_to = r.on.front();
+            out.push_back(std::move(r));
+        }
         return out;
     }();
     return all;

@@ -56,7 +56,7 @@ void SignRenderer::load(const std::string& application_dir) {
 }
 
 void SignRenderer::unload() {
-    baked_.unload(); baked_ready_ = bake_failed_ = false;
+    baked_.clear(); baked_ready_ = bake_failed_ = false;
     if (!loaded_) return;
     if (own_font_) UnloadFont(font_);
     if (flag_.id) UnloadTexture(flag_);
@@ -68,7 +68,7 @@ void SignRenderer::unload() {
 void SignRenderer::set(Signage signage) {
     signage_ = std::move(signage);
     layout();
-    baked_.unload(); baked_ready_ = bake_failed_ = false;
+    baked_.clear(); baked_ready_ = bake_failed_ = false;
 }
 
 float SignRenderer::measure(const std::string& text, float height) const {
@@ -192,11 +192,17 @@ void SignRenderer::draw(Vector3 camera, Vector3 camera_target, float time_second
     // Signs never move: recorded once into two static meshes (boards, lettering) and drawn from
     // the GPU every frame after. If they do not fit one recording, they are drawn as they come.
     if (!baked_ready_ && !bake_failed_) {
-        std::vector<std::size_t> all(signage_.signs.size());
-        for (std::size_t i = 0; i < all.size(); ++i) all[i] = i;
-        bake_failed_ = !recorder_.record([&] {boards(all); lettering(all, false);}, baked_);
+        constexpr std::size_t chunk = 48;   // signs per recording: ~25,000 vertices at most
+        baked_.clear();
+        for (std::size_t from = 0; from < signage_.signs.size() && !bake_failed_; from += chunk) {
+            std::vector<std::size_t> some;
+            for (std::size_t i = from; i < std::min(signage_.signs.size(), from + chunk); ++i) some.push_back(i);
+            baked_.emplace_back();
+            bake_failed_ = !recorder_.record([&] {boards(some); lettering(some, false);}, baked_.back());
+        }
+        if (bake_failed_) baked_.clear();
         baked_ready_ = !bake_failed_;
-    } else if (baked_ready_) baked_.draw();
+    } else if (baked_ready_) for (const auto& piece : baked_) piece.draw();
     else {boards(shown); lettering(shown, true);}
 
     // The poles: the island's own, then the gangs' banners (which come and go with the turf).

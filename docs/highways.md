@@ -73,6 +73,38 @@ Tests: `tests/integration/world/test_interchanges.cpp` (the layout, the deck and
 through the roundabout the right way round and on and off the ring by the slip roads, one-way
 roads only their way, and a car driving over each bridge both ways).
 
+## Signs on the ring
+
+Every interchange is signed both ways round (`game/culture/Signage`, `highway_signs`), with green
+boards on the carriageway's right verge:
+- **1 km before:** "ELIRO 2 / PORTO LUMA / VERDA URBO / 1 km".
+- **At the slip road:** "ELIRO 2 » / PORTO LUMA / VERDA URBO", where the exit leaves the ring.
+- **After the entry:** "RINGVOJO" with the next two exits that way round and how far, e.g.
+  "3  SUDA HAVENO  2,1 km".
+- **On the highway into the roundabout,** from either side: "RINGVOJO / ELIRO n" and the town the
+  highway goes on to.
+
+(The sign renderer now bakes its boards in chunks of 48, so no board is dropped when there are
+many of them.)
+
+## La Ringo: the ring's bar and grills
+
+Two roadhouses stand beside the ring (`highways::rest_areas()`), each serving one carriageway:
+**Okcidento** outside the ring at 207° (west-south-west, for the anticlockwise carriageway) and
+**Oriento** inside it at 24° (east-north-east, for the clockwise one).
+
+- **Off and on.** A one-way slip road leaves the ring, tapering off the slow lane, into a 10 m
+  aisle through the car and truck park; another slip road joins the ring again beyond it.
+- **The lot.** A parking lot by the aisle, a Marnafto diesel island for the rigs, the bar and grill
+  (a one-storey pub, brick at Oriento, stucco at Okcidento) beyond, and trees round the pad. Each
+  stands on a level pad of its own (`rest_area_flat`, easing back to the land over
+  `rest_area_blend`).
+- **Signs.** A blue services board 1 km before and another at the slip road: "LA RINGO /
+  TRINKEJO · KRADROSTEJO / DIZELO · PARKEJO" (bar · grill / diesel · parking), and a tall red
+  two-faced pole sign by the ring, "LA RINGO / TRINKEJO KAJ KRADROSTEJO".
+- **In the kit.** Their ground is reserved at the start of the world build; the buildings
+  themselves are built last, so every older piece keeps its id.
+
 ## Cross-section
 From the centre line outwards on each side:
 

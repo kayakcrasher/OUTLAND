@@ -74,6 +74,27 @@ struct Interchange {
     std::vector<Slip> slips;       // four: off and on, inside and outside the ring
 };
 const std::vector<Interchange>& interchanges();
+
+// The ring's bar and grills, "La Ringo": one beside each carriageway (traffic keeps right, so each
+// serves one way round), a slip road off the ring into a car and truck park with a diesel lane, the
+// bar and grill beyond it, and a slip road back on. On level pads of their own (TerrainHeight).
+inline constexpr float rest_area_flat = 52, rest_area_blend = 36;
+struct RestArea {
+    std::string_view name;          // "Okcidento" / "Oriento"
+    bool inside{false};             // beside the forward carriageway, inside the ring
+    float bearing{0};               // radians: where on the ring (atan2(z, x))
+    float ring_s{0};                // metres along the ring
+    Vector3 centre{};               // the level pad
+    Vector3 building{};             // the bar and grill, its front toward the ring
+    float building_yaw{0};
+    Vector3 lot{};                  // the car and truck park (a 68 m paved lot)
+    float lot_yaw{0};
+    Vector3 diesel{};               // a diesel lane for the rigs
+    float diesel_yaw{0};
+    std::vector<Vector3> off, on;   // the slip roads, one way, in driving order
+    Vector3 aisle_from{}, aisle_to{};   // the park's two-way aisle, from the off slip to the on slip
+};
+const std::vector<RestArea>& rest_areas();
 // The ring's bridge deck at (x, z), if there is one: its roadway height in `y`. With `heading`, only
 // for something travelling along the ring (a car placed on the spoke below is not on the bridge).
 bool deck(float x, float z, float& y, const Vector3* heading = nullptr);

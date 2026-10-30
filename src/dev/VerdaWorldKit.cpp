@@ -51,6 +51,9 @@ public:
     }
     // Reserve a lot outright (no checks): ground already spoken for, like a roundabout's island.
     void reserve(Lot lot) { taken_.push_back(lot); }
+    void release(Lot lot) {
+        std::erase_if(taken_, [&](const Lot& l) { return l.x0 == lot.x0 && l.z0 == lot.z0 && l.x1 == lot.x1 && l.z1 == lot.z1; });
+    }
     // Would claim() succeed? (Reserves nothing.)
     bool fits(Vector3 centre, float half_x, float half_z, float yaw) {
         const auto report_before = report.skipped_lots;
@@ -2292,6 +2295,13 @@ void lay_highways(world::VerdaRegion& region) {
             for (std::size_t k = 0; k + 1 < slip.points.size(); ++k)
                 capital->roads.push_back({slip.points[k], slip.points[k + 1], hw::slip_width, world::RoadType::Ramp});
     }
+    // The ring's bar and grills: the slip roads off and on, and the park's aisle between them.
+    for (const auto& rest : hw::rest_areas()) {
+        for (const auto* slip : {&rest.off, &rest.on})
+            for (std::size_t k = 0; k + 1 < slip->size(); ++k)
+                capital->roads.push_back({(*slip)[k], (*slip)[k + 1], hw::slip_width, world::RoadType::Ramp});
+        capital->roads.push_back({rest.aisle_from, rest.aisle_to, 10, world::RoadType::Asphalt});
+    }
 }
 }
 
@@ -2797,10 +2807,34 @@ void street_lighting(Kit& kit, world::VerdaRegion& region) {
     }
 }
 
+// The ring's bar and grills, "La Ringo": the bar and grill (a pub), the car and truck park, a diesel
+// lane for the rigs, and trees round the pad.
+Lot roadhouse_plot(const world::highways::RestArea& rest) {
+    return {rest.centre.x - 75, rest.centre.z - 75, rest.centre.x + 75, rest.centre.z + 75};
+}
+void ring_roadhouses(Kit& kit) {
+    for (const auto& rest : world::highways::rest_areas()) {
+        kit.release(roadhouse_plot(rest));
+        kit.put(city + "ground/parking_lot_68.glb", {rest.lot.x, world::terrain::TerrainHeight::sample(rest.lot.x, rest.lot.z), rest.lot.z}, rest.lot_yaw, false);
+        modular_building(kit, rest.building, rest.building_yaw, 8, 4, rest.inside ? "brick" : "stuco", 1,
+                         rest.inside ? 9101U : 9102U, world::BuildingPurpose::Pub);
+        kit.put(city + "civic/diesel_island.glb", rest.diesel, rest.diesel_yaw);
+        const Vector3 out{rest.centre.x / std::hypot(rest.centre.x, rest.centre.z) * (rest.inside ? -1.0F : 1.0F), 0,
+                          rest.centre.z / std::hypot(rest.centre.x, rest.centre.z) * (rest.inside ? -1.0F : 1.0F)};
+        const Vector3 along{-out.z, 0, out.x};
+        for (const float a : {-46.0F, -30.0F, 30.0F, 46.0F})
+            for (const float o : {54.0F, 126.0F})
+                kit.tree({rest.centre.x + along.x * a + out.x * (o - 70), 0, rest.centre.z + along.z * a + out.z * (o - 70)});
+    }
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     lay_highways(region);
     Kit kit(region, catalog);
+    // The ring's bar and grills (built last, below): their ground kept free from the start.
+    for (const auto& rest : world::highways::rest_areas())
+        kit.reserve(roadhouse_plot(rest));
     // The ballparks' plots (Verda City's is the stadium ground, kept in government()).
     for (const auto& park : world::ballpark::parks)
         if (std::hypot(park.centre.x - stadium_reserve.x, park.centre.z - stadium_reserve.z) > 1) kit.reserve(ballpark_plot(park.centre));
@@ -2852,6 +2886,8 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     ballparks(kit, region);
     // Last, round everything built: street lights wherever a town's street is dark.
     street_lighting(kit, region);
+    // After the lights (new pieces only): the ring's bar and grills.
+    ring_roadhouses(kit);
     return kit.report;
 }
 }

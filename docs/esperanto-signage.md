@@ -27,6 +27,10 @@ Verda is an Esperanto-speaking island (see [verda-lore.md](verda-lore.md)), so e
 - On each way out of town, a sign lists the towns that road is the best way to, with road distances, e.g. "Porto Luma  1,6 km".
 - Distances are measured on the road graph and use the Esperanto decimal comma.
 
+**The ring road** (see `docs/highways.md`): green exit boards, "ELIRO 2 / PORTO LUMA / VERDA URBO / 1 km"
+and "ELIRO 2 »" at the slip road, "RINGVOJO" boards with the next exits and their distances, and blue
+services boards and a red pole sign for the bar and grills, "LA RINGO / TRINKEJO · KRADROSTEJO".
+
 **Street names** on every downtown traffic signal: two blades, one for each crossing street. They include ZAMENHOF-STRATO, AVENUO DE LA PACO, KOSMONAŬTA AVENUO, BULVARDO VERDA STELO and STRATO DE LA EKSPERIMENTO.
 
 **Bus stops**: "BUSHALTEJO / LINIO n". Shelters carry the sign on the roof, benches on a post.

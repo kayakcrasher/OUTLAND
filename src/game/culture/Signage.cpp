@@ -3,6 +3,7 @@
 #include "outland/world/Zones.hpp"
 #include "outland/game/culture/Esperanto.hpp"
 #include "outland/game/life/LifePopulation.hpp"
+#include "outland/world/Highways.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
@@ -602,6 +603,128 @@ void backcountry(const world::VerdaRegion& region, Signage& out) {
 }
 }
 
+// The ring road's signs, Verda's autobahn: for each interchange and each carriageway, an exit board
+// a kilometre before it ("ELIRO 2 / PORTO LUMA / VERDA URBO / 1 km"), another where the slip road
+// leaves ("ELIRO 2 »"), and beyond the entry a board with the next two exits and how far; and on the
+// highway into each interchange's roundabout, the way onto the ring.
+std::string kilometres(float metres) {
+    if (metres < 950) return std::to_string(static_cast<int>(std::round(metres / 50) * 50)) + " m";
+    const int tenths = static_cast<int>(std::round(metres / 100));
+    return std::to_string(tenths / 10) + (tenths % 10 ? "," + std::to_string(tenths % 10) : std::string()) + " km";
+}
+std::string upper_ascii(std::string text) {
+    for (auto& c : text) if (c >= 'a' && c <= 'z') c = static_cast<char>(c - 'a' + 'A');
+    return text;
+}
+void highway_signs(const world::VerdaRegion& region, Signage& out) {
+    namespace hw = world::highways;
+    const auto& all = hw::interchanges();
+    if (all.empty()) return;
+    constexpr float ring_length = 2 * PI * 1500;
+    // Where the crossing highway goes the other way (into the island): Verda City.
+    const auto board = [&](Vector3 at, Vector3 facing, std::string place, std::vector<SignLine> lines, float post = 3.2F) {
+        Sign sign;
+        sign.kind = SignKind::Highway;
+        sign.place = std::move(place);
+        sign.front = std::move(lines);
+        sign.max_width = 8.5F;
+        sign.post = post;
+        float height = 0;
+        for (const auto& line : sign.front) height += line.height * 1.25F;
+        sign.position = {at.x, ground(region, at, world::terrain::TerrainHeight::sample(at.x, at.z)) + post + height * .5F + .2F, at.z};
+        sign.yaw = yaw_of(facing);
+        out.signs.push_back(std::move(sign));
+    };
+    for (std::size_t k = 0; k < all.size(); ++k) {
+        const auto& x = all[k];
+        const float radius = std::hypot(x.at.x, x.at.z), bearing = std::atan2(x.at.z, x.at.x);
+        const float sense = x.ring_forward.x * -std::sin(bearing) + x.ring_forward.z * std::cos(bearing) > 0 ? 1.0F : -1.0F;
+        const auto on_ring = [&](float s, float lateral) {
+            const float b = bearing + sense * s / radius, r = radius + lateral;
+            return Vector3{r * std::cos(b), 0, r * std::sin(b)};
+        };
+        const auto along_ring = [&](float s) { const float b = bearing + sense * s / radius; return Vector3{-std::sin(b) * sense, 0, std::cos(b) * sense}; };
+        const std::string exit = "ELIRO " + std::to_string(x.number);
+        const std::string town = upper_ascii(std::string(x.town));
+        for (const float way : {1.0F, -1.0F}) {
+            // Traffic keeps right: forward (the way the ring's points run) inside the ring, the other way outside.
+            const float side = way > 0 ? -1.0F : 1.0F, verge = side * (hw::paved_half + hw::verge + 2.5F);
+            const auto facing = [&](float s) { const Vector3 d = along_ring(s); return Vector3{-d.x * way, 0, -d.z * way}; };
+            const float advance = -way * 1000, gore = -way * (hw::slip_reach + 40);
+            board(on_ring(advance, verge), facing(advance), exit, {{exit, .55F}, {town, .85F}, {"VERDA URBO", .6F}, {"1 km", .5F}});
+            board(on_ring(gore, verge), facing(gore), exit, {{exit + "  »", .7F}, {town, .85F}, {"VERDA URBO", .6F}});
+            // Beyond the entry: the next two exits this way round, and how far.
+            std::vector<SignLine> next{{"RINGVOJO", .7F}};
+            for (int n = 1; n <= 2; ++n) {
+                const std::size_t count = all.size(), step = static_cast<std::size_t>(n) % count;
+                const auto& y = all[way > 0 ? (k + step) % count : (k + count - step) % count];
+                float metres = way > 0 ? y.ring_s - x.ring_s : x.ring_s - y.ring_s;
+                metres = std::fmod(metres + 2 * ring_length, ring_length) - hw::slip_reach - 120;
+                next.push_back({std::to_string(y.number) + "  " + upper_ascii(std::string(y.town)) + "  " + kilometres(metres), .5F});
+            }
+            const float after = way * (hw::slip_reach + 120);
+            board(on_ring(after, verge), facing(after), "ring", next);
+        }
+        // (Below: the bar and grills.)
+        // On the highway into the roundabout, from either side: the way onto the ring.
+        for (const float leg : {1.0F, -1.0F}) {
+            const Vector3 in{-x.outward.x * leg, 0, -x.outward.z * leg};          // the inbound direction
+            const Vector3 right{-in.z, 0, in.x};
+            const Vector3 at{x.at.x + x.outward.x * leg * (hw::roundabout_pad + 40) + right.x * (hw::paved_half + 4),
+                             0, x.at.z + x.outward.z * leg * (hw::roundabout_pad + 40) + right.z * (hw::paved_half + 4)};
+            board(at, {-in.x, 0, -in.z}, exit, {{"RINGVOJO", .75F}, {exit, .5F}, {leg > 0 ? "VERDA URBO" : town, .55F}}, 2.4F);
+        }
+    }
+}
+
+// The ring's bar and grills: a blue services board a kilometre before each and at its slip road,
+// and its own tall sign by the ring.
+void rest_area_signs(const world::VerdaRegion& region, Signage& out) {
+    namespace hw = world::highways;
+    for (const auto& rest : hw::rest_areas()) {
+        const float side = rest.inside ? -1.0F : 1.0F, way = rest.inside ? 1.0F : -1.0F;
+        const auto on_ring = [&](float s, float lateral) {
+            const float b = rest.bearing + s / 1500, r = 1500 + side * lateral;
+            return Vector3{r * std::cos(b), 0, r * std::sin(b)};
+        };
+        const auto facing = [&](float s) {   // toward the traffic coming up to it
+            const float b = rest.bearing + s / 1500;
+            return Vector3{std::sin(b) * way, 0, -std::cos(b) * way};
+        };
+        const auto add = [&](Vector3 at, Vector3 face, std::vector<SignLine> lines, float post, Color board) {
+            Sign sign;
+            sign.kind = SignKind::Highway;
+            sign.place = "la_ringo_" + std::string(rest.name);
+            sign.front = std::move(lines);
+            sign.max_width = 8.5F;
+            sign.post = post;
+            sign.board = board;
+            float height = 0;
+            for (const auto& line : sign.front) height += line.height * 1.25F;
+            sign.position = {at.x, ground(region, at, world::terrain::TerrainHeight::sample(at.x, at.z)) + post + height * .5F + .2F, at.z};
+            sign.yaw = yaw_of(face);
+            out.signs.push_back(std::move(sign));
+        };
+        const Color services{20, 70, 150, 255};
+        const float verge = hw::paved_half + hw::verge + 2.5F;
+        for (const auto& [s, distance] : {std::pair<float, const char*>{-way * 1000, "1 km"}, {-way * 190, "»"}})
+            add(on_ring(s, verge), facing(s), {{"LA RINGO", .8F}, {"TRINKEJO · KRADROSTEJO", .5F}, {"DIZELO · PARKEJO", .45F}, {distance, .55F}}, 3.2F, services);
+        // Its own sign, tall, by the ring: both faces.
+        Sign pole;
+        pole.kind = SignKind::Highway;
+        pole.place = "la_ringo_" + std::string(rest.name);
+        pole.front = {{"LA RINGO", 1.3F}, {"TRINKEJO KAJ KRADROSTEJO", .55F}};
+        pole.back = pole.front;
+        pole.max_width = 9;
+        pole.post = 7;
+        pole.board = {150, 30, 30, 255};
+        const Vector3 at = on_ring(way * 10, 26);
+        pole.position = {at.x, world::terrain::TerrainHeight::sample(at.x, at.z) + pole.post + 1.4F, at.z};
+        pole.yaw = yaw_of(facing(0));
+        out.signs.push_back(std::move(pole));
+    }
+}
+
 Signage build_signage(const world::VerdaRegion& region, const life::Island& island) {
     Signage out;
     shopfronts(region, island, out);
@@ -611,6 +734,8 @@ Signage build_signage(const world::VerdaRegion& region, const life::Island& isla
     street_blades(region, out);
     town_roads(region, island, out);
     backcountry(region, out);
+    highway_signs(region, out);
+    rest_area_signs(region, out);
     for (auto& sign : out.signs)
         std::erase_if(sign.front, [](const SignLine& line) {return line.text.empty();});
     return out;
