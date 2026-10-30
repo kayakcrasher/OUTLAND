@@ -53,12 +53,19 @@ float Gearbox::update(float dt, float speed, float throttle, const EngineProfile
     if (p.cvt) {
         target = p.idle + (p.redline * .82F - p.idle) * std::max(gas * .85F, speed);
     } else {
-        // Gear k tops out at (k/n)^0.7 of top speed at 92% of the redline.
-        const auto top = [&](int k) { return std::pow(static_cast<float>(k) / static_cast<float>(p.gears), .7F); };
+        // Gear k tops out at (k/n)^0.7 of top speed at 92% of the redline. A petrol engine's top
+        // gears are overdrives: tall, so it cruises at top speed near 60% of the redline, not
+        // screaming at 92% (a big rig's diesel keeps close ratios and runs near its governed speed).
+        const bool governed = p.diesel && p.redline < 3000;
+        const auto top = [&](int k) {
+            const float share = static_cast<float>(k) / static_cast<float>(p.gears);
+            return std::pow(share, .7F) * (governed ? 1.0F : 1 + .5F * std::pow(share, 4.0F));
+        };
         const auto in_gear = [&](int k) { return p.redline * .92F * speed / top(k); };
         shift_ = std::max(0.0F, shift_ - dt);
         if (shift_ <= 0) {
-            const float up = p.redline * (.5F + .38F * gas), down = p.redline * (.26F + .14F * gas);
+            // Gently, it changes up early (about 40% of the redline); floored, late (88%).
+            const float up = p.redline * (.36F + .52F * gas), down = p.redline * (.24F + .16F * gas);
             if (gear_ < p.gears && in_gear(gear_) > up) { ++gear_; shift_ = p.diesel ? .35F : .2F; }
             else if (gear_ > 1 && in_gear(gear_) < down && in_gear(gear_ - 1) < p.redline * .9F) { --gear_; shift_ = .15F; }
         }
@@ -161,7 +168,9 @@ void EngineSynth::render(float* out, int frames) {
     const float muffle = 1 - std::exp(-2 * std::numbers::pi_v<float> * cut / rate_);
     // A pulse is as wide as the blowdown: about a sixth of a turn (wider on a diesel), sharper under load.
     const float cycle = rpm > 1 ? 120 / rpm : 1;
-    const float radiate = rate_ / (2 * std::numbers::pi_v<float> * 220);   // unity at 220 Hz
+    // (Unity at 220 Hz; the rise with the revs tempered, so pulling hard is loud but not a roar
+    // that runs the output into its limiter.)
+    const float radiate = rate_ / (2 * std::numbers::pi_v<float> * 220) * std::pow(std::max(1.0F, p.idle) / std::max(rpm, p.idle), .35F) * 1.6F;
     const float width = std::clamp(cycle * (p.diesel ? .16F : .13F) * (1.15F - .3F * load), .0012F, .03F) * rate_;
     for (int s = 0; s < frames; ++s) {
         if (retune_-- <= 0) {
@@ -249,7 +258,7 @@ void EngineSynth::render(float* out, int frames) {
         rumble_ = rumble_ * .997F + noise() * .02F;
         const float road = wind_ * std::min(1.0F, speed * speed / 1600) * .35F + rumble_ * std::min(1.0F, speed / 20) * .5F +
                            squeal_.run(noise()) * std::clamp(params_.squeal, 0.0F, 1.0F) * 1.4F + sigh;
-        out[s] = std::tanh((engine * .55F + road) * 1.2F) * std::clamp(params_.volume, 0.0F, 1.0F) * .8F;
+        out[s] = std::tanh((engine * .42F + road) * 1.2F) * std::clamp(params_.volume, 0.0F, 1.0F) * .8F;
     }
 }
 
