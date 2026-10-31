@@ -1,4 +1,5 @@
 #include "outland/engine/render/HighwayRender.hpp"
+#include "outland/engine/render/WorldShading.hpp"
 #include "outland/world/Highways.hpp"
 #include "outland/world/VerdaLayout.hpp"
 #include "outland/world/RegionGeometry.hpp"
@@ -46,6 +47,7 @@ Resources& resources() {
     if (FileExists(barrier.c_str())) {
         r.barrier = LoadModel(barrier.c_str());
         r.barrier_loaded = r.barrier.meshCount > 0;
+        if (r.barrier_loaded) engine::render::shade_model(r.barrier);
     }
     return r;
 }

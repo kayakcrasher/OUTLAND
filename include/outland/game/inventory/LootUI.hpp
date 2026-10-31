@@ -1,7 +1,10 @@
 #pragma once
 #include "outland/game/inventory/LootSession.hpp"
 #include "outland/assets/ModelCache.hpp"
+#include <string>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 namespace outland::game::inventory {
 // A quest in hand, for the bag's QUESTS section (the story's goal, the gang's or the Policio's job,
 // the load for Verda Transporto): the HUD shows only a line; the whole brief is here.
@@ -10,6 +13,7 @@ struct QuestNote {
     std::string detail;     // what to do
     std::string status;     // "2 of 3  ·  4:10 left  ·  350 m"
     Color colour{255, 214, 120, 255};
+    std::vector<std::pair<std::string, std::string>> table{};   // a record: label and value, two to a row
 };
 struct InventoryActions {
     bool close{false}, use{false}, drop_one{false}, drop_stack{false};

@@ -73,3 +73,22 @@ Checked in the running game under Xvfb: downtown at noon, sunset, dusk and midni
 - **Windows don't light up at night,** and interiors are as dark as outside.
 - **Night doesn't change gameplay yet:** bots and NPCs see as far at night as by day. Darkness should shorten sight outside lamp pools.
 - **No weather.**
+
+## Sun, sky light and haze (WorldShading)
+
+`engine::render::WorldShading` lights the world with the time of day:
+
+- **Shading.** Every model with normals is lit per vertex by the sun (`SkyState::sun`, warm, strongest
+  when high, gone at night) plus a sky light from above and a dimmer ground bounce from below, so
+  walls facing the sun are bright and those away from it are in shade. The terrain's normals follow
+  its slopes, so hillsides catch the sun or fall into shadow.
+- **Haze.** Everything fades into the horizon's colour with distance (from 90 m, thickest at 700 m,
+  never more than 72%), so distant hills and towns melt into the sky instead of popping in.
+- **Textures** loaded with models are mipmapped and trilinear-filtered (anisotropic 4x on desktop
+  GL), so distant roads and walls don't shimmer.
+- Two shaders, GLSL 330 on desktop and GLSL 100 on phones and browsers: a lit one for models, and a
+  haze-only one for geometry without normals (shapes drawn one by one and the recorded road and
+  building batches). Characters keep raylib's shader (it does their skinning).
+- `OUTLAND_SHADING=0` turns it off; if the shaders fail to compile everything draws as before.
+- Desktops and browsers now start the world at full resolution (phones at 75%); the dynamic
+  resolution still steps down if the frame rate drops.

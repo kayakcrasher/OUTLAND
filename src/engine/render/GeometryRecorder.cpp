@@ -1,4 +1,5 @@
 #include "outland/engine/render/GeometryRecorder.hpp"
+#include "outland/engine/render/WorldShading.hpp"
 #include <raymath.h>
 #include <cstring>
 #include <map>
@@ -24,6 +25,7 @@ int RecordedGeometry::triangles() const {
 void RecordedGeometry::draw() const {
     static Material material = LoadMaterialDefault();
     static const unsigned int white = rlGetTextureIdDefault();
+    render::shade_flat(material);   // recorded shapes have no normals: hazed, not lit
     for (const auto& piece : pieces_) {
         material.maps[MATERIAL_MAP_DIFFUSE].texture.id = piece.texture ? piece.texture : white;
         DrawMesh(piece.mesh, material, MatrixIdentity());

@@ -134,11 +134,13 @@ add_library(
     src/game/vehicles/VehicleRenderer.cpp
     src/game/vehicles/VehicleAudio.cpp
     src/game/vehicles/EngineSynth.cpp
+    src/game/player/PlayerStats.cpp
     src/platform/Runtime.cpp
     src/platform/Haptics.cpp
     src/assets/ModelCache.cpp
     src/engine/render/Renderer.cpp
     src/engine/render/GeometryRecorder.cpp
+    src/engine/render/WorldShading.cpp
     src/engine/render/StaticWorld.cpp
     src/engine/audio/EnvironmentAudio.cpp
     src/engine/audio/GunAudio.cpp
@@ -684,6 +686,10 @@ if(OUTLAND_BUILD_TESTS)
     target_link_libraries(outland_engine_synth_tests PRIVATE outland_render)
     target_compile_options(outland_engine_synth_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     add_test(NAME outland_engine_synth_tests COMMAND outland_engine_synth_tests)
+    add_executable(outland_player_stats_tests tests/unit/player/test_player_stats.cpp src/game/player/PlayerStats.cpp)
+    target_include_directories(outland_player_stats_tests PRIVATE ${PROJECT_SOURCE_DIR}/include)
+    target_compile_options(outland_player_stats_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    add_test(NAME outland_player_stats_tests COMMAND outland_player_stats_tests)
     add_executable(outland_raylib6_pose_tests tests/integration/assets/test_raylib6_pose.cpp)
     target_link_libraries(outland_raylib6_pose_tests PRIVATE outland_render)
     target_compile_options(outland_raylib6_pose_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

@@ -46,7 +46,12 @@ public:
         else if (average >= 1.0F / 58) calm_ = 0;
     }
 private:
+    // Phones start a step down; a desktop or a browser starts sharp (it steps down if it must).
+#if defined(__ANDROID__)
     float scale_{.75F};
+#else
+    float scale_{1.0F};
+#endif
     bool fixed_{false};
     float elapsed_{0}, submit_{0};
     int frames_{0}, calm_{0};

@@ -21,6 +21,9 @@ synthesised, and so is the whole engine if the recordings are missing.
 - **Load.** On the throttle it's louder and brighter; off it, duller and quieter, quieter still on
   the overrun. Sport exhausts and straight pipes let more of the top through.
 - **Rev limiter.** Held at the redline it cuts out every third turn of the crank.
+- **No fizz, no clicks.** Each loop also keeps a copy with the top filtered off, blended in as the
+  loop plays faster (sped up, a recording's top folds back down as a harsh fizz); the throttle
+  eases the level and tone up and down instead of stepping; a new engine fades in over 20 ms.
 - `tools/make_engine_loops.py` cuts the loops from the source recordings: it holds each stretch
   to a steady pitch, trims it to a whole number of firings, crossfades the seam and levels it.
   The loops are 16-bit WAV (Vorbis trimmed the ends and clicked at the seam). The sources and

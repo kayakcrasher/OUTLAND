@@ -51,6 +51,10 @@ EngineProfile engine_profile(std::string_view definition, int engine = 0, int ex
 struct EngineLoop {
     std::vector<float> pcm;
     float hz{50};
+    // The same, with the top cut (filled by prepare()): played sped up, the top of a recording
+    // folds back down as a harsh fizz, so the faster a loop plays the more of this it gets.
+    std::vector<float> soft;
+    void prepare();
 };
 
 // The recorded loops for a vehicle (names in assets/audio/engines, low revs to high), and each
@@ -126,7 +130,7 @@ private:
     int retune_{0};
     std::vector<const EngineLoop*> loops_;
     std::array<double, 4> read_{};           // where each loop is playing
-    float tone_{0}, gate_{1};
+    float tone_{0}, gate_{1}, fade_in_{1}, level_{0}, bright_{0};
 };
 
 } // namespace outland::game::vehicles

@@ -4,6 +4,18 @@ In Explore, a player can join one of La Mafio's gangs or the Policio de Verda. E
 
 **Leaving from the menu:** any time in Explore (out of prison), the pause menu (ESC / MENU) has a red button at the bottom: **LEAVE THE GANG**, **HAND IN YOUR BADGE** or **LEAVE THE BROTHERHOOD**. Tap it twice ("TAP AGAIN TO ...") to leave. You don't have to go back to the boss, the desk or Ivo.
 
+## What the player is told
+
+The island's business reaches the screen only when it is the player's: news of raids, turf
+changing hands, prison goings-on, hit and runs and ballpark riots shows on the ticker only to a
+gang member or a cop (raids on your own turf and turf you lose always do); the rigs' news only to
+a trucker. Everything else still goes round as gossip, for whoever talks to the locals. On the map
+and compass a civilian sees no hideouts, gang bases, yin-yang balance or patrol outposts: a cop
+sees the whole underworld and every outpost, a gangster their own gang's places (and rivals' close
+by), a brother La Ringo, the brotherhood's home. Gangsters' colours over their heads show only to
+the underworld, or when that gang is coming for you. A gang's door still tells anyone standing at
+it whose it is and how to join.
+
 ## Joining
 
 - **A gang:**

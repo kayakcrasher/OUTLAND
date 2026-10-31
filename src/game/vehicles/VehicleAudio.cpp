@@ -37,6 +37,7 @@ void VehicleAudio::initialize() {
             loop.hz = engine_loop_hz(name);
             loop.pcm.assign(samples, samples + wave.frameCount);
             UnloadWaveSamples(samples);
+            loop.prepare();
             loops_.emplace(name, std::move(loop));
         }
         UnloadWave(wave);

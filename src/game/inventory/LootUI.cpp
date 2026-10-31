@@ -156,6 +156,14 @@ void LootUI::draw_inventory(const ItemRegistry &registry, const LootSession &ses
                 word.clear();
             }
             flush();
+            // A record (the player's stats): label and value, two columns.
+            for (std::size_t k = 0; k < quest.table.size(); ++k) {
+                const float cx = qx + 18 + static_cast<float>(k % 2) * (qw - 36) / 2, col = (qw - 36) / 2 - 12;
+                const auto& [label, value] = quest.table[k];
+                DrawText(label.c_str(), static_cast<int>(cx), static_cast<int>(y), 14, GRAY);
+                DrawText(value.c_str(), static_cast<int>(cx + col - static_cast<float>(MeasureText(value.c_str(), 15))), static_cast<int>(y), 15, RAYWHITE);
+                if (k % 2 == 1 || k + 1 == quest.table.size()) y += 18;
+            }
             if (!quest.status.empty()) { DrawText(quest.status.c_str(), static_cast<int>(qx) + 18, static_cast<int>(y), 14, GRAY); y += 18; }
             y += 12;
         }

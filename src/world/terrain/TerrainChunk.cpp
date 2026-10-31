@@ -2,7 +2,9 @@
 
 #include "outland/world/terrain/TerrainHeight.hpp"
 
+#include "outland/engine/render/WorldShading.hpp"
 #include <raylib.h>
+#include <raymath.h>
 #include <algorithm>
 
 namespace outland::world::terrain {
@@ -43,7 +45,11 @@ void TerrainChunk::build() {
         const int v=z*side+x;
         const float px=origin_x+x*step,pz=origin_z+z*step;
         mesh.vertices[v*3]=px;mesh.vertices[v*3+1]=TerrainHeight::sample(px,pz);mesh.vertices[v*3+2]=pz;
-        mesh.normals[v*3]=0;mesh.normals[v*3+1]=1;mesh.normals[v*3+2]=0;
+        // The slope, so hillsides catch the sun or fall into shade.
+        const float e=std::max(.5F,step*.5F);
+        const float sx=TerrainHeight::sample(px+e,pz)-TerrainHeight::sample(px-e,pz),sz=TerrainHeight::sample(px,pz+e)-TerrainHeight::sample(px,pz-e);
+        const Vector3 normal=Vector3Normalize({-sx,2*e,-sz});
+        mesh.normals[v*3]=normal.x;mesh.normals[v*3+1]=normal.y;mesh.normals[v*3+2]=normal.z;
         mesh.texcoords[v*2]=static_cast<float>(x)/cells;mesh.texcoords[v*2+1]=static_cast<float>(z)/cells;
     }
     for(int z=0;z<cells;++z) for(int x=0;x<cells;++x) {
@@ -54,6 +60,7 @@ void TerrainChunk::build() {
     UploadMesh(&mesh,false);
     model_=LoadModelFromMesh(mesh);
     model_.materials[0].maps[MATERIAL_MAP_DIFFUSE].color={112,151,77,255};
+    engine::render::shade_model(model_);
     loaded_=true;
 }
 

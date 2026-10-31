@@ -27,6 +27,7 @@
 #include "outland/game/ranch/Ranches.hpp"
 #include "outland/game/freight/Freight.hpp"
 #include "outland/game/freight/Trucking.hpp"
+#include "outland/game/player/PlayerStats.hpp"
 #include "outland/game/campaign/Campaign.hpp"
 #include "outland/game/TouchLayoutEditor.hpp"
 #include <ctime>
@@ -44,6 +45,7 @@
 #include "outland/game/career/Crew.hpp"
 #include "outland/game/career/Callouts.hpp"
 #include "outland/assets/ModelCache.hpp"
+#include "outland/engine/render/WorldShading.hpp"
 #include "outland/engine/render/FrameTimings.hpp"
 #include "outland/engine/render/RenderScale.hpp"
 #include "outland/engine/render/StaticWorld.hpp"
@@ -285,6 +287,7 @@ Model* get_world_asset_model(const std::string& path, const characters::Characte
             characters::CharacterRenderer::prepare(*character, model);
         knock_out_windows(path, model);
         if (path.find("/Building Parts/") != std::string::npos) double_sided(model);
+        render::shade_model(model);
         return model.meshCount > 0;
     });
 }
@@ -484,6 +487,8 @@ bool Renderer::initialize(
         initialized_ = false;
         return false;
     }
+
+    render::shading_initialize();
 
     // Renderer handles Escape as return-to-home; raylib must not close first.
     SetExitKey(KEY_NULL);
@@ -768,6 +773,11 @@ void Renderer::run() {
     game::freight::Trucking trucking;
     game::freight::HaulWorld haul_world;
     std::string trucking_path,trucking_saved;
+    // The player's record (game::player::PlayerStats): kept beside the career, shown in the bag.
+    game::player::PlayerStats stats;
+    std::string stats_path,stats_saved;
+    std::int64_t stats_money=-1;
+    Vector3 stats_feet{};bool stats_placed=false;
     struct DepotBoss { Vector3 at{}; float yaw{180}; bool placed{false}; } depot_boss;
     constexpr int depot_boss_bot=930001;
     constexpr const char* depot_boss_name=game::career::depot_boss;
@@ -829,6 +839,7 @@ void Renderer::run() {
     std::string territory_path,territory_saved;
     float territory_save_wait=0;
     std::string gang_news;float gang_news_time=0;
+    std::string quiet_news;   // news the player isn't part of: not on the screen, only passed round by word of mouth
     bool island_ruled=false;
     // How it ends when the gangs win: the Green Hand's siege of the parliament, then the Russian
     // landing and the garrisons to clear (saved beside the territory).
@@ -1603,6 +1614,13 @@ void Renderer::run() {
         return Color{176,128,74,255};   // the ranching families: saddle brown
     };
     const auto player_gang=[&]{return career.state().side==game::career::Side::Gang ? career.state().gang : -1;};
+    // The island's news reaches the screen only when it is the player's business (their gang, the
+    // badge, the brotherhood); otherwise it only goes round as gossip.
+    const auto tell=[&](std::string text,float seconds,bool involved) {
+        if(involved) {gang_news=std::move(text);gang_news_time=seconds;}
+        else quiet_news=std::move(text);
+    };
+    const auto underworld=[&]{return player_gang()>=0 || career.on_duty();};
     // Who a body fights for: a gang (its crew), a ranching family, or -1.
     const auto faction_of=[&](int bot) -> int {
         if(bot<0) return -1;
@@ -2391,6 +2409,9 @@ void Renderer::run() {
                     trucking_path=career_path+".trucking";
                     if(FileExists(trucking_path.c_str())) if(char* text=LoadFileText(trucking_path.c_str())) {trucking.parse(text);UnloadFileText(text);}
                     trucking_saved=trucking.serialise();
+                    stats=game::player::PlayerStats{};stats_path=career_path+".stats";stats_money=-1;stats_placed=false;
+                    if(FileExists(stats_path.c_str())) if(char* text=LoadFileText(stats_path.c_str())) {stats.parse(text);UnloadFileText(text);}
+                    stats_saved=stats.serialise();
                     // La Verda Basballigo: the parks, and the league where it stood (or a new one today).
                     parks=world::ballpark::find(verda_region);
                     league=game::sports::League{};
@@ -3625,6 +3646,7 @@ void Renderer::run() {
             }
             // Word gets around: every headline is heard by the island.
             if(gang_news!=gossip_heard) {gossip_heard=gang_news;if(!gang_news.empty()) gossip.hear(gang_news,clock.minutes,town_of(here));}
+            if(!quiet_news.empty()) {gossip.hear(quiet_news,clock.minutes,town_of(here));quiet_news.clear();}
             // A feast day: the morning's word, and the gangs keep the peace.
             if(day!=feast_said_day && minute>=7*60) {
                 feast_said_day=day;
@@ -3740,7 +3762,7 @@ void Renderer::run() {
                 switch(street_race.take_result()) {
                     case game::racing::Result::Won:
                         loot_session.economy().money+=street_race.pot();loot_session.changed();
-                        ++campaign.races;++campaign.race_wins;
+                        ++campaign.races;++campaign.race_wins;stats.race_won();
                         gang_news="STREET RACE: first past the last flare - Fulmo's pot is yours, "+std::to_string(street_race.pot())+" kr";gang_news_time=8;gossip_heard=gang_news;
                         gossip.hear("somebody in "+car_words()+" beat Fulmo's boys on the ring road",clock.minutes,town_of(here),true);
                         gun_audio.kill_confirm();haptics.hit_given(true);
@@ -5705,7 +5727,7 @@ void Renderer::run() {
             }
         }
         if(!pending_kills.empty()) {gun_audio.kill_confirm();haptics.hit_given(true);}
-        for(const Vector3 where:pending_kills) combat_feedback.kill(where);
+        for(const Vector3 where:pending_kills) {combat_feedback.kill(where);stats.kill();}
         pending_kills.clear();
         environment_audio.play_combat(weapons.selected(),weapons.events());
         gun_audio.set_volume(environment_audio.volume(),environment_audio.muted());
@@ -5882,8 +5904,8 @@ void Renderer::run() {
                         const bool chased=services.pursue(v.id,actor.position,vehicles);
                         if(match_time-npc_hit_news>25 || chased) {
                             npc_hit_news=match_time;
-                            gang_news=chased ? "HIT AND RUN: a car hit someone and drove on - the police are after it" : "HIT AND RUN: a car hit someone and drove on";
-                            gang_news_time=6;
+                            tell(chased ? "HIT AND RUN: a car hit someone and drove on - the police are after it" : "HIT AND RUN: a car hit someone and drove on",
+                                 6,career.on_duty());
                         }
                     }
                 }
@@ -5979,6 +6001,7 @@ void Renderer::run() {
                 // Busted: cuffed, into the back of a police car, and off to the state prison (a fade),
                 // then the booking photo. The sentence starts once the photo is taken.
                 booking={0,0,career.jailed()+hit_and_run.busted()};   // a hit and run is mandatory time
+                stats.busted();
                 if(backup.active()) backup.dismiss(br_bots,match_time);
                 Vector3 exit{};
                 if(vehicles.driver()) vehicles.exit(verda_region,exit,true);
@@ -6130,7 +6153,7 @@ void Renderer::run() {
                     const int inmate=prison_yard.admit(false,prison_body);
                     if(inmate>=0) for(const auto& p:prison_yard.people()) if(p.bot==inmate) prison_spawn(p);
                     jail_terms.book(inmate,resident,island_life.clock().minutes);
-                    gang_news="HIT AND RUN: the police caught "+who+" - a week in Ŝtata Malliberejo";gang_news_time=7;
+                    tell("HIT AND RUN: the police caught "+who+" - a week in Ŝtata Malliberejo",7,career.on_duty());
                 }
                 if(services.events().backup)   // a Ŝosea Patrolo cruiser found you: the Policio sends more
                     justice.tip_off(std::min(5,justice.wanted()+1),frame.player,frame,island_life,"The Ŝosea Patrolo radioed the Policio for backup");
@@ -6580,6 +6603,7 @@ void Renderer::run() {
                             // A brother drives for the union rate.
                             const int paid=static_cast<int>(std::lround(static_cast<float>(pay)*career.haul_rate()));
                             loot_session.economy().money+=paid;loot_session.changed();
+                            stats.hauled();
                             if(career.trucker()) {
                                 career.haul_done();
                                 interaction_message=TextFormat("Union rate: %d kr for the load (company rate %d)",paid,pay);interaction_remaining=4;
@@ -6619,16 +6643,16 @@ void Renderer::run() {
                         }
                         if(from>=0 && target.crew>=0) mafio.send_hit_squad(from,target.crew,br_bots,bot_drivers,vehicles,verda_region,match_time);
                         if(target.owner==player_gang()) {gang_news=gang_name(raid.attacker)+" are hitting "+target.name+" - your turf. Defend it";gang_news_time=7;}
-                        else if(Vector3Distance(target.centre,feet)<700) {gang_news=gang_name(raid.attacker)+" hit "+faction_name(target.owner)+" at "+target.name;gang_news_time=5;}
+                        else if(Vector3Distance(target.centre,feet)<700) tell(gang_name(raid.attacker)+" hit "+faction_name(target.owner)+" at "+target.name,5,underworld());
                     }
                     for(const auto& flip:territory.take_flips()) {
                         const auto& t=territory.turfs()[static_cast<std::size_t>(flip.turf)];
                         if(t.crew>=0) mafio.set_crew_gang(t.crew,flip.to);
-                        gang_news=gang_name(flip.to)+" took "+t.name+" from "+faction_name(flip.from);gang_news_time=7;
+                        tell(gang_name(flip.to)+" took "+t.name+" from "+faction_name(flip.from),7,underworld());
                         if(flip.to==player_gang()) career.turf_taken(flip.turf,t.name);
                         else if(flip.from==player_gang()) {gang_news="You lost "+t.name+" to "+gang_name(flip.to);gang_news_time=8;}
                     }
-                    if(!player_health.alive() && !career_dead) {career.died();career_dead=true;}
+                    if(!player_health.alive() && !career_dead) {career.died();stats.died();career_dead=true;}
                     if(player_health.alive()) career_dead=false;
                     mafio.set_calm(territory.balance(player_gang()).law);   // a safer Verda has fewer gang wars
                     // Crime calls: now and then the dispatcher puts out a robbery or a drive-by instead
@@ -6857,6 +6881,7 @@ void Renderer::run() {
                     // Prisoners in the back: booked in at the prison's gate from a police car.
                     if(const int held=career.custody();held>0 && prison_tour.line<0 && work.driving_police && std::hypot(feet.x-prison_intake.x,feet.z-prison_intake.z)<25 && career.deliver()>0) {
                         interaction_message=career.message();interaction_remaining=4;gun_audio.kill_confirm();
+                        stats.arrests(held);
                         // Into the yard with the rest.
                         for(int k=0;k<held;++k)
                             if(const int id=prison_yard.admit(true,prison_body);id>=0) {
@@ -6875,16 +6900,16 @@ void Renderer::run() {
                                 for(const auto& p:prison_yard.people()) if(p.bot==recruit) prison_spawn(p);
                                 jail_terms.moved(term.inmate,recruit);
                             }
-                            if(!who.empty()) {gang_news="PRISON: "+who+" joined "+gang_name(term.gang)+" inside";gang_news_time=6;}
+                            if(!who.empty()) tell("PRISON: "+who+" joined "+gang_name(term.gang)+" inside",6,underworld());
                         } else if(e.fate==game::law::JailTerms::Fate::Shanked) {
                             if(term.inmate>=0) {npcs.set_bot_hidden(term.inmate,true);prison_yard.remove(term.inmate);}
                             if(term.resident>=0) island_life.hospitalise(term.resident,services.has_hospital() ? services.hospital_door() : prison_intake,
                                                                       game::services::EmergencyServices::treatment_minutes);
-                            if(!who.empty()) {gang_news="PRISON: "+who+" wouldn't join a gang - shanked in the yard. To the hospital, then out";gang_news_time=6;}
+                            if(!who.empty()) tell("PRISON: "+who+" wouldn't join a gang - shanked in the yard. To the hospital, then out",6,underworld());
                         } else if(e.fate==game::law::JailTerms::Fate::Released) {
                             if(term.inmate>=0) {npcs.set_bot_hidden(term.inmate,true);prison_yard.remove(term.inmate);}
                             if(term.resident>=0) island_life.set_free(term.resident);
-                            if(!who.empty()) {gang_news="PRISON: "+who+" did the week and walked out of the gate";gang_news_time=6;}
+                            if(!who.empty()) tell("PRISON: "+who+" did the week and walked out of the gate",6,career.on_duty());
                         }
                     }
                     prison_yard.update(dt);
@@ -6980,13 +7005,13 @@ void Renderer::run() {
                                 case EventKind::Fight:
                                     park_fight_until[static_cast<std::size_t>(g.home)]=match_time+45;
                                     if(here) {interaction_message="A fight breaks out between the "+nick(g.home)+" and "+nick(g.away)+" fans!";interaction_remaining=5;}
-                                    else {gang_news="BRAWL in the stands at the "+nick(g.home)+" ballpark: "+nick(g.home)+" and "+nick(g.away)+" fans";gang_news_time=6;}
+                                    else tell("BRAWL in the stands at the "+nick(g.home)+" ballpark: "+nick(g.home)+" and "+nick(g.away)+" fans",6,career.on_duty());
                                     break;
                                 case EventKind::Champion:
                                     gang_news="ĈAMPIONOJ! The "+std::string(teams[static_cast<std::size_t>(e.team)].name)+" win the Basballigo!";gang_news_time=9;
                                     break;
                                 case EventKind::Riot:
-                                    gang_news="RIOT at the "+nick(g.home)+" ballpark: the "+nick(e.team)+" fans won't take it - police on the way";gang_news_time=9;
+                                    tell("RIOT at the "+nick(g.home)+" ballpark: the "+nick(e.team)+" fans won't take it - police on the way",9,career.on_duty());
                                     riot_team=e.team;
                                     if(site.team>=0 && services.active()) services.respond(site.to_world(world::ballpark::gate),3,match_time+game::sports::League::riot_minutes*60.0/30.0,vehicles);
                                     break;
@@ -7061,6 +7086,21 @@ void Renderer::run() {
                     services.assign_player_car(career.on_duty() ? career.state().patrol_car : std::string());
                     services.set_player_siren(false);   // the player works their own lights (LIGHTS / L)
                     career.tick_message(dt);
+                    // The record: the road and the pavement, the time, the wallet.
+                    {
+                        const Vector3 now{player.position.x,0,player.position.z};
+                        if(const auto* car=vehicles.driver()) stats.drove(std::abs(car->speed)*dt,car->speed);
+                        else if(stats_placed && !riding_now) {
+                            // On foot (faster than a sprint is a ride - the bus, a passenger seat - not a walk).
+                            const float step=Vector3Distance(now,stats_feet);
+                            if(step<12*dt+.05F) stats.walked(step);
+                        }
+                        stats_feet=now;stats_placed=true;
+                        stats.played(dt);
+                        const std::int64_t money=loot_session.economy().money;
+                        if(stats_money>=0 && money!=stats_money) stats.money(stats_money,money);
+                        stats_money=money;
+                    }
                     // Saved whenever it changes (at most once a second).
                     career_save_wait-=dt;
                     if(career_save_wait<=0) {
@@ -7068,6 +7108,7 @@ void Renderer::run() {
                         if(const auto text=career.serialise();text!=career_saved && SaveFileText(career_path.c_str(),const_cast<char*>(text.c_str()))) career_saved=text;
                         if(const auto text=trucking.serialise();!trucking_path.empty() && text!=trucking_saved && SaveFileText(trucking_path.c_str(),const_cast<char*>(text.c_str()))) trucking_saved=text;
                         if(const auto text=league.serialise();!league_path.empty() && text!=league_saved && SaveFileText(league_path.c_str(),const_cast<char*>(text.c_str()))) league_saved=text;
+                        if(const auto text=stats.serialise();!stats_path.empty() && text!=stats_saved && SaveFileText(stats_path.c_str(),const_cast<char*>(text.c_str()))) stats_saved=text;
                     }
                 }
                 br_bots.sync_bodies(npcs,&character_registry);
@@ -7443,7 +7484,9 @@ void Renderer::run() {
         // High in the drop everything is far away: a farther near plane keeps the depth buffer
         // precise enough that roads do not flicker through the ground below.
         rlSetClipPlanes(dropping && skydiver.stage()!=game::aircraft::DiveStage::Landed ? .6 : RL_CULL_DISTANCE_NEAR,RL_CULL_DISTANCE_FAR);
+        render::shading_frame(sky);
         BeginMode3D(camera);
+        render::shading_begin();
 
         // ----------------------------------------------------
         // VERDA TERRAIN
@@ -8221,6 +8264,7 @@ void Renderer::run() {
             if(zone.next_radius<zone.radius-1) game::draw_next_circle(zone.next_center,zone.next_radius,camera.position,static_cast<float>(GetTime()));
         }
         if(perf.enabled()) perf.mark(FrameStage::Characters,GetTime());
+        render::shading_end();
         EndMode3D();
 
         // Night: darken everything drawn so far, then add what shines (lamps, fires, headlights,
@@ -8591,6 +8635,12 @@ void Renderer::run() {
                 if(!brief.empty()) brief[0]=static_cast<char>(std::toupper(static_cast<unsigned char>(brief[0])));
                 quests.push_back({trucking.title()+"  ·  Verda Transporto",brief,TextFormat("%d kr  ·  %.0f m",trucking.job().pay,metres(trucking.target())),Color{90,220,140,255}});
             }
+            // The player's record, last (read it any time in the bag).
+            if(!stats_path.empty()) {
+                game::inventory::QuestNote record{"YOUR STATS","","",Color{170,200,235,255},{}};
+                for(const auto& line:stats.lines()) record.table.emplace_back(line.label,line.value);
+                quests.push_back(std::move(record));
+            }
             loot_ui.set_quests(std::move(quests));
             loot_ui.draw_inventory(item_registry,loot_session,weapons,screen_width,screen_height);
         }
@@ -8618,8 +8668,9 @@ void Renderer::run() {
                 if(Vector3DotProduct(Vector3Subtract(over,camera.position),Vector3Subtract(camera.target,camera.position))<=0) continue;
                 const Vector2 at=GetWorldToScreen(over,camera);
                 if(std::any_of(tagged.begin(),tagged.end(),[&](Vector2 t){return std::abs(t.x-at.x)<150 && std::abs(t.y-at.y)<24;})) continue;
-                tagged.push_back(at);
                 const bool angry=mafio.provoked(gang,match_time);
+                if(!angry && !underworld()) continue;   // a civilian sees a gangster's colours only when they come for them
+                tagged.push_back(at);
                 const std::string tag=std::string(angry ? "! " : "")+std::string(game::mafia::gangs[static_cast<std::size_t>(gang)].name);
                 const float tw=MeasureTextEx(font,tag.c_str(),15,1).x;
                 DrawRectangle(static_cast<int>(at.x-tw/2-5),static_cast<int>(at.y-2),static_cast<int>(tw+10),19,Fade(BLACK,.45F));
@@ -8659,6 +8710,7 @@ void Renderer::run() {
             for(int row=0;row<2;++row) {
                 const std::string& text=row==0 ? ranches.message() : freight.message();
                 const float time=row==0 ? ranches.message_time() : freight.message_time();
+                if(row==1 && !career.trucker() && !trucking.hired()) continue;   // the rigs' news is truckers' business
                 if(time<=0) continue;
                 const float alpha=std::clamp(time,0.0F,1.0F);
                 const float mw=MeasureTextEx(font,text.c_str(),18,1).x;
@@ -9827,7 +9879,7 @@ void Renderer::run() {
                 for(const auto& crew:mafio.crews()) {
                     const auto& gang=game::mafia::gangs[static_cast<std::size_t>(crew.gang)];
                     if(crew.gang==mine) own.push_back(crew.door);
-                    else if(flat(crew.door)<(mine>=0 ? 400.0F : 220.0F))
+                    else if((mine>=0 || career.on_duty()) && flat(crew.door)<400.0F)   // a rival's, close by (not a civilian's business)
                         compass_marks.push_back({crew.door,Glyph::Hideout,gang.color,std::string(gang.name)+" - "+crew.town,false});
                 }
                 if(mine>=0) {
@@ -9840,7 +9892,7 @@ void Renderer::run() {
                     const auto& family=territory.families()[static_cast<std::size_t>(t.ranch)];
                     compass_marks.push_back({t.centre,Glyph::Ranch,Color{176,128,74,255},family.name.empty() ? t.name : family.name+" ranch",false});
                 }
-                for(int i=0;i<patrol_open && i<static_cast<int>(patrol_posts.size());++i)
+                for(int i=0;career.on_duty() && i<patrol_open && i<static_cast<int>(patrol_posts.size());++i)
                     if(flat(patrol_posts[static_cast<std::size_t>(i)].at)<1400)
                         compass_marks.push_back({patrol_posts[static_cast<std::size_t>(i)].at,Glyph::Police,Color{214,170,100,255},"ŜOSEA PATROLO",false});
                 if(career.on_duty() && police_camp.placed())
@@ -9939,14 +9991,18 @@ void Renderer::run() {
             }
             for(const auto& stop:bus_line.stops()) view.stops.push_back(stop.shelter);
             if(bus_line.running()) for(const auto& bus:bus_line.buses()) if(bus.running) view.buses.push_back({bus.position,bus.yaw});
+            // The underworld only on a map that is its business: a cop knows every hideout and what
+            // the Policio cleared; a gangster their own gang's; nobody else any of it.
             for(const auto& crew:mafio.crews()) {
                 const auto& gang=game::mafia::gangs[static_cast<std::size_t>(crew.gang)];
+                const bool known=career.on_duty() || crew.gang==player_gang();
+                if(!known) continue;
                 if(crew.disbanded) {view.cleared.push_back(crew.door);continue;}
                 view.turf.push_back({crew.door,gang.color});
                 if(crew.base) view.bases.push_back({crew.door,gang.color,std::string(gang.name)});
             }
-            // The truckers' brotherhood's home: La Ringo Okcidento.
-            if(!outbreak.active() && game::rules_for(game_mode).civilian_life)
+            // The truckers' brotherhood's home: La Ringo Okcidento (a brother's map).
+            if(!outbreak.active() && game::rules_for(game_mode).civilian_life && career.trucker())
                 view.bases.push_back({world::highways::brotherhood_home().front_door(0),Color{232,140,40,255},"LA FRATECO - LA RINGO",true});
             // A gangster's map: who holds every town and ranch, the tags, the standings.
             if(const int mine=player_gang();mine>=0 && !territory.turfs().empty()) {
@@ -9998,12 +10054,12 @@ void Renderer::run() {
             if(clothing_store && std::hypot(clothing_store->front.x-player.position.x,clothing_store->front.z-player.position.z)>=900)
                 view.marks.push_back({clothing_store->front,game::hud::Glyph::Shop,Color{60,200,130,255},"VESTAĴEJO",false});
             view.marks.push_back({prison_intake,game::hud::Glyph::Police,Color{170,170,176,255},"ŜTATA MALLIBEREJO",false});
-            for(int i=0;i<patrol_open && i<static_cast<int>(patrol_posts.size());++i) {   // every outpost, near or far
+            for(int i=0;career.on_duty() && i<patrol_open && i<static_cast<int>(patrol_posts.size());++i) {   // a cop's map: every outpost
                 const auto& post=patrol_posts[static_cast<std::size_t>(i)];
                 if(std::hypot(post.at.x-player.position.x,post.at.z-player.position.z)>=1400)
                     view.marks.push_back({post.at,game::hud::Glyph::Police,Color{214,170,100,255},"ŜOSEA PATROLO",false});
             }
-            if(game::rules_for(game_mode).civilian_life && !territory.turfs().empty()) {
+            if(game::rules_for(game_mode).civilian_life && !territory.turfs().empty() && underworld()) {
                 const auto balance=territory.balance(player_gang());
                 view.law=balance.law;view.crime=balance.crime;
                 if(player_gang()>=0) view.crime_color=game::mafia::gangs[static_cast<std::size_t>(player_gang())].color;
@@ -10087,6 +10143,7 @@ void Renderer::shutdown() {
     }
 
     world_asset_model_cache().clear();
+    render::shading_shutdown();
     CloseWindow();
 
     initialized_ = false;
