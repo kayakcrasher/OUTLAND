@@ -52,17 +52,25 @@ clockwise from the north: **1 Espera, 2 Porto Luma, 3 Suda Haveno, 4 Roka**.
   it and down again at 7%.
 - **The roundabout.** Under the bridge, at the crossing highway's level, a roundabout 40 m across
   its lane (`roundabout_radius`, an 8 m lane), anticlockwise on the map: traffic keeps right and
-  turns right into it and out of it. Its island has a kerb and a lawn. The crossing highway runs
+  turns right into it and out of it. Inside the lane, a 4 m cobbled truck apron (`island_apron`),
+  then the island: a low, mountable kerb and a lawn - a car cutting the corner or a rig's trailer
+  rolls over them instead of hitting a wall. The bridge's two piers on the island (`pier_along`, 20 m
+  either side of the crossing) are solid. The crossing highway runs
   into it from both sides, narrowing over its last 50 m to the entry and exit lanes.
 - **Slip roads.** Four per interchange, one way (`RoadType::Ramp`): each carriageway's exit leaves
-  the ring 172 m before the crossing, tapers off the outer lane, and runs beside the ring 22 m
+  the ring 172 m before the crossing (joined to the ring 16 m further back, in a long shallow line
+  from its centre to the slow lane, so traffic following it never swings at the median), tapers
+  off the outer lane, and runs beside the ring 22 m
   out, below its embankment (a retaining wall between them), into the roundabout; the entry runs
   back up beside it onto the ring 172 m beyond. Forward traffic (the way the ring's points run)
   is inside the ring, the other way outside.
 - **Level ground.** The roundabout sits on a level pad at the crossing highway's height (raised
   where a town's levelled ground is close beyond, so the highway can reach it within the grade);
-  the slip roads have roadbeds of their own, at the ring's height while still on it, then down
-  evenly to the pad.
+  the slip roads have roadbeds of their own, at the ring's height while they run beside its
+  roadbed (so the two are one level where they meet - no step at the ring's verge), then down
+  evenly to the pad, reaching its level at the pad's edge. Beside a slip road's roadbed the land
+  comes back in an even bank (2.5 across for 1 up or down, up to `slip_bank` 24 m wide), never a
+  sheer cut or a drop at its edge.
 - **On the deck.** Cars on the ring (and people on foot) ride the deck (`highways::deck`); cars
   on the roundabout beneath drive under it. Barriers and parapets count only at their own level,
   and nothing standing on the ground under a deck is in the way of a car up on it.
@@ -71,7 +79,18 @@ clockwise from the north: **1 Espera, 2 Porto Luma, 3 Suda Haveno, 4 Roka**.
 
 Tests: `tests/integration/world/test_interchanges.cpp` (the layout, the deck and the pad, routes
 through the roundabout the right way round and on and off the ring by the slip roads, one-way
-roads only their way, and a car driving over each bridge both ways).
+roads only their way, and a car driving over each bridge both ways);
+`tests/integration/world/test_route_drive.cpp` (a big rig driven along every slip road on and
+off, straight across each roundabout both ways, and through La Ringo's lots, steering by the road
+graph like traffic does: nowhere does it get stuck, drop off a ledge or fail to get through;
+`OUTLAND_DRIVE_ALL=1` adds a car and the way from the capital to every town; `OUTLAND_DRIVE_LOG=1`
+prints every bump, `OUTLAND_DRIVE_WHY=1` what it hit); `tests/integration/world/test_road_conflicts.cpp`
+(nothing standing on a carriageway, no slip road, roundabout or divided highway crossed with no
+junction, and nothing within 60 m of a road hanging over the land or sunk into it).
+
+Street lamps along the roads stand only on level ground (not on the bank beside a slip road),
+and the few rows of lamps placed by hand (Roka's truck yard, the trailer parks' lanes) stand on the
+land, not at sea level under it. A freight yard's container rows go on its level ground.
 
 ## Signs on the ring
 

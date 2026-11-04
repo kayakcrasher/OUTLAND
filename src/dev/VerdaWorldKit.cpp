@@ -759,7 +759,7 @@ void roka_city(Kit& kit, world::VerdaRegion& region) {
     }
     for (int i = 0; i < 6; ++i) prop(kit, shacks + "Concrete Barricade.glb", {c.x - 130, 0, c.z - 70 + i * 9.0F}, 0, 1.1F);
     truck({c.x - 160, 0, c.z - 8}, 90);
-    for (const float x : {-150.0F, -175.0F, -200.0F}) kit.put(urban + "Traffic lights/street_light.glb", {c.x + x, 0, c.z - 6.4F}, 180, false);
+    for (const float x : {-150.0F, -175.0F, -200.0F}) kit.put(urban + "Traffic lights/street_light.glb", {c.x + x, 0, c.z - 6.4F}, 180);   // (on the land: these spots carry no height of their own)
     kit.claim({c.x - 165, 0, c.z}, 42, 112, 0);
     roka->survivors = 0; // every home in the city is lived in
     ++kit.report.cities;
@@ -1052,7 +1052,7 @@ void trailer_park(Kit& kit, world::VerdaRegion& region) {
     for (const auto& [a, b, yaw] : std::initializer_list<std::tuple<float, float, float>>{{-44, -4.2F, 0}, {-44, 4.2F, 180}, {-48.2F, 0, 90}})
         prop(kit, urban + "Bus stops/busstop_bench.glb", at(a, b), lane_yaw + yaw - 90, 1.6F);
     // Street lights along the lane, and the chainlink perimeter with the gate at the lane.
-    for (const float a : {-26.0F, 0.0F, 26.0F}) kit.put(urban + "Traffic lights/street_light.glb", at(a, lane_half + 1.2F), lane_yaw + 90, false);
+    for (const float a : {-26.0F, 0.0F, 26.0F}) kit.put(urban + "Traffic lights/street_light.glb", at(a, lane_half + 1.2F), lane_yaw + 90);   // (on the land: these spots carry no height of their own)
     const std::vector<std::string> chain{shacks + "Chainlink Fence.glb"};
     fence(kit, at(-52, -24), at(52, -24), chain, 2.46F, 71);
     fence(kit, at(-52, 24), at(52, 24), chain, 2.46F, 72);
@@ -1749,7 +1749,7 @@ void trailer_hamlet(Kit& kit, world::VerdaRegion& region, const world::layout::S
     for (const auto& [da, db, yaw] : std::initializer_list<std::tuple<float, float, float>>{{-52, 7.8F, 0}, {-52, 16.2F, 180}, {-47.8F, 12, 90}})
         prop(kit, urban + "Bus stops/busstop_bench.glb", at(da, db), lane_yaw + yaw, 1.6F);
     loot_marker("medical", at(-49, 15), .1F);
-    for (const float a : {-36.0F, -8.0F, 20.0F}) kit.put(urban + "Traffic lights/street_light.glb", at(a, lane_half + 1.2F), lane_yaw + 90, false);
+    for (const float a : {-36.0F, -8.0F, 20.0F}) kit.put(urban + "Traffic lights/street_light.glb", at(a, lane_half + 1.2F), lane_yaw + 90);   // (on the land: these spots carry no height of their own)
     const std::vector<std::string> chain{shacks + "Chainlink Fence.glb"};
     fence(kit, at(-62, -26), at(44, -26), chain, 2.46F, seed + 71);
     fence(kit, at(-62, 26), at(44, 26), chain, 2.46F, seed + 72);
@@ -2675,9 +2675,25 @@ void freight_yards(Kit& kit, world::VerdaRegion& region) {
                     // (Its centre 4.5 m inside the loop's inner edge: 2.5 m clear of the lane.)
                     const float diesel = ring - lane * .5F - 4.5F;
                     kit.put(city + "civic/diesel_island.glb", {centre.x + out.x * diesel, 0, centre.z + out.z * diesel}, std::atan2(across.x, across.z) * RAD2DEG);
-                    for (const float s : {-14.0F, 14.0F})
-                        kit.put(city + "civic/container_stack.glb", {shed.x + across.x * s, world::terrain::TerrainHeight::sample(shed.x + across.x * s, shed.z + across.z * s),
-                                                                      shed.z + across.z * s}, yaw + 90, false);
+                    for (const float side : {-1.0F, 1.0F})
+                    for (const float reach : {14.0F, 9.0F, 19.0F, 4.0F}) {
+                        // Only on the yard's level ground (not overhanging the bank at its edge): the
+                        // first spot along the yard that is.
+                        const float s = side * reach;
+                        const Vector3 at{shed.x + across.x * s, 0, shed.z + across.z * s};
+                        float low = 1e9F, high = -1e9F;
+                        // (The row is 37.5 m long and 10.5 m deep, its length along the model's z.)
+                        const float a = (yaw + 90) * DEG2RAD;
+                        const Vector3 length{std::sin(a), 0, std::cos(a)}, depth{std::cos(a), 0, -std::sin(a)};
+                        for (const float u : {-18.5F, -9.0F, 0.0F, 9.0F, 18.5F})
+                            for (const float v : {-5.0F, 0.0F, 5.0F}) {
+                                const float h = world::terrain::TerrainHeight::sample(at.x + length.x * u + depth.x * v, at.z + length.z * u + depth.z * v);
+                                low = std::min(low, h); high = std::max(high, h);
+                            }
+                        if (high - low > .6F) continue;
+                        kit.put(city + "civic/container_stack.glb", {at.x, world::terrain::TerrainHeight::sample(at.x, at.z), at.z}, yaw + 90, false);
+                        break;
+                    }
                     kit.report.freight_yards.push_back(centre);
             const float apron = world::terrain::TerrainHeight::sample(centre.x, centre.z);
             kit.put(city + "ground/parking_lot_68.glb", {centre.x, apron, centre.z}, std::atan2(out.x, out.z) * RAD2DEG, false);
@@ -2798,6 +2814,17 @@ void street_lighting(Kit& kit, world::VerdaRegion& region) {
             const Vector3 p{road.start.x + dir.x * along + normal.x * side * (road.width * .5F + 1.3F), 0,
                             road.start.z + dir.z * along + normal.z * side * (road.width * .5F + 1.3F)};
             if (world::terrain::TerrainHeight::sample(p.x, p.z) <= world::layout::sea_level + .5F) continue;
+            // Only on level ground: not on the bank beside a slip road or a cutting, half buried or
+            // standing out over the drop.
+            {
+                float low = 1e9F, high = -1e9F;
+                for (const float u : {-1.6F, 0.0F, 1.6F})
+                    for (const float v : {-1.6F, 0.0F, 1.6F}) {
+                        const float h = world::terrain::TerrainHeight::sample(p.x + u, p.z + v);
+                        low = std::min(low, h); high = std::max(high, h);
+                    }
+                if (high - low > .6F) continue;
+            }
             if (std::any_of(lit.begin(), lit.end(), [&](Vector3 q) { return std::hypot(q.x - p.x, q.z - p.z) < street_light_spacing * .5F; })) continue;
             if (!clear_of_roads(p) || !clear_of_doors(p) || world::physics::WorldCollision::blocked({p.x, world::terrain::TerrainHeight::sample(p.x, p.z), p.z}, region, 1.0F)) continue;
             // The arm (the model's +x) reaches out over the road.

@@ -386,10 +386,11 @@ const std::vector<Interchange>& interchanges() {
                                     const float side = inside ? -1.0F : 1.0F, way = inside == off ? -1.0F : 1.0F;
                                     Slip slip;
                                     slip.off = off; slip.inside = inside;
-                                    // (On the ring's centre line, where it joins the ring; then at once clear of the
-                                    // median barrier, in the carriageway.)
-                                    slip.points.push_back(point(way * slip_reach, 0));
-                                    slip.points.push_back(point(way * (slip_reach - 6), side * 4.6F));
+                                    // (On the ring's centre line, where it joins the ring - its junction - then in a
+                                    // long shallow line out to the slow lane: traffic following it keeps well clear
+                                    // of the median barrier, a rig too.)
+                                    slip.points.push_back(point(way * (slip_reach + 16), 0));
+                                    slip.points.push_back(point(way * slip_reach, side * slow_lane));
                                     for (float d = slip_reach - taper; d > enter + .5F; d -= 10) slip.points.push_back(point(way * d, lateral(d, side)));
                                     slip.points.push_back(point(way * enter, side * slip_offset));
                                     if (!off) std::reverse(slip.points.begin(), slip.points.end());
@@ -535,26 +536,41 @@ float graded(float x, float z, float height, HeightFn natural, HeightFn pad) {
             const float sense = i.ring_forward.x * -std::sin(bearing) + i.ring_forward.z * std::cos(bearing) > 0 ? 1.0F : -1.0F;
             std::vector<Slipway> ways;
             for (const auto& slip : i.slips) {
-                // From the ring: at the ring's height while it is still on the ring's roadbed (its taper
-                // off the carriageway), then down at an even grade to the roundabout's level.
+                // From the ring: at the ring's height while it is still beside the ring's roadbed (its
+                // taper off the carriageway and out), then down at an even grade to the roundabout's level.
                 std::vector<Vector3> points = slip.points;
                 if (!slip.off) std::reverse(points.begin(), points.end());   // (from the ring end)
                 Slipway w;
                 std::size_t k = 0;
                 for (; k < points.size(); ++k) {
                     const Vector3 q = points[k];
-                    if (std::abs(std::hypot(q.x, q.z) - radius) > grade_flat + 1 || !ring) break;
+                    // (Until its whole roadbed is clear of the ring's: where the two lie side by side
+                    // they are one level, or the ground steps between them at the ring's verge.)
+                    if (std::abs(std::hypot(q.x, q.z) - radius) > grade_flat + slip_width * .5F + 2.5F || !ring) break;
                     const float s_ = sense * std::remainder(std::atan2(q.z, q.x) - bearing, 2 * pi) * radius;
                     w.points.push_back({q.x, q.z});
                     w.height.push_back(profile_height(*ring, i.ring_s + s_));
                 }
                 const float start = w.height.empty() ? level : w.height.back();
+                // (Down to the roundabout's level by the edge of its pad, which is level all over.)
+                const auto on_pad = [&](Vector3 q) { return std::hypot(q.x - i.at.x, q.z - i.at.z) <= roundabout_pad + 1; };
                 float run = 0, total = 0;
-                for (std::size_t j = std::max<std::size_t>(k, 1); j < points.size(); ++j) total += std::hypot(points[j].x - points[j - 1].x, points[j].z - points[j - 1].z);
+                for (std::size_t j = std::max<std::size_t>(k, 1); j < points.size() && !on_pad(points[j - 1]); ++j) {
+                    const float step = std::hypot(points[j].x - points[j - 1].x, points[j].z - points[j - 1].z);
+                    if (!on_pad(points[j])) {total += step; continue;}
+                    // The part of this step outside the pad.
+                    const Vector3 a = points[j - 1], b = points[j];
+                    float lo = 0, hi = 1;
+                    for (int it = 0; it < 20; ++it) {
+                        const float mid = (lo + hi) * .5F;
+                        (on_pad({a.x + (b.x - a.x) * mid, 0, a.z + (b.z - a.z) * mid}) ? hi : lo) = mid;
+                    }
+                    total += step * lo;
+                }
                 for (; k < points.size(); ++k) {
                     if (k > 0 && !w.points.empty()) run += std::hypot(points[k].x - points[k - 1].x, points[k].z - points[k - 1].z);
                     w.points.push_back({points[k].x, points[k].z});
-                    w.height.push_back(start + (level - start) * (total > 0 ? std::clamp(run / total, 0.0F, 1.0F) : 1.0F));
+                    w.height.push_back(on_pad(points[k]) ? level : start + (level - start) * (total > 0 ? std::clamp(run / total, 0.0F, 1.0F) : 1.0F));
                 }
                 ways.push_back(std::move(w));
             }
@@ -563,6 +579,9 @@ float graded(float x, float z, float height, HeightFn natural, HeightFn pad) {
         return out;
     }();
     float pad_level = 0, pad_weight = 0, ring_distance = 1e9F;
+    // Beside a slip road's roadbed, the bank down (or up) to the land: the nearest slip road within
+    // reach, and its height there.
+    float bank_distance = 1e9F, bank_height = 0;
     for (std::size_t l = 0; l < index.profiles.size() && l < line_distance.size(); ++l)
         if (index.profiles[l].loop) ring_distance = line_distance[l];
     for (std::size_t k = 0; k < interchanges().size() && k < levels.size(); ++k) {
@@ -580,17 +599,31 @@ float graded(float x, float z, float height, HeightFn natural, HeightFn pad) {
                 const float l2 = dd.x * dd.x + dd.z * dd.z;
                 const float t = l2 < 1e-6F ? 0 : std::clamp(((x - a.x) * dd.x + (z - a.z) * dd.z) / l2, 0.0F, 1.0F);
                 const float distance = std::hypot(x - (a.x + dd.x * t), z - (a.z + dd.z * t));
-                if (distance > slip_width * .5F + 2 || ring_distance <= paved_half + verge + .5F) continue;   // (the ring's own roadway is the ring's)
+                if (ring_distance <= paved_half + verge + .5F) continue;   // (the ring's own roadway is the ring's)
                 const float h = w.height[j] + (w.height[j + 1] - w.height[j]) * t;
+                if (distance > slip_width * .5F + 2) {
+                    if (d > roundabout_pad && distance < bank_distance) {bank_distance = distance; bank_height = h;}
+                    continue;
+                }
                 lowest = std::min(lowest, h);
                 if (distance < nearest) {nearest = distance; road = h;}
             }
     }
     const auto with_pads = [&](float h) { return h * (1 - pad_weight) + pad_level * pad_weight; };
+    // A slip road's bank: from its roadbed's edge back to the land in an even slope (2.5 across for
+    // each 1 up or down, at least 3 m wide, at most slip_bank), never a sheer step at its verge.
+    const auto banked = [&](float h) {
+        if (bank_distance > 1e8F) return h;
+        const float over = bank_distance - (slip_width * .5F + 2);
+        const float width = std::clamp(std::abs(bank_height - h) * 2.5F, 3.0F, slip_bank);
+        if (over >= width) return h;
+        const float t = over / width;
+        return bank_height + (h - bank_height) * t * t * (3 - 2 * t);
+    };
     // The roadbed itself is always level across (another road's roadbed - the ring's, climbing to its
     // bridge - is not the pad's).
     if (lowest < 1e8F) return std::abs(lowest - pad_level) < .5F ? with_pads(lowest) : lowest;
-    if (nearest >= grade_flat + grade_band) return with_pads(height);
+    if (nearest >= grade_flat + grade_band) return banked(with_pads(height));
     const float t = (nearest - grade_flat) / grade_band;
     float blend = t * t * (3 - 2 * t);
     // Inside a building pad, the pad's level ground stands beyond a bank by the shoulder: three
@@ -600,7 +633,7 @@ float graded(float x, float z, float height, HeightFn natural, HeightFn pad) {
     const float bank = std::clamp((nearest - grade_flat) / width, 0.0F, 1.0F);
     const float levelled = std::clamp((pad(x, z) - .9F) / .1F, 0.0F, 1.0F) * bank * bank * (3 - 2 * bank);
     blend = std::max(blend, levelled * levelled * (3 - 2 * levelled));
-    return with_pads(road * (1 - blend) + height * blend);
+    return banked(with_pads(road * (1 - blend) + height * blend));
 }
 
 bool deck(float x, float z, float& y, const Vector3* heading) {

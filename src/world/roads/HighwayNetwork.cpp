@@ -309,14 +309,20 @@ void Network::build(const VerdaRegion& region) {
     islands();
 }
 
-// Each roundabout's island: a kerb all round it (at the roundabout's level, under the ring's bridge).
+// Each roundabout's island: its kerb is low and mountable (a car cutting the corner, a rig's trailer,
+// rolls over the apron and onto the grass rather than into a wall), but the ring's bridge stands on
+// two piers on it, and those stop anything (at the roundabout's level, under the bridge).
 void Network::islands() {
     for (const auto& x : interchanges()) {
-        const float r = roundabout_radius - roundabout_width * .5F - .4F, y = terrain::TerrainHeight::sample(x.at.x, x.at.z);
-        constexpr int pieces = 32;
-        for (int k = 0; k < pieces; ++k) {
-            const float a0 = 2 * PI * static_cast<float>(k) / pieces, a1 = 2 * PI * static_cast<float>(k + 1) / pieces;
-            add_run({{x.at.x + r * std::cos(a0), x.at.z + r * std::sin(a0)}, {x.at.x + r * std::cos(a1), x.at.z + r * std::sin(a1)}, y, true});
+        const float y = terrain::TerrainHeight::sample(x.at.x, x.at.z);
+        const Vector2 f{x.ring_forward.x, x.ring_forward.z}, o{x.outward.x, x.outward.z};
+        for (const float side : {-1.0F, 1.0F}) {
+            // A pier: 2.4 m along the ring, 5 m across (as drawn), outlined by runs.
+            const Vector2 c{x.at.x + f.x * side * pier_along, x.at.z + f.y * side * pier_along};
+            const float ha = 1.2F - barrier_half, hc = 2.5F - barrier_half;
+            const auto corner = [&](float a, float b) { return Vector2{c.x + f.x * a + o.x * b, c.y + f.y * a + o.y * b}; };
+            const Vector2 p0 = corner(-ha, -hc), p1 = corner(ha, -hc), p2 = corner(ha, hc), p3 = corner(-ha, hc);
+            add_run({p0, p1, y, true}); add_run({p1, p2, y, true}); add_run({p2, p3, y, true}); add_run({p3, p0, y, true});
         }
     }
 }

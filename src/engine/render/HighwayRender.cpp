@@ -148,7 +148,7 @@ void bridge(const hw::Interchange& x) {
         float y = deck;
         hw::deck(c.x, c.z, y, &d);
         box(c, d, 1.2F, 2 * hw::grade_flat + 2, under - .5F, y - 1.0F, dark);                      // abutments
-        box(ring_point(side * 20, 0), ring_along(side * 20), 2.4F, 5, under, deck - 1.1F, dark);   // piers
+        box(ring_point(side * hw::pier_along, 0), ring_along(side * hw::pier_along), 2.4F, 5, under, deck - 1.1F, dark);   // piers
         // Retaining walls: the ring's embankment beside each slip road while it climbs.
         for (float t = hw::roundabout_pad + 2; t < hw::slip_reach - 10; t += 4)
             for (const float lateral : {-1.0F, 1.0F}) {
@@ -158,22 +158,31 @@ void bridge(const hw::Interchange& x) {
                 box(ring_point(side * t, lateral * (hw::grade_flat + 1.6F)), ring_along(side * t), 4.1F, 1.0F, low - .3F, high + .15F, concrete);
             }
     }
-    // The island: a kerb and a lawn, under the bridge.
-    const float island = hw::roundabout_radius - hw::roundabout_width * .5F;
+    // The island: a kerb and a lawn, under the bridge, inside a cobbled truck apron.
+    const float island = hw::island_radius, lane_edge = hw::roundabout_radius - hw::roundabout_width * .5F;
     constexpr int pieces = 40;
     rlSetTexture(0);
     rlBegin(RL_TRIANGLES);
+    for (int k = 0; k < pieces; ++k) {
+        const float a0 = 2 * PI * k / pieces, a1 = 2 * PI * (k + 1) / pieces;
+        const auto at = [&](float a, float r) { return Vector3{x.at.x + std::cos(a) * r, under + .05F, x.at.z + std::sin(a) * r}; };
+        const Vector3 i0 = at(a0, island), i1 = at(a1, island), o0 = at(a0, lane_edge), o1 = at(a1, lane_edge);
+        const Color setts = k % 2 ? Color{150, 140, 128, 255} : Color{138, 128, 118, 255};   // red-grey setts, banded
+        rlColor4ub(setts.r, setts.g, setts.b, 255);
+        rlVertex3f(i0.x, i0.y, i0.z); rlVertex3f(o1.x, o1.y, o1.z); rlVertex3f(o0.x, o0.y, o0.z);
+        rlVertex3f(i0.x, i0.y, i0.z); rlVertex3f(i1.x, i1.y, i1.z); rlVertex3f(o1.x, o1.y, o1.z);
+    }
     rlColor4ub(lawn.r, lawn.g, lawn.b, 255);
     for (int k = 0; k < pieces; ++k) {
         const float a0 = 2 * PI * k / pieces, a1 = 2 * PI * (k + 1) / pieces, r = island - .5F;
-        const Vector3 p0{x.at.x + std::cos(a0) * r, under + .32F, x.at.z + std::sin(a0) * r}, p1{x.at.x + std::cos(a1) * r, under + .32F, x.at.z + std::sin(a1) * r};
-        rlVertex3f(x.at.x, under + .32F, x.at.z); rlVertex3f(p1.x, p1.y, p1.z); rlVertex3f(p0.x, p0.y, p0.z);
+        const Vector3 p0{x.at.x + std::cos(a0) * r, under + .1F, x.at.z + std::sin(a0) * r}, p1{x.at.x + std::cos(a1) * r, under + .1F, x.at.z + std::sin(a1) * r};
+        rlVertex3f(x.at.x, under + .1F, x.at.z); rlVertex3f(p1.x, p1.y, p1.z); rlVertex3f(p0.x, p0.y, p0.z);
     }
     rlEnd();
     for (int k = 0; k < pieces; ++k) {
         const float a = 2 * PI * (k + .5F) / pieces;
         const Vector3 c{x.at.x + std::cos(a) * (island - .25F), 0, x.at.z + std::sin(a) * (island - .25F)};
-        box(c, {-std::sin(a), 0, std::cos(a)}, 2 * PI * island / pieces + .15F, .5F, under, under + .3F, kerb);
+        box(c, {-std::sin(a), 0, std::cos(a)}, 2 * PI * island / pieces + .15F, .5F, under, under + .12F, kerb);   // low: mountable
     }
 }
 

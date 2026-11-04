@@ -53,10 +53,16 @@ inline constexpr float overpass_rise = 7.5F;        // the ring's roadway above 
 inline constexpr float roundabout_radius = 40;      // the circulating lane's centre line
 inline constexpr float roundabout_width = 8;
 inline constexpr float roundabout_pad = roundabout_radius + roundabout_width * .5F + 3;   // its level ground
+// Inside the circulating lane, a cobbled truck apron (driven over: a rig's trailer, a car cutting
+// the corner) before the island's kerb.
+inline constexpr float island_apron = 4;
+inline constexpr float island_radius = roundabout_radius - roundabout_width * .5F - island_apron;
+inline constexpr float pier_along = 20;           // the bridge's two piers on the island, either side of the crossing
 inline constexpr float deck_half = 50;              // the ring's bridge over it, half its length
 inline constexpr float slip_offset = 22;            // the slip roads run this far out from the ring's centre line
 inline constexpr float slip_reach = 172;            // and leave it, or join it, this far from the crossing
 inline constexpr float slip_width = 7;
+inline constexpr float slip_bank = 24;            // the widest bank beside a slip road's roadbed
 inline constexpr float parapet = paved_half + verge * .5F;   // the bridge's parapet walls, out over the verges
 struct Slip {
     std::vector<Vector3> points;   // in driving order (one way)

@@ -66,9 +66,16 @@ int main() {
             check(std::abs(world::terrain::TerrainHeight::sample(p.x, p.z) - ground) < .2F, name + ": level ground under the bridge");
         }
         // The roundabout's island has a kerb (at its level), the deck has parapets (at its own).
-        const Vector3 kerb = offset(x.at, x.outward, hw::roundabout_radius - hw::roundabout_width * .5F - .4F);
-        check(network.barrier_hit({kerb.x, ground, kerb.z}, .5F), name + ": the island's kerb stops a car");
-        check(!network.barrier_hit({kerb.x, ground + hw::overpass_rise, kerb.z}, .5F), name + ": not one on the bridge above it");
+        // The island's kerb is mountable (no wall at the lane's edge or the apron's); the bridge's
+        // piers on it stop a car.
+        const Vector3 kerb = offset(x.at, x.outward, hw::island_radius - .4F);
+        check(!network.barrier_hit({kerb.x, ground, kerb.z}, .5F), name + ": the island's kerb is mountable");
+        const Vector3 apron = offset(x.at, x.outward, hw::roundabout_radius - hw::roundabout_width * .5F - .6F);
+        check(!network.barrier_hit({apron.x, ground, apron.z}, .5F), name + ": a truck apron inside the lane, not a wall");
+        // (2 m to the side of the ring's line: within the pier, clear of the deck's median above it.)
+        const Vector3 pier = offset(offset(x.at, x.ring_forward, hw::pier_along), x.outward, 2);
+        check(network.barrier_hit({pier.x, ground, pier.z}, .5F), name + ": the bridge's pier stops a car");
+        check(!network.barrier_hit({pier.x, ground + hw::overpass_rise, pier.z}, .5F), name + ": not one on the bridge above it");
         const Vector3 edge = offset(x.at, x.outward, hw::parapet);
         hw::deck(x.at.x, x.at.z, deck, &x.ring_forward);
         check(network.barrier_hit({edge.x, deck, edge.z}, .5F), name + ": a parapet along the deck");

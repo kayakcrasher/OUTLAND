@@ -148,6 +148,13 @@ int main() {
             for (float d = 4; d < length - 4; d += 2.5F)
                 for (const float o : {-lane, lane, -edge, edge}) {
                     Vector3 p{road.start.x + dir.x * d + side.x * o, 0, road.start.z + dir.z * d + side.z * o};
+                    // (A slip road joins its highway at the centre line: where a car set down along it
+                    // would stand on the highway's median, the median is meant to be there.)
+                    if (road.type == world::RoadType::Ramp &&
+                        std::any_of(roads.begin(), roads.end(), [&](const world::Road& h) {
+                            return h.type == world::RoadType::Highway && to_segment(p, h.start, h.end) < world::highways::median_half + world::highways::barrier_half + car->width * .5F + car->length * .25F + .3F;   // (the junction runs at a slant: a long body reaches further)
+                        }))
+                        continue;
                     p.y = world::physics::WorldCollision::ground_height({p.x, 400, p.z}, 400, region);
                     if (!vehicles.blocked(region, p, yaw, *car, 1)) continue;
                     // Something solid (not just a steep pitch, which the grading answers for).
