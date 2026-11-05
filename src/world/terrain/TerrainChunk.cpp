@@ -7,6 +7,8 @@
 #include <raymath.h>
 #include <algorithm>
 #include <vector>
+#include <cmath>
+#include "outland/world/Highways.hpp"
 
 namespace outland::world::terrain {
 
@@ -48,6 +50,25 @@ void TerrainChunk::build() {
     std::vector<float> height(static_cast<std::size_t>(ring*ring));
     for(int z=-1;z<=side;++z) for(int x=-1;x<=side;++x)
         height[static_cast<std::size_t>((z+1)*ring+x+1)]=TerrainHeight::sample(origin_x+x*step,origin_z+z*step);
+    // Under La Ringo's paving (its car park and truck park, laid 2 cm proud of the land) the land
+    // is drawn a little lower, so it never flickers through the slab from afar. (Only drawn: the
+    // ground everything stands and drives on is unchanged.)
+    if(TerrainHeight::coastal_layout()) {
+        struct Slab { Vector3 centre; float yaw, half_x, half_z; };
+        std::vector<Slab> slabs;
+        for(const auto& rest:highways::rest_areas()) {
+            slabs.push_back({rest.lot,rest.lot_yaw,33,33});
+            slabs.push_back({rest.truck_park,rest.truck_park_yaw,41,15});
+        }
+        for(int z=-1;z<=side;++z) for(int x=-1;x<=side;++x) {
+            const float px=origin_x+x*step,pz=origin_z+z*step;
+            for(const auto& slab:slabs) {
+                const float a=slab.yaw*DEG2RAD,dx=px-slab.centre.x,dz=pz-slab.centre.z;
+                const float lx=dx*std::cos(a)-dz*std::sin(a),lz=dx*std::sin(a)+dz*std::cos(a);
+                if(std::abs(lx)<slab.half_x && std::abs(lz)<slab.half_z) {height[static_cast<std::size_t>((z+1)*ring+x+1)]-=.12F;break;}
+            }
+        }
+    }
     const auto h=[&](int x,int z){return height[static_cast<std::size_t>((z+1)*ring+x+1)];};
     for(int z=0;z<side;++z) for(int x=0;x<side;++x) {
         const int v=z*side+x;

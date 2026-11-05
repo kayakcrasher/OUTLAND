@@ -13,6 +13,8 @@
 #include "outland/world/assets/GroundSurface.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
+#include "outland/world/Highways.hpp"
+#include "outland/world/roads/HighwayNetwork.hpp"
 
 namespace outland::world::foliage {
 
@@ -360,8 +362,13 @@ void FoliageSystem::draw(
                 if(evaluations_>=evaluation_budget) continue;
                 ++evaluations_;
                 bool allowed=!physics::WorldCollision::blocked({world_x,0,world_z},region,.35F);
+                if(allowed && (highways::paved_ground(world_x,world_z) || highways::network(region).on_apron(world_x,world_z))) allowed=false;   // a gore, a roundabout, a drive-in's apron
                 if(allowed) for(const auto& town:region.settlements()) {
-                    for(const auto& road:town.roads) if(assets::on_road({world_x,0,world_z},road,.25F)) {allowed=false;break;}
+                    // (Clear of a highway's gravel verge and a slip road's shoulders too.)
+                    for(const auto& road:town.roads) {
+                        const float margin=road.type==RoadType::Highway ? highways::verge+.5F : road.type==RoadType::Ramp ? 2.0F : road.type==RoadType::Roundabout ? 1.5F : .25F;
+                        if(assets::on_road({world_x,0,world_z},road,margin)) {allowed=false;break;}
+                    }
                     if(!allowed) break;
                 }
                 const float y=allowed ? terrain::TerrainHeight::sample(world_x,world_z)+.025F : 0;

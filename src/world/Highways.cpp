@@ -311,6 +311,20 @@ Index build(HeightFn natural, HeightFn pad) {
                 p->height[k] += (meet - p->height[k]) * u * u * (3 - 2 * u);
             }
     }
+    // The ring's levee: its roadbed raised above the land's lie, but down to a pad's level where it
+    // crosses one (eased in along the ring), and the bridges as they are.
+    for (auto& p : index.profiles) {
+        if (!p.loop) continue;
+        std::vector<float> to_pad(p.height.size(), 1e9F);
+        for (std::size_t k = 0; k < p.height.size(); ++k)
+            if (p.locked[k] == soft)
+                for (std::size_t j = 0; j < p.height.size(); ++j) to_pad[j] = std::min(to_pad[j], distance_along(p, j, static_cast<float>(k) * step));
+        for (std::size_t k = 0; k < p.height.size(); ++k) {
+            if (p.locked[k]) continue;
+            const float u = std::clamp(to_pad[k] / levee_ease, 0.0F, 1.0F);
+            p.height[k] += levee * u * u * (3 - 2 * u);
+        }
+    }
     for (auto& p : index.profiles) limit(p);
     index.grid.resize(static_cast<std::size_t>(Index::cells * Index::cells));
     const float reach = grade_flat + grade_band;
@@ -655,6 +669,50 @@ float graded(float x, float z, float height, HeightFn natural, HeightFn pad) {
     const float levelled = std::clamp((pad(x, z) - .9F) / .1F, 0.0F, 1.0F) * bank * bank * (3 - 2 * bank);
     blend = std::max(blend, levelled * levelled * (3 - 2 * levelled));
     return banked(with_pads(road * (1 - blend) + height * blend));
+}
+
+float gore_at(Vector3 centre, Vector3 heading, float half, float& side) {
+    const float r = std::hypot(centre.x, centre.z);
+    if (r < 1) return -1;
+    const float edge = paved_half + verge;
+    const float gap = std::abs(r - ring_radius) - half - edge;
+    // Toward the ring's line: inward from outside it, outward from inside.
+    const Vector3 toward{(r > ring_radius ? -1.0F : 1.0F) * centre.x / r, 0, (r > ring_radius ? -1.0F : 1.0F) * centre.z / r};
+    const Vector3 right{-heading.z, 0, heading.x};
+    side = toward.x * right.x + toward.z * right.z >= 0 ? 1.0F : -1.0F;
+    return gap;
+}
+
+bool paved_ground(float x, float z) {
+    const auto inside = [&](const std::vector<Vector3>& line) {
+        for (std::size_t k = 0; k + 1 < line.size(); ++k) {
+            const Vector3 a = line[k], b = line[k + 1];
+            const float dx = b.x - a.x, dz = b.z - a.z, l2 = dx * dx + dz * dz;
+            if (l2 < 1e-6F) continue;
+            const float t = std::clamp(((x - a.x) * dx + (z - a.z) * dz) / l2, 0.0F, 1.0F);
+            const Vector3 c{a.x + dx * t, 0, a.z + dz * t};
+            const float aside = std::hypot(x - c.x, z - c.z);
+            if (aside > slip_width * .5F + gore_gap + 1) continue;
+            const float l = std::sqrt(l2);
+            float side = 0;
+            const float gap = gore_at(c, {dx / l, 0, dz / l}, slip_width * .5F, side);
+            if (gap < 0 || gap > gore_gap) continue;
+            // On the ring's side of the slip road, between its edge and the ring's verge.
+            const float right = (x - c.x) * -dz / l + (z - c.z) * dx / l;
+            if (right * side > 0 && aside <= slip_width * .5F + gap + .5F) return true;
+        }
+        return false;
+    };
+    const float r = std::hypot(x, z);
+    if (std::abs(r - ring_radius) > slip_offset + slip_width) return false;
+    for (const auto& i : interchanges()) {
+        const float d = std::hypot(x - i.at.x, z - i.at.z);
+        if (d >= island_radius && d <= roundabout_radius + roundabout_width * .5F + 1.5F) return true;   // the lane and its apron
+        if (d < slip_reach + 40) for (const auto& slip : i.slips) if (inside(slip.points)) return true;
+    }
+    for (const auto& rest : rest_areas())
+        if (std::hypot(x - rest.centre.x, z - rest.centre.z) < 260 && (inside(rest.off) || inside(rest.on))) return true;
+    return false;
 }
 
 bool deck(float x, float z, float& y, const Vector3* heading) {

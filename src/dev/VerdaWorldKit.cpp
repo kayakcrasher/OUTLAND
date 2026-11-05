@@ -1819,7 +1819,7 @@ const std::string clinic_model = "assets/verda/city/civic/clinic.glb";
 
 bool civic_lot(Kit& kit, world::VerdaRegion& region, Vector3 near, float min_distance, float max_distance, float lot_x, float lot_z,
                float half_x, float half_z, float front, float apron, CivicSpot& out,
-               const std::function<bool(const CivicSpot&)>& accept = {}, bool dirt = false) {
+               const std::function<bool(const CivicSpot&)>& accept = {}, bool dirt = false, float level = 1.2F) {
     struct Candidate { float score; Vector3 origin; float yaw; };
     std::vector<Candidate> candidates;
     for (const auto& town : region.settlements())
@@ -1849,7 +1849,7 @@ bool civic_lot(Kit& kit, world::VerdaRegion& region, Vector3 near, float min_dis
             const float h = world::terrain::TerrainHeight::sample(q.x, q.z);
             lo = std::min(lo, h); hi = std::max(hi, h);
         }
-        if (hi - lo > 1.2F) continue;
+        if (hi - lo > level) continue;
         bool blocked = false;
         const float a = c.yaw * DEG2RAD;
         for (const auto& town : region.settlements()) {
@@ -1877,6 +1877,19 @@ bool civic_lot(Kit& kit, world::VerdaRegion& region, Vector3 near, float min_dis
         return true;
     }
     return false;
+}
+
+// A drive-in's spot, seated on the highest ground under its lot (half_x by half_z about its
+// origin): its forecourt never sunk into a slope - at most standing a little proud on the low
+// side, where the apron in front of it and its concrete skirt meet the land (world::highways::Apron).
+Vector3 seated(const CivicSpot& spot, float half_x, float half_z) {
+    float high = -1e9F;
+    for (const float sx : {-1.0F, -.5F, 0.0F, .5F, 1.0F})
+        for (const float sz : {-1.0F, -.5F, 0.0F, .5F, 1.0F}) {
+            const Vector3 q = to_world(spot.origin, spot.yaw, sx * half_x, 0, sz * half_z);
+            high = std::max(high, world::terrain::TerrainHeight::sample(q.x, q.z));
+        }
+    return {spot.origin.x, high, spot.origin.z};
 }
 
 // ------------------------------------------------------------------ Preĝejoj
@@ -2567,8 +2580,10 @@ void motor_trade(Kit& kit, world::VerdaRegion& region) {
     // Filling stations: model bounds x -12..12, z -11..11; the forecourt fronts the road.
     const auto station = [&](Vector3 near, float min_d, float max_d, const std::function<bool(const CivicSpot&)>& accept) {
         CivicSpot spot;
-        if (!civic_lot(kit, region, near, min_d, max_d, 0, 0, 12.4F, 11.4F, 11.2F, 3.5F, spot, accept)) return;
-        if (!kit.put(M::gas_model, spot.origin, spot.yaw)) return;
+        // (Level ground, within half a metre: the forecourt is seated on its high side.)
+        if (!civic_lot(kit, region, near, min_d, max_d, 0, 0, 12.4F, 11.4F, 11.2F, 3.5F, spot, accept, false, .5F)) return;
+        spot.origin = seated(spot, 12, 11);
+        if (!kit.put(M::gas_model, spot.origin, spot.yaw, false)) return;
         kit.purpose(to_world(spot.origin, spot.yaw, 0, .15F, 6.2F), spot.yaw, world::BuildingPurpose::Shop);   // the kiosk shop
         kit.report.gas_stations.push_back(spot.origin);
     };
@@ -2590,7 +2605,8 @@ void motor_trade(Kit& kit, world::VerdaRegion& region) {
     const auto workshop = [&](Vector3 near, float min_d, float max_d, const std::function<bool(const CivicSpot&)>& accept) {
         CivicSpot spot;
         if (!civic_lot(kit, region, near, min_d, max_d, 0, 0, 9.4F, 6.6F, 6.4F, 6.0F, spot, accept)) return;
-        if (!kit.put(M::mechanic_model, spot.origin, spot.yaw)) return;
+        spot.origin = seated(spot, 9, 6.2F);
+        if (!kit.put(M::mechanic_model, spot.origin, spot.yaw, false)) return;
         kit.purpose(to_world(spot.origin, spot.yaw, 6.6F, .1F, -4.8F), spot.yaw, world::BuildingPurpose::Garage);   // the office
         kit.report.mechanics.push_back(spot.origin);
     };
@@ -2598,7 +2614,7 @@ void motor_trade(Kit& kit, world::VerdaRegion& region) {
     {
         CivicSpot spot;
         if (civic_lot(kit, region, {0, 0, 0}, 200, 620, 0, 0, 18.4F, 13.9F, 13.8F, 3.5F, spot, clear_of_downtown) &&
-            kit.put(M::car_lot_model, spot.origin, spot.yaw)) {
+            (spot.origin = seated(spot, 18, 13.6F), kit.put(M::car_lot_model, spot.origin, spot.yaw, false))) {
             kit.purpose(to_world(spot.origin, spot.yaw, 12.8F, .12F, 7.2F), spot.yaw, world::BuildingPurpose::Office);   // the sales office
             kit.report.car_lot = true;
             kit.report.car_lot_at = spot.origin;
@@ -2843,8 +2859,9 @@ void ring_roadhouses(Kit& kit, world::VerdaRegion& region) {
     for (const auto& rest : world::highways::rest_areas()) {
         kit.release(roadhouse_plot(rest));
         // The car park and, behind it, the truck park (18 drive-in bays for rigs): paving on the
-        // level pad, sunk so it stands 2 cm proud of it, and nothing to collide with - wheels and
-        // feet run on the ground (a solid slab shoved parked rigs about and jack-knifed them).
+        // level pad, sunk so it stands 2 cm proud of it (the land is drawn lower under it, so no
+        // grass flickers through: TerrainChunk), and nothing to collide with - wheels and feet run
+        // on the ground (a solid slab shoved parked rigs about and jack-knifed them).
         const auto paving = [](Vector3 p) { return Vector3{p.x, world::terrain::TerrainHeight::sample(p.x, p.z) - .13F, p.z}; };
         kit.put(city + "ground/parking_lot_68.glb", paving(rest.lot), rest.lot_yaw, false, false);
         kit.put(city + "ground/truck_park.glb", paving(rest.truck_park), rest.truck_park_yaw, false, false);

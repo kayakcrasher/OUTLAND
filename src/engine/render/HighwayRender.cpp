@@ -397,6 +397,68 @@ void draw(const world::Road& road, const hw::RoadInfo& info, int begin, int end)
 }
 
 
+void draw_aprons(const std::vector<hw::Apron>& aprons, Vector3 camera, float reach) {
+    auto& r = resources();
+    rlSetTexture(r.plain.id);
+    rlBegin(RL_TRIANGLES);
+    rlColor4ub(asphalt_tint.r, asphalt_tint.g, asphalt_tint.b, asphalt_tint.a);
+    rlNormal3f(0, 1, 0);
+    for (const auto& a : aprons) {
+        const Vector3 mid{(a.lot_left.x + a.road_right.x) * .5F, 0, (a.lot_left.z + a.road_right.z) * .5F};
+        if (std::hypot(mid.x - camera.x, mid.z - camera.z) > reach) continue;
+        const float width = std::hypot(a.lot_right.x - a.lot_left.x, a.lot_right.z - a.lot_left.z);
+        const float depth = std::hypot(a.road_left.x - a.lot_left.x, a.road_left.z - a.lot_left.z);
+        const int nu = std::max(1, static_cast<int>(std::ceil(width / 2))), nv = std::max(1, static_cast<int>(std::ceil(depth)));
+        // On the land, a little above it; at the lot's edge no lower than the lot's forecourt.
+        const auto at = [&](int i, int j) {
+            const float u = static_cast<float>(i) / nu, v = static_cast<float>(j) / nv;
+            const float x = a.lot_left.x + (a.lot_right.x - a.lot_left.x) * u + (a.road_left.x - a.lot_left.x) * v;
+            const float z = a.lot_left.z + (a.lot_right.z - a.lot_left.z) * u + (a.road_left.z - a.lot_left.z) * v;
+            const float land = world::terrain::TerrainHeight::sample(x, z) + .07F;
+            const float lot = a.lot_y + .04F + (land - a.lot_y - .04F) * v;
+            rlTexCoord2f(u * width / texture_across, v * depth / texture_along);
+            rlVertex3f(x, std::max(land, lot), z);
+        };
+        for (int i = 0; i < nu; ++i)
+            for (int j = 0; j < nv; ++j)
+                for (const bool flip : {false, true}) {   // (either way round)
+                    if (!flip) {at(i, j); at(i + 1, j + 1); at(i + 1, j); at(i, j); at(i, j + 1); at(i + 1, j + 1);}
+                    else {at(i, j); at(i + 1, j); at(i + 1, j + 1); at(i, j); at(i + 1, j + 1); at(i, j + 1);}
+                }
+    }
+    rlEnd();
+    rlSetTexture(0);
+    // Each lot's concrete skirt: from its level down into the land, round its edge.
+    rlBegin(RL_TRIANGLES);
+    const Color skirt{176, 172, 164, 255};
+    rlColor4ub(skirt.r, skirt.g, skirt.b, 255);
+    for (const auto& a : aprons) {
+        const Vector3 mid{(a.lot_left.x + a.lot_right.x) * .5F, 0, (a.lot_left.z + a.lot_right.z) * .5F};
+        if (std::hypot(mid.x - camera.x, mid.z - camera.z) > reach) continue;
+        const float dl = std::hypot(a.road_left.x - a.lot_left.x, a.road_left.z - a.lot_left.z);
+        if (dl < .01F) continue;
+        const Vector3 back{-(a.road_left.x - a.lot_left.x) / dl * a.lot_depth, 0, -(a.road_left.z - a.lot_left.z) / dl * a.lot_depth};
+        const Vector3 corners[4]{a.lot_left, a.lot_right, Vector3Add(a.lot_right, back), Vector3Add(a.lot_left, back)};
+        for (int k = 0; k < 4; ++k) {
+            const Vector3 p = corners[k], q = corners[(k + 1) % 4];
+            const int n = std::max(1, static_cast<int>(std::ceil(std::hypot(q.x - p.x, q.z - p.z) / 2)));
+            for (int i = 0; i < n; ++i) {
+                const float t0 = static_cast<float>(i) / n, t1 = static_cast<float>(i + 1) / n;
+                const Vector3 u{p.x + (q.x - p.x) * t0, 0, p.z + (q.z - p.z) * t0}, w{p.x + (q.x - p.x) * t1, 0, p.z + (q.z - p.z) * t1};
+                const float top = a.lot_y + .02F;
+                const float bu = world::terrain::TerrainHeight::sample(u.x, u.z) - .3F, bw = world::terrain::TerrainHeight::sample(w.x, w.z) - .3F;
+                if (bu >= top && bw >= top) continue;
+                for (const bool flip : {false, true}) {
+                    const auto v = [](float x, float y, float z) { rlVertex3f(x, y, z); };
+                    if (!flip) {v(u.x, bu, u.z); v(w.x, bw, w.z); v(w.x, top, w.z); v(u.x, bu, u.z); v(w.x, top, w.z); v(u.x, top, u.z);}
+                    else {v(u.x, bu, u.z); v(w.x, top, w.z); v(w.x, bw, w.z); v(u.x, bu, u.z); v(u.x, top, u.z); v(w.x, top, w.z);}
+                }
+            }
+        }
+    }
+    rlEnd();
+}
+
 void draw_link(const world::Road& road, int begin, int end, const std::vector<hw::Rail>& rails) {
     const int segments = world::geometry::road_segments(road);
     begin = std::max(0, begin); end = std::min(segments, end);
@@ -493,7 +555,26 @@ void draw_link(const world::Road& road, int begin, int end, const std::vector<hw
         for (int i = begin; i < end; ++i) {
             const Frame b = frame(i + 1);
             const float sa = length * i / segments, sb = length * (i + 1) / segments;
-            if (pass == 0) strip(a, b, sa, sb, -half, half, -half / texture_across, half / texture_across, lift - .01F);
+            if (pass == 0) {
+                strip(a, b, sa, sb, -half, half, -half / texture_across, half / texture_across, lift - .01F);
+                // The gore toward the ring, where the two run close: paved to the ring's verge.
+                float side_a = 0, side_b = 0;
+                const float ga = hw::gore_at(a.centre, a.heading, half, side_a), gb = hw::gore_at(b.centre, b.heading, half, side_b);
+                if (side_a == side_b && ((ga >= 0 && ga <= hw::gore_gap) || (gb >= 0 && gb <= hw::gore_gap))) {
+                    const auto at = [&](const Frame& f, float o) {
+                        const float x = f.centre.x + f.cross.x * o, z = f.centre.z + f.cross.z * o;
+                        return Vector3{x, roadway(x, z, f.heading) + lift - .02F, z};
+                    };
+                    const float wa = std::clamp(ga, 0.0F, hw::gore_gap) + .4F, wb = std::clamp(gb, 0.0F, hw::gore_gap) + .4F;
+                    const Vector3 p0 = at(a, side_a * half), p1 = at(a, side_a * (half + wa)), q0 = at(b, side_a * half), q1 = at(b, side_a * (half + wb));
+                    for (const bool flip : {false, true}) {   // (either side of the slip road)
+                        const auto v = [](Vector3 w, float u, float t) { rlTexCoord2f(u, t); rlVertex3f(w.x, w.y, w.z); };
+                        const float u0 = sa / texture_along, u1 = sb / texture_along;
+                        if (!flip) {v(p0, u0, 0); v(q1, u1, 1); v(q0, u1, 0); v(p0, u0, 0); v(p1, u0, 1); v(q1, u1, 1);}
+                        else {v(p0, u0, 0); v(q0, u1, 0); v(q1, u1, 1); v(p0, u0, 0); v(q1, u1, 1); v(p1, u0, 1);}
+                    }
+                }
+            }
             else if (pass == 1) for (const float edge : {-half + .3F, half - .45F}) strip(a, b, sa, sb, edge, edge + .15F, 0, 1, lift);
             else for (const float edge : {-half - 1.5F, half}) strip(a, b, sa, sb, edge, edge + 1.5F, 0, 1, lift - .03F);
             a = b;

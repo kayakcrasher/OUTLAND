@@ -96,6 +96,7 @@ void StaticWorld::draw(const world::VerdaRegion& region, Vector3 camera, const V
         }
         chunk.mesh->draw(); ++draws_;
     }
+    highway::draw_aprons(highways.aprons(), camera, 340 * reach);
     if (lifted) { rlDrawRenderBatchActive(); rlPopMatrix(); }
     // Houses within 320 m; full detail within 90 m.
     for (auto& house : buildings_) {

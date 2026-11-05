@@ -41,7 +41,7 @@ public:
 
     // `one_way`: traffic runs a to b only (a ramp, a roundabout's lane); `ramp`: a slip road, joined
     // and left only by turning right or going straight on (no turning left across a highway's median).
-    struct Edge { int a, b; float length, width; bool one_way{false}, ramp{false}; };
+    struct Edge { int a, b; float length, width; bool one_way{false}, ramp{false}, divided{false}; };   // divided: a city boulevard (a median down it)
     const std::vector<Vector3>& nodes() const { return nodes_; }
     const std::vector<Edge>& edges() const { return edges_; }
 

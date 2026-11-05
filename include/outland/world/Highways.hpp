@@ -49,6 +49,10 @@ const std::vector<Line>& lines();
 // (it never stops, like a giant roundabout itself), and the crossing highway runs into the roundabout
 // from both sides. Slip roads leave the ring before the bridge and run beside it, at the
 // roundabout's level, into the roundabout; others run back up onto the ring beyond it.
+// The ring is Verda's levee against the storm surges: its roadbed stands this far above the
+// land's lie along it (easing down where it runs across a building pad, the rest areas').
+inline constexpr float levee = .8F;
+inline constexpr float levee_ease = 90;            // metres along the ring, from a pad's hold to the full height
 inline constexpr float overpass_rise = 7.5F;        // the ring's roadway above the roundabout's
 inline constexpr float roundabout_radius = 40;      // the circulating lane's centre line
 inline constexpr float roundabout_width = 8;
@@ -118,6 +122,17 @@ inline constexpr int truck_bays = 18;
 // The ring's bridge deck at (x, z), if there is one: its roadway height in `y`. With `heading`, only
 // for something travelling along the ring (a car placed on the spoke below is not on the bridge).
 bool deck(float x, float z, float& y, const Vector3* heading = nullptr);
+
+// The gore where a slip road tapers into or out of the ring: the ground between the slip road's
+// edge and the ring's verge, paved where that gap is narrower than gore_gap (no wedge of grass in
+// the merge). For a point on a slip road's centre line heading `heading`, `half` its half-width:
+// the gap there (metres; > gore_gap or negative: no gore), and `side` (+1: the ring is to the
+// right of the slip road, -1: to its left).
+inline constexpr float gore_gap = 7;
+float gore_at(Vector3 centre, Vector3 heading, float half, float& side);
+// Is (x, z) paved ground of the highways (a gore, or a roundabout's lane or truck apron)? Plants
+// keep off it.
+bool paved_ground(float x, float z);
 
 // The land at (x, z) once cut and filled to the highways, given its natural height there.
 // `natural` is the land without highways (used once, to lay the road's profile); `pad` is how far

@@ -81,6 +81,11 @@ clockwise from the north: **1 Espera, 2 Porto Luma, 3 Suda Haveno, 4 Roka**.
   of a highway, a slip road, a roundabout or a rest area; elsewhere the usual 5 m), so the land's
   triangles follow the roadbed's edge instead of cutting up over the asphalt. The retaining walls
   between the climbing ring and the slip roads run as one continuous sloped wall.
+- **No grass where a car goes.** Where a slip road tapers into or out of the ring, the gore
+  between its edge and the ring's verge is paved (`highways::gore_at`, while the gap is under
+  `gore_gap`, 7 m), so the merge is one sheet of asphalt. Grass tufts keep off every carriageway,
+  a highway's gravel verge, a slip road's shoulders, a gore, a roundabout's lane and its truck
+  apron, and a drive-in's apron (`highways::paved_ground`, `Network::on_apron`).
 - **Guardrails.** Wherever the land falls away more than 1.4 m beside a highway or a slip road
   (the embankments up to the ring's bridges, a slip road built up over a dip), a steel guardrail
   on wooden posts stands out on the verge (`Network::rails`; drawn with the road, and solid for
@@ -107,6 +112,21 @@ junction, and nothing within 60 m of a road hanging over the land or sunk into i
 Street lamps along the roads stand only on level ground (not on the bank beside a slip road),
 and the few rows of lamps placed by hand (Roka's truck yard, the trailer parks' lanes) stand on the
 land, not at sea level under it. A freight yard's container rows go on its level ground.
+
+## Pulling in: drive-ins and yards
+Wherever a car or a rig pulls off a road, the way in is paved all the way:
+- **Drive-ins.** Each filling station, workshop and the car lot gets a paved apron from its lot's
+  front out to the road's edge in front of it (`Network::aprons`, drawn on the land as asphalt).
+  Each stands on level ground (a filling station only where its site is level within half a
+  metre), seated on the high side of its lot so its forecourt is never sunk into a slope, with a
+  concrete skirt round the lot's edge down into the land.
+- **The ring's filling station** stands off the ring's shoulder where the ground is level, its
+  forecourt meeting the ring's verge.
+- **La Ringo's car and truck parks** are paving 2 cm proud of their level pads; the land is drawn
+  12 cm lower under them (`TerrainChunk`, drawing only: wheels and feet still run on the true
+  ground) so it never flickers through the paving from across the car park.
+- **The freight yards** are a road in from the highway and a loop round a paved yard; the depot's
+  yard road runs into its truck park.
 
 ## Signs on the ring
 
@@ -218,6 +238,12 @@ The terrain is cut and filled to the highways (`highways::graded`, called from
    hill on the edge of the town's pad, which left a step of up to a metre down onto the streets).
 3. **Grade limit.** No piece is steeper than 7%: neighbours that differ by more meet in the
    middle (a cutting or an embankment), and holds stay put.
+3a. **The ring is a levee.** Verda's ring road doubles as its levee against the storm surges:
+   its roadbed stands `highways::levee` (0.8 m, about 2½ ft) above the land's lie along it, so
+   from the ground beside it the ring is plainly up on a bank. It eases down (over
+   `levee_ease`, 90 m) to a building pad's level where it crosses one (La Ringo's rest areas), and
+   the bridges keep their own heights; the grade limit runs again after it. The slip roads, the
+   verges and everything placed beside the ring follow it (the world map is rebuilt to it).
 4. **Crossings.** Where two highways cross, they share a 24 m level plateau. Its height is as
    close to halfway between the two profiles as both can reach within the grade. Then the grade
    limit runs again.
@@ -245,10 +271,17 @@ Two road types are one way, start to end: `RoadType::Ramp` (a slip road onto or 
 
 ## Traffic and collision
 - **Traffic.** Traffic drives on the right, in the outer (slow) lane, 6.25 m from the centre line
-  (`RoadGraph::lane_of`). A route eases between lane offsets over 16 m either side of a corner, for
+  (`RoadGraph::lane_of`); on Verda City's boulevard (a divided road narrower than a highway, cars
+  parked at its kerb) 3.5 m out, between the median's kerb and the parked cars. A car pulling out
+  of a kerbside space joins the road at its lane the way it is going, never first out to the
+  road's middle (on the boulevard, that was the median). A route eases between lane offsets over 16 m either side of a corner, for
   example from a highway onto a street, so cars no longer jump sideways at a junction.
 - **The median barrier.** It stops cars (`WorldCollision::vehicle_blocked`). People on foot climb
-  over it. Its runs are indexed on a 32 m grid.
+  over it (and over the guardrails). Its runs are indexed on a 32 m grid.
+- **The walls under the bridges.** Under each ring bridge the two piers, the abutments at the
+  deck's ends (holding back the embankment) and the retaining walls between the climbing ring and
+  the slip roads are solid for cars and people alike (`Network::wall_hit`), each at its own level,
+  so traffic up on the deck passes over them. Nobody drives or walks through them into the bank.
 - **Testing.** `outland_highway_tests` drives the route between every pair of towns and checks
   that no point comes within a car's half-width of the barrier.
 

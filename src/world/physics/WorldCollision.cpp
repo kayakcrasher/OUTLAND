@@ -229,6 +229,8 @@ bool WorldCollision::blocked_impl(
        terrain::TerrainHeight::sample(position.x,position.z)<=layout::sea_level) return true;
     // A highway's median barrier stops cars (people climb over it).
     if(vehicle && highways::network(region).barrier_hit(position,player_radius)) return true;
+    // The walls under the ring's bridges stop everyone.
+    if(!vehicle && highways::network(region).wall_hit({position.x,feet_y ? *feet_y : position.y,position.z},player_radius)) return true;
 
     for (
         const Settlement& settlement :

@@ -16,5 +16,8 @@ void draw(const world::Road& road, const world::highways::RoadInfo& info, int be
 // roundabout's lane (RoadType::Roundabout: drawn as part of a smooth ring, edge lines both sides),
 // with its guardrails.
 void draw_link(const world::Road& road, int begin, int end, const std::vector<world::highways::Rail>& rails = {});
+// The drive-ins' aprons (world::highways::Apron) within `reach` metres of `camera`: plain asphalt
+// laid on the land from each lot's front to the road.
+void draw_aprons(const std::vector<world::highways::Apron>& aprons, Vector3 camera, float reach);
 
 }

@@ -7391,6 +7391,13 @@ void Renderer::run() {
             prison_tour.eye=Vector3Lerp(prison_tour.eye,eye,k);prison_tour.look=Vector3Lerp(prison_tour.look,look,k);
             camera.position=prison_tour.eye;camera.target=prison_tour.look;
         }
+#ifdef OUTLAND_DEV_TOOLS
+        // Dev builds: OUTLAND_DEV_EYE="x,y,z,tx,ty,tz" holds the camera there (aerial screenshots).
+        if(const char* eye=std::getenv("OUTLAND_DEV_EYE")) {
+            Vector3 e{},t{};
+            if(std::sscanf(eye,"%f,%f,%f,%f,%f,%f",&e.x,&e.y,&e.z,&t.x,&t.y,&t.z)==6) {camera.position=e;camera.target=t;}
+        }
+#endif
         // The parks' scoreboards: the line score as it stands (Linescore::box - the same runs as the
         // panel's), drawn into each board's texture before the scene.
         park_boards.on.fill(false);

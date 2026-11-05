@@ -71,7 +71,7 @@ Vector3 cross_at(const RoadInfo& info, Vector3 direction, float distance, float 
 }
 
 void Network::build(const VerdaRegion& region) {
-    roads_.clear(); runs_.clear(); grid_.clear(); junctions_ = 0; rail_count_ = 0;
+    roads_.clear(); runs_.clear(); grid_.clear(); aprons_.clear(); junctions_ = 0; rail_count_ = 0;
     const auto& towns = region.settlements();
     roads_.resize(towns.size());
     std::vector<Piece> pieces;
@@ -311,6 +311,63 @@ void Network::build(const VerdaRegion& region) {
             }
     islands();
     guardrails(region);
+    drive_ins(region);
+}
+
+// Each drive-in's apron: its lot's front (local -z: it faces the road) out to the nearest road's
+// edge straight ahead (a highway's to its gravel verge), at most 16 m.
+void Network::drive_ins(const VerdaRegion& region) {
+    struct Kind { const char* model; float half_x, front, back; };
+    static constexpr Kind kinds[]{
+        {"civic/gas_station.glb", 12, 11, 11},       // (the forecourt is the model's front half)
+        {"civic/mechanic_shop.glb", 9, 6.2F, 6},
+        {"civic/car_lot.glb", 18, 13.6F, 13},
+    };
+    const auto& towns = region.settlements();
+    for (const auto& town : towns)
+        for (const auto& asset : town.assets) {
+            const Kind* kind = nullptr;
+            for (const auto& k : kinds) if (asset.model_path.size() >= std::char_traits<char>::length(k.model) && asset.model_path.ends_with(k.model)) kind = &k;
+            if (!kind) continue;
+            const float a = asset.rotation_y * DEG2RAD;
+            const Vector2 ahead{-std::sin(a), -std::cos(a)}, across{std::cos(a), -std::sin(a)};   // local -z, local +x
+            const Vector2 front{asset.position.x + ahead.x * kind->front, asset.position.z + ahead.y * kind->front};
+            // The road straight ahead: the nearest whose edge the ray from the front reaches.
+            float best = 16;
+            for (const auto& t : towns)
+                for (const auto& road : t.roads) {
+                    const Vector2 p{road.start.x, road.start.z}, q{road.end.x, road.end.z}, d = sub(q, p);
+                    const float l = len(d);
+                    if (l < 1) continue;
+                    const Vector2 u{d.x / l, d.y / l};
+                    // Where the ray (front + ahead * s) crosses the road's centre line.
+                    const float den = ahead.x * u.y - ahead.y * u.x;
+                    if (std::abs(den) < .2F) continue;   // (running alongside, not across the way ahead)
+                    const Vector2 w = sub(p, front);
+                    const float s = (w.x * u.y - w.y * u.x) / den, along = (w.x * ahead.y - w.y * ahead.x) / den;
+                    if (along < -2 || along > l + 2) continue;
+                    const float half = road.type == RoadType::Highway ? road.width * .5F + verge : road.width * .5F;
+                    const float edge = s - half / std::abs(den);   // (slantwise: the edge comes sooner)
+                    if (edge > -1 && edge < best) best = std::max(edge, 0.0F);
+                }
+            if (best >= 16 || best < .3F) continue;
+            const float reach = best + .6F;   // (onto the road's edge)
+            const auto at = [&](float side, float out) {
+                return Vector3{front.x + across.x * side + ahead.x * out, 0, front.y + across.y * side + ahead.y * out};
+            };
+            aprons_.push_back({at(-kind->half_x, 0), at(kind->half_x, 0), at(-kind->half_x, reach), at(kind->half_x, reach), asset.position.y, kind->front + kind->back});
+        }
+}
+
+bool Network::on_apron(float x, float z) const {
+    for (const auto& a : aprons_) {
+        // (A parallelogram: from the lot's front edge to the road's.)
+        const Vector2 o{a.lot_left.x, a.lot_left.z}, e1 = sub({a.lot_right.x, a.lot_right.z}, o), e2 = sub({a.road_left.x, a.road_left.z}, o);
+        const Vector2 q = sub({x, z}, o);
+        const float u = dot(q, e1) / dot(e1, e1), v = dot(q, e2) / dot(e2, e2);
+        if (u >= -.02F && u <= 1.02F && v >= -.05F && v <= 1.05F) return true;
+    }
+    return false;
 }
 
 // Guardrails: along a highway or a slip road wherever the land falls away beside its roadbed (the
@@ -392,20 +449,47 @@ const std::vector<Rail>& Network::rails(std::size_t settlement, std::size_t road
     return roads_[settlement][road].rails;
 }
 
-// Each roundabout's island: its kerb is low and mountable (a car cutting the corner, a rig's trailer,
-// rolls over the apron and onto the grass rather than into a wall), but the ring's bridge stands on
-// two piers on it, and those stop anything (at the roundabout's level, under the bridge).
+// Under each ring bridge: the two piers on the roundabout's island, the abutments at the deck's
+// ends holding back the embankment, and the retaining walls between the climbing ring and the slip
+// roads beside it - walls for cars and people alike, each at its own level (traffic up on the deck
+// passes over). The island's kerb is low and mountable (a car cutting the corner, a rig's trailer,
+// rolls over the apron and onto the grass rather than into a wall).
 void Network::islands() {
     for (const auto& x : interchanges()) {
         const float y = terrain::TerrainHeight::sample(x.at.x, x.at.z);
         const Vector2 f{x.ring_forward.x, x.ring_forward.z}, o{x.outward.x, x.outward.z};
+        const float radius = std::hypot(x.at.x, x.at.z), bearing = std::atan2(x.at.z, x.at.x);
+        const float sense = x.ring_forward.x * -std::sin(bearing) + x.ring_forward.z * std::cos(bearing) > 0 ? 1.0F : -1.0F;
+        // A point `s` metres along the ring from the crossing, `lateral` out from its centre line
+        // (as HighwayRender's bridge() draws them).
+        const auto ring_point = [&](float s, float lateral) {
+            const float b = bearing + sense * s / radius, r = radius + lateral;
+            return Vector2{r * std::cos(b), r * std::sin(b)};
+        };
         for (const float side : {-1.0F, 1.0F}) {
             // A pier: 2.4 m along the ring, 5 m across (as drawn), outlined by runs.
             const Vector2 c{x.at.x + f.x * side * pier_along, x.at.z + f.y * side * pier_along};
             const float ha = 1.2F - barrier_half, hc = 2.5F - barrier_half;
             const auto corner = [&](float a, float b) { return Vector2{c.x + f.x * a + o.x * b, c.y + f.y * a + o.y * b}; };
             const Vector2 p0 = corner(-ha, -hc), p1 = corner(ha, -hc), p2 = corner(ha, hc), p3 = corner(-ha, hc);
-            add_run({p0, p1, y, true}); add_run({p1, p2, y, true}); add_run({p2, p3, y, true}); add_run({p3, p0, y, true});
+            for (const auto& [a, b] : {std::pair{p0, p1}, std::pair{p1, p2}, std::pair{p2, p3}, std::pair{p3, p0}}) add_run({a, b, y, true, true});
+            // The abutment: across the whole roadbed at the deck's end.
+            const float at = side * (roundabout_pad + .6F), across = grade_flat + 1;
+            add_run({ring_point(at, -across), ring_point(at, across), y, true, true});
+            // The retaining walls, where the ring stands .4 m or more above the slip road beside it.
+            for (const float lateral : {-1.0F, 1.0F}) {
+                bool open = false;
+                Vector2 from{};
+                float low_from = 0;
+                for (float t = roundabout_pad + 2; t < slip_reach - 10; t += 2) {
+                    const Vector2 top = ring_point(side * t, lateral * (grade_flat + .8F)), foot = ring_point(side * t, lateral * (grade_flat + 4.5F));
+                    const float high = terrain::TerrainHeight::sample(top.x, top.y), low = terrain::TerrainHeight::sample(foot.x, foot.y);
+                    const Vector2 here = ring_point(side * t, lateral * (grade_flat + 1.6F));
+                    if (high - low < .4F) {open = false; continue;}
+                    if (open) add_run({from, here, low_from, true, true});
+                    from = here; low_from = low; open = true;
+                }
+            }
         }
     }
 }
@@ -425,12 +509,16 @@ const RoadInfo* Network::info(std::size_t settlement, std::size_t road) const {
     return info.highway ? &info : nullptr;
 }
 
-bool Network::barrier_hit(Vector3 p, float radius) const {
+bool Network::barrier_hit(Vector3 p, float radius) const { return hit(p, radius, false); }
+bool Network::wall_hit(Vector3 p, float radius) const { return hit(p, radius, true); }
+
+bool Network::hit(Vector3 p, float radius, bool walls) const {
     if (runs_.empty()) return false;
     const auto found = grid_.find(cell_key(static_cast<int>(std::floor(p.x / cell)), static_cast<int>(std::floor(p.z / cell))));
     if (found == grid_.end()) return false;
     for (const int i : found->second) {
         const auto& run = runs_[static_cast<std::size_t>(i)];
+        if (walls && !run.wall) continue;
         if (run.level && std::abs(p.y - run.y) > 3) continue;   // above or below this one
         const Vector2 d = sub(run.b, run.a), q{p.x - run.a.x, p.z - run.a.y};
         const float l2 = dot(d, d);

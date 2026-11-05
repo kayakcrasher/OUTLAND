@@ -14,8 +14,11 @@ float flat(Vector3 a, Vector3 b) { return std::hypot(a.x - b.x, a.z - b.z); }
 // Where the right-hand lane runs: a quarter of the way across a two-lane road; wide streets keep
 // a parking lane at the kerb, so traffic runs nearer the middle; on a divided highway, the outer
 // (slow) lane of the right-hand carriageway.
-float lane_of(float width) {
+float lane_of(float width, bool divided = false) {
     if (width >= highways::min_width) return highways::slow_lane;
+    // A city boulevard (narrower, a planted median down the middle, cars parked at the kerb):
+    // between the two, clear of the median's kerb.
+    if (divided) return width * .5F - 4.5F;
     return width >= 10 ? width * .15F : width * .25F;
 }
 // Lane changes (a highway onto a street, a street onto a wider one) ease over this far either
@@ -87,7 +90,8 @@ void RoadGraph::build(const VerdaRegion& region) {
                 const bool known = std::any_of(adjacent_[static_cast<std::size_t>(n)].begin(), adjacent_[static_cast<std::size_t>(n)].end(),
                     [&](int e) {return edges_[static_cast<std::size_t>(e)].a == previous || edges_[static_cast<std::size_t>(e)].b == previous;});
                 if (!known) {
-                    edges_.push_back({previous, n, flat(nodes_[static_cast<std::size_t>(previous)], nodes_[static_cast<std::size_t>(n)]), s.width, s.one_way, s.ramp});
+                    edges_.push_back({previous, n, flat(nodes_[static_cast<std::size_t>(previous)], nodes_[static_cast<std::size_t>(n)]), s.width, s.one_way, s.ramp,
+                                      s.highway && s.width < highways::min_width});
                     adjacent_[static_cast<std::size_t>(previous)].push_back(static_cast<int>(edges_.size() - 1));
                     adjacent_[static_cast<std::size_t>(n)].push_back(static_cast<int>(edges_.size() - 1));
                 }
@@ -146,7 +150,7 @@ Route RoadGraph::route(Vector3 from, Vector3 to) const {
     const auto& ge = edges_[static_cast<std::size_t>(goal.edge)];
     add(from, 0);
     if (start.edge == goal.edge) {
-        add(start.point, 0); add(goal.point, se.one_way ? 0.0F : lane_of(se.width)); add(to, 0);
+        add(start.point, 0); add(goal.point, se.one_way ? 0.0F : lane_of(se.width, se.divided)); add(to, 0);
         route.complete = true;
         return route;
     }
@@ -201,10 +205,21 @@ Route RoadGraph::route(Vector3 from, Vector3 to) const {
     std::vector<int> chain;
     for (int state = last; state >= 0; state = via[static_cast<std::size_t>(state)]) chain.push_back(state);
     std::reverse(chain.begin(), chain.end());
-    const auto lane = [&](int e) { const auto& edge = edge_at(e); return edge.one_way ? 0.0F : lane_of(edge.width); };
-    add(start.point, 0);
+    const auto lane = [&](int e) { const auto& edge = edge_at(e); return edge.one_way ? 0.0F : lane_of(edge.width, edge.divided); };
+    // Pulling out of a kerbside space (starting off the road's middle): onto it at its lane the way
+    // the route runs, not first out to the middle (across a boulevard's median, or into oncoming
+    // traffic).
+    Vector3 entry = start.point;
+    if (!se.one_way && !chain.empty() && flat(from, start.point) > 1 && flat(from, start.point) < se.width * .5F + 2) {
+        Vector3 next = nodes_[static_cast<std::size_t>(node_of(chain.front()))];
+        if (flat(next, start.point) < 1 && chain.size() > 1) next = nodes_[static_cast<std::size_t>(node_of(chain[1]))];
+        const Vector3 d = flat_dir(start.point, next);
+        const float l = lane_of(se.width, se.divided);
+        entry = {start.point.x - d.z * l, 0, start.point.z + d.x * l};
+    }
+    add(entry, 0);
     for (const int state : chain) add(nodes_[static_cast<std::size_t>(node_of(state))], lane(state / 2));
-    add(goal.point, ge.one_way ? 0.0F : lane_of(ge.width));
+    add(goal.point, ge.one_way ? 0.0F : lane_of(ge.width, ge.divided));
     add(to, 0);
     route.complete = true;
     return route;
