@@ -8,7 +8,11 @@
 #include <rlgl.h>
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <functional>
+#include <tuple>
 #include <string>
+#include <vector>
 
 namespace outland::engine::highway {
 namespace {
@@ -114,6 +118,48 @@ void box(Vector3 centre, Vector3 along, float length, float width, float y0, flo
     rlEnd();
 }
 
+// Guardrails over segments [begin, end) of a road (2 m each): a steel beam on wooden posts, every
+// post on the land at its foot, the beam following the roadway's grade.
+void guardrails(const std::vector<hw::Rail>& rails, float length, int segments, int begin, int end, const std::function<Frame(float)>& frame) {
+    if (rails.empty() || segments <= 0) return;
+    const float from = length * begin / segments, to = length * end / segments;
+    const Color steel{188, 192, 196, 255}, shade{150, 154, 160, 255}, post{122, 98, 72, 255};
+    for (const auto& rail : rails) {
+        const float s0 = std::max(from, rail.from), s1 = std::min(to, rail.to);
+        if (s1 <= s0) continue;
+        const auto point = [&](float s) {
+            const Frame f = frame(s);
+            const float x = f.centre.x + f.cross.x * rail.offset, z = f.centre.z + f.cross.z * rail.offset;
+            return Vector3{x, roadway(x, z, f.heading), z};
+        };
+        // Posts every 2 m from the rail's start (so chunks agree where they fall).
+        for (float s = rail.from + std::ceil((s0 - rail.from) / 2) * 2; s < s1; s += 2) {
+            const Frame f = frame(s);
+            const Vector3 p = point(s);
+            box(p, f.heading, .16F, .2F, p.y - .5F, p.y + .72F, post);
+        }
+        // The beam: a W-section (a lighter upper face, a shaded lower one), both sides showing.
+        rlSetTexture(0);
+        rlBegin(RL_TRIANGLES);
+        const int count = std::max(1, static_cast<int>(std::ceil((s1 - s0) / 2)));
+        for (int k = 0; k < count; ++k) {
+            const float a = s0 + (s1 - s0) * k / count, b = s0 + (s1 - s0) * (k + 1) / count;
+            const Vector3 p = point(a), q = point(b);
+            for (const auto& [lo, hi, colour] : {std::tuple{.42F, .58F, shade}, std::tuple{.58F, .74F, steel}}) {
+                rlColor4ub(colour.r, colour.g, colour.b, colour.a);
+                const Vector3 p0{p.x, p.y + lo, p.z}, p1{p.x, p.y + hi, p.z}, q0{q.x, q.y + lo, q.z}, q1{q.x, q.y + hi, q.z};
+                for (const bool flip : {false, true}) {
+                    const auto v = [](Vector3 w) { rlVertex3f(w.x, w.y, w.z); };
+                    if (!flip) {v(p0); v(q0); v(q1); v(p0); v(q1); v(p1);}
+                    else {v(p0); v(q1); v(q0); v(p0); v(p1); v(q1);}
+                }
+            }
+        }
+        rlEnd();
+    }
+}
+
+
 // A ring bridge over an interchange's roundabout: the deck slab under the ring's roadway, a parapet
 // along each edge, an abutment at each end holding back the embankment, two piers on the island,
 // and the island itself (a kerb and a lawn); retaining walls between the climbing ring and the slip
@@ -149,14 +195,48 @@ void bridge(const hw::Interchange& x) {
         hw::deck(c.x, c.z, y, &d);
         box(c, d, 1.2F, 2 * hw::grade_flat + 2, under - .5F, y - 1.0F, dark);                      // abutments
         box(ring_point(side * hw::pier_along, 0), ring_along(side * hw::pier_along), 2.4F, 5, under, deck - 1.1F, dark);   // piers
-        // Retaining walls: the ring's embankment beside each slip road while it climbs.
-        for (float t = hw::roundabout_pad + 2; t < hw::slip_reach - 10; t += 4)
-            for (const float lateral : {-1.0F, 1.0F}) {
+        // Retaining walls: the ring's embankment beside each slip road while it climbs - one wall,
+        // its top following the ring down (not a stair of blocks), ending where the two meet level.
+        for (const float lateral : {-1.0F, 1.0F}) {
+            struct Post { Vector3 at; float low, high; };
+            std::vector<Post> run;
+            const auto flush = [&] {
+                if (run.size() >= 2) {
+                    rlSetTexture(0);
+                    rlBegin(RL_TRIANGLES);
+                    rlColor4ub(concrete.r, concrete.g, concrete.b, 255);
+                    for (std::size_t k = 0; k + 1 < run.size(); ++k) {
+                        const Post& a = run[k];
+                        const Post& b = run[k + 1];
+                        for (const float face : {-.5F, .5F}) {   // both faces, and the top between them
+                            const Vector3 n{a.at.x / std::hypot(a.at.x, a.at.z) * lateral * face, 0, a.at.z / std::hypot(a.at.x, a.at.z) * lateral * face};
+                            const Vector3 a0{a.at.x + n.x, a.low, a.at.z + n.z}, a1{a.at.x + n.x, a.high, a.at.z + n.z};
+                            const Vector3 b0{b.at.x + n.x, b.low, b.at.z + n.z}, b1{b.at.x + n.x, b.high, b.at.z + n.z};
+                            rlVertex3f(a0.x, a0.y, a0.z); rlVertex3f(b0.x, b0.y, b0.z); rlVertex3f(b1.x, b1.y, b1.z);
+                            rlVertex3f(a0.x, a0.y, a0.z); rlVertex3f(b1.x, b1.y, b1.z); rlVertex3f(a1.x, a1.y, a1.z);
+                            rlVertex3f(a0.x, a0.y, a0.z); rlVertex3f(b1.x, b1.y, b1.z); rlVertex3f(b0.x, b0.y, b0.z);
+                            rlVertex3f(a0.x, a0.y, a0.z); rlVertex3f(a1.x, a1.y, a1.z); rlVertex3f(b1.x, b1.y, b1.z);
+                        }
+                        const Vector3 n{a.at.x / std::hypot(a.at.x, a.at.z) * .5F, 0, a.at.z / std::hypot(a.at.x, a.at.z) * .5F};
+                        const Vector3 p0{a.at.x - n.x, a.high, a.at.z - n.z}, p1{a.at.x + n.x, a.high, a.at.z + n.z};
+                        const Vector3 q0{b.at.x - n.x, b.high, b.at.z - n.z}, q1{b.at.x + n.x, b.high, b.at.z + n.z};
+                        rlVertex3f(p0.x, p0.y, p0.z); rlVertex3f(q1.x, q1.y, q1.z); rlVertex3f(q0.x, q0.y, q0.z);
+                        rlVertex3f(p0.x, p0.y, p0.z); rlVertex3f(p1.x, p1.y, p1.z); rlVertex3f(q1.x, q1.y, q1.z);
+                        rlVertex3f(p0.x, p0.y, p0.z); rlVertex3f(q0.x, q0.y, q0.z); rlVertex3f(q1.x, q1.y, q1.z);
+                        rlVertex3f(p0.x, p0.y, p0.z); rlVertex3f(q1.x, q1.y, q1.z); rlVertex3f(p1.x, p1.y, p1.z);
+                    }
+                    rlEnd();
+                }
+                run.clear();
+            };
+            for (float t = hw::roundabout_pad + 2; t < hw::slip_reach - 10; t += 2) {
                 const Vector3 top = ring_point(side * t, lateral * (hw::grade_flat + .8F)), foot = ring_point(side * t, lateral * (hw::grade_flat + 4.5F));
                 const float high = world::terrain::TerrainHeight::sample(top.x, top.z), low = world::terrain::TerrainHeight::sample(foot.x, foot.z);
-                if (high - low < .4F) continue;
-                box(ring_point(side * t, lateral * (hw::grade_flat + 1.6F)), ring_along(side * t), 4.1F, 1.0F, low - .3F, high + .15F, concrete);
+                if (high - low < .4F) {flush(); continue;}
+                run.push_back({ring_point(side * t, lateral * (hw::grade_flat + 1.6F)), low - .3F, high + .15F});
             }
+            flush();
+        }
     }
     // The island: a kerb and a lawn, under the bridge, inside a cobbled truck apron.
     const float island = hw::island_radius, lane_edge = hw::roundabout_radius - hw::roundabout_width * .5F;
@@ -269,6 +349,10 @@ void draw(const world::Road& road, const hw::RoadInfo& info, int begin, int end)
         rlEnd();
     }
     rlSetTexture(0);
+    guardrails(info.rails, length, segments, begin, end, [&](float s) {
+        const float t = s / length, half = info.start_half > 0 ? info.start_half + (info.end_half - info.start_half) * t : hw::paved_half;
+        return Frame{{road.start.x + direction.x * s, 0, road.start.z + direction.z * s}, Vector3Scale(hw::cross_at(info, direction, s, length), half / hw::paved_half), direction};
+    });
     // The ring's bridges, drawn with the piece of ring that passes over each.
     for (const auto& x : hw::interchanges()) {
         const float along = (x.at.x - road.start.x) * direction.x + (x.at.z - road.start.z) * direction.z;
@@ -313,7 +397,7 @@ void draw(const world::Road& road, const hw::RoadInfo& info, int begin, int end)
 }
 
 
-void draw_link(const world::Road& road, int begin, int end) {
+void draw_link(const world::Road& road, int begin, int end, const std::vector<hw::Rail>& rails) {
     const int segments = world::geometry::road_segments(road);
     begin = std::max(0, begin); end = std::min(segments, end);
     if (segments == 0 || begin >= end) return;
@@ -359,19 +443,50 @@ void draw_link(const world::Road& road, int begin, int end) {
         rlSetTexture(0);
         return;
     }
-    // A slip road: asphalt between white edge lines.
+    // A slip road: asphalt between white edge lines. Each piece is mitred to the pieces before and
+    // after it along its slip road (the cross-section at a joint is square to the bend), so the
+    // pieces meet edge to edge round a curve - no wedge of grass between them, no overlap.
     const float length = std::hypot(road.end.x - road.start.x, road.end.z - road.start.z);
     const Vector3 direction{(road.end.x - road.start.x) / length, 0, (road.end.z - road.start.z) / length};
     const Vector3 cross{-direction.z, 0, direction.x};
-    const auto frame = [&](int i) {
-        const float s = length * static_cast<float>(i) / static_cast<float>(segments);
-        return Frame{{road.start.x + direction.x * s, 0, road.start.z + direction.z * s}, cross, direction};
+    const auto mitre = [&](Vector3 joint, Vector3 neighbour, bool before) {
+        const float l = std::hypot(neighbour.x - joint.x, neighbour.z - joint.z);
+        if (l < .01F) return cross;
+        const Vector3 d = before ? Vector3{(joint.x - neighbour.x) / l, 0, (joint.z - neighbour.z) / l} : Vector3{(neighbour.x - joint.x) / l, 0, (neighbour.z - joint.z) / l};
+        Vector3 m{-(direction.z + d.z), 0, direction.x + d.x};
+        const float ml = std::hypot(m.x, m.z);
+        if (ml < .01F) return cross;
+        m = {m.x / ml, 0, m.z / ml};
+        const float c = m.x * cross.x + m.z * cross.z;   // cos of the half-angle: the mitre is longer by 1/c
+        return c > .5F ? Vector3{m.x / c, 0, m.z / c} : cross;
     };
+    Vector3 cross_start = cross, cross_end = cross;
+    const auto near = [](Vector3 a, Vector3 b) { return std::hypot(a.x - b.x, a.z - b.z) < .05F; };
+    const auto find_neighbours = [&](const std::vector<Vector3>& line) {
+        for (std::size_t k = 0; k + 1 < line.size(); ++k)
+            if (near(line[k], road.start) && near(line[k + 1], road.end)) {
+                if (k > 0) cross_start = mitre(road.start, line[k - 1], true);
+                if (k + 2 < line.size()) cross_end = mitre(road.end, line[k + 2], false);
+                return true;
+            }
+        return false;
+    };
+    bool found = false;
+    for (const auto& x : hw::interchanges())
+        for (const auto& slip : x.slips) if (!found) found = find_neighbours(slip.points);
+    for (const auto& rest : hw::rest_areas()) if (!found) found = find_neighbours(rest.off) || find_neighbours(rest.on);
+    const auto frame_at = [&](float s) {
+        const float t = std::clamp(s / length, 0.0F, 1.0F);
+        const Vector3 c{cross_start.x + (cross_end.x - cross_start.x) * t, 0, cross_start.z + (cross_end.z - cross_start.z) * t};
+        return Frame{{road.start.x + direction.x * s, 0, road.start.z + direction.z * s}, c, direction};
+    };
+    const auto frame = [&](int i) { return frame_at(length * static_cast<float>(i) / static_cast<float>(segments)); };
     const float half = road.width * .5F;
-    for (int pass = 0; pass < 2; ++pass) {
+    // Asphalt, its edge lines, then a gravel shoulder each side (on the level roadbed).
+    for (int pass = 0; pass < 3; ++pass) {
         rlSetTexture(pass == 0 ? r.plain.id : 0);
         rlBegin(RL_TRIANGLES);
-        const Color tint = pass == 0 ? asphalt_tint : white;
+        const Color tint = pass == 0 ? asphalt_tint : pass == 1 ? white : gravel;
         rlColor4ub(tint.r, tint.g, tint.b, tint.a);
         rlNormal3f(0, 1, 0);
         Frame a = frame(begin);
@@ -379,12 +494,14 @@ void draw_link(const world::Road& road, int begin, int end) {
             const Frame b = frame(i + 1);
             const float sa = length * i / segments, sb = length * (i + 1) / segments;
             if (pass == 0) strip(a, b, sa, sb, -half, half, -half / texture_across, half / texture_across, lift - .01F);
-            else for (const float edge : {-half + .3F, half - .45F}) strip(a, b, sa, sb, edge, edge + .15F, 0, 1, lift);
+            else if (pass == 1) for (const float edge : {-half + .3F, half - .45F}) strip(a, b, sa, sb, edge, edge + .15F, 0, 1, lift);
+            else for (const float edge : {-half - 1.5F, half}) strip(a, b, sa, sb, edge, edge + 1.5F, 0, 1, lift - .03F);
             a = b;
         }
         rlEnd();
     }
     rlSetTexture(0);
+    guardrails(rails, length, segments, begin, end, frame_at);
 }
 
 }

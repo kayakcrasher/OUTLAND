@@ -32,6 +32,10 @@ public:
     [[nodiscard]]
     int chunk_count() const;
 
+    // The grid a chunk is built at, `ring` chunks from the one the camera is over: finer near
+    // the highways (kRoadResolution), coarser far away.
+    static int resolution_for(int chunk_x, int chunk_z, int ring);
+
 private:
     static constexpr int kRadius = 3;        // the near rings, at full detail
     static constexpr int kFarResolution = 10;
@@ -40,6 +44,9 @@ private:
     bool coastal_layout_{false};
     static constexpr float kChunkSize = 128.0F;
     static constexpr int kResolution = 24;
+    // Near the highways, their slip roads, roundabouts and La Ringo: a 2 m grid, the roads' own
+    // step, so the land follows their banks and cuttings and never shows through the roadway.
+    static constexpr int kRoadResolution = 64;
 
     std::vector<
         std::unique_ptr<TerrainChunk>

@@ -24,7 +24,8 @@ extern "C" bool __wrap_IsKeyPressed(int key) { return key == pressed_key; }
 extern "C" void __wrap_UploadMesh(Mesh *, bool) {}
 extern "C" Model __wrap_LoadModelFromMesh(Mesh mesh) {
     ++created;
-    assert(mesh.vertexCount==625 && mesh.triangleCount==1152 && mesh.indices);
+    // (24 cells to a chunk, or 64 - a 2 m grid - near the highways.)
+    assert(((mesh.vertexCount==625 && mesh.triangleCount==1152) || (mesh.vertexCount==65*65 && mesh.triangleCount==2*64*64)) && mesh.indices);
     for(int i=0;i<mesh.triangleCount*3;++i) assert(mesh.indices[i]<mesh.vertexCount);
     for(int i=0;i<mesh.triangleCount*3;i+=3) {
         const auto a=mesh.indices[i]*3,b=mesh.indices[i+1]*3,c=mesh.indices[i+2]*3;

@@ -14,6 +14,9 @@ namespace outland::world { class VerdaRegion; }
 namespace outland::world::highways {
 
 struct Span { float from, to; };   // metres along a road from its start
+// A guardrail beside a road: steel on posts, `offset` metres out to the right (negative: the left),
+// over [from, to] metres along it - where the land falls away beside the roadbed (an embankment).
+struct Rail { float offset, from, to; };
 
 struct RoadInfo {
     bool highway{false};
@@ -21,14 +24,18 @@ struct RoadInfo {
     std::vector<Span> plain;            // junction aprons: plain asphalt, no lines, no barrier
     std::vector<Span> barrier;          // where the median barrier stands
     float start_half{0}, end_half{0};   // paved half-width at each end (narrower where it tapers into a town)
+    std::vector<Rail> rails;            // (also kept for slip roads, which are not highways)
 };
 
 class Network {
 public:
     void build(const VerdaRegion& region);
     [[nodiscard]] const RoadInfo* info(std::size_t settlement, std::size_t road) const;
-    // Would a vehicle (a circle of `radius` at p, its wheels at p.y) touch the median barrier, or a
-    // bridge's parapet?
+    // The guardrails beside a highway or a slip road (none for any other road).
+    [[nodiscard]] const std::vector<Rail>& rails(std::size_t settlement, std::size_t road) const;
+    [[nodiscard]] std::size_t rail_count() const { return rail_count_; }
+    // Would a vehicle (a circle of `radius` at p, its wheels at p.y) touch the median barrier, a
+    // bridge's parapet, or a guardrail?
     [[nodiscard]] bool barrier_hit(Vector3 p, float radius) const;
     [[nodiscard]] std::size_t barrier_runs() const { return runs_.size(); }
     [[nodiscard]] std::size_t junctions() const { return junctions_; }
@@ -39,10 +46,11 @@ private:
     struct Run { Vector2 a, b; float y{0}; bool level{false}; };
     void add_run(Run run);
     void islands();
+    void guardrails(const VerdaRegion& region);
     std::vector<std::vector<RoadInfo>> roads_;
     std::vector<Run> runs_;
     std::unordered_map<long long, std::vector<int>> grid_;
-    std::size_t junctions_{0};
+    std::size_t junctions_{0}, rail_count_{0};
 };
 
 // The region's network, rebuilt when its roads change (count or storage).

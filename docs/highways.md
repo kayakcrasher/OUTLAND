@@ -68,9 +68,25 @@ clockwise from the north: **1 Espera, 2 Porto Luma, 3 Suda Haveno, 4 Roka**.
   where a town's levelled ground is close beyond, so the highway can reach it within the grade);
   the slip roads have roadbeds of their own, at the ring's height while they run beside its
   roadbed (so the two are one level where they meet - no step at the ring's verge), then down
-  evenly to the pad, reaching its level at the pad's edge. Beside a slip road's roadbed the land
-  comes back in an even bank (2.5 across for 1 up or down, up to `slip_bank` 24 m wide), never a
-  sheer cut or a drop at its edge.
+  to the pad on a smooth vertical curve (easing out of the ring's grade, easing into the pad's
+  level at its edge: no crease at either end). The roadbed's height anywhere is the slip road's
+  height at the nearest point along it (not the end of the piece before, which held the land
+  level to each joint for a road's width and climbed the slope in 40 cm steps). Beside a slip
+  road's roadbed the land comes back in an even bank (2.5 across for 1 up or down, up to
+  `slip_bank` 24 m wide), never a sheer cut or a drop at its edge.
+- **Drawn smooth.** Each slip road piece is mitred to the pieces before and after it (square to
+  the bend at every joint: no wedge of grass, no overlap), with white edge lines and a 1.5 m
+  gravel shoulder each side on the level roadbed. Near the highways and interchanges the land is
+  drawn on a 2 m grid (`TerrainWorld::kRoadResolution`, 64 cells to a 128 m chunk, within 45 m
+  of a highway, a slip road, a roundabout or a rest area; elsewhere the usual 5 m), so the land's
+  triangles follow the roadbed's edge instead of cutting up over the asphalt. The retaining walls
+  between the climbing ring and the slip roads run as one continuous sloped wall.
+- **Guardrails.** Wherever the land falls away more than 1.4 m beside a highway or a slip road
+  (the embankments up to the ring's bridges, a slip road built up over a dip), a steel guardrail
+  on wooden posts stands out on the verge (`Network::rails`; drawn with the road, and solid for
+  vehicles like the median barrier). None on a bridge (it has parapets), across a junction, where
+  another road joins or runs alongside (a slip road's taper off the ring), round a roundabout, or
+  through a town.
 - **On the deck.** Cars on the ring (and people on foot) ride the deck (`highways::deck`); cars
   on the roundabout beneath drive under it. Barriers and parapets count only at their own level,
   and nothing standing on the ground under a deck is in the way of a car up on it.

@@ -6,6 +6,7 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <algorithm>
+#include <vector>
 
 namespace outland::world::terrain {
 
@@ -41,14 +42,18 @@ void TerrainChunk::build() {
     mesh.texcoords=static_cast<float*>(MemAlloc(mesh.vertexCount*2*sizeof(float)));
     mesh.indices=static_cast<unsigned short*>(MemAlloc(mesh.triangleCount*3*sizeof(unsigned short)));
     const float step=size_/cells,origin_x=chunk_x_*size_,origin_z=chunk_z_*size_;
+    // The land at every grid point, with one ring beyond the chunk's edge (for the slopes there,
+    // so the shading runs on unbroken into the next chunk). Each point sampled once.
+    const int ring=side+2;
+    std::vector<float> height(static_cast<std::size_t>(ring*ring));
+    for(int z=-1;z<=side;++z) for(int x=-1;x<=side;++x)
+        height[static_cast<std::size_t>((z+1)*ring+x+1)]=TerrainHeight::sample(origin_x+x*step,origin_z+z*step);
+    const auto h=[&](int x,int z){return height[static_cast<std::size_t>((z+1)*ring+x+1)];};
     for(int z=0;z<side;++z) for(int x=0;x<side;++x) {
         const int v=z*side+x;
-        const float px=origin_x+x*step,pz=origin_z+z*step;
-        mesh.vertices[v*3]=px;mesh.vertices[v*3+1]=TerrainHeight::sample(px,pz);mesh.vertices[v*3+2]=pz;
+        mesh.vertices[v*3]=origin_x+x*step;mesh.vertices[v*3+1]=h(x,z);mesh.vertices[v*3+2]=origin_z+z*step;
         // The slope, so hillsides catch the sun or fall into shade.
-        const float e=std::max(.5F,step*.5F);
-        const float sx=TerrainHeight::sample(px+e,pz)-TerrainHeight::sample(px-e,pz),sz=TerrainHeight::sample(px,pz+e)-TerrainHeight::sample(px,pz-e);
-        const Vector3 normal=Vector3Normalize({-sx,2*e,-sz});
+        const Vector3 normal=Vector3Normalize({h(x-1,z)-h(x+1,z),2*step,h(x,z-1)-h(x,z+1)});
         mesh.normals[v*3]=normal.x;mesh.normals[v*3+1]=normal.y;mesh.normals[v*3+2]=normal.z;
         mesh.texcoords[v*2]=static_cast<float>(x)/cells;mesh.texcoords[v*2+1]=static_cast<float>(z)/cells;
     }

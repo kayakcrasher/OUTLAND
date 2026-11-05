@@ -51,6 +51,9 @@ std::vector<Span> merged(std::vector<Span> spans) {
     }
     return out;
 }
+bool inside_any(const std::vector<Span>& spans, float s) {
+    return std::any_of(spans.begin(), spans.end(), [&](const Span& span) { return s >= span.from && s <= span.to; });
+}
 long long cell_key(int x, int z) { return (static_cast<long long>(x) << 32) ^ static_cast<std::uint32_t>(z); }
 constexpr float cell = 32;
 }
@@ -68,7 +71,7 @@ Vector3 cross_at(const RoadInfo& info, Vector3 direction, float distance, float 
 }
 
 void Network::build(const VerdaRegion& region) {
-    roads_.clear(); runs_.clear(); grid_.clear(); junctions_ = 0;
+    roads_.clear(); runs_.clear(); grid_.clear(); junctions_ = 0; rail_count_ = 0;
     const auto& towns = region.settlements();
     roads_.resize(towns.size());
     std::vector<Piece> pieces;
@@ -307,6 +310,86 @@ void Network::build(const VerdaRegion& region) {
                 if (deck(mx - side * 1.0F * mx / std::hypot(mx, mz), mz - side * 1.0F * mz / std::hypot(mx, mz), y, &heading)) add_run({a, b, y, true});
             }
     islands();
+    guardrails(region);
+}
+
+// Guardrails: along a highway or a slip road wherever the land falls away beside its roadbed (the
+// embankments up to the ring's bridges, a slip road built up over a dip), steel on posts out on the
+// verge. Never on a bridge (it has parapets), across a junction, where another road joins or runs
+// alongside (a slip road's taper off the ring), round a roundabout, or through a town.
+void Network::guardrails(const VerdaRegion& region) {
+    struct Other { std::size_t s, r; Vector2 a, b; float half; };
+    std::vector<Other> others;
+    const auto& towns = region.settlements();
+    for (std::size_t s = 0; s < towns.size(); ++s)
+        for (std::size_t r = 0; r < towns[s].roads.size(); ++r) {
+            const auto& road = towns[s].roads[r];
+            others.push_back({s, r, {road.start.x, road.start.z}, {road.end.x, road.end.z}, road.width * .5F});
+        }
+    constexpr float step = 2, drop = 1.4F, shortest = 8, bridge_gap = 6;
+    for (std::size_t s = 0; s < towns.size(); ++s)
+        for (std::size_t r = 0; r < towns[s].roads.size(); ++r) {
+            const auto& road = towns[s].roads[r];
+            auto& info = roads_[s][r];
+            const bool slip = road.type == RoadType::Ramp;
+            if (!slip && !(info.highway && road.width >= min_width && info.start_half == paved_half && info.end_half == paved_half)) continue;
+            const Vector2 a{road.start.x, road.start.z}, b{road.end.x, road.end.z};
+            const float length = len(sub(b, a));
+            if (!(length > step)) continue;
+            const Vector2 d = unit(sub(b, a)), right = right_of(d);
+            if (std::any_of(interchanges().begin(), interchanges().end(), [&](const Interchange& x) {
+                    return std::min(len(sub(a, {x.at.x, x.at.z})), len(sub(b, {x.at.x, x.at.z}))) < roundabout_pad + 4; }))
+                continue;   // (into the roundabout: its pad is level)
+            const float out = slip ? slip_width * .5F + 1.1F : paved_half + verge - .45F;
+            const float every = slip ? step : 2 * step;   // (the long highways more coarsely)
+            for (const float side : {-1.0F, 1.0F}) {
+                std::vector<Span> spans;
+                for (float at = every * .5F; at < length; at += every) {
+                    if (!slip && inside_any(info.plain, at)) continue;
+                    const Vector2 e{a.x + d.x * at + right.x * side * out, a.y + d.y * at + right.y * side * out};
+                    float y = 0;
+                    if (deck(e.x, e.y, y)) continue;
+                    y = terrain::TerrainHeight::sample(e.x, e.y);
+                    float land = 1e9F;
+                    for (const float further : {3.0F, 6.0F})
+                        land = std::min(land, terrain::TerrainHeight::sample(e.x + right.x * side * further, e.y + right.y * side * further));
+                    if (y - land < drop) continue;
+                    // Another road there (not the pieces this one runs on into).
+                    bool clear = true;
+                    for (const auto& o : others) {
+                        if (o.s == s && o.r == r) continue;
+                        if (std::min({len(sub(o.a, a)), len(sub(o.a, b)), len(sub(o.b, a)), len(sub(o.b, b))}) < 1) continue;
+                        const Vector2 od = sub(o.b, o.a), q = sub(e, o.a);
+                        const float l2 = dot(od, od);
+                        const float t = l2 < 1e-6F ? 0 : std::clamp(dot(q, od) / l2, 0.0F, 1.0F);
+                        if (len(sub(q, {od.x * t, od.y * t})) < o.half + 2.5F) {clear = false; break;}
+                    }
+                    if (!clear) continue;
+                    const Span here{std::max(0.0F, at - every * .5F), std::min(length, at + every * .5F)};
+                    if (!spans.empty() && here.from - spans.back().to <= bridge_gap) spans.back().to = here.to;
+                    else spans.push_back(here);
+                }
+                for (const auto& span : spans) {
+                    if (span.to - span.from < shortest) continue;
+                    info.rails.push_back({side * out, span.from, span.to});
+                    ++rail_count_;
+                    // Solid, in short runs that each know their level.
+                    const int count = std::max(1, static_cast<int>(std::ceil((span.to - span.from) / 4)));
+                    for (int k = 0; k < count; ++k) {
+                        const float f0 = span.from + (span.to - span.from) * k / count, f1 = span.from + (span.to - span.from) * (k + 1) / count;
+                        const Vector2 p0{a.x + d.x * f0 + right.x * side * out, a.y + d.y * f0 + right.y * side * out};
+                        const Vector2 p1{a.x + d.x * f1 + right.x * side * out, a.y + d.y * f1 + right.y * side * out};
+                        add_run({p0, p1, terrain::TerrainHeight::sample((p0.x + p1.x) * .5F, (p0.y + p1.y) * .5F), true});
+                    }
+                }
+            }
+        }
+}
+
+const std::vector<Rail>& Network::rails(std::size_t settlement, std::size_t road) const {
+    static const std::vector<Rail> none;
+    if (settlement >= roads_.size() || road >= roads_[settlement].size()) return none;
+    return roads_[settlement][road].rails;
 }
 
 // Each roundabout's island: its kerb is low and mountable (a car cutting the corner, a rig's trailer,

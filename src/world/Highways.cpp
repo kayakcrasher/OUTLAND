@@ -567,10 +567,22 @@ float graded(float x, float z, float height, HeightFn natural, HeightFn pad) {
                     }
                     total += step * lo;
                 }
+                // The grade it leaves the ring's side on (per metre), so the slope down eases out of
+                // it, and eases into the pad's level: a vertical curve at each end, never a crease.
+                float grade = 0;
+                if (w.height.size() >= 2) {
+                    const V2 p0 = w.points[w.points.size() - 2], p1 = w.points.back();
+                    const float l = std::hypot(p1.x - p0.x, p1.z - p0.z);
+                    if (l > .1F) grade = std::clamp((w.height.back() - w.height[w.height.size() - 2]) / l, -.08F, .08F);
+                }
                 for (; k < points.size(); ++k) {
                     if (k > 0 && !w.points.empty()) run += std::hypot(points[k].x - points[k - 1].x, points[k].z - points[k - 1].z);
                     w.points.push_back({points[k].x, points[k].z});
-                    w.height.push_back(on_pad(points[k]) ? level : start + (level - start) * (total > 0 ? std::clamp(run / total, 0.0F, 1.0F) : 1.0F));
+                    const float t = total > 0 ? std::clamp(run / total, 0.0F, 1.0F) : 1.0F;
+                    // (Hermite: from `start` on `grade` to `level` on the flat.)
+                    const float t2 = t * t, t3 = t2 * t;
+                    const float h = start * (2 * t3 - 3 * t2 + 1) + grade * total * (t3 - 2 * t2 + t) + level * (3 * t2 - 2 * t3);
+                    w.height.push_back(on_pad(points[k]) ? level : std::clamp(h, std::min(start, level) - .5F, std::max(start, level) + .5F));
                 }
                 ways.push_back(std::move(w));
             }
@@ -593,21 +605,26 @@ float graded(float x, float z, float height, HeightFn natural, HeightFn pad) {
             const float t = std::clamp((d - roundabout_pad) / pad_band, 0.0F, 1.0F), w = 1 - t * t * (3 - 2 * t);
             if (w > pad_weight) {pad_weight = w; pad_level = levels[k].first;}
         }
-        for (const auto& w : levels[k].second)
+        if (ring_distance <= paved_half + verge + .5F) continue;   // (the ring's own roadway is the ring's)
+        for (const auto& w : levels[k].second) {
+            // The slip road's height where it passes nearest (the piece it is beside: not the end of
+            // the piece before, which would hold the ground level to a joint for a road's width and
+            // climb the slope in steps).
+            float closest = 1e9F, h = 0;
             for (std::size_t j = 0; j + 1 < w.points.size(); ++j) {
                 const V2 a = w.points[j], b = w.points[j + 1], dd = b - a;
                 const float l2 = dd.x * dd.x + dd.z * dd.z;
                 const float t = l2 < 1e-6F ? 0 : std::clamp(((x - a.x) * dd.x + (z - a.z) * dd.z) / l2, 0.0F, 1.0F);
                 const float distance = std::hypot(x - (a.x + dd.x * t), z - (a.z + dd.z * t));
-                if (ring_distance <= paved_half + verge + .5F) continue;   // (the ring's own roadway is the ring's)
-                const float h = w.height[j] + (w.height[j + 1] - w.height[j]) * t;
-                if (distance > slip_width * .5F + 2) {
-                    if (d > roundabout_pad && distance < bank_distance) {bank_distance = distance; bank_height = h;}
-                    continue;
-                }
-                lowest = std::min(lowest, h);
-                if (distance < nearest) {nearest = distance; road = h;}
+                if (distance < closest) {closest = distance; h = w.height[j] + (w.height[j + 1] - w.height[j]) * t;}
             }
+            if (closest > slip_width * .5F + 2) {
+                if (d > roundabout_pad && closest < bank_distance) {bank_distance = closest; bank_height = h;}
+                continue;
+            }
+            lowest = std::min(lowest, h);
+            if (closest < nearest) {nearest = closest; road = h;}
+        }
     }
     const auto with_pads = [&](float h) { return h * (1 - pad_weight) + pad_level * pad_weight; };
     // A slip road's bank: from its roadbed's edge back to the land in an even slope (2.5 across for
@@ -622,7 +639,11 @@ float graded(float x, float z, float height, HeightFn natural, HeightFn pad) {
     };
     // The roadbed itself is always level across (another road's roadbed - the ring's, climbing to its
     // bridge - is not the pad's).
-    if (lowest < 1e8F) return std::abs(lowest - pad_level) < .5F ? with_pads(lowest) : lowest;
+    if (lowest < 1e8F) {
+        // (Onto the pad's level where it meets it, easing off as the two part: no step.)
+        const float near_pad = std::clamp(1 - std::abs(lowest - pad_level) / .5F, 0.0F, 1.0F);
+        return lowest + (with_pads(lowest) - lowest) * near_pad;
+    }
     if (nearest >= grade_flat + grade_band) return banked(with_pads(height));
     const float t = (nearest - grade_flat) / grade_band;
     float blend = t * t * (3 - 2 * t);
