@@ -56,6 +56,13 @@ STATIONS = [
         "evening": "Bonan vesperon, rokuloj! Vi aŭskultas Espera Roko.",
         "night": "Noktaj rokuloj, vi aŭskultas Espera Roko, cent kvin komo naŭ.",
     }},
+    # Luma Disko's DJ: a smooth late-night voice with the dance floor's echo on it.
+    {"key": "disko", "voice": "pl_PL-gosia-medium", "pace": 1.0, "drawl": False, "echo": True, "lines": {
+        "morning": "Bonan matenon, Porto Luma! Vi aŭskultas Luma Disko.",
+        "day": "Vi aŭskultas Luma Disko, naŭdek kvar komo tri. Dancu!",
+        "evening": "Bonan vesperon! La neonoj brilas. Vi aŭskultas Luma Disko.",
+        "night": "Noktaj dancantoj, vi aŭskultas Luma Disko, naŭdek kvar komo tri.",
+    }},
 ]
 OCCASIONS = ["morning", "day", "evening", "night"]
 # La Verda Basballigo's clubs (game::sports::teams, in order), as the announcers say them.
@@ -177,11 +184,24 @@ def mix(voice, bed=None, start=.9):
     return out / max(1.0, np.max(np.abs(out)) / .92)
 
 
+def echoed(x):
+    """The disco DJ's echo: two repeats, a quarter-second apart, each fainter and darker."""
+    lag = int(RATE * .24)
+    out = np.zeros(len(x) + 2 * lag)
+    out[:len(x)] += x
+    soft = signal.sosfilt(signal.butter(2, 3000, fs=RATE, output="sos"), x)
+    out[lag:lag + len(x)] += .32 * soft
+    out[2 * lag:2 * lag + len(x)] += .14 * soft
+    return out / max(1.0, np.max(np.abs(out)))
+
+
 def fit(text, spec, start, grit=False):
     """The voice, a little quicker if it would run past the slot."""
     pace = spec["pace"]
     for _ in range(8):
         voice = on_air(speak(text, spec["voice"], pace, spec["drawl"]), grit)
+        if spec.get("echo"):
+            voice = echoed(voice)
         if start + len(voice) / RATE <= VOICE_SLOT - .45:
             return voice
         pace *= .92
@@ -236,15 +256,17 @@ def header(idents, news):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--header-only", action="store_true", help="only rewrite RadioVoices.hpp")
+    parser.add_argument("--only", help="speak just this station's idents (no news); the rest stay as they are")
     args = parser.parse_args()
     idents = []
     for st in STATIONS:
         row = []
-        bed = None if args.header_only else decode(ROOT / "assets" / "audio" / "radio" / f"{st['key']}_ident.ogg")
+        speak_it = not args.header_only and (not args.only or args.only == st["key"])
+        bed = decode(ROOT / "assets" / "audio" / "radio" / f"{st['key']}_ident.ogg") if speak_it else None
         for occasion in OCCASIONS:
             name = f"assets/audio/radio/voice/{st['key']}_{occasion}.ogg"
             row.append(name)
-            if not args.header_only:
+            if speak_it:
                 voice = fit(st["lines"][occasion], st, .9, st.get("grit", False))
                 encode(mix(voice, bed, .9), ROOT / name)
                 print("wrote", name)
@@ -258,7 +280,7 @@ def main():
                     continue
                 name = f"assets/audio/radio/voice/news_{'drawl_' if k else ''}{w}{l}.ogg"
                 news[k].append(name)
-                if not args.header_only:
+                if not args.header_only and not args.only:
                     voice = fit(f"Sportaj novaĵoj! {TEAMS[w]} venkis, {TEAMS[l]} perdis.", spec, .75)
                     clip = mix(voice, None, .75)
                     c = chime()

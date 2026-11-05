@@ -18,7 +18,7 @@ public:
     RecordedGeometry(RecordedGeometry&& other) noexcept : pieces_(std::move(other.pieces_)) { other.pieces_.clear(); }
     RecordedGeometry& operator=(RecordedGeometry&& other) noexcept;
     ~RecordedGeometry() { unload(); }
-    void draw() const;
+    void draw(bool surface = false) const;   // surface: a road batch (render::shade_surface)
     void unload();
     bool empty() const { return pieces_.empty(); }
     int triangles() const;

@@ -86,6 +86,10 @@ clockwise from the north: **1 Espera, 2 Porto Luma, 3 Suda Haveno, 4 Roka**.
   `gore_gap`, 7 m), so the merge is one sheet of asphalt. Grass tufts keep off every carriageway,
   a highway's gravel verge, a slip road's shoulders, a gore, a roundabout's lane and its truck
   apron, and a drive-in's apron (`highways::paved_ground`, `Network::on_apron`).
+- **Solid from afar.** Road surfaces (roads, slip roads, gores, aprons) are drawn with a tiny
+  depth bias that grows with distance, as the depth buffer's precision does
+  (`render::shading_surface_begin`), so the land never flickers through the asphalt on a distant
+  road or an interchange seen from above - on phones too, whose depth buffers are coarser.
 - **Guardrails.** Wherever the land falls away more than 1.4 m beside a highway or a slip road
   (the embankments up to the ring's bridges, a slip road built up over a dip), a steel guardrail
   on wooden posts stands out on the verge (`Network::rails`; drawn with the road, and solid for

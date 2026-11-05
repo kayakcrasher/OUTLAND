@@ -57,6 +57,30 @@ void main() {
 }
 )";
 
+// The road surfaces: as kFlatVertex, pulled a hair toward the eye in depth only. A fixed shift in
+// normalised depth is a distance that grows with the square of the range - as the depth
+// buffer's step does - so it is nothing up close and enough far off.
+constexpr const char* kSurfaceVertex = R"(
+IN vec3 vertexPosition;
+IN vec2 vertexTexCoord;
+IN vec4 vertexColor;
+uniform mat4 mvp;
+uniform vec3 fogRange;
+uniform float depthBias;
+OUT vec2 fragTexCoord;
+OUT vec4 fragColor;
+OUT vec3 fragLight;
+OUT float fragFog;
+void main() {
+    fragTexCoord = vertexTexCoord;
+    fragColor = vertexColor;
+    fragLight = vec3(1.0);
+    gl_Position = mvp * vec4(vertexPosition, 1.0);
+    fragFog = clamp((gl_Position.w - fogRange.x) * fogRange.y, 0.0, 1.0) * fogRange.z;
+    gl_Position.z -= depthBias * gl_Position.w;
+}
+)";
+
 constexpr const char* kFragment = R"(
 IN vec2 fragTexCoord;
 IN vec4 fragColor;
@@ -74,9 +98,9 @@ void main() {
 
 struct State {
     bool ready{false};
-    Shader lit{}, flat{};
+    Shader lit{}, flat{}, surface{};
     int lit_sun{-1}, lit_sun_color{-1}, lit_sky{-1}, lit_ground{-1}, lit_fog{-1}, lit_fog_color{-1};
-    int flat_fog{-1}, flat_fog_color{-1};
+    int flat_fog{-1}, flat_fog_color{-1}, surface_fog{-1}, surface_fog_color{-1};
     std::unordered_set<unsigned int> mipmapped;
 };
 State& state() {
@@ -120,11 +144,13 @@ void shading_initialize() {
     const auto fragment = source(kFragment, false);
     s.lit = LoadShaderFromMemory(source(kLitVertex, true).c_str(), fragment.c_str());
     s.flat = LoadShaderFromMemory(source(kFlatVertex, true).c_str(), fragment.c_str());
-    if (!usable(s.lit) || !usable(s.flat)) {
+    s.surface = LoadShaderFromMemory(source(kSurfaceVertex, true).c_str(), fragment.c_str());
+    if (!usable(s.lit) || !usable(s.flat) || !usable(s.surface)) {
         TraceLog(LOG_WARNING, "OUTLAND shading: shaders did not compile; drawing unlit");
         if (usable(s.lit)) UnloadShader(s.lit);
         if (usable(s.flat)) UnloadShader(s.flat);
-        s.lit = s.flat = Shader{};
+        if (usable(s.surface)) UnloadShader(s.surface);
+        s.lit = s.flat = s.surface = Shader{};
         return;
     }
     s.lit_sun = GetShaderLocation(s.lit, "sunDir");
@@ -135,6 +161,11 @@ void shading_initialize() {
     s.lit_fog_color = GetShaderLocation(s.lit, "fogColor");
     s.flat_fog = GetShaderLocation(s.flat, "fogRange");
     s.flat_fog_color = GetShaderLocation(s.flat, "fogColor");
+    s.surface_fog = GetShaderLocation(s.surface, "fogRange");
+    s.surface_fog_color = GetShaderLocation(s.surface, "fogColor");
+    // (With the near plane at 5 cm: 4 cm at 50 m, 15 cm at 100 m, 60 cm at 200 m.)
+    const float bias = 1.5e-6F;
+    SetShaderValue(s.surface, GetShaderLocation(s.surface, "depthBias"), &bias, SHADER_UNIFORM_FLOAT);
     s.ready = true;
     shading_frame(world::sky::sky_at(12));
 }
@@ -144,6 +175,7 @@ void shading_shutdown() {
     if (!s.ready) return;
     UnloadShader(s.lit);
     UnloadShader(s.flat);
+    UnloadShader(s.surface);
     s = State{};
 }
 
@@ -192,6 +224,8 @@ void shading_frame(const world::sky::SkyState& sky) {
     SetShaderValue(s.lit, s.lit_fog_color, fog_color, SHADER_UNIFORM_VEC3);
     SetShaderValue(s.flat, s.flat_fog, fog, SHADER_UNIFORM_VEC3);
     SetShaderValue(s.flat, s.flat_fog_color, fog_color, SHADER_UNIFORM_VEC3);
+    SetShaderValue(s.surface, s.surface_fog, fog, SHADER_UNIFORM_VEC3);
+    SetShaderValue(s.surface, s.surface_fog_color, fog_color, SHADER_UNIFORM_VEC3);
 }
 
 void shading_begin() {
@@ -200,6 +234,19 @@ void shading_begin() {
 
 void shading_end() {
     if (state().ready) EndShaderMode();
+}
+
+void shading_surface_begin() {
+    if (state().ready) BeginShaderMode(state().surface);
+}
+
+void shading_surface_end() {
+    if (state().ready) BeginShaderMode(state().flat);   // (back to the world pass's own)
+}
+
+void shade_surface(Material& material) {
+    auto& s = state();
+    if (s.ready) material.shader = s.surface;
 }
 
 } // namespace outland::engine::render

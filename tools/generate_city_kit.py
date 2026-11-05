@@ -2030,6 +2030,8 @@ RADIO_STYLES = {
     "popolko": dict(walls=("render", (236, 228, 206)), accent=(16, 128, 70), mast=30.0, porch=False, dishes=1),
     "kantrio": dict(walls=("wood", None), accent=(122, 74, 36), mast=24.0, porch=True, dishes=0),
     "roko": dict(walls=("render", (54, 54, 58)), accent=(176, 30, 34), mast=36.0, porch=False, dishes=2),
+    # Luma Disko: white render, hot-pink trim, cyan neon tubes and a mirror ball on the roof.
+    "disko": dict(walls=("render", (240, 238, 244)), accent=(226, 38, 146), mast=28.0, porch=False, dishes=1, neon=(46, 228, 238)),
 }
 
 
@@ -2122,6 +2124,18 @@ def radio_station(style):
         cx, cz = -3.6 + k * 2.6, 2.4
         b.solid((cx - .1, height, cz - .1), (cx + .1, height + .9, cz + .1), "steel")
         b.dome("dish", cx, cz, 1.0 if k == 0 else .7, height + .9, courses=4, sides=16, rise=.35)
+    if st.get("neon"):
+        # Neon tubes: one under the sign band across the front, one round the roof's edge, and a
+        # mirror ball on a post on the roof.
+        b.material("neon", flat(st["neon"], 0), 1, 1)
+        b.material("mirror", checker((214, 218, 226), (150, 156, 170), 8, 73), 1, 1)
+        b.solid((-w - .05, height - 1.0, -d - .25), (w + .05, height - .9, -d - .15), "neon")
+        for lo, hi in (((-w, height + .4, -d - .05), (w, height + .5, -d + .05)), ((-w, height + .4, d - .05), (w, height + .5, d + .05)),
+                       ((-w - .05, height + .4, -d), (-w + .05, height + .5, d)), ((w - .05, height + .4, -d), (w + .05, height + .5, d))):
+            b.solid(lo, hi, "neon")
+        b.solid((2.9, height, -1.6), (3.1, height + 1.3, -1.4), "steel")
+        b.dome("mirror", 3.0, -1.5, .55, height + 1.3, courses=4, sides=12)
+        b.dome("mirror", 3.0, -1.5, .55, height + 1.3, courses=4, sides=12, rise=-1.0)
     lattice_mast(b, w + 2.2, 1.5, st["mast"])
     # The guy-line anchors and the fence round the mast's foot.
     b.solid((w + .6, 0, -.1), (w + 3.8, .9, -.04), "steel")
@@ -3056,7 +3070,7 @@ def kit():
     add("civic/parking_garage.glb", parking_garage(), "city_parking_garage", "Parkumejo Centra - multi-storey car park (drive up 4 levels), rooftop mansion for sale", "Building", 38.6, 32.6, 20.2)
     add("civic/truck_depot.glb", truck_depot(), "city_truck_depot", "Verda Transporto - truck depot with office", "Building", 38, 31, 9)
     add("civic/gun_shop.glb", gun_shop(), "city_gun_shop", "Armilejo - gun shop (modular, enterable)", "Building", 12.2, 9.2, 4.4)
-    for style, name in (("popolko", "Verda Popolko 98.1"), ("kantrio", "Radio Sovaĝejo 102.5"), ("roko", "Espera Roko 105.9")):
+    for style, name in (("popolko", "Verda Popolko 98.1"), ("kantrio", "Radio Sovaĝejo 102.5"), ("roko", "Espera Roko 105.9"), ("disko", "Luma Disko 94.3")):
         mast = RADIO_STYLES[style]["mast"]
         add(f"civic/radio_station_{style}.glb", radio_station(style), f"city_radio_station_{style}",
             f"Radio station - {name} (modular studio, transmitter mast)", "Building", 18, 13.4 if RADIO_STYLES[style]["porch"] else 11.2, mast + 4.35)

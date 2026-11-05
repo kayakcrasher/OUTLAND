@@ -22,10 +22,12 @@ int RecordedGeometry::triangles() const {
     return n;
 }
 
-void RecordedGeometry::draw() const {
+void RecordedGeometry::draw(bool surface) const {
     static Material material = LoadMaterialDefault();
     static const unsigned int white = rlGetTextureIdDefault();
-    render::shade_flat(material);   // recorded shapes have no normals: hazed, not lit
+    material.shader.id = rlGetShaderIdDefault();
+    if (surface) render::shade_surface(material);
+    else render::shade_flat(material);   // recorded shapes have no normals: hazed, not lit
     for (const auto& piece : pieces_) {
         material.maps[MATERIAL_MAP_DIFFUSE].texture.id = piece.texture ? piece.texture : white;
         DrawMesh(piece.mesh, material, MatrixIdentity());

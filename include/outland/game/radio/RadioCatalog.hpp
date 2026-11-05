@@ -31,14 +31,23 @@ inline constexpr std::array<SongEntry, 5> roko_songs{{
     {"Vitraj Turoj", "assets/audio/radio/roko_4.ogg", 138.273F},
     {"Nigra Minejo", "assets/audio/radio/roko_5.ogg", 149.897F},
 }};
+inline constexpr std::array<SongEntry, 5> disko_songs{{
+    {"Neona Nokto", "assets/audio/radio/disko_1.ogg", 135.000F},
+    {"Stela Danco", "assets/audio/radio/disko_2.ogg", 130.742F},
+    {"Kristala Koro", "assets/audio/radio/disko_3.ogg", 137.237F},
+    {"Rapide al la Luno", "assets/audio/radio/disko_4.ogg", 128.714F},
+    {"Lumoj de Luma", "assets/audio/radio/disko_5.ogg", 141.947F},
+}};
 
-inline constexpr std::array<StationEntry, 3> stations{{
+inline constexpr std::array<StationEntry, 4> stations{{
     {"popolko", "Verda Popolko", "98.1", "Pop polka", "Verda City",
      "assets/audio/radio/popolko_ident.ogg", 5.136F, popolko_songs},
     {"kantrio", "Radio Sovaĝejo", "102.5", "Country & bluegrass", "Sovaĝejo",
      "assets/audio/radio/kantrio_ident.ogg", 5.250F, kantrio_songs},
     {"roko", "Espera Roko", "105.9", "Rock", "Espera",
      "assets/audio/radio/roko_ident.ogg", 5.136F, roko_songs},
+    {"disko", "Luma Disko", "94.3", "Italo disco & synth-pop", "Porto Luma",
+     "assets/audio/radio/disko_ident.ogg", 5.500F, disko_songs},
 }};
 
 } // namespace outland::game::radio

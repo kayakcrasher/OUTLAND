@@ -1,6 +1,6 @@
 # Radio
 
-Verda has three radio stations. Each one broadcasts from its own building in its own town, and
+Verda has four radio stations. Each one broadcasts from its own building in its own town, and
 you hear them in any car you drive.
 
 | Station | Frequency | Town | Music |
@@ -8,6 +8,7 @@ you hear them in any car you drive.
 | **Verda Popolko** | 98.1 | Verda City | Pop polka: accordion, tuba oom-pah, clarinet, glockenspiel, a pop beat |
 | **Radio Sovaĝejo** | 102.5 | Sovaĝejo | Country and bluegrass: fiddle, banjo rolls, mandolin, upright bass, steel guitar |
 | **Espera Roko** | 105.9 | Espera | Rock: distorted guitar riffs, bass, drums, guitar solos |
+| **Luma Disko** | 94.3 | Porto Luma | Italo disco and synth-pop, the Verdan way: octave bass, arpeggios, string machine, robot choir |
 
 Each station plays four or five instrumental songs, with the station's ident (a few seconds of
 its sound) between them. Every song is an original composition:
@@ -22,6 +23,14 @@ its sound) between them. Every song is an original composition:
   (eighties synth-rock with a shuffle, chorused guitar and a synth lead) and *Nigra Minejo* (heavy
   metal: chugging palm-muted riffs, double kick, a guitar solo).
 
+- Luma Disko: Verda's own Italo disco, from the harbour city's dance floors. *Neona Nokto*,
+  *Stela Danco*, *Kristala Koro*, *Rapide al la Luno* and *Lumoj de Luma*: four on the floor
+  with claps and open hats, the bass bouncing from root to octave on every pair of sixteenths
+  through a snapping filter, an arpeggiator spinning the chords with a dotted-eighth echo, a
+  string machine underneath, brass-synth stabs on the chorus offbeats, a wordless vocoder "robot
+  choir" singing the tune, electronic-tom fills into each chorus, and an arpeggio break with the
+  drums out. Mostly minor keys, 114-126 BPM, a pumping mix.
+
 ## The voices
 
 Between the songs the stations talk (`tools/generate_radio_voice.py`). The voices are neural
@@ -29,7 +38,8 @@ Between the songs the stations talk (`tools/generate_radio_voice.py`). The voice
 Esperanto sounds and a natural voice speaks it. Esperanto sounds much like Italian, Polish and Czech,
 so the announcers are Italian, Polish and Czech voices: Verda Popolko's is Italian (Paola), Espera
 Roko's a deep Polish voice (Darkman) with a touch of grit, the newsreader Czech (Jirka). Radio
-Sovaĝejo's is American (Joe). The broadcast processing is light, so every word stays clear. (Checked
+Sovaĝejo's is American (Joe), and Luma Disko's DJ a smooth Polish voice (Gosia) with the dance floor's
+echo on every line. The broadcast processing is light, so every word stays clear. (Checked
 with an Esperanto speech recogniser: it now gets most of the words, against well under half before.)
 The voice models download once into `~/.cache/outland/piper` when the tool runs; only the finished
 clips are kept in the repository.
@@ -78,19 +88,24 @@ The modules differ by station:
   dirt road, among the homesteads.
 - **Espera Roko:** black walls and red trim, a 36 m mast and two dishes. It is on the edge of
   Espera.
+- **Luma Disko:** white walls, hot-pink trim, cyan neon tubes under the sign and round the roof,
+  a mirror ball on the roof, one dish and a 28 m mast. It is in Porto Luma.
 
 Each studio is an Office place, so staff work there. Its sign is in Esperanto:
 
 - VERDA POPOLKO 98.1 · RADIO · POPMUZIKO KAJ POLKO
 - RADIO SOVAĜEJO 102.5 · KANTRIO · BLUGRASO
 - ESPERA ROKO 105.9 · RADIO · ROKMUZIKO
+- LUMA DISKO 94.3 · RADIO · DISKO KAJ SINTPOPO
 
 ## Making the music
 
 Every note is synthesised from scratch by `tools/generate_radio_music.py`. There are no samples
 and no recordings:
 
-- Additive oscillators make the reeds, brass, fiddle, steel guitar and electric guitars.
+- Additive oscillators make the reeds, brass, fiddle, steel guitar and electric guitars, and the
+  disco synths (a filtered octave bass, arpeggiator plucks, a string machine, brass stabs, and a
+  vocoder-like choir: a buzzy carrier through two sliding vowel formants).
 - Karplus-Strong strings make the banjo, acoustic guitar, mandolin and bass.
 - Noise makes the drums.
 - Each song's melodies are composed from its chords and a seed: a two-bar motif, the motif again
@@ -109,6 +124,7 @@ To regenerate the music (needs numpy, scipy and ffmpeg with libvorbis):
 ```
 python3 tools/generate_radio_music.py            # all stations
 python3 tools/generate_radio_music.py --only roko --wav /tmp/radio   # one station, plus WAVs to listen to
+python3 tools/generate_radio_voice.py --only disko   # one station's spoken idents (the rest stay as they are)
 ```
 
 ## Code
@@ -117,5 +133,5 @@ python3 tools/generate_radio_music.py --only roko --wav /tmp/radio   # one stati
   the now-playing note). Tested by `tests/unit/radio/test_radio.cpp`.
 - `game/radio/RadioAudio`: streams the song on air from the right point, keeps it in step with
   the station's clock, and plays the static.
-- The world kit (`radio_stations` in `src/dev/VerdaWorldKit.cpp`) places the three studios. The
+- The world kit (`radio_stations` in `src/dev/VerdaWorldKit.cpp`) places the four studios. The
   signs are in `game/culture/Signage`.

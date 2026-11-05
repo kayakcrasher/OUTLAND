@@ -5824,6 +5824,7 @@ ASSET "creator_city_diesel_island_kit2" 4 "assets/verda/city/civic/diesel_island
 ASSET "creator_city_radio_station_popolko_kit1" 0 "assets/verda/city/civic/radio_station_popolko.glb" -187.11499 0 19.8500004 18 34.3499985 11.1999998 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_radio_station_kantrio_kit1" 0 "assets/verda/city/civic/radio_station_kantrio.glb" -1801.7251 13.8896255 233.75 18 28.3500004 13.3999996 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_radio_station_roko_kit1" 0 "assets/verda/city/civic/radio_station_roko.glb" 21.8500004 6 -1665.88501 18 40.3499985 11.1999998 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_radio_station_disko_kit1" 0 "assets/verda/city/civic/radio_station_disko.glb" 1731.84998 6 -265.899994 18 32.3499985 11.1999998 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gun_shop_kit1" 0 "assets/verda/city/civic/gun_shop.glb" 187.149994 0 18 12.1999998 4.4000001 9.19999981 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gun_shop_kit2" 0 "assets/verda/city/civic/gun_shop.glb" 12 6 -1934.1499 12.1999998 4.4000001 9.19999981 180 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gun_shop_kit3" 0 "assets/verda/city/civic/gun_shop.glb" 1615.8501 6 -412 12.1999998 4.4000001 9.19999981 -90 255 255 255 255 80 80 80 255 1
@@ -5836,7 +5837,7 @@ ASSET "creator_house_cream_kit17" 0 "assets/verda/residential/houses/house_cream
 ASSET "creator_city_gas_station_kit1" 0 "assets/verda/city/civic/gas_station.glb" -526 0 -62.2999992 24 6.19999981 22 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit2" 0 "assets/verda/city/civic/gas_station.glb" 457.299988 0.281384975 26 24 6.19999981 22 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit3" 0 "assets/verda/city/civic/gas_station.glb" 140.699997 6 -1820 24 6.19999981 22 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_city_gas_station_kit4" 0 "assets/verda/city/civic/gas_station.glb" 1730 6 -259.299988 24 6.19999981 22 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_gas_station_kit4" 0 "assets/verda/city/civic/gas_station.glb" 1609.30005 6 -340 24 6.19999981 22 -90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit5" 0 "assets/verda/city/civic/gas_station.glb" 440.700012 6 1820 24 6.19999981 22 90 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit6" 0 "assets/verda/city/civic/gas_station.glb" -1810 14.0573664 590.700012 24 6.19999981 22 -0 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_gas_station_kit7" 0 "assets/verda/city/civic/gas_station.glb" -457.93692 6.00289297 -1402.78992 24 6.19999981 22 18.7499046 255 255 255 255 80 80 80 255 1
@@ -6170,175 +6171,174 @@ ASSET "creator_urban_traffic_lights_street_light_kit601" 9 "assets/verda/urban/T
 ASSET "creator_urban_traffic_lights_street_light_kit602" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1622.69995 6 -490 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit603" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1622.69995 6 -462 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit604" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1622.69995 6 -378 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit605" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1622.69995 6 -350 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit606" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1622.69995 6 -322 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit607" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1622.69995 6 -294 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit608" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1646 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit609" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1674 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit610" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1702 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit611" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1730 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit612" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1758 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit613" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1814 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit614" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1842 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit615" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1877.30005 6 -504 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit616" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1877.30005 6 -448 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit617" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1877.30005 6 -420 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit618" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1877.30005 6 -392 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit619" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1877.30005 6 -336 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit620" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1877.30005 6 -308 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit621" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1660 6 -272.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit622" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1688 6 -272.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit623" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1772 6 -272.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit624" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1800 6 -272.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit625" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1828 6 -272.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit626" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1856 6 -272.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit627" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1884 6 -434.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit628" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1898 6 -445.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit629" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1912 6 -434.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit630" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1926 6 -445.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit631" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1884 6 -351.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit632" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1898 6 -368.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit633" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1912 6 -351.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit634" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1926 6 -368.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit635" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1937.69995 5.3002243 -502 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit636" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1937.69995 6 -418 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit637" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1937.69995 6 -390 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit638" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1954.30005 5.40723991 -348 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit639" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1937.69995 6 -334 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit640" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1937.69995 5.9419241 -306 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit641" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1884 6 -461.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit642" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1898 6 -478.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit643" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1912 6 -461.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit644" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1926 6 -478.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit645" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1972 2.71929836 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit646" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1986 0.631579399 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit647" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2000 -1.45614052 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit648" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2014 -3.54385948 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit649" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2028 -5.6315794 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit650" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2042 -7.71929836 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit651" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2056 -9.80701828 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit652" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2070 -11.8947372 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit653" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2084 -13.9824562 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit654" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2098 -16.0701771 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit655" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2112 -18.1578941 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit656" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2126 -20.2456131 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit657" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2140 -22.3333321 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit658" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2154 -24.4210529 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit659" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2168 -26.50877 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit660" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1968 3.3157897 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit661" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1982 1.22807026 -352.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit662" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1996 -0.859649181 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit663" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2010 -2.94736862 -352.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit664" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2024 -5.03508854 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit665" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2038 -7.12280655 -352.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit666" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2052 -9.21052647 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit667" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2066 -11.2982464 -352.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit668" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2080 -13.3859634 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit669" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2108 -17.5614033 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit670" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2164 -25.912281 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit671" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2178 -28 -352.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit672" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2192 -28 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit673" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2206 -28 -352.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit674" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2205.69995 -28 -402 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit675" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2222.30005 -28 -388 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit676" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2205.69995 -28 -374 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit677" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1635.30005 6 -268 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit678" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1710 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit679" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1738 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit680" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1794 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit681" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1822 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit682" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1850 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit683" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1878 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit684" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1906 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit685" 9 "assets/verda/urban/Traffic lights/street_light.glb" 196 6 1672.69995 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit686" 9 "assets/verda/urban/Traffic lights/street_light.glb" 224 6 1672.69995 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit687" 9 "assets/verda/urban/Traffic lights/street_light.glb" 252 6 1672.69995 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit688" 9 "assets/verda/urban/Traffic lights/street_light.glb" 280 6 1672.69995 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit689" 9 "assets/verda/urban/Traffic lights/street_light.glb" 364 6 1672.69995 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit690" 9 "assets/verda/urban/Traffic lights/street_light.glb" 392 6 1672.69995 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit691" 9 "assets/verda/urban/Traffic lights/street_light.glb" 427.299988 6 1696 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit692" 9 "assets/verda/urban/Traffic lights/street_light.glb" 427.299988 6 1724 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit693" 9 "assets/verda/urban/Traffic lights/street_light.glb" 427.299988 6 1752 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit694" 9 "assets/verda/urban/Traffic lights/street_light.glb" 427.299988 6 1780 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit695" 9 "assets/verda/urban/Traffic lights/street_light.glb" 427.299988 6 1864 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit696" 9 "assets/verda/urban/Traffic lights/street_light.glb" 427.299988 6 1892 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit697" 9 "assets/verda/urban/Traffic lights/street_light.glb" 210 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit698" 9 "assets/verda/urban/Traffic lights/street_light.glb" 238 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit699" 9 "assets/verda/urban/Traffic lights/street_light.glb" 294 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit700" 9 "assets/verda/urban/Traffic lights/street_light.glb" 322 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit701" 9 "assets/verda/urban/Traffic lights/street_light.glb" 350 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit702" 9 "assets/verda/urban/Traffic lights/street_light.glb" 378 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit703" 9 "assets/verda/urban/Traffic lights/street_light.glb" 406 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit704" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1072.82239 -9.01461792 1079.61072 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit705" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1089.51013 -10.6939125 1082.7218 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit706" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1092.62134 -10.0541058 1099.40967 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit707" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1129.10815 -3.30451035 1122.31982 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit708" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1132.21936 -2.42408347 1139.00769 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit709" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1148.9071 -1.34583199 1142.11877 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit710" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1152.01831 -1.73300767 1158.80664 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit711" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1168.70618 -2.47754431 1161.91785 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit712" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1171.81726 -2.08219266 1178.60559 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit713" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1188.50513 -0.786051035 1181.7168 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit714" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1191.61633 1.08361626 1198.40466 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit715" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1208.30408 2.44491982 1201.51575 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit716" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1228.10315 6.84932184 1221.31482 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit717" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1231.21423 6.33115101 1238.00256 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit718" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1247.9021 6.0002594 1241.11377 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit719" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1251.01331 6 1257.80164 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit720" 9 "assets/verda/urban/Traffic lights/street_light.glb" 133.39061 5.9990592 1666.40601 2.06061006 6.6078372 0.706260979 -101.398712 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit721" 9 "assets/verda/urban/Traffic lights/street_light.glb" 145.019516 6 1679.56384 2.06061006 6.6078372 0.706260979 78.6012726 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit722" 9 "assets/verda/urban/Traffic lights/street_light.glb" 160.838318 6 1671.93982 2.06061006 6.6078372 0.706260979 -101.398712 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit723" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 360 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit724" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 388 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit725" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 444 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit726" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 472 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit727" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 500 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit728" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 528 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit729" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 556 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit730" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1854 14.0573664 322.700012 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit731" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1826 14.0573664 322.700012 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit732" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1798 14.0573664 322.700012 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit733" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1770 14.0573664 322.700012 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit734" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1686 14.0573664 322.700012 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit735" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1658 14.0573664 322.700012 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit736" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1622.69995 14.0573664 346 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit737" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1622.69995 14.0573664 374 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit738" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1622.69995 14.0573664 458 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit739" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1622.69995 14.0573664 514 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit740" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1622.69995 14.0573664 542 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit741" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1840 14.0573664 577.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit742" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1756 14.0573673 577.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit743" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1728 14.0573654 577.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit744" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1700 14.0573664 577.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit745" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1672 14.0573654 577.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit746" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1644 14.0573664 577.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit747" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1892 14.0573664 456.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit748" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1714.82605 14.0573673 602.110291 2.06061006 6.6078372 0.706260979 1.04162288 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit749" 9 "assets/verda/urban/Traffic lights/street_light.glb" 947 16.2185574 -992.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit750" 9 "assets/verda/urban/Traffic lights/street_light.glb" 975 16.2185574 -992.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit751" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1003 16.2185574 -992.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit752" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1031 16.2185574 -992.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit753" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1053.75244 16.2185574 -999.425964 2.06061006 6.6078372 0.706260979 133.750061 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit754" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1057.91846 16.2185574 -1015.31946 2.06061006 6.6078372 0.706260979 -46.2499352 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit755" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1307.69995 6 -189 2.06061006 6.6078372 0.706260979 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit756" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1307.69995 6 -217 2.06061006 6.6078372 0.706260979 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit757" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1307.69995 6 -245 2.06061006 6.6078372 0.706260979 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit758" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1307.69995 6 -273 2.06061006 6.6078372 0.706260979 -0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit759" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1305.18909 6 -293.008514 2.06061006 6.6078372 0.706260979 20.3231678 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit760" 9 "assets/verda/urban/Traffic lights/street_light.glb" -960.700012 6 -967 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit761" 9 "assets/verda/urban/Traffic lights/street_light.glb" -960.700012 6 -995 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit762" 9 "assets/verda/urban/Traffic lights/street_light.glb" -960.700012 6 -1023 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit763" 9 "assets/verda/urban/Traffic lights/street_light.glb" -960.700012 6 -1051 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit764" 9 "assets/verda/urban/Traffic lights/street_light.glb" -967.04187 6 -1073.84985 2.06061006 6.6078372 0.706260979 -138.749893 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit765" 9 "assets/verda/urban/Traffic lights/street_light.glb" -982.738525 6 -1078.7052 2.06061006 6.6078372 0.706260979 41.2501068 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit766" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1001.20026 7.85028982 -1099.75671 2.06061006 6.6078372 0.706260979 41.2501068 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit767" 9 "assets/verda/urban/Traffic lights/street_light.glb" -913.299988 7.28794098 1027 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit768" 9 "assets/verda/urban/Traffic lights/street_light.glb" -913.299988 7.28794098 1055 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit769" 9 "assets/verda/urban/Traffic lights/street_light.glb" -913.299988 7.28794098 1083 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit770" 9 "assets/verda/urban/Traffic lights/street_light.glb" -913.299988 7.28794098 1111 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit771" 9 "assets/verda/urban/Traffic lights/street_light.glb" -917.360901 7.28794098 1128.54749 2.06061006 6.6078372 0.706260979 -38.7500763 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit772" 9 "assets/verda/urban/Traffic lights/street_light.glb" -919.416809 7.28794098 1144.849 2.06061006 6.6078372 0.706260979 141.249924 255 255 255 255 80 80 80 255 1
-ASSET "creator_urban_traffic_lights_street_light_kit773" 9 "assets/verda/urban/Traffic lights/street_light.glb" -934.88678 7.06778622 1150.38428 2.06061006 6.6078372 0.706260979 -38.7500763 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit605" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1622.69995 6 -322 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit606" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1622.69995 6 -294 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit607" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1646 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit608" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1674 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit609" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1702 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit610" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1730 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit611" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1758 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit612" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1814 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit613" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1842 6 -527.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit614" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1877.30005 6 -504 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit615" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1877.30005 6 -448 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit616" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1877.30005 6 -420 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit617" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1877.30005 6 -392 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit618" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1877.30005 6 -336 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit619" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1877.30005 6 -308 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit620" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1660 6 -272.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit621" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1688 6 -272.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit622" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1772 6 -272.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit623" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1800 6 -272.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit624" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1828 6 -272.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit625" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1856 6 -272.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit626" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1884 6 -434.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit627" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1898 6 -445.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit628" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1912 6 -434.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit629" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1926 6 -445.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit630" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1884 6 -351.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit631" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1898 6 -368.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit632" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1912 6 -351.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit633" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1926 6 -368.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit634" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1937.69995 5.3002243 -502 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit635" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1937.69995 6 -418 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit636" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1937.69995 6 -390 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit637" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1954.30005 5.40723991 -348 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit638" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1937.69995 6 -334 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit639" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1937.69995 5.9419241 -306 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit640" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1884 6 -461.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit641" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1898 6 -478.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit642" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1912 6 -461.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit643" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1926 6 -478.299988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit644" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1972 2.71929836 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit645" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1986 0.631579399 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit646" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2000 -1.45614052 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit647" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2014 -3.54385948 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit648" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2028 -5.6315794 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit649" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2042 -7.71929836 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit650" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2056 -9.80701828 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit651" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2070 -11.8947372 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit652" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2084 -13.9824562 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit653" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2098 -16.0701771 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit654" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2112 -18.1578941 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit655" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2126 -20.2456131 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit656" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2140 -22.3333321 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit657" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2154 -24.4210529 -462.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit658" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2168 -26.50877 -477.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit659" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1968 3.3157897 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit660" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1982 1.22807026 -352.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit661" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1996 -0.859649181 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit662" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2010 -2.94736862 -352.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit663" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2024 -5.03508854 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit664" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2038 -7.12280655 -352.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit665" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2052 -9.21052647 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit666" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2066 -11.2982464 -352.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit667" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2080 -13.3859634 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit668" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2108 -17.5614033 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit669" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2164 -25.912281 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit670" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2178 -28 -352.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit671" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2192 -28 -367.799988 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit672" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2206 -28 -352.200012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit673" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2205.69995 -28 -402 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit674" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2222.30005 -28 -388 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit675" 9 "assets/verda/urban/Traffic lights/street_light.glb" 2205.69995 -28 -374 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit676" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1635.30005 6 -268 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit677" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1710 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit678" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1738 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit679" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1794 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit680" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1822 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit681" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1850 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit682" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1878 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit683" 9 "assets/verda/urban/Traffic lights/street_light.glb" 172.699997 6 1906 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit684" 9 "assets/verda/urban/Traffic lights/street_light.glb" 196 6 1672.69995 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit685" 9 "assets/verda/urban/Traffic lights/street_light.glb" 224 6 1672.69995 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit686" 9 "assets/verda/urban/Traffic lights/street_light.glb" 252 6 1672.69995 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit687" 9 "assets/verda/urban/Traffic lights/street_light.glb" 280 6 1672.69995 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit688" 9 "assets/verda/urban/Traffic lights/street_light.glb" 364 6 1672.69995 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit689" 9 "assets/verda/urban/Traffic lights/street_light.glb" 392 6 1672.69995 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit690" 9 "assets/verda/urban/Traffic lights/street_light.glb" 427.299988 6 1696 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit691" 9 "assets/verda/urban/Traffic lights/street_light.glb" 427.299988 6 1724 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit692" 9 "assets/verda/urban/Traffic lights/street_light.glb" 427.299988 6 1752 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit693" 9 "assets/verda/urban/Traffic lights/street_light.glb" 427.299988 6 1780 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit694" 9 "assets/verda/urban/Traffic lights/street_light.glb" 427.299988 6 1864 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit695" 9 "assets/verda/urban/Traffic lights/street_light.glb" 427.299988 6 1892 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit696" 9 "assets/verda/urban/Traffic lights/street_light.glb" 210 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit697" 9 "assets/verda/urban/Traffic lights/street_light.glb" 238 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit698" 9 "assets/verda/urban/Traffic lights/street_light.glb" 294 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit699" 9 "assets/verda/urban/Traffic lights/street_light.glb" 322 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit700" 9 "assets/verda/urban/Traffic lights/street_light.glb" 350 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit701" 9 "assets/verda/urban/Traffic lights/street_light.glb" 378 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit702" 9 "assets/verda/urban/Traffic lights/street_light.glb" 406 6 1927.30005 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit703" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1072.82239 -9.01461792 1079.61072 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit704" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1089.51013 -10.6939125 1082.7218 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit705" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1092.62134 -10.0541058 1099.40967 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit706" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1129.10815 -3.30451035 1122.31982 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit707" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1132.21936 -2.42408347 1139.00769 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit708" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1148.9071 -1.34583199 1142.11877 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit709" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1152.01831 -1.73300767 1158.80664 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit710" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1168.70618 -2.47754431 1161.91785 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit711" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1171.81726 -2.08219266 1178.60559 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit712" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1188.50513 -0.786051035 1181.7168 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit713" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1191.61633 1.08361626 1198.40466 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit714" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1208.30408 2.44491982 1201.51575 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit715" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1228.10315 6.84932184 1221.31482 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit716" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1231.21423 6.33115101 1238.00256 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit717" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1247.9021 6.0002594 1241.11377 2.06061006 6.6078372 0.706260979 -135 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit718" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1251.01331 6 1257.80164 2.06061006 6.6078372 0.706260979 45 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit719" 9 "assets/verda/urban/Traffic lights/street_light.glb" 133.39061 5.9990592 1666.40601 2.06061006 6.6078372 0.706260979 -101.398712 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit720" 9 "assets/verda/urban/Traffic lights/street_light.glb" 145.019516 6 1679.56384 2.06061006 6.6078372 0.706260979 78.6012726 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit721" 9 "assets/verda/urban/Traffic lights/street_light.glb" 160.838318 6 1671.93982 2.06061006 6.6078372 0.706260979 -101.398712 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit722" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 360 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit723" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 388 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit724" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 444 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit725" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 472 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit726" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 500 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit727" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 528 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit728" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1877.30005 14.0573664 556 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit729" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1854 14.0573664 322.700012 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit730" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1826 14.0573664 322.700012 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit731" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1798 14.0573664 322.700012 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit732" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1770 14.0573664 322.700012 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit733" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1686 14.0573664 322.700012 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit734" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1658 14.0573664 322.700012 2.06061006 6.6078372 0.706260979 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit735" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1622.69995 14.0573664 346 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit736" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1622.69995 14.0573664 374 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit737" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1622.69995 14.0573664 458 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit738" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1622.69995 14.0573664 514 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit739" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1622.69995 14.0573664 542 2.06061006 6.6078372 0.706260979 -180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit740" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1840 14.0573664 577.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit741" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1756 14.0573673 577.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit742" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1728 14.0573654 577.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit743" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1700 14.0573664 577.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit744" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1672 14.0573654 577.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit745" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1644 14.0573664 577.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit746" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1892 14.0573664 456.299988 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit747" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1714.82605 14.0573673 602.110291 2.06061006 6.6078372 0.706260979 1.04162288 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit748" 9 "assets/verda/urban/Traffic lights/street_light.glb" 947 16.2185574 -992.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit749" 9 "assets/verda/urban/Traffic lights/street_light.glb" 975 16.2185574 -992.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit750" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1003 16.2185574 -992.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit751" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1031 16.2185574 -992.700012 2.06061006 6.6078372 0.706260979 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit752" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1053.75244 16.2185574 -999.425964 2.06061006 6.6078372 0.706260979 133.750061 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit753" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1057.91846 16.2185574 -1015.31946 2.06061006 6.6078372 0.706260979 -46.2499352 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit754" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1307.69995 6 -189 2.06061006 6.6078372 0.706260979 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit755" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1307.69995 6 -217 2.06061006 6.6078372 0.706260979 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit756" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1307.69995 6 -245 2.06061006 6.6078372 0.706260979 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit757" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1307.69995 6 -273 2.06061006 6.6078372 0.706260979 -0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit758" 9 "assets/verda/urban/Traffic lights/street_light.glb" 1305.18909 6 -293.008514 2.06061006 6.6078372 0.706260979 20.3231678 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit759" 9 "assets/verda/urban/Traffic lights/street_light.glb" -960.700012 6 -967 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit760" 9 "assets/verda/urban/Traffic lights/street_light.glb" -960.700012 6 -995 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit761" 9 "assets/verda/urban/Traffic lights/street_light.glb" -960.700012 6 -1023 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit762" 9 "assets/verda/urban/Traffic lights/street_light.glb" -960.700012 6 -1051 2.06061006 6.6078372 0.706260979 180 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit763" 9 "assets/verda/urban/Traffic lights/street_light.glb" -967.04187 6 -1073.84985 2.06061006 6.6078372 0.706260979 -138.749893 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit764" 9 "assets/verda/urban/Traffic lights/street_light.glb" -982.738525 6 -1078.7052 2.06061006 6.6078372 0.706260979 41.2501068 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit765" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1001.20026 7.85028982 -1099.75671 2.06061006 6.6078372 0.706260979 41.2501068 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit766" 9 "assets/verda/urban/Traffic lights/street_light.glb" -913.299988 7.28794098 1027 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit767" 9 "assets/verda/urban/Traffic lights/street_light.glb" -913.299988 7.28794098 1055 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit768" 9 "assets/verda/urban/Traffic lights/street_light.glb" -913.299988 7.28794098 1083 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit769" 9 "assets/verda/urban/Traffic lights/street_light.glb" -913.299988 7.28794098 1111 2.06061006 6.6078372 0.706260979 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit770" 9 "assets/verda/urban/Traffic lights/street_light.glb" -917.360901 7.28794098 1128.54749 2.06061006 6.6078372 0.706260979 -38.7500763 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit771" 9 "assets/verda/urban/Traffic lights/street_light.glb" -919.416809 7.28794098 1144.849 2.06061006 6.6078372 0.706260979 141.249924 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit772" 9 "assets/verda/urban/Traffic lights/street_light.glb" -934.88678 7.06778622 1150.38428 2.06061006 6.6078372 0.706260979 -38.7500763 255 255 255 255 80 80 80 255 1
 ASSET "creator_city_parking_lot_68_kit16" 4 "assets/verda/city/ground/parking_lot_68.glb" -1395.31628 5.86999989 -710.949219 68 0.150000006 68 153 255 255 255 255 80 80 80 255 0
 ASSET "creator_city_truck_park_kit1" 4 "assets/verda/city/ground/truck_park.glb" -1441.64856 5.86999989 -734.556702 84 0.159999996 32 -116.999985 255 255 255 255 80 80 80 255 0
 ASSET "creator_urban_building_parts_stuco_wall_window_1_kit103" 4 "assets/verda/urban/Building Parts/stuco_wall_window_1.glb" -1362.7168 6.0999999 -742.598083 0.00999999978 3 3 237.513962 255 255 255 255 80 80 80 255 1
@@ -6834,35 +6834,36 @@ MARKER "creator_marker_building_purpose_kit_187" 4 -560 -0 -66.5 1.20000005 2.20
 MARKER "creator_marker_building_purpose_kit_188" 4 -183.899994 0.349999994 14.1000004 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_189" 4 -1799.5 14.2396259 228.100006 1.20000005 2.20000005 1.20000005 -90 1
 MARKER "creator_marker_building_purpose_kit_190" 4 16.1000004 6.3499999 -1669.1001 1.20000005 2.20000005 1.20000005 -0 1
-MARKER "creator_marker_building_purpose_kit_191" 4 183.899994 0.349999994 18 1.20000005 2.20000005 1.20000005 90 1
-MARKER "creator_marker_building_purpose_kit_192" 4 12 6.3499999 -1930.8999 1.20000005 2.20000005 1.20000005 180 1
-MARKER "creator_marker_building_purpose_kit_193" 4 1619.1001 6.3499999 -412 1.20000005 2.20000005 1.20000005 -90 1
-MARKER "creator_marker_building_purpose_kit_194" 4 169.100006 6.3499999 1812 1.20000005 2.20000005 1.20000005 -90 1
-MARKER "creator_marker_building_purpose_kit_195" 4 -1619.1001 14.4073668 430 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_191" 4 1726.09998 6.3499999 -269.099976 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_192" 4 183.899994 0.349999994 18 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_193" 4 12 6.3499999 -1930.8999 1.20000005 2.20000005 1.20000005 180 1
+MARKER "creator_marker_building_purpose_kit_194" 4 1619.1001 6.3499999 -412 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_195" 4 169.100006 6.3499999 1812 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_196" 4 -1619.1001 14.4073668 430 1.20000005 2.20000005 1.20000005 90 1
 MARKER "gang_house_village_espera" 4 -22.4099998 6.05999994 -1665.55005 1.20000005 2.20000005 1.20000005 -0 1
 MARKER "gang_house_port_luma" 4 1732.41003 6.05999994 -534.449951 1.20000005 2.20000005 1.20000005 180 1
 MARKER "gang_house_south_haven" 4 322.410004 6.05999994 1665.55005 1.20000005 2.20000005 1.20000005 180 1
 MARKER "gang_house_west_roka" 4 -1615.55005 14.1173668 512.409973 1.20000005 2.20000005 1.20000005 90 1
-MARKER "creator_marker_building_purpose_kit_196" 4 -526 0.150000006 -56.0999985 1.20000005 2.20000005 1.20000005 0 1
-MARKER "creator_marker_building_purpose_kit_197" 4 451.099976 0.431384981 26 1.20000005 2.20000005 1.20000005 -90 1
-MARKER "creator_marker_building_purpose_kit_198" 4 146.899994 6.1500001 -1820 1.20000005 2.20000005 1.20000005 90 1
-MARKER "creator_marker_building_purpose_kit_199" 4 1730 6.1500001 -253.099991 1.20000005 2.20000005 1.20000005 -0 1
-MARKER "creator_marker_building_purpose_kit_200" 4 446.900024 6.1500001 1820 1.20000005 2.20000005 1.20000005 90 1
-MARKER "creator_marker_building_purpose_kit_201" 4 -1810 14.207366 596.900024 1.20000005 2.20000005 1.20000005 -0 1
-MARKER "creator_marker_building_purpose_kit_202" 4 -455.944 6.15289307 -1396.91895 1.20000005 2.20000005 1.20000005 18.7499046 1
-MARKER "creator_marker_building_purpose_kit_203" 4 225.068008 0.119999997 32.4999962 1.20000005 2.20000005 1.20000005 0 1
-MARKER "creator_marker_building_purpose_kit_204" 4 251.548248 0.100000001 15.5999975 1.20000005 2.20000005 1.20000005 0 1
-MARKER "creator_marker_building_purpose_kit_205" 4 -133.599991 6.0999999 -1733.40002 1.20000005 2.20000005 1.20000005 -90 1
-MARKER "creator_marker_building_purpose_kit_206" 4 1816.59998 6.0999999 -266.399994 1.20000005 2.20000005 1.20000005 -0 1
-MARKER "creator_marker_building_purpose_kit_207" 4 279.971558 6.0999999 1667.02234 1.20000005 2.20000005 1.20000005 -78.3663483 1
-MARKER "creator_marker_building_purpose_kit_208" 4 -1723.40002 14.1573677 583.600037 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_197" 4 -526 0.150000006 -56.0999985 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_198" 4 451.099976 0.431384981 26 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_199" 4 146.899994 6.1500001 -1820 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_200" 4 1603.1001 6.1500001 -340 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_201" 4 446.900024 6.1500001 1820 1.20000005 2.20000005 1.20000005 90 1
+MARKER "creator_marker_building_purpose_kit_202" 4 -1810 14.207366 596.900024 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_203" 4 -455.944 6.15289307 -1396.91895 1.20000005 2.20000005 1.20000005 18.7499046 1
+MARKER "creator_marker_building_purpose_kit_204" 4 225.068008 0.119999997 32.4999962 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_205" 4 251.548248 0.100000001 15.5999975 1.20000005 2.20000005 1.20000005 0 1
+MARKER "creator_marker_building_purpose_kit_206" 4 -133.599991 6.0999999 -1733.40002 1.20000005 2.20000005 1.20000005 -90 1
+MARKER "creator_marker_building_purpose_kit_207" 4 1816.59998 6.0999999 -266.399994 1.20000005 2.20000005 1.20000005 -0 1
+MARKER "creator_marker_building_purpose_kit_208" 4 279.971558 6.0999999 1667.02234 1.20000005 2.20000005 1.20000005 -78.3663483 1
+MARKER "creator_marker_building_purpose_kit_209" 4 -1723.40002 14.1573677 583.600037 1.20000005 2.20000005 1.20000005 -0 1
 MARKER "freight_yard_village_espera" 4 -99.4000015 6.0999999 -1430 1.20000005 2.20000005 1.20000005 90 1
 MARKER "freight_yard_port_luma" 4 1355.03259 6.0999999 -446.372589 1.20000005 2.20000005 1.20000005 20.3233337 1
 MARKER "freight_yard_south_haven" 4 338.881012 6.0999999 1375.91919 1.20000005 2.20000005 1.20000005 -78.3698273 1
 MARKER "freight_yard_west_roka" 4 -1357.60571 6.0999999 447.608398 1.20000005 2.20000005 1.20000005 -166.355621 1
 MARKER "vehicle_spawn_bus_team_1" 3 -188.665161 6 -1773.60156 2.5999999 3.20000005 11 -87.7974014 1
-MARKER "creator_marker_building_purpose_kit_209" 4 -1372.19446 6.0999999 -750.055481 1.20000005 2.20000005 1.20000005 147.513962 1
-MARKER "creator_marker_building_purpose_kit_210" 4 1328.13757 6.0999999 546.087708 1.20000005 2.20000005 1.20000005 151.942215 1
+MARKER "creator_marker_building_purpose_kit_210" 4 -1372.19446 6.0999999 -750.055481 1.20000005 2.20000005 1.20000005 147.513962 1
+MARKER "creator_marker_building_purpose_kit_211" 4 1328.13757 6.0999999 546.087708 1.20000005 2.20000005 1.20000005 151.942215 1
 PURPOSE "creator_marker_building_purpose_kit_1" 1
 PURPOSE "creator_marker_building_purpose_kit_2" 1
 PURPOSE "creator_marker_building_purpose_kit_3" 1
@@ -7053,34 +7054,35 @@ PURPOSE "creator_marker_building_purpose_kit_187" 7
 PURPOSE "creator_marker_building_purpose_kit_188" 7
 PURPOSE "creator_marker_building_purpose_kit_189" 7
 PURPOSE "creator_marker_building_purpose_kit_190" 7
-PURPOSE "creator_marker_building_purpose_kit_191" 2
+PURPOSE "creator_marker_building_purpose_kit_191" 7
 PURPOSE "creator_marker_building_purpose_kit_192" 2
 PURPOSE "creator_marker_building_purpose_kit_193" 2
 PURPOSE "creator_marker_building_purpose_kit_194" 2
 PURPOSE "creator_marker_building_purpose_kit_195" 2
+PURPOSE "creator_marker_building_purpose_kit_196" 2
 PURPOSE "gang_house_village_espera" 1
 PURPOSE "gang_house_port_luma" 1
 PURPOSE "gang_house_south_haven" 1
 PURPOSE "gang_house_west_roka" 1
-PURPOSE "creator_marker_building_purpose_kit_196" 2
 PURPOSE "creator_marker_building_purpose_kit_197" 2
 PURPOSE "creator_marker_building_purpose_kit_198" 2
 PURPOSE "creator_marker_building_purpose_kit_199" 2
 PURPOSE "creator_marker_building_purpose_kit_200" 2
 PURPOSE "creator_marker_building_purpose_kit_201" 2
 PURPOSE "creator_marker_building_purpose_kit_202" 2
-PURPOSE "creator_marker_building_purpose_kit_203" 7
-PURPOSE "creator_marker_building_purpose_kit_204" 8
+PURPOSE "creator_marker_building_purpose_kit_203" 2
+PURPOSE "creator_marker_building_purpose_kit_204" 7
 PURPOSE "creator_marker_building_purpose_kit_205" 8
 PURPOSE "creator_marker_building_purpose_kit_206" 8
 PURPOSE "creator_marker_building_purpose_kit_207" 8
 PURPOSE "creator_marker_building_purpose_kit_208" 8
+PURPOSE "creator_marker_building_purpose_kit_209" 8
 PURPOSE "freight_yard_village_espera" 9
 PURPOSE "freight_yard_port_luma" 9
 PURPOSE "freight_yard_south_haven" 9
 PURPOSE "freight_yard_west_roka" 9
-PURPOSE "creator_marker_building_purpose_kit_209" 3
 PURPOSE "creator_marker_building_purpose_kit_210" 3
+PURPOSE "creator_marker_building_purpose_kit_211" 3
 SETTLEMENT "capital_verda" "Verda" 0 0 0 0 384 0 0
 ROAD 0 0 -1680 0 0 -1621.12915 18.7999992 3
 ROAD 0 0 -1621.12915 0 0 -1562.2583 18.7999992 3

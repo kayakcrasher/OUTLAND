@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verda's radio: fourteen original instrumental songs and three station idents, made from scratch.
+"""Verda's radio: nineteen original instrumental songs and four station idents, made from scratch.
 
 Every note is synthesised here - additive oscillators for reeds, brass, bowed and electric
 instruments, Karplus-Strong strings for the banjo, guitars, mandolin and bass, noise for the drums -
@@ -349,6 +349,72 @@ def piano(m, dur, v):
     return norm((out + hammer) * np.minimum(1, t / .002) * envelope(n, .001, 1, 1, .08, hold=dur + .4))
 
 
+# Italo disco: the synths of a Verdan dance floor.
+@functools.lru_cache(maxsize=None)
+def octave_bass(m, dur, v):
+    """The disco bass: a saw through a resonant low-pass that snaps shut on every note (a filter
+    envelope), short and punchy - played bouncing between root and octave."""
+    f, n = hz(m), int((dur + .03) * RATE)
+    t = times(n)
+    raw = additive(phase(f, n), f, SAW[:28]) * .8 + additive(phase(f * 1.006, n), f, SAW[:28]) * .4
+    # (The filter's sweep: bright at the pluck, closing in ~60 ms. Two fixed filters crossfaded.)
+    bright, dark = peak(lowpass(raw, 2400, 2), 900, 7, 2.5), lowpass(raw, 420, 2)
+    sweep = np.exp(-t * (16 + 4 * v))
+    out = bright * sweep + dark * (1 - sweep) + np.sin(phase(f, n)) * .5
+    return norm(np.tanh(out * 1.3) * envelope(n, .002, .12, .55, .025, hold=dur))
+
+
+@functools.lru_cache(maxsize=None)
+def arp(m, dur, v):
+    """An arpeggiator's pluck: a square and a saw, a fast decay, bright."""
+    f, n = hz(m), int((dur + .08) * RATE)
+    ph = phase(f, n)
+    out = additive(ph, f, [1, 0, 1 / 3, 0, 1 / 5, 0, 1 / 7, 0, 1 / 9, 0, 1 / 11]) * .7 + additive(ph * 1.002, f, SAW[:18]) * .4
+    return norm(lowpass(out, 3800 - 600 * v, 2) * envelope(n, .002, .09, .25, .04, hold=dur))
+
+
+@functools.lru_cache(maxsize=None)
+def strings(chord, dur):
+    """A string machine: many detuned saws, a slow swell, a gentle ensemble wobble."""
+    n = int((dur + .6) * RATE)
+    out = np.zeros(n)
+    for m in chord:
+        for d, r in ((-.006, 4.1), (0, 5.3), (.006, 6.2)):
+            out += additive(phase(hz(m) * (1 + d), n, vibrato=.003, rate=r, delay=0), hz(m), SAW[:14])
+    return norm(peak(lowpass(out, 2600, 2), 1200, 3, 1) * envelope(n, .35, 1, 1, .6, hold=dur))
+
+
+@functools.lru_cache(maxsize=None)
+def stab(chord, v):
+    """A brass-synth stab: a bright poly chord, short."""
+    n = int(.32 * RATE)
+    out = sum(additive(phase(hz(m) * (1 + d), n), hz(m), SAW[:20]) for m in chord for d in (-.003, .003))
+    return norm(lowpass(out, 3000 + 400 * v, 2) * envelope(n, .006, .09, .3, .06, hold=.18))
+
+
+@functools.lru_cache(maxsize=None)
+def vocoder(m, dur, v):
+    """The robot choir: a buzzy carrier through two vowel formants (an "a" sliding toward "o"),
+    with a breathy edge and a slow vibrato - a vocoder singing with no words."""
+    f, n = hz(m), int((dur + .15) * RATE)
+    t = times(n)
+    carrier = additive(phase(f, n, vibrato=.006, rate=5.0, delay=.2), f, SAW[:40]) + additive(phase(f * 2.003, n), 2 * f, SAW[:20]) * .3
+    a = bandpass(carrier, 650, 1150, 2) + .6 * bandpass(carrier, 1050, 1500, 2)
+    o = bandpass(carrier, 400, 800, 2) + .5 * bandpass(carrier, 750, 1100, 2)
+    w = np.clip(t / max(dur, .2), 0, 1)
+    voice = a * (1 - w) + o * w + .08 * highpass(noise(n, 3000 + v), 4000) * np.exp(-t * 12)
+    return norm(voice * envelope(n, .02, .3, .85, .12, hold=dur))
+
+
+@functools.lru_cache(maxsize=None)
+def syntom(f, v):
+    """An electronic tom: a sine falling sharply in pitch, the drum-pad 'pew'."""
+    n = int(.45 * RATE)
+    t = times(n)
+    sweep = f * (1 + 1.4 * np.exp(-t * 14))
+    return norm(np.sin(2 * np.pi * np.cumsum(sweep) / RATE) * np.exp(-t * 6.5) + noise(n, 3100 + v) * np.exp(-t * 200) * .15)
+
+
 # Drums (variant picks one of a few hits so a beat is not a loop of one sample).
 @functools.lru_cache(maxsize=None)
 def kick(v):
@@ -527,6 +593,7 @@ VOCAB = {
     "anthem": [[2, 1, 1], [1, 1, 2], [1.5, .5, 2], [3, 1], [.5, .5, 1, 2]],
     "ballad": [[2, 2], [1, 1, 2], [3, 1], [1.5, .5, 1, 1], [2, 1, -1]],
     "metal": [[1, 1, 1, 1], [.5, .5, 1, 2], [2, 1, 1], [1, .5, .5, 2]],
+    "italo": [[1, .5, .5, 2], [.5, 1, .5, 2], [1.5, 1.5, 1], [.5, .5, .5, .5, 2], [2, .5, .5, 1], [1, 1, 1.5, -.5]],
 }
 CADENCE = [[2, -2], [3, -1], [1, 1, 2], [4]]
 
@@ -1078,6 +1145,70 @@ def arrange_ballad(song):
             play(song, "lead", harmonica, tune, start, .45)
 
 
+def arrange_italo(song):
+    """Verdan Italo disco: four on the floor with claps and open hats, the bass bouncing root to
+    octave on every sixteenth pair, an arpeggiator spinning the chord, a string machine under it,
+    brass stabs on the offbeats, the robot choir (vocoder) on the tune, synth toms into each
+    chorus, and an arpeggio break with the drums out."""
+    tunes = {label: compose(song, label, VOCAB["italo"], song.key + 7, song.key + 24) for label in song.spec["progs"]}
+    shape = song.spec.get("arp", [0, 1, 2, 1])   # which chord tones the arpeggio climbs through
+    for kind, label, i, bars, start, number in each_bar(song):
+        if kind == "outro":
+            if i == 0:
+                chord = song.chord_at("I", 0, 0)
+                song.add("pad", start, strings(song.voice(chord, song.key), song.secs(7)), .32)
+                song.add("bass", start, octave_bass(song.root_note(chord, song.key - 24), song.secs(2), 0), .5)
+                song.add("drums", start, crash(0), .45)
+                song.add("drums", start, kick(0), .9)
+                for k in range(8):
+                    notes = song.voice(chord, song.key + 12)
+                    song.add("chords", start + k * .25, arp(notes[shape[k % len(shape)] % len(notes)] + 12 * (k // 4), song.secs(.25), 0), .3 * (1 - k / 10))
+            continue
+        drums = not (kind == "intro" and i < 2) and kind != "break"
+        for beat in range(4):
+            chord = song.chord_at(label, i, beat)
+            root = song.root_note(chord, song.key - 24 if song.key - 24 >= 31 else song.key - 12)
+            notes = song.voice(chord, song.key + 12)
+            # The arpeggiator: sixteenths up through the chord, an octave jump on the last.
+            for k in range(4):
+                tone = notes[shape[k % len(shape)] % len(notes)] + (12 if k == 3 else 0)
+                song.add("chords", start + beat + k * .25, arp(tone, song.secs(.22), k % 2), .2 if kind != "break" else .3)
+            if kind == "break" and i < bars - 1:
+                continue
+            # The octave bass: root on the eighth, octave on the sixteenth after it.
+            for k in range(4):
+                song.add("bass", start + beat + k * .25, octave_bass(root + (12 if k % 2 else 0), song.secs(.18), k % 2), .36 if k % 2 == 0 else .28)
+            if drums:
+                song.add("drums", start + beat, kick(beat), .95)
+                song.add("drums", start + beat + .5, hat(beat, True), .16)
+                song.add("drums", start + beat + .25, hat(beat + 1), .06)
+                song.add("drums", start + beat + .75, hat(beat + 2), .06)
+                if beat % 2:
+                    song.add("drums", start + beat, clap(beat), .55)
+                    song.add("drums", start + beat, snare(beat, True), .22)
+            # Brass stabs on the offbeats of the chorus.
+            if kind == "chorus" and beat in (1, 3):
+                song.add("chords", start + beat + .5, stab(song.voice(chord, song.key + 7), beat % 2), .2)
+        chord = song.chord_at(label, i, 0)
+        song.add("pad", start, strings(song.voice(chord, song.key), song.secs(4)), .24 if kind in ("chorus", "bridge") else .14)
+        if i == 0 and kind in ("chorus", "bridge"):
+            song.add("drums", start, crash(number % 3), .38)
+        # Synth toms down into the next section.
+        if drums and i == bars - 1 and kind in ("verse", "break", "bridge"):
+            for k, f in enumerate((220, 180, 150, 120, 100, 85)):
+                song.add("drums", start + 2.5 + k * .25, syntom(f, k), .45)
+        if kind in ("intro", "break"):
+            continue
+        tune = [(b - i * 4, l, m) for b, l, m in tunes[label] if i * 4 <= b < i * 4 + 4]
+        if kind == "chorus":
+            play(song, "lead", vocoder, tune, start, .5)
+            play(song, "lead", synth_lead, tune, start, .2, octave=1)
+        elif kind == "bridge":
+            play(song, "lead", synth_lead, tune, start, .46)
+        else:
+            play(song, "lead", vocoder, tune, start, .44)
+
+
 # ----------------------------------------------------------------------------------- mastering
 BUS = {
     # gain, reverb send
@@ -1104,6 +1235,14 @@ def produce(song):
         second = np.zeros_like(g)
         second[lag:] = lowpass(g, 3000, 2)[:-lag]
         song.buses["guitar"] = g * .8 + second * .7
+    if spec.get("echo") and "chords" in song.buses:
+        # The arpeggio's echo: a dotted-eighth delay, twice, darker each time.
+        c = song.buses["chords"]
+        lag = int(song.spb * .75 * RATE)
+        wet = np.zeros_like(c)
+        wet[lag:] += lowpass(c, 2500, 1)[:-lag] * .38
+        wet[2 * lag:] += lowpass(c, 1500, 1)[:-2 * lag] * .16
+        song.buses["chords"] = c + wet
     if spec.get("pump"):
         # The pop pump: pad, chords and bass duck on every beat and swell back.
         beats = np.arange(song.n) / RATE / song.spb
@@ -1242,6 +1381,37 @@ STATIONS = [
                           ("chorus", "B", 8), ("solo", "A", 8), ("riff", "I", 4), ("chorus", "B", 8), ("chorus", "B", 8), ("outro", "I", 3))},
         ],
     },
+    {
+        "key": "disko", "name": "Luma Disko", "frequency": "94.3", "genre": "Italo disco & synth-pop", "town": "Porto Luma",
+        "arrange": arrange_italo, "room": 1.0,
+        "songs": [
+            {"title": "Neona Nokto", "key": 57, "tempo": 120, "seed": 211, "scale": "minor", "pump": True, "echo": True,
+             "progs": {"I": ["i", "bVI", "bIII", "bVII"], "A": ["i", "i", "bVI", "bVII", "i", "i", "bVI", "bVII"],
+                       "B": ["bVI", "bVII", "i", "i", "bVI", "bVII", "bIII", "V"], "C": ["iv", "iv", "i", "i", "bVI", "bVI", "V", "V"]},
+             "form": form(("intro", "I", 4), ("verse", "A", 8), ("chorus", "B", 8), ("break", "I", 4), ("verse", "A", 8),
+                          ("chorus", "B", 8), ("bridge", "C", 8), ("chorus", "B", 8), ("chorus", "B", 8), ("outro", "I", 2))},
+            {"title": "Stela Danco", "key": 62, "tempo": 124, "seed": 223, "scale": "minor", "pump": True, "echo": True, "arp": [0, 2, 1, 2],
+             "progs": {"I": ["i", "iv", "bVII", "bIII"], "A": ["i", "iv", "bVII", "bIII", "bVI", "iv", "V", "V"],
+                       "B": ["bIII", "bVII", "i", "iv", "bIII", "bVII", "V", "i"], "C": ["bVI", "bVII", "bIII", "bIII", "bVI", "bVII", "V", "V"]},
+             "form": form(("intro", "I", 4), ("verse", "A", 8), ("chorus", "B", 8), ("verse", "A", 8), ("chorus", "B", 8),
+                          ("break", "I", 4), ("bridge", "C", 8), ("chorus", "B", 8), ("chorus", "B", 8), ("outro", "I", 2))},
+            {"title": "Kristala Koro", "key": 54, "tempo": 118, "seed": 227, "scale": "minor", "pump": True, "echo": True, "arp": [0, 1, 2, 0],
+             "progs": {"I": ["i", "bVII", "bVI", "bVII"], "A": ["i", "bVII", "bVI", "bVII", "i", "bVII", "iv", "V"],
+                       "B": ["bVI", "bIII", "bVII", "i", "bVI", "bIII", "iv", "V"], "C": ["i", "i", "iv", "iv", "bVI", "bVII", "V", "V"]},
+             "form": form(("intro", "I", 4), ("verse", "A", 8), ("chorus", "B", 8), ("break", "I", 4), ("verse", "A", 8),
+                          ("chorus", "B", 8), ("bridge", "C", 8), ("chorus", "B", 8), ("chorus", "B", 8), ("outro", "I", 2))},
+            {"title": "Rapide al la Luno", "key": 64, "tempo": 126, "seed": 229, "pump": True, "echo": True, "arp": [0, 2, 1, 2],
+             "progs": {"I": ["I", "V", "vi", "IV"], "A": ["vi", "IV", "I", "V", "vi", "IV", "ii", "V"],
+                       "B": ["I", "V", "vi", "iii", "IV", "I", "ii", "V"], "C": ["IV", "V", "iii", "vi", "IV", "V", "V", "V"]},
+             "form": form(("intro", "I", 4), ("verse", "A", 8), ("chorus", "B", 8), ("verse", "A", 8), ("chorus", "B", 8),
+                          ("break", "I", 4), ("bridge", "C", 8), ("chorus", "B", 8), ("chorus", "B", 8), ("outro", "I", 2))},
+            {"title": "Lumoj de Luma", "key": 60, "tempo": 114, "seed": 233, "scale": "minor", "pump": True, "echo": True, "room": 1.3, "arp": [0, 1, 2, 1],
+             "progs": {"I": ["i", "bIII", "bVII", "iv"], "A": ["i", "i", "bIII", "bIII", "bVI", "bVI", "bVII", "bVII"],
+                       "B": ["bVI", "bVII", "bIII", "i", "bVI", "bVII", "V", "V"], "C": ["iv", "bVII", "bIII", "bVI", "iv", "bVII", "V", "V"]},
+             "form": form(("intro", "I", 4), ("verse", "A", 8), ("chorus", "B", 8), ("break", "I", 4), ("verse", "A", 8),
+                          ("chorus", "B", 8), ("bridge", "C", 8), ("chorus", "B", 8), ("chorus", "B", 8), ("outro", "I", 2))},
+        ],
+    },
 ]
 
 
@@ -1264,6 +1434,18 @@ def ident(station):
         song.add("lead", 2, fiddle(67 + 12, song.secs(3), 2), .55)
         song.add("bass", 0, upright(43, song.secs(2), 0), .8)
         song.add("bass", 2, upright(43, song.secs(2), 1), .8)
+    elif key == "disko":
+        song = Song({"key": 57, "tempo": 120, "seed": 8, "form": [("x", "I", 2)], "progs": {"I": ["i", "i"]}, "tail": 1.5, "echo": True})
+        for k in range(8):   # the arpeggio climbing into a chord
+            song.add("chords", k * .25, arp((57, 60, 64, 69, 72, 76, 81, 84)[k], song.secs(.22), k % 2), .4)
+        for k, f in enumerate((220, 165, 120)):
+            song.add("drums", 1 + k * .33, syntom(f, k), .5)
+        song.add("pad", 2, strings((57, 60, 64, 69), song.secs(4)), .45)
+        song.add("lead", 2, vocoder(69, song.secs(3), 0), .55)
+        song.add("bass", 2, octave_bass(33, song.secs(.3), 0), .6)
+        song.add("bass", 2.25, octave_bass(45, song.secs(.3), 1), .5)
+        song.add("drums", 2, crash(0), .45)
+        song.add("drums", 2, kick(0), .9)
     else:
         song = Song({"key": 52, "tempo": 132, "seed": 7, "form": [("x", "I", 2)], "progs": {"I": ["i", "i"]}, "tail": 1.5})
         for k in range(8):
@@ -1315,7 +1497,7 @@ def catalog(entries):
         for title, file, seconds in songs:
             lines.append(f'    {{"{cpp(title)}", "{file}", {seconds:.3f}F}},')
         lines.append("}};")
-    lines += ["", "inline constexpr std::array<StationEntry, 3> stations{{"]
+    lines += ["", f"inline constexpr std::array<StationEntry, {len(entries)}> stations{{{{"]
     for st, ident_seconds, songs in entries:
         lines.append(f'    {{"{st["key"]}", "{cpp(st["name"])}", "{st["frequency"]}", "{cpp(st["genre"])}", "{cpp(st["town"])}",')
         lines.append(f'     "assets/audio/radio/{st["key"]}_ident.ogg", {ident_seconds:.3f}F, {st["key"]}_songs}},')

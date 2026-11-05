@@ -27,5 +27,12 @@ void shading_frame(const world::sky::SkyState& sky);
 // Around the world pass: shapes drawn one by one get the haze too.
 void shading_begin();
 void shading_end();
+// Road surfaces (the roads, slip roads, gores and aprons, laid a few centimetres over the land):
+// the haze shader with a small depth bias that grows with distance, as the depth buffer's
+// precision falls away, so the land never flickers through the asphalt far off. Between
+// shading_surface_begin and _end (inside the world pass), and for recorded road batches.
+void shading_surface_begin();
+void shading_surface_end();
+void shade_surface(Material& material);
 
 } // namespace outland::engine::render

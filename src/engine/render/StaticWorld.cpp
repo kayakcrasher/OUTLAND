@@ -1,6 +1,7 @@
 #include "outland/engine/render/StaticWorld.hpp"
 #include "outland/engine/render/ViewFrustum.hpp"
 #include "outland/engine/render/HighwayRender.hpp"
+#include "outland/engine/render/WorldShading.hpp"
 #include "outland/world/roads/HighwayNetwork.hpp"
 #include "outland/world/RegionGeometry.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -75,6 +76,8 @@ void StaticWorld::draw(const world::VerdaRegion& region, Vector3 camera, const V
     const bool lifted = road_lift > 0;
     if (lifted) { rlDrawRenderBatchActive(); rlPushMatrix(); rlTranslatef(0, road_lift, 0); }
     const auto& highways = world::highways::network(region);
+    rlDrawRenderBatchActive();
+    render::shading_surface_begin();
     for (auto& chunk : roads_) {
         if (chunk.settlement >= towns.size() || chunk.index >= towns[chunk.settlement].roads.size()) continue;
         if (flat(chunk.centre, camera) > 340 * reach + chunk.radius || !visible(chunk.centre, chunk.radius)) continue;
@@ -94,9 +97,11 @@ void StaticWorld::draw(const world::VerdaRegion& region, Vector3 camera, const V
             chunk.failed = !recorder_.record(draw_road, *chunk.mesh);
             continue; // recording drew it this frame
         }
-        chunk.mesh->draw(); ++draws_;
+        chunk.mesh->draw(true); ++draws_;
     }
     highway::draw_aprons(highways.aprons(), camera, 340 * reach);
+    rlDrawRenderBatchActive();
+    render::shading_surface_end();
     if (lifted) { rlDrawRenderBatchActive(); rlPopMatrix(); }
     // Houses within 320 m; full detail within 90 m.
     for (auto& house : buildings_) {

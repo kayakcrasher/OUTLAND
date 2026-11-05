@@ -2502,6 +2502,7 @@ void radio_stations(Kit& kit, world::VerdaRegion& region) {
         {"popolko", site("capital_verda"), 70, 460, false, false},
         {"kantrio", world::layout::sovagejo_center, 0, 220, true, true},
         {"roko", site("village_espera"), 15, 300, false, false},
+        {"disko", site("port_luma"), 15, 320, false, false},
     };
     for (const auto& st : stations) {
         // Model bounds x -6.3..9.8 (the mast on +X), z -4.6..4.6 (-6.7 with the porch).
