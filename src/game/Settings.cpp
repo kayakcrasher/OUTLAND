@@ -36,6 +36,7 @@ bool GameSettings::load(const std::string& path) {
         else if (key == "vibration") flag(in, read.vibration);
         else if (key == "footsteps") flag(in, read.footsteps);
         else if (key == "graphics") { int v = 0; in >> v; read.graphics = static_cast<Graphics>(std::clamp(v, 0, 2)); }
+        else if (key == "news") { int v = 0; in >> v; read.news = static_cast<News>(std::clamp(v, 0, 2)); }
         else if (key == "touch_controls") { int v = 0; in >> v; read.touch_controls = static_cast<TouchControls>(std::clamp(v, 0, 2)); }
         else if (key == "touch") {
             std::string name; input::TouchCustom c;
@@ -57,7 +58,7 @@ bool GameSettings::load(const std::string& path) {
     read.button_size = std::clamp(read.button_size, min_buttons, max_buttons);
     read.volume = std::clamp(read.volume, 0.0F, 1.0F);
     read.radio_volume = std::clamp(read.radio_volume, 0.0F, 1.0F);
-    read.radio_station = std::clamp(read.radio_station, -1, 2);
+    read.radio_station = std::clamp(read.radio_station, -1, 63);   // (the radio keeps it to its stations)
     read.mouse_look = mouse_look;
     *this = read;
     return true;
@@ -72,7 +73,7 @@ bool GameSettings::save(const std::string& path) const {
            << "\naim_assist " << aim_assist << "\nvibration " << vibration << "\nfootsteps " << footsteps << "\ntouch_controls " << static_cast<int>(touch_controls)
            << "\nbutton_size " << button_size << "\nvolume " << volume << "\nmuted " << (muted ? 1 : 0)
            << "\nradio_volume " << radio_volume << "\nradio_station " << radio_station
-           << "\ngraphics " << static_cast<int>(graphics) << '\n';
+           << "\ngraphics " << static_cast<int>(graphics) << "\nnews " << static_cast<int>(news) << '\n';
     for (std::size_t i = 0; i < input::action_count; ++i)
         output << "bind " << input::Bindings::key(static_cast<input::Action>(i)) << ' ' << bindings.codes[i][0] << ' '
                << bindings.codes[i][1] << '\n';
@@ -87,6 +88,7 @@ void GameSettings::reset_controls() {
     fresh.radio_volume = radio_volume;
     fresh.radio_station = radio_station;
     fresh.graphics = graphics;
+    fresh.news = news;
     fresh.mouse_look = mouse_look;
     *this = fresh;
 }

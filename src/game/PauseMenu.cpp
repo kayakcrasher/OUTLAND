@@ -34,7 +34,7 @@ struct Words {
     const char* back, *reset_settings, *reset_keys;
     const char* rows[PauseMenu::row_count][2];   // label, hint (or nullptr)
     const char* on, *off, *toggle, *hold;
-    const char* touch_modes[3], *graphics_modes[3];
+    const char* touch_modes[3], *graphics_modes[3], *news_modes[3];
     const char* edit;
     const char* press_key, *capture_note, *note;
 };
@@ -58,9 +58,10 @@ constexpr Words english{
      {"Car radio", "music at the wheel; O or RADIO changes the station"},
      {"Footsteps", "the sound of your own feet"},
      {"Sound", nullptr},
-     {"Graphics", "AUTO adapts resolution to keep play smooth"}},
+     {"Graphics", "AUTO adapts resolution to keep play smooth"},
+     {"Messages", "AUTO: your business, island news once you've played a while"}},
     "ON", "OFF", "TOGGLE", "HOLD",
-    {"AUTO", "ON", "OFF"}, {"AUTO", "FAST", "SHARP"},
+    {"AUTO", "ON", "OFF"}, {"AUTO", "FAST", "SHARP"}, {"AUTO", "ONLY MINE", "OFF"},
     "EDIT",
     "PRESS A KEY",
     "Press a key or mouse button.  ESC cancels, BACKSPACE clears the slot.",
@@ -69,7 +70,7 @@ constexpr Words english{
 bool toggle_row(PauseMenu::Row row) {
     using R = PauseMenu::Row;
     return row == R::TouchLayout || row == R::InvertY || row == R::AimToggle || row == R::AimAssist || row == R::TouchControls || row == R::Vibration ||
-           row == R::Footsteps || row == R::Sound || row == R::Graphics;
+           row == R::Footsteps || row == R::Sound || row == R::Graphics || row == R::News;
 }
 int rows_per_column() { return static_cast<int>((input::action_count + 1) / 2); }
 } // namespace
@@ -112,9 +113,11 @@ Rectangle PauseMenu::main_button(int index, int width, int height) {
 Rectangle PauseMenu::row_button(Row row, int side, int width, int height) {
     const float s = scale_of(width, height);
     const auto p = panel(width, height, Page::Settings);
-    const float y = p.y + 66 * s + static_cast<float>(static_cast<int>(row)) * 36 * s, right = p.x + p.width - 24 * s;
-    if (toggle_row(row)) return {right - 170 * s, y, 170 * s, 34 * s};
-    return side == 0 ? Rectangle{right - 170 * s, y, 46 * s, 34 * s} : Rectangle{right - 46 * s, y, 46 * s, 34 * s};
+    // (On a short screen the rows close up to fit above the footer's buttons.)
+    const float pitch = std::min(36 * s, (p.height - 66 * s - 66 * s) / static_cast<float>(row_count)), tall = std::min(34 * s, pitch - 2 * s);
+    const float y = p.y + 66 * s + static_cast<float>(static_cast<int>(row)) * pitch, right = p.x + p.width - 24 * s;
+    if (toggle_row(row)) return {right - 170 * s, y, 170 * s, tall};
+    return side == 0 ? Rectangle{right - 170 * s, y, 46 * s, tall} : Rectangle{right - 46 * s, y, 46 * s, tall};
 }
 
 Rectangle PauseMenu::slot(int action, int slot_index, int width, int height) {
@@ -248,6 +251,10 @@ PauseMenu::Result PauseMenu::update(GameSettings& settings, int width, int heigh
                     settings.graphics = static_cast<GameSettings::Graphics>((static_cast<int>(settings.graphics) + 1) % 3);
                     changed();
                     break;
+                case Row::News:
+                    settings.news = static_cast<GameSettings::News>((static_cast<int>(settings.news) + 1) % 3);
+                    changed();
+                    break;
                 case Row::Count: break;
                 }
             }
@@ -320,6 +327,7 @@ void PauseMenu::draw(const GameSettings& settings, int width, int height, const 
                 button(r, touch_modes[static_cast<int>(settings.touch_controls)], settings.touch_controls != GameSettings::TouchControls::Off, font, s);
                 break;
             case Row::Graphics: button(r, graphics_modes[static_cast<int>(settings.graphics)], true, font, s); break;
+            case Row::News: button(r, w.news_modes[static_cast<int>(settings.news)], settings.news != GameSettings::News::Off, font, s); break;
             case Row::Count: break;
             }
             if (value) {

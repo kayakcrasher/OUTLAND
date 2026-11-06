@@ -1616,8 +1616,18 @@ void Renderer::run() {
     const auto player_gang=[&]{return career.state().side==game::career::Side::Gang ? career.state().gang : -1;};
     // The island's news reaches the screen only when it is the player's business (their gang, the
     // badge, the brotherhood); otherwise it only goes round as gossip.
+    // What reaches the news line on the screen (SETTINGS > Messages): the player's own business
+    // (their race, their load, their turf, their job) unless messages are off; the island's
+    // goings-on (feasts, the league) only on AUTO, and only once they've played a while - a
+    // newcomer isn't told what's going on round Verda. What isn't shown goes round as gossip.
+    const auto show=[&](std::string text,float seconds,bool island=false,bool gossip=true) {
+        const bool wanted=settings.news!=game::GameSettings::News::Off &&
+            (!island || (settings.news==game::GameSettings::News::Auto && stats.hours_played()>=game::GameSettings::news_after_hours));
+        if(wanted) {gang_news=std::move(text);gang_news_time=seconds;if(!gossip) gossip_heard=gang_news;}
+        else if(gossip) quiet_news=std::move(text);
+    };
     const auto tell=[&](std::string text,float seconds,bool involved) {
-        if(involved) {gang_news=std::move(text);gang_news_time=seconds;}
+        if(involved) show(std::move(text),seconds);
         else quiet_news=std::move(text);
     };
     const auto underworld=[&]{return player_gang()>=0 || career.on_duty();};
@@ -3650,7 +3660,7 @@ void Renderer::run() {
             // A feast day: the morning's word, and the gangs keep the peace.
             if(day!=feast_said_day && minute>=7*60) {
                 feast_said_day=day;
-                if(const auto said=game::culture::feast_morning(day);!said.empty()) {gang_news=said;gang_news_time=9;gossip_heard=gang_news;}
+                if(const auto said=game::culture::feast_morning(day);!said.empty()) show(said,9,true,false);
             }
             if(game::culture::day_of_peace(day) && mafio.active()) mafio.set_next_war(std::max(mafio.next_war(),match_time+60));
             // The bells of the nearest church.
@@ -3763,13 +3773,13 @@ void Renderer::run() {
                     case game::racing::Result::Won:
                         loot_session.economy().money+=street_race.pot();loot_session.changed();
                         ++campaign.races;++campaign.race_wins;stats.race_won();
-                        gang_news="STREET RACE: first past the last flare - Fulmo's pot is yours, "+std::to_string(street_race.pot())+" kr";gang_news_time=8;gossip_heard=gang_news;
+                        show("STREET RACE: first past the last flare - Fulmo's pot is yours, "+std::to_string(street_race.pot())+" kr",8,false,false);
                         gossip.hear("somebody in "+car_words()+" beat Fulmo's boys on the ring road",clock.minutes,town_of(here),true);
                         gun_audio.kill_confirm();haptics.hit_given(true);
                         break;
                     case game::racing::Result::Lost:
                         ++campaign.races;
-                        gang_news="STREET RACE: "+street_race.winner()+" takes the pot";gang_news_time=7;gossip_heard=gang_news;
+                        show("STREET RACE: "+street_race.winner()+" takes the pot",7,false,false);
                         gossip.hear(street_race.winner()+" won on the ring road again - left "+car_words()+" in the dust",clock.minutes,town_of(here),true);
                         break;
                     case game::racing::Result::Forfeit:
@@ -3797,8 +3807,12 @@ void Renderer::run() {
                     for(int k=0;k<4;++k) npcs.despawn_bot(race_bot+k);
                 }
             }
-            // Uncle Ron and Uncle Dario ring now and then (the campaign, in free play).
-            if(!campaign_path.empty() && story.stage()==game::campaign::Stage::Free) {
+            // Uncle Ron and Uncle Dario ring now and then (the campaign, in free play) - about the
+            // island's goings-on, so only on AUTO messages, and only once the player has played a
+            // while (or sooner once they're in the family business, the badge or the brotherhood).
+            const bool phone_on=settings.news==game::GameSettings::News::Auto &&
+                (stats.hours_played()>=game::GameSettings::news_after_hours || career.state().side!=game::career::Side::Civilian);
+            if(!campaign_path.empty() && story.stage()==game::campaign::Stage::Free && phone_on) {
                 game::campaign::PhoneContext pc;
                 pc.played=campaign.played;pc.hour=hour;pc.saturday=saturday;pc.sunday=sunday;
                 pc.cop=career.on_duty();
@@ -5950,7 +5964,7 @@ void Renderer::run() {
                     next_hijack=-1;
                     if(dev_hijack || GetRandomValue(0,99)<55)
                         if(const int gang=mafio.send_hijackers(mine->position,player_gang(),br_bots,bot_drivers,vehicles,verda_region,match_time);gang>=0) {
-                            gang_news="HIJACKERS: "+gang_name(gang)+" want your load - a car is coming";gang_news_time=8;
+                            show("HIJACKERS: "+gang_name(gang)+" want your load - a car is coming",8);
                         }
                 }
             }
@@ -6642,7 +6656,7 @@ void Renderer::run() {
                             if(crew.gang==raid.attacker && d<nearest) {nearest=d;from=static_cast<int>(c);}
                         }
                         if(from>=0 && target.crew>=0) mafio.send_hit_squad(from,target.crew,br_bots,bot_drivers,vehicles,verda_region,match_time);
-                        if(target.owner==player_gang()) {gang_news=gang_name(raid.attacker)+" are hitting "+target.name+" - your turf. Defend it";gang_news_time=7;}
+                        if(target.owner==player_gang()) show(gang_name(raid.attacker)+" are hitting "+target.name+" - your turf. Defend it",7);
                         else if(Vector3Distance(target.centre,feet)<700) tell(gang_name(raid.attacker)+" hit "+faction_name(target.owner)+" at "+target.name,5,underworld());
                     }
                     for(const auto& flip:territory.take_flips()) {
@@ -6650,7 +6664,7 @@ void Renderer::run() {
                         if(t.crew>=0) mafio.set_crew_gang(t.crew,flip.to);
                         tell(gang_name(flip.to)+" took "+t.name+" from "+faction_name(flip.from),7,underworld());
                         if(flip.to==player_gang()) career.turf_taken(flip.turf,t.name);
-                        else if(flip.from==player_gang()) {gang_news="You lost "+t.name+" to "+gang_name(flip.to);gang_news_time=8;}
+                        else if(flip.from==player_gang()) show("You lost "+t.name+" to "+gang_name(flip.to),8);
                     }
                     if(!player_health.alive() && !career_dead) {career.died();stats.died();career_dead=true;}
                     if(player_health.alive()) career_dead=false;
@@ -6781,7 +6795,7 @@ void Renderer::run() {
                         const int ranch=career.job().ranch,gang=player_gang();
                         if(ranch>=0 && territory.extort(ranch,gang)) {
                             career.extort_result(true,game::mafia::family_faction(ranch));
-                            gang_news="The "+territory.families()[static_cast<std::size_t>(ranch)].name+" family pays "+gang_name(gang);gang_news_time=6;
+                            show("The "+territory.families()[static_cast<std::size_t>(ranch)].name+" family pays "+gang_name(gang),6);
                         } else if(ranch>=0) {
                             const auto& family=territory.families()[static_cast<std::size_t>(ranch)];
                             if(static_cast<std::size_t>(ranch)<ranches.ranches().size())
@@ -6801,7 +6815,7 @@ void Renderer::run() {
                             for(std::size_t c=0;c<mafio.crews().size();++c) mafio.set_crew_gang(static_cast<int>(c),mine);
                             territory.take_flips();
                             island_ruled=true;banner_key.clear();
-                            gang_news="THE CHIEF IS DEAD - "+gang_name(mine)+" TAKE VERDA";gang_news_time=14;
+                            show("THE CHIEF IS DEAD - "+gang_name(mine)+" TAKE VERDA",14);
                             gun_audio.kill_confirm();
                             game::law::JusticeFrame tip;tip.now=match_time;tip.player=feet;
                             justice.tip_off(3,feet,tip,island_life,"The Chief has been shot - every officer on the island is coming");
@@ -6812,14 +6826,13 @@ void Renderer::run() {
                             for(std::size_t i=0;i<territory.turfs().size();++i)
                                 if(territory.turfs()[i].crew==done.crew) territory.clear_town(static_cast<int>(i));
                             banner_key.clear();
-                            gang_news="The Policio broke up the "+gang_name(mafio.crews()[static_cast<std::size_t>(done.crew)].gang)+" in "+
-                                      mafio.crews()[static_cast<std::size_t>(done.crew)].town;
-                            gang_news_time=8;
+                            show("The Policio broke up the "+gang_name(mafio.crews()[static_cast<std::size_t>(done.crew)].gang)+" in "+
+                                 mafio.crews()[static_cast<std::size_t>(done.crew)].town,8);
                         }
                     }
                     if(const int mine=player_gang();mine>=0 && !island_ruled && territory.rules_island(mine)) {
                         island_ruled=true;
-                        gang_news=gang_name(mine)+" RULE VERDA - every town and every ranch is yours";gang_news_time=12;
+                        show(gang_name(mine)+" RULE VERDA - every town and every ranch is yours",12);
                         gun_audio.kill_confirm();
                     }
                     // How it ends: a gang that rules Verda brings on the endgame - the Green Hand
@@ -6830,11 +6843,11 @@ void Renderer::run() {
                             endgame.gang_won(std::string(dev)=="siege" ? 0 : 2,match_time-(std::string(dev)=="siege" ? 0 : game::mafia::Endgame::landing_delay),br_bots);
                         if(island_ruled && player_gang()>=0 && endgame.phase()==game::mafia::EndPhase::None) {
                             endgame.gang_won(player_gang(),match_time,br_bots);
-                            if(endgame.phase()==game::mafia::EndPhase::Siege) {gang_news="THE GREEN HAND MARCH ON THE REGISTARO - take the parliament";gang_news_time=12;}
+                            if(endgame.phase()==game::mafia::EndPhase::Siege) show("THE GREEN HAND MARCH ON THE REGISTARO - take the parliament",12);
                         }
                         const auto before=endgame.phase();
                         if(const auto said=endgame.update(feet,player_health.alive(),match_time,br_bots);!said.empty()) {
-                            gang_news=said;gang_news_time=14;gun_audio.kill_confirm();
+                            show(said,14);gun_audio.kill_confirm();
                         }
                         const auto now_phase=endgame.phase();
                         if(before==game::mafia::EndPhase::Siege && now_phase!=game::mafia::EndPhase::Siege) {
@@ -6971,7 +6984,7 @@ void Renderer::run() {
                                 TraceLog(LOG_INFO,"OUTLAND ballgame %d: %zu fans on their way to the %s park",i,fans.size(),teams[static_cast<std::size_t>(g.home)].nick);
                             }
                         for(const auto& e:league.update(now)) {
-                            if(e.kind==EventKind::NewSeason) {gang_news=TextFormat("BASBALLIGO: season %d begins - five clubs, one cup",league.season());gang_news_time=6;game_fans.clear();continue;}
+                            if(e.kind==EventKind::NewSeason) {show(TextFormat("BASBALLIGO: season %d begins - five clubs, one cup",league.season()),6,true);game_fans.clear();continue;}
                             if(e.fixture<0 || e.fixture>=static_cast<int>(league.fixtures().size())) continue;
                             const auto& g=league.fixtures()[static_cast<std::size_t>(e.fixture)];
                             const auto& site=parks[static_cast<std::size_t>(g.home)];
@@ -6984,7 +6997,7 @@ void Renderer::run() {
                                         seated+=island_life.in_the_stands(island_life.residents()[static_cast<std::size_t>(fan.resident)]);
                                     TraceLog(LOG_INFO,"OUTLAND ballgame %d: first pitch, %d of %zu fans in their seats",e.fixture,seated,game_fans[e.fixture].size());
                                 }
-                                    gang_news=(g.final ? "THE FINAL: " : "PLAY BALL: ")+nick(g.away)+" at "+nick(g.home);gang_news_time=6;
+                                    show((g.final ? "THE FINAL: " : "PLAY BALL: ")+nick(g.away)+" at "+nick(g.home),6,true);
                                     break;
                                 case EventKind::Run:
                                     (e.team==g.home ? park_cheer_home : park_cheer_away)[static_cast<std::size_t>(g.home)]=match_time+5;
@@ -7000,7 +7013,7 @@ void Renderer::run() {
                                     }
                                     break;
                                 case EventKind::GameOver:
-                                    gang_news=TextFormat("FINAL: %s %d, %s %d",nick(g.home).c_str(),score.home_runs,nick(g.away).c_str(),score.away_runs);gang_news_time=7;
+                                    show(TextFormat("FINAL: %s %d, %s %d",nick(g.home).c_str(),score.home_runs,nick(g.away).c_str(),score.away_runs),7,true);
                                     break;
                                 case EventKind::Fight:
                                     park_fight_until[static_cast<std::size_t>(g.home)]=match_time+45;
@@ -7008,7 +7021,7 @@ void Renderer::run() {
                                     else tell("BRAWL in the stands at the "+nick(g.home)+" ballpark: "+nick(g.home)+" and "+nick(g.away)+" fans",6,career.on_duty());
                                     break;
                                 case EventKind::Champion:
-                                    gang_news="ĈAMPIONOJ! The "+std::string(teams[static_cast<std::size_t>(e.team)].name)+" win the Basballigo!";gang_news_time=9;
+                                    show("ĈAMPIONOJ! The "+std::string(teams[static_cast<std::size_t>(e.team)].name)+" win the Basballigo!",9,true);
                                     break;
                                 case EventKind::Riot:
                                     tell("RIOT at the "+nick(g.home)+" ballpark: the "+nick(e.team)+" fans won't take it - police on the way",9,career.on_duty());
