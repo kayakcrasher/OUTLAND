@@ -3,6 +3,18 @@
 #include <cmath>
 #include <raymath.h>
 namespace outland::game::vehicles {
+VehicleAudio *VehicleAudio::live_ = nullptr;
+
+// On the audio thread: the next block of a voice's engine, rendered from what the game last set.
+void VehicleAudio::render(int index, void *buffer, unsigned int frames) {
+    auto *out = static_cast<short *>(buffer);
+    VehicleAudio *self = live_;
+    if (!self) { std::fill(out, out + frames, short{0}); return; }
+    auto &voice = self->voices_[static_cast<std::size_t>(index)];
+    const std::lock_guard<std::mutex> hold(voice.lock);
+    voice.synth.render(out, static_cast<int>(frames));
+}
+
 void VehicleAudio::initialize() {
     if (initialized_ || !IsAudioDeviceReady())
         return;
@@ -42,21 +54,47 @@ void VehicleAudio::initialize() {
         }
         UnloadWave(wave);
     }
-    // The engines: one stream each, fed a chunk at a time.
+    // The engines: one stream each, filled by the audio callback.
+    live_ = this;
     SetAudioStreamBufferSizeDefault(chunk);
-    for (auto &voice : voices_)
+    for (std::size_t i = 0; i < voices_.size(); ++i) {
+        auto &voice = voices_[i];
         voice.stream = LoadAudioStream(sample_rate, 16, 1);
+        if (voice.stream.buffer)
+            SetAudioStreamCallback(voice.stream, i == 0 ? +[](void *b, unsigned int f) { render(0, b, f); }
+                                                         : +[](void *b, unsigned int f) { render(1, b, f); });
+    }
     SetAudioStreamBufferSizeDefault(0);
-    buffer_.assign(chunk, 0);
 }
 void VehicleAudio::play(std::size_t i) {
     if (sounds_[i].stream.buffer && !IsSoundPlaying(sounds_[i]))
         PlaySound(sounds_[i]);
 }
 void VehicleAudio::silence(Voice &voice) {
+    if (!voice.playing || voice.stopping > 0)
+        return;
+    // The engine dies away (its level and the road's glide down), and the stream stops after.
+    {
+        const std::lock_guard<std::mutex> hold(voice.lock);
+        EngineSynth::Params quiet;
+        quiet.running = false;
+        quiet.volume = 0;
+        voice.synth.set(quiet);
+    }
+    voice.stopping = fade_out;
+}
+void VehicleAudio::halt(Voice &voice) {
     if (voice.playing && voice.stream.buffer)
         StopAudioStream(voice.stream);
     voice.playing = false;
+    voice.stopping = 0;
+}
+void VehicleAudio::tick(Voice &voice, float dt) {
+    if (voice.stopping <= 0)
+        return;
+    voice.stopping -= dt;
+    if (voice.stopping <= 0)
+        halt(voice);
 }
 void VehicleAudio::stop() {
     for (auto &voice : voices_)
@@ -67,10 +105,16 @@ void VehicleAudio::stop() {
     door_timer_ = 0;
 }
 VehicleAudio::~VehicleAudio() {
-    stop();
+    for (auto &voice : voices_)
+        halt(voice);
+    for (auto sound : sounds_)
+        if (sound.stream.buffer)
+            StopSound(sound);
     for (auto &voice : voices_)
         if (voice.stream.buffer)
             UnloadAudioStream(voice.stream);
+    if (live_ == this)
+        live_ = nullptr;
     for (auto sound : sounds_)
         if (sound.stream.buffer)
             UnloadSound(sound);
@@ -83,7 +127,6 @@ void VehicleAudio::tune(Voice &voice, const world::WorldAsset &a) {
     const bool same = voice.vehicle == a.id;
     voice.vehicle = a.id;
     voice.profile = key;
-    voice.synth.set_profile(engine_profile(a.vehicle.definition, engine, exhaust));
     std::vector<const EngineLoop *> loops;
     for (const auto name : engine_loops(a.vehicle.definition, engine, exhaust)) {
         const auto found = loops_.find(name);
@@ -92,6 +135,8 @@ void VehicleAudio::tune(Voice &voice, const world::WorldAsset &a) {
     // All of them or none: a gap in the revs would be worse than the synthesised engine.
     if (std::find(loops.begin(), loops.end(), nullptr) != loops.end())
         loops.clear();
+    const std::lock_guard<std::mutex> hold(voice.lock);
+    voice.synth.set_profile(engine_profile(a.vehicle.definition, engine, exhaust));
     voice.synth.set_loops(loops);
     if (!same)
         voice.box.reset(voice.synth.profile());
@@ -99,21 +144,21 @@ void VehicleAudio::tune(Voice &voice, const world::WorldAsset &a) {
 void VehicleAudio::feed(Voice &voice, const EngineSynth::Params &params, float level) {
     if (!voice.stream.buffer)
         return;
-    voice.synth.set(params);
+    // What the engine is doing; the callback renders it (its level glides there, never stepping).
+    EngineSynth::Params p = params;
+    p.volume = std::clamp(level, 0.0F, 1.0F);
+    {
+        const std::lock_guard<std::mutex> hold(voice.lock);
+        if (!voice.playing)
+            voice.synth.quiet();
+        voice.synth.set(p);
+    }
+    voice.stopping = 0;   // (back on before its fade finished: it carries on)
     if (!voice.playing) {
-        // Two chunks queued before it starts, so it never starts on silence.
-        for (int i = 0; i < 2; ++i) {
-            voice.synth.render(buffer_.data(), chunk);
-            UpdateAudioStream(voice.stream, buffer_.data(), chunk);
-        }
+        SetAudioStreamVolume(voice.stream, 1);
         PlayAudioStream(voice.stream);
         voice.playing = true;
     }
-    for (int i = 0; i < 2 && IsAudioStreamProcessed(voice.stream); ++i) {
-        voice.synth.render(buffer_.data(), chunk);
-        UpdateAudioStream(voice.stream, buffer_.data(), chunk);
-    }
-    SetAudioStreamVolume(voice.stream, std::clamp(level, 0.0F, 1.0F));
 }
 void VehicleAudio::update(const VehicleSystem &system, const world::VerdaRegion &region, float dt,
                           bool paused, float volume, const Vector3 *listener) {
@@ -127,6 +172,8 @@ void VehicleAudio::update(const VehicleSystem &system, const world::VerdaRegion 
             if (sound.stream.buffer)
                 SetSoundVolume(sound, .5F * volume_);
     }
+    for (auto &voice : voices_)
+        tick(voice, dt);
     if (paused) {
         stop();
         return;
@@ -171,7 +218,6 @@ void VehicleAudio::update(const VehicleSystem &system, const world::VerdaRegion 
         if (input.brake && std::abs(v->speed) > 4) squeal = std::max(squeal, .7F);
         if (gas > .95F && std::abs(speed) < .06F && std::abs(v->speed) > .3F && mine.synth.profile().cylinders >= 8) squeal = std::max(squeal, .45F);
         p.squeal = squeal;
-        p.volume = 1;
         feed(mine, p, .65F * volume_);
         if (system.events().horn)
             play(2);
@@ -180,7 +226,7 @@ void VehicleAudio::update(const VehicleSystem &system, const world::VerdaRegion 
         parking_ = system.events().parking;
     } else {
         silence(mine);
-        mine.vehicle.clear();
+        if (!mine.playing) mine.vehicle.clear();
         parking_ = false;
     }
     // The nearest other vehicle on the move, within earshot.
@@ -215,7 +261,7 @@ void VehicleAudio::update(const VehicleSystem &system, const world::VerdaRegion 
         feed(passing, p, .55F * fade * fade * volume_);
     } else {
         silence(passing);
-        passing.vehicle.clear();
+        if (!passing.playing) passing.vehicle.clear();
     }
 }
 } // namespace outland::game::vehicles

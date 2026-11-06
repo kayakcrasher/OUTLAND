@@ -560,10 +560,16 @@ void draw_link(const world::Road& road, int begin, int end, const std::vector<hw
                 // The gore toward the ring, where the two run close: paved to the ring's verge.
                 float side_a = 0, side_b = 0;
                 const float ga = hw::gore_at(a.centre, a.heading, half, side_a), gb = hw::gore_at(b.centre, b.heading, half, side_b);
-                if (side_a == side_b && ((ga >= 0 && ga <= hw::gore_gap) || (gb >= 0 && gb <= hw::gore_gap))) {
+                // (On the land, never up to the ring's bridge deck: under a bridge there is no gore.)
+                const auto under_deck = [&](const Frame& f) {
+                    float y = 0;
+                    const float o = side_a * (half + hw::gore_gap + .5F);
+                    return hw::deck(f.centre.x + f.cross.x * o, f.centre.z + f.cross.z * o, y) || hw::deck(f.centre.x, f.centre.z, y);
+                };
+                if (side_a == side_b && ((ga >= 0 && ga <= hw::gore_gap) || (gb >= 0 && gb <= hw::gore_gap)) && !under_deck(a) && !under_deck(b)) {
                     const auto at = [&](const Frame& f, float o) {
                         const float x = f.centre.x + f.cross.x * o, z = f.centre.z + f.cross.z * o;
-                        return Vector3{x, roadway(x, z, f.heading) + lift - .02F, z};
+                        return Vector3{x, world::terrain::TerrainHeight::sample(x, z) + lift - .02F, z};
                     };
                     const float wa = std::clamp(ga, 0.0F, hw::gore_gap) + .4F, wb = std::clamp(gb, 0.0F, hw::gore_gap) + .4F;
                     const Vector3 p0 = at(a, side_a * half), p1 = at(a, side_a * (half + wa)), q0 = at(b, side_a * half), q1 = at(b, side_a * (half + wb));

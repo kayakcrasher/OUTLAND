@@ -6,6 +6,17 @@ and crossfaded from loop to loop as they climb. Everything riding on top (the tu
 supercharger, pops, the jake brake, the air brakes, the intake roar, the road and the tyres) is
 synthesised, and so is the whole engine if the recordings are missing.
 
+## Playback
+
+The engines play from an audio callback (`VehicleAudio`): the sound device asks for each block
+of samples as it needs it (1,024 at a time, about 46 ms), and the synth renders it then from
+whatever the game last told it. A slow or stalled frame (scenery loading, a busy moment on a
+phone) never starves it, so there are no dropouts or crackle. Inside each block the revs, the
+throttle and the volume glide (in 1.5 ms steps, over a few tens of milliseconds) rather than
+stepping once a frame, so the pitch sweeps smoothly through the gears and a passing car fades
+smoothly in and out. Changing which car's engine you hear carries on from the last sample (no
+click), and an engine stopping (getting out, pausing) fades over about 0.2 s instead of being cut.
+
 ## The recordings
 
 | Engine | Loops | Vehicles |

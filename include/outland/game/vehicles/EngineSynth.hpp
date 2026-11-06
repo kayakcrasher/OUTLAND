@@ -96,8 +96,12 @@ public:
     // outlive the synth's use of them.
     void set_loops(const std::vector<const EngineLoop*>& loops);
     [[nodiscard]] bool recorded() const { return !loops_.empty(); }
+    // Starting again from silence: nothing carried over from the last sound played.
+    void quiet() { last_out_ = carry_ = 0; rpm_ = -1; volume_ = 0; }
     [[nodiscard]] const EngineProfile& profile() const { return profile_; }
-    // Mono samples, -1..1.
+    // Mono samples, -1..1. The revs, the load and the volume glide to the values last set (a few
+    // tens of milliseconds), never stepping between calls; a change of engine (set_profile,
+    // set_loops) carries on from the last sample, so it never clicks.
     void render(float* out, int frames);
     void render(short* out, int frames);
     [[nodiscard]] std::uint64_t firings() const { return firings_; }
@@ -107,6 +111,9 @@ public:
 
 private:
     struct Pulse { float at{0}, length{1}, strength{0}; };
+    void render_block(float* out, int frames);   // at the glided revs, load and volume
+    float rpm_{-1}, load_{0}, volume_{0};         // the glided values (rpm_ < 0: not yet set)
+    float last_out_{0}, carry_{0};                // the last sample out, and what's left of it after a switch
     struct Band {
         float b0{0}, a1{0}, a2{0}, x1{0}, x2{0}, y1{0}, y2{0};
         void tune(float hz, float q, float rate);

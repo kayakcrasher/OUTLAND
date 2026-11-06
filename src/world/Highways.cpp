@@ -697,6 +697,8 @@ bool paved_ground(float x, float z) {
             float side = 0;
             const float gap = gore_at(c, {dx / l, 0, dz / l}, slip_width * .5F, side);
             if (gap < 0 || gap > gore_gap) continue;
+            float deck_y = 0;
+            if (deck(c.x, c.z, deck_y)) continue;   // (under the ring's bridge: no gore)
             // On the ring's side of the slip road, between its edge and the ring's verge.
             const float right = (x - c.x) * -dz / l + (z - c.z) * dx / l;
             if (right * side > 0 && aside <= slip_width * .5F + gap + .5F) return true;
@@ -726,7 +728,9 @@ bool deck(float x, float z, float& y, const Vector3* heading) {
         if (std::abs(along) > deck_half + 1) continue;
         // (The ring curves gently: its centre line is a 1,500 m circle.)
         const float across = std::hypot(x, z) - std::hypot(i.at.x, i.at.z);
-        if (std::abs(across) > paved_half + verge) continue;
+        // (The whole deck, its verges' outer edges included: a hair outside, an edge of the verge
+        // would take the ground's height under the bridge and hang down from the deck as a wall.)
+        if (std::abs(across) > paved_half + verge + .6F) continue;
         if (heading && std::abs(heading->x * i.ring_forward.x + heading->z * i.ring_forward.z) < .6F) continue;
         y = profile_height(*ring, i.ring_s + along);
         return true;

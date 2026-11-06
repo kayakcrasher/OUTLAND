@@ -162,6 +162,8 @@ void EngineSynth::set_profile(const EngineProfile& profile) {
     next_ = 0;
     phase_ = 0;
     retune_ = 0;
+    carry_ = last_out_;   // (another engine: carry on from the last sample, not with a click)
+    rpm_ = -1;            // (and its revs from where its own gearbox has them)
 }
 
 void EngineSynth::set_loops(const std::vector<const EngineLoop*>& loops) {
@@ -170,6 +172,7 @@ void EngineSynth::set_loops(const std::vector<const EngineLoop*>& loops) {
         if (loop && loop->pcm.size() > 4 && loop->hz > 0 && loops_.size() < read_.size()) loops_.push_back(loop);
     read_.fill(0);
     fade_in_ = 0;   // a new engine comes in over a few milliseconds, not with a click
+    carry_ = last_out_;
 }
 
 void EngineSynth::render(short* out, int frames) {
@@ -205,16 +208,35 @@ float pulse_shape(float u) {
 }
 
 void EngineSynth::render(float* out, int frames) {
+    // In short blocks, each at the revs, load and volume glided a step closer to those last set:
+    // a block's pitch and level are steady, but they never jump between one call and the next.
+    constexpr int block = 32;
+    const float rpm_glide = 1 - std::exp(-block / (rate_ * .035F)), load_glide = 1 - std::exp(-block / (rate_ * .025F));
+    const float volume_glide = 1 - std::exp(-block / (rate_ * .03F));
+    const float rpm_target = std::max(0.0F, params_.rpm), load_target = std::clamp(params_.load, 0.0F, 1.0F);
+    const float volume_target = std::clamp(params_.volume, 0.0F, 1.0F);
+    if (rpm_ < 0) {rpm_ = rpm_target; load_ = load_target; volume_ = volume_target;}
+    for (int done = 0; done < frames;) {
+        const int n = std::min(block, frames - done);
+        rpm_ += (rpm_target - rpm_) * rpm_glide;
+        load_ += (load_target - load_) * load_glide;
+        volume_ += (volume_target - volume_) * volume_glide;
+        render_block(out + done, n);
+        done += n;
+    }
+}
+
+void EngineSynth::render_block(float* out, int frames) {
     const auto& p = profile_;
     const int n = std::clamp(p.cylinders, 1, static_cast<int>(angle_.size()));
-    const float rpm = std::max(0.0F, params_.rpm), load = std::clamp(params_.load, 0.0F, 1.0F), red = std::max(1000.0F, p.redline);
+    const float rpm = rpm_, load = load_, red = std::max(1000.0F, p.redline);
     const float rev = rpm / red;
     const float step = rpm / 120 / rate_;   // cycles (two turns) a sample
     const float burst_fall = std::exp(-1 / (rate_ * .0028F)), clatter_fall = std::exp(-1 / (rate_ * .0012F));
     const float blow_fall = std::exp(-1 / (rate_ * .35F)), spool_rate = 1 - std::exp(-1 / (rate_ * .7F));
     const float gain_rate = 1 - std::exp(-1 / (rate_ * .03F)), jake_rate = 1 - std::exp(-1 / (rate_ * .06F));
     const float wind_rate = 1 - std::exp(-2 * std::numbers::pi_v<float> * 500 / rate_);
-    const float sigh_fall = std::exp(-1 / (rate_ * .45F));
+    const float sigh_fall = std::exp(-1 / (rate_ * .45F)), carry_fall = std::exp(-1 / (rate_ * .006F));
     const float speed = std::abs(params_.speed);
     // Lifting off at speed: the overrun (and the turbo's blow-off).
     if (last_load_ - load > .4F && spool_ > .4F) blow_ = 1;
@@ -382,7 +404,11 @@ void EngineSynth::render(float* out, int frames) {
         rumble_ = rumble_ * .997F + noise() * .02F;
         const float road = wind_ * std::min(1.0F, speed * speed / 1600) * .35F + rumble_ * std::min(1.0F, speed / 20) * .5F +
                            squeal_.run(noise()) * std::clamp(params_.squeal, 0.0F, 1.0F) * 1.4F + sigh;
-        out[s] = std::tanh((engine * .42F + road) * 1.2F) * std::clamp(params_.volume, 0.0F, 1.0F) * .8F;
+        // (After a change of engine the old one's last sample fades out over a few milliseconds
+        // instead of the sound jumping.)
+        carry_ *= carry_fall;
+        out[s] = std::tanh((engine * .42F + road) * 1.2F) * volume_ * .8F + carry_;
+        last_out_ = out[s];
     }
 }
 

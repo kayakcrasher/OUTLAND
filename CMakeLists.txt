@@ -662,7 +662,7 @@ if(OUTLAND_BUILD_TESTS)
         -Wl,--wrap=LoadSound -Wl,--wrap=UnloadSound -Wl,--wrap=SetSoundVolume
         -Wl,--wrap=IsSoundPlaying -Wl,--wrap=PlaySound -Wl,--wrap=StopSound
         -Wl,--wrap=SetAudioStreamBufferSizeDefault -Wl,--wrap=LoadAudioStream -Wl,--wrap=UnloadAudioStream
-        -Wl,--wrap=UpdateAudioStream -Wl,--wrap=IsAudioStreamProcessed -Wl,--wrap=PlayAudioStream
+        -Wl,--wrap=SetAudioStreamCallback -Wl,--wrap=PlayAudioStream
         -Wl,--wrap=StopAudioStream -Wl,--wrap=SetAudioStreamVolume)
     add_test(NAME outland_vehicle_audio_tests COMMAND outland_vehicle_audio_tests)
     add_executable(outland_gossip_tests tests/unit/culture/test_gossip.cpp)

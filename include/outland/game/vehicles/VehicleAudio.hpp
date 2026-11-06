@@ -3,6 +3,7 @@
 #include "outland/game/vehicles/VehicleSystem.hpp"
 #include <array>
 #include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 namespace outland::game::vehicles {
@@ -11,7 +12,11 @@ namespace outland::game::vehicles {
 // move), and the recorded starter, ignition off, horn, doors and parking brake.
 class VehicleAudio {
   public:
-    static constexpr int sample_rate = 22050, chunk = 1536;   // two chunks queued: ~140 ms, enough for a slow phone frame
+    // The engines play from an audio callback: the device asks for each block as it needs it (so a
+    // slow or stalled frame never starves it), and the synth renders it then, from what the game
+    // last told it. 1024 frames a block: ~46 ms.
+    static constexpr int sample_rate = 22050, chunk = 1024;
+    static constexpr float fade_out = .18F;   // seconds: an engine stopping (getting out, pausing) fades, never cuts
     static constexpr float hearing = 40;   // metres: another vehicle's engine is heard this close
     ~VehicleAudio();
     // `listener`: where the ears are (the camera); defaults to the player's vehicle.
@@ -26,22 +31,27 @@ class VehicleAudio {
   private:
     struct Voice {
         AudioStream stream{};
-        EngineSynth synth{sample_rate};
+        EngineSynth synth{sample_rate};   // (rendered on the audio thread: touched only under `lock`)
+        std::mutex lock;
         Gearbox box;
         std::string vehicle, profile;
         bool playing{false};
+        float stopping{0};                // seconds left of its fade out (0: not fading)
     };
     bool initialized_{false}, parking_{false};
     float volume_{1};
     std::array<Voice, 2> voices_{};   // the player's vehicle; the nearest other one on the move
     std::array<Sound, 6> sounds_{};   // start, stop, horn, door open, door close, parking brake
-    std::vector<short> buffer_;
     std::map<std::string, EngineLoop, std::less<>> loops_;   // assets/audio/engines, by name
     float door_timer_{0};
     void initialize();
     void play(std::size_t index);
     void tune(Voice &voice, const world::WorldAsset &asset);
     void feed(Voice &voice, const EngineSynth::Params &params, float level);
-    void silence(Voice &voice);
+    void silence(Voice &voice);   // fade it out (it stops when the fade is done)
+    void halt(Voice &voice);      // stop it now
+    void tick(Voice &voice, float dt);
+    static void render(int voice, void *buffer, unsigned int frames);
+    static VehicleAudio *live_;   // the one whose engines the audio callbacks render
 };
 } // namespace outland::game::vehicles
