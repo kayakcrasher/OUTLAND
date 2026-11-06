@@ -24,8 +24,9 @@ Island headlines are not pushed at a new player. The pause menu's **Messages** s
 
 - **AUTO** (default): your own business always shows (your street race, your turf, your family,
   your crew, the siege). Island news (feasts, the baseball league) shows only after 3 hours played
-  (`GameSettings::news_after_hours`). Faction news shows only to the people in it: a gang war to
-  gang members, a raid to the police, the truckers' news to the brotherhood. Ron and Dario only
+  (`GameSettings::news_after_hours`). Faction news shows only to the people in it: gang raids and turf changing hands
+  to gang members and the police, hit-and-runs, prison news and ballpark riots to the police. A
+  trucker hears about their own loads (hijackers on the CB). Ron and Dario only
   phone once you've played 3 hours or have taken a side (gang, police, truckers).
 - **ONLY MINE**: just your own business; no island news, no phone calls.
 - **OFF**: no messages at all.

@@ -1614,12 +1614,12 @@ void Renderer::run() {
         return Color{176,128,74,255};   // the ranching families: saddle brown
     };
     const auto player_gang=[&]{return career.state().side==game::career::Side::Gang ? career.state().gang : -1;};
-    // The island's news reaches the screen only when it is the player's business (their gang, the
-    // badge, the brotherhood); otherwise it only goes round as gossip.
     // What reaches the news line on the screen (SETTINGS > Messages): the player's own business
     // (their race, their load, their turf, their job) unless messages are off; the island's
     // goings-on (feasts, the league) only on AUTO, and only once they've played a while - a
-    // newcomer isn't told what's going on round Verda. What isn't shown goes round as gossip.
+    // newcomer isn't told what's going on round Verda. Faction news (`tell`: gang raids, prison,
+    // hit-and-runs, ballpark riots) shows only to those it concerns (a gang member, the police).
+    // What isn't shown goes round as gossip.
     const auto show=[&](std::string text,float seconds,bool island=false,bool gossip=true) {
         const bool wanted=settings.news!=game::GameSettings::News::Off &&
             (!island || (settings.news==game::GameSettings::News::Auto && stats.hours_played()>=game::GameSettings::news_after_hours));
