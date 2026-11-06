@@ -150,7 +150,9 @@ private:
     // town's pubs (bar hoppers go round them), and the pub in the biggest town (the party).
     std::vector<int> cruise_spots_;
     std::vector<std::vector<int>> town_pubs_;
+    std::vector<std::vector<int>> town_walks_;   // a town's public places, for a stroll round them
     int party_pub_{-1};
+    [[nodiscard]] bool sealed_for(const Resident& r,const Place& place) const;
     void index_nightlife();
     const characters::CharacterRegistry* registry_{nullptr};
     LifeConfig config_{};

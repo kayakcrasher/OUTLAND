@@ -137,12 +137,27 @@ std::vector<int> Crew::update(const Frame& frame, ai::BattleRoyaleBots& bots, co
             if (!aboard_.empty()) get_out(last_car_, last_yaw_, bots, region);
             for (const int id : crew) {
                 const auto* bot = bots.find(id);
-                if (!bot || bots.mounted(id) || flat(bot->position(), frame.car) > board_radius) continue;
+                // The partner always comes along (they ride with the officer, on and off the beat);
+                // the gang's men get in if they're close enough to run over.
+                if (!bot || !bot->alive() || bots.mounted(id) || (id != partner_ && flat(bot->position(), frame.car) > board_radius)) continue;
                 aboard_.push_back(id);
                 bots.set_hidden(id, true);   // in the car (out of sight), awake: they shoot from the windows
                 bots.set_asleep(id, false);
             }
         }
+        else if (frame.car_speed < 2)
+            // Stopped or crawling: anyone left behind who comes up to the car gets in.
+            for (const int id : crew) {
+                const auto* bot = bots.find(id);
+                if (!bot || !bot->alive() || bots.mounted(id) || contains(aboard_, id) || flat(bot->position(), frame.car) > 5) continue;
+                aboard_.push_back(id);
+                bots.set_hidden(id, true);
+                bots.set_asleep(id, false);
+            }
+        // Left behind (the gang's men further off than the board radius): they come to the car.
+        for (const int id : crew)
+            if (auto* bot = bots.find(id); bot && bot->alive() && !bots.mounted(id) && !contains(aboard_, id))
+                bot->set_roam_center(frame.car, 2.5F);
         driving_ = frame.driving;
         last_car_ = frame.car;
         last_yaw_ = frame.car_yaw;

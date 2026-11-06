@@ -55,6 +55,11 @@ int main() {
     check(sunday.people > 0 && sunday.green_hand > 0, "Sunday: the faithful, and La Verda Mano outside their chapel");
     check(gathering(church, true, plain, 10 * 60).green_hand == 0 && gathering(church, false, plain, 10 * 60).people == 0, "no Green Hand at the Orthodox church; nobody on a weekday");
     check(gathering(church, false, feast_days, 14 * 60).people > gathering(chapel, false, feast_days, 14 * 60).people, "Teofanio is the Orthodox church's day");
+    using outland::game::culture::Service;
+    check(gathering(chapel, true, plain, 9 * 60 + 20).phase == Service::Gathering && gathering(chapel, true, plain, 10 * 60).phase == Service::Sermon &&
+              gathering(chapel, true, plain, 10 * 60).inside > 0 && gathering(chapel, true, plain, 11 * 60 + 10).phase == Service::Porch &&
+              gathering(chapel, true, plain, 11 * 60 + 50).phase == Service::Leaving && gathering(chapel, true, plain, 12 * 60 + 5).phase == Service::None,
+          "Sunday: gather at the door, sit through the sermon, talk on the porch, go home");
     check(day_of_peace(0) && !day_of_peace(plain) && has(feast_morning(0), "Kristnasko") && feast_morning(plain).empty(), "feast days are days of peace");
 
     if (failures == 0) std::cout << "gossip ok\n";

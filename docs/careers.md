@@ -143,8 +143,9 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
 ### Backup
 
 - Serving officers can radio for backup: **Z**, or the **BACKUP** button on touch screens.
-- Two armed officers set off from the nearest station in a squad car with lights and siren, drive to you by road and get out at your side. If the car is stuck for 8 s, or you are too close to the station for a drive, they come running from round the corner.
-- They follow you and fight any gang at war with you. They leave a gang at peace alone, so calling them never starts a fight.
+- One squad car with two armed officers sets off from the nearest station with lights and siren and drives by road to the area you called from. They get out there. If the car is stuck for 8 s, or you are too close to the station for a drive, they come running from round the corner (or, if you are driving, pull over and walk the rest).
+- On foot within 80 m of where they were called, you have them at your side. They fight any gang at war with you and leave a gang at peace alone, so calling them never starts a fight.
+- Drive off and they hold the area. They are never moved to you, so they can't end up in the road in front of your car. Once you've been more than 250 m away for 20 s, they go back.
 - They stay 150 s from arrival, and longer while there is shooting near you. Then they head back to the station.
 - If they fall, or once they leave, dispatch needs 40 s before it can send the next squad. The squad car stays where they left it, for the next call.
 - Tech: `game::career::Backup`. The officers are `ai::BattleRoyaleBots` bots; the Mafio's outsider rule decides whom they fight.
@@ -249,7 +250,7 @@ Your crew and partner:
 - Follow you on foot. If they fall far behind, they catch up out of sight.
 - Fight beside you. Gang members fight any gang that has turned on you; your partner fights any
   gang at war with you, as backup does.
-- Ride along when you drive off. Those within about 35 m get in and get out where you do.
+- Ride along when you drive off. Your partner always gets in, however far off; gang members within about 60 m do. Anyone left behind comes to the car and gets in if you stop for them. They all get out where you do.
 - **Drive you** if you USE at a car's passenger door (the right-hand side) while one of them is
   near. The nearest takes the wheel and drives you by road to your map waypoint, or else to the
   job in hand. The others ride too. USE again in the passenger seat to pull over and get out. From the passenger seat you can shoot any gun out of the

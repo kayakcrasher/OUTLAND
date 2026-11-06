@@ -239,6 +239,21 @@ int main() {
     mafio.provoke(casino->members.front(), now);
     check(mafio.hostile(officer->id(), casino->members.front(), now), "a gang at war with the officer is fought");
     mafio.forgive();
+    {
+        // The player drives off: the officers hold the area - never put down at the player's side
+        // (in the road in front of the car) - and go back once the player has been gone a while.
+        const Vector3 road = Vector3Add(player, {0, 0, 300});
+        std::vector<Vector3> before;
+        for (const int id : backup.ids()) before.push_back(bots.find(id)->position());
+        backup.update(road, now, true, false, bots, drivers, cars, region, true);
+        bool stayed = true;
+        for (std::size_t k = 0; k < backup.ids().size(); ++k)
+            stayed = stayed && Vector3Distance(bots.find(backup.ids()[k])->position(), before[k]) < 1;
+        check(stayed && backup.active(), "a player who drives off leaves the backup in the area");
+        for (int k = 0; k < 30 && backup.active(); ++k) { now += 1; backup.update(road, now, true, false, bots, drivers, cars, region, true); }
+        check(!backup.active(), "gone from the area a while, they go back");
+        backup.update(player, now, true, false, bots, drivers, cars, region);
+    }
     backup.dismiss(bots, now);
     check(!backup.active() && bots.hidden(officer->id()) && backup.call(player, now, station, 0, bots, drivers, cars, region).find("no units") != std::string::npos,
           "home again, and dispatch needs a while before the next");
@@ -327,6 +342,19 @@ int main() {
         check(crew.assign_partner(Vector3Add(casino->door, {2, 0, 0}), 0, bots, now) && crew.partner() >= 0 && bots.find(crew.partner())->alive(),
               "the desk gives the officer a partner");
         check(!crew.assign_partner(casino->door, 0, bots, now), "one partner");
+        {
+            // The officer gets into a car well out of reach: the partner rides along all the same,
+            // and gets out with them.
+            const Vector3 far_car = Vector3Add(casino->door, {0, 0, 200});
+            game::career::Crew::Frame cf; cf.player = far_car; cf.alive = true; cf.driving = "test_car"; cf.car = far_car;
+            crew.update(cf, bots, region, said);
+            check(crew.aboard(crew.partner()), "the partner gets in, however far off");
+            cf.driving.clear();
+            crew.update(cf, bots, region, said);
+            const auto* partner = bots.find(crew.partner());
+            check(!crew.aboard(crew.partner()) && std::hypot(partner->position().x - far_car.x, partner->position().z - far_car.z) < 8,
+                  "and gets out beside the car");
+        }
         crew.dismiss_partner(bots);
         check(crew.partner() < 0 && bots.hidden(crew.partner_bot()), "the partner goes off duty with the badge");
     }

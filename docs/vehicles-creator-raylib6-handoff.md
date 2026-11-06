@@ -14,6 +14,14 @@ Registry loading validates paths/numeric limits transactionally. Rendered body
 length is normalized from transformed mesh bounds; wheel diameter is normalized
 separately, with a centered rotation pivot.
 
+**World size** (`VehicleDefinition::world_scale`): the cars (under 2.3 m tall and 5.4 m long) are
+put in the world 8% bigger than the manifest's metres, so a seated grown man's head stays under
+the roof. Pickups, vans, buses, rigs and ambulances keep their size (a bigger pickup would not make
+the parking garage's ramp turns). Spawns, marker cars and saved vehicles all take this size;
+physics, collision and rendering follow it through the asset's size. A seated body's hips go no
+higher than 1.42 m under the roof (`Renderer` car_hips), and passengers, churchgoers and fans sit
+with their hands in their laps (`BodyPose::lap`) rather than on a wheel.
+
 **One production definition is present: `hatchback` / Classic hatchback.** Its
 length is 4.2 m, steering limit 30 degrees, nominal top speed 28 m/s (100.8 km/h),
 reverse limit 7 m/s, and slope limit 28 degrees. These are initial game tuning,

@@ -67,6 +67,14 @@ void LifeConfig::sanitize() {
 
 void LifeSimulation::index_nightlife() {
     cruise_spots_.clear();town_pubs_.assign(island_.settlement_centers.size(),{});party_pub_=-1;
+    town_walks_.assign(island_.settlement_centers.size(),{});
+    for(std::size_t i=0;i<island_.places.size();++i) {
+        const auto& place=island_.places[i];
+        const bool public_place=place.kind==PlaceKind::Square || place.kind==PlaceKind::Shop || place.kind==PlaceKind::Pub ||
+                                place.kind==PlaceKind::Church || place.kind==PlaceKind::Clinic;
+        if(public_place && place.settlement>=0 && place.settlement<static_cast<int>(town_walks_.size()))
+            town_walks_[static_cast<std::size_t>(place.settlement)].push_back(static_cast<int>(i));
+    }
     std::vector<int> population(island_.settlement_centers.size(),0);
     for(const auto& r:island_.residents) if(r.settlement>=0 && r.settlement<static_cast<int>(population.size())) ++population[static_cast<std::size_t>(r.settlement)];
     int biggest=-1;
@@ -182,9 +190,17 @@ int LifeSimulation::resolve(const Resident& r,Activity activity) const {
         case Activity::Socialize:return either(r.pub);
         case Activity::Worship:return either(r.church);
         case Activity::Shopping:return either(r.shop);
-        case Activity::Visit:return r.visit_home>=0 ? r.visit_home : square(r.settlement);
+        case Activity::Visit:if(r.visit_home>=0) return r.visit_home;[[fallthrough]];
         case Activity::Ballgame:return r.game_place>=0 ? r.game_place : r.home;
-        case Activity::Stroll:return square(r.settlement);
+        case Activity::Stroll: {
+            // A walk round the town: the square, the shops, the pubs, the church - somewhere new
+            // every twenty-five minutes or so (everybody on their own round, not all to the square).
+            const auto town=static_cast<std::size_t>(r.settlement);
+            if(town>=town_walks_.size() || town_walks_[town].empty()) return square(r.settlement);
+            const auto& walk=town_walks_[town];
+            const auto period=static_cast<std::uint64_t>(std::max(0.0,(clock_.minutes+static_cast<double>(r.id%25))/25));
+            return walk[static_cast<std::size_t>(mix(period*0x9e3779b97f4a7c15ULL+static_cast<std::uint64_t>(r.id)*31)%walk.size())];
+        }
         case Activity::FactionMeet:return either(r.hangout);
         case Activity::Cruise: {
             // Somewhere new every forty minutes or so, anywhere on the island.
@@ -258,6 +274,12 @@ Vector3 LifeSimulation::abstract_position(const Resident& r) const {
 
 Vector3 LifeSimulation::position(const Resident& r) const {return r.physical ? r.body : abstract_position(r);}
 
+bool LifeSimulation::sealed_for(const Resident& r,const Place& place) const {
+    // At the service: the congregation goes in at the door and sits in the pews (the renderer
+    // draws them there, game::culture::Gathering) - not bodies wandering between the pews.
+    return place.sealed || (place.kind==PlaceKind::Church && r.activity==Activity::Worship);
+}
+
 bool LifeSimulation::indoors(const Resident& r) const {
     if(r.place<0 || r.responding || r.trip!=Trip::Walk) return false;
     const auto& place=island_.places[static_cast<std::size_t>(r.place)];
@@ -308,7 +330,7 @@ LifeSimulation::Anchor LifeSimulation::physical_anchor(const Resident& r,Vector3
     // restart the walk every time.)
     if(r.trip==Trip::ToCar && r.car>=0) return {car_door(r.car),1.0F};
     const auto& target=island_.places[static_cast<std::size_t>(r.place)];
-    const bool want_inside=target.indoor && !target.sealed && !outdoors_now(r);
+    const bool want_inside=target.indoor && !sealed_for(r,target) && !outdoors_now(r);
     const float inside_radius=std::max(.5F,std::min(target.building_size.x,target.building_size.z)*.28F);
     // Leave any other building through its doorway before heading off; walls have no shortcuts.
     for(const auto& place:island_.places) {
@@ -321,7 +343,16 @@ LifeSimulation::Anchor LifeSimulation::physical_anchor(const Resident& r,Vector3
         return {target.door,.8F};
     }
     if(r.activity==Activity::Patrol) return {target.door,4};
-    return {target.door,target.indoor ? 2.5F : 7.0F};
+    // Out in the open (a square or a park): each to their own spot across it - a bench, a corner
+    // of the lawn - not everybody milling round one point.
+    if(!target.indoor) {
+        const float reach=std::clamp(std::min(target.building_size.x,target.building_size.z)*.4F,10.0F,22.0F);
+        const auto h=mix(static_cast<std::uint64_t>(r.id)*0x2545F4914F6CDD1DULL+static_cast<std::uint64_t>(r.place));
+        const float a=static_cast<float>(h%6283)/1000.0F,d=reach*(.3F+.7F*static_cast<float>((h>>16)%1000)/1000.0F);
+        Vector3 spot{target.door.x+std::cos(a)*d,target.door.y,target.door.z+std::sin(a)*d};
+        return {spot,1.5F};
+    }
+    return {target.door,2.5F};
 }
 
 void LifeSimulation::sync_bodies(Vector3 player,characters::NpcSystem& npcs) {
@@ -347,7 +378,7 @@ void LifeSimulation::sync_bodies(Vector3 player,characters::NpcSystem& npcs) {
         const float distance=flat_distance(r.body,player);
         const auto& place=island_.places[static_cast<std::size_t>(r.place)];
         // Into a sealed building (office tower): the body goes in at the door and leaves the world.
-        const bool entered_sealed=r.alive && !r.responding && place.sealed && !outdoors_now(r) && flat_distance(r.body,place.door)<3;
+        const bool entered_sealed=r.alive && !r.responding && sealed_for(r,place) && !outdoors_now(r) && flat_distance(r.body,place.door)<3;
         const bool keep=!entered_sealed && distance<=config_.dematerialize_radius &&
             (!r.alive || !indoors(r) || distance<=config_.indoor_radius+12);
         if(keep) {++bodies;continue;}
@@ -362,7 +393,7 @@ void LifeSimulation::sync_bodies(Vector3 player,characters::NpcSystem& npcs) {
     for(const auto& r:island_.residents) {
         if(r.physical || !r.alive || r.trip==Trip::Driving || in_hospital(r) || in_jail(r)) continue;
         const float distance=flat_distance(abstract_position(r),player);
-        if(indoors(r) && island_.places[static_cast<std::size_t>(r.place)].sealed) continue;
+        if(indoors(r) && sealed_for(r,island_.places[static_cast<std::size_t>(r.place)])) continue;
         if(distance<=(indoors(r) ? config_.indoor_radius : config_.materialize_radius)) candidates.emplace_back(distance,r.id);
     }
     std::sort(candidates.begin(),candidates.end());

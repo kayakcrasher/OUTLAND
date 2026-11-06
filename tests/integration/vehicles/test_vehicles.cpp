@@ -68,7 +68,7 @@ int main() {
     assert(cars.enter(region, 0, {25, 0, 27}));
     assert(!cars.enter(region, 0, {25, 0, 27}));
     assert(cars.events().started && cars.events().door);
-    assert(std::abs(cars.seat(region).y - def->seat.y) < .001F);
+    assert(std::abs(cars.seat(region).y - def->seat.y * def->world_scale()) < .001F);
     for (int i = 0; i < 50; ++i) {
         cars.begin_frame();
         cars.update(.02F, {1, 0}, region, {25, 0, 25});

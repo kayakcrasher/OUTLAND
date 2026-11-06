@@ -77,9 +77,23 @@ bool bells(bool sunday, int day, int minute) {
 Gathering gathering(const Church& church, bool sunday, int day, int minute) {
     Gathering g;
     const int feast = feast_on(day);
-    if (feast == 2 && minute < 90) { g.people = 14; g.candles = true; }                                // Pasko night
-    else if (feast >= 0 && minute >= 10 * 60 && minute < 18 * 60) g.people = feast == 1 && church.denomination == Denomination::Orthodox ? 16 : 12;
-    else if (sunday && minute >= 9 * 60 + 15 && minute < 11 * 60 + 45) g.people = 8;
+    // The day's order: [start, service, out, home, end) in minutes of the day.
+    const auto order = [&](int start, int service, int out, int home, int end) {
+        if (minute < start || minute >= end) return Service::None;
+        if (minute < service) return Service::Gathering;
+        if (minute < out) return Service::Sermon;
+        if (minute < home) return Service::Porch;
+        return Service::Leaving;
+    };
+    if (feast == 2 && minute < 90) { g.people = 14; g.candles = true; g.phase = Service::Porch; }          // Pasko night
+    else if (feast >= 0 && minute >= 10 * 60 && minute < 18 * 60) {
+        g.people = feast == 1 && church.denomination == Denomination::Orthodox ? 16 : 12;
+        g.phase = order(10 * 60, 10 * 60 + 30, 11 * 60 + 45, 17 * 60 + 30, 18 * 60);   // the feast goes on outside all day
+        g.inside = 30;
+    } else if (sunday) {
+        g.phase = order(9 * 60 + 15, 9 * 60 + 45, 11 * 60, 11 * 60 + 40, 12 * 60);
+        if (g.phase != Service::None) { g.people = 10; g.inside = 22; }
+    }
     if (g.people > 0 && church.green_hand && (sunday || feast >= 0)) g.green_hand = std::min(4, g.people / 2);
     return g;
 }

@@ -389,6 +389,9 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
             // A driver's hands rest on the wheel, turning it a little now and then.
             if(seated && (left_upper || right_upper)) angle=.85F+.05F*std::sin(time*.7F+(left_upper ? 0 : 2));
             if(seated && (left_lower || right_lower)) angle=.75F;
+            // Not driving: the hands rest in the lap.
+            if(seated && body.lap && (left_upper || right_upper)) angle=.3F+.03F*std::sin(time*.5F+(left_upper ? 0 : 2));
+            if(seated && body.lap && (left_lower || right_lower)) angle=1.15F;
             // In the air the arms hold their spread (or the toggles) instead of swinging.
             if(airborne && (left_upper || right_upper)) angle*=1-std::max(skydive,hang);
             if(airborne && (left_lower || right_lower)) angle=angle*(1-std::max(skydive,hang))+.35F*skydive+.25F*hang;

@@ -119,6 +119,10 @@ bool VehicleSystem::load_state(world::VerdaRegion &region, const std::string &pa
         }
         p.enabled = enabled;
         p.destroyed = destroyed;
+        // Every vehicle is put in the world at its type's size (a save from before a size change
+        // is brought up to it).
+        if (const auto *d = registry_.find(p.definition))
+            a.size = {d->width * d->world_scale(), d->height * d->world_scale(), d->length * d->world_scale()};
         parsed.push_back(a);
     }
     if (!ended || (in >> record)) {

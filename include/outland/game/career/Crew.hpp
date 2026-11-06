@@ -16,7 +16,8 @@ namespace outland::game::vehicles { class VehicleSystem; }
 //   with them on and off the beat.
 //
 // They follow the player on foot and fight whoever the player's side fights. When the player
-// drives off, those close by get in too (they ride out of sight) and get out where the player
+// drives off, the partner and those close by get in too (the others come to the car, and get in
+// if it waits for them) (they ride out of sight) and get out where the player
 // does. And the player can ride with them: USE at a car's passenger door and one of them drives
 // the player there - to the waypoint set on the map, or else the job in hand.
 //
@@ -28,7 +29,7 @@ class Crew {
 public:
     static constexpr int max_gang = 4;
     static constexpr float follow_radius = 4.5F;    // they keep about this close
-    static constexpr float board_radius = 35;       // close enough to get in when the player drives off
+    static constexpr float board_radius = 60;       // close enough to get in when the player drives off (the partner always does)
     static constexpr float catch_up = 90;           // left further behind than this: they catch up out of sight
 
     // The partner (added once a session, after the Mafio's crews): out of the game until assigned.
@@ -50,6 +51,7 @@ public:
         std::string driving;       // the car the player drives ("" on foot)
         Vector3 car{};             // ...where it is
         float car_yaw{0};
+        float car_speed{0};        // m/s: stopped or crawling, those left behind can still get in
         bool riding{false};        // the player rides with the crew (the ride moves them)
     };
     // Every frame: keep up, get in and out with the player. Returns the gang members who fell

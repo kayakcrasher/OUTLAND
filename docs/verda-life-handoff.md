@@ -102,6 +102,10 @@ The island clock appears top-centre (`MON 07:30`; the default is 30× real time,
 
 ## Daily routines, night owls and commuters (update)
 
+- **Strolls** go round the town: the square, the shops, the pubs, the church and the clinic,
+  somewhere new every 25 minutes or so, each resident on their own round (a Visit with no friend
+  to call on is a stroll too). At a square or park each person heads for their own spot across it
+  (10-22 m out from its centre) instead of everyone milling round one point.
 - **Modest bedtimes.** Ordinary residents are home and asleep by about 23:00 on weeknights; the
   unemployed no longer stay up until 01:00. Each resident's day still has a little personal
   jitter so the street doesn't empty at the same minute.

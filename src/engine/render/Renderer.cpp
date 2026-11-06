@@ -896,6 +896,10 @@ void Renderer::run() {
     constexpr int crowd_bot=987000;
     int crowd_church=-1,crowd_size=0,crowd_green=0;bool crowd_candles=false;
     std::vector<Vector3> crowd_spots;
+    game::culture::Service crowd_phase=game::culture::Service::None;
+    std::vector<float> crowd_heading;   // leaving: the way each one walks home (degrees)
+    // The service: the congregation inside the church (drawn in the pews), and the minister.
+    int sermon_church=-1,sermon_people=0,sermon_green=0;
     float bell_clock=0;int feast_said_day=-1;
     Sound bell_sound{},ring_sound{};bool chimes_ready=false;
     int motor_site=-1,motor_served=-1;   // the site in use; one whose menu was closed (not again till the car leaves it)
@@ -3676,40 +3680,77 @@ void Renderer::run() {
                     PlaySound(bell_sound);
                 }
             } else bell_clock=0;
-            // The faithful outside the nearest church with a gathering (Sunday, a feast, Pasko night).
+            // The faithful at the nearest church with a gathering (Sunday, a feast, Pasko night):
+            // they gather at the door, go in for the sermon (drawn in the pews), come out to talk
+            // on the porch and the steps, then walk off home.
             {
+                using game::culture::Service;
                 int want=-1;game::culture::Gathering gather;
                 if(near_church>=0 && church_distance<170) {
                     gather=game::culture::gathering(churches[static_cast<std::size_t>(near_church)],sunday,day,minute);
                     if(gather.people>0) want=near_church;
                 }
-                if(want!=crowd_church || (want>=0 && gather.people!=crowd_size)) {
+                const Service phase=want>=0 ? gather.phase : Service::None;
+                const bool outside=phase==Service::Gathering || phase==Service::Porch;
+                const bool walking_off=phase==Service::Leaving && crowd_church==want && crowd_size>0;
+                if(!walking_off && (want!=crowd_church || phase!=crowd_phase || (outside && gather.people!=crowd_size))) {
                     for(int k=0;k<crowd_size;++k) npcs.despawn_bot(crowd_bot+k);
-                    crowd_church=want;crowd_size=0;crowd_green=0;crowd_spots.clear();
-                    if(want>=0) {
+                    crowd_church=want;crowd_size=0;crowd_green=0;crowd_spots.clear();crowd_heading.clear();
+                    if(want>=0 && outside) {
                         const auto& church=churches[static_cast<std::size_t>(want)];
                         Vector3 out=Vector3Subtract(church.door,church.centre);out.y=0;
                         out=Vector3Length(out)>.1F ? Vector3Normalize(out) : Vector3{0,0,-1};
                         const Vector3 side{-out.z,0,out.x};
                         const float face=std::atan2(-out.x,-out.z)*RAD2DEG;   // toward the church
                         for(int k=0;k<gather.people;++k) {
-                            const int row=k/6,col=k%6;
                             const auto r=static_cast<std::uint32_t>(want*131+k*977);
-                            const float across=(static_cast<float>(col)-2.5F)*1.5F+static_cast<float>(r%7)*.08F;
-                            const Vector3 at=Vector3Add(church.door,Vector3Add(Vector3Scale(out,3.0F+static_cast<float>(row)*1.7F),Vector3Scale(side,across)));
+                            Vector3 at;float yaw=face+static_cast<float>(r%21)-10;
+                            if(phase==Service::Gathering || gather.candles) {
+                                // Waiting for the doors: in loose rows facing the church.
+                                const int row=k/6,col=k%6;
+                                const float across=(static_cast<float>(col)-2.5F)*1.5F+static_cast<float>(r%7)*.08F;
+                                at=Vector3Add(church.door,Vector3Add(Vector3Scale(out,3.0F+static_cast<float>(row)*1.7F),Vector3Scale(side,across)));
+                            } else {
+                                // After the service: little knots of three or four on the porch, the
+                                // steps and the path, talking, each facing the others.
+                                const int group=k/4,in_group=k%4;
+                                const float gx=(static_cast<float>(group%3)-1.0F)*4.2F,gz=1.2F+static_cast<float>(group/3)*3.6F;
+                                const float a=static_cast<float>(in_group)*1.5708F+static_cast<float>(group)*.7F;
+                                const Vector3 centre=Vector3Add(church.door,Vector3Add(Vector3Scale(out,gz),Vector3Scale(side,gx)));
+                                at=Vector3Add(centre,Vector3Add(Vector3Scale(out,std::cos(a)*.75F),Vector3Scale(side,std::sin(a)*.75F)));
+                                const Vector3 in=Vector3Subtract(centre,at);
+                                yaw=std::atan2(in.x,in.z)*RAD2DEG;
+                            }
                             const float top=at.y+3;
                             const Vector3 ground{at.x,world::physics::WorldCollision::ground_height({at.x,top,at.z},top,verda_region),at.z};
                             const bool green=k<gather.green_hand;
                             const auto* who=green ? nullptr : character_registry.choose(characters::CharacterPool::Civilian,r);
                             const std::string body=green || !who ? std::string(outfit_body) : who->id;
                             if(!character_registry.find(body)) continue;
-                            npcs.spawn_bot(crowd_bot+k,body,ground,face+static_cast<float>(r%21)-10);
+                            npcs.spawn_bot(crowd_bot+k,body,ground,yaw);
                             crowd_spots.push_back(ground);
+                            // Home: away from the church, fanned out.
+                            crowd_heading.push_back(std::atan2(out.x,out.z)*RAD2DEG+static_cast<float>(static_cast<int>(r%120))-60);
                             crowd_size=k+1;
                         }
                         crowd_green=gather.green_hand;
                     }
                 }
+                crowd_phase=walking_off ? Service::Leaving : phase;
+                // Walking off home: each their own way, at a stroll; gone out of the scene when done.
+                if(walking_off)
+                    for(int k=0;k<crowd_size && k<static_cast<int>(crowd_spots.size());++k) {
+                        auto& at=crowd_spots[static_cast<std::size_t>(k)];
+                        const float h=crowd_heading[static_cast<std::size_t>(k)]*DEG2RAD;
+                        at.x+=std::sin(h)*1.3F*dt;at.z+=std::cos(h)*1.3F*dt;
+                        const float top=at.y+2;
+                        at.y=world::physics::WorldCollision::ground_height({at.x,top,at.z},top,verda_region);
+                        npcs.set_bot(crowd_bot+k,at,crowd_heading[static_cast<std::size_t>(k)],100,characters::NpcState::Wander);
+                    }
+                // The sermon: the congregation is inside.
+                sermon_church=phase==Service::Sermon ? want : -1;
+                sermon_people=phase==Service::Sermon ? gather.inside : 0;
+                sermon_green=phase==Service::Sermon ? gather.green_hand : 0;
                 crowd_candles=gather.candles;
             }
             // The street races: the boys' cars come out at night by the meet, and go home by day.
@@ -6367,7 +6408,7 @@ void Renderer::run() {
                         for(const int id:player_crew.dismiss(br_bots)) mafio.lend(id,false,br_bots,feet);
                     game::career::Crew::Frame cf;
                     cf.player=feet;cf.alive=player_health.alive();cf.riding=player_crew.riding(bot_drivers);
-                    if(const auto* car=vehicles.driver()) {cf.driving=car->id;cf.car=car->position;cf.car_yaw=car->yaw;}
+                    if(const auto* car=vehicles.driver()) {cf.driving=car->id;cf.car=car->position;cf.car_yaw=car->yaw;cf.car_speed=std::abs(car->speed);}
                     std::string said;
                     for(const int id:player_crew.update(cf,br_bots,verda_region,said)) mafio.lend(id,false,br_bots,feet);
                     if(!said.empty()) {interaction_message=said;interaction_remaining=3;}
@@ -6383,7 +6424,7 @@ void Renderer::run() {
                         const auto* bot=br_bots.find(m.bot);
                         fighting=bot && bot->alive() && !br_bots.hidden(m.bot) && std::hypot(bot->position().x-feet.x,bot->position().z-feet.z)<60;
                     }
-                    if(const auto said=cb_backup.update(feet,match_time,player_health.alive(),fighting,br_bots,bot_drivers,vehicles,verda_region);!said.empty()) {
+                    if(const auto said=cb_backup.update(feet,match_time,player_health.alive(),fighting,br_bots,bot_drivers,vehicles,verda_region,vehicles.driver()!=nullptr);!said.empty()) {
                         interaction_message=said;interaction_remaining=3;
                     }
                 }
@@ -6412,7 +6453,7 @@ void Renderer::run() {
                         const auto* bot=br_bots.find(m.bot);
                         fighting=bot && bot->alive() && !br_bots.hidden(m.bot) && std::hypot(bot->position().x-feet.x,bot->position().z-feet.z)<60;
                     }
-                    if(const auto said=backup.update(feet,match_time,player_health.alive(),fighting,br_bots,bot_drivers,vehicles,verda_region);!said.empty()) {
+                    if(const auto said=backup.update(feet,match_time,player_health.alive(),fighting,br_bots,bot_drivers,vehicles,verda_region,vehicles.driver()!=nullptr);!said.empty()) {
                         interaction_message=said;interaction_remaining=3;
                     }
                 }
@@ -7573,7 +7614,7 @@ void Renderer::run() {
                 const auto* type=asset ? vehicles.definition(*asset) : nullptr;
                 if(!asset || !type) continue;
                 const float scale=asset->size.x/type->width;
-                characters::BodyPose sitting;sitting.seated=true;
+                characters::BodyPose sitting;sitting.seated=true;sitting.lap=true;
                 for(std::size_t k=0;k<bus.riders.size() && k<20;++k) {
                     if(bus.riders[k].character.empty()) continue;
                     const int row=static_cast<int>(k/2);
@@ -7658,7 +7699,7 @@ void Renderer::run() {
                             const bool cheering=(fan.home ? park_cheer_home : park_cheer_away)[static_cast<std::size_t>(p)]>match_time;
                             characters::BodyPose pose;
                             const bool up=cheering && (k%3!=0);
-                            pose.seated=!up;
+                            pose.seated=!up;pose.lap=true;
                             const Vector3 at=up ? seat : Vector3{seat.x,seat.y-.42F,seat.z};
                             character_renderer.draw(r.character_id,at,site.seat_yaw(fan.home)+static_cast<float>((k*29)%24)-12,1,up ? &cheer_pose : &crowd_pose,pose);
                         }
@@ -7782,11 +7823,12 @@ void Renderer::run() {
             const std::string mine=vehicles.driver() ? vehicles.driver()->id : std::string();
             car_seat_pose.advance(characters::AnimationAction::Idle,dt,0);
             // Where a sitting body's hips go: the seat, low enough that the head clears the roof
-            // (a car's seat height is set for the driver's eyes and the camera, not a body).
+            // (a car's seat height is set for the driver's eyes and the camera, not a body). A
+            // seated body's head is about 1.4 m over the hips' mark.
             const auto car_hips=[&](const world::WorldAsset& asset,const game::vehicles::VehicleDefinition& type) {
                 const float scale=asset.size.x/type.width;
                 Vector3 local=type.seat;
-                local.y=std::min(local.y,type.height-1.14F);
+                local.y=std::min(local.y,type.height-1.42F/scale);
                 return game::vehicles::VehicleSystem::world_point(local,asset.position,asset.rotation_y,scale);
             };
             const auto sit=[&](const std::string& vehicle,const std::string& character) {
@@ -7826,7 +7868,7 @@ void Renderer::run() {
                     for(const auto& p:outbreak.people()) if(p.name==game::outbreak::Story::ron) body=p.character;
                     Vector3 local=type->seat;
                     local.x=-local.x;
-                    local.y=std::min(local.y,type->height-1.14F);
+                    local.y=std::min(local.y,type->height-1.42F*type->width/asset->size.x);
                     const auto seat=game::vehicles::VehicleSystem::world_point(local,asset->position,asset->rotation_y,asset->size.x/type->width);
                     characters::BodyPose sitting;sitting.seated=true;
                     if(!body.empty() && Vector3DistanceSqr(seat,camera.position)<90*90)
@@ -7845,6 +7887,40 @@ void Renderer::run() {
                     body.outfit=uniform ? 0U : look ? outfit_texture(look->outfit) : 0U;
                     character_renderer.draw_player({seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y*DEG2RAD,body);
                 }
+            }
+        }
+        // The Sunday (or feast-day) service: the congregation inside, facing the front - in the
+        // pews of a Baptist chapel, standing before the iconostasis in an Orthodox church - and the
+        // minister at the pulpit (game::culture::Gathering; the model: tools/generate_city_kit.py).
+        if(sermon_church>=0 && sermon_church<static_cast<int>(churches.size())) {
+            const auto& church=churches[static_cast<std::size_t>(sermon_church)];
+            if(Vector3DistanceSqr(church.centre,camera.position)<90*90) {
+                const bool baptist=church.denomination==game::culture::Denomination::Baptist;
+                const auto place=[&](Vector3 local){return game::vehicles::VehicleSystem::world_point(local,church.centre,church.yaw,1);};
+                for(int k=0;k<sermon_people;++k) {
+                    Vector3 local;
+                    if(baptist) {
+                        // Seven rows of pews, two banks either side of the aisle, filled from the front.
+                        const int row=6-(k/8)%7,seat=k%8;
+                        const float x=seat<4 ? -4.05F+static_cast<float>(seat)*.85F : 1.25F+static_cast<float>(seat-4)*.85F;
+                        local={x,.65F-.42F,-6.6F+static_cast<float>(row)*1.45F+.22F};
+                    } else {
+                        // The faithful stand, in loose rows, before the iconostasis.
+                        const int row=k/8,col=k%8;
+                        local={-3.6F+static_cast<float>(col)*1.0F+static_cast<float>((k*7)%5)*.06F,.25F,2.2F-static_cast<float>(row)*1.25F};
+                    }
+                    const auto r=static_cast<std::uint32_t>(sermon_church*131+k*977);
+                    const bool green=k<sermon_green;
+                    const auto* who=green ? nullptr : character_registry.choose(characters::CharacterPool::Civilian,r);
+                    const std::string body=green || !who ? std::string(outfit_body) : who->id;
+                    if(!character_registry.find(body)) continue;
+                    characters::BodyPose pose;pose.seated=baptist;pose.lap=true;
+                    if(green) pose.outfit=k==0 ? outfits.kapo.id : outfits.soldato.id;
+                    character_renderer.draw(body,place(local),church.yaw+static_cast<float>(static_cast<int>(r%9))-4,1,&car_seat_pose,pose);
+                }
+                // The minister: at the pulpit (Baptist), before the royal doors (Orthodox), facing them.
+                if(const auto* who=character_registry.choose(characters::CharacterPool::Civilian,static_cast<std::uint32_t>(sermon_church*7919+3)))
+                    character_renderer.draw(who->id,place(baptist ? Vector3{0,.42F,6.0F} : Vector3{0,.25F,4.6F}),church.yaw+180,1,&car_seat_pose,characters::BodyPose{});
             }
         }
         vehicle_renderer.draw(vehicles,verda_region,camera.position);

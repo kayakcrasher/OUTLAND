@@ -18,6 +18,7 @@ struct BodyPose {
     float support{.20F};  // metres from the grip forward to the support hand
     bool seated{false};   // sitting (a driver): thighs forward, knees bent, hands out to a wheel;
                           // the hips keep their standing height, so draw it that far below the seat
+    bool lap{false};      // seated with the hands in the lap (a passenger, a pew, the stands), not on a wheel
     // Skydiving (the Battle Royale drop). `skydive` 0..1: spread-eagle freefall, arms out, knees
     // bent back. `hang` 0..1: under a canopy, hands up on the toggles, legs dangling. The whole
     // body tilts forward `body_pitch` radians about the hips and rolls `body_roll` (banking).

@@ -61,6 +61,8 @@ std::string Backup::call(Vector3 player, double now, Vector3 station, float yaw,
         if (usable()) driving = drivers.dispatch(bots, cars, region, ids_, station, player, 1e6F, car_);
     }
     phase_ = driving ? BackupPhase::Driving : BackupPhase::OnScene;
+    scene_ = player;
+    left_at_ = 0;
     last_moved_ = now;
     last_seen_ = {1e9F, 0, 1e9F};
     until_ = now + stay;
@@ -81,7 +83,7 @@ void Backup::on_foot(Vector3 player, Vector3 from, ai::BattleRoyaleBots& bots, c
 }
 
 std::string Backup::update(Vector3 player, double now, bool player_alive, bool fighting, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers,
-                           vehicles::VehicleSystem& cars, const world::VerdaRegion& region) {
+                           vehicles::VehicleSystem& cars, const world::VerdaRegion& region, bool player_driving) {
     if (phase_ == BackupPhase::Idle) return {};
     if (!player_alive) { dismiss(bots, now); return {}; }
     int standing = 0;
@@ -100,21 +102,49 @@ std::string Backup::update(Vector3 player, double now, bool player_alive, bool f
             const Vector3 at = bot ? bot->position() : player;
             if (flat(at, last_seen_) > 4) { last_seen_ = at; last_moved_ = now; }
             if (now - last_moved_ < stuck_seconds) return {};
-            for (const int id : ids_) drivers.cancel(id, bots, cars);
-            on_foot(player, at, bots, region);
+            if (player_driving) {
+                // The player is on the road: they pull over and walk the rest (never put down in
+                // the road in front of a moving car).
+                for (const int id : ids_) drivers.cancel(id, bots, cars);
+                const int v = cars.find(car_);
+                const Vector3 car = v >= 0 ? cars.vehicles()[static_cast<std::size_t>(v)].position : at;
+                for (std::size_t k = 0; k < ids_.size(); ++k)
+                    if (auto* officer = bots.find(ids_[k]); officer && officer->alive()) {
+                        bots.set_hidden(ids_[k], false);
+                        officer->set_position(ground(Vector3Add(car, {k == 0 ? -2.4F : 2.4F, 0, -1.0F}), region));
+                    }
+            } else {
+                for (const int id : ids_) drivers.cancel(id, bots, cars);
+                on_foot(player, at, bots, region);
+            }
+        }
+        else if (!player_driving) {
+            // The ride ended short of the area (the car gave up on the road): with the player on
+            // foot there, they come running from round the corner.
+            const auto* bot = bots.find(ids_.front());
+            if (bot && flat(bot->position(), scene_) > 60) on_foot(player, bot->position(), bots, region);
         }
         // Out of the car: on the scene.
         phase_ = BackupPhase::OnScene;
         until_ = now + stay;
         said = line("Backup is here", "The brothers are here - truckers stick together");
     }
-    // At your side: they keep close and fight whatever comes.
+    // The area they were called to. On foot there, the player has them at their side; a player
+    // who drives off leaves them to it - they hold the area (one squad car to the area, that's it).
     if (fighting) until_ = std::max(until_, now + 30);
+    const bool here = !player_driving && flat(player, scene_) < area_radius;
+    if (here) scene_ = player;
     for (const int id : ids_) {
         auto* bot = bots.find(id);
         if (!bot || !bot->alive() || bots.mounted(id)) continue;
-        if (flat(bot->position(), player) > 120) bot->set_position(player);   // left far behind: they catch up
-        bot->set_roam_center(player, follow_radius);
+        bot->set_roam_center(here ? player : scene_, here ? follow_radius : 10.0F);
+    }
+    // Gone from the area a while: they wrap up and go back.
+    if (flat(player, scene_) > leave_radius) {
+        if (left_at_ <= 0) left_at_ = now;
+        if (now - left_at_ > 20) until_ = std::min(until_, now);
+    } else {
+        left_at_ = 0;
     }
     if (now >= until_) { dismiss(bots, now); return line("Backup heads back to the station", "The brothers head back to the road"); }
     return said;

@@ -43,9 +43,16 @@ day.
 Island day 6, 13, 20... is a Sunday; a feast falls every fourth day (Pasko is day 8).
 - **Bells:** Sunday 9:10-9:30 and 11:30-11:45; feast days at noon; Pasko at midnight. Heard
   within about 520 m of a church door.
-- **Churchgoers:** walk up to a church during a service and its people are out front - 8 on a
-  Sunday morning (9:15-11:45), 12 on a feast day (10:00-18:00, 16 at the Orthodox churches for
-  Teofanio), 14 with candles at the Pasko midnight vigil (0:00-1:30).
+- **The service** (`game::culture::Service`): on a Sunday the faithful gather at the door
+  (9:15-9:45), go in for the sermon (9:45-11:00), come out to talk in little knots on the porch,
+  the steps and the path (11:00-11:40), then walk off home (to 12:00). On a feast day: gathering
+  10:00-10:30, service 10:30-11:45, then the feast goes on outside until 17:30 and they leave by
+  18:00. 10 outside on a Sunday, 12 on a feast day (16 at the Orthodox churches for Teofanio),
+  14 with candles at the Pasko midnight vigil (0:00-1:30).
+- **Inside during the sermon:** 22 on a Sunday, 30 on a feast day, seated in the Baptist pews
+  (hands in their laps), or standing in rows before the iconostasis in an Orthodox church; the
+  minister at the pulpit or before the royal doors. Residents whose day says Worship go in at
+  the door and join them (they don't wander between the pews).
 - **La Verda Mano at chapel:** at the Baptist chapel on the west boulevard up to four of the
   crowd are Green Hand men in their kapo and soldato suits.
 - **Days of peace:** on a feast day the morning headline names it ("TODAY: Pasko - ... The

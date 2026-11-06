@@ -69,7 +69,7 @@ int main() {
     int trucks = 0, cars = 0;
     for (std::size_t i = 0; i < fleet.vehicles().size(); ++i) {
         const auto* a = fleet.asset(region, fleet.vehicles()[i].id);
-        check(a && std::abs(a->size.x - fleet.definition(*a)->width) < .01F, "every vehicle at its real size");
+        check(a && std::abs(a->size.x - fleet.definition(*a)->width * fleet.definition(*a)->world_scale()) < .01F, "every vehicle at its real size");
         trucks += a->vehicle.definition == "truck";
         for (const char* everyday : {"hatchback", "sedan", "wagon", "van", "muscle"}) cars += a->vehicle.definition == everyday;   // the everyday cars
     }

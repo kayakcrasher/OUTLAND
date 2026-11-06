@@ -13,6 +13,11 @@ struct VehicleDefinition {
     Vector3 seat{}, exit{};
     float camera_distance{}, camera_height{}, max_slope{}, body_offset{};
     [[nodiscard]] std::array<Vector3, 4> anchors() const;
+    // The size a vehicle is put in the world at (times the manifest's metres): the cars a touch
+    // bigger than their models, so a grown man sits in one with his head under the roof; pickups
+    // (already tall in the cab, and as long as the garage's ramps allow), vans, buses, rigs and
+    // ambulances as they are.
+    [[nodiscard]] float world_scale() const { return height < 2.3F && length < 5.4F ? 1.08F : 1.0F; }
 };
 class VehicleRegistry {
   public:
