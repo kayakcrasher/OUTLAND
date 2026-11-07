@@ -415,7 +415,7 @@ if(EMSCRIPTEN)
     target_compile_options(outland_render PRIVATE -O2)
     target_link_options(outland PRIVATE
         -O2 -sASYNCIFY=1 -sASYNCIFY_IGNORE_INDIRECT=1 -sASYNCIFY_STACK_SIZE=262144
-        -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 -sMAXIMUM_MEMORY=1073741824
+        -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=134217728 -sMAXIMUM_MEMORY=2147483648
         -sSTACK_SIZE=2097152 -sFORCE_FILESYSTEM=1
         "-sEXPORTED_RUNTIME_METHODS=['callMain','FS','ccall']" -lidbfs.js
         "--shell-file=${PROJECT_SOURCE_DIR}/platform/web/shell.html"

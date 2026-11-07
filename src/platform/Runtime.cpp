@@ -86,7 +86,10 @@ void begin_frame() {
     next_browser_frame(); // Asyncify preserves the shared game loop and local session state.
     const int width=EM_ASM_INT({return Math.max(1,Math.floor(window.innerWidth));});
     const int height=EM_ASM_INT({return Math.max(1,Math.floor(window.visualViewport ? window.visualViewport.height : window.innerHeight));});
-    const float scale=std::min(1.0F,std::min(1280.0F/width,720.0F/height));
+    // The game lays out in CSS pixels up to a 1920 x 1200 screen (bigger windows are drawn at that
+    // and stretched, so the HUD stays readable); the canvas then holds devicePixelRatio times that
+    // (raylib, patched: tools/patch_raylib_platform.py), so a 1080p monitor is drawn at 1080p.
+    const float scale=std::min(1.0F,std::min(1920.0F/width,1200.0F/height));
     const int target_width=static_cast<int>(width*scale),target_height=static_cast<int>(height*scale);
     if(GetScreenWidth()!=target_width || GetScreenHeight()!=target_height) SetWindowSize(target_width,target_height);
 #endif

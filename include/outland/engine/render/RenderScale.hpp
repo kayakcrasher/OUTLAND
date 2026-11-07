@@ -26,7 +26,7 @@ public:
         if (mode == 1) scale_ = .6F;
         else if (mode == 2) scale_ = 1.0F;
         else scale_ = std::clamp(scale_, minimum, maximum);
-        elapsed_ = submit_ = 0; frames_ = calm_ = 0;
+        elapsed_ = submit_ = 0; frames_ = calm_ = slow_ = 0;
     }
     bool fixed() const { return fixed_; }
     // Call once per frame with the last frame's duration and how much of it the CPU spent getting
@@ -40,7 +40,11 @@ public:
         const float average = elapsed_ / static_cast<float>(frames_);
         const float waiting = 1 - submit_ / elapsed_; // share of the frame spent waiting on the GPU
         elapsed_ = submit_ = 0; frames_ = 0;
-        if (average > 1.0F / 50 && waiting > .3F) {scale_ = std::max(minimum, scale_ - step); calm_ = 0;}
+        // Down only after two slow seconds in a row: one hitch (a model loading, a save) is not a
+        // reason to blur the picture, and each step reallocates the scene's render target.
+        const bool gpu_bound = average > 1.0F / 50 && waiting > .3F;
+        if (!gpu_bound) slow_ = 0;
+        if (gpu_bound) {if (++slow_ >= 2) {scale_ = std::max(minimum, scale_ - step); slow_ = 0;} calm_ = 0;}
         else if (average > 1.0F / 50) {scale_ = std::min(maximum, scale_ + step); calm_ = 0;}
         else if (average < 1.0F / 58 && ++calm_ >= 3) {scale_ = std::min(maximum, scale_ + step); calm_ = 0;}
         else if (average >= 1.0F / 58) calm_ = 0;
@@ -54,6 +58,6 @@ private:
 #endif
     bool fixed_{false};
     float elapsed_{0}, submit_{0};
-    int frames_{0}, calm_{0};
+    int frames_{0}, calm_{0}, slow_{0};
 };
 }

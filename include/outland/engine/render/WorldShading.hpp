@@ -34,5 +34,11 @@ void shading_end();
 void shading_surface_begin();
 void shading_surface_end();
 void shade_surface(Material& material);
+// The finished scene onto the screen: an FXAA pass smooths the jagged edges (no multisampling -
+// the world is drawn into a scaled render target), and a touch of sharpening offsets the stretch
+// when the scene is drawn below the screen's resolution. Around the one DrawTexturePro of the scene.
+// False (and nothing changes) when the shader isn't there; `on` false skips it (FAST graphics).
+bool present_begin(Texture2D scene, int screen_width, int screen_height, bool on = true);
+void present_end();
 
 } // namespace outland::engine::render

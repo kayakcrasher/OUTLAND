@@ -5,6 +5,9 @@
 #include <string>
 #include <unordered_set>
 #include <rlgl.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 namespace outland::engine::render {
 namespace {
@@ -96,9 +99,61 @@ void main() {
 }
 )";
 
+// The present pass: FXAA (after Timothy Lottes' FXAA, the compact console form) on the scene
+// texture, plus a light unsharp mask scaled by how far the scene was stretched.
+constexpr const char* kPresentVertex = R"(
+IN vec3 vertexPosition;
+IN vec2 vertexTexCoord;
+IN vec4 vertexColor;
+uniform mat4 mvp;
+OUT vec2 fragTexCoord;
+OUT vec4 fragColor;
+void main() {
+    fragTexCoord = vertexTexCoord;
+    fragColor = vertexColor;
+    gl_Position = mvp * vec4(vertexPosition, 1.0);
+}
+)";
+constexpr const char* kPresentFragment = R"(
+IN vec2 fragTexCoord;
+IN vec4 fragColor;
+uniform sampler2D texture0;
+uniform vec2 texel;       // 1 / the scene texture's size
+uniform float sharpen;    // 0 .. ~0.3
+float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+void main() {
+    vec2 uv = fragTexCoord;
+    vec3 rgbNW = TEXTURE(texture0, uv + vec2(-1.0, -1.0) * texel).rgb;
+    vec3 rgbNE = TEXTURE(texture0, uv + vec2( 1.0, -1.0) * texel).rgb;
+    vec3 rgbSW = TEXTURE(texture0, uv + vec2(-1.0,  1.0) * texel).rgb;
+    vec3 rgbSE = TEXTURE(texture0, uv + vec2( 1.0,  1.0) * texel).rgb;
+    vec4 centre = TEXTURE(texture0, uv);
+    vec3 rgbM = centre.rgb;
+    float lumaNW = luma(rgbNW), lumaNE = luma(rgbNE), lumaSW = luma(rgbSW), lumaSE = luma(rgbSE), lumaM = luma(rgbM);
+    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
+    vec3 colour = rgbM;
+    if (lumaMax - lumaMin > max(0.0312, lumaMax * 0.125)) {
+        vec2 dir = vec2(-((lumaNW + lumaNE) - (lumaSW + lumaSE)), (lumaNW + lumaSW) - (lumaNE + lumaSE));
+        float reduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * (0.25 * 0.125), 1.0 / 128.0);
+        float scale = 1.0 / (min(abs(dir.x), abs(dir.y)) + reduce);
+        dir = clamp(dir * scale, vec2(-8.0), vec2(8.0)) * texel;
+        vec3 a = 0.5 * (TEXTURE(texture0, uv + dir * (1.0 / 3.0 - 0.5)).rgb + TEXTURE(texture0, uv + dir * (2.0 / 3.0 - 0.5)).rgb);
+        vec3 b = a * 0.5 + 0.25 * (TEXTURE(texture0, uv + dir * -0.5).rgb + TEXTURE(texture0, uv + dir * 0.5).rgb);
+        float lumaB = luma(b);
+        colour = (lumaB < lumaMin || lumaB > lumaMax) ? a : b;
+    }
+    // Unsharp: the centre against the average of the four diagonal taps.
+    vec3 blur = (rgbNW + rgbNE + rgbSW + rgbSE) * 0.25;
+    colour = clamp(colour + (colour - blur) * sharpen, 0.0, 1.0);
+    FRAG_COLOR = vec4(colour, 1.0) * fragColor;
+}
+)";
+
 struct State {
     bool ready{false};
-    Shader lit{}, flat{}, surface{};
+    Shader lit{}, flat{}, surface{}, present{};
+    int present_texel{-1}, present_sharpen{-1};
     int lit_sun{-1}, lit_sun_color{-1}, lit_sky{-1}, lit_ground{-1}, lit_fog{-1}, lit_fog_color{-1};
     int flat_fog{-1}, flat_fog_color{-1}, surface_fog{-1}, surface_fog_color{-1};
     std::unordered_set<unsigned int> mipmapped;
@@ -125,6 +180,19 @@ std::string source(const char* body, bool vertex) {
 
 bool usable(const Shader& shader) { return shader.id != 0 && shader.id != rlGetShaderIdDefault(); }
 
+// Anisotropic filtering: desktop GL has it; a browser's WebGL 2 usually does (asked once).
+bool anisotropy() {
+    if (rlGetVersion() == RL_OPENGL_33 || rlGetVersion() == RL_OPENGL_43) return true;
+#ifdef __EMSCRIPTEN__
+    static const bool web = EM_ASM_INT({
+        return (typeof GLctx !== 'undefined' && GLctx && GLctx.getExtension('EXT_texture_filter_anisotropic')) ? 1 : 0;
+    }) != 0;
+    return web;
+#else
+    return false;
+#endif
+}
+
 void texture_quality(Texture2D& texture) {
     auto& s = state();
     if (texture.id == 0 || texture.id == rlGetTextureIdDefault() || !s.mipmapped.insert(texture.id).second) return;
@@ -132,7 +200,7 @@ void texture_quality(Texture2D& texture) {
     SetTextureFilter(texture, texture.mipmaps > 1 ? TEXTURE_FILTER_TRILINEAR : TEXTURE_FILTER_BILINEAR);
     // Anisotropic filtering keeps roads and walls sharp at a glancing angle (desktop GL has it;
     // phones and browsers may not).
-    if (texture.mipmaps > 1 && (rlGetVersion() == RL_OPENGL_33 || rlGetVersion() == RL_OPENGL_43)) SetTextureFilter(texture, TEXTURE_FILTER_ANISOTROPIC_4X);
+    if (texture.mipmaps > 1 && anisotropy()) SetTextureFilter(texture, TEXTURE_FILTER_ANISOTROPIC_4X);
 }
 
 } // namespace
@@ -168,7 +236,32 @@ void shading_initialize() {
     SetShaderValue(s.surface, GetShaderLocation(s.surface, "depthBias"), &bias, SHADER_UNIFORM_FLOAT);
     s.ready = true;
     shading_frame(world::sky::sky_at(12));
+    // The present pass (optional: without it the scene is drawn as before).
+    s.present = LoadShaderFromMemory(source(kPresentVertex, true).c_str(), source(kPresentFragment, false).c_str());
+    if (usable(s.present)) {
+        s.present_texel = GetShaderLocation(s.present, "texel");
+        s.present_sharpen = GetShaderLocation(s.present, "sharpen");
+    } else {
+        TraceLog(LOG_WARNING, "OUTLAND shading: the present (FXAA) shader did not compile");
+        s.present = Shader{};
+    }
 }
+
+bool present_begin(Texture2D scene, int screen_width, int screen_height, bool on) {
+    auto& s = state();
+    if (!on || !s.ready || !usable(s.present) || scene.width <= 0 || scene.height <= 0) return false;
+    const float texel[2]{1.0F / static_cast<float>(scene.width), 1.0F / static_cast<float>(scene.height)};
+    // Stretched further, sharpened a little more (none at full resolution, up to 0.3 at half).
+    const float stretch = std::max(1.0F, static_cast<float>(std::max(1, GetRenderWidth())) / static_cast<float>(scene.width));
+    const float sharpen = std::clamp((stretch - 1.0F) * 0.6F, 0.0F, 0.3F);
+    (void)screen_width; (void)screen_height;
+    SetShaderValue(s.present, s.present_texel, texel, SHADER_UNIFORM_VEC2);
+    SetShaderValue(s.present, s.present_sharpen, &sharpen, SHADER_UNIFORM_FLOAT);
+    BeginShaderMode(s.present);
+    return true;
+}
+
+void present_end() { EndShaderMode(); }
 
 void shading_shutdown() {
     auto& s = state();
@@ -176,6 +269,7 @@ void shading_shutdown() {
     UnloadShader(s.lit);
     UnloadShader(s.flat);
     UnloadShader(s.surface);
+    if (usable(s.present)) UnloadShader(s.present);
     s = State{};
 }
 

@@ -766,7 +766,7 @@ void Renderer::run() {
         }
     };
     std::string career_path,career_saved;
-    float career_save_wait=0;
+    float career_save_wait=0,stats_save_wait=10;
     bool career_dead=false;
     struct JoinOffer { int crew{-1}; std::string patrol_car; double until{-1}; } join_offer;
     // The police questline: Chief Marko Forta at Verda City HQ (a body in NpcSystem under his own
@@ -854,6 +854,7 @@ void Renderer::run() {
     // landing and the garrisons to clear (saved beside the territory).
     game::mafia::Endgame endgame;
     std::string endgame_path,endgame_saved;
+    float endgame_save_wait=0;
     int boss_talks=0;                // the bosses vary what they say
     std::vector<game::career::DockSpot> smuggling_docks;
     // Marnafto's diesel lanes for the big rigs (found by model; game::freight::Diesel).
@@ -2762,6 +2763,10 @@ void Renderer::run() {
                             if(place.kind==game::life::PlaceKind::Dock && static_cast<std::size_t>(place.settlement)<verda_region.settlements().size())
                                 smuggling_docks.push_back({verda_region.settlements()[static_cast<std::size_t>(place.settlement)].name+" docks",place.door});
                     territory_path=game::inventory::LootSave::profile_path(map_path,game_mode)+".territory";
+                    {   // (the profile folder may not exist yet on a fresh island: a failed write retried every frame stalls a browser)
+                        std::error_code made;
+                        std::filesystem::create_directories(std::filesystem::path(territory_path).parent_path(),made);
+                    }
                     bool territory_loaded=false;
                     if(FileExists(territory_path.c_str())) if(char* text=LoadFileText(territory_path.c_str())) {
                         territory_loaded=territory.parse(text);
@@ -7024,13 +7029,16 @@ void Renderer::run() {
                             career.orders(game::career::JobKind::Liberate,endgame.objective(feet),
                                           TextFormat("Russian troops hold %d of %d towns - clear the garrison in %s",endgame.garrisons_left(),
                                                      static_cast<int>(endgame.garrisons().size()),endgame.objective_town(feet).c_str()));
-                        if(!endgame_path.empty() && game::rules_for(game_mode).civilian_life)
+                        endgame_save_wait-=dt;
+                        if(endgame_save_wait<=0 && !endgame_path.empty() && game::rules_for(game_mode).civilian_life) {
+                            endgame_save_wait=5;
                             if(const auto text=endgame.serialise();text!=endgame_saved && SaveFileText(endgame_path.c_str(),const_cast<char*>(text.c_str()))) endgame_saved=text;
+                        }
                     }
                     gang_news_time=std::max(0.0F,gang_news_time-dt);
                     territory_save_wait-=dt;
                     if(territory_save_wait<=0 && !territory_path.empty()) {
-                        territory_save_wait=2;
+                        territory_save_wait=10;   // (the holds drift all the time: not every moment is worth a write)
                         if(const auto text=territory.serialise();text!=territory_saved && SaveFileText(territory_path.c_str(),const_cast<char*>(text.c_str()))) territory_saved=text;
                     }
                     // An officer's first drop-off: the warden shows them round before the guards take the prisoners.
@@ -7278,6 +7286,12 @@ void Renderer::run() {
                         if(const auto text=career.serialise();text!=career_saved && SaveFileText(career_path.c_str(),const_cast<char*>(text.c_str()))) career_saved=text;
                         if(const auto text=trucking.serialise();!trucking_path.empty() && text!=trucking_saved && SaveFileText(trucking_path.c_str(),const_cast<char*>(text.c_str()))) trucking_saved=text;
                         if(const auto text=league.serialise();!league_path.empty() && text!=league_saved && SaveFileText(league_path.c_str(),const_cast<char*>(text.c_str()))) league_saved=text;
+                    }
+                    // The stats change every second (time played): saved every ten, so the browser's
+                    // storage isn't syncing all the time.
+                    stats_save_wait-=dt;
+                    if(stats_save_wait<=0) {
+                        stats_save_wait=10;
                         if(const auto text=stats.serialise();!stats_path.empty() && text!=stats_saved && SaveFileText(stats_path.c_str(),const_cast<char*>(text.c_str()))) stats_saved=text;
                     }
                 }
@@ -7547,8 +7561,9 @@ void Renderer::run() {
         const int scene_width=std::max(64,static_cast<int>(static_cast<float>(GetRenderWidth())*render_scale.scale()));
         const int scene_height=std::max(64,static_cast<int>(static_cast<float>(GetRenderHeight())*render_scale.scale()));
         if(scene_target.id==0 || scene_target.texture.width!=scene_width || scene_target.texture.height!=scene_height) {
+            // (Only the target changes: the recorded roads, houses and trees are world-space meshes
+            // and stay - re-recording them all at every resolution step froze the browser.)
             if(scene_target.id!=0) UnloadRenderTexture(scene_target);
-    static_world.invalidate();
             scene_target=LoadRenderTexture(scene_width,scene_height);
             SetTextureFilter(scene_target.texture,TEXTURE_FILTER_BILINEAR);
         }
@@ -8525,8 +8540,14 @@ void Renderer::run() {
         EndTextureMode();
         BeginDrawing();
         ClearBackground(BLACK);
-        DrawTexturePro(scene_target.texture,{0,0,static_cast<float>(scene_width),-static_cast<float>(scene_height)},
-            {0,0,static_cast<float>(screen_width),static_cast<float>(screen_height)},{0,0},0,WHITE);
+        {
+            // FXAA (and a touch of sharpening when the scene is drawn below the screen's
+            // resolution) on the way to the screen; FAST graphics skips it.
+            const bool smooth=render::present_begin(scene_target.texture,screen_width,screen_height,settings.graphics!=game::GameSettings::Graphics::Fast);
+            DrawTexturePro(scene_target.texture,{0,0,static_cast<float>(scene_width),-static_cast<float>(scene_height)},
+                {0,0,static_cast<float>(screen_width),static_cast<float>(screen_height)},{0,0},0,WHITE);
+            if(smooth) render::present_end();
+        }
         if(justice.wanted()>0 || justice.message_time()>0) {
             // Wanted stars and what the police just did.
             if(justice.wanted()>0) {
