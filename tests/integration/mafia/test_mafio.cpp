@@ -5,6 +5,7 @@
 #include "outland/game/life/LifeSimulation.hpp"
 #include "outland/game/career/Backup.hpp"
 #include "outland/game/career/Crew.hpp"
+#include "outland/game/career/RoutineCalls.hpp"
 #include "outland/game/mafia/Mafio.hpp"
 #include "outland/game/vehicles/VehicleSystem.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -257,6 +258,73 @@ int main() {
     backup.dismiss(bots, now);
     check(!backup.active() && bots.hidden(officer->id()) && backup.call(player, now, station, 0, bots, drivers, cars, region).find("no units") != std::string::npos,
           "home again, and dispatch needs a while before the next");
+
+    // A patrol officer's routine calls (before the Gang Task Force): a domestic or a pharmacy
+    // robbery - one civilian suspect who gives up (cuffed, into the back of the car) or resists
+    // (and an officer may lawfully shoot him: the call is done, no crime).
+    {
+        game::career::Career cop;
+        std::string why;
+        cop.join_police("police_test", why);
+        { bool car = false; cop.chief_talk(car); cop.passed_training(); cop.chief_talk(car); }
+        game::career::RoutineCalls routine;
+        routine.start(bots, player, 91);
+        const Vector3 there = Vector3Add(player, {260, 0, 0});
+        game::career::CallScene scene;
+        scene.door = {there.x, world::terrain::TerrainHeight::sample(there.x, there.z), there.z};
+        scene.out = {0, 0, 1};
+        scene.town = "Testurbo";
+        scene.place = "the shop";
+        scene.shop = false;
+        auto pharmacy = scene;
+        pharmacy.shop = true;
+        pharmacy.place = "the pharmacy at Testurbo's clinic";
+        int arrested = 0, shot = 0;
+        for (int call = 0; call < 12; ++call) {
+            game::career::RoutineCalls::Frame rf;
+            rf.dt = .05F; rf.now = now; rf.officer = player; rf.alive = true;
+            bool sent = false;
+            for (int k = 0; k < 40 && !sent; ++k) {
+                rf.now = now += 10;
+                sent = routine.dispatch(rf, {scene}, {pharmacy}, cop, bots, drivers, cars, region, 1000ULL + static_cast<std::uint64_t>(call * 97 + k));
+            }
+            check(sent && routine.active() && cop.job().routine, "a routine call goes out");
+            if (!sent) break;
+            const auto* suspect = bots.find(routine.bot());
+            check(suspect && suspect->alive() && !bots.hidden(routine.bot()) && Vector3Distance(suspect->position(), scene.door) < 6, "the suspect at the scene");
+            // The officer walks up.
+            std::string said;
+            rf.officer = Vector3Add(scene.door, {0, 0, 8});
+            for (int k = 0; k < 4; ++k) { rf.now = now += .05; routine.update(rf, cop, bots, drivers, cars, region, said); }
+            using RS = game::career::RoutineCalls::Stage;
+            const int before = cop.routine_done();
+            if (routine.stage() == RS::Waiting) { check(false, "the suspect decides face to face"); break; }
+            if (routine.stage() == RS::HandsUp) {
+                rf.officer = Vector3Add(bots.find(routine.bot())->position(), {1, 0, 0});
+                check(routine.to_cuff(rf.officer, bots) == routine.bot() && routine.cuff(bots), "hands up: cuffed");
+                rf.police_car = "police_test"; rf.car = Vector3Add(rf.officer, {3, 0, 0});
+                routine.update(rf, cop, bots, drivers, cars, region, said);
+                check(!routine.active() && cop.custody() >= 1 && cop.routine_done() == before + 1, "into the back of the car: the call is done");
+                rf.police_car.clear();
+                ++arrested;
+            } else {
+                // Running or armed: lethal force.
+                const auto record = cop.state().record;
+                while (bots.find(routine.bot())->alive()) bots.damage_bot(routine.bot(), 60, rf.officer, now);
+                routine.update(rf, cop, bots, drivers, cars, region, said);
+                check(!routine.active() && cop.routine_done() == before + 1 && cop.on_duty() && cop.state().record == record,
+                      "a suspect shot dead: stopped, lawfully");
+                ++shot;
+            }
+            cop.deliver();
+            now += 60;
+        }
+        std::cout << "routine calls: " << arrested << " arrested, " << shot << " shot\n";
+        check(arrested > 0, "suspects give up and are cuffed");
+        check(cop.routine_done() >= game::career::Career::task_force_calls, "ten routine calls done");
+        bool told = false;
+        check(cop.chief_talk(told).find("Gang Task Force") != std::string::npos && cop.task_force(), "the Chief takes the officer onto the Gang Task Force");
+    }
 
     // The player's own crew: a gang member recruits his gang's foot soldiers (never the boss), up
     // to four; they follow the player, fight whoever turns on the player, and one of them drives

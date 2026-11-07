@@ -119,14 +119,32 @@ Every recruit, at any station, starts a Kadeto **in training**. There are no cal
 
 ## Police calls
 
-| Call | What | Pay | Respect |
+### Routine calls, then the Gang Task Force
+
+A new officer starts on routine work. Gang work (raids, gang wars, the Chief's orders, gang robberies and drive-bys) belongs to the **Gang Task Force**, and the Chief only takes officers onto it after **10 routine calls**. The bag's POLICIO panel counts them ("routine calls 4/10 for the Gang Task Force"). After the tenth, the radio tells you to see the Chief at Verda City HQ; talk to him (USE) and you're on the task force from then on. Officers from older saves with 10 jobs done are already on it.
+
+| Routine call | What | Pay | Respect |
 |---|---|---|---|
 | **PATROL** | Drive a police car to three towns in turn (15 min) | 260 | 5 |
+| **DOMESTIC DISPUTE** | Shouting at a house; the man is out front. Most give up, some run, a few pull a gun | 300 | 6 |
+| **DRUNK DRIVER** | A car leaving a pub, its colour, model and plate on the radio. Get on its bumper (16 m) with the lights on for 5 s and he pulls over; out of the car he nearly always gives up | 360 | 6 |
+| **PHARMACY ROBBERY** | An armed man at a town clinic's pharmacy. As likely to run or fight as to give up | 450 | 8 |
+
+- One suspect a call, a civilian (no gang). Face to face (18 m) he decides: **hands up** (USE within 3.4 m cuffs him), **runs** (catch him or wound him and he gives up), or **fights** ("SUSPECT - ARMED: lethal force authorised"; hurt, he drops the gun).
+- Cuffed, he walks behind you and climbs into the back of your police car; the call is done. Book him in at the state prison's gate like any prisoner.
+- **Lethal force:** officers may lawfully kill suspects. A suspect shot dead counts as stopped, on any call - no crime, no record, no lost badge. (Bystanders are another matter: see crossfire below.)
+- Tech: `game::career::RoutineCalls` (one suspect body, a CombatBot that fights only the officer and only while resisting); `Career::routine_call`, `routine_done`, `task_force`, `task_force_calls`.
+- Dev: `OUTLAND_DEV_CAREER=police:taskforce` starts on the task force.
+
+### Gang Task Force calls
+
+| Call | What | Pay | Respect |
+|---|---|---|---|
 | **RAID** | Take down 2–3 of a gang crew at its hideout | 480 | 9 |
 | **GANG WAR** | When a hit squad is on the road: stop 2 of either side | 500 | 10 |
 | **ROBBERY** / **DRIVE-BY** | A crime in progress: two gang members and their getaway car (colour, model, plate on the radio). Stop them, cuff them, bring them in | 650 / 600 | 10 |
 
-- **Callouts** (ROBBERY, DRIVE-BY) come up instead of the next job about two times in three; the very first call is always one, and comes with a partner, Officer Novak, who talks you through it. See [callouts and prison](callouts-and-prison.md).
+- **Callouts** (ROBBERY, DRIVE-BY: Gang Task Force only) come up instead of the next job about two times in three; the very first call is always one, and comes with a partner, Officer Novak, who talks you through it. See [callouts and prison](callouts-and-prison.md).
 
 - **Patrols** count in any police car: your own, a station's, the Interceptor or a cruiser. A town counts within 40 m of its centre (towns only, not the ranches).
 - **Gang war calls** don't go stale: once the shooting stops, the call points at the nearest crew of either gang, and it ends if there is nobody left to stop.
@@ -199,7 +217,7 @@ The goal of the police questline is to get rid of the gangs. Once you serve, abo
 Verda's trucking is a tough grind, so the truckers stick together. They are Esperantistoj, working class, in every town on the island, and they hold out for a higher rate. The brotherhood is the third road, beside the gangs and the Policio.
 
 - **Home: La Ringo.** The brotherhood's home is La Ringo Okcidento, the bar and grill on the ring road's west side, with its truck park full of brothers' rigs (marked on the map: LA FRATECO - LA RINGO). See [highways](highways.md#la-ringo-the-rings-bar-and-grills).
-- **Joining:** talk to **Ivo Kovač**, at La Ringo's door (USE opens a menu: **Join** or **Talk**). Anyone but a cop or a gangster can join (they leave their side first, and a brother leaves the brotherhood before joining one). A brother's menu has **Talk**, **Call a strike**, **A contraband run** and **Leave the brotherhood** (which asks again before you go).
+- **Joining:** talk to **Ivo Kovač**, at La Ringo's door (USE opens a menu: **Join** or **Talk**). A brother has **50 miles (80 km) driven** before he joins - the bag's YOUR STATS shows KM DRIVEN, and Ivo says how many miles are still to go. Anyone but a cop or a gangster can join (they leave their side first, and a brother leaves the brotherhood before joining one). A brother's menu has **Talk**, **Call a strike**, **A contraband run** and **Leave the brotherhood** (which asks again before you go).
 - **Ranks:** Novulo, Ŝoforo, Veterano, Ŝosea Lupo, Reĝo de la Vojo.
 - **The union rate:** every Verda Transporto load pays a brother 25% more than the company rate, plus every raise won on strike (up to +50% in all). Each load is also +3 respect. The pay message shows both rates.
 - **Truckers in every town:** brothers stand about La Ringo's door and among its rigs, one is at the diesel lane in Verda Transporto's yard, and a Kamionisto stands outside a pub (or the shop) in every town. They talk shop with a brother, and point anyone else to Ivo at La Ringo.

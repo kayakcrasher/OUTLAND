@@ -214,6 +214,7 @@ add_library(
     src/game/mafia/GangLogos.cpp
     src/game/career/Career.cpp
     src/game/career/Callouts.cpp
+    src/game/career/RoutineCalls.cpp
     src/game/career/Crew.cpp
     src/game/career/Backup.cpp
     src/game/career/TrainingCamp.cpp

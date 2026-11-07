@@ -116,6 +116,7 @@ struct Job {
     int ranch{-1};                 // Extort: the family's ranch
     int turf{-1};                  // TakeTurf: the town
     double deadline{0};
+    bool routine{false};           // a routine call (counts toward the Gang Task Force)
     double held_since{-1};         // STRIKE: when the gate was last seen held (-1: not held now)
     float held{0};                 // ...and for how long in all (the clock stops while it's open)
     int pay{0};
@@ -142,6 +143,8 @@ struct CareerState {
     int outposts_built{0};         // Ŝosea Patrolo outposts the player opened (THE PATROL)
     float union_raise{0};          // a trucker's raises won on strike, on top of the union rate
     bool rig_issued{false};        // the brotherhood handed the trucker a rig of their own (once)
+    int routine_done{0};           // routine calls done (patrols, domestics, drunk drivers, pharmacy robberies)
+    bool task_force{false};        // on the Gang Task Force: the gang work (raids, gang wars, the Chief's orders)
 };
 
 class Career {
@@ -155,8 +158,20 @@ public:
     // Joining. False (with why) when the door is shut.
     bool join_gang(int gang, const std::string& gang_name, std::string& why);
     bool join_police(const std::string& patrol_car, std::string& why);
-    // La Frateco de Kamionistoj (any but a cop or a gangster).
-    bool join_truckers(std::string& why);
+    // La Frateco de Kamionistoj (any but a cop or a gangster), once they've put the miles in:
+    // `km_driven` on the player's wheels (game::player::PlayerStats), at least brotherhood_km.
+    static constexpr double brotherhood_miles = 50, brotherhood_km = brotherhood_miles * 1.609344;
+    bool join_truckers(std::string& why, double km_driven = brotherhood_km);
+    // The Policio's Gang Task Force: an officer starts on routine calls (patrols, domestic
+    // disputes, drunk drivers, pharmacy robberies); after task_force_calls of them the Chief takes
+    // them onto the task force, and the gang work begins (raids, gang wars, the Chief's orders,
+    // gang robberies and drive-bys).
+    static constexpr int task_force_calls = 10;
+    [[nodiscard]] bool task_force() const { return state_.side == Side::Police && state_.task_force; }
+    [[nodiscard]] int routine_done() const { return state_.routine_done; }
+    // A routine call put out by the game (game::career::RoutineCalls): taken like a callout, and
+    // counted toward the task force when done.
+    bool routine_call(Job call);
     [[nodiscard]] bool trucker() const { return state_.side == Side::Trucker; }
     // The brotherhood's rate: what a member's load pays against the company's (1 + union_rate +
     // the raises won on strike, up to raise_max).

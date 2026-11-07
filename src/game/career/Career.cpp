@@ -90,10 +90,17 @@ bool Career::join_police(const std::string& patrol_car, std::string& why) {
     return true;
 }
 
-bool Career::join_truckers(std::string& why) {
+bool Career::join_truckers(std::string& why, double km_driven) {
     if (state_.side == Side::Trucker) { why = "You're already one of us, brother"; return false; }
     if (state_.side == Side::Police) { why = "No badges in the brotherhood - hand it in first"; return false; }
     if (state_.side == Side::Gang) { why = "We don't haul for gangsters - walk away from your gang first"; return false; }
+    if (!(km_driven >= brotherhood_km)) {
+        const double miles = std::max(0.0, km_driven) / 1.609344;
+        const int left = std::max(1, static_cast<int>(std::ceil(brotherhood_miles - miles)));
+        why = "A brother has " + std::to_string(static_cast<int>(brotherhood_miles)) + " miles under his wheels before he joins. You've driven " +
+              std::to_string(static_cast<int>(miles)) + " - put in another " + std::to_string(left) + (left == 1 ? " mile" : " miles") + " and come back";
+        return false;
+    }
     state_.side = Side::Trucker;
     state_.gang = -1;
     state_.respect = 0;
@@ -163,7 +170,14 @@ void Career::killed(int gang, bool from_vehicle) {
 }
 
 bool Career::arrested(int gang) {
-    if (state_.side != Side::Police || gang < 0) return false;
+    if (state_.side != Side::Police) return false;
+    if (gang < 0) {
+        // A routine call's suspect (no gang): into the back of the car.
+        if (custody_ >= custody_max) { say("The car is full - take them to the state prison first"); return false; }
+        gain(1);
+        ++custody_;
+        return true;
+    }
     if (custody_ >= custody_max) { say("The car is full - take them to the state prison first"); return false; }
     const bool counted = (job_.kind == JobKind::Raid && gang == job_.gang) ||
                          (job_.kind == JobKind::BreakUpWar && (gang == job_.gang || gang == job_.crew));
@@ -196,6 +210,13 @@ bool Career::callout(Job call) {
     job_ = std::move(call);
     ++state_.callouts;
     say("CALL: " + job_.detail);
+    return true;
+}
+
+bool Career::routine_call(Job call) {
+    if (!callout(std::move(call))) return false;
+    --state_.callouts;   // (the gang callouts' count: the partner's first lesson)
+    job_.routine = true;
     return true;
 }
 
@@ -336,6 +357,19 @@ std::string Career::chief_talk(bool& issue) {
         }
         case PoliceStage::Serving: break;
     }
+    if (!state_.task_force) {
+        if (state_.routine_done >= task_force_calls) {
+            state_.task_force = true;
+            job_ = {};
+            next_offer_ = -1;
+            say("GANG TASK FORCE: the gang work is yours now - raids, gang wars and the Chief's orders");
+            return chief + "Ten calls, and you handled every one of them. You're on the Gang Task Force from today. "
+                           "The towns are under the gangs - raids, gang wars, robberies with their shirts on. Start out there, not here.";
+        }
+        const int left = task_force_calls - state_.routine_done;
+        return chief + "The Gang Task Force takes officers who've done the ordinary work first. Patrols, domestics, drunk drivers, "
+                       "pharmacy jobs - " + std::to_string(left) + (left == 1 ? " more call" : " more calls") + ", then come and see me.";
+    }
     if (verda_clean_) return chief + "The gangs are gone. Verda is free, and it stays ours - you did that. Komisaro suits you.";
     if (campaign_left_ > 0) {
         const std::string left = std::to_string(campaign_left_) + (campaign_left_ == 1 ? " town" : " towns");
@@ -469,6 +503,15 @@ void Career::finish(bool success, const std::string& why) {
                 std::to_string(static_cast<int>(std::lround((union_rate + state_.union_raise) * 100))) + "%");
         }
         build_authority(job_.kind == JobKind::CleanUp ? 8.0F : job_.kind == JobKind::BuildPost ? 5.0F : 3.0F);
+        // Routine work counts toward the Gang Task Force.
+        if (state_.side == Side::Police && (job_.routine || job_.kind == JobKind::Patrol) && !state_.task_force) {
+            ++state_.routine_done;
+            if (state_.routine_done == task_force_calls)
+                say(std::string(chief_name) + " wants to see you at Verda City HQ: " + std::to_string(task_force_calls) +
+                    " routine calls done - the Gang Task Force has a place for you");
+            else if (state_.routine_done < task_force_calls)
+                say("Routine calls: " + std::to_string(state_.routine_done) + " of " + std::to_string(task_force_calls) + " for the Gang Task Force");
+        }
     } else {
         gain(-job_.respect * .5F);
         say(why + " (-" + std::to_string(static_cast<int>(std::ceil(job_.respect * .5F))) + " respect)");
@@ -596,6 +639,20 @@ void Career::offer(const CareerFrame& frame) {
             job.detail = std::string(chief_name) + ": \"Your authority carries now. The Ŝosea Patrolo needs another outpost on the ring - "
                          "drive a police car out to the site and open it.\"";
             job.pay = 900; job.respect = 10; job.deadline = frame.now + 1500;
+        } else if (!state_.task_force) {
+            // Not on the task force: routine work. (The game puts out domestics, drunk drivers and
+            // pharmacy robberies too: game::career::RoutineCalls.)
+            if (frame.towns.size() >= 2) {
+                job.kind = JobKind::Patrol;
+                job.needed = 3;
+                std::vector<const TownSpot*> towns;
+                for (const auto& t : frame.towns) if (flat(t.centre, frame.player) > 120) towns.push_back(&t);
+                if (towns.empty()) for (const auto& t : frame.towns) towns.push_back(&t);
+                const auto* first = towns[std::min(towns.size() - 1, static_cast<std::size_t>(random() * static_cast<float>(towns.size())))];
+                job.target = first->centre;
+                job.detail = "Patrol in a police car: show the flag in " + first->name + " and two more towns";
+                job.pay = 260; job.respect = 5; job.deadline = frame.now + 900;
+            }
         } else if (order && random() < .4F) {
             job.kind = JobKind::CleanUp;
             job.gang = order->gang; job.crew = order->crew; job.target = order->door;
@@ -854,11 +911,12 @@ void Career::update(const CareerFrame& frame) {
 
 std::string Career::serialise() const {
     std::ostringstream out;
-    out << "career 8 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
+    out << "career 9 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
         << (state_.record ? 1 : 0) << ' ' << state_.jobs_done << ' ' << (state_.patrol_car.empty() ? "-" : state_.patrol_car) << ' '
         << static_cast<int>(state_.police_stage) << ' ' << (state_.honourable ? 1 : 0) << ' ' << state_.defended << ' ' << (state_.chief_dead ? 1 : 0) << ' ' << state_.notoriety << ' '
         << state_.callouts << ' ' << (state_.prison_toured ? 1 : 0) << ' ' << state_.inmate << ' ' << (state_.inside_told ? 1 : 0) << ' '
-        << state_.authority << ' ' << state_.outposts_built << ' ' << state_.union_raise << ' ' << (state_.rig_issued ? 1 : 0) << '\n';
+        << state_.authority << ' ' << state_.outposts_built << ' ' << state_.union_raise << ' ' << (state_.rig_issued ? 1 : 0) << ' '
+        << state_.routine_done << ' ' << (state_.task_force ? 1 : 0) << '\n';
     return out.str();
 }
 
@@ -867,7 +925,7 @@ bool Career::parse(const std::string& text) {
     std::string tag, car;
     int version = 0, side = 0, gang = -1, record = 0, jobs = 0;
     float respect = 0;
-    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 8 ||
+    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 9 ||
         side < 0 || side > 3 || !std::isfinite(respect))
         return false;
     // Officers from before the questline are already serving.
@@ -886,6 +944,10 @@ bool Career::parse(const std::string& text) {
     if (version >= 7 && (!(in >> authority >> built >> raise) || !std::isfinite(authority) || !std::isfinite(raise) || built < 0)) return false;
     int issued = 0;
     if (version >= 8 && !(in >> issued)) return false;
+    // Officers from before the Gang Task Force who have done the work are on it already.
+    int routine = 0, force = 0;
+    if (version >= 9 && (!(in >> routine >> force) || routine < 0)) return false;
+    if (version < 9 && jobs >= task_force_calls) { routine = task_force_calls; force = 1; }
     CareerState s;
     s.side = static_cast<Side>(side);
     s.rig_issued = issued != 0;
@@ -906,6 +968,8 @@ bool Career::parse(const std::string& text) {
     s.prison_toured = toured != 0;
     s.inmate = inmate;
     s.inside_told = told != 0;
+    s.routine_done = routine;
+    s.task_force = s.side == Side::Police && force != 0;
     if (s.side == Side::Gang && s.gang < 0) s = {};
     restore(s);
     next_offer_ = -1;

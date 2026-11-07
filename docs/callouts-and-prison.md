@@ -4,7 +4,7 @@ Crimes in progress for the Policio to answer, an easier arrest, and what happens
 
 ## Callouts (police)
 
-A serving officer gets **ROBBERY** and **DRIVE-BY** calls, about two times in three instead of the next job.
+An officer on the **Gang Task Force** gets **ROBBERY** and **DRIVE-BY** calls, about two times in three instead of the next job. (Before the task force, the calls are routine ones - domestic disputes, drunk drivers, pharmacy robberies: see [careers](careers.md#routine-calls-then-the-gang-task-force).) Officers may use lethal force: a suspect shot dead counts as stopped.
 
 - **The call:** the radio gives the place (a shop or pub for a robbery, a house for a drive-by), the town, the gang and its shirts, and the getaway car: colour, model and plate ("2 Feraj Hundoj (rust-red shirts), a racing red pickup, plate VRD-472K").
 - **The scene:** two of the nearest crew wait by the car (never the boss, never Verda City's casino crew). The compass and the job marker follow them. The car carries a red **SUSPECT VEHICLE · plate** label, and the men **SUSPECT**.

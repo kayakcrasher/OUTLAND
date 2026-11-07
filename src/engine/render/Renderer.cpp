@@ -17,6 +17,7 @@
 #include "outland/game/mafia/GangLogos.hpp"
 #include "outland/game/career/Career.hpp"
 #include "outland/game/career/Backup.hpp"
+#include "outland/game/career/RoutineCalls.hpp"
 #include "outland/game/career/Armory.hpp"
 #include "outland/game/law/HitAndRun.hpp"
 #include "outland/game/law/JailTerms.hpp"
@@ -728,6 +729,9 @@ void Renderer::run() {
     };
     // Crime calls for an officer (game::career::Callouts): the places they happen, the call in hand.
     game::career::Callouts callouts;
+    // A patrol officer's routine calls: domestics, drunk drivers, pharmacy robberies (before the Gang Task Force).
+    game::career::RoutineCalls routine;
+    std::vector<game::career::CallScene> pharmacy_scenes;
     std::vector<game::career::CallScene> call_scenes;
     // Busted: the ride in (a fade), the booking photo and prison number, then a word from a guard
     // (and, for a gang member, the gang's word on a snitch in the yard). A shanking ends in the SHU.
@@ -963,6 +967,7 @@ void Renderer::run() {
     // Outsiders: Paul Acosta, the Vakeroj, and an officer's backup (against a gang at war with the officer).
     mafio.set_outsiders([&](int a,int b,double now){
         if(endgame.ours(a) || endgame.ours(b)) return endgame.hostile(a,b);   // the parliament's guard, the occupiers
+        if(routine.suspect(a) || routine.suspect(b)) return routine.hostile(a,b);   // a routine call's suspect: only the officer, only while he resists
         const auto officer=[&](int id){return backup.officer(id) || cb_backup.officer(id) || (player_crew.partner()>=0 && id==player_crew.partner());};
         if(officer(a) || officer(b)) {
             const int gang=mafio.gang_of(officer(a) ? b : a);
@@ -2120,7 +2125,7 @@ void Renderer::run() {
                 territory.clear();territory_path.clear();smuggling_docks.clear();
                 endgame.clear();endgame_path.clear();endgame_saved.clear();
                 mafio.clear(br_bots,bot_drivers,vehicles);
-                callouts.reset();booking={};inside_lines.clear();inside_line=0;in_shu=false;sleep_fade=-1;prison_tour={};
+                callouts.reset();routine.clear();booking={};inside_lines.clear();inside_line=0;in_shu=false;sleep_fade=-1;prison_tour={};
                 services.clear(vehicles,npcs);
                 bot_drivers.clear(br_bots,vehicles);bots_looted.clear();
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
@@ -2183,10 +2188,22 @@ void Renderer::run() {
                         std::string(game::mafia::gangs[static_cast<std::size_t>(crew.gang)].name).c_str(),crew.town.c_str(),crew.door.x,crew.door.z,crew.yaw);
 #endif
                     // Where crimes happen for the Policio's calls: shops and pubs (robberies) and houses (drive-bys).
-                    call_scenes.clear();callouts.reset();
+                    call_scenes.clear();callouts.reset();pharmacy_scenes.clear();
                     {
                         int homes=0;
                         for(const auto& place:island_life.places()) {
+                            // A town's clinic: its pharmacy (a routine call's robbery).
+                            if(place.kind==game::life::PlaceKind::Clinic && place.settlement>=0 && static_cast<std::size_t>(place.settlement)<verda_region.settlements().size()) {
+                                const auto& town=verda_region.settlements()[static_cast<std::size_t>(place.settlement)];
+                                Vector3 out=Vector3Subtract(place.door,place.interior);out.y=0;
+                                if(!town.id.starts_with("ranch_") && Vector3Length(out)>.1F) {
+                                    game::career::CallScene scene;
+                                    scene.door=place.door;scene.out=Vector3Normalize(out);scene.shop=true;
+                                    scene.town=town.name.empty() ? town.id : town.name;
+                                    scene.place="the pharmacy at "+scene.town+"'s clinic";
+                                    pharmacy_scenes.push_back(std::move(scene));
+                                }
+                            }
                             const bool shop=place.kind==game::life::PlaceKind::Shop || place.kind==game::life::PlaceKind::Pub;
                             const bool house=place.kind==game::life::PlaceKind::Home && !place.mixed_home && place.indoor;
                             if((!shop && !house) || (house && homes++%3!=0)) continue;
@@ -2266,6 +2283,15 @@ void Renderer::run() {
                             npcs.spawn_bot(cb_backup.ids()[k],body,park,0);
                         }
                         npcs.spawn_bot(player_crew.partner_bot(),"character_21_police",park,0);
+                        // A routine call's suspect: an ordinary man in his own clothes.
+                        routine.start(br_bots,park,session_seed+57);
+                        {
+                            std::string body="character_05";
+                            for(std::uint64_t n=0;n<40;++n)
+                                if(const auto* d=character_registry.choose(characters::CharacterPool::Civilian,session_seed+577+n*31);
+                                   d && d->id.find("female")==std::string::npos && d->id.find("police")==std::string::npos && d->id.find("doctor")==std::string::npos) {body=d->id;break;}
+                            npcs.spawn_bot(routine.bot(),body,park,0);
+                        }
                     }
                     // How it ends: the parliament's guard on Registaro de Verda's steps, and a garrison
                     // for each county seat's square (both out of the game until their part comes).
@@ -2384,12 +2410,13 @@ void Renderer::run() {
                                 (!best || Vector3Distance(u.home,here)<Vector3Distance(best->home,here))) best=&u;
                             if(best) career.join_police(best->vehicle,why);
                         } else if(want.rfind("police:",0)==0) {
-                            // police:training / police:graduated / police:serving - further along the questline.
+                            // police:training / police:graduated / police:serving / police:taskforce - further along the questline.
                             for(const auto& u:services.units()) if(u.kind==game::services::UnitKind::Police) {career.join_police(u.vehicle,why);break;}
                             bool car=false;
                             career.chief_talk(car);
                             if(want!="police:training") career.passed_training();
-                            if(want=="police:serving") {career.chief_talk(car);career.issue_car("creator_vehicle_reissue");} // the Interceptor at HQ, below
+                            if(want=="police:serving" || want=="police:taskforce") {career.chief_talk(car);career.issue_car("creator_vehicle_reissue");} // the Interceptor at HQ, below
+                            if(want=="police:taskforce") {auto st=career.state();st.routine_done=game::career::Career::task_force_calls;st.task_force=true;career.restore(st);}
                         }
                     }
 #endif
@@ -3331,7 +3358,13 @@ void Renderer::run() {
         };
         if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !at_table && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
-            if(const int hands_up=career.on_duty() && !vehicles.driver() ? callouts.to_cuff(feet,mafio,br_bots) : -1;hands_up>=0) {
+            if(career.on_duty() && !vehicles.driver() && routine.to_cuff(feet,br_bots)>=0) {
+                // A routine call's suspect with his hands up: cuffed, he walks with the officer to the car.
+                routine.cuff(br_bots);
+                interaction_message="CUFFED - he walks with you. Get in your police car with him close by";
+                interaction_remaining=4;gun_audio.kill_confirm();
+                input_system.player().interact=false;
+            } else if(const int hands_up=career.on_duty() && !vehicles.driver() ? callouts.to_cuff(feet,mafio,br_bots) : -1;hands_up>=0) {
                 // A suspect with his hands up: cuffed, he walks with the officer to the car.
                 callouts.cuff(hands_up,mafio.gang_of(hands_up),mafio,br_bots);
                 interaction_message="CUFFED - he walks with you. Get in your police car with him close by";
@@ -3925,7 +3958,7 @@ void Renderer::run() {
             }
             if(!here && game::rules_for(game_mode).civilian_life && !vehicles.driver()) {Vector3 s{};float y=0;here=stand_seat.on || stand_seat_near(feet,s,y);}
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
-                here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 || (career.on_duty() && callouts.to_cuff(feet,mafio,br_bots)>=0) ||
+                here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 || (career.on_duty() && (callouts.to_cuff(feet,mafio,br_bots)>=0 || routine.to_cuff(feet,br_bots)>=0)) ||
                     (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) || trucker_near(feet)>=0 || society_near(feet) || gun_man_near(feet)>=0 ||
                     (!campaign_path.empty() && (story.talking() || (uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F))) ||
                     boss_near(feet)>=0 || station_desk(feet)!=nullptr || recruit_near(feet)>=0 ||
@@ -3937,7 +3970,7 @@ void Renderer::run() {
                     else if(!campaign_path.empty() && story.stage()==game::campaign::Stage::ToTruck && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.5F)
                         store_prompt="E - Ride home with Uncle Ron";
                     else if(!campaign_path.empty() && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F) store_prompt="E - Talk to Uncle Ron";
-                    else if(career.on_duty() && !vehicles.driver() && callouts.to_cuff(feet,mafio,br_bots)>=0) store_prompt="E - Cuff him (hands up)";
+                    else if(career.on_duty() && !vehicles.driver() && (callouts.to_cuff(feet,mafio,br_bots)>=0 || routine.to_cuff(feet,br_bots)>=0)) store_prompt="E - Cuff him (hands up)";
                     else if(arrestable(feet)>=0) store_prompt="E - Arrest him";
                     else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F)
                         store_prompt=!trucking.hired() ? "E - Ask the boss of Verda Transporto for work" :
@@ -4148,7 +4181,7 @@ void Renderer::run() {
                         case TalkWith::IvoJoin:
                             if(act.chosen==0) {
                                 std::string why;
-                                if(career.join_truckers(why)) {
+                                if(career.join_truckers(why,stats.km_driven())) {
                                     gun_audio.kill_confirm();
                                     chief_line=std::string(brotherhood_man)+": \"Welcome, brother. The union rate on every load, the CB when you need us. Sign on with "+
                                                depot_boss_name+" for loads - and come to me when you want the brotherhood's work.\"";chief_line_time=9;done();
@@ -6716,10 +6749,26 @@ void Renderer::run() {
                         game::career::Callouts::Frame call;
                         call.dt=dt;call.now=match_time;call.officer=feet;call.yaw=player.yaw;call.alive=player_health.alive();
                         if(work.driving_police) if(const auto* car=vehicles.driver()) {call.police_car=car->id;call.car=car->position;}
-                        if(career.due_call(match_time) && (career.state().callouts==0 || GetRandomValue(0,99)<65))
-                            callouts.dispatch(call,call_scenes,career,mafio,br_bots,vehicles,verda_region,static_cast<std::uint64_t>(GetRandomValue(1,1<<30)));
+                        // On the Gang Task Force: gang robberies and drive-bys. Before it: routine calls
+                        // (domestics, drunk drivers, pharmacy robberies) between the patrols.
+                        if(career.due_call(match_time)) {
+                            if(career.task_force()) {
+                                if(career.state().callouts==0 || GetRandomValue(0,99)<65)
+                                    callouts.dispatch(call,call_scenes,career,mafio,br_bots,vehicles,verda_region,static_cast<std::uint64_t>(GetRandomValue(1,1<<30)));
+                            } else if(GetRandomValue(0,99)<75) {
+                                game::career::RoutineCalls::Frame rf;
+                                rf.dt=call.dt;rf.now=call.now;rf.officer=call.officer;rf.yaw=call.yaw;rf.alive=call.alive;
+                                routine.dispatch(rf,call_scenes,pharmacy_scenes,career,br_bots,bot_drivers,vehicles,verda_region,static_cast<std::uint64_t>(GetRandomValue(1,1<<30)));
+                            }
+                        }
                         std::string said;
                         callouts.update(call,career,mafio,br_bots,vehicles,verda_region,said);
+                        {
+                            game::career::RoutineCalls::Frame rf;
+                            rf.dt=call.dt;rf.now=call.now;rf.officer=call.officer;rf.yaw=call.yaw;rf.alive=call.alive;
+                            rf.police_car=call.police_car;rf.car=call.car;rf.lights=!call.police_car.empty() && lights_car==call.police_car;
+                            routine.update(rf,career,br_bots,bot_drivers,vehicles,verda_region,said);
+                        }
                         if(!said.empty()) {interaction_message=said;interaction_remaining=4;}
 #ifdef OUTLAND_DEV_TOOLS
                         // OUTLAND_DEV_HEIST=1: skip the chase - the officer and the car beside the scene,
@@ -7172,6 +7221,12 @@ void Renderer::run() {
                     npcs.set_bot_weapon(e.bot,-1);
                 }
                 for(const auto& h:mafio.heists()) for(const int id:h.surrendered) if(!callouts.escorting(id)) npcs.set_bot_weapon(id,-1);
+                // A routine call's suspect: unarmed unless he's fighting; cuffed, he walks with the officer.
+                if(routine.bot()>=0) if(const auto* bot=br_bots.find(routine.bot())) {
+                    if(routine.stage()==game::career::RoutineCalls::Stage::Cuffed)
+                        npcs.set_bot(routine.bot(),bot->position(),bot->yaw(),bot->health(),routine.walking() ? characters::NpcState::Wander : characters::NpcState::Idle);
+                    if(!routine.armed()) npcs.set_bot_weapon(routine.bot(),-1);
+                }
                 walking_man.dress(npcs);
                 world_draw_stats().bots=world_draw_stats().bots*.9+(GetTime()-bots_t0)*1000*.1;
                 hurt_player(br_bots.events().player_damage);
@@ -8157,6 +8212,10 @@ void Renderer::run() {
                 if(game::lan::LanPlay::is_remote_body(actor.bot))
                     if(const auto* who=lan_play.find(game::lan::LanPlay::slot_of(actor.bot));who && down(*who)) {body.downed=1;return;}
                 // Arrests: hands up, or cuffed behind the back.
+                if(actor.bot>=0 && routine.suspect(actor.bot)) {
+                    if(routine.stage()==game::career::RoutineCalls::Stage::Cuffed) {body.cuffed=1;return;}
+                    if(routine.hands_up(actor.bot)) {body.hands_up=1;return;}
+                }
                 if(actor.bot>=0 && mafio.active()) {
                     if(callouts.escorting(actor.bot)) {body.cuffed=1;return;}
                     if(mafio.surrendered(actor.bot)) {body.hands_up=1;return;}
@@ -8716,6 +8775,9 @@ void Renderer::run() {
                 // Who you are on the island: rank, respect, honour and your crew.
                 std::string standing=TextFormat("Respect %d",static_cast<int>(career.state().respect));
                 if(cop) standing+=TextFormat("  ·  authority %d  ·  %d outposts built",static_cast<int>(career.authority()),career.outposts_built());
+                if(cop && career.serving()) standing+=career.task_force() ? std::string("  ·  GANG TASK FORCE") :
+                    career.routine_done()>=game::career::Career::task_force_calls ? std::string("  ·  see the Chief: the Gang Task Force") :
+                    std::string(TextFormat("  ·  routine calls %d/%d for the Gang Task Force",career.routine_done(),game::career::Career::task_force_calls));
                 else if(trucker) standing+=TextFormat("  ·  union rate +%d%%",static_cast<int>(std::lround((career.haul_rate()-1)*100)));
                 if(!cop) standing+=career.state().notoriety>0 ? TextFormat("  ·  notoriety %d",static_cast<int>(career.state().notoriety)) :
                                    std::string(trucker ? "" : career.state().honourable ? "  ·  honourable" : "  ·  no honour");
@@ -8966,6 +9028,20 @@ void Renderer::run() {
                     }
                 for(const auto& e:callouts.escorts())
                     if(const auto* bot=br_bots.find(e.bot)) tag({bot->position().x,bot->position().y+2.25F,bot->position().z},"CUFFED","",Color{150,190,255,255},30);
+                // A routine call's suspect.
+                if(routine.active() && career.on_duty())
+                    if(const auto* bot=br_bots.find(routine.bot());bot && bot->alive() && !br_bots.mounted(routine.bot()) && !br_bots.hidden(routine.bot())) {
+                        using RS=game::career::RoutineCalls::Stage;
+                        const Vector3 over{bot->position().x,bot->position().y+2.25F,bot->position().z};
+                        const float d=Vector3Distance(bot->position(),{player.position.x,player.position.y-1,player.position.z});
+                        switch(routine.stage()) {
+                            case RS::HandsUp:tag(over,"HANDS UP",d<game::career::Callouts::cuff_reach ? "USE to cuff him" : "walk up to cuff him",Color{255,214,120,255},40);break;
+                            case RS::Cuffed:tag(over,"CUFFED","",Color{150,190,255,255},30);break;
+                            case RS::Running:tag(over,"SUSPECT - RUNNING","",Color{255,90,80,255},80);break;
+                            case RS::Fighting:tag(over,"SUSPECT - ARMED","lethal force authorised",Color{255,60,60,255},80);break;
+                            default:tag(over,"SUSPECT","",Color{255,90,80,255},80);break;
+                        }
+                    }
                 if(prison_until>=0 && !in_shu && career.state().side==game::career::Side::Gang)
                     if(const auto* mark=prison_yard.snitch()>=0 ? prison_yard.find(prison_yard.snitch()) : nullptr) {
                         const Vector3 w=prison_yard.world(*mark);

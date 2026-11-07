@@ -32,6 +32,14 @@ bool wait_for(Career& c, JobKind kind, double& now) {
 }
 }
 
+// An officer who has done the routine work: on the Gang Task Force.
+void task_force(Career& c) {
+    auto st = c.state();
+    st.routine_done = Career::task_force_calls;
+    st.task_force = true;
+    c.restore(st);
+}
+
 int main() {
     // A gang: join, get jobs, earn respect and pay.
     {
@@ -275,13 +283,54 @@ int main() {
             c.update(f);
         }
         check(c.job().kind == JobKind::None && c.state().jobs_done == 1, "patrol done");
+        // The Gang Task Force: routine calls first.
+        check(c.routine_done() == 1 && !c.task_force(), "a patrol is a routine call");
+        {
+            bool raid = false;
+            for (int i = 0; i < 40 && !raid; ++i) {
+                auto w = world(now += 40);
+                c.update(w);
+                raid = c.job().kind == JobKind::Raid || c.job().kind == JobKind::CleanUp || c.job().kind == JobKind::BreakUpWar;
+                if (c.job().kind != JobKind::None) c.update(world(now += 2000));   // let it lapse
+            }
+            check(!raid, "no gang work off the task force");
+        }
+        bool told = false;
+        check(c.chief_talk(told).find("more calls") != std::string::npos && !c.task_force(), "the Chief: do the routine work first");
+        {
+            Job domestic;
+            domestic.title = "DOMESTIC DISPUTE";
+            domestic.needed = 1;
+            domestic.deadline = now + 900;
+            domestic.pay = 300;
+            domestic.respect = 6;
+            const int before = c.routine_done();
+            check(c.routine_call(domestic) && c.job().routine, "a routine call taken");
+            check(c.arrested(-1) && c.custody() == 1, "a civilian suspect in the back of the car");
+            c.suspect_down(true);
+            check(c.job().kind == JobKind::None && c.routine_done() == before + 1 && c.state().callouts == 0, "a routine call counts (not as a gang callout)");
+            c.deliver();
+            c.take_pay();
+        }
+        {
+            auto st = c.state();
+            st.routine_done = Career::task_force_calls;
+            c.restore(st);
+        }
+        check(c.chief_talk(told).find("Gang Task Force") != std::string::npos && c.task_force(), "ten calls: the Chief takes you onto the task force");
+        {
+            Career back;
+            check(back.parse(c.serialise()) && back.task_force() && back.routine_done() == Career::task_force_calls, "the task force is saved");
+            Career old;
+            check(old.parse("career 8 2 -1 30 0 12 police_7 3 1 0 0 0 0 0 0 0 0 0 0 0") && old.task_force(), "an officer from an older save with the work done is on it");
+        }
         check(wait_for(c, JobKind::Raid, now), "a raid call");
         const int gang = c.job().gang;
         c.arrested(gang);                                    // one taken alive (USE)
         check(c.job().done == 1 && c.custody() == 1, "an arrest counts on a raid, and he's in custody");
         for (int k = 1; k < c.job().needed; ++k) c.killed(gang, false);
         c.update(world(now));
-        check(c.state().jobs_done == 2, "raid done");
+        check(c.state().jobs_done == 3, "raid done");   // (a patrol and a domestic before it)
         const int paid = c.take_pay();
         for (int k = 0; k < 5; ++k) c.arrested(gang);
         check(c.custody() == Career::custody_max && c.take_pay() == 0 && paid > 0, "custody pays nothing till delivered; the car holds four");
@@ -290,7 +339,7 @@ int main() {
         // Gang war calls when there is one.
         Career d;
         d.join_police("police_2", why);
-        { bool car = false; d.chief_talk(car); d.passed_training(); d.chief_talk(car); }
+        { bool car = false; d.chief_talk(car); d.passed_training(); d.chief_talk(car); task_force(d); }
         bool war_call = false;
         for (int i = 0; i < 400 && !war_call; ++i) {
             auto w = world(i);
@@ -353,7 +402,7 @@ int main() {
         Career c;
         std::string why;
         c.join_police("police_1", why);
-        { bool car = false; c.chief_talk(car); c.passed_training(); c.chief_talk(car); }
+        { bool car = false; c.chief_talk(car); c.passed_training(); c.chief_talk(car); task_force(c); }
         auto f = world(0);
         f.crews[0].capital = true;   // Verda's crew
         double now = 0;
@@ -396,7 +445,7 @@ int main() {
         // An officer warned off the capital too early loses a little respect.
         Career d;
         d.join_police("police_2", why);
-        { bool car = false; d.chief_talk(car); d.passed_training(); d.chief_talk(car); }
+        { bool car = false; d.chief_talk(car); d.passed_training(); d.chief_talk(car); task_force(d); }
         const float r = d.state().respect;
         d.warned_off_capital(100);
         d.warned_off_capital(105);
@@ -499,6 +548,7 @@ int main() {
         cop.join_police("car", why);
         bool car = false;
         cop.chief_talk(car); cop.passed_training(); cop.chief_talk(car);   // serving
+        task_force(cop);
         check(cop.serving() && cop.authority() == 0, "a new officer has no authority yet");
         CareerFrame f;
         f.next_post = {500, 0, 0}; f.post_known = true;
@@ -521,7 +571,8 @@ int main() {
         std::string why;
         Career t;
         check(t.haul_rate() == 1, "a civilian drives for the company rate");
-        check(t.join_truckers(why) && t.trucker() && std::string(t.rank_name()) == "Novulo", "joined the brotherhood");
+        check(!t.join_truckers(why, 30) && why.find("50 miles") != std::string::npos && !t.trucker(), "the brotherhood wants 50 miles driven first");
+        check(t.join_truckers(why, 81) && t.trucker() && std::string(t.rank_name()) == "Novulo", "joined the brotherhood");
         check(t.haul_rate() > 1.2F, "the union rate");
         check(!t.join_police("car", why) && !t.join_gang(1, "Montaj Lupoj", why), "a brother joins nobody else first");
         Career cop;
