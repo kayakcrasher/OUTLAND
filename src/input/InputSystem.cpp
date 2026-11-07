@@ -165,6 +165,7 @@ void InputSystem::update(int screen_width, int screen_height, bool gameplay, boo
             if (drive_by_ && hit(p, layout_.fire_left, 43)) return Control::FireLeft;
             if (police_car_ && hit(p, layout_.lights, 43)) return Control::Lights;
             if (hit(p, layout_.radio, 40)) return Control::Radio;
+            if (hit(p, layout_.inventory, 43)) return Control::Inventory;   // the bag, from the driver's seat too
             if (hit(p, layout_.movement, 92)) return Control::Movement;
             if (const auto pan = pan_area(screen_width, screen_height); p.x >= pan.x && p.x <= pan.x + pan.width && p.y >= pan.y && p.y <= pan.y + pan.height) return Control::Pan;
             return Control::None;

@@ -391,7 +391,8 @@ int Mafio::send_hijackers(Vector3 rig, int spare, ai::BattleRoyaleBots& bots, ai
         if (squad.size() < 2) continue;
         if (!drivers.dispatch(bots, cars, region, squad, home.door, rig, 200)) continue;
         for (const int id : squad) bots.set_asleep(id, false);
-        provoke_gang(home.gang, now, std::string(gangs[static_cast<std::size_t>(home.gang)].name) + " are after your rig - hijackers!");
+        // They come for the load; like any gang member, they only shoot once the player does.
+        say(std::string(gangs[static_cast<std::size_t>(home.gang)].name) + " are after your rig - hijackers!");
         return home.gang;
     }
     return -1;
@@ -484,17 +485,15 @@ void Mafio::update(const MafioFrame& frame, ai::BattleRoyaleBots& bots, ai::BotW
         }
     }
 
-    // A member of another gang on a rival's turf: they know the colours. A warning first; stay
-    // past it and they open fire.
+    // A member of another gang on a rival's turf: they know the colours and say so. They don't
+    // open fire unless the player does (gang members only shoot back).
     if (player_gang_ >= 0 && frame.player_alive)
         for (const auto& crew : crews_) {
             if (crew.gang == player_gang_ || crew.disbanded || flat(crew.door, frame.player_feet) > rival_turf_alert) continue;
             const auto g = static_cast<std::size_t>(crew.gang);
             if (now - turf_warned_at_[g] > 40) {
                 turf_warned_at_[g] = now;
-                say(std::string(gangs[g].name) + " know your colours - get off their turf");
-            } else if (now - turf_warned_at_[g] >= turf_grace) {
-                provoked_until_[g] = std::max(provoked_until_[g], now + 20);
+                say(std::string(gangs[g].name) + " know your colours - they're watching you on their turf");
             }
         }
 
@@ -624,6 +623,18 @@ const Heist* Mafio::heist_of(int bot) const {
 bool Mafio::surrendered(int bot) const {
     const auto* h = heist_of(bot);
     return h && std::find(h->surrendered.begin(), h->surrendered.end(), bot) != h->surrendered.end();
+}
+
+bool Mafio::surrender(int bot, ai::BattleRoyaleBots& bots) {
+    for (auto& h : heists_) {
+        if (std::find(h.squad.begin(), h.squad.end(), bot) == h.squad.end()) continue;
+        std::erase(h.running, bot);
+        if (std::find(h.surrendered.begin(), h.surrendered.end(), bot) == h.surrendered.end()) h.surrendered.push_back(bot);
+        if (std::find(h.settled.begin(), h.settled.end(), bot) == h.settled.end()) h.settled.push_back(bot);
+        hold(bot, true, bots);
+        return true;
+    }
+    return false;
 }
 
 void Mafio::hold(int bot, bool held, ai::BattleRoyaleBots& bots) {

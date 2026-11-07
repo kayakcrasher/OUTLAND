@@ -129,7 +129,14 @@ A new officer starts on routine work. Gang work (raids, gang wars, the Chief's o
 | **DOMESTIC DISPUTE** | Shouting at a house; the man is out front. Most give up, some run, a few pull a gun | 300 | 6 |
 | **DRUNK DRIVER** | A car leaving a pub, its colour, model and plate on the radio. Get on its bumper (16 m) with the lights on for 5 s and he pulls over; out of the car he nearly always gives up | 360 | 6 |
 | **PHARMACY ROBBERY** | An armed man at a town clinic's pharmacy. As likely to run or fight as to give up | 450 | 8 |
+| **TRAFFIC STOP** | A speeder, colour, model and plate on the radio. Pull him over (bumper, lights, 5 s), walk up and **USE: write the ticket** - he drives on. Now and then he runs instead | 200 | 4 |
+| **SHOPLIFTER** | A man out of a shop's door with the goods. He sees the uniform from 45 m and runs: catch him or stop him | 220 | 4 |
+| **BAR FIGHT** | A drunk throwing chairs outside a pub. Mostly he gives up; some run | 280 | 6 |
+| **STOLEN CAR** | A car reported stolen, plate on the radio. Pull it over; the thief may give up, run or fight | 420 | 7 |
 
+- Traffic stops come up most often.
+- **The first routine call** comes with Officer Novak at your side, talking you through it a line at a time (the car on the radio, the lights, the pull-over, hands up and USE, lethal force, walking him to the car, and the ten calls to the task force); his tips follow what happens.
+- **The taser** (VT2): every officer is issued one with 8 cartridges (and can draw more at the armory). One cartridge a shot, about 10 m. A suspect it hits goes down for a few seconds and gives up - cuff him. A Krimulo it hits is down for 8 s, and can be cuffed then even in front of his crew. It doesn't wound, and a gang doesn't take it as a shot.
 - One suspect a call, a civilian (no gang). Face to face (18 m) he decides: **hands up** (USE within 3.4 m cuffs him), **runs** (catch him or wound him and he gives up), or **fights** ("SUSPECT - ARMED: lethal force authorised"; hurt, he drops the gun).
 - Cuffed, he walks behind you and climbs into the back of your police car; the call is done. Book him in at the state prison's gate like any prisoner.
 - **Lethal force:** officers may lawfully kill suspects. A suspect shot dead counts as stopped, on any call - no crime, no record, no lost badge. (Bystanders are another matter: see crossfire below.)
@@ -221,6 +228,7 @@ Verda's trucking is a tough grind, so the truckers stick together. They are Espe
 - **Ranks:** Novulo, Ŝoforo, Veterano, Ŝosea Lupo, Reĝo de la Vojo.
 - **The union rate:** every Verda Transporto load pays a brother 25% more than the company rate, plus every raise won on strike (up to +50% in all). Each load is also +3 respect. The pay message shows both rates.
 - **Truckers in every town:** brothers stand about La Ringo's door and among its rigs, one is at the diesel lane in Verda Transporto's yard, and a Kamionisto stands outside a pub (or the shop) in every town. They talk shop with a brother, and point anyone else to Ivo at La Ringo.
+- **Ivo's word:** "Verdan pride, brother. Now hit this next job and set us and the boys up for a month."
 - **The CB (BACKUP / Z):** two brothers come from the nearest truck stop in a pickup to fight beside you, the same way an officer's backup does. They stay a few minutes, longer while there's shooting.
 - **The brotherhood's work is voluntary.** Nothing comes over the CB on its own: ask Ivo for a strike or a contraband run when you want one, and he sends it ("ON THE CB").
 

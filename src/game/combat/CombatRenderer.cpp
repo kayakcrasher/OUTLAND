@@ -96,6 +96,18 @@ void machine_pistol(float reload,float line) {
     rear_notch(-.03F,line,.034F);
     front_post(.12F,line,.034F,false);
 }
+void taser(float reload,float line) {
+    // The VT2 taser: a chunky yellow-and-black body, the cartridge's black face at the muzzle,
+    // a short grip, a laser under the nose.
+    static constexpr Color yellow{226,190,40,255};
+    box(0,.012F,.06F,.034F,.046F,.15F,yellow);                  // body
+    box(0,.012F,.14F,.036F,.044F,.02F,black);                   // the cartridge face
+    box(0,-.012F,.10F,.012F,.010F,.04F,dark);                   // laser
+    box(0,-.026F,.035F,.005F,.005F,.035F,polymer);              // trigger guard
+    tilted(10,0,-.065F-reload*.05F,-.012F,.03F,.10F,.036F,black); // grip
+    rear_notch(-.01F,line,.034F);
+    front_post(.13F,line,.034F,false);
+}
 void smg(float reload,bool irons,float line) {
     tube(.24F,.30F,.011F,0,dark);                         // barrel and thread
     box(0,0,.07F,.04F,.065F,.34F,polymer);                // receiver
@@ -262,7 +274,7 @@ void rocket_launcher(float reload,bool irons,float line) {
 }
 // First-person hands and forearms: trigger hand on the grip, support hand under the fore-end.
 void hands(WeaponId id,const GunLayout& layout) {
-    if(id==WeaponId::Pistol || id==WeaponId::MachinePistol) {
+    if(id==WeaponId::Pistol || id==WeaponId::MachinePistol || id==WeaponId::Taser) {
         tilted(18,0,-.068F,-.048F,.05F,.085F,.07F,glove);
         tilted(18,.026F,-.075F,-.04F,.028F,.08F,.065F,glove);
         DrawCylinderEx({0,-.09F,-.09F},{-.04F,-.17F,-.36F},.032F,.04F,8,sleeve);
@@ -279,7 +291,7 @@ void hands(WeaponId id,const GunLayout& layout) {
 GunLayout gun_layout(WeaponId id,Sight sight) {
     const float line=sight_height(id,sight);
     switch(id) {
-        case WeaponId::Pistol: case WeaponId::MachinePistol: return {0,0,line,definition(id).length};
+        case WeaponId::Pistol: case WeaponId::MachinePistol: case WeaponId::Taser: return {0,0,line,definition(id).length};
         case WeaponId::Smg: return {.26F,.17F,line,definition(id).length};
         case WeaponId::Shotgun: return {.34F,.24F,line,definition(id).length};
         case WeaponId::Sniper: return {.36F,.24F,line,definition(id).length};
@@ -316,6 +328,7 @@ void CombatRenderer::draw_gun(Vector3 grip,Vector3 aim,Vector3 up,WeaponId id,fl
         case WeaponId::AutoShotgun: auto_shotgun(reload,sight==Sight::Iron,line);break;
         case WeaponId::Rocket: rocket_launcher(reload,sight==Sight::Iron,line);break;
         case WeaponId::MachinePistol: machine_pistol(reload,line);break;
+        case WeaponId::Taser: taser(reload,line);break;
         default: rifle(reload,sight==Sight::Iron,line);break;
     }
     if(draw_hands) hands(id,gun_layout(id));

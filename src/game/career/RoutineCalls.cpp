@@ -38,6 +38,10 @@ const char* routine_name(RoutineKind kind) {
         case RoutineKind::Domestic: return "DOMESTIC DISPUTE";
         case RoutineKind::DrunkDriver: return "DRUNK DRIVER";
         case RoutineKind::Pharmacy: return "PHARMACY ROBBERY";
+        case RoutineKind::TrafficStop: return "TRAFFIC STOP";
+        case RoutineKind::Shoplifter: return "SHOPLIFTER";
+        case RoutineKind::BarFight: return "BAR FIGHT";
+        case RoutineKind::StolenCar: return "STOLEN CAR";
     }
     return "";
 }
@@ -59,19 +63,26 @@ bool RoutineCalls::hostile(int a, int b) const {
 bool RoutineCalls::dispatch(const Frame& frame, const std::vector<CallScene>& scenes, const std::vector<CallScene>& pharmacies, Career& career,
                             ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers, vehicles::VehicleSystem& cars, world::VerdaRegion& region,
                             std::uint64_t seed) {
-    if (bot_ < 0 || stage_ != Stage::Idle || frame.now < next_call_ || !frame.alive) return false;
+    if (bot_ < 0 || frame.now < next_call_ || !frame.alive) return false;
+    if (stage_ == Stage::Leaving) end(bots, drivers, cars);   // last call's ticketed driver is long gone
+    if (stage_ != Stage::Idle) return false;
     next_call_ = frame.now + 8;
     auto h = mix(seed ^ static_cast<std::uint64_t>(frame.now * 1000));
     const auto in_reach = [&](const CallScene& s) { const float d = flat(s.door, frame.officer); return d >= scene_near && d <= scene_far; };
-    for (int attempt = 0; attempt < 6; ++attempt) {
+    // How often each comes up: traffic stops most, then the rest.
+    constexpr RoutineKind deck[]{RoutineKind::TrafficStop, RoutineKind::TrafficStop, RoutineKind::Domestic, RoutineKind::DrunkDriver,
+                                 RoutineKind::Pharmacy, RoutineKind::Shoplifter, RoutineKind::BarFight, RoutineKind::StolenCar};
+    for (int attempt = 0; attempt < 8; ++attempt) {
         h = mix(h);
-        const auto kind = static_cast<RoutineKind>(h % 3);
-        // Where: a house (a domestic), a pub's kerb (a drunk driver), a clinic's pharmacy.
+        const auto kind = deck[h % std::size(deck)];
+        // Where: a house (a domestic), a pub (a drunk driver, a bar fight), a shop (a shoplifter),
+        // a clinic's pharmacy, anywhere on a street (a speeder, a stolen car).
         std::vector<const CallScene*> pool;
         for (const auto& s : kind == RoutineKind::Pharmacy ? pharmacies : scenes) {
             if (!in_reach(s)) continue;
             if (kind == RoutineKind::Domestic && s.shop) continue;
-            if (kind == RoutineKind::DrunkDriver && s.place != "the pub") continue;
+            if ((kind == RoutineKind::DrunkDriver || kind == RoutineKind::BarFight) && s.place != "the pub") continue;
+            if (kind == RoutineKind::Shoplifter && (!s.shop || s.place == "the pub")) continue;
             pool.push_back(&s);
         }
         if (pool.empty()) continue;
@@ -83,8 +94,8 @@ bool RoutineCalls::dispatch(const Frame& frame, const std::vector<CallScene>& sc
         job.deadline = frame.now + 900;
         job.respect = 6;
         std::string car;
-        if (kind == RoutineKind::DrunkDriver) {
-            // His car at the kerb, and home for him: a town a long drive off.
+        if (driving_call(kind)) {
+            // His car at the kerb, and where he's going: a town a long drive off.
             const CallScene* home = nullptr;
             for (const auto& s : scenes)
                 if (flat(s.door, scene.door) > 600 && (!home || flat(s.door, scene.door) < flat(home->door, scene.door))) home = &s;
@@ -108,25 +119,51 @@ bool RoutineCalls::dispatch(const Frame& frame, const std::vector<CallScene>& sc
                 bots.set_hidden(bot_, true);
                 continue;
             }
+            home_ = home->door;
             plate_ = Callouts::make_plate(h);
-            job.detail = "Drunk driver reported leaving " + scene.place + " in " + scene.town + ": a " + lower(autos::paints[colour].name) + " " +
-                         ride.name + ", plate " + plate_ + ", all over the road. Lights on, get on his bumper, pull him over";
-            job.pay = 360;
+            const std::string look = "a " + lower(autos::paints[colour].name) + " " + ride.name + ", plate " + plate_;
+            if (kind == RoutineKind::DrunkDriver) {
+                job.detail = "Drunk driver reported leaving " + scene.place + " in " + scene.town + ": " + look +
+                             ", all over the road. Lights on, get on his bumper, pull him over";
+                job.pay = 360;
+            } else if (kind == RoutineKind::TrafficStop) {
+                job.detail = "Speeder through " + scene.town + ": " + look + ", doing twice the limit past the school. Pull him over and write him a ticket";
+                job.pay = 200;
+                job.respect = 4;
+            } else {
+                job.detail = "Stolen car spotted in " + scene.town + ": " + look + ". Pull it over and take the driver";
+                job.pay = 420;
+                job.respect = 7;
+            }
         } else {
-            const Vector3 at = ground(Vector3Add(scene.door, Vector3Scale(scene.out, kind == RoutineKind::Domestic ? 2.0F : 3.0F)), region);
+            const float out = kind == RoutineKind::Domestic ? 2.0F : 3.0F;
+            const Vector3 at = ground(Vector3Add(scene.door, Vector3Scale(scene.out, out)), region);
             bots.respawn(bot_, at, std::atan2(scene.out.x, scene.out.z) * RAD2DEG, seed_ + h % 1000);
             bots.set_hidden(bot_, false);
             bots.set_asleep(bot_, false);
             if (auto* b = bots.find(bot_)) b->set_roam_center(at, 2.5F);
-            if (kind == RoutineKind::Domestic) {
-                job.detail = "Domestic dispute at a house in " + scene.town + ": the neighbours hear shouting and breaking glass. He's out front - bring him in";
-                job.pay = 300;
-            } else {
-                job.detail = "Pharmacy robbery at " + scene.place + " in " + scene.town + ": one man, armed, after the medicine cabinet. Take him";
-                job.pay = 450;
-                job.respect = 8;
+            switch (kind) {
+                case RoutineKind::Domestic:
+                    job.detail = "Domestic dispute at a house in " + scene.town + ": the neighbours hear shouting and breaking glass. He's out front - bring him in";
+                    job.pay = 300;
+                    break;
+                case RoutineKind::Shoplifter:
+                    job.detail = "Shoplifter at " + scene.place + " in " + scene.town + ": he's out of the door with the goods. Catch him";
+                    job.pay = 220;
+                    job.respect = 4;
+                    break;
+                case RoutineKind::BarFight:
+                    job.detail = "Bar fight at " + scene.place + " in " + scene.town + ": a drunk throwing chairs out front. Calm it down - bring him in";
+                    job.pay = 280;
+                    break;
+                default:
+                    job.detail = "Pharmacy robbery at " + scene.place + " in " + scene.town + ": one man, armed, after the medicine cabinet. Take him";
+                    job.pay = 450;
+                    job.respect = 8;
+                    break;
             }
         }
+        first_ = career.routine_done() == 0 && !career.task_force();
         if (!career.routine_call(job)) {
             if (!car.empty()) { drivers.cancel(bot_, bots, cars); cars.remove(region, car); }
             bots.retire(bot_);
@@ -139,31 +176,104 @@ bool RoutineCalls::dispatch(const Frame& frame, const std::vector<CallScene>& sc
         tailed_ = 0;
         roll_ = mix(h ^ 0x51ed);
         told_lethal_ = false;
-        stage_ = kind == RoutineKind::DrunkDriver ? Stage::Driving : Stage::Waiting;
+        stage_ = driving_call(kind) ? Stage::Driving : Stage::Waiting;
         next_call_ = frame.now + 30;
+        lesson_.clear();
+        line_time_ = 0;
+        if (first_) {
+            // The first routine call: Officer Novak at the officer's side, talking it through.
+            partner_wanted_ = true;
+            const std::string novak = "Officer Novak";
+            lesson_.push_back({novak, "First call, partner - " + std::string(routine_name(kind)) + ". Routine work: every officer starts here."});
+            if (driving_call(kind)) {
+                lesson_.push_back({novak, "Look for the car on the radio - colour, model, plate. It's on the compass."});
+                lesson_.push_back({novak, "Get in behind him, lights on (L), and stay on his bumper. He'll pull over."});
+            } else {
+                lesson_.push_back({novak, "It's on the compass. Walk up to him - he'll make up his mind when he sees us."});
+            }
+            if (kind == RoutineKind::TrafficStop) lesson_.push_back({novak, "Pulled over: walk up to him and USE - write the ticket, and he's on his way."});
+            lesson_.push_back({novak, "Hands up? Walk up and USE to cuff him. Runs? Catch him - or wound him and he gives up."});
+            lesson_.push_back({novak, "If he pulls a gun, you may use lethal force. A suspect down is a suspect stopped."});
+            lesson_.push_back({novak, "Cuffed, he walks with you. Get in the car close by and he climbs in the back - the call's done."});
+            lesson_.push_back({novak, "Ten calls like this and the Chief will want you on the Gang Task Force."});
+        }
         return true;
     }
     return false;
 }
 
+void RoutineCalls::hint(const std::string& text) {
+    if (!first_) return;
+    lesson_.assign({{"Officer Novak", text}});
+    line_time_ = 0;
+}
+
 void RoutineCalls::decide(ai::BattleRoyaleBots& bots, std::string& said) {
-    // Face to face with the officer: a drunk nearly always gives up; a husband mostly does; a
-    // robber with a gun is as likely to run or fight.
+    // Face to face with the officer: a speeder takes his ticket; a drunk nearly always gives up; a
+    // shoplifter runs; a husband mostly gives up; an armed robber or car thief may run or fight.
     const float r = unit(roll_);
-    const float hands = kind_ == RoutineKind::DrunkDriver ? .85F : kind_ == RoutineKind::Domestic ? .65F : .4F;
-    const float runs = kind_ == RoutineKind::DrunkDriver ? 1.0F : kind_ == RoutineKind::Domestic ? .85F : .7F;
+    if (kind_ == RoutineKind::TrafficStop) {
+        if (r < .85F) {
+            stage_ = Stage::Ticket;
+            bots.set_asleep(bot_, true);
+            said = "He waits by his car - walk up and USE to write the ticket";
+            hint("Walk up to him and USE - write the ticket.");
+            return;
+        }
+        stage_ = Stage::Running;
+        said = "He's not waiting for a ticket - he's running for it";
+        hint("He's running - catch him! Now he's coming in.");
+        return;
+    }
+    float hands = .4F, runs = .7F;
+    switch (kind_) {
+        case RoutineKind::DrunkDriver: hands = .85F; runs = 1.0F; break;
+        case RoutineKind::Domestic: hands = .65F; runs = .85F; break;
+        case RoutineKind::Shoplifter: hands = .15F; runs = 1.0F; break;
+        case RoutineKind::BarFight: hands = .7F; runs = 1.0F; break;
+        case RoutineKind::StolenCar: hands = .5F; runs = .8F; break;
+        default: break;
+    }
     if (r < hands) {
         stage_ = Stage::HandsUp;
         bots.set_asleep(bot_, true);
         said = "Hands up! He gives up - walk up and USE to cuff him";
+        hint("Hands up - good. Walk up and USE to cuff him.");
     } else if (r < runs) {
         stage_ = Stage::Running;
         said = "He's running for it - catch him, or stop him";
+        hint("He's running - catch him, or wound him and he gives up.");
     } else {
         stage_ = Stage::Fighting;
         said = "He's pulled a gun! You may use lethal force";
+        hint("Gun! Take cover - you may use lethal force.");
         told_lethal_ = true;
     }
+}
+
+int RoutineCalls::to_ticket(Vector3 feet, ai::BattleRoyaleBots& bots) const {
+    if (stage_ != Stage::Ticket) return -1;
+    const auto* bot = bots.find(bot_);
+    if (!bot || !bot->alive() || std::abs(bot->position().y - feet.y) > 1.8F || flat(bot->position(), feet) > Callouts::cuff_reach) return -1;
+    return bot_;
+}
+
+bool RoutineCalls::ticket(Career& career, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers, vehicles::VehicleSystem& cars,
+                          world::VerdaRegion& region) {
+    if (stage_ != Stage::Ticket) return false;
+    career.suspect_down(true);   // (the call is done)
+    bots.set_asleep(bot_, false);
+    hint("Ticket written. That's a call done - on to the next.");
+    // Back in his car and on his way, slower now.
+    const auto* bot = bots.find(bot_);
+    const int v = car_.empty() ? -1 : cars.find(car_);
+    if (bot && v >= 0 && drivers.dispatch(bots, cars, region, {bot_}, bot->position(), home_, 30, car_)) {
+        stage_ = Stage::Leaving;
+        return true;
+    }
+    stage_ = Stage::Leaving;
+    if (auto* b = bots.find(bot_)) b->set_roam_center(Vector3Add(b->position(), {20, 0, 20}), 3);
+    return true;
 }
 
 void RoutineCalls::update(const Frame& frame, Career& career, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers,
@@ -178,7 +288,17 @@ void RoutineCalls::update(const Frame& frame, Career& career, ai::BattleRoyaleBo
             stale_car_.clear();
         }
     }
+    // The partner's lesson, a line at a time.
+    if (!lesson_.empty() && (line_time_ += frame.dt) >= Callouts::line_seconds) { lesson_.erase(lesson_.begin()); line_time_ = 0; }
     if (stage_ == Stage::Idle) return;
+    if (stage_ == Stage::Leaving) {
+        // Ticketed, he drives on; out of the game once he's out of sight (or the drive is over).
+        const auto* bot = bots.find(bot_);
+        if (!bot || !bot->alive() || (!drivers.ride_of(bot_) && (!bot || flat(bot->position(), frame.officer) > 60)) ||
+            (bot && flat(bot->position(), frame.officer) > 250))
+            end(bots, drivers, cars);
+        return;
+    }
     const bool on_call = career.job().kind == JobKind::Callout && career.job().routine;
     if (!career.on_duty() || !frame.alive || (!on_call && stage_ != Stage::Cuffed)) { end(bots, drivers, cars); return; }
     auto* bot = bots.find(bot_);
@@ -210,13 +330,15 @@ void RoutineCalls::update(const Frame& frame, Career& career, ai::BattleRoyaleBo
                 drivers.halt(bot_, bots, cars, region);
                 stage_ = Stage::Waiting;
                 if (auto* b = bots.find(bot_)) b->set_roam_center(b->position(), 1.5F);
-                said = "The drunk driver pulled over";
+                said = kind_ == RoutineKind::DrunkDriver ? "The drunk driver pulled over" : kind_ == RoutineKind::TrafficStop ? "The speeder pulled over" : "The stolen car pulled over";
+                hint("He's pulled over. Out of the car and walk up to him.");
             }
             break;
         }
         case Stage::Waiting:
             career.track(bot->position());
-            if (frame.alive && near < face_off) decide(bots, said);
+            // (A shoplifter sees the uniform from further off.)
+            if (frame.alive && near < (kind_ == RoutineKind::Shoplifter ? face_off * 2.5F : face_off)) decide(bots, said);
             break;
         case Stage::Running: {
             career.track(bot->position());
@@ -240,8 +362,10 @@ void RoutineCalls::update(const Frame& frame, Career& career, ai::BattleRoyaleBo
             }
             break;
         case Stage::HandsUp:
+        case Stage::Ticket:
             career.track(bot->position());
             break;
+        case Stage::Leaving: break;
         case Stage::Cuffed: {
             // He walks behind the officer; with the officer at the wheel of a police car close by,
             // he climbs in the back.
@@ -286,10 +410,20 @@ int RoutineCalls::to_cuff(Vector3 feet, ai::BattleRoyaleBots& bots) const {
     return bot_;
 }
 
+bool RoutineCalls::stun(ai::BattleRoyaleBots& bots, std::string& said) {
+    if (stage_ != Stage::Waiting && stage_ != Stage::Running && stage_ != Stage::Fighting && stage_ != Stage::Ticket) return false;
+    stage_ = Stage::HandsUp;
+    bots.set_asleep(bot_, true);
+    said = "Tased! He's down - USE to cuff him";
+    hint("Good shot. He's done - walk up and USE to cuff him.");
+    return true;
+}
+
 bool RoutineCalls::cuff(ai::BattleRoyaleBots& bots) {
     if (stage_ != Stage::HandsUp) return false;
     stage_ = Stage::Cuffed;
     bots.set_asleep(bot_, true);
+    hint("Cuffed. Walk him to the car - get in close by and he climbs in the back.");
     return true;
 }
 

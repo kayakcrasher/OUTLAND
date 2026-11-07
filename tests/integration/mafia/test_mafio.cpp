@@ -292,8 +292,10 @@ int main() {
             if (!sent) break;
             const auto* suspect = bots.find(routine.bot());
             check(suspect && suspect->alive() && !bots.hidden(routine.bot()) && Vector3Distance(suspect->position(), scene.door) < 6, "the suspect at the scene");
-            // The officer walks up.
+            // The officer walks up (every third call he tases the man first: he goes down and gives up).
             std::string said;
+            if (call % 3 == 0)
+                check(routine.stun(bots, said) && routine.stage() == game::career::RoutineCalls::Stage::HandsUp, "tased: he gives up");
             rf.officer = Vector3Add(scene.door, {0, 0, 8});
             for (int k = 0; k < 4; ++k) { rf.now = now += .05; routine.update(rf, cop, bots, drivers, cars, region, said); }
             using RS = game::career::RoutineCalls::Stage;

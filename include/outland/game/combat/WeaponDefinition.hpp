@@ -6,8 +6,8 @@
 namespace outland::game::combat {
 
 // Saves store weapons by index: append new weapons, never reorder.
-enum class WeaponId : std::size_t { Pistol, Rifle, Smg, Shotgun, Sniper, DoubleBarrel, AutoShotgun, Rocket, MachinePistol };
-inline constexpr std::size_t weapon_count = 9;
+enum class WeaponId : std::size_t { Pistol, Rifle, Smg, Shotgun, Sniper, DoubleBarrel, AutoShotgun, Rocket, MachinePistol, Taser };
+inline constexpr std::size_t weapon_count = 10;
 
 // How the body holds it: a pistol in both hands at arm's length, long guns shouldered.
 enum class WeaponHold : unsigned char { Pistol, Shouldered };
@@ -88,7 +88,14 @@ inline constexpr std::array<WeaponDefinition, weapon_count> weapons{{
     {"VM9 MACHINE PISTOL", 30, 90, true, 0.058F, 1.8F, 340.0F, 23.0F, 0.18F, 0.036F, 0.0045F, 0.0068F,
      0.06F, 0.0065F, 0.55F, 0.06F, 56.0F, 1.80F, 0.90F,
      1, 0, "machine_pistol", WeaponHold::Pistol, 0.20F, 170, 40, 0, 1.35F},
+    // The Policio's VT2 taser: two darts on wires, one cartridge at a time, good to about 10 m.
+    // It doesn't wound - a man it hits goes down twitching and gives up (game::combat::taser_reach).
+    {"VT2 TASER", 1, 8, false, 0.60F, 1.6F, 120.0F, 0.0F, 0.40F, 0.020F, 0.0040F, 0.0040F,
+     0.0F, 0.0020F, 0.80F, 0.02F, 60.0F, 1.0F, 1.0F,
+     1, 0, "taser", WeaponHold::Pistol, 0.16F, 25, 0, 0, 2.2F},
 }};
+// The taser's darts reach this far (metres); further off they fall short.
+inline constexpr float taser_reach = 10.5F;
 
 inline const WeaponDefinition& definition(WeaponId id) {
     return weapons[static_cast<std::size_t>(id)];

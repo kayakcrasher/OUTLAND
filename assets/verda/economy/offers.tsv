@@ -47,6 +47,8 @@ general_double_barrel	general	double_barrel	220	85	2
 general_auto_shotgun	general	auto_shotgun	420	160	1
 general_rocket_launcher	general	rocket_launcher	900	300	1
 general_rockets	general	rockets	120	40	4
+general_taser	general	taser	180	60	2
+general_taser_cartridges	general	taser_cartridges	30	10	10
 general_sniper	general	sniper	420	160	1
 general_wood_chair	general	wood_chair	40	15	8
 general_wood_table	general	wood_table	80	30	4
@@ -160,6 +162,8 @@ guns_shotgun_shells	guns	shotgun_shells	4	1	160
 guns_rifle_ammo	guns	rifle_ammo	4	2	300
 guns_sniper_ammo	guns	sniper_ammo	8	3	100
 guns_rockets	guns	rockets	150	60	8
+guns_taser	guns	taser	260	90	3
+guns_taser_cartridges	guns	taser_cartridges	40	15	20
 guns_frag_grenade	guns	frag_grenade	60	25	12
 guns_vest_light	guns	vest_light	300	120	4
 guns_vest_heavy	guns	vest_heavy	750	300	2

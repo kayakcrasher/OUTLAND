@@ -45,7 +45,7 @@ pointer, and that opens the pause menu.
 | Throw a grenade | G |
 | Fire mode (auto / single) | B |
 | Change sight | X |
-| Bag / inventory | TAB or I |
+| Bag / inventory | TAB or I (on foot or at the wheel; touch: BAG, in the car too) |
 | Camera view (first / third person; at the wheel: the cab view / chase camera) | V |
 | Map | M |
 | Build (Explore) | K. While building: left click places, right click removes, the wheel picks the piece |

@@ -138,6 +138,8 @@ void Career::gain(float amount) {
     const int before = rank();
     state_.respect = std::clamp(state_.respect + amount, 0.0F, respect_max);
     if (rank() > before) say(std::string("Promoted: ") + rank_name() + " - better pay from now on");
+    if (state_.side == Side::Gang && before == 0 && rank() >= 1)
+        say("You run your own show now: rob a store, put in work on your own account, and ask the boss when you want his jobs");
 }
 
 void Career::killed(int gang, bool from_vehicle) {
@@ -152,6 +154,12 @@ void Career::killed(int gang, bool from_vehicle) {
         state_.respect = std::max(0.0F, state_.respect - 15);
         say("You killed one of your own: -15 respect");
         return;
+    }
+    if (state_.side == Side::Gang && !state_.bones) {
+        // The first kill for the gang: they've earned their bones.
+        state_.bones = true;
+        gain(3);
+        say("You earned your bones - you put in work for the gang. The crew looks at you different now (+3 respect)");
     }
     bool counted = false;
     switch (job_.kind) {
@@ -399,15 +407,20 @@ std::string Career::boss_talk(int gang, bool member, bool ruled, bool occupied, 
     }
     if (hand) {
         if (ruled) return "\"Every town is ours. Now the Registaro - we march on the parliament, and Verda is one nation under the Hand.\"";
-        switch (line % 3) {
+        switch (line % 5) {
             case 0: return "\"Our people are drifting apart. The Green Hand is the only gang capable of uniting them - and we'll reap the rewards.\"";
-            case 1: return "\"We're Esperantista Loyalists, nevo. One island, one tongue, one flag. Take every town, and then the parliament.\"";
+            case 1: return "\"The Ĉefo's got it out for us. We've got something planned for him - just you wait.\"";
+            case 2: return "\"We're Esperantista Loyalists, nevo. One island, one tongue, one flag. Take every town, and then the parliament.\"";
+            case 3: return "\"Go put in work. La Manos don't do down time.\"";
             default: return "\"The other gangs want a piece of Verda. We want all of it - in one piece.\"";
         }
     }
     if (ruled) return "\"Verda is ours. Every town. Let the Green Hand weep over their parliament.\"";
-    if (line % 2 == 0) return "\"Our people are drifting apart. Everyone wants a piece of Verda - we take ours first.\"";
-    return "\"The Green Hand talk about uniting the people. All they want is the parliament. Hold our towns.\"";
+    switch (line % 3) {
+        case 0: return "\"Our people are drifting apart. Everyone wants a piece of Verda - we take ours first.\"";
+        case 1: return "\"Go put in work. Nobody in this crew does down time.\"";
+        default: return "\"The Green Hand talk about uniting the people. All they want is the parliament. Hold our towns.\"";
+    }
 }
 
 void Career::orders(JobKind kind, Vector3 target, const std::string& detail) {
@@ -450,6 +463,26 @@ void Career::extort_result(bool paid, int family_faction) {
     job_.done = 0;
     job_.detail = "They won't pay: take down two of the family, then they will";
     say("EXTORTION: they reach for their shotguns");
+}
+
+bool Career::ask_for_work(std::string& why) {
+    if (state_.side != Side::Gang) { why = "Crew only"; return false; }
+    if (job_.kind != JobKind::None) { why = "Finish the job you've got first"; return false; }
+    asked_ = JobKind::KillRivals;   // (the marker: the next offer is the boss's)
+    next_offer_ = 0;                // at once
+    return true;
+}
+
+int Career::freelance_robbery(float roll) {
+    if (state_.side != Side::Gang || jailed_) return 0;
+    const int take = freelance_take_min + static_cast<int>(std::clamp(roll, 0.0F, 1.0F) * static_cast<float>(freelance_take_max - freelance_take_min));
+    pay_ += take;
+    ++state_.scores;
+    crime(true);
+    tipoff_ = true;
+    say("You put in work on your own account: " + std::to_string(take) + " kronoj from the till - the alarm's gone off");
+    gain(freelance_respect);
+    return take;
 }
 
 bool Career::robbed() {
@@ -552,7 +585,9 @@ void Career::offer(const CareerFrame& frame) {
         job.needed = 1;
         job.detail = "The boss of " + name_of(state_.gang) + " wants " + chief_name + " dead - at Verda City HQ. Do it and Verda is ours";
         job.pay = hit_pay; job.respect = 30; job.deadline = frame.now + 1800;
-    } else if (state_.side == Side::Gang) {
+    } else if (state_.side == Side::Gang && (!own_show() || asked_ == JobKind::KillRivals)) {
+        // A Novulo is sent; from Soldato up the boss's work comes when asked for.
+        asked_ = JobKind::None;
         const float roll = random();
         const auto home = [&]() { return home_of(frame); };
         // Rival towns, weakest hold first (the next one to take).
@@ -911,12 +946,12 @@ void Career::update(const CareerFrame& frame) {
 
 std::string Career::serialise() const {
     std::ostringstream out;
-    out << "career 9 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
+    out << "career 10 " << static_cast<int>(state_.side) << ' ' << state_.gang << ' ' << state_.respect << ' '
         << (state_.record ? 1 : 0) << ' ' << state_.jobs_done << ' ' << (state_.patrol_car.empty() ? "-" : state_.patrol_car) << ' '
         << static_cast<int>(state_.police_stage) << ' ' << (state_.honourable ? 1 : 0) << ' ' << state_.defended << ' ' << (state_.chief_dead ? 1 : 0) << ' ' << state_.notoriety << ' '
         << state_.callouts << ' ' << (state_.prison_toured ? 1 : 0) << ' ' << state_.inmate << ' ' << (state_.inside_told ? 1 : 0) << ' '
         << state_.authority << ' ' << state_.outposts_built << ' ' << state_.union_raise << ' ' << (state_.rig_issued ? 1 : 0) << ' '
-        << state_.routine_done << ' ' << (state_.task_force ? 1 : 0) << '\n';
+        << state_.routine_done << ' ' << (state_.task_force ? 1 : 0) << ' ' << (state_.bones ? 1 : 0) << ' ' << state_.scores << '\n';
     return out.str();
 }
 
@@ -925,7 +960,7 @@ bool Career::parse(const std::string& text) {
     std::string tag, car;
     int version = 0, side = 0, gang = -1, record = 0, jobs = 0;
     float respect = 0;
-    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 9 ||
+    if (!(in >> tag >> version >> side >> gang >> respect >> record >> jobs >> car) || tag != "career" || version < 1 || version > 10 ||
         side < 0 || side > 3 || !std::isfinite(respect))
         return false;
     // Officers from before the questline are already serving.
@@ -948,6 +983,9 @@ bool Career::parse(const std::string& text) {
     int routine = 0, force = 0;
     if (version >= 9 && (!(in >> routine >> force) || routine < 0)) return false;
     if (version < 9 && jobs >= task_force_calls) { routine = task_force_calls; force = 1; }
+    int bones = 0, scores = 0;
+    if (version >= 10 && (!(in >> bones >> scores) || scores < 0)) return false;
+    if (version < 10 && side == static_cast<int>(Side::Gang) && jobs > 0) bones = 1;   // an old hand has killed for the gang
     CareerState s;
     s.side = static_cast<Side>(side);
     s.rig_issued = issued != 0;
@@ -970,6 +1008,8 @@ bool Career::parse(const std::string& text) {
     s.inside_told = told != 0;
     s.routine_done = routine;
     s.task_force = s.side == Side::Police && force != 0;
+    s.bones = bones != 0;
+    s.scores = scores;
     if (s.side == Side::Gang && s.gang < 0) s = {};
     restore(s);
     next_offer_ = -1;

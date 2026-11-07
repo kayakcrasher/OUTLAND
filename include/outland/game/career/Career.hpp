@@ -145,6 +145,8 @@ struct CareerState {
     bool rig_issued{false};        // the brotherhood handed the trucker a rig of their own (once)
     int routine_done{0};           // routine calls done (patrols, domestics, drunk drivers, pharmacy robberies)
     bool task_force{false};        // on the Gang Task Force: the gang work (raids, gang wars, the Chief's orders)
+    bool bones{false};             // a gang member's first kill for the gang: they've earned their bones
+    int scores{0};                 // a gang member's own work: stores robbed on their own account
 };
 
 class Career {
@@ -277,6 +279,15 @@ public:
     // off (take_tipoff) and the takings go home to the hideout. False when there's no robbery on.
     static constexpr float till_reach = 4.5F;      // USE this close to the counter
     bool robbed();
+    // A gang member's own work. From Soldato (the second rank) they run their own show: the boss's
+    // jobs come only when asked for (ask_for_work); a Novulo is sent. Any member may rob a store
+    // on their own account (freelance_robbery: the take, respect, the police tipped off).
+    [[nodiscard]] bool own_show() const { return state_.side == Side::Gang && rank() >= 1; }
+    bool ask_for_work(std::string& why);
+    static constexpr int freelance_take_min = 250, freelance_take_max = 700;   // kronoj from a till
+    static constexpr float freelance_respect = 3;
+    int freelance_robbery(float roll);   // returns the take (0: not a gang member)
+    [[nodiscard]] bool earned_bones() const { return state_.bones; }
     // TAG UP: a tag sprayed on a wall in `turf` (Territory's index). The job wants `needed` of them
     // in its rival town; the boss hands over the cans with the job (take_cans).
     void tagged(int turf);

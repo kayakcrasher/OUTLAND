@@ -40,6 +40,7 @@ const char* gun_name(game::combat::WeaponId id) {
         case game::combat::WeaponId::AutoShotgun: return "auto_shotgun";
         case game::combat::WeaponId::Rocket: return "rocket";
         case game::combat::WeaponId::MachinePistol: return "machine_pistol";
+        case game::combat::WeaponId::Taser: return "taser";
     }
     return "rifle";
 }

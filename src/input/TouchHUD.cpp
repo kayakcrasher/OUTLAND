@@ -594,6 +594,7 @@ void TouchHUD::draw(
         if (drive_by_) button(layout.fire_left, "FIRE", input.fire);
         if (police_car_) button(layout.lights, lights_on_ ? "LIGHTS ON" : "LIGHTS", lights_on_ || input.lights);
         button(layout.radio, "RADIO", input.radio);
+        button(layout.inventory, "BAG", input.inventory);
         // The pan area above the pedals: a faint hint while no thumb is on it.
         const Rectangle pan = InputSystem::pan_area(screen_width, screen_height);
         if (input.look_dx == 0 && input.look_dy == 0) {

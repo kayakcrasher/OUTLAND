@@ -204,6 +204,8 @@ public:
     [[nodiscard]] const Heist* heist_of(int bot) const;
     // A suspect with his hands up (an officer can cuff him).
     [[nodiscard]] bool surrendered(int bot) const;
+    // A heist's suspect brought down (an officer's taser): he gives up. False if he's in no heist.
+    bool surrender(int bot, ai::BattleRoyaleBots& bots);
     // The game holds him (hands up, cuffed, walked to the car): asleep, where the game puts him.
     void hold(int bot, bool held, ai::BattleRoyaleBots& bots);
     [[nodiscard]] bool held(int bot) const;
@@ -244,7 +246,7 @@ public:
     void set_player_gang(int gang) { player_gang_ = gang; }
     [[nodiscard]] int player_gang() const { return player_gang_; }
     static constexpr float rival_turf_alert = 45;   // metres from a rival hideout
-    static constexpr float turf_grace = 5;          // seconds' warning before they shoot
+    static constexpr float turf_grace = 5;          // (unused: a rival crew only warns now)
 
 private:
     float calm_{0};

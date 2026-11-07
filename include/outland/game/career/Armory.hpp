@@ -22,8 +22,9 @@ struct ArmoryItem {
     int rounds;            // ...how many (or how many of the item itself, for gear)
 };
 
-inline constexpr std::array<ArmoryItem, 12> armory{{
+inline constexpr std::array<ArmoryItem, 13> armory{{
     {"pistol", "V9 pistol", 0, 0, 150, "pistol_ammo", 45},
+    {"taser", "VT2 taser", 0, -1, 0, "taser_cartridges", 8},
     {"vest_heavy", "Plate carrier (armour II)", 0, 2, 900, "", 0},
     {"shotgun", "VS12 pump shotgun", 1, 1, 420, "shotgun_shells", 20},
     {"machine_pistol", "VM9 machine pistol", 1, 0, 330, "pistol_ammo", 90},

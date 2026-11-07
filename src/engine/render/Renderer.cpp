@@ -731,6 +731,11 @@ void Renderer::run() {
     game::career::Callouts callouts;
     // A patrol officer's routine calls: domestics, drunk drivers, pharmacy robberies (before the Gang Task Force).
     game::career::RoutineCalls routine;
+    // A gang member's own work: a store robbed on their own account (when each till was last emptied).
+    std::unordered_map<int,double> till_robbed;
+    // Tased: who is down on the ground and until when (they give up; a Krimulo can be cuffed).
+    std::unordered_map<int,double> tased_until;
+    constexpr double tase_seconds=8;
     std::vector<game::career::CallScene> pharmacy_scenes;
     std::vector<game::career::CallScene> call_scenes;
     // Busted: the ride in (a fade), the booking photo and prison number, then a word from a guard
@@ -1668,6 +1673,21 @@ void Renderer::run() {
         // Battle Royale bodies belong to their bot brains; everyone else is an NpcSystem actor.
         const auto& body=npcs.actors()[static_cast<std::size_t>(actor)];
         const Vector3 where=body.position;
+        // The taser: darts on wires, about 10 m. A man it hits goes down and gives up - no wound.
+        if(weapons.selected()==game::combat::WeaponId::Taser && !lan_match) {
+            const Vector3 me{player.position.x,player.position.y-1,player.position.z};
+            if(body.bot<0 || body.bot==chief_bot || Vector3Distance(me,where)>game::combat::taser_reach) return false;
+            std::string said;
+            if(routine.suspect(body.bot)) routine.stun(br_bots,said);
+            else if(mafio.active() && mafio.gang_of(body.bot)>=0 && !callouts.escorting(body.bot)) {
+                if(mafio.surrender(body.bot,br_bots)) said="Tased! He's down - USE to cuff him";
+                else {mafio.hold(body.bot,true,br_bots);said="Tased! He's down for a few seconds - USE to arrest him";}
+            } else return false;
+            tased_until[body.bot]=match_time+tase_seconds;
+            if(!said.empty()) {interaction_message=said;interaction_remaining=3;}
+            gun_audio.kill_confirm();
+            return false;
+        }
         if(body.bot==chief_bot) {
             // Nobody shoots the Chief - unless the boss ordered it (THE BIG HIT).
             if(!chief.placed || career.job().kind!=game::career::JobKind::HitChief) return false;
@@ -2125,7 +2145,7 @@ void Renderer::run() {
                 territory.clear();territory_path.clear();smuggling_docks.clear();
                 endgame.clear();endgame_path.clear();endgame_saved.clear();
                 mafio.clear(br_bots,bot_drivers,vehicles);
-                callouts.reset();routine.clear();booking={};inside_lines.clear();inside_line=0;in_shu=false;sleep_fade=-1;prison_tour={};
+                callouts.reset();routine.clear();tased_until.clear();till_robbed.clear();booking={};inside_lines.clear();inside_line=0;in_shu=false;sleep_fade=-1;prison_tour={};
                 services.clear(vehicles,npcs);
                 bot_drivers.clear(br_bots,vehicles);bots_looted.clear();
                 br_bots.clear();sound_bus.clear();nav_grid.clear(); // the map may have been edited
@@ -3319,6 +3339,28 @@ void Renderer::run() {
                     interaction_message="\"Take it, take it!\" - the till's emptied. Now get it home";interaction_remaining=4;
                 }
             }
+        } else if(player_gang()>=0 && game_mode==game::GameMode::Explore && !vehicles.driver() && player_health.alive() && weapons.available() && !island_life.empty()) {
+            // A gang member's own work: any shop's till, gun out (each till once in ten minutes).
+            const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
+            const auto& places=island_life.places();
+            for(std::size_t i=0;i<places.size();++i) {
+                const auto& place=places[i];
+                if(place.kind!=game::life::PlaceKind::Shop || !place.indoor) continue;
+                if(std::hypot(feet.x-place.interior.x,feet.z-place.interior.z)>=game::career::Career::till_reach || std::abs(feet.y-place.interior.y)>=3) continue;
+                if(const auto last=till_robbed.find(static_cast<int>(i));last!=till_robbed.end() && match_time-last->second<600) {
+                    store_prompt="The till's empty - they were robbed not long ago";
+                    break;
+                }
+                store_prompt=touch_ui ? "USE - Rob the till (your own work)" : "E - Rob the till (your own work)";
+                use_available=true;
+                if(input_system.player().interact) {
+                    input_system.player().interact=false;
+                    till_robbed[static_cast<int>(i)]=match_time;
+                    career.freelance_robbery(static_cast<float>(GetRandomValue(0,1000))/1000.0F);
+                    interaction_message="\"Take it, take it!\" - you put in work on your own account. The alarm's going - get out";interaction_remaining=4;
+                }
+                break;
+            }
         }
         if(clothing_store && game_mode==game::GameMode::Explore && !vehicles.driver() && player_health.alive() && !store_open) {
             if(nearby_shop && nearby_shop->id==clothing_store->place_id) nearby_shop=nullptr;
@@ -3350,7 +3392,8 @@ void Renderer::run() {
             for(const auto& m:mafio.members()) {
                 const auto* bot=br_bots.find(m.bot);
                 if(!bot || !bot->alive() || br_bots.mounted(m.bot) || std::abs(bot->position().y-feet.y)>1.6F) continue;
-                if(m.held || callouts.escorting(m.bot) || mafio.heist_of(m.bot)) continue;   // the call's suspects give up first
+                const bool tased=tased_until.contains(m.bot);
+                if((m.held && !tased) || callouts.escorting(m.bot) || mafio.heist_of(m.bot)) continue;   // the call's suspects give up first
                 const float d=std::hypot(bot->position().x-feet.x,bot->position().z-feet.z);
                 if(d<nearest) {nearest=d;best=m.bot;}
             }
@@ -3358,7 +3401,13 @@ void Renderer::run() {
         };
         if(controls.interact && !creator_active && !inventory_open && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !at_table && player_health.alive()) {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
-            if(career.on_duty() && !vehicles.driver() && routine.to_cuff(feet,br_bots)>=0) {
+            if(career.on_duty() && !vehicles.driver() && routine.to_ticket(feet,br_bots)>=0) {
+                // A traffic stop: the ticket written, and he drives on.
+                routine.ticket(career,br_bots,bot_drivers,vehicles,verda_region);
+                interaction_message="TICKET WRITTEN - he's on his way, slower now";
+                interaction_remaining=4;gun_audio.kill_confirm();
+                input_system.player().interact=false;
+            } else if(career.on_duty() && !vehicles.driver() && routine.to_cuff(feet,br_bots)>=0) {
                 // A routine call's suspect with his hands up: cuffed, he walks with the officer to the car.
                 routine.cuff(br_bots);
                 interaction_message="CUFFED - he walks with you. Get in your police car with him close by";
@@ -3380,13 +3429,13 @@ void Renderer::run() {
                     const auto* o=br_bots.find(other);
                     watched|=other!=bot && o && o->alive() && !br_bots.hidden(other) && Vector3Distance(o->position(),him->position())<15;
                 }
-                if(watched && him->health()>60) {
+                if(watched && him->health()>60 && !tased_until.contains(bot)) {
                     interaction_message="He won't come quietly - his crew is watching. Get him alone, or wound him first";
                 } else if(career.custody()+static_cast<int>(callouts.escorts().size())>=game::career::Career::custody_max) {
                     interaction_message="The car is full - take them to the state prison first";
                 } else {
                     // Cuffed: he walks with the officer, and gets in the back of the police car.
-                    if(watched) mafio.provoke(bot,match_time);   // cuffed in front of his crew: they take it badly
+                    // (Cuffed in front of his crew: they don't like it, but they only shoot if the officer does.)
                     callouts.cuff(bot,gang,mafio,br_bots);
                     territory.killed(gang,feet,player_gang());
                     if(crew>=0 && mafio.crews()[static_cast<std::size_t>(crew)].casino && career.serving() &&
@@ -3426,8 +3475,9 @@ void Renderer::run() {
                         "\"The company pays what it can get away with. Together, we make it pay what a load is worth.\"",
                         "\"Every town on the island has a brother in it. Call on the CB and they come.\"",
                         "\"The Ŝosea Patrolo grows by the month. Fine - we know every back road on Verda.\"",
-                        "\"No brother gets sent anywhere he didn't ask to go. Want work? You know where I am.\""};
-                    return ivo+lines[line%4];
+                        "\"No brother gets sent anywhere he didn't ask to go. Want work? You know where I am.\"",
+                        "\"Verdan pride, brother. Now hit this next job and set us and the boys up for a month.\""};
+                    return ivo+lines[line%5];
                 }
                 return ivo+"\"Verda's trucking is a tough grind - that's why truckers stick together. Esperantistoj, working class, every town on the island, "
                            "one rate for all of us and a higher one every year.\"";
@@ -3438,8 +3488,9 @@ void Renderer::run() {
                     "\"Brother! Keep the rubber side down.\"",
                     "\"The company squeezes us, we squeeze back. A strike at the gate and the rate goes up.\"",
                     "\"The patrol's thick on the ring - run the crates on the back roads.\"",
-                    "\"Trouble? Get on the CB and we come running.\""};
-                return who+lines[line%4];
+                    "\"Trouble? Get on the CB and we come running.\"",
+                    "\"Verdan pride, brother! Hit the next job and set us and the boys up for a month.\""};
+                return who+lines[line%5];
             }
             static constexpr const char* lines[]{
                 "\"Verda's trucking is a tough grind. That's why we stick together.\"",
@@ -3958,7 +4009,7 @@ void Renderer::run() {
             }
             if(!here && game::rules_for(game_mode).civilian_life && !vehicles.driver()) {Vector3 s{};float y=0;here=stand_seat.on || stand_seat_near(feet,s,y);}
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
-                here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 || (career.on_duty() && (callouts.to_cuff(feet,mafio,br_bots)>=0 || routine.to_cuff(feet,br_bots)>=0)) ||
+                here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 || (career.on_duty() && (callouts.to_cuff(feet,mafio,br_bots)>=0 || routine.to_cuff(feet,br_bots)>=0 || routine.to_ticket(feet,br_bots)>=0)) ||
                     (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) || trucker_near(feet)>=0 || society_near(feet) || gun_man_near(feet)>=0 ||
                     (!campaign_path.empty() && (story.talking() || (uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F))) ||
                     boss_near(feet)>=0 || station_desk(feet)!=nullptr || recruit_near(feet)>=0 ||
@@ -3970,6 +4021,7 @@ void Renderer::run() {
                     else if(!campaign_path.empty() && story.stage()==game::campaign::Stage::ToTruck && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.5F)
                         store_prompt="E - Ride home with Uncle Ron";
                     else if(!campaign_path.empty() && uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F) store_prompt="E - Talk to Uncle Ron";
+                    else if(career.on_duty() && !vehicles.driver() && routine.to_ticket(feet,br_bots)>=0) store_prompt="E - Write the ticket";
                     else if(career.on_duty() && !vehicles.driver() && (callouts.to_cuff(feet,mafio,br_bots)>=0 || routine.to_cuff(feet,br_bots)>=0)) store_prompt="E - Cuff him (hands up)";
                     else if(arrestable(feet)>=0) store_prompt="E - Arrest him";
                     else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F)
@@ -4037,6 +4089,8 @@ void Renderer::run() {
                         title=gang_name(gang_of());subtitle=dario ? "Uncle Dario" : "The boss";
                         rows.push_back({"Talk","hear what he has to say",""});
                         rows.push_back({"Leave the gang","walk away - your crew goes home (you'll be asked to be sure)",""});
+                        if(career.own_show()) rows.push_back({"Ask for work",career.job().kind!=game::career::JobKind::None ? "finish the job you've got first" :
+                                                              "you run your own show - the boss's jobs when you want them","",career.job().kind==game::career::JobKind::None});
                         break;
                     case TalkWith::GangBoss:
                         title=gang_name(gang_of());subtitle=dario ? "Uncle Dario - family first" : "The boss looks you over";
@@ -4143,6 +4197,13 @@ void Renderer::run() {
                             if(act.chosen==0) {
                                 chief_line=std::string(dario ? "Uncle Dario: " : "Boss: ")+game::career::Career::boss_talk(gang,true,island_ruled,occupied,boss_talks++);
                                 chief_line_time=9;done();
+                            } else if(act.chosen==2) {
+                                std::string why;
+                                if(career.ask_for_work(why)) {
+                                    chief_line=std::string(dario ? "Uncle Dario: " : "Boss: ")+(gang==0 ? "\"Good. Go put in work - La Manos don't do down time. The word's coming.\"" :
+                                                                                                         "\"Good. Go put in work - nobody here does down time. The word's coming.\"");
+                                    chief_line_time=8;done();
+                                } else gear_menu.set_status(why);
                             } else {pending=Pending::LeaveGang;open_gear(GearScreen::Confirm,0);}
                             break;
                         case TalkWith::GangBoss:
@@ -4173,7 +4234,7 @@ void Renderer::run() {
                                                "and keep it there a minute. The brothers will be on the picket line with you.\"";chief_line_time=9;done();
                                 } else gear_menu.set_status(why);
                             } else if(act.chosen==2) {
-                                if(career.ask_for_run(why)) {chief_line=std::string(brotherhood_man)+": \"Crates came in last night. Listen to the CB - and watch for the patrol.\"";chief_line_time=7;done();}
+                                if(career.ask_for_run(why)) {chief_line=std::string(brotherhood_man)+": \"Crates came in last night. Listen to the CB - and watch for the patrol. Verdan pride, brother: hit this one and set us and the boys up for a month.\"";chief_line_time=9;done();}
                                 else gear_menu.set_status(why);
                             } else {pending=Pending::LeaveBrotherhood;open_gear(GearScreen::Confirm,0);}
                             break;
@@ -4195,7 +4256,10 @@ void Renderer::run() {
                                 // Issued: a sidearm and two magazines.
                                 auto& bag=loot_session.edit_inventory();
                                 if(!bag.owns_weapon(item_registry,game::combat::WeaponId::Pistol)) bag.add(item_registry,"pistol",1);
-                                bag.add(item_registry,"pistol_ammo",30);loot_session.changed();
+                                bag.add(item_registry,"pistol_ammo",30);
+                                // ...and a taser: the Policio takes most of them alive.
+                                if(!bag.owns_weapon(item_registry,game::combat::WeaponId::Taser)) bag.add(item_registry,"taser",1);
+                                bag.add(item_registry,"taser_cartridges",8);loot_session.changed();
                                 chief_line="Desk sergeant: \"Welcome to the Policio de Verda. Your car's out front - report to "+std::string(game::career::chief_name)+" at Verda City HQ.\"";
                                 chief_line_time=9;done();
                             } else gear_menu.set_status(why);
@@ -6382,7 +6446,8 @@ void Renderer::run() {
                 frame.dt=dt;frame.now=match_time;frame.player_feet=feet;
                 frame.player_velocity=dt>0 ? Vector3Scale(Vector3Subtract(feet,last_player_feet),1.0F/dt) : Vector3{};
                 frame.player_alive=player_health.alive();
-                frame.player_fired=weapons.events().shots>0;
+                // (A taser's darts aren't gunfire: no gang takes them as a shot at them.)
+                frame.player_fired=weapons.events().shots>0 && weapons.selected()!=game::combat::WeaponId::Taser;
                 frame.player_weapon=weapons.selected();
                 frame.player_in_vehicle=driving;
                 frame.aim_origin=gun_muzzle;frame.aim_direction=gun_direction;
@@ -6399,11 +6464,13 @@ void Renderer::run() {
                     if(f.owner<0 || f.owner>=game::mafia::gang_count || mafio.spotted_by_patrol(f.at,f.owner,br_bots)<0) {++i;continue;}
                     fresh_tags.erase(fresh_tags.begin()+static_cast<std::ptrdiff_t>(i));
                     const std::string town=f.turf>=0 && static_cast<std::size_t>(f.turf)<territory.turfs().size() ? territory.turfs()[static_cast<std::size_t>(f.turf)].name : std::string("town");
+                    // (They don't shoot the player for it - gang members only shoot back - but a second
+                    // tag is war between the gangs.)
                     if(++tags_found[static_cast<std::size_t>(f.owner)]==1) {
-                        mafio.provoke_gang(f.owner,match_time,gang_name(f.owner)+"'s patrol found your tag in "+town+" - they're out looking for you");
+                        show(gang_name(f.owner)+"'s patrol found your tag in "+town+" - they know it was you",7);
                         continue;
                     }
-                    mafio.provoke_gang(f.owner,match_time,gang_name(f.owner)+"'s patrol found another of your tags in "+town+" - it's war");
+                    show(gang_name(f.owner)+"'s patrol found another of your tags in "+town+" - it's war between the gangs",7);
                     int from=-1,to=-1;float near_from=1e9F,near_to=1e9F;
                     for(std::size_t c=0;c<mafio.crews().size();++c) {
                         const auto& crew=mafio.crews()[c];
@@ -6839,7 +6906,7 @@ void Renderer::run() {
                             }
                         }
 #endif
-                        if(callouts.take_partner_wanted() && player_crew.partner()<0) {
+                        if((callouts.take_partner_wanted() | routine.take_partner_wanted()) && player_crew.partner()<0) {
                             const Vector3 at=Vector3Add(feet,{std::cos(player.yaw)*1.6F,0,-std::sin(player.yaw)*1.6F});   // at the officer's side
                             if(player_crew.assign_partner(at,player.yaw*RAD2DEG+180,br_bots,match_time)) vehicle_dirty=true;
                         }
@@ -6871,7 +6938,7 @@ void Renderer::run() {
                     // What the job set off: the police tipped off, a demand at a ranch, a job paid out.
                     if(career.take_tipoff()) {
                         game::law::JusticeFrame tip;tip.now=match_time;tip.player=feet;
-                        justice.tip_off(2,feet,tip,island_life,career.job().kind==game::career::JobKind::RobStore ?
+                        justice.tip_off(2,feet,tip,island_life,career.job().kind==game::career::JobKind::RobStore || career.job().kind==game::career::JobKind::None ?
                                         "Store robbery: the alarm went off - the police are on the way" :
                                         career.job().kind==game::career::JobKind::Contraband ? "Contraband in a big rig: the Ŝosea Patrolo is out for it" :
                                         "Contraband run: someone tipped off the police");
@@ -6891,7 +6958,7 @@ void Renderer::run() {
                             if(static_cast<std::size_t>(ranch)<ranches.ranches().size())
                                 ranches.provoke_ranch(ranch,match_time,"The "+family.name+" family won't be squeezed");
                             if(family.stance==game::mafia::Stance::Allied && family.gang>=0 && family.gang!=gang)
-                                mafio.provoke_gang(family.gang,match_time,gang_name(family.gang)+" stand by the "+family.name+" family - they want you dead");
+                                show(gang_name(family.gang)+" stand by the "+family.name+" family - they'll remember this",6);
                             career.extort_result(false,game::mafia::family_faction(ranch));
                         }
                     }
@@ -7221,6 +7288,12 @@ void Renderer::run() {
                     npcs.set_bot_weapon(e.bot,-1);
                 }
                 for(const auto& h:mafio.heists()) for(const int id:h.surrendered) if(!callouts.escorting(id)) npcs.set_bot_weapon(id,-1);
+                // The tased get back up: a Krimulo nobody cuffed is on his feet again (and armed).
+                for(auto t=tased_until.begin();t!=tased_until.end();) {
+                    if(match_time<t->second) {npcs.set_bot_weapon(t->first,-1);++t;continue;}
+                    if(mafio.active() && mafio.gang_of(t->first)>=0 && !callouts.escorting(t->first) && !mafio.surrendered(t->first)) mafio.hold(t->first,false,br_bots);
+                    t=tased_until.erase(t);
+                }
                 // A routine call's suspect: unarmed unless he's fighting; cuffed, he walks with the officer.
                 if(routine.bot()>=0) if(const auto* bot=br_bots.find(routine.bot())) {
                     if(routine.stage()==game::career::RoutineCalls::Stage::Cuffed)
@@ -8211,6 +8284,10 @@ void Renderer::run() {
                 // Another player knocked down (squad play): on their knees, no gun.
                 if(game::lan::LanPlay::is_remote_body(actor.bot))
                     if(const auto* who=lan_play.find(game::lan::LanPlay::slot_of(actor.bot));who && down(*who)) {body.downed=1;return;}
+                // Tased: down on the ground for a few seconds (unless already cuffed).
+                if(actor.bot>=0 && !callouts.escorting(actor.bot))
+                    if(const auto t=tased_until.find(actor.bot);t!=tased_until.end() && match_time<t->second &&
+                       !(routine.suspect(actor.bot) && routine.stage()==game::career::RoutineCalls::Stage::Cuffed)) {body.downed=1;return;}
                 // Arrests: hands up, or cuffed behind the back.
                 if(actor.bot>=0 && routine.suspect(actor.bot)) {
                     if(routine.stage()==game::career::RoutineCalls::Stage::Cuffed) {body.cuffed=1;return;}
@@ -8775,13 +8852,14 @@ void Renderer::run() {
                 // Who you are on the island: rank, respect, honour and your crew.
                 std::string standing=TextFormat("Respect %d",static_cast<int>(career.state().respect));
                 if(cop) standing+=TextFormat("  ·  authority %d  ·  %d outposts built",static_cast<int>(career.authority()),career.outposts_built());
-                if(cop && career.serving()) standing+=career.task_force() ? std::string("  ·  GANG TASK FORCE") :
-                    career.routine_done()>=game::career::Career::task_force_calls ? std::string("  ·  see the Chief: the Gang Task Force") :
-                    std::string(TextFormat("  ·  routine calls %d/%d for the Gang Task Force",career.routine_done(),game::career::Career::task_force_calls));
+                if(cop && career.task_force()) standing+="  ·  GANG TASK FORCE";
                 else if(trucker) standing+=TextFormat("  ·  union rate +%d%%",static_cast<int>(std::lround((career.haul_rate()-1)*100)));
                 if(!cop) standing+=career.state().notoriety>0 ? TextFormat("  ·  notoriety %d",static_cast<int>(career.state().notoriety)) :
                                    std::string(trucker ? "" : career.state().honourable ? "  ·  honourable" : "  ·  no honour");
-                const std::string with=cop ? (player_crew.partner()>=0 ? "Your partner rides with you." : "No partner - ask at a station's desk.") :
+                const std::string task_force=!cop || !career.serving() || career.task_force() ? std::string() :
+                    career.routine_done()>=game::career::Career::task_force_calls ? std::string(" Ten routine calls done - see the Chief about the Gang Task Force.") :
+                    std::string(TextFormat(" Routine calls: %d of %d for the Gang Task Force.",career.routine_done(),game::career::Career::task_force_calls));
+                const std::string with=cop ? (player_crew.partner()>=0 ? "Your partner rides with you." : "No partner - ask at a station's desk.")+task_force :
                     trucker ? std::string("Every town has a brother in it - Z on the CB calls two to your side.") :
                     TextFormat("Your crew: %d of %d - recruit your gang's men with USE.",static_cast<int>(player_crew.members().size()),game::career::Crew::max_gang);
                 quests.push_back({who+"  ·  "+career.rank_name(),
@@ -9037,6 +9115,8 @@ void Renderer::run() {
                         switch(routine.stage()) {
                             case RS::HandsUp:tag(over,"HANDS UP",d<game::career::Callouts::cuff_reach ? "USE to cuff him" : "walk up to cuff him",Color{255,214,120,255},40);break;
                             case RS::Cuffed:tag(over,"CUFFED","",Color{150,190,255,255},30);break;
+                            case RS::Ticket:tag(over,"PULLED OVER",d<game::career::Callouts::cuff_reach ? "USE to write the ticket" : "walk up to write the ticket",Color{255,214,120,255},40);break;
+                            case RS::Leaving:break;
                             case RS::Running:tag(over,"SUSPECT - RUNNING","",Color{255,90,80,255},80);break;
                             case RS::Fighting:tag(over,"SUSPECT - ARMED","lethal force authorised",Color{255,60,60,255},80);break;
                             default:tag(over,"SUSPECT","",Color{255,90,80,255},80);break;
@@ -9280,6 +9360,8 @@ void Renderer::run() {
                 // The partner talks the officer through the first call.
                 if(const auto* line=callouts.line();line && booking.stage<0 && prison_tour.line<0)
                     speech_box(line->speaker,line->text,Color{120,170,255,255},"");
+                else if(const auto* tip=routine.line();tip && booking.stage<0 && prison_tour.line<0)
+                    speech_box(tip->speaker,tip->text,Color{120,170,255,255},"");
                 // The warden's tour.
                 if(prison_tour.line>=0)
                     speech_box("Warden Brana  ·  Ŝtata Malliberejo",tour_lines[static_cast<std::size_t>(prison_tour.line)],Color{230,180,90,255},
@@ -9730,7 +9812,7 @@ void Renderer::run() {
             const auto* a=vehicles.asset(verda_region,car->id);
             if(a && a->vehicle.definition==game::mafia::green_hand_car && player_gang()!=0 && !gt_stolen) {
                 gt_stolen=true;
-                mafio.provoke_gang(0,match_time,"You took La Verda Mano's GT - the Green Hand wants it back");
+                interaction_message="You took La Verda Mano's GT - the Green Hand will want it back";interaction_remaining=4;
             } else if(a && a->vehicle.definition==game::mafia::green_hand_car && player_gang()==0 && !gt_stolen) {
                 gt_stolen=true;interaction_message="The crew's Verda Mano GT - bring it back in one piece";interaction_remaining=3;
             }

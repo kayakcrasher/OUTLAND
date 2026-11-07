@@ -19,6 +19,12 @@ namespace outland::game::vehicles { class VehicleSystem; }
 //   on its bumper with the lights on until it pulls over (or it crashes, or he gets home); out of
 //   the car he nearly always gives up.
 // - PHARMACY ROBBERY: an armed robber at a town's clinic pharmacy. He may give up, run, or fight.
+// - TRAFFIC STOP: a speeder, colour, model and plate on the radio. Pull him over (bumper, lights);
+//   walk up and USE writes the ticket and he drives on - unless he runs for it.
+// - SHOPLIFTER: a man legging it from a shop with the goods. Catch him (or stop him) and cuff him.
+// - BAR FIGHT: a drunk throwing chairs outside a pub. Mostly he gives up; some run.
+// - STOLEN CAR: a car reported stolen, plate on the radio. Pull it over; the thief may give up,
+//   run, or fight.
 //
 // One suspect a call: a civilian (no gang), a CombatBot in the shared ai::BattleRoyaleBots - he
 // fights the officer only while he's resisting. Hands up, USE cuffs him; cuffed, he walks with the
@@ -27,7 +33,7 @@ namespace outland::game::vehicles { class VehicleSystem; }
 // counts as stopped, and is never a crime.
 namespace outland::game::career {
 
-enum class RoutineKind : std::uint8_t { Domestic, DrunkDriver, Pharmacy };
+enum class RoutineKind : std::uint8_t { Domestic, DrunkDriver, Pharmacy, TrafficStop, Shoplifter, BarFight, StolenCar };
 const char* routine_name(RoutineKind kind);   // "DOMESTIC DISPUTE"
 
 class RoutineCalls {
@@ -39,7 +45,9 @@ public:
     static constexpr float tail_seconds = 5;                    // ...with the lights on, this long: he pulls over
     static constexpr float give_up_health = 70;                 // hurt this much: he gives up
 
-    enum class Stage : std::uint8_t { Idle, Waiting, Driving, Running, Fighting, HandsUp, Cuffed };
+    enum class Stage : std::uint8_t { Idle, Waiting, Driving, Running, Fighting, HandsUp, Cuffed,
+                                      Ticket,     // a traffic stop: he waits by his car for the ticket
+                                      Leaving };  // ticketed: he drives on (out of the game when out of sight)
 
     struct Frame {
         float dt{0};
@@ -67,6 +75,15 @@ public:
     // The suspect with his hands up within cuffing reach (his bot id), or -1; cuffing him.
     [[nodiscard]] int to_cuff(Vector3 feet, ai::BattleRoyaleBots& bots) const;
     bool cuff(ai::BattleRoyaleBots& bots);
+    // The suspect hit by an officer's taser: down, and he gives up (true when it took).
+    bool stun(ai::BattleRoyaleBots& bots, std::string& said);
+    // A traffic stop: the driver within reach, waiting for his ticket (his bot id), or -1; writing it.
+    [[nodiscard]] int to_ticket(Vector3 feet, ai::BattleRoyaleBots& bots) const;
+    bool ticket(Career& career, ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers, vehicles::VehicleSystem& cars, world::VerdaRegion& region);
+    // The partner's lesson on the first routine call: the line showing (nullptr: none); the
+    // partner wanted beside the officer for it (once).
+    [[nodiscard]] const CalloutLine* line() const { return lesson_.empty() ? nullptr : &lesson_.front(); }
+    bool take_partner_wanted() { const bool w = partner_wanted_; partner_wanted_ = false; return w; }
 
     [[nodiscard]] bool active() const { return stage_ != Stage::Idle; }
     [[nodiscard]] Stage stage() const { return stage_; }
@@ -74,6 +91,9 @@ public:
     [[nodiscard]] int bot() const { return bot_; }
     [[nodiscard]] bool suspect(int bot) const { return bot >= 0 && bot == bot_; }
     [[nodiscard]] bool hands_up(int bot) const { return suspect(bot) && (stage_ == Stage::HandsUp || stage_ == Stage::Cuffed); }
+    [[nodiscard]] static bool driving_call(RoutineKind kind) {
+        return kind == RoutineKind::DrunkDriver || kind == RoutineKind::TrafficStop || kind == RoutineKind::StolenCar;
+    }
     [[nodiscard]] bool armed() const { return stage_ == Stage::Fighting; }
     [[nodiscard]] bool walking() const { return walking_; }   // cuffed and walking with the officer
     // The suspect fights the officer (the player) while he's resisting.
@@ -83,11 +103,15 @@ public:
 
 private:
     void decide(ai::BattleRoyaleBots& bots, std::string& said);
+    void hint(const std::string& text);
     void end(ai::BattleRoyaleBots& bots, ai::BotDrivers& drivers, vehicles::VehicleSystem& cars);
     int bot_{-1};
     Stage stage_{Stage::Idle};
     RoutineKind kind_{RoutineKind::Domestic};
-    Vector3 scene_{};
+    Vector3 scene_{}, home_{};
+    std::vector<CalloutLine> lesson_;
+    float line_time_{0};
+    bool partner_wanted_{false}, first_{false};
     std::string car_, plate_, stale_car_;
     float tailed_{0};
     double next_call_{0};

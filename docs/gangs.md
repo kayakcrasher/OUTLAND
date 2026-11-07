@@ -95,10 +95,24 @@ When the hold runs out, the town goes to whichever gang pushed hardest. The hold
 ### Street patrols
 
 In most towns two of the crew's soldiers patrol the street in front of their hideout, walking 60 m each way and back (`game::mafia::Patrol`). A rival's fresh tag on their gang's wall doesn't stay unnoticed for long. When a patroller comes within about 26 m of one, he has seen it:
-- **The first tag of yours they find:** that gang turns on you and hunts you for a while.
-- **Every one after that:** it's war. The gang turns on you and sends a hit squad in a car at your nearest crew.
+- **The first tag of yours they find:** they know it was you.
+- **Every one after that:** it's war between the gangs: a hit squad in a car goes for your nearest crew.
+- Either way they don't shoot *you* for it: gang members only shoot once you start shooting (see below).
 
 Kill the patrol, or tag where they don't walk, and your tags can go unseen. Patrols only walk while you're near enough to wake their town. They don't patrol while they're on a hit squad, in a heist, held or lent to you.
+
+## Gang members shoot back - they don't shoot first
+
+No gang member opens fire on the player until the player shoots: a round at one of them (a near miss counts), or running one down with a car. On a rival's turf they warn you ("they're watching you on their turf"); a patrol that finds your tag holds it against you; hijackers come for a trucker's load; the Green Hand want their GT back; a family's allies remember a squeeze - but none of them shoots first. (A taser's darts don't count as a shot.)
+
+## Earning your bones, and running your own show
+
+- **Your bones:** the first rival you kill for the gang, you've earned your bones (+3 respect): "you put in work for the gang".
+- **Novulo** (the first rank): the boss sends you jobs.
+- **From Soldato up** (15 respect) you run your own show. The boss's jobs come only when you ask for them (his menu: **Ask for work**), and you put in work on your own account:
+  - **Rob a store** (any gang member): any shop's till, gun out, **USE** at the counter - "Rob the till (your own work)". 250-700 kronoj and +3 respect, a crime on your record, and the alarm brings the police (2 stars). Each till is empty for ten minutes after.
+- What the bosses say now includes "Go put in work - La Manos don't do down time", and Uncle Dario: "The Ĉefo's got it out for us. We've got something planned for him - just you wait."
+- Tech: `Career::own_show`, `ask_for_work`, `freelance_robbery`, `earned_bones` (saved, career 10).
 
 ## Gang jobs
 

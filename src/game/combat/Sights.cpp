@@ -17,6 +17,7 @@ float rail(WeaponId weapon) {
     switch(weapon) {
         case WeaponId::Pistol: return .023F;
         case WeaponId::MachinePistol: return .036F;
+        case WeaponId::Taser: return .034F;
         case WeaponId::Smg: return .041F;
         case WeaponId::Shotgun: case WeaponId::DoubleBarrel: return .030F;
         case WeaponId::AutoShotgun: return .046F;
@@ -28,6 +29,7 @@ float iron(WeaponId weapon) {
     switch(weapon) {
         case WeaponId::Pistol: return .029F;
         case WeaponId::MachinePistol: return .038F;
+        case WeaponId::Taser: return .036F;
         case WeaponId::Smg: return .058F;
         case WeaponId::Shotgun: return .036F;
         case WeaponId::DoubleBarrel: return .030F;
@@ -52,6 +54,7 @@ bool sight_fits(WeaponId weapon, Sight sight) {
     if(sight==Sight::Sniper) return weapon==WeaponId::Sniper;
     switch(weapon) {
         case WeaponId::Pistol: case WeaponId::MachinePistol: return sight==Sight::RedDot;
+        case WeaponId::Taser: return false;
         case WeaponId::Shotgun: case WeaponId::AutoShotgun: case WeaponId::Rocket: return sight!=Sight::Scope4x;
         case WeaponId::DoubleBarrel: return sight==Sight::RedDot;
         case WeaponId::Sniper: return false;

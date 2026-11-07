@@ -24,6 +24,8 @@ CareerFrame world(double now) {
 bool wait_for(Career& c, JobKind kind, double& now) {
     for (int i = 0; i < 400; ++i) {
         now += 1;
+        std::string why;
+        if (c.own_show() && c.job().kind == JobKind::None) c.ask_for_work(why);   // a Soldato asks the boss
         c.update(world(now));
         if (c.job().kind == kind) return true;
         if (c.job().kind != JobKind::None) { now += 2000; c.update(world(now)); }   // let it lapse
@@ -63,6 +65,7 @@ int main() {
         for (int k = 0; k < c.job().needed; ++k) c.killed(target, false);
         c.update(world(now));
         check(c.job().kind == JobKind::None && c.state().respect > before && c.state().jobs_done == 1, "job done: respect");
+        check(c.earned_bones(), "the first kill for the gang: bones earned");
         const int pay = c.take_pay();
         check(pay > 0 && c.take_pay() == 0, "and pay, once");
 
@@ -128,6 +131,7 @@ int main() {
         for (int i = 0; i < 3000 && !(smuggle && extort && turf); ++i) {
             now += 1;
             auto f = full(now);
+            if (c.own_show() && c.job().kind == JobKind::None) c.ask_for_work(why);   // a Soldato asks the boss
             c.update(f);
             const auto kind = c.job().kind;
             if (kind == JobKind::Smuggle && !smuggle) {
@@ -169,6 +173,25 @@ int main() {
             }
         }
         check(smuggle && extort && turf, "all three jobs come up");
+        // A Soldato runs his own show: no job unless he asks; and he can rob a store on his own account.
+        {
+            Career s;
+            s.join_gang(1, "Montaj Lupoj", why);
+            auto st = s.state(); st.respect = 20; s.restore(st);
+            check(s.own_show(), "a Soldato runs his own show");
+            double t = 0;
+            for (int i = 0; i < 100; ++i) { t += 1; s.update(world(t)); }
+            check(s.job().kind == JobKind::None, "no job comes unasked");
+            check(s.ask_for_work(why), "he asks the boss");
+            for (int i = 0; i < 20 && s.job().kind == JobKind::None; ++i) { t += 1; s.update(world(t)); }
+            check(s.job().kind != JobKind::None, "and the boss has work");
+            const float r0 = s.state().respect;
+            const int take = s.freelance_robbery(.5F);
+            check(take >= Career::freelance_take_min && s.take_pay() >= take && s.state().respect > r0 && s.state().record && s.take_tipoff(),
+                  "a store robbed on his own account: the take, respect, a record, the police tipped off");
+            Career back;
+            check(back.parse(s.serialise()) && back.state().scores == 1, "saved");
+        }
         // A store robbery (a gun out at the counter, the till, home with the police after you) and
         // a tag up (the cans with the job; five tags in the rival town, none elsewhere).
         {
@@ -508,7 +531,9 @@ int main() {
         cop.set_occupied(true);
         check(cop.chief_talk(car).find("Russian") != std::string::npos, "the Chief under occupation");
         check(Career::boss_talk(0, true, false, false, 0).find("only gang capable of uniting") != std::string::npos, "the Green Hand unite the people");
-        check(Career::boss_talk(0, true, false, false, 1).find("Esperantista Loyalists") != std::string::npos, "Esperantista Loyalists");
+        check(Career::boss_talk(0, true, false, false, 2).find("Esperantista Loyalists") != std::string::npos, "Esperantista Loyalists");
+        check(Career::boss_talk(0, true, false, false, 1).find("got it out for us") != std::string::npos, "Uncle Dario on the Ĉefo");
+        check(Career::boss_talk(0, true, false, false, 3).find("La Manos don't do down time") != std::string::npos, "put in work");
         check(Career::boss_talk(0, true, true, false, 0).find("parliament") != std::string::npos, "then the parliament");
         check(Career::boss_talk(0, false, false, false, 0).find("Want in?") != std::string::npos, "the Green Hand's pitch");
         check(Career::boss_talk(3, true, false, false, 0).find("drifting apart") != std::string::npos, "the other gangs see it too");
