@@ -18,7 +18,7 @@ int main(){
     for(int i=0;i<3;++i){
         outland::platform::begin_frame();
         ++local_state;
-        assert(width==1248 && height==720);
+        assert(width==1920 && height==960);   // a 2400x1200 window, laid out at most 1920 wide
         assert(outland::platform::save_requested());
         outland::platform::flush_saves();
     }
