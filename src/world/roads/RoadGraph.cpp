@@ -179,8 +179,22 @@ Route RoadGraph::route(Vector3 from, Vector3 to) const {
         const auto i = static_cast<std::size_t>(state);
         if (c < cost[i]) {cost[i] = c; via[i] = previous; open.emplace(c, state);}
     };
+    // On a divided road, starting from beside it (a kerbside space, a driveway), only the
+    // carriageway on that side: the way whose right-hand lane is the near one, never across the median.
+    const auto right_side = [&](Vector3 at, Vector3 on, int n) {
+        const Vector3 d = flat_dir(on, nodes_[static_cast<std::size_t>(n)]);
+        return (at.x - on.x) * -d.z + (at.z - on.z) * d.x >= 0;
+    };
+    const bool beside_start = se.divided && flat(from, start.point) > 1;
+    int starts = 0;
     for (const int n : {se.a, se.b})
-        if (!se.one_way || n == se.b) relax(state_of(start.edge, n), flat(start.point, nodes_[static_cast<std::size_t>(n)]), -1);
+        if ((!se.one_way || n == se.b) && (!beside_start || right_side(from, start.point, n))) {
+            relax(state_of(start.edge, n), flat(start.point, nodes_[static_cast<std::size_t>(n)]), -1);
+            ++starts;
+        }
+    if (starts == 0)
+        for (const int n : {se.a, se.b})
+            if (!se.one_way || n == se.b) relax(state_of(start.edge, n), flat(start.point, nodes_[static_cast<std::size_t>(n)]), -1);
     while (!open.empty()) {
         const auto [c, state] = open.top(); open.pop();
         if (c > cost[static_cast<std::size_t>(state)]) continue;
@@ -192,14 +206,20 @@ Route RoadGraph::route(Vector3 from, Vector3 to) const {
         }
     }
     // Onto the goal's edge from an end it can be driven from.
+    // (On a divided road, along the carriageway on the destination's side when there is a way.)
     int last = -1;
     float best = std::numeric_limits<float>::max();
-    for (std::size_t state = 0; state < states; ++state) {
-        if (cost[state] == std::numeric_limits<float>::max()) continue;
-        const int e = static_cast<int>(state / 2), n = node_of(static_cast<int>(state));
-        if ((n != ge.a && n != ge.b) || (ge.one_way && n != ge.a) || !allowed(e, n, goal.edge)) continue;
-        const float c = cost[state] + flat(nodes_[static_cast<std::size_t>(n)], goal.point);
-        if (c < best) {best = c; last = static_cast<int>(state);}
+    const bool beside_goal = ge.divided && flat(to, goal.point) > 1;
+    for (const bool sided : {true, false}) {
+        if (last >= 0 || (!sided && !beside_goal)) break;
+        for (std::size_t state = 0; state < states; ++state) {
+            if (cost[state] == std::numeric_limits<float>::max()) continue;
+            const int e = static_cast<int>(state / 2), n = node_of(static_cast<int>(state));
+            if ((n != ge.a && n != ge.b) || (ge.one_way && n != ge.a) || !allowed(e, n, goal.edge)) continue;
+            if (sided && beside_goal && right_side(to, goal.point, n)) continue;   // (arriving the other way round)
+            const float c = cost[state] + flat(nodes_[static_cast<std::size_t>(n)], goal.point);
+            if (c < best) {best = c; last = static_cast<int>(state);}
+        }
     }
     if (last < 0) {add(start.point, 0); add(to, 0); return route;} // islands of road: nothing joins them
     std::vector<int> chain;

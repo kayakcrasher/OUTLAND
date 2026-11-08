@@ -11,6 +11,7 @@
 #include "outland/world/Ballparks.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/Highways.hpp"
+#include "outland/world/MountainRoad.hpp"
 #include "outland/world/roads/Turnaround.hpp"
 #include "outland/world/roads/RoadGraph.hpp"
 #include "outland/world/physics/MeshCollision.hpp"
@@ -158,8 +159,9 @@ int main() {
         check(entered == buildings, "walk in at every one's front door: " + std::to_string(entered) + "/" + std::to_string(buildings));
     }
 
-    // Sovaĝejo's trailer park (twelve mobile homes), Ruldomaro's (eight) and the three highway
-    // hamlets' (six each): every one walkable from the lane through its door.
+    // Sovaĝejo's trailer park (twelve mobile homes), Ruldomaro's (eight), the three highway
+    // hamlets' (six each), and up Sovaĝa Monto's road one at each of its six pullouts and six in
+    // Supra Sovaĝejo: every one walkable from the lane through its door.
     {
         check(report.parks == 1, "trailer park built");
         int trailers = 0, entered = 0;
@@ -192,7 +194,8 @@ int main() {
             if (std::hypot(p.x - inside.x, p.z - inside.z) < .2F && p.y > asset.position.y + .6F) ++entered;
             else std::cerr << "  could not enter trailer " << model << " at " << asset.position.x << "," << asset.position.z << '\n';
         }
-        check(trailers == 38, "thirty-eight trailers: " + std::to_string(trailers));
+        check(trailers == 50, "fifty trailers: " + std::to_string(trailers));
+        check(report.pullout_trailers == 6 && report.upper_trailers == 6, "the mountain road's trailers");
         check(entered == trailers, "walk into every trailer: " + std::to_string(entered) + "/" + std::to_string(trailers));
     }
 
@@ -263,7 +266,13 @@ int main() {
         for (const auto& [x, z] : std::initializer_list<std::pair<float, float>>{{-180, 0}, {120, 120}, {-120, -120}, {180, -60}})
             check(std::abs(world::terrain::TerrainHeight::sample(roka->center.x + x, roka->center.z + z) - h) < .05F, "Roka on a level pad");
         check(sovagejo->center.z < roka->center.z - 300 && std::abs(sovagejo->center.x - roka->center.x) < 80, "Sovaĝejo is north of Roka");
-        for (const auto& road : sovagejo->roads) check(road.type == world::RoadType::Dirt, "a dirt road out to Sovaĝejo");
+        // (Gravel only for Sovaĝa Monto's lay-bys and Supra Sovaĝejo's lane.)
+        int gravel = 0;
+        for (const auto& road : sovagejo->roads) {
+            check(road.type == world::RoadType::Dirt || road.type == world::RoadType::Gravel, "a dirt road out to Sovaĝejo");
+            gravel += road.type == world::RoadType::Gravel;
+        }
+        check(gravel == 3 * static_cast<int>(world::mountain::pullouts().size()) + 2, "gravel only up the mountain: " + std::to_string(gravel));
         world::roads::RoadGraph graph(region);
         check(graph.route(sovagejo->center, roka->center).complete, "the dirt road joins Roka's streets");
         for (const auto& s : region.settlements()) for (const auto& asset : s.assets)

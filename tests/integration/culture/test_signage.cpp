@@ -1,6 +1,7 @@
 #include "outland/creator/CreatorMapIO.hpp"
 #include "outland/game/culture/Esperanto.hpp"
 #include "outland/game/culture/Signage.hpp"
+#include "outland/world/MountainRoad.hpp"
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/Zones.hpp"
@@ -215,10 +216,31 @@ int main() {
     int sovagejo_crosses = 0, crosses = 0;
     for (const auto& flag : signage.flags) if (flag.design == FlagDesign::Apelacio) {
         ++crosses;
-        if (std::hypot(flag.base.x + 1790, flag.base.z - 90) < 140) ++sovagejo_crosses;
+        // (Sovaĝejo's: the trailer park, and up Sovaĝa Monto's road - its trailers, Supra
+        // Sovaĝejo's, and the tall poles at the ends, the fork, the lookout and the summit.)
+        if (std::hypot(flag.base.x + 1790, flag.base.z - 90) < 140 || world::mountain::near(flag.base.x, flag.base.z, 40) ||
+            flag.place.starts_with("monto:")) ++sovagejo_crosses;
         check(!world::physics::WorldCollision::body_blocked(flag.base, flag.base.y, region, .4F), "trailer flagpole stands clear: " + flag.place);
     }
     check(sovagejo_crosses >= 10 && sovagejo_crosses * 2 > crosses, "Sovaĝejo's trailer park flies the most Apelacio flags: " + std::to_string(sovagejo_crosses));
+    {
+        // Sovaĝa Monto: the Apelacio over the summit, the lookout, Supra Sovaĝejo and both ends of the road,
+        // and the boards at the ends, the fork and the lookout (the summit's height on it).
+        int summit = 0, poles = 0, boards = 0;
+        const Vector3 top = world::mountain::summit();
+        for (const auto& flag : signage.flags) if (flag.place.starts_with("monto:")) {
+            ++poles;
+            check(flag.design == FlagDesign::Apelacio, "the mountain flies the Apelacio: " + flag.place);
+            summit += flag.place == "monto:pinto" && std::hypot(flag.base.x - top.x, flag.base.z - top.z) < 1 && std::abs(flag.base.y - top.y) < 2;
+        }
+        bool height = false;
+        for (const auto& sign : signage.signs) if (sign.place.starts_with("monto:")) {
+            ++boards;
+            for (const auto& line : sign.front) height = height || line.text == std::to_string(static_cast<int>(std::round(top.y))) + " m";
+        }
+        check(summit == 1 && poles >= 6, "Apelacio poles up the mountain, one on the summit: " + std::to_string(poles));
+        check(boards == 4 && height, "the mountain road's boards, the summit's height at the lookout");
+    }
 
     // Ferarbaro's back roads carry hand-painted boards, and only Ferarbaro's.
     {

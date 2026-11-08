@@ -4,6 +4,7 @@
 #include "outland/game/culture/Esperanto.hpp"
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/world/Highways.hpp"
+#include "outland/world/MountainRoad.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
@@ -290,7 +291,7 @@ void squares(const world::VerdaRegion& region, const life::Island& island, Signa
 }
 
 // Sovaĝejo's trailer park flies the Apelacio flag from a pole beside every trailer (and its town
-// flag is one too); Ruldomaro, out east, has a couple. Trailers are found by where they stand,
+// flag is one too), and so do its trailers up Sovaĝa Monto's road; Ruldomaro, out east, has a couple. Trailers are found by where they stand,
 // whichever settlement the map files them under.
 void trailer_flags(const world::VerdaRegion& region, Signage& out) {
     const auto& towns = region.settlements();
@@ -301,7 +302,9 @@ void trailer_flags(const world::VerdaRegion& region, Signage& out) {
         if (!sovagejo && town.id != "hamlet_ruldomaro") continue;
         int trailer = 0;
         for (const auto& owner : towns) for (const auto& asset : owner.assets) {
-            if (asset.model_path.find("/residential/trailers/") == std::string::npos || flat(asset.position, town.center) > 220) continue;
+            if (asset.model_path.find("/residential/trailers/") == std::string::npos) continue;
+            // (Sovaĝejo's own reach up the mountain road: its pullouts and Supra Sovaĝejo.)
+            if (flat(asset.position, town.center) > 220 && !(sovagejo && world::mountain::near(asset.position.x, asset.position.z, 30))) continue;
             if (trailer++ % (sovagejo ? 1 : 4) != 0) continue;
             const float reach = std::max(asset.size.x, asset.size.z) * .5F;
             Vector3 spot{};
@@ -608,6 +611,79 @@ void backcountry(const world::VerdaRegion& region, Signage& out) {
 }
 }
 
+// Sovaĝa Monto's road: hand-painted boards where it starts and ends, at the fork to Supra
+// Sovaĝejo and at the lookout under the summit (its height), and the Apelacio - Sovaĝejo's own
+// flag - on tall poles at both ends, the fork, the lookout and the summit itself.
+std::string kilometres(float metres);
+void mountain_signs(const world::VerdaRegion& region, Signage& out) {
+    namespace mtn = world::mountain;
+    const auto& line = mtn::road();
+    if (line.points.size() < 2) return;
+    const auto board = [&](Vector3 p, Vector3 facing, std::vector<SignLine> lines, const char* place) {
+        for (int step = 0; step < 6 && !clear_spot(region, p, .5F); ++step) p = Vector3Add(p, Vector3Scale(facing, -.6F));
+        Sign sign;
+        // Hand-painted in Ferarbaro; past its edge (the ring road end, in Altverdo), a county board.
+        const bool homemade = world::zones::zone_at(p) == world::zones::ZoneId::Ferarbaro;
+        sign.kind = homemade ? SignKind::Homemade : SignKind::Distance;
+        sign.place = place;
+        sign.front = std::move(lines);
+        if (homemade) {sign.board = {196, 166, 116, 255}; sign.ink = {20, 80, 36, 255};}
+        sign.post = 1.0F;
+        sign.max_width = 2.8F;
+        const float rows = static_cast<float>(sign.front.size());
+        sign.position = {p.x, ground(region, p, p.y) + sign.post + rows * .3F, p.z};
+        sign.yaw = yaw_of(facing);
+        out.signs.push_back(std::move(sign));
+    };
+    const auto pole = [&](Vector3 p, float tall, float width, const char* place) {
+        if (!clear_spot(region, p, .4F)) return;
+        const float base = ground(region, p, p.y);
+        FlagPole flag;
+        flag.place = place;
+        flag.base = {p.x, base, p.z};
+        flag.tip = {p.x, base + tall, p.z};
+        flag.fly = Vector3Normalize(wind);
+        flag.width = width;
+        flag.design = FlagDesign::Apelacio;
+        out.flags.push_back(flag);
+    };
+    const auto left = [](Vector3 run) { return Vector3{-run.z, 0, run.x}; };
+    const float length = line.length();
+    // Off the ring: what lies up the road (the run ends at the ring, so a board facing along it
+    // faces the traffic coming off).
+    {
+        const Vector3 at = line.at(length - 34), run = line.heading(length - 34);
+        board(Vector3Add(at, Vector3Scale(left(run), 5.4F)), run,
+              {{"SOVAĜA MONTO", .36F}, {"SOVAĜEJO " + kilometres(length), .3F}}, "monto:ringo");
+        pole(Vector3Add(line.at(length - 46), Vector3Scale(left(line.heading(length - 46)), -7.0F)), 8, 2.6F, "monto:ringo");
+    }
+    // Out of the trailer park's north gate.
+    {
+        const Vector3 at = line.at(14), run = line.heading(14);
+        board(Vector3Add(at, Vector3Scale(left(run), 5.4F)), Vector3Scale(run, -1),
+              {{"SOVAĜA MONTO", .36F}, {"LA RINGO " + kilometres(length), .3F}}, "monto:sovagejo");
+        pole(Vector3Add(line.at(4), Vector3Scale(left(line.heading(4)), -6.5F)), 8, 2.6F, "monto:sovagejo");
+    }
+    // The fork: Supra Sovaĝejo's lane.
+    {
+        const auto& up = mtn::hamlet();
+        const Vector3 side{-up.lane.z, 0, up.lane.x};
+        board(Vector3Add(Vector3Add(up.fork, Vector3Scale(up.lane, 9)), Vector3Scale(side, 4.6F)), Vector3Scale(up.lane, -1),
+              {{"SUPRA", .32F}, {"SOVAĜEJO", .4F}}, "monto:supra_sovagejo");
+        pole(Vector3Add(Vector3Add(up.fork, Vector3Scale(up.lane, 9)), Vector3Scale(side, -4.8F)), 8, 2.6F, "monto:supra_sovagejo");
+        pole(up.at(34, 6), 7, 2.2F, "monto:supra_sovagejo");
+    }
+    // The lookout, and the summit above it.
+    const Vector3 top = mtn::summit();
+    for (const auto& p : mtn::pullouts()) {
+        if (!p.lookout) continue;
+        board(p.at(-21, 11), Vector3Scale(p.out, -1),
+              {{"SOVAĜA MONTO", .34F}, {std::to_string(static_cast<int>(std::round(top.y))) + " m", .5F}}, "monto:belvedero");
+        pole(p.at(-20, 19), 8, 2.6F, "monto:belvedero");
+    }
+    pole(top, 9, 3.0F, "monto:pinto");
+}
+
 // The ring road's signs, Verda's autobahn: for each interchange and each carriageway, an exit board
 // a kilometre before it ("ELIRO 2 / PORTO LUMA / VERDA URBO / 1 km"), another where the slip road
 // leaves ("ELIRO 2 »"), and beyond the entry a board with the next two exits and how far; and on the
@@ -747,6 +823,7 @@ Signage build_signage(const world::VerdaRegion& region, const life::Island& isla
     backcountry(region, out);
     highway_signs(region, out);
     rest_area_signs(region, out);
+    mountain_signs(region, out);
     for (auto& sign : out.signs)
         std::erase_if(sign.front, [](const SignLine& line) {return line.text.empty();});
     return out;

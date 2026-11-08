@@ -21,8 +21,8 @@ for the logic, `DropRenderer` for drawing), wired into `Renderer.cpp`. Tests:
 The four take the four different lines across the island (north-south, east-west and both
 diagonals), each flown one way or the other at random, so no two go the same direction. Each line
 crosses the whole island, starting and finishing out over the sea, up to 550 m to one side of the
-capital. They fly at 650-716 m (staggered 22 m apart so crossing lines never meet, well above every
-hill) at 58 m/s, about 90 s from coast to coast; each rolls and bobs gently, nose down, main and
+capital. They fly at 700-766 m (staggered 22 m apart so crossing lines never meet, well above every
+hill, Sovaĝa Monto at about 290 m among them) at 58 m/s, about 90 s from coast to coast; each rolls and bobs gently, nose down, main and
 tail rotors spinning (`draw_helicopters`).
 
 The routes show on the map (M) as dashed lines with each helicopter on its line; yours is the

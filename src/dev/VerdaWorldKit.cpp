@@ -5,6 +5,7 @@
 #include "outland/world/Ballparks.hpp"
 #include "outland/world/Highways.hpp"
 #include "outland/world/MotorTrade.hpp"
+#include "outland/world/MountainRoad.hpp"
 #include "outland/world/Ranches.hpp"
 #include "outland/world/Zones.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -2895,6 +2896,128 @@ void ring_roadhouses(Kit& kit, world::VerdaRegion& region) {
     }
 }
 
+
+// ------------------------------------------------------------------ Sovaĝa Monto's road
+// Sovaĝejo's dirt road carries on through the trailer park's north gate, over the shoulder of Sovaĝa
+// Monto and down to the ring road (world/MountainRoad.hpp lays it out and shapes the land to it).
+// Each pullout has a gravel lay-by, a row of parking bays behind square bollards, a trailer home
+// and a street light; the fork leads to Supra Sovaĝejo, six trailers on a bench above the sea -
+// still Sovaĝejo's people.
+namespace mtn = world::mountain;
+// The road's samples thinned to pieces that stay within a few centimetres of the curve.
+std::vector<Vector3> thin_line(const std::vector<Vector3>& points, float tolerance, float longest) {
+    std::vector<bool> keep(points.size(), false);
+    keep.front() = keep.back() = true;
+    std::function<void(std::size_t, std::size_t)> split = [&](std::size_t a, std::size_t b) {
+        if (b <= a + 1) return;
+        float worst = 0;
+        std::size_t at = a;
+        const Vector3 p = points[a], q = points[b];
+        const float dx = q.x - p.x, dz = q.z - p.z, l = std::max(1e-4F, std::hypot(dx, dz));
+        for (std::size_t i = a + 1; i < b; ++i) {
+            const float d = std::abs((points[i].x - p.x) * dz - (points[i].z - p.z) * dx) / l;
+            if (d > worst) {worst = d; at = i;}
+        }
+        if (worst > tolerance || l > longest) {
+            if (worst <= tolerance) at = (a + b) / 2;
+            keep[at] = true;
+            split(a, at);
+            split(at, b);
+        }
+    };
+    split(0, points.size() - 1);
+    std::vector<Vector3> out;
+    for (std::size_t i = 0; i < points.size(); ++i) if (keep[i]) out.push_back({points[i].x, 0, points[i].z});
+    return out;
+}
+float yaw_toward(Vector3 d) { return std::atan2(d.x, d.z) * RAD2DEG; }   // a model's +z (its front) along d
+const std::array<std::string, 6> trailer_models{"trailer_01", "trailer_02", "trailer_03", "trailer_04", "trailer_05", "trailer_06"};
+// A trailer home, `toward` the way its front (porch and steps) faces: a HOME just inside the door,
+// a car on the pad beside it, yard junk behind it, an Apelacio flag on a pole (Signage).
+bool mountain_trailer(Kit& kit, world::Settlement& town, Vector3 centre, Vector3 toward, std::uint32_t seed, const std::string& car_id, bool car) {
+    const auto r = hash(seed);
+    const float yaw = yaw_toward(toward) + static_cast<float>(static_cast<int>(r % 7) - 3);
+    if (!kit.claim(centre, 3.4F, 7.8F, yaw)) return false;
+    if (!kit.put(trailers + trailer_models[r % trailer_models.size()] + ".glb", centre, yaw)) return false;
+    auto inside = to_world(centre, yaw, .25F, 0, .56F);
+    inside.y = world::terrain::TerrainHeight::sample(centre.x, centre.z) + .85F;
+    kit.purpose(inside, 90 + yaw, world::BuildingPurpose::Home);
+    if (car) vehicle_marker(town, car_id, to_world(centre, yaw, (r & 8) ? 6.6F : -6.6F, 0, 4.0F), yaw + ((r & 16) ? 180.0F : 0.0F));
+    prop(kit, shacks + ((r % 3) == 0 ? "Pallet.glb" : "Barrel.glb"), to_world(centre, yaw, 2.2F, 0, -9.0F), static_cast<float>(r % 360), .8F);
+    return true;
+}
+void sovagejo_mountain(Kit& kit, world::VerdaRegion& region) {
+    world::Settlement* town = sovagejo(region);
+    if (!town) return;
+    // The trailer park's north fence opens onto the road (the four pieces across the lane go).
+    for (auto& s : region.runtime_settlements())
+        kit.report.cleared += static_cast<int>(std::erase_if(s.assets, [](const world::WorldAsset& a) {
+            return a.model_path.ends_with("Chainlink Fence.glb") && std::abs(a.position.z - 38) < .6F && std::abs(a.position.x - sovagejo_road_x()) < 4.9F;
+        }));
+    // The road, and on to the ring road's centre line (where traffic joins it).
+    const auto& line = mtn::road();
+    const auto pieces = thin_line(line.points, .2F, 24);
+    const std::size_t before = town->roads.size();
+    for (std::size_t i = 0; i + 1 < pieces.size(); ++i)
+        town->roads.push_back({pieces[i], pieces[i + 1], mtn::road_width, world::RoadType::Dirt});
+    const Vector3 end = pieces.back();
+    town->roads.push_back({end, highway_point(region, end), mtn::road_width, world::RoadType::Dirt});
+    // The pullouts' lay-bys: off the road, along the bench, back on.
+    for (const auto& p : mtn::pullouts()) {
+        const auto on = [&](float a) { const Vector3 q = line.at(p.s + a); return Vector3{q.x, 0, q.z}; };
+        const Vector3 a0 = on(-30), a1 = p.at(-18, 9), a2 = p.at(18, 9), a3 = on(30);
+        town->roads.push_back({a0, {a1.x, 0, a1.z}, mtn::layby_width, world::RoadType::Gravel});
+        town->roads.push_back({{a1.x, 0, a1.z}, {a2.x, 0, a2.z}, mtn::layby_width, world::RoadType::Gravel});
+        town->roads.push_back({{a2.x, 0, a2.z}, a3, mtn::layby_width, world::RoadType::Gravel});
+    }
+    // Supra Sovaĝejo's lane: from the fork, through the pad, to the fire pit.
+    const auto& up = mtn::hamlet();
+    const Vector3 lane_end = up.at(26, 0);
+    town->roads.push_back({{up.fork.x, 0, up.fork.z}, {up.centre.x, 0, up.centre.z}, mtn::lane_width, world::RoadType::Gravel});
+    town->roads.push_back({{up.centre.x, 0, up.centre.z}, {lane_end.x, 0, lane_end.z}, mtn::lane_width, world::RoadType::Gravel});
+    kit.add_roads(std::vector<world::Road>(town->roads.begin() + static_cast<long>(before), town->roads.end()));
+    kit.report.mountain_roads += static_cast<int>(town->roads.size() - before);
+    const std::string light = urban + "Traffic lights/street_light.glb";
+    const std::string bollard = urban + "Cones & Barriers/Bollards/square_bollard.glb";
+    int homes = 0;
+    // Each pullout: parking bays behind bollards, the trailer, a light over the lay-by.
+    for (std::size_t k = 0; k < mtn::pullouts().size(); ++k) {
+        const auto& p = mtn::pullouts()[k];
+        const auto r = hash(1300U + static_cast<std::uint32_t>(k));
+        const float out_yaw = yaw_toward(p.out);
+        for (int bay = 0; bay < 4; ++bay) {
+            const float a = -16 + bay * 3.0F;
+            if ((r >> bay) % 3 != 0)
+                vehicle_marker(*town, "vehicle_spawn_hatchback_monto_" + std::to_string(k + 1) + "_" + std::to_string(bay + 1), p.at(a, 14.6F), out_yaw);
+        }
+        for (int post = 0; post < 5; ++post) kit.put(bollard, p.at(-17.5F + post * 3.0F, 17.4F), out_yaw);
+        if (mountain_trailer(kit, *town, p.at(9, 17.5F), Vector3Scale(p.along, (r & 1) ? 1.0F : -1.0F), 1400U + static_cast<std::uint32_t>(k),
+                             "vehicle_spawn_truck_monto_" + std::to_string(k + 1), false)) {++homes; ++kit.report.pullout_trailers;}
+        kit.put(light, p.at(-1, 12.8F), yaw_toward(Vector3Scale(p.out, -1)));
+        if (p.lookout) kit.put(light, p.at(19, 12.8F), yaw_toward(Vector3Scale(p.out, -1)));
+    }
+    // Supra Sovaĝejo: three trailers each side of the lane, fronts to it, a car beside most; the
+    // fire pit and benches at the lane's end; lights along it; shade trees behind the lots.
+    const Vector3 left{-up.lane.z, 0, up.lane.x};
+    int upper = 0;
+    for (int side = 0; side < 2; ++side) for (int i = 0; i < 3; ++i) {
+        const float lateral = side == 0 ? 13.5F : -13.5F, a = -16 + i * 13.0F;
+        const Vector3 toward = Vector3Scale(left, side == 0 ? -1.0F : 1.0F);
+        if (mountain_trailer(kit, *town, up.at(a, lateral), toward, 1500U + static_cast<std::uint32_t>(side * 3 + i),
+                             "vehicle_spawn_hatchback_supra_sovagejo_" + std::to_string(side * 3 + i + 1), (i + side) % 3 != 2)) {
+            ++upper; ++kit.report.upper_trailers;
+            if ((i + side) % 2 == 0) kit.tree(up.at(a - 2, lateral + (side == 0 ? 11.0F : -11.0F)));
+        }
+    }
+    homes += upper;
+    prop(kit, "assets/verda/survival/runtime/bonfire.glb", up.at(30, 0), 0, 1.2F);
+    for (const auto& [a, l, yaw] : std::initializer_list<std::tuple<float, float, float>>{{30, 4.2F, 0}, {30, -4.2F, 180}, {34.2F, 0, 90}})
+        prop(kit, urban + "Bus stops/busstop_bench.glb", up.at(a, l), yaw_toward(up.lane) + yaw - 90, 1.6F);
+    for (const float a : {-30.0F, -4.0F, 22.0F}) kit.put(light, up.at(a, 4.2F), yaw_toward(Vector3Scale(left, -1)));
+    // Each trailer brings its people (about three in the hamlet, two at a pullout).
+    town->survivors += upper * 3 + (homes - upper) * 2;
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     lay_highways(region);
@@ -2955,6 +3078,8 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     street_lighting(kit, region);
     // After the lights (new pieces only): the ring's bar and grills.
     ring_roadhouses(kit, region);
+    // After those (new pieces only): Sovaĝa Monto's road, its pullouts and Supra Sovaĝejo.
+    sovagejo_mountain(kit, region);
     return kit.report;
 }
 }

@@ -3,6 +3,7 @@
 #include "outland/world/VerdaLayout.hpp"
 #include "outland/world/Highways.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
+#include "outland/world/MountainRoad.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -35,6 +36,9 @@ int TerrainWorld::resolution_for(int chunk_x, int chunk_z, int ring) {
             mark(x.at.x, x.at.z, highways::roundabout_pad + 30);
         }
         for (const auto& rest : highways::rest_areas()) mark(rest.centre.x, rest.centre.z, highways::rest_area_flat + highways::rest_area_blend);
+        // Sovaĝa Monto's road, its pullouts and Supra Sovaĝejo: the cuttings and banks beside them.
+        for (const auto& p : mountain::road().points) mark(p.x, p.z, mountain::bed_half + mountain::pullout_bench + 30);
+        mark(mountain::hamlet().centre.x, mountain::hamlet().centre.z, mountain::hamlet_flat + mountain::hamlet_blend);
         return out;
     }();
     return roads.contains((static_cast<long long>(chunk_x) << 32) ^ static_cast<unsigned>(chunk_z)) ? kRoadResolution : kResolution;

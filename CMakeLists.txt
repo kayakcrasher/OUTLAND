@@ -254,6 +254,7 @@ add_library(
     src/world/assets/VerdanProps.cpp
     src/world/terrain/TerrainHeight.cpp
     src/world/Highways.cpp
+    src/world/MountainRoad.cpp
     src/world/MotorTrade.cpp
     src/world/terrain/TerrainChunk.cpp
     src/world/terrain/TerrainWorld.cpp
@@ -540,6 +541,7 @@ if(OUTLAND_BUILD_TESTS)
         src/world/physics/MeshCollision.cpp
         src/world/terrain/TerrainHeight.cpp
         src/world/Highways.cpp
+        src/world/MountainRoad.cpp
         src/engine/audio/EnvironmentAudio.cpp
     )
     target_include_directories(outland_environment_tests PRIVATE
@@ -566,6 +568,7 @@ if(OUTLAND_BUILD_TESTS)
         src/game/combat/WeaponSystem.cpp
         src/world/terrain/TerrainHeight.cpp
         src/world/Highways.cpp
+        src/world/MountainRoad.cpp
     )
     target_include_directories(outland_combat_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_combat_tests PRIVATE -Wall -Wextra -Wpedantic)
@@ -906,6 +909,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_zones_map_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_zones_map_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_zones_map_tests COMMAND outland_zones_map_tests)
+    add_executable(outland_mountain_road_tests tests/integration/world/test_mountain_road.cpp)
+    target_link_libraries(outland_mountain_road_tests PRIVATE outland_render)
+    target_compile_options(outland_mountain_road_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_mountain_road_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_mountain_road_tests COMMAND outland_mountain_road_tests)
     add_executable(outland_helicopter_drop_tests tests/integration/modes/test_helicopter_drop.cpp)
     target_link_libraries(outland_helicopter_drop_tests PRIVATE outland_render)
     target_compile_options(outland_helicopter_drop_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)

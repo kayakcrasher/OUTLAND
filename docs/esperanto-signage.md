@@ -93,3 +93,5 @@ The backcountry flies its own flag: the old Appeal to Heaven pine-tree flag in E
 pine on white under the motto "APELACIO AL LA ĈIELO" (`apelacio_image`, the motto drawn with the
 sign font). Sovaĝejo's trailer park flies it from a 5 m pole beside every trailer, and Sovaĝejo's
 town flag is one; Ruldomaro has two. `FlagPole::design` picks the cloth.
+
+Up Sovaĝa Monto's road it flies beside every trailer, at the pullouts and in Supra Sovaĝejo, and on tall poles at both ends of the road, the fork, the lookout and the mountain's summit ([sovaga-monto.md](sovaga-monto.md)).

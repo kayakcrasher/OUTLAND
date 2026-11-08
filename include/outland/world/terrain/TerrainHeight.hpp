@@ -15,11 +15,17 @@ public:
     // How far (0..1) the building pads (towns, hamlets, ranches) level the land here.
     [[nodiscard]]
     static float pad_weight(float world_x, float world_z);
+    // The island's land (Verda's coastal layout) before Sovaĝa Monto's road is cut into it
+    // (world/MountainRoad.hpp lays the road's profile from it).
+    [[nodiscard]]
+    static float ungraded(float world_x, float world_z);
 
 private:
     // The land before the highways' roadbeds are cut and filled.
     [[nodiscard]]
     static float unpaved(float world_x, float world_z);
+    [[nodiscard]]
+    static float land(float world_x, float world_z, bool coastal);
 
     [[nodiscard]]
     static float large_hills(

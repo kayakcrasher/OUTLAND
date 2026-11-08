@@ -7,6 +7,7 @@
 #include "outland/world/VerdaLayout.hpp"
 #include "outland/world/Ranches.hpp"
 #include "outland/world/Ballparks.hpp"
+#include "outland/world/MountainRoad.hpp"
 
 namespace outland::world::terrain {
 
@@ -206,9 +207,17 @@ float TerrainHeight::pad_weight(
     return std::clamp(weight,0.0F,1.0F);
 }
 
-float TerrainHeight::unpaved(
+float TerrainHeight::unpaved(const float world_x, const float world_z) {
+    // Then Sovaĝa Monto's road cut and filled into it (world/MountainRoad.hpp).
+    return coastal_enabled ? mountain::graded(world_x, world_z, land(world_x, world_z, true)) : land(world_x, world_z, false);
+}
+
+float TerrainHeight::ungraded(const float world_x, const float world_z) { return land(world_x, world_z, true); }
+
+float TerrainHeight::land(
     const float world_x,
-    const float world_z
+    const float world_z,
+    const bool coastal
 ) {
     float height =
         large_hills(
@@ -293,7 +302,9 @@ float TerrainHeight::unpaved(
             natural_weight;
     }
 
-    if (coastal_enabled) {
+    if (coastal) {
+        // The coast range north of Sovaĝejo, Sovaĝa Monto its summit (world/MountainRoad.hpp).
+        height += mountain::massif(world_x, world_z);
         // Flat central building pad (downtown and the suburbs either side), then the original countryside.
         const float suburb=std::hypot(std::max({layout::suburb_near-std::abs(world_x),std::abs(world_x)-layout::suburb_far,0.0F}),
                                       std::max(std::abs(world_z)-layout::suburb_half,0.0F));

@@ -46,6 +46,9 @@ struct WorldKitReport {
     std::vector<Vector3> freight_yards;    // Verda Transporto's drops off the highways (yard centres)
     Vector3 car_lot_at{};
     int town_halls{0};
+    // Sovaĝa Monto's road (world/MountainRoad.hpp): the trailers at its pullouts and in Supra
+    // Sovaĝejo, and the road's pieces laid.
+    int pullout_trailers{0}, upper_trailers{0}, mountain_roads{0};
     std::vector<KitBuilding> enterable;
     std::vector<Vector3> skipped;     // centres of lots left empty because something was there
     std::vector<std::string> missing; // catalog models that could not be placed

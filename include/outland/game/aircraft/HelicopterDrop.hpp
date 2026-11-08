@@ -26,7 +26,7 @@ struct FlightPath {
     Vector3 side{};        // unit, level, to the right of travel
     float length{0};
     float speed{58};       // metres per second
-    float altitude{650};   // world height of the helicopter
+    float altitude{700};   // world height of the helicopter (400 m over Sovaĝa Monto, the highest ground)
     float land_from{0}, land_to{0}; // the stretch of the line over the island (distances along it)
 
     [[nodiscard]] Vector3 point(float distance) const;

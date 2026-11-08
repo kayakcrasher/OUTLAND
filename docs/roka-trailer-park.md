@@ -1,5 +1,7 @@
 # Roka trailer park
 
+> The dirt road now carries on through the park's north gate over Sovaĝa Monto to the ring road; see [sovaga-monto.md](sovaga-monto.md).
+
 > Since the five zones were added, the park belongs to **Sovaĝejo**, the heart of Ferarbaro (`ferarbaro_sovagejo`), together with the homesteads south of Roka. Its people are counted in Sovaĝejo's population. See [map-and-zones.md](map-and-zones.md).
 
 Twelve mobile homes from the Trailer Park pack (El Bolillo Duro, CC0) now stand on the flat ground about 220 m south-west of Roka's centre, around (−1900, 610).
