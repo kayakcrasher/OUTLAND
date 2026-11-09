@@ -168,6 +168,63 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_stela_turo", .name = "Stela Turo - art deco skyscraper, 17 floors, penthouse (enterable)", .category = CreatorAssetCategory::Building,
         .model_path = "assets/verda/city/towers/stela_turo.glb", .thumbnail_path = "", .footprint = {30.60F, 29.20F, 86.20F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_three_flat_grey_1", .name = "Greystone three-flat (grey stone, stoop, back porches)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/three_flat_grey_1.glb", .thumbnail_path = "", .footprint = {7.80F, 22.60F, 12.15F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_three_flat_grey_2", .name = "Greystone three-flat (grey stone, stoop, back porches)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/three_flat_grey_2.glb", .thumbnail_path = "", .footprint = {7.80F, 22.60F, 12.15F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_three_flat_buff_1", .name = "Greystone three-flat (buff stone, stoop, back porches)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/three_flat_buff_1.glb", .thumbnail_path = "", .footprint = {7.80F, 22.60F, 12.15F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_three_flat_buff_2", .name = "Greystone three-flat (buff stone, stoop, back porches)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/three_flat_buff_2.glb", .thumbnail_path = "", .footprint = {7.80F, 22.60F, 12.15F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_walkup_red", .name = "Brick walk-up, four storeys (red, iron escape stairs, water tank)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/walkup_red.glb", .thumbnail_path = "", .footprint = {16.30F, 19.14F, 21.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_walkup_red_shop", .name = "Brick walk-up with a corner store (red, iron escape stairs, water tank)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/walkup_red_shop.glb", .thumbnail_path = "", .footprint = {16.30F, 19.14F, 21.40F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_walkup_red_mural_verda", .name = "Brick walk-up with a mural on its end wall (red, verda)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/walkup_red_mural_verda.glb", .thumbnail_path = "", .footprint = {16.30F, 19.14F, 21.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_walkup_red_mural_geometrio", .name = "Brick walk-up with a mural on its end wall (red, geometrio)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/walkup_red_mural_geometrio.glb", .thumbnail_path = "", .footprint = {16.30F, 19.14F, 21.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_walkup_brown", .name = "Brick walk-up, four storeys (brown, iron escape stairs, water tank)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/walkup_brown.glb", .thumbnail_path = "", .footprint = {16.30F, 19.14F, 21.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_walkup_brown_shop", .name = "Brick walk-up with a corner store (brown, iron escape stairs, water tank)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/walkup_brown_shop.glb", .thumbnail_path = "", .footprint = {16.30F, 19.14F, 21.40F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_walkup_brown_mural_verda", .name = "Brick walk-up with a mural on its end wall (brown, verda)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/walkup_brown_mural_verda.glb", .thumbnail_path = "", .footprint = {16.30F, 19.14F, 21.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_walkup_brown_mural_geometrio", .name = "Brick walk-up with a mural on its end wall (brown, geometrio)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/walkup_brown_mural_geometrio.glb", .thumbnail_path = "", .footprint = {16.30F, 19.14F, 21.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_corner_tavern_1", .name = "Corner tavern (neon in the windows, blade sign, flat upstairs)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/corner_tavern_1.glb", .thumbnail_path = "", .footprint = {12.30F, 17.75F, 7.90F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_corner_tavern_2", .name = "Corner tavern (neon in the windows, blade sign, flat upstairs)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/north/corner_tavern_2.glb", .thumbnail_path = "", .footprint = {12.30F, 17.75F, 7.90F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_l_deck", .name = "The L - elevated railway deck, 20 m (two tracks)", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/north/l_deck.glb", .thumbnail_path = "", .footprint = {7.60F, 20.00F, 7.10F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_l_bent", .name = "The L - steel bent (columns and cap girder)", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/north/l_bent.glb", .thumbnail_path = "", .footprint = {7.60F, 1.00F, 5.40F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_l_station", .name = "The L - station: side platforms, canopies, stairs", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/north/l_station.glb", .thumbnail_path = "", .footprint = {16.60F, 40.00F, 11.10F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_l_train", .name = "The L - two-car train", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/north/l_train.glb", .thumbnail_path = "", .footprint = {2.85F, 30.00F, 3.80F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_alley_block_68", .name = "Sidewalk Block 68 m with an alley", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/ground/alley_block_68.glb", .thumbnail_path = "", .footprint = {68.00F, 68.00F, 0.15F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_sidewalk_block_68", .name = "Sidewalk Block 68 m", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/ground/sidewalk_block_68.glb", .thumbnail_path = "", .footprint = {68.00F, 68.00F, 0.15F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

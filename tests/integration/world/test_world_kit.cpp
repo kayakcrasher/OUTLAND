@@ -342,8 +342,9 @@ int main() {
     int grid_streets = 0, highways = 0, through = 0, suburb_streets = 0, freight_roads = 0;
     for (const auto& road : capital->roads) {
         const auto in_suburbs = [](Vector3 p) { return std::abs(p.x) >= 179 && std::abs(p.x) <= 476 && std::abs(p.z) <= 168; };
-        // The grid, and its south blocks (avenues on to a street along their far side).
-        const auto grid = [](Vector3 p) { return std::abs(p.x) <= 180 && p.z >= -177 && p.z <= 261; };
+        // The grid, its south blocks (avenues on to a street along their far side) and Norda
+        // Kvartalo north of it (the avenues on north to two more streets).
+        const auto grid = [](Vector3 p) { return std::abs(p.x) <= 180 && p.z >= -world::layout::downtown_north_edge - 1 && p.z <= 261; };
         const bool inside = grid(road.start) && grid(road.end);
         // The ring interchanges' roundabouts and slip roads (tests/integration/world/test_interchanges).
         if (world::one_way(road.type)) continue;
@@ -365,7 +366,7 @@ int main() {
         else if (road.width == 8 && std::hypot(road.start.x - world::ballpark::parks[0].centre.x, road.start.z - world::ballpark::parks[0].centre.z) < 90) continue;
         else check(world::roads::turnaround_road(road.width), "a capital road that is neither street, highway nor bus turnaround");
     }
-    check(grid_streets == 8 + 5 && highways >= 12 && through >= 4 && suburb_streets == 14, // + the south blocks' four avenues and one street; the west street in three (the truckers' link)
+    check(grid_streets == 8 + 5 + 6 && highways >= 12 && through >= 4 && suburb_streets == 14, // + the south blocks' four avenues and one street, Norda Kvartalo's four and two; the west street in three (the truckers' link)
           "grid, suburbs, and the two highways through: " + std::to_string(grid_streets) + "/" + std::to_string(suburb_streets) + "/" +
           std::to_string(highways) + "/" + std::to_string(through));
     check(freight_roads == 1, "the yard road into Verda Transporto's depot");

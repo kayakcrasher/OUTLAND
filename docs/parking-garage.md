@@ -30,6 +30,8 @@ the south-west parking block) into `maps/verda_world.map`. Layout constants: `wo
 - Big rigs don't fit under the decks.
 
 ## How cars drive on it
+- "Enter vehicle" only reaches a car on your own level: the cars parked on the decks above and
+  below are out of reach through the floor.
 Cars normally ride the terrain. Over the garage (`VehicleSystem::bind_surface`, bound by the game)
 a car rides its decks and ramps instead: the highest floor of the model within a metre above its
 wheels (`WorldCollision::ground_height`). Spawning, parking (`place()`), the slope and body-tilt
@@ -41,6 +43,9 @@ The garage (and Verda Transporto's truck depot, which had been solid to vehicles
 buildings: a car meets their real columns, walls and ramps (`WorldCollision`).
 
 ## The mansion (Explore)
+(Its east wall, facing the roof's parking, has two rows of windows between the piers, with gold
+sills, like its front.)
+
 On the roof's west side stands a **three-storey Art Deco mansion**, the little sister of Stela Turo:
 - dressed limestone on a granite plinth, tall tinted windows with gold sills;
 - piers between the window bays that rise past the roof with gold caps;

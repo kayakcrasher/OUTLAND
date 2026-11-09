@@ -68,6 +68,9 @@ bool WorldCollision::vehicle_blocked(
     return blocked_impl(position, region, radius, ignore_asset, nullptr, true);
 }
 
+// La Levita's deck, bents and stations (world::north): the streets run on under them.
+bool WorldCollision::elevated(const WorldAsset& asset) { return asset.model_path.find("city/north/l_") != std::string::npos; }
+
 bool WorldCollision::light_prop(const WorldAsset& asset) {
     if (!asset.vehicle.definition.empty() || asset.model_path.empty()) return false;
     const std::string& path = asset.model_path;
@@ -450,7 +453,8 @@ bool WorldCollision::blocked_impl(
             // box would be a wall round open ground.
             const bool drive_in=asset.model_path.ends_with("civic/gas_station.glb") ||
                asset.model_path.ends_with("civic/mechanic_shop.glb") || asset.model_path.ends_with("civic/car_lot.glb") ||
-               asset.model_path.ends_with("civic/truck_depot.glb") || asset.model_path.ends_with("civic/parking_garage.glb");
+               asset.model_path.ends_with("civic/truck_depot.glb") || asset.model_path.ends_with("civic/parking_garage.glb") ||
+               elevated(asset);
             if(vehicle && asset.collision && asset.vehicle.definition.empty() && !asset.model_path.empty() &&
                (drive_in || std::max(asset.size.x,asset.size.z)>=large_model)) {
                 const float far=asset.size.x+asset.size.z+player_radius;

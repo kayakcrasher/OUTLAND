@@ -40,6 +40,8 @@ public:
         std::string_view ignore_asset = {}
     );
     static bool light_prop(const WorldAsset& asset);
+    // The elevated railway's pieces (world::north): met by their real shape, the street open under them.
+    static bool elevated(const WorldAsset& asset);
     // For vehicles, alongside vehicle_blocked's points: a post, a tree or a bollard (anything
     // slimmer than a car) inside the footprint - the rectangle `half_width` by `half_length` round
     // `centre`, turned `yaw` degrees. The footprint's points are a metre or two apart, and a lamp

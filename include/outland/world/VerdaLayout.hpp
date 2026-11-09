@@ -36,10 +36,11 @@ inline constexpr float sea_level = -32;
 // north-south highway runs straight through it down x = 0 as a planted boulevard.
 inline constexpr float downtown_half_x = 179, downtown_half_z = 176;
 inline constexpr float downtown_south_edge = 268;   // the row of blocks south of the grid ends here
+inline constexpr float downtown_north_edge = 344;   // ...and Norda Kvartalo's two rows north of it here
 // How far (x, z) is outside the level rectangle downtown stands on (0 inside).
 inline float downtown_outside(float x, float z) {
     const float dx = std::max(std::abs(x) - downtown_half_x - 6, 0.0F);
-    const float dz = std::max({z - downtown_south_edge, -z - downtown_half_z - 6, 0.0F});
+    const float dz = std::max({z - downtown_south_edge, -z - downtown_north_edge, 0.0F});
     return std::hypot(dx, dz);
 }
 inline constexpr bool in_downtown(float x, float z) { return x > -downtown_half_x && x < downtown_half_x && z > -downtown_half_z - 90 && z < downtown_half_z + 90; }

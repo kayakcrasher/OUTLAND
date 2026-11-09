@@ -58,11 +58,17 @@ time (LEAVE / ESC), or go through the list:
 ## Aŭtovendejo Verda (the car lot)
 The car lot is in Verda City, west of downtown: a paved lot with bunting, two rows of bays, a sign
 and a glass sales office. One of each car it sells is on show, with its price over it (nobody can
-drive those off). To buy, walk up to the salesman's desk and press USE:
+drive those off). To buy, walk up to the salesman's desk and press USE for the list, or walk up to
+a car on show and press USE to buy that one ("E - Buy the Verda Fulmo (7500 kr)"). The new car
+waits at the lot's exit (along the street front if one is already waiting there).
+
+In **Battle Royale** there is no salesman: the cars on show are anyone's, and USE gets in like any
+other car.
 
 | Car | Price |
 |---|---|
 | Classic hatchback | 6,000 kr |
+| Verda Fulmo (motorcycle) | 7,500 kr |
 | Vakero side-by-side | 8,500 kr |
 | Verda Familio (estate) | 9,500 kr |
 | Verda Sedano | 11,000 kr |
@@ -73,6 +79,14 @@ drive those off). To buy, walk up to the salesman's desk and press USE:
 | Verda Mano GT | 45,000 kr |
 
 The first five stand on the front row and the rest behind them.
+
+### The Verda Fulmo
+A roadster motorcycle (`tools/generate_motorcycle.py`: a green tank with a cream stripe, an
+air-cooled twin with finned cylinders, twin chrome pipes, spoked wheels). It is quick off the mark,
+light and short-geared, with a two-cylinder engine note. It leans into its turns, more the faster
+it goes and the harder it turns, and the rider sits astride, hands on the bars. It carries one
+passenger (a crew partner first). Parked Fulmos stand at the kerb in West Verda, on a few East Verda
+drives and along Norda Kvartalo's streets.
 
 The Familio, Furgono, Platformo and Tempesto are built by `tools/generate_civilian_vehicles.py`
 (rows in `assets/verda/vehicles/vehicle_manifest.tsv`). They also park in the towns' streets and

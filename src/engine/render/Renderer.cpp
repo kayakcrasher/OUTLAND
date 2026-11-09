@@ -74,6 +74,7 @@
 #include "outland/game/economy/SkyMansion.hpp"
 #include "outland/game/economy/Stash.hpp"
 #include "outland/world/ParkingGarage.hpp"
+#include "outland/world/NorthQuarter.hpp"
 #include "outland/world/Ballparks.hpp"
 #include "outland/game/sports/BallGame.hpp"
 #include "outland/game/sports/League.hpp"
@@ -1200,6 +1201,57 @@ void Renderer::run() {
                     board(5.4F,0,"BONVENON AL VERDA","CENTRO · STELA TURO");
                     board(-5.4F,180,"SUDA HAVENO  1,6 km","SUDO ·  RINGVOJO");
                 }
+            }
+        // Norda Kvartalo: La Levita's station boards over each platform, facing the tracks; a name
+        // board over each corner tavern's door and over each corner store's window.
+        for(const auto& town:verda_region.settlements())
+            for(const auto& a:town.assets) {
+                const bool station=a.model_path.ends_with("north/l_station.glb"),tavern=a.model_path.find("north/corner_tavern")!=std::string::npos,
+                    shop=a.model_path.ends_with("_shop.glb") && a.model_path.find("/north/")!=std::string::npos;
+                if(!station && !tavern && !shop) continue;
+                // The model's own origin (the asset stands at its bounds' centre).
+                Vector3 origin=a.position;
+                const float yaw=a.rotation_y*DEG2RAD;
+                if(const auto* mesh=world::physics::MeshCollisionLibrary::get(a.model_path)) {
+                    const float cx=(mesh->source_min.x+mesh->source_max.x)*.5F,cz=(mesh->source_min.z+mesh->source_max.z)*.5F;
+                    origin.x-=cx*std::cos(yaw)+cz*std::sin(yaw);origin.z-=-cx*std::sin(yaw)+cz*std::cos(yaw);origin.y-=mesh->source_min.y;
+                }
+                const auto local=[&](float x,float y,float z) {return Vector3{origin.x+x*std::cos(yaw)+z*std::sin(yaw),origin.y+y,origin.z-x*std::sin(yaw)+z*std::cos(yaw)};};
+                const unsigned pick=static_cast<unsigned>(std::abs(origin.x)*7+std::abs(origin.z)*13);
+                game::culture::Sign sign;
+                sign.kind=game::culture::SignKind::Shopfront;
+                sign.place=a.id;
+                if(station) {
+                    const char* name="CENTRO";
+                    for(const auto& st:world::north::stations) if(std::abs(st.x-origin.x)<5)
+                        name=std::string_view(st.name)=="Okcidento" ? "OKCIDENTO" : std::string_view(st.name)=="Oriento" ? "ORIENTO" : "CENTRO";
+                    for(const float side:{-1.0F,1.0F}) {
+                        auto board=sign;
+                        board.place=a.id+(side<0 ? "_n" : "_s");
+                        board.position={origin.x,origin.y+world::north::l_platform+2.3F,origin.z+side*5.4F};
+                        board.yaw=side<0 ? 0.0F : 180.0F;
+                        board.max_width=5.0F;
+                        board.front={{name,.5F},{"LA LEVITA · NORDA KVARTALO",.2F}};
+                        board.board=Color{18,60,44,255};board.ink=WHITE;
+                        signage.signs.push_back(std::move(board));
+                    }
+                    continue;
+                }
+                if(tavern) {
+                    static constexpr const char* names[]{"ĈE LA ANGULO","LA VENTO","TAVERNO STELO","LA RUĜA LAMPO","LA LASTA TRAJNO"};
+                    sign.position=local(0,3.75F,-8.2F);
+                    sign.max_width=4.2F;
+                    sign.front={{names[pick%5],.42F},{"BIERO · VINO · MUZIKO",.16F}};
+                    sign.board=Color{24,20,18,255};sign.ink=Color{255,214,96,255};
+                } else {
+                    static constexpr const char* names[]{"NUTRAĴOJ","BAKEJO","GAZETOJ · KAFO","FRUKTOJ KAJ LEGOMOJ"};
+                    sign.position=local(0,3.52F,-9.2F);
+                    sign.max_width=9.0F;
+                    sign.front={{names[pick%4],.5F}};
+                    sign.board=Color{24,92,60,255};sign.ink=Color{255,244,214,255};
+                }
+                sign.yaw=a.rotation_y+180;   // the face looks out of the front
+                signage.signs.push_back(std::move(sign));
             }
         // VENDATA boards in front of the homes for sale.
         for(const auto& home:homes_for_sale) {
@@ -8185,6 +8237,21 @@ void Renderer::run() {
             for(const auto& cow:ranches.stockyard().pen) draw_cow(cow);
             for(const auto& cow:ranches.cattle_quay().pen) draw_cow(cow);
         }
+        // La Levita's two trains over Norda Kvartalo's alley (world::north), on their timetable.
+        if(verda_region.coastal_layout() && std::abs(camera.position.z-world::north::l_z)<700 && std::abs(camera.position.x)<800)
+            if(Model* train=get_world_asset_model("assets/verda/city/north/l_train.glb",character_registry)) {
+                static const float street=world::terrain::TerrainHeight::sample(0,0);
+                for(int k=0;k<2;++k) {
+                    const auto t=world::north::train(k,GetTime());
+                    const Vector3 at{t.at.x,street+t.at.y,t.at.z};
+                    if(!view.sphere({at.x,at.y+2,at.z},16)) continue;
+                    rlPushMatrix();
+                    rlTranslatef(at.x,at.y,at.z);
+                    rlRotatef(90,0,1,0);   // (its length along the line, east-west)
+                    DrawModel(*train,{0,0,0},1,WHITE);
+                    rlPopMatrix();
+                }
+            }
         double sub_t3=GetTime();
         sign_renderer.draw(camera.position,camera.target,static_cast<float>(GetTime()));
         // The traffic signals' lamps, on island traffic's signal clock.

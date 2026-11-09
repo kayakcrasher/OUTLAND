@@ -6,6 +6,7 @@
 #include "outland/world/Highways.hpp"
 #include "outland/world/MotorTrade.hpp"
 #include "outland/world/MountainRoad.hpp"
+#include "outland/world/NorthQuarter.hpp"
 #include "outland/world/Ranches.hpp"
 #include "outland/world/Zones.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -639,6 +640,109 @@ const char* everyday_car(int n) {
     static constexpr std::array<const char*, 8> kinds{"hatchback", "wagon", "hatchback", "sedan", "hatchback", "van", "hatchback", "muscle"};
     return kinds[static_cast<std::size_t>(n) % kinds.size()];
 }
+// ------------------------------------------------------------------ Norda Kvartalo
+// Verda City's north side (world::north): the avenues carry on north past downtown's edge to two
+// new streets across the highway; two rows of blocks, each split by an alley, built up like a
+// Chicago neighbourhood - greystone three-flats, brick walk-ups (some with a corner store, some
+// with a mural on the end wall), a corner tavern on some rows - and La Levita, the elevated
+// railway, over the second row's alley. (The first row's two blocks beside the highway are left
+// to the police station and the hospital, which emergency_services() puts there.)
+void north_quarter(Kit& kit, world::VerdaRegion& region) {
+    namespace nq = world::north;
+    world::Settlement* capital = nullptr;
+    for (auto& settlement : region.runtime_settlements()) if (settlement.id == "capital_verda") capital = &settlement;
+    if (!capital) return;
+    const float ground = world::terrain::TerrainHeight::sample(0, 0);
+    const auto at = [&](float x, float z, float up = 0) { return Vector3{x, ground + pad_top + up, z}; };
+    const std::string north = city + "north/";
+    // Streets: the avenues on north from the grid's edge, the two new streets across the highway.
+    std::vector<world::Road> roads;
+    const float far = -nq::streets[1] + dt_street * .5F;   // (to the far street's outer edge)
+    for (const float x : nq::avenues) roads.push_back({{x, 0, -grid_edge_z}, {x, 0, -far}, dt_street, world::RoadType::Asphalt});
+    for (const float z : nq::streets) roads.push_back({{-grid_edge_x, 0, z}, {grid_edge_x, 0, z}, dt_street, world::RoadType::Asphalt});
+    for (const auto& road : roads) capital->roads.push_back(road);
+    kit.add_roads(roads);
+    for (const float x : nq::avenues) for (const float z : nq::streets) kit.put(city + "ground/intersection_16.glb", {x, ground, z}, 0, false);
+    // A row of buildings along one side of a block: kinds left to right as the row faces (yaw 0
+    // fronts -z; yaw 180 fronts +z). F three-flat, W walk-up, S walk-up with a corner store, M
+    // walk-up with a mural on its left end wall, T corner tavern; '_' a 4 m gangway.
+    static constexpr std::array<const char*, 5> patterns{"MFFFFT", "WFFST", "FFFWFF_", "SWFFF_", "MFFWF"};
+    int parked = 0;
+    const auto row = [&](float bx, float bz, bool north_side, std::uint32_t seed) {
+        const float yaw = north_side ? 0.0F : 180.0F, sign = north_side ? 1.0F : -1.0F;
+        const char* pattern = patterns[seed % patterns.size()];
+        const bool red = (seed / 5) % 2;
+        float along = -nq::front;
+        for (const char* c = pattern; *c; ++c) {
+            const char kind = *c;
+            const float width = kind == 'F' ? 8.0F : kind == 'T' ? 12.3F : kind == '_' ? 4.0F : 16.3F;
+            const float mid = along + width * .5F;
+            along += width;
+            if (kind == '_') continue;
+            const float setback = kind == 'T' ? 8.0F : 9.0F;   // the front wall from the model's centre
+            const Vector3 p = at(bx + sign * mid, bz - sign * (nq::front - setback));
+            std::string model;
+            const auto pick = hash(seed * 31U + static_cast<std::uint32_t>(c - pattern));
+            switch (kind) {
+                case 'F': model = std::string("three_flat_") + (pick % 3 ? "grey_" : "buff_") + std::to_string(1 + (pick / 3) % 2); break;
+                case 'W': model = std::string("walkup_") + (red ? "red" : "brown"); break;
+                case 'S': model = std::string("walkup_") + (red ? "brown" : "red") + "_shop"; break;
+                case 'M': model = std::string("walkup_") + (red ? "red" : "brown") + "_mural_" + (pick % 2 ? "verda" : "geometrio"); break;
+                default: model = "corner_tavern_" + std::to_string(1 + pick % 2); break;
+            }
+            if (!kit.claim(p, width * .5F - .05F, 9.0F, yaw)) continue;
+            if (!kit.put(north + model + ".glb", p, yaw, false)) continue;
+            ++kit.report.north_buildings;
+            ++kit.report.buildings;
+        }
+        // Cars at the kerb along the street in front: mostly hatchbacks, now and then a motorcycle.
+        static constexpr std::array<const char*, 6> kinds{"hatchback", "sedan", "hatchback", "motorcycle", "wagon", "hatchback"};
+        for (const float a : {-22.0F, 4.0F, 24.0F}) {
+            if (hash(seed * 7U + static_cast<std::uint32_t>(a + 40)) % 3 == 0) continue;
+            const std::string kind = kinds[static_cast<std::size_t>(parked) % kinds.size()];
+            vehicle_marker(*capital, "vehicle_spawn_" + kind + "_norda_" + std::to_string(++parked),
+                           {bx + a, ground, bz - sign * (pad_size * .5F + 1.2F)}, north_side ? 90.0F : 270.0F);
+        }
+    };
+    std::vector<std::pair<float, float>> blocks;
+    for (const float bx : dt_block_x) for (const float bz : nq::rows)
+        if (bz == nq::rows[1] || std::abs(bx) > 90) blocks.push_back({bx, bz});
+    for (std::size_t i = 0; i < blocks.size(); ++i) {
+        const auto [bx, bz] = blocks[i];
+        kit.put(city + "ground/alley_block_68.glb", {bx, ground, bz}, 0, false);
+        const auto seed = static_cast<std::uint32_t>(4100 + i * 13);
+        row(bx, bz, true, seed);
+        row(bx, bz, false, seed + 6);
+        // Street trees and lamps on the sidewalks; the alley's bins and a tree or two in the yards.
+        for (int side = 0; side < 4; ++side) {
+            const float e = pad_size * .5F - 1.6F;
+            const auto spot = [&](float a) {
+                return side == 0 ? at(bx + a, bz - e) : side == 1 ? at(bx + e, bz + a) : side == 2 ? at(bx - a, bz + e) : at(bx - e, bz - a);
+            };
+            for (const float a : {-16.0F, 16.0F}) kit.tree(spot(a + ((side % 2) ? 0.0F : 4.0F)));
+            kit.put(urban + "Traffic lights/street_light.glb", spot(side % 2 ? 12.0F : -4.0F), side == 0 ? 0.0F : side == 1 ? 270.0F : side == 2 ? 180.0F : 90.0F, false);
+        }
+        for (const float x : {-24.0F, 2.0F, 26.0F})
+            for (const float z : {-1.0F, 1.0F})
+                kit.put(urban + "Litter/TrashCan/trash_can_alt1.glb", {bx + x + z * 3, ground, bz + z * (nq::alley_half + .5F)}, z > 0 ? 180.0F : 0.0F, true, false);
+        if (bz == nq::rows[0]) for (const float x : {-18.0F, 18.0F}) for (const float z : {-7.0F, 7.0F}) kit.tree(at(bx + x, bz + z));
+        ++kit.report.north_blocks;
+    }
+    // La Levita over the second row's alley: the deck in 20 m pieces, a bent at each block's
+    // quarter points (spanning the streets and the highway), and the three stations.
+    for (float x = nq::l_west + nq::l_piece * .5F; x < nq::l_east; x += nq::l_piece)
+        kit.put(north + "l_deck.glb", {x, ground, nq::l_z}, 90, false);
+    std::vector<float> bents{nq::l_west, nq::l_east};
+    for (const float bx : dt_block_x)
+        for (const float a : {-30.0F, -10.0F, 10.0F, 30.0F})
+            if (bx + a > nq::l_west + 4 && bx + a < nq::l_east - 4) bents.push_back(bx + a);
+    for (const float x : bents) kit.put(north + "l_bent.glb", {x, ground, nq::l_z}, 90, false);
+    for (const auto& station : nq::stations)
+        if (kit.put(north + "l_station.glb", {station.x, ground, nq::l_z}, 90, false)) ++kit.report.l_stations;
+    // Keep the rest of the kit off the new blocks (the first row's inner two stay free).
+    for (const auto& [bx, bz] : blocks) kit.claim({bx, 0, bz}, 36, 36, 0);
+}
+
 void roka_city(Kit& kit, world::VerdaRegion& region) {
     auto* roka = settlement(region, "west_roka");
     auto* capital = settlement(region, "capital_verda");
@@ -3041,6 +3145,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     }
     downtown(kit, region);
     downtown_south(kit, region);
+    north_quarter(kit, region);
     roka_city(kit, region);
     trailer_park(kit, region);
     suda_haveno(kit, region);
