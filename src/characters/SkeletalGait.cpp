@@ -194,6 +194,9 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
         // Sitting at a wheel: thighs level, shins down to the pedals, a slight lean back.
         left_thigh=right_thigh=1.45F;left_flex=right_flex=1.4F;
         lean=-.08F;
+        // Astride a motorcycle: the thighs angled down along the tank, the shins back to the pegs,
+        // leaning forward over the bars.
+        if(body.ride) {left_thigh=right_thigh=.95F;left_flex=right_flex=1.6F;lean=.28F;}
     }
     const float downed=dying || seated ? 0 : std::clamp(body.downed,0.0F,1.0F);
     if(downed>0) {
@@ -389,6 +392,8 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
             // A driver's hands rest on the wheel, turning it a little now and then.
             if(seated && (left_upper || right_upper)) angle=.85F+.05F*std::sin(time*.7F+(left_upper ? 0 : 2));
             if(seated && (left_lower || right_lower)) angle=.75F;
+            if(seated && body.ride && (left_upper || right_upper)) angle=.7F;   // out to the handlebars
+            if(seated && body.ride && (left_lower || right_lower)) angle=.45F;
             // Not driving: the hands rest in the lap.
             if(seated && body.lap && (left_upper || right_upper)) angle=.3F+.03F*std::sin(time*.5F+(left_upper ? 0 : 2));
             if(seated && body.lap && (left_lower || right_lower)) angle=1.15F;
@@ -444,7 +449,7 @@ bool SkeletalGait::sample(const Model& model,AnimationAction action,double cycle
         for(auto& p:pose_) p.translation=Vector3Subtract(p.translation,Vector3Scale(up,lowest));
         grip_=Vector3Subtract(grip_,Vector3Scale(up,lowest));
     }
-    if(airborne && (body.body_pitch!=0 || body.body_roll!=0) && hips>=0) {
+    if((airborne || (seated && body.ride)) && (body.body_pitch!=0 || body.body_roll!=0) && hips>=0) {
         // Tilt the whole body about the hips: forward (belly-down) and into a bank.
         const auto pivot=pose_[hips].translation;
         auto q=QuaternionFromAxisAngle(lateral,body.body_pitch);

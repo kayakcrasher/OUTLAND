@@ -220,7 +220,8 @@ bool VehicleSystem::glide(world::VerdaRegion &region, std::string_view id, Vecto
                left = world_point({-d->track * .5F, 0, 0}, a->position, v.yaw, scale),
                right = world_point({d->track * .5F, 0, 0}, a->position, v.yaw, scale);
     v.pitch = std::atan2(height(front) - height(rear), (d->front_z - d->rear_z) * scale) * RAD2DEG;
-    v.roll = std::atan2(height(right) - height(left), d->track * scale) * RAD2DEG;
+    // (A two-wheeler stands upright: its lean is the rider's, drawn from its steering.)
+    v.roll = d->two_wheeled() ? 0.0F : std::atan2(height(right) - height(left), d->track * scale) * RAD2DEG;
     return true;
 }
 std::vector<world::WorldAsset> VehicleSystem::checkpoint(const world::VerdaRegion& region) const {
@@ -357,9 +358,11 @@ int VehicleSystem::nearest(const world::VerdaRegion &r, Vector3 p, float radius)
     float best = radius * radius;
     for (std::size_t i = 0; i < vehicles_.size(); ++i) {
         const auto *a = asset(r, vehicles_[i].id);
-        if (!a || !a->vehicle.enabled || a->vehicle.destroyed || parts_donor(a->vehicle.marker) || for_sale(a->vehicle.marker) ||
+        if (!a || !a->vehicle.enabled || a->vehicle.destroyed || parts_donor(a->vehicle.marker) || (for_sale(a->vehicle.marker) && !showroom_open_) ||
             kinematic_.contains(vehicles_[i].id))
             continue;
+        // (Not a car on another level of a parking garage, above or below: within reach of its doors.)
+        if (std::abs(p.y - a->position.y) > 2.2F) continue;
         // Distance to the car body: standing at a door or bumper counts, not only near its centre.
         float d = distance(p, a->position);
         if (const auto *def = definition(*a)) {
@@ -731,7 +734,8 @@ bool VehicleSystem::update(float dt, VehicleInput input, world::VerdaRegion &r, 
         v.pitch =
             std::atan2(height(front) - height(rear), (d->front_z - d->rear_z) * scale) * RAD2DEG +
             std::clamp((v.speed - old_speed) / dt * .15F, -3.0F, 3.0F);
-        v.roll = std::atan2(height(right) - height(left), d->track * scale) * RAD2DEG +
+        v.roll = d->two_wheeled() ? 0.0F :
+                 std::atan2(height(right) - height(left), d->track * scale) * RAD2DEG +
                  std::clamp(v.speed * yaw_delta * .025F, -4.0F, 4.0F) * (1 + .5F * (1 - tire));
         if (fuel_hook_ && driving) {
             const float used = fuel_hook_(a->id, std::abs(v.speed) * dt);

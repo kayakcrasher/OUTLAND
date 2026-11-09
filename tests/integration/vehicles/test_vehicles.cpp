@@ -63,6 +63,15 @@ int main() {
     cars.reconcile(region);
     assert(cars.nearest(region, {25, 0, 27}) == 0);
     assert(cars.nearest(region, {100, 0, 100}) == -1);
+    // Not through a floor: a car on the deck below is out of reach (a parking garage's levels).
+    assert(cars.nearest(region, {25, 3.2F, 27}) == -1);
+    // A car on show at the lot is bought, not taken - unless the showroom is open (Battle Royale).
+    car->vehicle.marker = "vehicle_spawn_hatchback_forsale_1";
+    assert(cars.nearest(region, {25, 0, 27}) == -1);
+    cars.set_showroom_open(true);
+    assert(cars.nearest(region, {25, 0, 27}) == 0);
+    cars.set_showroom_open(false);
+    car->vehicle.marker = "vehicle_spawn_hatchback_capital";
     assert(!cars.enter(region, -1, {25, 0, 27}));
     assert(!cars.enter(region, 0, {100, 0, 100}));
     assert(cars.enter(region, 0, {25, 0, 27}));

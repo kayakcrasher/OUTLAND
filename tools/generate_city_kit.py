@@ -1633,12 +1633,18 @@ def parking_garage():
     front += [win(a, a + 2.6, k) for k in (1, 2) for a in (-16.4, -12.0, -7.6)]
     back = [win(a, a + 2.4, k) for k in (0, 1, 2) for a in (-16.0, -11.0)]
     sides = [win(a, a + 2.4, k) for k in (0, 1, 2) for a in (-.5, 5.5)]
+    # The east face, over the roof's parking: windows too, clear of the stairs climbing inside it (z 9 - 13.5).
+    east = [win(a, a + 2.4, k) for k in (0, 1, 2) for a in (-1.6, 2.8)]   # (between the piers at z 1.5 and 6)
     wall_with_openings(b, 'x', mz0, (mx0, mx1), top, mw, front, "stone", "inside", -1, base=roof)
     wall_with_openings(b, 'x', mz1, (mx0, mx1), top, mw, back, "stone", "inside", +1, base=roof)
     wall_with_openings(b, 'z', mx0, (mz0 + mw, mz1 - mw), top, mw, sides, "stone", "inside", -1, base=roof)
-    wall_with_openings(b, 'z', mx1, (mz0 + mw, mz1 - mw), top, mw, [], "stone", "inside", +1, base=roof)
+    wall_with_openings(b, 'z', mx1, (mz0 + mw, mz1 - mw), top, mw, east, "stone", "inside", +1, base=roof)
+    for a0, a1, y0, y1 in east:                                                                     # gold sills, bronze under each
+        b.solid((mx1, y0 - .1, a0 - .1), (mx1 + .14, y0, a1 + .1), "gold")
+        if y0 > roof + 1:
+            b.solid((mx1 + .01, y0 - .75, a0), (mx1 + .06, y0 - .1, a1), "bronze")
     # Tinted glass in the upper windows and the back and side ones (the ground floor's front stays open).
-    for openings, axis, fixed, inward in ((front[3:], 'x', mz0, 1), (back, 'x', mz1, -1), (sides, 'z', mx0, 1)):
+    for openings, axis, fixed, inward in ((front[3:], 'x', mz0, 1), (back, 'x', mz1, -1), (sides, 'z', mx0, 1), (east, 'z', mx1, -1)):
         for a0, a1, y0, y1 in openings:
             mid = fixed + inward * mw * .5
             lo = (a0, y0, mid - .02) if axis == 'x' else (mid - .02, y0, a0)

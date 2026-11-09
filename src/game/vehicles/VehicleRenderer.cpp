@@ -148,7 +148,7 @@ void VehicleRenderer::draw(const VehicleSystem &system, const world::VerdaRegion
         rlTranslatef(a->position.x, a->position.y, a->position.z);
         rlRotatef(a->rotation_y, 0, 1, 0);
         rlRotatef(-v.pitch, 1, 0, 0);
-        rlRotatef(v.roll, 0, 0, 1);
+        rlRotatef(v.roll + lean_degrees(*d, v.steering, v.speed), 0, 0, 1);
         // Bigger (or smaller) tyres lift (or drop) the body with them.
         const float lift = (a->vehicle.wheel - 1) * d->wheel_radius * scale;
         DrawModelEx(*body, {0, d->body_offset * scale + lift, 0}, {0, 1, 0}, 0, {scale, scale, scale},

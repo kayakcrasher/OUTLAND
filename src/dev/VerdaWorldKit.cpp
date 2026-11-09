@@ -1438,6 +1438,9 @@ void west_suburbs(Kit& kit, world::VerdaRegion& region) {
     modular_building(kit, {-420, 0, 20}, 0, 8, 4, "stuco", 1, 7604, world::BuildingPurpose::Clinic);
     for (int i = 0; i < 3; ++i)
         vehicle_marker(*capital, "vehicle_spawn_hatchback_okcidento_shops_" + std::to_string(i + 1), {-226 - i * 22.0F, 0, avenue * .5F + 1.6F}, 270);
+    // Two motorcycles at the kerb between them (the Verda Fulmo).
+    for (int i = 0; i < 2; ++i)
+        vehicle_marker(*capital, "vehicle_spawn_motorcycle_okcidento_shops_" + std::to_string(i + 1), {-237 - i * 22.0F, 0, avenue * .5F + 1.2F}, 270);
     capital->survivors += kit.report.houses; // west homes (built first)
 }
 
@@ -1563,6 +1566,9 @@ bool fancy_house(Kit& kit, world::Settlement& capital, Vector3 at, int facing, s
         vehicle_marker(capital, "vehicle_spawn_hatchback_orienta_" + std::to_string(++cars),
                        to_world(ground, yaw, -4.4F, 0, -half_d - 1.6F), yaw + 180);
         ++kit.report.driveways;
+    } else if ((r / 4) % 13 == 1) {
+        vehicle_marker(capital, "vehicle_spawn_motorcycle_orienta_" + std::to_string(++cars),
+                       to_world(ground, yaw, -4.4F, 0, -half_d - 1.6F), yaw + 180);
     }
     // Two lawn trees, and on some lots a wrought-iron fence along the lawn with a gap for the path.
     kit.tree(to_world(ground, yaw, half_w + 4.2F, 0, -half_d + 2));
@@ -2623,7 +2629,7 @@ void motor_trade(Kit& kit, world::VerdaRegion& region) {
             // The cars on show, noses to the street: one of each the lot sells.
             auto* capital = settlement(region, "capital_verda");
             // (game::autos::dealer's order: the first five on the front row, the rest behind.)
-            static constexpr std::array<const char*, 9> stock{"hatchback", "sxs", "wagon", "sedan", "van", "truck", "flatbed", "muscle", "green_hand_gt"};
+            static constexpr std::array<const char*, 10> stock{"hatchback", "motorcycle", "sxs", "wagon", "sedan", "van", "truck", "flatbed", "muscle", "green_hand_gt"};
             for (std::size_t i = 0; i < stock.size() && capital; ++i) {
                 const std::size_t row = i / M::car_lot_spots.size(), slot = i % M::car_lot_spots.size();
                 vehicle_marker(*capital, std::string("vehicle_spawn_") + stock[i] + "_forsale_" + std::to_string(i + 1),

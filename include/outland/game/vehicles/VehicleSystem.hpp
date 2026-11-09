@@ -36,7 +36,7 @@ inline bool for_sale(const std::string& marker) { return marker.find("_forsale_"
 class VehicleSystem {
   public:
     // Runtime vehicles at most (parked, driven and spawned together).
-    static constexpr std::size_t max_vehicles = 240;
+    static constexpr std::size_t max_vehicles = 320;
     // Wrecks are towed home and repaired after this long with the player this far away.
     static constexpr float tow_seconds = 90, tow_distance = 70;
     explicit VehicleSystem(const VehicleRegistry &registry) : registry_(registry) {}
@@ -50,6 +50,10 @@ class VehicleSystem {
     // Nearest usable vehicle whose body (not just its centre) is within `radius` of the player.
     int nearest(const world::VerdaRegion &region, Vector3 player, float radius = 2) const;
     void set_training_structure(bool solid) { training_structure_ = solid; }
+    // Battle Royale: the cars on show at Aŭtovendejo Verda are anyone's to drive off (nobody sells
+    // them in a fight); elsewhere they stay on the lot until bought.
+    void set_showroom_open(bool open) { showroom_open_ = open; }
+    [[nodiscard]] bool showroom_open() const { return showroom_open_; }
     bool enter(world::VerdaRegion &region, int index, Vector3 player);
     bool exit(world::VerdaRegion &region, Vector3 &destination, bool forced = false);
     bool update(float dt, VehicleInput input, world::VerdaRegion &region, Vector3 player,
@@ -146,6 +150,7 @@ class VehicleSystem {
     // The vehicle (index) whose body the footprint at `p` reaches, other than `self`; -1 none.
     int vehicle_hit(const world::VerdaRegion &r, Vector3 p, float yaw, const VehicleDefinition &d, float scale,
                     std::string_view self) const;
+    bool showroom_open_{false};
     bool training_structure_{true};
     const VehicleRegistry &registry_;
     std::vector<VehicleRuntime> vehicles_;

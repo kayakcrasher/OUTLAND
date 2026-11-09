@@ -18,6 +18,8 @@ EngineProfile engine_profile(std::string_view d, int engine, int exhaust) {
     } else if (d == "ambulance") { p.cylinders = 8; p.diesel = true; p.idle = 650; p.redline = 3800; p.body_hz = 70; p.rasp = .25F; p.turbo = .3F; p.pipe = 3.4F; p.muffler = 700; }
     else if (d == "van") { p.diesel = true; p.idle = 750; p.redline = 4200; p.body_hz = 90; p.rasp = .3F; p.turbo = .25F; p.gain = .9F; p.pipe = 2.6F; p.muffler = 650; }
     else if (d == "flatbed") { p.cylinders = 6; p.diesel = true; p.idle = 650; p.redline = 3600; p.body_hz = 64; p.rasp = .25F; p.turbo = .4F; p.pipe = 3.6F; p.muffler = 600; p.gain = 1.3F; p.jake = true; p.air_brakes = true; }
+    // The Fulmo's air-cooled twin: a lumpy idle, revs high through five gears, a raspy pair of pipes.
+    else if (d == "motorcycle") { p.cylinders = 2; p.idle = 1100; p.redline = 9000; p.gears = 5; p.lope = .45F; p.body_hz = 130; p.rasp = .75F; p.gain = .95F; p.pipe = 1.2F; p.muffler = 1600; }
     else if (d == "sxs") { p.cylinders = 2; p.idle = 1200; p.redline = 7500; p.cvt = true; p.body_hz = 120; p.rasp = .8F; p.gain = .9F; p.pipe = 1.4F; p.muffler = 1400; }
     // The big rig's straight six breathes out of tall stacks; the bus's out of a long pipe under it.
     else if (d == "semi") { p.cylinders = 6; p.diesel = true; p.idle = 600; p.redline = 2100; p.gears = 10; p.body_hz = 52; p.rasp = .2F; p.turbo = .6F; p.gain = 1.8F; p.pipe = 5.0F; p.muffler = 650; p.jake = true; p.air_brakes = true; }

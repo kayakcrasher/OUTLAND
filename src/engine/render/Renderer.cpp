@@ -2045,6 +2045,7 @@ void Renderer::run() {
                 game::economy::restore_purposes(verda_region,vacated_homes);
                 vacated_homes.clear();homes_for_sale.clear();home_here=was_in_home=nullptr;
                 motor_sites.clear();motor_menu.close();motor_screen=MotorScreen::None;motor_site=motor_served=-1;motor_car.clear();
+                vehicles.set_showroom_open(!game::rules_for(game_mode).civilian_life);   // (Battle Royale: the lot's cars are anyone's)
                 owned_cars.clear();owned_ready=false;
                 if(game::rules_for(game_mode).civilian_life) {
                     homes_for_sale=game::economy::plan_homes(verda_region);
@@ -3993,10 +3994,51 @@ void Renderer::run() {
                 if(std::hypot(player.position.x-c.door.x,player.position.z-c.door.z)>30) church_seen=-1;
             }
         }
+        // Aŭtovendejo Verda (on foot): the salesman's desk (its site), or a car on show close by (its
+        // place in the dealer's list, and its site).
+        const auto car_lot_desk=[&](Vector3 feet) {
+            if(vehicles.driver() || vehicles.showroom_open()) return -1;   // (in a free-for-all the cars are simply there to take)
+            for(std::size_t i=0;i<motor_sites.size();++i)
+                if(motor_sites[i].kind==world::motor::Kind::CarLot && Vector3Distance(motor_sites[i].to_world(world::motor::car_lot_desk),feet)<2.4F)
+                    return static_cast<int>(i);
+            return -1;
+        };
+        const auto car_on_show=[&](Vector3 feet,int& site)->int {
+            site=-1;
+            if(vehicles.driver() || vehicles.showroom_open()) return -1;
+            for(std::size_t i=0;i<motor_sites.size();++i) {
+                if(motor_sites[i].kind!=world::motor::Kind::CarLot || Vector3Distance(motor_sites[i].origin,feet)>40) continue;
+                int best=-1;float nearest=3.2F;
+                for(const auto& v:vehicles.vehicles()) {
+                    const auto* a=vehicles.asset(verda_region,v.id);
+                    if(!a || !game::vehicles::for_sale(a->vehicle.marker)) continue;
+                    const auto at=a->vehicle.marker.rfind("_forsale_");
+                    const int k=std::atoi(a->vehicle.marker.c_str()+at+9)-1;
+                    if(k<0 || k>=static_cast<int>(game::autos::dealer.size())) continue;
+                    const auto* def=vehicles.definition(*a);
+                    const auto local=Vector3RotateByAxisAngle(Vector3Subtract(feet,a->position),{0,1,0},-a->rotation_y*DEG2RAD);
+                    const float half_w=def ? def->width*.5F : 1,half_l=def ? def->length*.5F : 2.2F;
+                    const float d=std::hypot(std::max(0.0F,std::abs(local.x)-half_w),std::max(0.0F,std::abs(local.z)-half_l));
+                    if(d<nearest) {nearest=d;best=k;}
+                }
+                if(best>=0) {site=static_cast<int>(i);return best;}
+            }
+            return -1;
+        };
         {
             // Anything in reach of USE: shows the touch USE button next frame.
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
-            bool here=store_mannequin>=0 || at_store_counter || nearby_shop || at_table ||
+            // (The car lot first: its clerk stands by the desk, and the sale is what you came for.)
+            if(car_lot_desk(feet)>=0 && store_prompt.empty()) store_prompt=touch_ui ? "USE - Buy a car (Aŭtovendejo Verda)" : "E - Buy a car (Aŭtovendejo Verda)";
+            {
+                int lot=-1;
+                if(const int k=car_on_show(feet,lot);k>=0 && store_prompt.empty()) {
+                    const auto& sale=game::autos::dealer[static_cast<std::size_t>(k)];
+                    store_prompt=std::string(touch_ui ? "USE - Buy the " : "E - Buy the ")+sale.name+"  ("+std::to_string(sale.price)+" kr)";
+                }
+            }
+            int show_lot=-1;
+            bool here=store_mannequin>=0 || at_store_counter || nearby_shop || at_table || car_lot_desk(feet)>=0 || car_on_show(feet,show_lot)>=0 ||
                 vehicles.nearest(verda_region,feet)>=0 || loot_session.world().nearest(feet,2.8F)>=0 ||
                 (game::rules_for(game_mode).civilian_life && penthouse.inside(feet)) || home_here;
             if(outbreak.active() && !vehicles.driver()) if(const auto said=outbreak.prompt(feet);!said.empty()) {
@@ -4529,20 +4571,45 @@ void Renderer::run() {
                         interaction_remaining=1.5F;
                     } else if(diesel_paid>=0) {interaction_message="DIZELO - tank full";interaction_remaining=2;diesel_paid=-1;}
                 }
-            // The car lot: at the salesman's desk, on foot.
-            int at_desk=-1;
-            if(!driven && !motor_menu.is_open())
-                for(std::size_t i=0;i<motor_sites.size();++i)
-                    if(motor_sites[i].kind==world::motor::Kind::CarLot &&
-                       Vector3Distance(motor_sites[i].to_world(world::motor::car_lot_desk),{player.position.x,player.position.y-1,player.position.z})<2.4F)
-                        at_desk=static_cast<int>(i);
+            // The car lot, on foot: the salesman's desk opens the list; at a car on show, USE buys that one.
+            const Vector3 lot_feet{player.position.x,player.position.y-1,player.position.z};
+            const int at_desk=!driven && !motor_menu.is_open() ? car_lot_desk(lot_feet) : -1;
+            int show_site=-1;
+            const int show_car=!driven && !motor_menu.is_open() ? car_on_show(lot_feet,show_site) : -1;
+            // Hands over a car: it waits at the lot's exit, nose to the street (nullptr: sold; else why not).
+            const auto sell=[&](int k,int site)->const char* {
+                const auto& sale=autos::dealer[static_cast<std::size_t>(k)];
+                if(owned_cars.size()>=autos::max_owned) return "That's enough cars for anyone";
+                if(site<0 || site>=static_cast<int>(motor_sites.size()) || wallet.money<sale.price) return "Not enough kronoj";
+                const auto& lot=motor_sites[static_cast<std::size_t>(site)];
+                autos::OwnedCar c;
+                c.definition=sale.definition;
+                c.yaw=lot.yaw+180;
+                // (At the exit, or along the lot's street front if a car already waits there.)
+                bool placed=false;
+                for(const float along:{0.0F,-5.5F,-11.0F,-16.5F}) {
+                    c.at=lot.to_world({world::motor::car_lot_delivery.x+along,0,world::motor::car_lot_delivery.z});
+                    c.at.y=world::terrain::TerrainHeight::sample(c.at.x,c.at.z);
+                    if((placed=spawn_owned(c))) break;
+                }
+                if(!placed) return "Come back in a minute - the lot's exit is blocked";
+                wallet.money-=sale.price;loot_session.changed();
+                owned_cars.push_back(c);store_owned();
+                interaction_message=std::string("Your new ")+sale.name+" is waiting by the lot's exit. It's yours: it'll be where you leave it";interaction_remaining=6;
+                return nullptr;
+            };
             if(at_desk>=0) {
                 use_available=true;
-                if(store_prompt.empty()) store_prompt="E - Buy a car (Aŭtovendejo Verda)";
                 if(controls.interact && !inventory_open && !(shop_open||store_open) && !poker_open) {
                     input_system.player().interact=false;
                     motor_site=at_desk;motor_car.clear();
                     open_motor(MotorScreen::Dealer,0);
+                }
+            } else if(show_car>=0) {
+                use_available=true;
+                if(controls.interact && !inventory_open && !(shop_open||store_open) && !poker_open) {
+                    input_system.player().interact=false;
+                    if(const char* why=sell(show_car,show_site)) {interaction_message=why;interaction_remaining=3;}
                 }
             }
             if(motor_menu.is_open()) {
@@ -4634,20 +4701,8 @@ void Renderer::run() {
                     case MotorScreen::Rims: {auto m=mods;m.rims=chosen;fit(m,autos::rims[static_cast<std::size_t>(chosen)].price,"New rims on");open_motor(MotorScreen::Rims,chosen);break;}
                     case MotorScreen::Glow: {auto m=mods;m.glow=chosen;fit(m,autos::glows[static_cast<std::size_t>(chosen)].price,chosen ? "Lit up underneath" : "The lights come off");open_motor(MotorScreen::Glow,chosen);break;}
                     case MotorScreen::Dealer: {
-                        const auto& sale=autos::dealer[static_cast<std::size_t>(chosen)];
-                        if(owned_cars.size()>=autos::max_owned) {motor_menu.set_status("That's enough cars for anyone");break;}
-                        if(motor_site<0 || motor_site>=static_cast<int>(motor_sites.size()) || wallet.money<sale.price) {motor_menu.set_status("Not enough kronoj");break;}
-                        const auto& lot=motor_sites[static_cast<std::size_t>(motor_site)];
-                        autos::OwnedCar c;
-                        c.definition=sale.definition;
-                        c.at=lot.to_world(world::motor::car_lot_delivery);
-                        c.at.y=world::terrain::TerrainHeight::sample(c.at.x,c.at.z);
-                        c.yaw=lot.yaw+180;
-                        if(!spawn_owned(c)) {motor_menu.set_status("Come back in a minute - the lot is full");break;}
-                        pay(sale.price);
-                        owned_cars.push_back(c);store_owned();
+                        if(const char* why=sell(chosen,motor_site)) {motor_menu.set_status(why);break;}
                         leave_motor();
-                        interaction_message=std::string("Your new ")+sale.name+" is waiting by the lot's exit. It's yours: it'll be where you leave it";interaction_remaining=6;
                         break;
                     }
                     default: break;
@@ -6513,7 +6568,10 @@ void Renderer::run() {
                         for(const int id:player_crew.dismiss(br_bots)) mafio.lend(id,false,br_bots,feet);
                     game::career::Crew::Frame cf;
                     cf.player=feet;cf.alive=player_health.alive();cf.riding=player_crew.riding(bot_drivers);
-                    if(const auto* car=vehicles.driver()) {cf.driving=car->id;cf.car=car->position;cf.car_yaw=car->yaw;cf.car_speed=std::abs(car->speed);}
+                    if(const auto* car=vehicles.driver()) {
+                        cf.driving=car->id;cf.car=car->position;cf.car_yaw=car->yaw;cf.car_speed=std::abs(car->speed);
+                        if(const auto* a=vehicles.asset(verda_region,car->id)) if(const auto* t=vehicles.definition(*a); t && t->two_wheeled()) cf.seats=1;
+                    }
                     std::string said;
                     for(const int id:player_crew.update(cf,br_bots,verda_region,said)) mafio.lend(id,false,br_bots,feet);
                     if(!said.empty()) {interaction_message=said;interaction_remaining=3;}
@@ -7971,8 +8029,24 @@ void Renderer::run() {
             const auto car_hips=[&](const world::WorldAsset& asset,const game::vehicles::VehicleDefinition& type) {
                 const float scale=asset.size.x/type.width;
                 Vector3 local=type.seat;
-                local.y=std::min(local.y,type.height-1.42F/scale);
+                if(!type.two_wheeled()) local.y=std::min(local.y,type.height-1.42F/scale);   // (a motorcycle has no roof)
                 return game::vehicles::VehicleSystem::world_point(local,asset.position,asset.rotation_y,scale);
+            };
+            // A motorcycle's rider: astride, banked with the bike into its turn (the bike leans about
+            // its tyres' contact, so the hips swing out sideways with it).
+            const auto astride=[&](const std::string& vehicle,const world::WorldAsset& asset,const game::vehicles::VehicleDefinition& type,
+                                   Vector3& hips,characters::BodyPose& pose) {
+                if(!type.two_wheeled()) return;
+                pose.ride=true;
+                const int i=vehicles.find(vehicle);
+                if(i<0) return;
+                const auto& v=vehicles.vehicles()[static_cast<std::size_t>(i)];
+                const float lean=(v.roll+game::vehicles::lean_degrees(type,v.steering,v.speed))*DEG2RAD;
+                const float height=hips.y-asset.position.y,a=asset.rotation_y*DEG2RAD;
+                const Vector3 right{std::cos(a),0,-std::sin(a)};
+                hips=Vector3Add(hips,Vector3Scale(right,-height*std::sin(lean)));
+                hips.y=asset.position.y+height*std::cos(lean);
+                pose.body_roll=lean;
             };
             const auto sit=[&](const std::string& vehicle,const std::string& character) {
                 if(character.empty() || vehicle==mine || !taken.insert(vehicle).second) return;
@@ -7980,8 +8054,9 @@ void Renderer::run() {
                 const auto* type=asset ? vehicles.definition(*asset) : nullptr;
                 if(!asset || !type || asset->vehicle.destroyed || Vector3DistanceSqr(asset->position,camera.position)>90*90) return;
                 if(asset->vehicle.mods[9]>=2) return;   // limo tint: nobody sees in
-                const auto seat=car_hips(*asset,*type);
+                auto seat=car_hips(*asset,*type);
                 characters::BodyPose sitting;sitting.seated=true;
+                astride(vehicle,*asset,*type,seat,sitting);
                 character_renderer.draw(character,{seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y,1,&car_seat_pose,sitting);
             };
             if(game::rules_for(game_mode).civilian_life) {
@@ -8022,11 +8097,12 @@ void Renderer::run() {
                 const auto* asset=vehicles.asset(verda_region,mine);
                 const auto* type=asset ? vehicles.definition(*asset) : nullptr;
                 if(asset && type && asset->vehicle.mods[9]<2) {
-                    const auto seat=car_hips(*asset,*type);
+                    auto seat=car_hips(*asset,*type);
                     const auto* look=game::wardrobe::wearing(loot_session.economy(),wardrobe_catalogue);
                     const bool uniform=game_mode==game::GameMode::Explore && career.on_duty() && character_registry.find(police_uniform);
                     character_renderer.set_player(uniform ? std::string(police_uniform) : look ? look->character : std::string());
                     characters::BodyPose body;body.seated=true;
+                    astride(mine,*asset,*type,seat,body);
                     body.outfit=uniform ? 0U : look ? outfit_texture(look->outfit) : 0U;
                     character_renderer.draw_player({seat.x,seat.y+.1F-.92F,seat.z},asset->rotation_y*DEG2RAD,body);
                 }
@@ -9027,7 +9103,7 @@ void Renderer::run() {
                     const Vector2 at=GetWorldToScreen(over,camera);
                     const auto& sale=game::autos::dealer[i];
                     const char* name=sale.name;
-                    const char* price=TextFormat("%d kr  ·  at the desk",sale.price);
+                    const char* price=TextFormat("%d kr  ·  USE to buy",sale.price);
                     const float tw=MeasureTextEx(font,name,15,1).x,pw=MeasureTextEx(font,price,13,1).x,w=std::max(tw,pw);
                     DrawRectangle(static_cast<int>(at.x-w/2-6),static_cast<int>(at.y-18),static_cast<int>(w+12),36,Fade(BLACK,.55F));
                     DrawTextEx(font,name,{at.x-tw/2,at.y-16},15,1,WHITE);

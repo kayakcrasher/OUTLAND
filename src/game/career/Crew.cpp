@@ -135,7 +135,11 @@ std::vector<int> Crew::update(const Frame& frame, ai::BattleRoyaleBots& bots, co
         // The player drove off: those close enough got in (they ride out of sight).
         if (driving_ != frame.driving) {
             if (!aboard_.empty()) get_out(last_car_, last_yaw_, bots, region);
-            for (const int id : crew) {
+            // (The partner first: on a motorcycle there is only the pillion.)
+            auto order = crew;
+            std::stable_partition(order.begin(), order.end(), [&](int id) { return id == partner_; });
+            for (const int id : order) {
+                if (static_cast<int>(aboard_.size()) >= frame.seats) break;
                 const auto* bot = bots.find(id);
                 // The partner always comes along (they ride with the officer, on and off the beat);
                 // the gang's men get in if they're close enough to run over.
@@ -148,6 +152,7 @@ std::vector<int> Crew::update(const Frame& frame, ai::BattleRoyaleBots& bots, co
         else if (frame.car_speed < 2)
             // Stopped or crawling: anyone left behind who comes up to the car gets in.
             for (const int id : crew) {
+                if (static_cast<int>(aboard_.size()) >= frame.seats) break;
                 const auto* bot = bots.find(id);
                 if (!bot || !bot->alive() || bots.mounted(id) || contains(aboard_, id) || flat(bot->position(), frame.car) > 5) continue;
                 aboard_.push_back(id);

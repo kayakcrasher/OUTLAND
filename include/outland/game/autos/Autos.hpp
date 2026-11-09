@@ -164,8 +164,9 @@ inline constexpr int litre_price = 2;   // kronoj
 
 // Aŭtovendejo Verda's stock.
 struct ForSale { const char* definition; const char* name; const char* detail; int price; };
-inline constexpr std::array<ForSale, 9> dealer{{
+inline constexpr std::array<ForSale, 10> dealer{{
     {"hatchback", "Classic hatchback", "small, cheap to run", 6000},
+    {"motorcycle", "Verda Fulmo", "a twin on two wheels: lean into the bends", 7500},
     {"sxs", "Vakero side-by-side", "goes anywhere off the road", 8500},
     {"wagon", "Verda Familio", "the estate: room for the dog", 9500},
     {"sedan", "Verda Sedano", "the family car", 11000},

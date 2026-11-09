@@ -53,6 +53,7 @@ public:
         float car_yaw{0};
         float car_speed{0};        // m/s: stopped or crawling, those left behind can still get in
         bool riding{false};        // the player rides with the crew (the ride moves them)
+        int seats{4};              // room aboard besides the driver (a motorcycle: the pillion)
     };
     // Every frame: keep up, get in and out with the player. Returns the gang members who fell
     // (to hand back to the Mafio), and sets `said` when something should be on the screen.
