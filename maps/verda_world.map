@@ -6852,6 +6852,146 @@ ASSET "creator_urban_bus_stops_busstop_bench_kit26" 9 "assets/verda/urban/Bus st
 ASSET "creator_urban_traffic_lights_street_light_kit828" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1802.76526 31.082449 -574.466675 2.06061006 6.6078372 0.706260979 -16.0140247 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit829" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1827.75635 31.0824547 -581.639343 2.06061006 6.6078372 0.706260979 -16.0140247 255 255 255 255 80 80 80 255 1
 ASSET "creator_urban_traffic_lights_street_light_kit830" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1852.74731 31.0824261 -588.812073 2.06061006 6.6078372 0.706260979 -16.0140247 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_mailbox_kit1" 4 "assets/verda/city/country/mailbox.glb" -1753.09924 12.4626846 -7.21211052 0.300000012 1.39999998 0.5 187.765167 255 255 255 255 80 80 80 255 1
+ASSET "creator_residential_trailer_04_kit9" 0 "assets/verda/residential/trailers/trailer_04.glb" -1748 12.4542208 -18 6.46000004 5.6500001 15.25 10.7651653 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit56" 9 "assets/verda/industrial/shacks/Pallet.glb" -1747.51978 12.4542103 -27.252533 0.899999976 0.100000001 1.20000005 315 255 255 255 255 80 80 80 255 0
+ASSET "creator_city_country_generator_kit1" 4 "assets/verda/city/country/generator.glb" -1754.19275 12.454215 -22.7064438 1 0.699999988 0.699999988 97.7651672 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_woodpile_kit1" 4 "assets/verda/city/country/woodpile.glb" -1742.57959 12.4542131 -26.359005 3.79999995 2 1.60000002 7.76516581 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_barrel_kit61" 9 "assets/verda/industrial/shacks/Barrel.glb" -1752.08496 12.4542246 -13.910574 0.800000012 0.899999976 0.692799985 20 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_832" 6 "" -1765.73584 12.4542198 -22.2425537 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_833" 6 "" -1732.59265 12.4542198 -23.431551 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_mailbox_kit2" 4 "assets/verda/city/country/mailbox.glb" -1769.60303 2.23175573 -126.582161 0.300000012 1.39999998 0.5 95.7106018 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_log_cabin_dark_kit1" 0 "assets/verda/city/country/log_cabin_dark.glb" -1760.0697 2.22955036 -121.194031 8.39999962 5.4000001 9.10000038 95.7106018 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_woodpile_kit2" 4 "assets/verda/city/country/woodpile.glb" -1758.63184 2.22955108 -127.417984 3.79999995 2 1.60000002 5.71060181 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_outhouse_kit1" 4 "assets/verda/city/country/outhouse.glb" -1752.41284 2.22955155 -115.72879 1.5 2.4000001 1.60000002 -84.2893982 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_deer_stand_kit1" 4 "assets/verda/city/country/deer_stand.glb" -1727.78455 5.44586229 -104.291847 2 5 2.95000005 -54.2893982 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_834" 6 "" -1731.74097 2.2295506 -109.756081 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_835" 6 "" -1721.79065 2.2295506 -100.701241 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_836" 6 "" -1733.5321 2.2295506 -97.517128 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_837" 6 "" -1755.62183 2.2295506 -137.517609 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_838" 6 "" -1755.52234 2.2295506 -106.372948 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_mailbox_kit3" 4 "assets/verda/city/country/mailbox.glb" -1707.06531 1.46981144 -170.138046 0.300000012 1.39999998 0.5 146.309937 255 255 255 255 80 80 80 255 1
+ASSET "creator_residential_trailer_06_kit8" 0 "assets/verda/residential/trailers/trailer_06.glb" -1678.07397 1.46980953 -178.452988 5.67000008 5.17000008 15.0299997 -126.690063 255 255 255 255 80 80 80 255 1
+ASSET "creator_residential_trailer_04_kit10" 0 "assets/verda/residential/trailers/trailer_04.glb" -1699.15259 1.46982765 -193.70726 6.46000004 5.6500001 15.25 54.3099327 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_workshop_shed_kit1" 0 "assets/verda/city/country/workshop_shed.glb" -1680.57007 1.46981657 -198.144852 12.6400003 5.32000017 10.6400003 146.309937 255 255 255 255 80 80 80 255 1
+ASSET "creator_survival_bonfire_c4172667_kit11" 9 "assets/verda/survival/runtime/bonfire.glb" -1690.55469 1.46981323 -183.167953 1.38901496 0.980683982 1.37558103 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_generator_kit2" 4 "assets/verda/city/country/generator.glb" -1681.4021 1.46981144 -187.882904 1 0.699999988 0.699999988 -33.6900673 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_woodpile_kit3" 4 "assets/verda/city/country/woodpile.glb" -1684.97998 1.46981525 -191.530045 3.79999995 2 1.60000002 -33.6900673 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_outhouse_kit2" 4 "assets/verda/city/country/outhouse.glb" -1669.77417 1.46981359 -180.130966 1.5 2.4000001 1.60000002 56.3099327 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_leanto_a_kit6" 4 "assets/verda/industrial/shacks/Leanto A.glb" -1699.5686 1.49814653 -204.801254 3.5704 3.06209993 2.12470007 -123.690063 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_barrel_kit62" 9 "assets/verda/industrial/shacks/Barrel.glb" -1670.33594 1.46981168 -182.308167 0.800000012 0.899999976 0.692799985 74 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_barrel_kit63" 9 "assets/verda/industrial/shacks/Barrel.glb" -1671.66711 1.46981061 -183.195694 0.800000012 0.899999976 0.692799985 74 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit84" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1661.79797 1.25970912 -190.437424 2.21210599 1.19889498 0.199089006 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit45" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1663.63721 1.26864612 -191.663605 2.11722589 1.19889498 0.189061001 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit46" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1665.47644 1.32620108 -192.889786 2.11722589 1.19889498 0.189061001 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit85" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1667.31567 1.39193141 -194.115967 2.21210599 1.19889498 0.199089006 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit86" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1669.15503 1.4404366 -195.342148 2.21210599 1.19889498 0.199089006 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit36" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1670.99426 1.46425509 -196.568329 2.10594797 1.27454805 0.292430997 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit37" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1672.8335 1.46980762 -197.79451 2.10594797 1.27454805 0.292430997 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit87" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1674.67273 1.46981275 -199.020691 2.21210599 1.19889498 0.199089006 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit88" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1676.51208 1.46981478 -200.246872 2.21210599 1.19889498 0.199089006 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit89" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1678.35132 1.46981716 -201.473053 2.21210599 1.19889498 0.199089006 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit90" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1680.19055 1.46981966 -202.699234 2.21210599 1.19889498 0.199089006 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit47" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1682.02991 1.46982253 -203.925415 2.11722589 1.19889498 0.189061001 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit48" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1683.86914 1.46983242 -205.151596 2.11722589 1.19889498 0.189061001 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit91" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1685.70837 1.48120248 -206.377777 2.21210599 1.19889498 0.199089006 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit38" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1687.54761 1.53586602 -207.603958 2.10594797 1.27454805 0.292430997 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit92" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1689.38696 1.67184329 -208.830139 2.21210599 1.19889498 0.199089006 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit93" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1691.2262 1.92773378 -210.05632 2.21210599 1.19889498 0.199089006 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit94" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1693.06543 2.33206701 -211.282501 2.21210599 1.19889498 0.199089006 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit39" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1694.90466 2.89269924 -212.508667 2.10594797 1.27454805 0.292430997 146.30986 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit49" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1661.48853 1.32770801 -188.909088 2.11722589 1.19889498 0.189061001 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit50" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1662.70874 1.39173043 -187.078583 2.11722589 1.19889498 0.189061001 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit95" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1663.9292 1.43382752 -185.248062 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit96" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1665.14941 1.45705235 -183.417557 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit40" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1666.36987 1.46697831 -181.587036 2.10594797 1.27454805 0.292430997 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit41" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1667.59009 1.46964467 -179.756531 2.10594797 1.27454805 0.292430997 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit97" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1668.81055 1.46981704 -177.926025 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit98" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1670.03076 1.46981657 -176.09552 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit99" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1671.25122 1.46981692 -174.264999 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit100" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1672.47144 1.46981704 -172.434494 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit51" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1673.69189 1.46981716 -170.603973 2.11722589 1.19889498 0.189061001 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit52" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1674.91211 1.46981728 -168.773468 2.11722589 1.19889498 0.189061001 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit101" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1676.13257 1.46981728 -166.942963 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit42" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1677.35278 1.47099459 -165.112457 2.10594797 1.27454805 0.292430997 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit102" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1678.57324 1.47562659 -163.281937 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit53" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1696.43457 2.94843578 -212.206512 2.11722589 1.19889498 0.189061001 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit103" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1697.65479 2.4476037 -210.376007 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit104" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1698.87524 2.04631877 -208.545486 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit43" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1700.09546 1.7585783 -206.714981 2.10594797 1.27454805 0.292430997 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit44" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1701.31592 1.58040476 -204.88446 2.10594797 1.27454805 0.292430997 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit105" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1702.53613 1.4934082 -203.053955 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit106" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1703.75659 1.46990514 -201.22345 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit107" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1704.97681 1.46983814 -199.392944 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit108" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1706.19727 1.46983695 -197.562424 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit54" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1707.41748 1.46983564 -195.731918 2.11722589 1.19889498 0.189061001 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_open_kit55" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_open.glb" -1708.63794 1.46983433 -193.901398 2.11722589 1.19889498 0.189061001 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit109" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1709.85815 1.46983314 -192.070892 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_broken_kit45" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_broken.glb" -1711.07861 1.46983171 -190.240387 2.10594797 1.27454805 0.292430997 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit110" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1712.29883 1.48126316 -188.409882 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_fences_low_wooden_fence_wooden_fence_closed_kit111" 4 "assets/verda/urban/Fences/low_wooden_fence/wooden_fence_closed.glb" -1713.51929 1.5208956 -186.579361 2.21210599 1.19889498 0.199089006 -123.689995 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_839" 6 "" -1705.97534 1.46981597 -210.514664 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_840" 6 "" -1663.87366 1.46981597 -174.514633 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_mailbox_kit4" 4 "assets/verda/city/country/mailbox.glb" -1601.93494 6.03324175 -181.38504 0.300000012 1.39999998 0.5 163.495636 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_farmhouse_cream_kit1" 0 "assets/verda/city/country/farmhouse_cream.glb" -1591.78406 6.03271484 -192.728699 10.04 6.5999999 11.5200005 163.495636 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_leanto_b_kit2" 4 "assets/verda/industrial/shacks/Leanto B.glb" -1598.07239 6.0327034 -203.185974 3.28520012 3.00160003 6.2493 163.495636 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit39" 9 "assets/verda/ranch/hay_bale.glb" -1580.81409 6.0327158 -198.072388 1.5 1.5 1.5 73.495636 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit40" 9 "assets/verda/ranch/hay_bale.glb" -1582.44397 6.03271532 -198.555328 1.5 1.5 1.5 73.495636 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit41" 9 "assets/verda/ranch/hay_bale.glb" -1584.07397 6.03271484 -199.038284 1.5 1.5 1.5 73.495636 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_water_trough_kit15" 9 "assets/verda/ranch/water_trough.glb" -1580.60095 6.03271914 -191.751419 2.20000005 0.699999988 2.20000005 73.495636 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_outhouse_kit3" 4 "assets/verda/city/country/outhouse.glb" -1593.66187 6.03270531 -203.991196 1.5 2.4000001 1.60000002 -16.5043602 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_841" 6 "" -1608.78955 6.03271437 -205.735672 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_842" 6 "" -1572.58972 6.03271437 -190.629272 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_mailbox_kit5" 4 "assets/verda/city/country/mailbox.glb" -1596 6.91149759 -118.510002 0.300000012 1.39999998 0.5 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_residential_trailer_06_kit9" 0 "assets/verda/residential/trailers/trailer_06.glb" -1586 6.9063468 -112 5.67000008 5.17000008 15.0299997 -88 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_barrel_kit64" 9 "assets/verda/industrial/shacks/Barrel.glb" -1576.92871 6.90634918 -110.115433 0.800000012 0.899999976 0.692799985 347 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_shack_a_kit15" 4 "assets/verda/industrial/shacks/Shack A.glb" -1581 6.90634298 -120 3.5704 3.06209993 6.2493 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_boat_trailer_kit1" 4 "assets/verda/city/country/boat_trailer.glb" -1588.40002 6.90634918 -105 1.70000005 1.60000002 5.5999999 90 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_generator_kit3" 4 "assets/verda/city/country/generator.glb" -1580 6.90634394 -116.5 1 0.699999988 0.699999988 -90 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_843" 6 "" -1579.40002 6.90634727 -129 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_844" 6 "" -1582.69995 6.90634727 -96 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_mailbox_kit6" 4 "assets/verda/city/country/mailbox.glb" -1922.99976 8.22324181 -57.5993576 0.300000012 1.39999998 0.5 214.508514 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_farmhouse_blue_kit1" 0 "assets/verda/city/country/farmhouse_blue.glb" -1925.43054 8.22218609 -72.6262741 10.04 6.5999999 11.5200005 214.508514 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_windmill_kit7" 9 "assets/verda/ranch/windmill.glb" -1921.0343 8.22222328 -85.6481934 5.5999999 10.8999996 5.4000001 34.508522 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_woodpile_kit4" 4 "assets/verda/city/country/woodpile.glb" -1936.15283 8.22218132 -74.1013107 3.79999995 2 1.60000002 34.508522 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit42" 9 "assets/verda/ranch/hay_bale.glb" -1935.19751 8.22218513 -67.4162674 1.5 1.5 1.5 34.508522 255 255 255 255 80 80 80 255 1
+ASSET "creator_ranch_hay_bale_kit43" 9 "assets/verda/ranch/hay_bale.glb" -1936.21729 8.22218323 -68.8995361 1.5 1.5 1.5 34.508522 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_845" 6 "" -1946.23962 8.22218609 -67.5913773 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_846" 6 "" -1911.72266 8.22218609 -86.2250214 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_mailbox_kit7" 4 "assets/verda/city/country/mailbox.glb" -1948.55725 9.23732281 -5.61880493 0.300000012 1.39999998 0.5 288.434937 255 255 255 255 80 80 80 255 1
+ASSET "creator_residential_trailer_04_kit11" 0 "assets/verda/residential/trailers/trailer_04.glb" -1962 9.23720837 -8 6.46000004 5.6500001 15.25 105.434944 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_pallet_kit57" 9 "assets/verda/industrial/shacks/Pallet.glb" -1971.26099 9.23720551 -7.7253561 0.899999976 0.100000001 1.20000005 63 255 255 255 255 80 80 80 255 0
+ASSET "creator_city_country_boat_trailer_kit2" 4 "assets/verda/city/country/boat_trailer.glb" -1958.45813 9.23720741 -1.80193543 1.70000005 1.60000002 5.5999999 288.434937 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_boat_trailer_kit3" 4 "assets/verda/city/country/boat_trailer.glb" -1969.50586 9.23720551 -12.7324915 1.70000005 1.60000002 5.5999999 268.434937 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_generator_kit4" 4 "assets/verda/city/country/generator.glb" -1970.06372 9.23720551 -10.055481 1 0.699999988 0.699999988 108.434944 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_barrel_kit65" 9 "assets/verda/industrial/shacks/Barrel.glb" -1964.05542 9.23720741 -1.51733077 0.800000012 0.899999976 0.692799985 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_847" 6 "" -1963.39148 9.23720741 12.491559 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_848" 6 "" -1971.39197 9.23720741 -23.8430119 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_mailbox_kit8" 4 "assets/verda/city/country/mailbox.glb" -1737.276 14.0573702 256.359467 0.300000012 1.39999998 0.5 92.602562 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_farmhouse_grey_kit1" 0 "assets/verda/city/country/farmhouse_grey.glb" -1715.87854 14.0573711 269.911835 10.04 6.5999999 11.5200005 92.602562 255 255 255 255 80 80 80 255 1
+ASSET "creator_residential_trailer_05_kit9" 0 "assets/verda/residential/trailers/trailer_05.glb" -1712.46033 14.0573711 251.737869 5.51000023 5.71999979 15.1099997 -90.397438 255 255 255 255 80 80 80 255 1
+ASSET "creator_industrial_barrel_kit66" 9 "assets/verda/industrial/shacks/Barrel.glb" -1703.47583 14.0573711 254.000244 0.800000012 0.899999976 0.692799985 280 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_workshop_shed_kit2" 0 "assets/verda/city/country/workshop_shed.glb" -1700.42725 14.0573711 263.203278 12.6400003 5.32000017 10.6400003 92.602562 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_woodpile_kit5" 4 "assets/verda/city/country/woodpile.glb" -1707.28601 14.0573711 277.479462 3.79999995 2 1.60000002 2.60256195 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_generator_kit5" 4 "assets/verda/city/country/generator.glb" -1705.30859 14.0573711 254.916397 1 0.699999988 0.699999988 -87.397438 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_849" 6 "" -1707.19287 14.0573711 235.481934 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_850" 6 "" -1710.87109 14.0573711 286.701752 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_church_baptist_kit4" 0 "assets/verda/city/civic/church_baptist.glb" -1674.12 12.7542601 -71.7565536 10.6999998 17.8999996 20.6000004 204.227753 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_general_store_kit1" 0 "assets/verda/city/country/general_store.glb" -1656.59558 12.7542591 -37.6871681 10.7399998 6.5999999 16.3700008 24.2277527 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_mechanic_shed_kit1" 0 "assets/verda/city/country/mechanic_shed.glb" -1653.70776 12.7542591 -77.5700531 12.6400003 5.32000017 10.6400003 204.227753 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_log_cabin_kit1" 0 "assets/verda/city/country/log_cabin.glb" -1671.46521 12.754261 -22.4808826 8.39999962 5.4000001 9.10000038 24.2277527 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_farmhouse_grey_kit2" 0 "assets/verda/city/country/farmhouse_grey.glb" -1633.92639 12.7542486 -38.4851036 10.04 6.5999999 11.5200005 24.2277527 255 255 255 255 80 80 80 255 1
+ASSET "creator_residential_trailer_05_kit10" 0 "assets/verda/residential/trailers/trailer_05.glb" -1625.07336 12.7542429 -55.364769 5.51000023 5.71999979 15.1099997 -64.7722549 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_log_cabin_kit2" 0 "assets/verda/city/country/log_cabin.glb" -1667.86755 12.7542448 -96.3647537 8.39999962 5.4000001 9.10000038 204.227753 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_generator_kit6" 4 "assets/verda/city/country/generator.glb" -1658.54089 12.7542524 -24.9521885 1 0.699999988 0.699999988 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_woodpile_kit6" 4 "assets/verda/city/country/woodpile.glb" -1688.77112 12.7542515 -74.9505692 3.79999995 2 1.60000002 114.227737 255 255 255 255 80 80 80 255 1
+ASSET "creator_city_country_outhouse_kit4" 4 "assets/verda/city/country/outhouse.glb" -1669.88403 12.7542534 -86.7120667 1.5 2.4000001 1.60000002 204.227753 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit831" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1663.93945 12.7542639 -63.7544479 2.06061006 6.6078372 0.706260979 24.2277451 255 255 255 255 80 80 80 255 1
+ASSET "creator_urban_traffic_lights_street_light_kit832" 9 "assets/verda/urban/Traffic lights/street_light.glb" -1674.29895 12.7542706 -38.0382614 2.06061006 6.6078372 0.706260979 -155.772247 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_851" 6 "" -1706.78162 12.7542591 -71.2322006 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_852" 6 "" -1688.54309 12.7542591 -79.4394989 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_853" 6 "" -1619.69312 12.7542591 -33.6610413 1 7 1 0 255 255 255 255 80 80 80 255 1
+ASSET "creator_kit_tree_854" 6 "" -1608.75012 12.7542591 -38.5854187 1 7 1 0 255 255 255 255 80 80 80 255 1
 MARKER "creator_marker_loot_spawn_general_training" 0 4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_medical_training" 0 -4 0 8 0.5 0.5 0.5 0 1
 MARKER "creator_marker_loot_spawn_camp_training" 0 0 0 15 0.5 0.5 0.5 0 1
@@ -7181,6 +7321,25 @@ MARKER "creator_marker_building_purpose_kit_220" 4 -1838.57227 31.9324379 -593.8
 MARKER "creator_marker_building_purpose_kit_221" 4 -1821.22229 31.9324646 -561.917664 1.20000005 2.20000005 1.20000005 256.985962 1
 MARKER "creator_marker_building_purpose_kit_222" 4 -1833.7179 31.9324684 -565.503967 1.20000005 2.20000005 1.20000005 256.985962 1
 MARKER "creator_marker_building_purpose_kit_223" 4 -1846.14978 31.932457 -569.099304 1.20000005 2.20000005 1.20000005 250.985962 1
+MARKER "creator_marker_building_purpose_kit_224" 4 -1747.64978 13.3042212 -17.4965515 1.20000005 2.20000005 1.20000005 100.765167 1
+MARKER "creator_marker_building_purpose_kit_225" 4 -1760.69653 2.62955046 -120.930344 1.20000005 2.20000005 1.20000005 95.7106018 1
+MARKER "creator_marker_building_purpose_kit_226" 4 -1678.67249 2.31980944 -178.587112 1.20000005 2.20000005 1.20000005 -36.6900635 1
+MARKER "creator_marker_building_purpose_kit_227" 4 -1698.55188 2.31982756 -193.583603 1.20000005 2.20000005 1.20000005 144.309937 1
+MARKER "creator_marker_building_purpose_kit_228" 4 -1682.62244 1.66981602 -195.066269 1.20000005 2.20000005 1.20000005 146.309937 1
+MARKER "creator_marker_building_purpose_kit_229" 4 -1592.19885 6.53271437 -191.328842 1.20000005 2.20000005 1.20000005 163.495636 1
+MARKER "creator_marker_building_purpose_kit_230" 4 -1586.55103 7.7563467 -111.730606 1.20000005 2.20000005 1.20000005 2 1
+MARKER "creator_marker_building_purpose_kit_231" 4 -1924.60339 8.72218609 -71.423172 1.20000005 2.20000005 1.20000005 214.508514 1
+MARKER "creator_marker_building_purpose_kit_232" 4 -1961.52673 10.0872087 -8.39002419 1.20000005 2.20000005 1.20000005 195.434937 1
+MARKER "creator_marker_building_purpose_kit_233" 4 -1717.33704 14.5573711 269.978119 1.20000005 2.20000005 1.20000005 92.602562 1
+MARKER "creator_marker_building_purpose_kit_234" 4 -1713.02197 14.9073715 251.983978 1.20000005 2.20000005 1.20000005 -0.397438049 1
+MARKER "creator_marker_building_purpose_kit_235" 4 -1704.12341 14.2573719 263.371277 1.20000005 2.20000005 1.20000005 92.602562 1
+MARKER "creator_marker_building_purpose_kit_236" 4 -1671.83228 13.0542593 -66.6725922 1.20000005 2.20000005 1.20000005 204.227753 1
+MARKER "creator_marker_building_purpose_kit_237" 4 -1658.18982 13.1542597 -41.2299843 1.20000005 2.20000005 1.20000005 24.2277527 1
+MARKER "creator_marker_building_purpose_kit_238" 4 -1652.18945 12.9542599 -74.1959457 1.20000005 2.20000005 1.20000005 204.227753 1
+MARKER "creator_marker_building_purpose_kit_239" 4 -1671.91431 13.1542597 -22.9915581 1.20000005 2.20000005 1.20000005 24.2277527 1
+MARKER "creator_marker_building_purpose_kit_240" 4 -1634.52551 13.2542591 -39.8165092 1.20000005 2.20000005 1.20000005 24.2277527 1
+MARKER "creator_marker_building_purpose_kit_241" 4 -1625.47339 13.6042433 -54.8999329 1.20000005 2.20000005 1.20000005 25.2277451 1
+MARKER "creator_marker_building_purpose_kit_242" 4 -1667.41846 13.1542597 -95.8540726 1.20000005 2.20000005 1.20000005 204.227753 1
 PURPOSE "creator_marker_building_purpose_kit_1" 1
 PURPOSE "creator_marker_building_purpose_kit_2" 1
 PURPOSE "creator_marker_building_purpose_kit_3" 1
@@ -7412,6 +7571,25 @@ PURPOSE "creator_marker_building_purpose_kit_220" 1
 PURPOSE "creator_marker_building_purpose_kit_221" 1
 PURPOSE "creator_marker_building_purpose_kit_222" 1
 PURPOSE "creator_marker_building_purpose_kit_223" 1
+PURPOSE "creator_marker_building_purpose_kit_224" 1
+PURPOSE "creator_marker_building_purpose_kit_225" 1
+PURPOSE "creator_marker_building_purpose_kit_226" 1
+PURPOSE "creator_marker_building_purpose_kit_227" 1
+PURPOSE "creator_marker_building_purpose_kit_228" 8
+PURPOSE "creator_marker_building_purpose_kit_229" 1
+PURPOSE "creator_marker_building_purpose_kit_230" 1
+PURPOSE "creator_marker_building_purpose_kit_231" 1
+PURPOSE "creator_marker_building_purpose_kit_232" 1
+PURPOSE "creator_marker_building_purpose_kit_233" 1
+PURPOSE "creator_marker_building_purpose_kit_234" 1
+PURPOSE "creator_marker_building_purpose_kit_235" 8
+PURPOSE "creator_marker_building_purpose_kit_236" 4
+PURPOSE "creator_marker_building_purpose_kit_237" 2
+PURPOSE "creator_marker_building_purpose_kit_238" 8
+PURPOSE "creator_marker_building_purpose_kit_239" 1
+PURPOSE "creator_marker_building_purpose_kit_240" 1
+PURPOSE "creator_marker_building_purpose_kit_241" 1
+PURPOSE "creator_marker_building_purpose_kit_242" 1
 SETTLEMENT "capital_verda" "Verda" 0 0 0 0 384 0 0
 ROAD 0 0 -1680 0 0 -1621.12915 18.7999992 3
 ROAD 0 0 -1621.12915 0 0 -1562.2583 18.7999992 3
@@ -9260,7 +9438,7 @@ MARKER "loot_spawn_medical_bldg_362" 0 -1741 14.4073658 550.224976 0.5 0.5 0.5 0
 MARKER "loot_spawn_medical_bldg_363" 0 -1759 14.4073658 550.224976 0.5 0.5 0.5 0 1
 MARKER "loot_spawn_general_bldg_364" 0 -1774 14.4073658 550.799988 0.5 0.5 0.5 0 1
 MARKER "vehicle_spawn_bus_team_4" 3 -1725.23352 14.0573664 618.302063 2.5999999 3.20000005 11 1.04162657 1
-SETTLEMENT "ferarbaro_sovagejo" "Sovaĝejo" -1790 0 90 0 78 0 0
+SETTLEMENT "ferarbaro_sovagejo" "Sovaĝejo" -1790 0 90 0 120 0 0
 ROAD -1790 0 40 -1790 0 142 6 0
 ROAD -1790 0 142 -1790 0 324 5 0
 ROAD -1790 0 40 -1788.65247 0 20.0515575 6 0
@@ -9518,6 +9696,69 @@ ROAD -713.865784 0 -1414.76917 -678.041565 0 -1418.32214 6 1
 ROAD -678.041565 0 -1418.32214 -665.127197 0 -1409.37402 6 1
 ROAD -1773.16577 0 -561.601746 -1832.75977 0 -578.705872 5 1
 ROAD -1832.75977 0 -578.705872 -1857.75085 0 -585.87854 5 1
+ROAD -1788.65247 0 20.0509586 -1771.1427 0 15.8840218 5 0
+ROAD -1771.1427 0 15.8840218 -1765.40332 0 14.1386251 5 0
+ROAD -1765.40332 0 14.1386251 -1759.76355 0 12.0915947 5 0
+ROAD -1759.76355 0 12.0915947 -1752.35425 0 9.07642365 5 0
+ROAD -1752.35425 0 9.07642365 -1745.09119 0 5.72441244 5 0
+ROAD -1745.09119 0 5.72441244 -1739.76025 0 2.97187424 5 0
+ROAD -1739.76025 0 2.97187424 -1732.83203 0 -1.02650726 5 0
+ROAD -1732.83203 0 -1.02650726 -1721.18079 0 -8.78155136 5 0
+ROAD -1721.18079 0 -8.78155136 -1711.7594 0 -16.2081814 5 0
+ROAD -1711.7594 0 -16.2081814 -1706.04993 0 -21.8063908 5 0
+ROAD -1706.04993 0 -21.8063908 -1698.0918 0 -30.7873898 5 0
+ROAD -1698.0918 0 -30.7873898 -1693.94531 0 -35.1220131 5 0
+ROAD -1693.94531 0 -35.1220131 -1689.39648 0 -39.0313148 5 0
+ROAD -1689.39648 0 -39.0313148 -1680 0 -46 5 0
+ROAD -1640 0 -64 -1630.50842 0 -76.8794479 5 0
+ROAD -1630.50842 0 -76.8794479 -1626.21143 0 -83.6236725 5 0
+ROAD -1626.21143 0 -83.6236725 -1621.7157 0 -92.5527649 5 0
+ROAD -1621.7157 0 -92.5527649 -1617.0946 0 -103.625359 5 0
+ROAD -1617.0946 0 -103.625359 -1613.64526 0 -113.0112 5 0
+ROAD -1613.64526 0 -113.0112 -1610.67761 0 -122.559151 5 0
+ROAD -1610.67761 0 -122.559151 -1607.06372 0 -136.084518 5 0
+ROAD -1607.06372 0 -136.084518 -1602.86121 0 -151.52269 5 0
+ROAD -1602.86121 0 -151.52269 -1598.73682 0 -166.98201 5 0
+ROAD -1598.73682 0 -166.98201 -1595 0 -181 5 0
+ROAD -1680 0 -46 -1691.8175 0 -59.5767403 5 0
+ROAD -1691.8175 0 -59.5767403 -1696.88647 0 -65.7647552 5 0
+ROAD -1696.88647 0 -65.7647552 -1703.80298 0 -75.5679703 5 0
+ROAD -1703.80298 0 -75.5679703 -1709.14636 0 -84.019165 5 0
+ROAD -1709.14636 0 -84.019165 -1712.96692 0 -91.0457993 5 0
+ROAD -1712.96692 0 -91.0457993 -1716.14331 0 -98.3841095 5 0
+ROAD -1716.14331 0 -98.3841095 -1719.32312 0 -107.862762 5 0
+ROAD -1719.32312 0 -107.862762 -1721.2168 0 -115.632179 5 0
+ROAD -1721.2168 0 -115.632179 -1722.02734 0 -121.574112 5 0
+ROAD -1722.02734 0 -121.574112 -1722.14514 0 -125.570679 5 0
+ROAD -1722.14514 0 -125.570679 -1721.79688 0 -129.552292 5 0
+ROAD -1721.79688 0 -129.552292 -1720.27673 0 -135.348206 5 0
+ROAD -1720.27673 0 -135.348206 -1717.0625 0 -142.667786 5 0
+ROAD -1717.0625 0 -142.667786 -1711.33203 0 -153.21051 5 0
+ROAD -1711.33203 0 -153.21051 -1708.13635 0 -158.286469 5 0
+ROAD -1708.13635 0 -158.286469 -1702 0 -167 5 0
+ROAD -1837.07446 0 -119.503311 -1817.08484 0 -118.937263 5 0
+ROAD -1817.08484 0 -118.937263 -1803.18018 0 -117.317612 5 0
+ROAD -1803.18018 0 -117.317612 -1797.19177 0 -116.998413 5 0
+ROAD -1797.19177 0 -116.998413 -1791.21411 0 -117.468491 5 0
+ROAD -1791.21411 0 -117.468491 -1781.32751 0 -118.964195 5 0
+ROAD -1781.32751 0 -118.964195 -1769 0 -120 5 0
+ROAD -1820.03882 0 -56.1083374 -1833.65759 0 -52.8637886 5 0
+ROAD -1833.65759 0 -52.8637886 -1847.21887 0 -49.3898582 5 0
+ROAD -1847.21887 0 -49.3898582 -1858.72925 0 -45.9977036 5 0
+ROAD -1858.72925 0 -45.9977036 -1872.13452 0 -41.9609947 5 0
+ROAD -1872.13452 0 -41.9609947 -1891.41333 0 -36.6397591 5 0
+ROAD -1891.41333 0 -36.6397591 -1899.0658 0 -34.3091164 5 0
+ROAD -1899.0658 0 -34.3091164 -1910.36548 0 -30.2729874 5 0
+ROAD -1910.36548 0 -30.2729874 -1923.36768 0 -25.0831814 5 0
+ROAD -1923.36768 0 -25.0831814 -1938.07275 0 -18.779871 5 0
+ROAD -1938.07275 0 -18.779871 -1951 0 -13 5 0
+ROAD -1899.0658 0 -34.3091164 -1908.42798 0 -49.6824837 5 0
+ROAD -1908.42798 0 -49.6824837 -1917 0 -63 5 0
+ROAD -1790 0 265 -1780.00024 0 265.06955 5 0
+ROAD -1780.00024 0 265.06955 -1768.00122 0 265.000031 5 0
+ROAD -1768.00122 0 265.000031 -1752.03357 0 264.002136 5 0
+ROAD -1752.03357 0 264.002136 -1736 0 263 5 0
+ROAD -1680 0 -46 -1640 0 -64 16 1
 MARKER "vehicle_spawn_hatchback_trailer_park_1" 3 -1780.61462 13.2198811 77.0291824 2 1.60000002 4.4000001 89 1
 MARKER "vehicle_spawn_hatchback_trailer_park_2" 3 -1780.72791 13.2198811 89.9563828 2 1.60000002 4.4000001 88 1
 MARKER "vehicle_spawn_hatchback_trailer_park_3" 3 -1780.83997 13.2198811 102.881615 2 1.60000002 4.4000001 87 1
@@ -9564,6 +9805,33 @@ MARKER "vehicle_spawn_hatchback_supra_sovagejo_1" 3 -1808.61682 31.0824547 -581.
 MARKER "vehicle_spawn_hatchback_supra_sovagejo_2" 3 -1821.21533 31.0824566 -584.922363 2 1.60000002 4.4000001 160.985977 1
 MARKER "vehicle_spawn_hatchback_supra_sovagejo_4" 3 -1813.77368 31.0824566 -563.726807 2 1.60000002 4.4000001 166.985962 1
 MARKER "vehicle_spawn_hatchback_supra_sovagejo_6" 3 -1851.03259 31.0824432 -574.420471 2 1.60000002 4.4000001 340.985962 1
+MARKER "vehicle_spawn_truck_kamparo_1" 3 -1740.43359 12.4542217 -18.0225201 2 1.60000002 4.4000001 187.765167 1
+MARKER "vehicle_spawn_hatchback_donor_kamparo_2" 3 -1756.10681 12.454215 -21.9408016 2 1.60000002 4.4000001 82.7651672 1
+MARKER "vehicle_spawn_truck_kamparo_3" 3 -1762.33838 2.22955036 -114.233749 2 1.60000002 4.4000001 95.7106018 1
+MARKER "vehicle_spawn_truck_kamparo_4" 3 -1691.66406 1.46980822 -174.292755 2 1.60000002 4.4000001 146.309937 1
+MARKER "vehicle_spawn_hatchback_kamparo_5" 3 -1699.15259 1.46981502 -179.285049 2 1.60000002 4.4000001 136.309937 1
+MARKER "vehicle_spawn_hatchback_donor_kamparo_6" 3 -1666.97986 1.45563412 -187.882904 2 1.60000002 4.4000001 -18.6900673 1
+MARKER "vehicle_spawn_truck_donor_kamparo_7" 3 -1694.4375 1.48206925 -206.188004 2 1.60000002 4.4000001 -53.6900673 1
+MARKER "vehicle_spawn_hatchback_donor_kamparo_8" 3 -1706.36365 1.46982884 -190.1017 2 1.60000002 4.4000001 61.3099327 1
+MARKER "vehicle_spawn_truck_kamparo_9" 3 -1585.18188 6.03271961 -186.850906 2 1.60000002 4.4000001 163.495636 1
+MARKER "vehicle_spawn_hatchback_donor_kamparo_10" 3 -1599.88342 6.03270483 -200.593674 2 1.60000002 4.4000001 43.4956398 1
+MARKER "vehicle_spawn_truck_kamparo_11" 3 -1580 6.90635109 -105 2 1.60000002 4.4000001 90 1
+MARKER "vehicle_spawn_hatchback_donor_kamparo_12" 3 -1591 6.90634775 -121 2 1.60000002 4.4000001 -50 1
+MARKER "vehicle_spawn_sxs_kamparo_13" 3 -1930.45923 8.22218704 -65.8196869 2 1.60000002 4.4000001 214.508514 1
+MARKER "vehicle_spawn_truck_donor_kamparo_14" 3 -1916.70813 8.222188 -74.0601044 2 1.60000002 4.4000001 204.508514 1
+MARKER "vehicle_spawn_truck_kamparo_15" 3 -1961.36755 9.23720932 -15.5894661 2 1.60000002 4.4000001 288.434937 1
+MARKER "vehicle_spawn_truck_kamparo_16" 3 -1723.94836 14.0573711 263.271423 2 1.60000002 4.4000001 92.602562 1
+MARKER "vehicle_spawn_hatchback_donor_kamparo_17" 3 -1728.62549 14.0573711 248.468506 2 1.60000002 4.4000001 2.60256195 1
+MARKER "vehicle_spawn_truck_donor_kamparo_18" 3 -1722.13208 14.0573711 248.173355 2 1.60000002 4.4000001 11.602562 1
+MARKER "vehicle_spawn_hatchback_donor_kamparo_19" 3 -1715.63879 14.0573711 247.878204 2 1.60000002 4.4000001 20.602562 1
+MARKER "vehicle_spawn_truck_kamparo_20" 3 -1664.37732 12.7542591 -24.5190277 2 1.60000002 4.4000001 -155.772247 1
+MARKER "vehicle_spawn_truck_kamparo_21" 3 -1626.57812 12.7542486 -40.4320564 2 1.60000002 4.4000001 -155.772247 1
+MARKER "vehicle_spawn_hatchback_kamparo_22" 3 -1621.99561 12.7542458 -48.5253601 2 1.60000002 4.4000001 -65.7722549 1
+MARKER "vehicle_spawn_truck_kamparo_23" 3 -1674.95544 12.7542448 -94.3266068 2 1.60000002 4.4000001 24.2277451 1
+MARKER "vehicle_spawn_truck_kamparo_24" 3 -1667.06738 12.7542677 -46.3367462 2 1.60000002 4.4000001 24.2277451 1
+MARKER "vehicle_spawn_truck_kamparo_25" 3 -1661.59583 12.7542648 -48.7989311 2 1.60000002 4.4000001 24.2277451 1
+MARKER "vehicle_spawn_sxs_kamparo_26" 3 -1652.93262 12.754261 -63.6632538 2 1.60000002 4.4000001 -155.772247 1
+MARKER "vehicle_spawn_hatchback_donor_kamparo_27" 3 -1647.96265 12.7542524 -86.7348709 2 1.60000002 4.4000001 134.227737 1
 SETTLEMENT "hamlet_ruldomaro" "Ruldomaro" 997 0 -997 0 26 0 0
 ROAD 939 0 -997 1045 0 -997 6 1
 ROAD 1045 0 -997 1084.97144 0 -1035.2644 6 1

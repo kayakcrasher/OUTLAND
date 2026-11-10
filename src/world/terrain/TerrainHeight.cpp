@@ -8,6 +8,7 @@
 #include "outland/world/Ranches.hpp"
 #include "outland/world/Ballparks.hpp"
 #include "outland/world/MountainRoad.hpp"
+#include "outland/world/SovagejoCounty.hpp"
 
 namespace outland::world::terrain {
 
@@ -209,7 +210,8 @@ float TerrainHeight::pad_weight(
 
 float TerrainHeight::unpaved(const float world_x, const float world_z) {
     // Then Sovaĝa Monto's road cut and filled into it (world/MountainRoad.hpp).
-    return coastal_enabled ? mountain::graded(world_x, world_z, land(world_x, world_z, true)) : land(world_x, world_z, false);
+    // (Sovaĝejo's country tracks and homes on top of the mountain road's shaping: world/SovagejoCounty.hpp.)
+    return coastal_enabled ? county::graded(world_x, world_z, mountain::graded(world_x, world_z, land(world_x, world_z, true))) : land(world_x, world_z, false);
 }
 
 float TerrainHeight::ungraded(const float world_x, const float world_z) { return land(world_x, world_z, true); }

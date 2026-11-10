@@ -107,7 +107,9 @@ int main() {
         }
         // Off the ring and into the town beyond: by a slip road (the way it runs) and the roundabout.
         for (const float way : {-1.0F, 1.0F}) {
-            const Vector3 ring_point = offset(x.at, x.ring_forward, way * 500);
+            // (500 m round the ring, in the lane for coming back toward the exit: on the carriageway
+            // itself, not out on the land beside it where a country track may pass nearer.)
+            const Vector3 ring_point = ::on_ring(x, way * 500, way > 0 ? hw::slow_lane : -hw::slow_lane);
             const auto off = graph.route(ring_point, outer);
             check(off.complete, name + ": off the ring");
             bool slipped = false;

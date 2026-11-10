@@ -3,6 +3,7 @@
 #include "outland/characters/CharacterRegistry.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/MountainRoad.hpp"
+#include "outland/world/SovagejoCounty.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
 #include <raymath.h>
 #include <algorithm>
@@ -104,7 +105,8 @@ PlaceKind kind_of(world::BuildingPurpose purpose) {
 }
 std::size_t nearest_town(const std::vector<world::Settlement>& settlements,Vector3 position) {
     // Up Sovaĝa Monto's road (its pullouts, Supra Sovaĝejo): Sovaĝejo's, however far from its middle.
-    if(world::terrain::TerrainHeight::coastal_layout() && world::mountain::near(position.x,position.z,40))
+    // ...and its country round about, Fajrejo too (world::county).
+    if(world::terrain::TerrainHeight::coastal_layout() && (world::mountain::near(position.x,position.z,40) || world::county::near(position.x,position.z,25)))
         for(std::size_t t=0;t<settlements.size();++t) if(settlements[t].id=="ferarbaro_sovagejo") return t;
     std::size_t home_town=0;float best=std::numeric_limits<float>::max();
     for(std::size_t t=0;t<settlements.size();++t) {

@@ -78,6 +78,7 @@ Ferarbaro's backcountry settlement (`ferarbaro_sovagejo`), built by `outland_bui
 
 - **The trailer park:** 12 enterable trailers, formerly Roka's, now Sovaĝejo's.
 - **Sovaĝa Monto:** north of the park, the island's highest mountain (about 289 m), with Sovaĝejo's dirt road winding about 2.9 km over its shoulder to the ring road: pullouts with trailers, parking and lights, and Supra Sovaĝejo's six trailers off a fork. See [sovaga-monto.md](sovaga-monto.md).
+- **The country round it:** seven short dirt tracks off the mountain road and the homestead road to ten scattered country homes (trailers, cabins, farmhouses, a family compound, a workshop family) and **Fajrejo**, a tiny settlement on a gravel lot with a chapel, a general store, a mechanic's shed and four houses. See [sovagejo-county.md](sovagejo-county.md).
 - **Seven homesteads** on a dirt road running south from Roka's main street, then west. Each has:
   - a shack home, a lean-to, and on some a second shack as a workshop;
   - a car that runs, with one or two **parts donors** on cinder blocks;

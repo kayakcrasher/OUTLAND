@@ -77,7 +77,8 @@ int main() {
     }
     int sxs = 0, semis = 0;
     for (const auto& car : cars.vehicles()) {
-        sxs += car.id.find("vehicle_spawn_sxs_") != std::string::npos && car.id.find("_forsale_") == std::string::npos;   // (not the car lot's)
+        sxs += car.id.find("vehicle_spawn_sxs_") != std::string::npos && car.id.find("_forsale_") == std::string::npos &&   // (not the car lot's,
+               car.id.find("_kamparo_") == std::string::npos;                                                         // nor Sovaĝejo's country folk's)
         semis += car.id.find("vehicle_spawn_semi_") != std::string::npos;
     }
     // The stockyard's two, Verda Transporto's (four for hire and three of its own drivers'), and the

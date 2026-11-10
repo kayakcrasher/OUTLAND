@@ -78,4 +78,7 @@ float graded(float x, float z, float height);
 // Within `margin` of the road, the lane or the pad (the ground the road shapes).
 bool near(float x, float z, float margin);
 
+// How far (x, z) is from the road's centre line (1e9 beyond the ground the road shapes).
+float distance(float x, float z);
+
 } // namespace outland::world::mountain

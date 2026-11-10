@@ -225,6 +225,48 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_alley_block_68", .name = "Sidewalk Block 68 m with an alley", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/ground/alley_block_68.glb", .thumbnail_path = "", .footprint = {68.00F, 68.00F, 0.15F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_log_cabin", .name = "Log cabin with a porch and a stone chimney (enterable)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/country/log_cabin.glb", .thumbnail_path = "", .footprint = {8.40F, 9.10F, 5.40F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_log_cabin_dark", .name = "Log cabin, weathered (enterable)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/country/log_cabin_dark.glb", .thumbnail_path = "", .footprint = {8.40F, 9.10F, 5.40F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_farmhouse_cream", .name = "Weatherboard farmhouse (cream, porch, enterable)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/country/farmhouse_cream.glb", .thumbnail_path = "", .footprint = {10.04F, 11.52F, 6.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_farmhouse_blue", .name = "Weatherboard farmhouse (blue, porch, enterable)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/country/farmhouse_blue.glb", .thumbnail_path = "", .footprint = {10.04F, 11.52F, 6.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_farmhouse_grey", .name = "Weatherboard farmhouse (grey, porch, enterable)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/country/farmhouse_grey.glb", .thumbnail_path = "", .footprint = {10.04F, 11.52F, 6.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_general_store", .name = "Country general store, false front and porch (enterable)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/country/general_store.glb", .thumbnail_path = "", .footprint = {10.74F, 16.37F, 6.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_mechanic_shed", .name = "Mechanic's steel shed, drive-in door", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/country/mechanic_shed.glb", .thumbnail_path = "", .footprint = {12.64F, 10.64F, 5.32F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_workshop_shed", .name = "Rusty workshop shed, drive-in door", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/country/workshop_shed.glb", .thumbnail_path = "", .footprint = {12.64F, 10.64F, 5.32F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_generator", .name = "Generator on a skid", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/country/generator.glb", .thumbnail_path = "", .footprint = {1.00F, 0.70F, 0.70F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_deer_stand", .name = "Deer stand (box blind on legs, ladder)", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/country/deer_stand.glb", .thumbnail_path = "", .footprint = {2.00F, 2.95F, 5.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_boat_trailer", .name = "Aluminium fishing boat on its trailer", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/country/boat_trailer.glb", .thumbnail_path = "", .footprint = {1.70F, 5.60F, 1.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_woodpile", .name = "Covered woodpile", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/country/woodpile.glb", .thumbnail_path = "", .footprint = {3.80F, 1.60F, 2.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_outhouse", .name = "Outhouse", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/country/outhouse.glb", .thumbnail_path = "", .footprint = {1.50F, 1.60F, 2.40F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_country_mailbox", .name = "Rural mailbox on a post", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/country/mailbox.glb", .thumbnail_path = "", .footprint = {0.30F, 0.50F, 1.40F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_sidewalk_block_68", .name = "Sidewalk Block 68 m", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/ground/sidewalk_block_68.glb", .thumbnail_path = "", .footprint = {68.00F, 68.00F, 0.15F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

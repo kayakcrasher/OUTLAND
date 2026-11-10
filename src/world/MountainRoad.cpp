@@ -406,6 +406,17 @@ float graded(float x, float z, float height) {
     return num / den;
 }
 
+float distance(float x, float z) {
+    const Plan& L = plan();
+    const int cx = static_cast<int>(std::floor((x - L.x0) / Plan::cell)), cz = static_cast<int>(std::floor((z - L.z0) / Plan::cell));
+    if (cx < 0 || cz < 0 || cx >= L.cols || cz >= L.rows) return 1e9F;
+    const Vector3 p{x, 0, z};
+    float best = 1e9F, t = 0;
+    for (const int i : L.cells[static_cast<std::size_t>(cz * L.cols + cx)])
+        best = std::min(best, distance_to_segment(p, L.line.points[static_cast<std::size_t>(i)], L.line.points[static_cast<std::size_t>(i) + 1], t));
+    return best;
+}
+
 bool near(float x, float z, float margin) {
     const Plan& L = plan();
     const Vector3 p{x, 0, z};

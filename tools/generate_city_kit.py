@@ -3421,6 +3421,338 @@ def alley_block():
     return b
 
 
+# ---------------------------------------------------------------- Sovaĝejo's country
+# The backcountry round Sovaĝejo (world::county): log cabins, a weatherboard farmhouse, Fajrejo's
+# general store and mechanic's shed, and the yard things of country homes - a generator on its
+# skid, a deer stand, a boat on its trailer, a covered woodpile, an outhouse, a mailbox.
+def logs(seed=103):
+    """Round logs laid up a cabin wall: four to a 1.2 m tile, chinking between them."""
+    c = Canvas(color=(76, 54, 36), seed=seed)
+    for y in range(0, TEX, 16):
+        for x in range(TEX):
+            for k in range(14):
+                tone = int(26 * math.sin((k + .5) / 14 * math.pi)) - 10
+                c.px[(y + k) * TEX + x] = shade((122, 86, 54), tone + c.rng.randint(-6, 6))
+        c.rect(0, y + 14, TEX, y + 16, (186, 176, 150), 4)
+    return c
+
+
+def corrugated(base=(150, 152, 150), rust=(140, 84, 44), seed=107):
+    """Corrugated tin: ridges, a few rust streaks."""
+    c = Canvas(color=base, seed=seed)
+    for x in range(TEX):
+        tone = 18 if x % 8 < 3 else -10
+        for y in range(TEX):
+            c.px[y * TEX + x] = shade(base, tone + c.rng.randint(-4, 4))
+    for _ in range(5):
+        x0, y0 = c.rng.randint(0, TEX - 6), c.rng.randint(0, TEX - 20)
+        c.rect(x0, y0, x0 + c.rng.randint(2, 6), y0 + c.rng.randint(8, 30), rust, 8)
+    return c
+
+
+def fieldstone(seed=109):
+    """Fieldstone laid in mortar (a chimney, a foundation)."""
+    c = Canvas(color=(150, 146, 136), seed=seed)
+    for y in range(0, TEX, 11):
+        x = -c.rng.randint(0, 10)
+        while x < TEX:
+            w = c.rng.randint(9, 17)
+            c.rect(x + 1, y + 1, x + w - 1, y + 10, shade((128, 122, 112), c.rng.randint(-24, 24)), 6)
+            x += w
+    return c
+
+
+def shingles(color=(86, 70, 60), seed=113):
+    c = Canvas(color=shade(color, -30), seed=seed)
+    for y in range(0, TEX, 8):
+        off = 6 if (y // 8) % 2 else 0
+        for x in range(-12, TEX, 12):
+            c.rect(x + off + 1, y, x + off + 11, y + 7, shade(color, c.rng.randint(-12, 12)), 5)
+    return c
+
+
+def country_room(b, w, d, height, outer, inner, floor_y, front_openings, back_openings=(), side_openings=(), floor="floor"):
+    """Four walls with openings (front at -Z), a floor at floor_y, a flat ceiling at height."""
+    t = .2
+    wall_with_openings(b, 'x', -d, (-w, w), height, t, front_openings, outer, inner, -1)
+    wall_with_openings(b, 'x', d, (-w, w), height, t, list(back_openings), outer, inner, +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), height, t, [o[:4] for o in side_openings if o[4] < 0], outer, inner, -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, [o[:4] for o in side_openings if o[4] > 0], outer, inner, +1)
+    b.box((-w + t, 0, -d + t), (w - t, floor_y, d - t), {'+y': floor})
+    b.box((-w + t, height - .12, -d + t), (w - t, height, d - t), {'-y': inner})
+
+
+def glass_in(b, openings, axis, face, outward):
+    """Glazing set into window openings (not doors: those reach the floor)."""
+    for o in openings:
+        a0, a1, y0, y1 = o[:4]
+        if y0 < .5:
+            continue
+        mid = face - outward * .1
+        if axis == 'x':
+            b.box((a0, y0, mid - .01), (a1, y1, mid + .01), {'-z': "glass", '+z': "glass"})
+        else:
+            b.box((mid - .01, y0, a0), (mid + .01, y1, a1), {'-x': "glass", '+x': "glass"})
+
+
+def log_cabin(seed=401):
+    """A log cabin (front -Z, 7 x 6 m, enterable): a gable front under a tin roof, a porch across
+    the front on posts, a fieldstone chimney up the east end; inside, a plank floor."""
+    b = Builder()
+    north_glass(b)
+    b.material("logs", logs(seed), 1.2, 1.2)
+    b.material("inner", logs(seed + 1), 1.2, 1.2)
+    b.material("floor", wood(), 2, 2)
+    b.material("tin", corrugated(seed=seed), 1.2, 1.2)
+    b.material("stone", fieldstone(), 1.2, 1.2)
+    b.material("post", flat((92, 66, 42), 6), 1, 1)
+    w, d, h, f = 3.5, 3.0, 2.8, .3
+    door = (-.6, .6, f, f + 2.1)
+    front = [door, (1.3, 2.6, f + .9, f + 1.9), (-2.6, -1.3, f + .9, f + 1.9)]
+    sides = [(-1.0, .4, f + .9, f + 1.9, -1)]
+    back = [(-.7, .7, f + .9, f + 1.9)]
+    country_room(b, w, d, h, "logs", "inner", f, front, back, sides)
+    glass_in(b, front, 'x', -d, -1)
+    glass_in(b, back, 'x', d, 1)
+    b.solid((-w - .1, 0, -d - .1), (w + .1, f, d + .1), "stone")
+    gable(b, "logs", "tin", -w - .05, w + .05, h, 1.9, -d - .05, d + .05, overhang=.45)
+    # The porch: a deck on the front, posts, a shed roof off the gable end.
+    b.solid((-w, 0, -d - 2.0), (w, f, -d), "floor")
+    for x in (-w + .15, w - .15):
+        b.solid((x - .1, f, -d - 1.95), (x + .1, h + .1, -d - 1.75), "post")
+    b.solid((-w - .2, h + .1, -d - 2.3), (w + .2, h + .18, -d), "tin")
+    b.solid((-w, f + .9, -d - 2.0), (-w + .1, f + 1.0, -d), "post")
+    b.solid((w - .1, f + .9, -d - 2.0), (w, f + 1.0, -d), "post")
+    for k in range(2):
+        b.solid((-.7, 0, -d - 2.0 - (k + 1) * .3), (.7, f - k * .15, -d - 2.0 - k * .3), "post")
+    # The chimney on the east end.
+    b.solid((w, 0, -.6), (w + .9, h + 2.6, .6), "stone")
+    return b
+
+
+def farmhouse(paint=(236, 226, 196), seed=411):
+    """A weatherboard farmhouse (front -Z, 9 x 8 m, enterable ground floor): a steep shingle roof
+    over the attic, a porch the width of the front, a brick chimney."""
+    b = Builder()
+    north_glass(b)
+    b.material("boards", clapboard(paint, shade(paint, -40), seed), 3, 3)
+    b.material("inner", flat((196, 186, 164), 4), 3, 3)
+    b.material("floor", wood(), 2, 2)
+    b.material("roof", shingles(seed=seed), 1.5, 1.5)
+    b.material("trim", flat((246, 244, 236), 3), 1, 1)
+    b.material("stone", fieldstone(seed + 1), 1.2, 1.2)
+    b.material("brick", brick((140, 62, 46), seed=seed), 1.2, 1.2)
+    w, d, h, f = 4.5, 4.0, 3.0, .4
+    door = (-.6, .6, f, f + 2.1)
+    front = [door, (-3.4, -2.0, f + .8, f + 2.1), (2.0, 3.4, f + .8, f + 2.1)]
+    back = [(-2.6, -1.4, f + .8, f + 2.0), (1.4, 2.6, f + .8, f + 2.0), (3.0, 3.9, f, f + 2.1)]
+    sides = [(-2.0, -.6, f + .8, f + 2.1, -1), (.6, 2.0, f + .8, f + 2.1, -1), (-2.0, -.6, f + .8, f + 2.1, 1), (.6, 2.0, f + .8, f + 2.1, 1)]
+    country_room(b, w, d, h, "boards", "inner", f, front, back, sides)
+    glass_in(b, front, 'x', -d, -1)
+    glass_in(b, back, 'x', d, 1)
+    glass_in(b, [o for o in sides if o[4] < 0], 'z', -w, -1)
+    glass_in(b, [o for o in sides if o[4] > 0], 'z', w, 1)
+    b.solid((-w - .05, 0, -d - .05), (w + .05, f, d + .05), "stone")
+    # The roof: the ridge across the front (built along Z, then swapped).
+    b2 = Builder()
+    b2.materials = b.materials
+    gable(b2, "boards", "roof", -d - .02, d + .02, h, 2.8, -w - .02, w + .02, overhang=.5)
+    for m, (pos, nor, uvs, idx) in b2.prims.items():
+        P, N, U, I = b.prims.setdefault(m, ([], [], [], []))
+        base = len(P)
+        P += [(z, y, x) for (x, y, z) in pos]
+        N += [(nz, ny, nx) for (nx, ny, nz) in nor]
+        U += uvs
+        I += [base + i for tri in zip(idx[0::3], idx[1::3], idx[2::3]) for i in (tri[0], tri[2], tri[1])]
+    # A dormer-less attic: a gable window each end.
+    for x, n in ((-w - .03, -1), (w + .01, 1)):
+        b.box((x, h + .7, -.5), (x + .02, h + 1.6, .5), {'-x' if n < 0 else '+x': "glass"})
+    # The porch.
+    b.solid((-w, 0, -d - 2.4), (w, f, -d), "floor")
+    for x in (-w + .15, -1.4, 1.4, w - .15):
+        b.solid((x - .09, f, -d - 2.35), (x + .09, h, -d - 2.17), "trim")
+    b.solid((-w - .2, h, -d - 2.6), (w + .2, h + .12, -d), "roof")
+    b.solid((-w, f + .85, -d - 2.4), (-1.0, f + .95, -d - 2.3), "trim")
+    b.solid((1.0, f + .85, -d - 2.4), (w, f + .95, -d - 2.3), "trim")
+    for k in range(2):
+        b.solid((-.9, 0, -d - 2.4 - (k + 1) * .3), (.9, f - k * .2, -d - 2.4 - k * .3), "floor")
+    b.solid((2.2, h, 1.0), (3.0, h + 3.6, 1.8), "brick")
+    return b
+
+
+def general_store(seed=421):
+    """Fajrejo's general store (front -Z, 10 x 13 m, enterable): a false front over the porch
+    with a board for its name, display windows either side of the door, a gable roof behind;
+    inside, a counter and shelves along the walls."""
+    b = Builder()
+    north_glass(b)
+    paint = (176, 70, 52)
+    b.material("boards", clapboard(paint, shade(paint, -40), seed), 3, 3)
+    b.material("inner", flat((200, 188, 160), 4), 3, 3)
+    b.material("floor", wood(), 2, 2)
+    b.material("tin", corrugated(seed=seed), 1.2, 1.2)
+    b.material("trim", flat((236, 228, 206), 3), 1, 1)
+    b.material("shelf", wood(), 1, 1)
+    b.material("goods", stripes((60, 110, 160), (214, 170, 60), width=6, seed=seed), .8, .8)
+    w, d, h, f = 5.0, 6.5, 3.6, .3
+    front = [(-.7, .7, f, f + 2.3), (-4.2, -1.4, f + .7, f + 2.6), (1.4, 4.2, f + .7, f + 2.6)]
+    back = [(2.6, 3.6, f, f + 2.1)]
+    sides = [(-2.0, 0.0, f + 1.0, f + 2.2, -1), (1.0, 3.0, f + 1.0, f + 2.2, 1)]
+    country_room(b, w, d, h, "boards", "inner", f, front, back, sides)
+    glass_in(b, front, 'x', -d, -1)
+    glass_in(b, [o for o in sides if o[4] < 0], 'z', -w, -1)
+    glass_in(b, [o for o in sides if o[4] > 0], 'z', w, 1)
+    gable(b, "boards", "tin", -w - .02, w + .02, h, 1.8, -d + .1, d + .02, overhang=.35)
+    # The false front: up past the roof, a trim band, the board where its name goes.
+    b.box((-w - .1, h, -d - .22), (w + .1, 6.4, -d), {'-z': "boards", '+z': "boards", '+x': "boards", '-x': "boards"})
+    b.solid((-w - .25, 6.4, -d - .4), (w + .25, 6.6, -d + .05), "trim")
+    b.solid((-3.6, 4.1, -d - .3), (3.6, 5.5, -d - .22), "trim")
+    # The porch: boardwalk, posts, a tin shed roof.
+    b.solid((-w, 0, -d - 2.4), (w, f, -d), "floor")
+    for x in (-w + .15, -2.4, 2.4, w - .15):
+        b.solid((x - .09, f, -d - 2.35), (x + .09, 3.3, -d - 2.17), "trim")
+    b.solid((-w - .2, 3.3, -d - 2.6), (w + .2, 3.4, -d), "tin")
+    for k in range(2):
+        b.solid((-1.0, 0, -d - 2.4 - (k + 1) * .3), (1.0, f - k * .15, -d - 2.4 - k * .3), "floor")
+    # Inside: the counter, shelves of goods along both side walls and the back.
+    b.solid((-3.8, f, -1.0), (-.8, f + 1.0, -.4), "shelf")
+    for x0, x1 in ((-w + .2, -w + .7), (w - .7, w - .2)):
+        b.solid((x0, f, -4.6), (x1, f + 2.0, 4.6), "shelf")
+        b.box((x0 + (0 if x0 > 0 else .5), f + .3, -4.4), (x1 - (.5 if x0 > 0 else 0), f + 1.8, 4.4), {'+x': "goods", '-x': "goods"})
+    b.solid((-3.0, f, d - .7), (1.8, f + 2.0, d - .2), "shelf")
+    return b
+
+
+def mechanic_shed(base=(132, 138, 140), rust=(150, 80, 40), seed=431):
+    """A steel shed for a mechanic or a workshop (front -Z, 12 x 10 m): a drive-in door on the
+    front, a side door, a low tin roof, a bench and a stack of tyres inside, a concrete floor."""
+    b = Builder()
+    b.material("tin", corrugated(base, rust, seed), 1.2, 1.2)
+    b.material("inner", corrugated(shade(base, -30), rust, seed + 1), 1.2, 1.2)
+    b.material("floor", flat((150, 148, 142), 6), 3, 3)
+    b.material("frame", flat((52, 54, 56), 4), 1, 1)
+    b.material("bench", wood(), 1, 1)
+    b.material("tyre", flat((26, 26, 28), 3), 1, 1)
+    w, d, h, f = 6.0, 5.0, 4.2, .1
+    front = [(-3.4, 1.8, f, 3.9), (3.4, 4.5, f, 2.2)]
+    sides = [(-1.0, 1.0, 1.4, 2.2, 1)]
+    country_room(b, w, d, h, "tin", "inner", f, front, (), sides)
+    gable(b, "tin", "tin", -w - .02, w + .02, h, 1.1, -d - .02, d + .02, overhang=.3)
+    b.solid((-3.5, 3.9, -d - .1), (1.9, 4.05, -d + .1), "frame")
+    b.solid((-w + .3, f, d - 1.0), (-w + 3.6, f + .95, d - .3), "bench")
+    for k in range(5):
+        b.ring("tyre", w - 1.0, d - 1.0, .36, .36, f + k * .24, f + k * .24 + .22, 12, top_cap=True)
+    return b
+
+
+def generator(seed=441):
+    """A portable generator on its skid: a frame, the engine and alternator, a tank on top, the pipe."""
+    b = Builder()
+    b.material("frame", flat((40, 40, 42), 3), 1, 1)
+    b.material("body", flat((230, 176, 30), 4), 1, 1)
+    b.material("engine", flat((90, 92, 94), 4), 1, 1)
+    b.material("tank", flat((196, 40, 32), 4), 1, 1)
+    b.solid((-.5, 0, -.35), (.5, .08, .35), "frame")
+    for x in (-.5, .45):
+        for z in (-.35, .3):
+            b.solid((x, .08, z), (x + .05, .7, z + .05), "frame")
+    b.solid((-.4, .08, -.28), (.05, .5, .28), "engine")
+    b.solid((.05, .1, -.25), (.42, .48, .25), "body")
+    b.solid((-.35, .5, -.22), (.35, .68, .22), "tank")
+    b.solid((-.48, .3, .1), (-.4, .62, .16), "frame")
+    return b
+
+
+def deer_stand(seed=451):
+    """A deer stand: a box blind with a shooting slot on four legs, a ladder up to it."""
+    b = Builder()
+    b.material("wood", wood(), 1.5, 1.5)
+    b.material("dark", flat((40, 32, 26), 4), 1, 1)
+    b.material("tin", corrugated(seed=seed), 1.2, 1.2)
+    for x in (-.8, .7):
+        for z in (-.8, .7):
+            b.solid((x, 0, z), (x + .12, 3.6, z + .12), "wood")
+    b.solid((-.95, 3.4, -.95), (.95, 3.5, .95), "wood")
+    b.box((-.9, 3.5, -.9), (.9, 4.4, .9), {s: "wood" for s in ('+x', '-x', '+z', '-z')})
+    b.box((-.9, 4.4, -.9), (.9, 4.7, .9), {'+x': "wood", '-x': "wood", '+z': "wood"})
+    b.box((-.9, 4.4, -.92), (.9, 4.7, -.9), {'-z': "dark"})
+    b.solid((-.95, 4.9, -.95), (1.05, 5.0, 1.05), "tin")
+    for x in (-.9, .9):
+        b.solid((x - .02, 4.7, -.9), (x + .02, 4.9, -.88), "wood")
+    for x in (-.3, .3):
+        b.solid((x - .04, 0, -1.9), (x + .04, 3.5, -1.82), "wood")
+    for k in range(11):
+        b.solid((-.3, .3 + k * .3, -1.9 + k * .09), (.3, .34 + k * .3, -1.82 + k * .09), "wood")
+    return b
+
+
+def boat_trailer(seed=461):
+    """A small aluminium fishing boat on its road trailer (along Z, the bow at -Z), an outboard."""
+    b = Builder()
+    b.material("frame", flat((40, 70, 120), 4), 1, 1)
+    b.material("hull", flat((190, 194, 198), 4), 1, 1)
+    b.material("inside", flat((150, 154, 158), 4), 1, 1)
+    b.material("tyre", flat((26, 26, 28), 3), 1, 1)
+    b.material("motor", flat((30, 30, 32), 3), 1, 1)
+    b.solid((-.06, .45, -3.2), (.06, .55, 2.2), "frame")
+    b.solid((-.8, .45, .6), (.8, .55, .7), "frame")
+    b.solid((-.8, .45, -1.4), (.8, .55, -1.3), "frame")
+    for x in (-.85, .7):
+        b.solid((x, 0, .1), (x + .15, .6, .7), "tyre")
+    for k in range(8):
+        z0 = -2.4 + k * .55
+        half = .45 + .4 * min(1, (k + 1) / 3)
+        b.box((-half, .6, z0), (half, 1.25, z0 + .55), {'+x': "hull", '-x': "hull", '-y': "hull", '+z': "inside" if k < 7 else "hull", '-z': "hull" if k == 0 else "inside"})
+        b.box((-half + .05, .65, z0), (half - .05, .68, z0 + .55), {'+y': "inside"})
+    b.solid((-.2, .9, 2.0), (.2, 1.6, 2.4), "motor")
+    b.solid((-.06, .5, 2.2), (.06, .95, 2.32), "motor")
+    b.solid((-.8, .9, .4), (.8, 1.0, .7), "inside")
+    return b
+
+
+def woodpile(seed=471):
+    """Split firewood stacked two rows deep under a tin lean-to roof."""
+    b = Builder()
+    b.material("ends", flat((176, 140, 96), 12, seed), .3, .3)
+    b.material("bark", flat((82, 60, 42), 10, seed + 1), .5, .5)
+    b.material("tin", corrugated(seed=seed), 1.2, 1.2)
+    b.material("post", flat((92, 66, 42), 6), 1, 1)
+    b.box((-1.6, 0, -.5), (1.6, 1.3, .5), {'-z': "ends", '+z': "ends", '-x': "bark", '+x': "bark", '+y': "bark"})
+    for x in (-1.7, 1.6):
+        for z in (-.6, .5):
+            b.solid((x, 0, z), (x + .1, 1.9 if z > 0 else 1.6, z + .1), "post")
+    b.raw("tin", [(-1.9, 1.55, -.85), (1.9, 1.55, -.85), (1.9, 1.95, .75), (-1.9, 1.95, .75)], (0, .97, -.24), [(0, 0), (3.2, 0), (3.2, 1.4), (0, 1.4)])
+    b.raw("tin", [(1.9, 1.55, -.85), (-1.9, 1.55, -.85), (-1.9, 1.95, .75), (1.9, 1.95, .75)], (0, -.97, .24), [(0, 0), (3.2, 0), (3.2, 1.4), (0, 1.4)])
+    return b
+
+
+def outhouse(seed=481):
+    """An outhouse: plank walls, a door with a crescent cut, a slant tin roof."""
+    b = Builder()
+    b.material("wood", wood(), 1.5, 1.5)
+    b.material("dark", flat((30, 24, 20), 3), 1, 1)
+    b.material("tin", corrugated(seed=seed), 1.2, 1.2)
+    b.solid((-.6, 0, -.6), (.6, 2.2, .6), "wood")
+    b.box((-.1, 1.75, -.62), (.1, 1.9, -.6), {'-z': "dark"})
+    b.raw("tin", [(-.75, 2.1, -.8), (.75, 2.1, -.8), (.75, 2.4, .75), (-.75, 2.4, .75)], (0, .98, -.19), [(0, 0), (1.2, 0), (1.2, 1.3), (0, 1.3)])
+    b.raw("tin", [(.75, 2.1, -.8), (-.75, 2.1, -.8), (-.75, 2.4, .75), (.75, 2.4, .75)], (0, -.98, .19), [(0, 0), (1.2, 0), (1.2, 1.3), (0, 1.3)])
+    return b
+
+
+def mailbox(seed=491):
+    """A rural mailbox on a post (its door toward -Z, the road), the red flag up."""
+    b = Builder()
+    b.material("post", flat((92, 66, 42), 6), 1, 1)
+    b.material("box", flat((60, 64, 66), 3), 1, 1)
+    b.material("flag", flat((200, 30, 30), 3), 1, 1)
+    b.solid((-.06, 0, -.06), (.06, 1.0, .06), "post")
+    b.solid((-.14, 1.0, -.25), (.14, 1.2, .25), "box")
+    b.ring("box", 0, 0, .14, .14, 1.2, 1.21, 10)
+    b.solid((.14, 1.1, .05), (.16, 1.4, .1), "flag")
+    b.solid((.14, 1.3, .1), (.16, 1.4, .24), "flag")
+    return b
+
+
 def pad(size, kind):
     """Block surface 0.15 m above the street: sidewalk (pavers), park (grass + paths) or parking."""
     b = Builder()
@@ -3592,6 +3924,20 @@ def kit():
     add("north/l_station.glb", l_station(), "city_north_l_station", "The L - station: side platforms, canopies, stairs", "BuildingPart", 16.6, 40, 11.1)
     add("north/l_train.glb", l_train(), "city_north_l_train", "The L - two-car train", "BuildingPart", 2.85, 30, 3.8)
     add("ground/alley_block_68.glb", alley_block(), "city_alley_block_68", "Sidewalk Block 68 m with an alley", "BuildingPart", 68, 68, .15)
+    add("country/log_cabin.glb", log_cabin(), "city_country_log_cabin", "Log cabin with a porch and a stone chimney (enterable)", "Building", 8.4, 9.1, 5.4)
+    add("country/log_cabin_dark.glb", log_cabin(402), "city_country_log_cabin_dark", "Log cabin, weathered (enterable)", "Building", 8.4, 9.1, 5.4)
+    for tone, paint in (("cream", (236, 226, 196)), ("blue", (176, 196, 210)), ("grey", (196, 196, 190))):
+        add(f"country/farmhouse_{tone}.glb", farmhouse(paint, 411 + len(tone)), f"city_country_farmhouse_{tone}",
+            f"Weatherboard farmhouse ({tone}, porch, enterable)", "Building", 10.04, 11.52, 6.6)
+    add("country/general_store.glb", general_store(), "city_country_general_store", "Country general store, false front and porch (enterable)", "Building", 10.74, 16.37, 6.6)
+    add("country/mechanic_shed.glb", mechanic_shed(), "city_country_mechanic_shed", "Mechanic's steel shed, drive-in door", "Building", 12.64, 10.64, 5.32)
+    add("country/workshop_shed.glb", mechanic_shed((120, 92, 70), (168, 90, 40), 432), "city_country_workshop_shed", "Rusty workshop shed, drive-in door", "Building", 12.64, 10.64, 5.32)
+    add("country/generator.glb", generator(), "city_country_generator", "Generator on a skid", "BuildingPart", 1.0, .7, .7)
+    add("country/deer_stand.glb", deer_stand(), "city_country_deer_stand", "Deer stand (box blind on legs, ladder)", "BuildingPart", 2.0, 2.95, 5.0)
+    add("country/boat_trailer.glb", boat_trailer(), "city_country_boat_trailer", "Aluminium fishing boat on its trailer", "BuildingPart", 1.7, 5.6, 1.6)
+    add("country/woodpile.glb", woodpile(), "city_country_woodpile", "Covered woodpile", "BuildingPart", 3.8, 1.6, 2.0)
+    add("country/outhouse.glb", outhouse(), "city_country_outhouse", "Outhouse", "BuildingPart", 1.5, 1.6, 2.4)
+    add("country/mailbox.glb", mailbox(), "city_country_mailbox", "Rural mailbox on a post", "BuildingPart", .3, .5, 1.4)
     add("ground/sidewalk_block_68.glb", pad(68, "sidewalk"), "city_sidewalk_block_68", "Sidewalk Block 68 m", "BuildingPart", 68, 68, .15)
     add("ground/courthouse_square_68.glb", pad(68, "park"), "city_courthouse_square_68", "Courthouse Square Park 68 m", "BuildingPart", 68, 68, 4.6)
     add("ground/parking_lot_68.glb", pad(68, "parking"), "city_parking_lot_68", "Parking Lot 68 m", "BuildingPart", 68, 68, .15)

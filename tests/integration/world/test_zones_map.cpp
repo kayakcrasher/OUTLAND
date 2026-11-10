@@ -9,6 +9,7 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include "outland/world/SovagejoCounty.hpp"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -125,12 +126,13 @@ int main() {
     for (const auto& s : region.settlements()) for (const auto& asset : s.assets) {
         if (std::hypot(asset.position.x - town->center.x, asset.position.z - town->center.z) > 220) continue;
         shacks += asset.model_path.ends_with("Shack A.glb");
-        trailers += asset.model_path.find("residential/trailers/") != std::string::npos;
+        trailers += asset.model_path.find("residential/trailers/") != std::string::npos &&
+                    !world::county::near(asset.position.x, asset.position.z, 2);   // (the park's, not the country homes')
     }
     std::cout << "Sovaĝejo: " << trailers << " trailers, " << shacks << " homesteads, " << runners << " cars that run, " << donors
               << " parts donors, roads " << dirt << " dirt / " << gravel << " gravel / " << paved << " paved, " << town->survivors << " people\n";
-    // (Gravel only for Sovaĝa Monto's lay-bys and Supra Sovaĝejo's lane.)
-    check(paved == 0 && dirt >= 2 && gravel <= 3 * 6 + 2, "dirt roads out here, gravel only up the mountain");
+    // (Gravel only for Sovaĝa Monto's lay-bys, Supra Sovaĝejo's lane and Fajrejo's lot.)
+    check(paved == 0 && dirt >= 2 && gravel <= 3 * 6 + 2 + 1, "dirt roads out here, gravel only up the mountain and Fajrejo's lot");
     check(trailers == 12 && shacks >= 5, "trailers and homesteads");
     check(donors >= 4 && runners >= 8, "a car that runs and the parts donors beside it");
     check(town->survivors >= 40, "people live here");

@@ -192,9 +192,10 @@ int main() {
             p = step_to(p, local(.6F, .56F));
             const auto inside = local(.6F, .56F);
             if (std::hypot(p.x - inside.x, p.z - inside.z) < .2F && p.y > asset.position.y + .6F) ++entered;
-            else std::cerr << "  could not enter trailer " << model << " at " << asset.position.x << "," << asset.position.z << '\n';
+            else std::cerr << "  could not enter trailer " << model << " at " << asset.position.x << "," << asset.position.z << " (got to " << p.x << "," << p.y << "," << p.z << ")\n";
         }
-        check(trailers == 50, "fifty trailers: " + std::to_string(trailers));
+        // (And seven more out in Sovaĝejo's country: world::county.)
+        check(trailers == 57, "fifty-seven trailers: " + std::to_string(trailers));
         check(report.pullout_trailers == 6 && report.upper_trailers == 6, "the mountain road's trailers");
         check(entered == trailers, "walk into every trailer: " + std::to_string(entered) + "/" + std::to_string(trailers));
     }
@@ -272,7 +273,8 @@ int main() {
             check(road.type == world::RoadType::Dirt || road.type == world::RoadType::Gravel, "a dirt road out to Sovaĝejo");
             gravel += road.type == world::RoadType::Gravel;
         }
-        check(gravel == 3 * static_cast<int>(world::mountain::pullouts().size()) + 2, "gravel only up the mountain: " + std::to_string(gravel));
+        // (Three a lay-by, Supra Sovaĝejo's lane in two, and Fajrejo's lot.)
+        check(gravel == 3 * static_cast<int>(world::mountain::pullouts().size()) + 2 + 1, "gravel only up the mountain and Fajrejo's lot: " + std::to_string(gravel));
         world::roads::RoadGraph graph(region);
         check(graph.route(sovagejo->center, roka->center).complete, "the dirt road joins Roka's streets");
         for (const auto& s : region.settlements()) for (const auto& asset : s.assets)

@@ -5,6 +5,7 @@
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/world/Highways.hpp"
 #include "outland/world/MountainRoad.hpp"
+#include "outland/world/SovagejoCounty.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
 #include "outland/world/terrain/TerrainHeight.hpp"
@@ -144,6 +145,13 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
         }
         // The trucking company's office at its depot.
         if (place.kind == PlaceKind::Office && near_model("civic/truck_depot.glb")) text = {"VERDA TRANSPORTO", "KAMIONADO · ŜARĜOJ · BRUTARO"};
+        // Fajrejo, Sovaĝejo's little settlement: its store, its mechanic, its church; and the
+        // country workshops round about.
+        if (world::terrain::TerrainHeight::coastal_layout() && flat(place.door, world::county::village().centre) < world::county::village().flat + 10) {
+            if (place.kind == PlaceKind::Shop) text = {"VILAĜA VENDEJO", "PANO · LAKTO · MUNICIO · LOGILOJ"};
+            if (place.kind == PlaceKind::Garage) text = {"RIPARO", "PNEŬOJ · SOLDADO · PARTOJ"};
+            if (place.kind == PlaceKind::Church) text = {"PREĜEJO DE LA MONTO", "DIMANĈE JE LA 10A · ĈIUJ BONVENAS"};
+        } else if (place.kind == PlaceKind::Garage && near_model("country/workshop_shed.glb")) text = {"METIEJO", "LIGNO · METALO · MOTOROJ"};
         // Armilejo, the gun shop chain.
         if (place.kind == PlaceKind::Shop && near_model("civic/gun_shop.glb")) text = {"ARMILEJO", "PAFILOJ · MUNICIO · KIRASOJ"};
         // The motor trade: Marnafto's kiosks, the workshops' offices, the car lot's sales office.
@@ -304,7 +312,9 @@ void trailer_flags(const world::VerdaRegion& region, Signage& out) {
         for (const auto& owner : towns) for (const auto& asset : owner.assets) {
             if (asset.model_path.find("/residential/trailers/") == std::string::npos) continue;
             // (Sovaĝejo's own reach up the mountain road: its pullouts and Supra Sovaĝejo.)
-            if (flat(asset.position, town.center) > 220 && !(sovagejo && world::mountain::near(asset.position.x, asset.position.z, 30))) continue;
+            // (and the county round it: world::county).
+            if (flat(asset.position, town.center) > 220 && !(sovagejo && (world::mountain::near(asset.position.x, asset.position.z, 30) ||
+                                                                          world::county::near(asset.position.x, asset.position.z, 10)))) continue;
             if (trailer++ % (sovagejo ? 1 : 4) != 0) continue;
             const float reach = std::max(asset.size.x, asset.size.z) * .5F;
             Vector3 spot{};
@@ -684,6 +694,87 @@ void mountain_signs(const world::VerdaRegion& region, Signage& out) {
     pole(top, 9, 3.0F, "monto:pinto");
 }
 
+// Sovaĝejo's country (world::county): a hand-painted board at the mouth of each track saying
+// where it goes, a board into Fajrejo, the families' names at their mailboxes, the odd thing for
+// sale by the track, and the Apelacio on poles over Fajrejo's lot and at the bigger homes.
+void county_signs(const world::VerdaRegion& region, Signage& out) {
+    namespace cty = world::county;
+    const auto& tracks = cty::tracks();
+    if (tracks.empty()) return;
+    const Color board_colour{196, 166, 116, 255}, ink{20, 80, 36, 255};
+    const auto board = [&](Vector3 p, Vector3 facing, std::vector<SignLine> lines, const std::string& place, float width = 2.6F) {
+        for (int step = 0; step < 6 && !clear_spot(region, p, .45F); ++step) p = Vector3Add(p, Vector3Scale(facing, -.5F));
+        Sign sign;
+        sign.kind = SignKind::Homemade;
+        sign.place = place;
+        sign.front = std::move(lines);
+        sign.board = board_colour;
+        sign.ink = ink;
+        sign.post = 1.0F;
+        sign.max_width = width;
+        const float rows = static_cast<float>(sign.front.size());
+        sign.position = {p.x, ground(region, p, p.y) + sign.post + rows * .28F, p.z};
+        sign.yaw = yaw_of(facing);
+        out.signs.push_back(std::move(sign));
+    };
+    const auto pole = [&](Vector3 p, float tall, float width, const std::string& place) {
+        if (!clear_spot(region, p, .4F)) return;
+        const float base = ground(region, p, p.y);
+        FlagPole flag;
+        flag.place = place;
+        flag.base = {p.x, base, p.z};
+        flag.tip = {p.x, base + tall, p.z};
+        flag.fly = Vector3Normalize(wind);
+        flag.width = width;
+        flag.design = FlagDesign::Apelacio;
+        out.flags.push_back(flag);
+    };
+    const auto left = [](Vector3 run) { return Vector3{-run.z, 0, run.x}; };
+    // Where each track goes (by its index in world::county's list).
+    static const std::vector<std::pair<std::string, std::string>> goes{
+        {"FAJREJO", "PREĜEJO · VENDEJO · RIPARO"}, {"KREKA VOJO", "MORENO · ŜIMKO"}, {"ARBARA VOJETO", "KOVAĈ"},
+        {"ĈASISTA VOJETO", "PRIVATA · NE ENIRU"}, {"OKCIDENTA VOJO", "AL LA MARO"}, {"LINDQVIST", "FARMO"}, {"PETROV", "METIEJO · PARTOJ"}};
+    for (std::size_t t = 0; t < tracks.size() && t < goes.size(); ++t) {
+        const auto& track = tracks[t];
+        // (The tracks out of Fajrejo start on its lot: their boards stand a little way along.)
+        const float at = track.from == cty::From::Village ? 30.0F : 9.0F;
+        const Vector3 p = track.at(at), run = track.heading(at);
+        board(Vector3Add(p, Vector3Scale(left(run), 4.0F)), Vector3Scale(run, -1), {{goes[t].first, .3F}, {goes[t].second, .2F}}, "kamparo:" + track.name);
+    }
+    // Into Fajrejo, on the east road; the flag over the lot.
+    const auto& v = cty::village();
+    {
+        const auto& road = tracks.front();
+        const float at = road.length() - 26;
+        const Vector3 p = road.at(at), run = road.heading(at);
+        board(Vector3Add(p, Vector3Scale(left(run), -4.2F)), Vector3Scale(run, -1),
+              {{"FAJREJO", .42F}, {"ĈI TIE ĈIUJ KONAS ĈIUJN", .2F}}, "kamparo:fajrejo", 3.0F);
+        const Vector3 q = road.at(at - 14);
+        board(Vector3Add(q, Vector3Scale(left(road.heading(at - 14)), 4.2F)), Vector3Scale(run, -1),
+              {{"VETURU MALRAPIDE", .26F}, {"INFANOJ · HUNDOJ · KOKINOJ", .18F}}, "kamparo:malrapide", 2.6F);
+        pole(v.at(-14, -11), 8, 2.6F, "kamparo:fajrejo");
+    }
+    // The homes: the name at each mailbox, something for sale at some, the flag over the bigger ones.
+    for (std::size_t k = 0; k < cty::sites().size(); ++k) {
+        const auto& site = cty::sites()[k];
+        const Vector3 box = site.at(5.2F, site.flat - 1.0F);
+        board(box, site.front, {{"FAM. " + site.name, .22F}}, "kamparo:" + site.name, 1.4F);
+        std::vector<SignLine> sale;
+        switch (site.kind) {
+            case cty::Home::RoadsideTrailer: sale = {{"OVOJ · MIELO", .26F}, {"FREŜAJ ĈIUTAGE", .18F}}; break;
+            case cty::Home::FisherTrailer: sale = {{"FREŜAJ FIŜOJ", .28F}, {"LOGILOJ", .2F}}; break;
+            case cty::Home::Compound: sale = {{"LIGNO VENDATA", .26F}}; break;
+            case cty::Home::HuntingCabin: sale = {{"ĈASTERENO", .28F}, {"ATENTU · NE ENIRU", .2F}}; break;
+            case cty::Home::CreekFarm: sale = {{"FREŜA LAKTO", .26F}}; break;
+            default: break;
+        }
+        if (!sale.empty()) board(site.at(-5.5F, site.flat - .5F), site.front, std::move(sale), "kamparo:" + site.name + ":vendo", 2.2F);
+        if (site.kind == cty::Home::Compound || site.kind == cty::Home::HuntingCabin || site.kind == cty::Home::Workshop ||
+            site.kind == cty::Home::WestFarm || site.kind == cty::Home::CreekFarm)
+            pole(site.at(-site.flat + 3, site.flat - 5), 6, 1.8F, "kamparo:" + site.name);
+    }
+}
+
 // The ring road's signs, Verda's autobahn: for each interchange and each carriageway, an exit board
 // a kilometre before it ("ELIRO 2 / PORTO LUMA / VERDA URBO / 1 km"), another where the slip road
 // leaves ("ELIRO 2 »"), and beyond the entry a board with the next two exits and how far; and on the
@@ -824,6 +915,7 @@ Signage build_signage(const world::VerdaRegion& region, const life::Island& isla
     highway_signs(region, out);
     rest_area_signs(region, out);
     mountain_signs(region, out);
+    county_signs(region, out);
     for (auto& sign : out.signs)
         std::erase_if(sign.front, [](const SignLine& line) {return line.text.empty();});
     return out;

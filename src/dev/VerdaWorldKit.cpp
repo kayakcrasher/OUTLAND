@@ -7,6 +7,7 @@
 #include "outland/world/MotorTrade.hpp"
 #include "outland/world/MountainRoad.hpp"
 #include "outland/world/NorthQuarter.hpp"
+#include "outland/world/SovagejoCounty.hpp"
 #include "outland/world/Ranches.hpp"
 #include "outland/world/Zones.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -3128,6 +3129,195 @@ void sovagejo_mountain(Kit& kit, world::VerdaRegion& region) {
     town->survivors += upper * 3 + (homes - upper) * 2;
 }
 
+// ------------------------------------------------------------------ Sovaĝejo's country
+// The county round Sovaĝejo (world/SovagejoCounty.hpp lays it out and levels the ground): short
+// dirt tracks off the mountain road and the homestead road to scattered homes - trailers, cabins,
+// farmhouses, a family compound, a workshop family - each with its yard: old cars and parts donors,
+// sheds, generators, woodpiles, a deer stand, boats, a mailbox; and Fajrejo, a tiny settlement on
+// its gravel lot: a church, a general store, a mechanic's shed and four houses. Everyone here is
+// Sovaĝejo's (and life counts them so: world::county::near).
+namespace cty = world::county;
+const std::string country = city + "country/";
+void sovagejo_county(Kit& kit, world::VerdaRegion& region) {
+    world::Settlement* town = sovagejo(region);
+    if (!town) return;
+    // The tracks (thinned to pieces close to their curves), and Fajrejo's gravel lot.
+    const std::size_t before = town->roads.size();
+    for (const auto& track : cty::tracks()) {
+        const auto pieces = thin_line(track.points, .15F, 20);
+        for (std::size_t i = 0; i + 1 < pieces.size(); ++i)
+            town->roads.push_back({pieces[i], pieces[i + 1], cty::track_width, world::RoadType::Dirt});
+    }
+    const auto& v = cty::village();
+    town->roads.push_back({{v.west.x, 0, v.west.z}, {v.east.x, 0, v.east.z}, cty::lot_width, world::RoadType::Gravel});
+    kit.add_roads(std::vector<world::Road>(town->roads.begin() + static_cast<long>(before), town->roads.end()));
+    kit.report.county_roads += static_cast<int>(town->roads.size() - before);
+    // A model facing `front` (its own front is -Z), standing on the pad at `at`.
+    const auto facing = [](Vector3 front) { return yaw_toward(front) + 180; };
+    const auto building = [&](const std::string& model, Vector3 at, Vector3 front, float half_x, float half_z) {
+        const float yaw = facing(front);
+        if (!kit.claim(at, half_x, half_z, yaw)) return false;
+        return kit.put(country + model + ".glb", at, yaw);
+    };
+    // A home's purpose marker just inside its door (the model's front wall at local z = -wall).
+    const auto home = [&](Vector3 at, Vector3 front, float wall, float floor, world::BuildingPurpose purpose = world::BuildingPurpose::Home) {
+        const float yaw = facing(front);
+        auto inside = to_world(at, yaw, 0, 0, -wall + 1.3F);
+        inside.y = at.y + floor + .1F;
+        kit.purpose(inside, yaw, purpose);
+    };
+    int cars = 0, donors = 0, dwellings = 0;
+    const auto car = [&](const char* kind, Vector3 at, float yaw, bool donor) {
+        vehicle_marker(*town, std::string("vehicle_spawn_") + kind + (donor ? "_donor_" : "_") + "kamparo_" + std::to_string(++cars), at, yaw);
+        donors += donor;
+    };
+    // (Yard things go where they're put: each spot is chosen clear of its home's own footprint.)
+    const auto small = [&](const char* model, Vector3 at, float yaw, float = 0) { kit.put(country + model + ".glb", at, yaw); };
+    const auto shack = [&](const char* model, Vector3 at, float yaw, float = 0) { kit.put(shacks + model, at, yaw); };
+    const std::vector<std::string> rails{urban + "Fences/low_wooden_fence/wooden_fence_closed.glb",
+        urban + "Fences/low_wooden_fence/wooden_fence_closed.glb", urban + "Fences/low_wooden_fence/wooden_fence_broken.glb",
+        urban + "Fences/low_wooden_fence/wooden_fence_open.glb"};
+    for (std::size_t k = 0; k < cty::sites().size(); ++k) {
+        const auto& site = cty::sites()[k];
+        const auto at = [&](float right, float forward) { return site.at(right, forward); };
+        const float yaw = yaw_toward(site.front);          // +Z toward the track (a trailer's porch)
+        const auto seed = 2200U + static_cast<std::uint32_t>(k) * 17U;
+        // The mailbox by the track, the family's name on it (Signage).
+        small("mailbox", at(6.5F, site.flat - 1.0F), yaw + 180, .5F);
+        switch (site.kind) {
+            case cty::Home::RoadsideTrailer:
+                if (mountain_trailer(kit, *town, at(0, 0), site.front, seed, "", false)) ++dwellings;
+                car("truck", at(-7.5F, 1), yaw + 180, false);
+                car("hatchback", at(7.5F, -5), yaw + 75, true);
+                small("generator", at(5.5F, -5.5F), yaw + 90, .8F);
+                small("woodpile", at(-6.5F, -7.5F), yaw, 2.2F);
+                shack("Barrel.glb", at(4.6F, 3.5F), 20, .6F);
+                break;
+            case cty::Home::HuntingCabin:
+                if (building("log_cabin_dark", at(0, -1), site.front, 4.6F, 4.9F)) {home(at(0, -1), site.front, 3, .3F); ++dwellings;}
+                car("truck", at(-6.5F, 3), yaw + 180, false);
+                small("woodpile", at(6.2F, -2), yaw + 90, 2.2F);
+                small("outhouse", at(-6, -7), yaw, 1.0F);
+                prop(kit, "assets/verda/survival/runtime/Shelter_tent.glb", at(6, -8), yaw, 1.8F);
+                kit.put(country + "deer_stand.glb", at(-20, -30), yaw + 30);   // (out in the trees, on the land)
+                kit.tree(at(-14, -27)); kit.tree(at(-24, -36)); kit.tree(at(-26, -24));
+                break;
+            case cty::Home::Compound: {
+                // Two trailers facing each other across the yard, the workshop at its head, the fire
+                // pit between; a rail fence round it, open to the track.
+                const Vector3 right{-site.front.z, 0, site.front.x};
+                if (mountain_trailer(kit, *town, at(-13, -2), right, seed, "", false)) ++dwellings;
+                if (mountain_trailer(kit, *town, at(13, -3), Vector3Scale(right, -1), seed + 1, "", false)) ++dwellings;
+                if (building("workshop_shed", at(0, -17), site.front, 6.6F, 5.6F)) home(at(0, -17), site.front, 5, .1F, world::BuildingPurpose::Garage);
+                prop(kit, "assets/verda/survival/runtime/bonfire.glb", at(0, 1), 0, 1.2F);
+                car("truck", at(-4, 9), yaw + 180, false);
+                car("hatchback", at(5, 9), yaw + 170, false);
+                car("hatchback", at(-17, -16), yaw + 15, true);
+                car("truck", at(16, -16), yaw - 20, true);
+                car("hatchback", at(17, 4), yaw + 95, true);
+                small("generator", at(-5, -8), yaw, .8F);
+                small("woodpile", at(0, -9), yaw, 2.2F);
+                small("outhouse", at(-19, -8), yaw + 90, 1.0F);
+                shack("Leanto A.glb", at(19.5F, -12), yaw - 90, 2.2F);
+                for (const float r : {-1.0F, 1.0F}) shack("Barrel.glb", at(-16.5F + r * .8F, -9.5F), static_cast<float>(seed % 90), .6F);
+                fence(kit, at(-21, -21), at(21, -21), rails, 2.2F, seed);
+                fence(kit, at(-21, -21), at(-21, 12), rails, 2.2F, seed + 1);
+                fence(kit, at(21, -21), at(21, 12), rails, 2.2F, seed + 2);
+                break;
+            }
+            case cty::Home::CreekFarm:
+                if (building("farmhouse_cream", at(0, -2), site.front, 5.3F, 6.0F)) {home(at(0, -2), site.front, 4, .4F); ++dwellings;}
+                car("truck", at(-8, 3), yaw + 180, false);
+                car("hatchback", at(10, -6), yaw + 60, true);
+                shack("Leanto B.glb", at(9, -9), yaw + 180, 2.2F);
+                for (int i = 0; i < 3; ++i) kit.put("assets/verda/ranch/hay_bale.glb", at(-9.0F + i * 1.7F, -9), yaw + 90);
+                kit.put("assets/verda/ranch/water_trough.glb", at(-11, -3), yaw + 90);
+                small("outhouse", at(5, -11), yaw, 1.0F);
+                break;
+            case cty::Home::CreekTrailer:
+                if (mountain_trailer(kit, *town, at(0, 0), site.front, seed, "", false)) ++dwellings;
+                shack("Shack A.glb", at(8, -5), yaw + 180, 2.4F);
+                small("boat_trailer", at(-7, 2), yaw + 180, 3.0F);
+                car("truck", at(-7, -6), yaw + 180, false);
+                car("hatchback", at(9, 5), yaw + 40, true);
+                small("generator", at(4.5F, -6), yaw, .8F);
+                break;
+            case cty::Home::WestFarm:
+                if (building("farmhouse_blue", at(0, -2), site.front, 5.3F, 6.0F)) {home(at(0, -2), site.front, 4, .4F); ++dwellings;}
+                kit.put("assets/verda/ranch/windmill.glb", at(-11, -9), yaw);
+                car("sxs", at(8, 2), yaw + 180, false);
+                car("truck", at(-8, 3), yaw + 170, true);
+                small("woodpile", at(8, -8), yaw, 2.2F);
+                for (int i = 0; i < 2; ++i) kit.put("assets/verda/ranch/hay_bale.glb", at(11.0F, -2.0F - i * 1.8F), yaw);
+                break;
+            case cty::Home::FisherTrailer:
+                if (mountain_trailer(kit, *town, at(0, 0), site.front, seed, "", false)) ++dwellings;
+                small("boat_trailer", at(7, 1), yaw + 180, 3.0F);
+                small("boat_trailer", at(-7, -6), yaw + 160, 3.0F);
+                car("truck", at(-7, 3), yaw + 180, false);
+                prop(kit, "assets/verda/survival/runtime/bonfire.glb", at(4, -8), 0, 1.2F);
+                small("generator", at(-4.5F, -7), yaw, .8F);
+                shack("Barrel.glb", at(5.5F, -4), 0, .6F);
+                break;
+            case cty::Home::Workshop:
+                if (building("farmhouse_grey", at(-8, -3), site.front, 5.3F, 6.0F)) {home(at(-8, -3), site.front, 4, .4F); ++dwellings;}
+                if (mountain_trailer(kit, *town, at(10, -6), site.front, seed, "", false)) ++dwellings;   // the grandmother's
+                if (building("workshop_shed", at(-2, -17.5F), site.front, 6.6F, 5.6F)) home(at(-2, -17.5F), site.front, 5, .1F, world::BuildingPurpose::Garage);
+                car("truck", at(-1, 6), yaw + 180, false);
+                for (int i = 0; i < 3; ++i) car(i == 1 ? "truck" : "hatchback", at(14, 10 - 6.5F * static_cast<float>(i)), yaw + 90 + static_cast<float>(i) * 9, true);
+                small("woodpile", at(-16, -10), yaw + 90, 2.2F);
+                small("generator", at(6.5F, -13), yaw, .8F);
+                break;
+        }
+        kit.tree(at(site.flat + 6, -site.flat * .6F));
+        kit.tree(at(-site.flat - 5, -site.flat * .3F));
+    }
+    // Fajrejo: the church across the lot from the store, the mechanic's shed beside it, four
+    // houses round about; the lot between them is the meeting place (cars, a bench, the flag).
+    const Vector3 south = v.across, north = Vector3Scale(v.across, -1), west = Vector3Scale(v.along, -1);
+    {
+        const Vector3 at = v.at(-6, -22);
+        const float yaw = facing(south);
+        if (kit.claim(at, 5.9F, 10.6F, yaw) && kit.put(baptist_model, at, yaw)) {
+            kit.purpose(to_world({at.x, v.centre.y, at.z}, yaw, 0, .3F, -6.5F), yaw, world::BuildingPurpose::Church);
+            ++kit.report.village_buildings;
+            ++kit.report.baptist_churches;   // (the west's faith)
+        }
+    }
+    if (building("general_store", v.at(-4, 18.5F), north, 5.6F, 8.4F)) {home(v.at(-4, 18.5F), north, 6.5F, .3F, world::BuildingPurpose::Shop); ++kit.report.village_buildings;}
+    if (building("mechanic_shed", v.at(15, -18), south, 6.6F, 5.6F)) {home(v.at(15, -18), south, 5, .1F, world::BuildingPurpose::Garage); ++kit.report.village_buildings;}
+    struct House { const char* model; float a, b; Vector3 front; float wall, floor; bool trailer; };
+    const House houses[]{{"log_cabin", -24, 26, north, 3, .3F, false}, {"farmhouse_grey", 17, 27, north, 4, .4F, false},
+                         {"", 32, 14, west, 0, 0, true}, {"log_cabin", 10, -42, south, 3, .3F, false}};
+    for (std::size_t i = 0; i < std::size(houses); ++i) {
+        const auto& h = houses[i];
+        const Vector3 at = v.at(h.a, h.b);
+        bool built = false;
+        if (h.trailer) built = mountain_trailer(kit, *town, at, h.front, 2400U + static_cast<std::uint32_t>(i), "", false);
+        else if ((built = building(h.model, at, h.front, h.model[0] == 'f' ? 5.3F : 4.6F, h.model[0] == 'f' ? 6.0F : 4.9F))) home(at, h.front, h.wall, h.floor);
+        if (built) {++kit.report.village_buildings; ++kit.report.village_homes; ++dwellings;}
+        const Vector3 drive = Vector3Add(at, Vector3Scale(h.trailer ? v.across : Vector3{-h.front.z, 0, h.front.x}, 7.5F));
+        car(i == 2 ? "hatchback" : "truck", drive, yaw_toward(h.front), false);
+    }
+    // The lot: pickups nosed in at the store, the side-by-side by the shed, a donor behind it.
+    car("truck", v.at(-10, 5), yaw_toward(south), false);
+    car("truck", v.at(-4, 5), yaw_toward(south), false);
+    car("sxs", v.at(10, -5), yaw_toward(north), false);
+    car("hatchback", v.at(24, -24), yaw_toward(v.along) + 20, true);
+    small("generator", v.at(-11, 28), 0, .8F);
+    small("woodpile", v.at(-18, -30), yaw_toward(v.along), 2.2F);
+    small("outhouse", v.at(4, -33), yaw_toward(south) + 180, 1.0F);
+    prop(kit, urban + "Bus stops/busstop_bench.glb", v.at(-12, 9.4F), yaw_toward(south) + 180, 1.6F);
+    prop(kit, urban + "Bus stops/busstop_bench.glb", v.at(4, 9.4F), yaw_toward(south) + 180, 1.6F);
+    kit.put(urban + "Traffic lights/street_light.glb", v.at(0, -9.6F), yaw_toward(south));
+    kit.put(urban + "Traffic lights/street_light.glb", v.at(-20, 9.6F), yaw_toward(north));
+    for (const float a : {-36.0F, -16.0F, 28.0F, 40.0F}) kit.tree(v.at(a, a < 0 ? -34.0F : 36.0F));
+    // Each home brings its people; the store, the shed and the church their work.
+    town->survivors += dwellings * 3;
+    kit.report.county_homes += dwellings;
+    kit.report.county_donors += donors;
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     lay_highways(region);
@@ -3191,6 +3381,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     ring_roadhouses(kit, region);
     // After those (new pieces only): Sovaĝa Monto's road, its pullouts and Supra Sovaĝejo.
     sovagejo_mountain(kit, region);
+    sovagejo_county(kit, region);
     return kit.report;
 }
 }

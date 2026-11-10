@@ -255,6 +255,7 @@ add_library(
     src/world/terrain/TerrainHeight.cpp
     src/world/Highways.cpp
     src/world/MountainRoad.cpp
+    src/world/SovagejoCounty.cpp
     src/world/MotorTrade.cpp
     src/world/terrain/TerrainChunk.cpp
     src/world/terrain/TerrainWorld.cpp
@@ -542,6 +543,7 @@ if(OUTLAND_BUILD_TESTS)
         src/world/terrain/TerrainHeight.cpp
         src/world/Highways.cpp
         src/world/MountainRoad.cpp
+        src/world/SovagejoCounty.cpp
         src/engine/audio/EnvironmentAudio.cpp
     )
     target_include_directories(outland_environment_tests PRIVATE
@@ -569,6 +571,7 @@ if(OUTLAND_BUILD_TESTS)
         src/world/terrain/TerrainHeight.cpp
         src/world/Highways.cpp
         src/world/MountainRoad.cpp
+        src/world/SovagejoCounty.cpp
     )
     target_include_directories(outland_combat_tests PRIVATE "${PROJECT_SOURCE_DIR}/include" ${RAYLIB_INCLUDE_DIRS})
     target_compile_options(outland_combat_tests PRIVATE -Wall -Wextra -Wpedantic)
@@ -914,6 +917,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_mountain_road_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_mountain_road_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_mountain_road_tests COMMAND outland_mountain_road_tests)
+    add_executable(outland_sovagejo_county_tests tests/integration/world/test_sovagejo_county.cpp)
+    target_link_libraries(outland_sovagejo_county_tests PRIVATE outland_render)
+    target_compile_options(outland_sovagejo_county_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_sovagejo_county_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_sovagejo_county_tests COMMAND outland_sovagejo_county_tests)
     add_executable(outland_north_quarter_tests tests/integration/world/test_north_quarter.cpp)
     target_link_libraries(outland_north_quarter_tests PRIVATE outland_render)
     target_compile_options(outland_north_quarter_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
