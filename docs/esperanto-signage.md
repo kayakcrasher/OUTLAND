@@ -65,6 +65,8 @@ All flags ripple in the wind.
   - then the flags as a waving 12×4 cloth grid with the generated flag texture.
   
   Signs are drawn within 120 m, their text within 75 m, and flags within 500 m. They darken at night with the rest of the world.
+- **Baked:** signs never move, so they are recorded once into static meshes, a street's worth (one 80 m square, up to 48 signs) to a chunk, the boards and the lettering apart. Each chunk's boards draw within 120 m of the camera and its lettering within 75 m, as above.
+- **No flicker:** the lettering stands 2.5 cm off its board, and the darker frame sits inside the board's 8 cm thickness, 2 cm clear of either face. These are gaps the depth buffer can still tell apart at 120 m. Earlier the lettering sat 6 mm off the board, with the frame 3 mm behind its back, and the baked signs were drawn at every distance. Distant signs shimmered: the lettering showed through the board and the frame through the back.
 - **Font:** `assets/fonts/DejaVuSans-Bold.ttf`, unmodified, under the license in `assets/fonts/LICENSE-DejaVu.txt`. It's loaded with ASCII, Latin-1 and Latin Extended-A, which covers ĉ ĝ ĥ ĵ ŝ ŭ and Slavic č ć ž š. Without the file the game falls back to raylib's font.
 - **Rebuilds:** the Renderer rebuilds signs when a mode starts and after Creator edits (when the builder closes). In Explore it uses the running life simulation's island, so a shop's sign names its actual shopkeeper.
 

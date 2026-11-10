@@ -98,7 +98,8 @@ int main() {
     std::set<std::string> names;
     for (const auto& v : ranches.vakeros()) {
         const auto* bot = bots.find(v.bot);
-        check(bot && bot->weapon() == game::combat::WeaponId::Shotgun, v.name + " carries a shotgun");
+        const auto gun = v.role == game::ranch::Role::Driver ? game::combat::WeaponId::LeverRifle : game::combat::WeaponId::Shotgun;
+        check(bot && bot->weapon() == gun, v.name + " carries a shotgun (the driver his lever rifle)");
         check(!v.character.empty() && (v.female == (v.character.find("female") != std::string::npos)), v.name + " has a body");
         names.insert(v.name);
     }

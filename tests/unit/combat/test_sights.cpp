@@ -11,6 +11,10 @@ int main() {
     assert(sight_fits(WeaponId::Pistol,Sight::RedDot) && !sight_fits(WeaponId::Pistol,Sight::Scope2x));
     assert(sight_fits(WeaponId::Shotgun,Sight::Scope2x) && !sight_fits(WeaponId::Shotgun,Sight::Scope4x));
     for(const Sight s:attachments) assert(sight_fits(WeaponId::Rifle,s) && sight_fits(WeaponId::Smg,s) && !sight_fits(WeaponId::Sniper,s));
+    // The revolver takes a red dot like the pistol; the lever rifle, the marksman rifle and the
+    // machine gun take any optic.
+    assert(sight_fits(WeaponId::Revolver,Sight::RedDot) && !sight_fits(WeaponId::Revolver,Sight::Scope2x));
+    for(const Sight s:attachments) assert(sight_fits(WeaponId::LeverRifle,s) && sight_fits(WeaponId::MarksmanRifle,s) && sight_fits(WeaponId::Lmg,s));
     // Zoom: 2x and 4x magnify the 70-degree view; a red dot keeps the gun's own aim zoom.
     const auto zoom=[](float fov){return std::tan(35.0F*3.14159265F/180)/std::tan(fov*.5F*3.14159265F/180);};
     assert(std::abs(zoom(sight_fov(WeaponId::Rifle,Sight::Scope2x))-2)<.01F);

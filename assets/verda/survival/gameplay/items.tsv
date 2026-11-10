@@ -28,6 +28,11 @@ machine_pistol	VM9 machine pistol	weapon		1	0.35	equip	0	machine_pistol	0		0	0
 taser	VT2 taser	weapon		1	0.3	equip	0	taser	0		0	0
 taser_cartridges	Taser cartridges	ammo	assets/verda/survival/runtime/Ammunition.glb	10	0.05	ammo	0	taser	0		0	0
 rockets	Rockets	ammo	assets/verda/survival/runtime/Ammunition.glb	4	0.3	ammo	0	rocket_launcher	0		0	0
+revolver	VR6 revolver	weapon		1	0.3	equip	0	revolver	0		0	0
+magnum_ammo	.357 rounds	ammo	assets/verda/survival/runtime/Ammunition.glb	36	0.16	ammo	0	revolver	0		0	0
+lever_rifle	VL30 lever rifle	weapon		1	1.05	equip	0	lever_rifle	0		0	0
+marksman_rifle	VM14 marksman rifle	weapon		1	1.15	equip	0	marksman_rifle	0		0	0
+lmg	VL60 light machine gun	weapon		1	1.2	equip	0	lmg	0		0	0
 backpack	Backpack	container	assets/verda/survival/runtime/Backpack.glb	1	0.55	container	0		12		0	0
 trunk	Field storage trunk	container	assets/verda/survival/runtime/Trunk.glb	1	0.8	container	0		8		0	0
 battery	Battery	utility	assets/verda/survival/runtime/Battery.glb	12	0.06	none	0		0		0	0

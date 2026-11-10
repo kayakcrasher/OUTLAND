@@ -296,7 +296,7 @@ saved: recruit again after loading a game.
 
 ## The armory and the gun man
 
-- **The Policio's armory** is at every station's desk (USE on duty: partner, armory, badge). It is the best kit on the island, and all of it is free, but restricted by rank: a Kadeto draws a pistol and a plate carrier, the shotgun and VM9 come at the next rank, rifles and grenades after that, the sniper and auto shotgun later, the rocket launcher only for a Komisaro.
+- **The Policio's armory** is at every station's desk (USE on duty: partner, armory, badge). It is the best kit on the island, and all of it is free, but restricted by rank: a Kadeto draws a pistol and a plate carrier, the shotgun, VM9, VR6 revolver and VL30 lever rifle come at the next rank, rifles and grenades after that, the sniper, the auto shotgun and the VM14 marksman rifle later, the rocket launcher and the VL60 machine gun only for a Komisaro.
 - **An officer on duty wears body armour** (level II), and every police car carries a pump shotgun: get in one for the first time and you take it with 10 shells.
 - **The gang's GUN MAN** stands by the door of each gang's main base, in its colours. He sells to family only: guns cheaper than the Armilejo, the heavier ones for those of higher rank. Code: `game::career::armory` (`include/outland/game/career/Armory.hpp`).
 

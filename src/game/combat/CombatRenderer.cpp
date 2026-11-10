@@ -169,6 +169,98 @@ void sniper(float reload,float bolt) {
     DrawCylinderEx({.012F,-.05F,.30F},{.012F,-.05F,.47F},.005F,.005F,6,black); // folded bipod
     DrawCylinderEx({-.012F,-.05F,.30F},{-.012F,-.05F,.47F},.005F,.005F,6,black);
 }
+void revolver(float reload,float line) {
+    // The VR6: a heavy full-lug barrel, the six-shot cylinder (it swings out to the left for the
+    // speedloader), an exposed hammer, wooden grips.
+    tube(.05F,.20F,.0095F,.013F,metal);                    // barrel
+    box(0,.0F,.125F,.014F,.014F,.15F,metal);               // full-length underlug
+    box(0,.0025F,.0F,.026F,.044F,.07F,metal);              // the frame
+    box(0,.026F,.02F,.016F,.006F,.075F,metal);             // top strap
+    const float swing=reload*.034F;                        // the cylinder, out on the crane while it reloads
+    DrawCylinderEx({swing,.002F,-.005F},{swing,.002F,.046F},.0195F,.0195F,6,metal);
+    DrawCylinderEx({swing,.002F,.046F},{swing,.002F,.048F},.012F,.012F,6,dark);
+    tilted(-30,0,.03F,-.04F,.008F,.018F,.01F,dark);        // the hammer spur
+    box(0,-.025F,.0F,.005F,.005F,.04F,metal);              // trigger guard
+    tilted(22,0,-.062F,-.05F,.028F,.10F,.042F,wood_dark);  // grips
+    rear_notch(-.02F,line,.029F);                          // notch in the top strap
+    front_post(.19F,line,.022F,false);
+}
+void lever_rifle(float reload,float lever,float line) {
+    // The VL30: a round barrel over its tube magazine, a case-hardened receiver, the lever loop
+    // (thrown down and back up between shots), walnut fore-end and stock, a buckhorn rear sight.
+    tube(.12F,.68F,.0085F,.012F,metal);                    // barrel
+    tube(.12F,.58F,.0075F,-.008F,metal);                   // magazine tube
+    box(0,.0F,.04F,.03F,.05F,.17F,Color{86,82,78,255});    // receiver
+    box(.0155F,-.004F,.07F,.002F,.016F,.05F,dark);         // loading gate (left side)
+    box(-.0155F,.016F,.04F,.002F,.006F,.05F,dark);         // ejection port, top right
+    box(0,-.012F,.24F,.034F,.032F,.20F,wood);              // fore-end
+    tube(.33F,.345F,.012F,.002F,metal);                    // barrel band
+    rlPushMatrix();                                        // the lever, about its pivot under the receiver
+    rlTranslatef(0,-.024F,.075F);rlRotatef(-lever*38,1,0,0);
+    box(0,-.012F,-.03F,.008F,.008F,.07F,metal);
+    box(0,-.03F,-.065F,.008F,.032F,.008F,metal);
+    box(0,-.046F,-.035F,.008F,.008F,.06F,metal);
+    rlPopMatrix();
+    tilted(-10,0,-.032F,-.06F,.032F,.05F,.09F,wood_dark);  // wrist
+    box(0,-.05F,-.22F,.036F,.10F,.20F,wood);               // butt
+    box(0,-.055F,-.326F,.038F,.11F,.012F,dark);            // butt plate
+    box(0,-.03F-reload*.015F,.075F,.012F,.004F,.03F,metal);
+    rear_notch(.17F,line,.022F,.004F);                     // buckhorn rear sight on the barrel
+    front_post(.665F,line,.021F,false);
+}
+void marksman_rifle(float reload,bool irons,float line) {
+    // The VM14: a long free-floated barrel, a slim rail handguard, a straight ten-round magazine,
+    // an adjustable cheek riser on the stock.
+    tube(.70F,.74F,.011F,0,dark);                          // flash hider
+    tube(.42F,.70F,.009F,0,metal);                         // barrel
+    box(0,0,.30F,.046F,.05F,.26F,olive);                   // handguard
+    box(0,.029F,.30F,.02F,.007F,.26F,black);
+    box(0,.024F,.41F,.016F,.04F,.016F,black);              // gas block and front sight
+    front_post(.41F,line,.046F,true);
+    box(0,.012F,.08F,.032F,.034F,.24F,metal);              // upper receiver
+    box(0,.033F,.08F,.022F,.008F,.22F,black);              // top rail
+    if(irons) {
+        box(0,.041F,-.02F,.022F,.008F,.014F,black);
+        rear_aperture(-.02F,line,.045F);
+    }
+    box(0,-.024F,.06F,.03F,.04F,.16F,metal);               // lower receiver
+    box(-.0165F,.012F,.07F,.002F,.012F,.045F,dark);        // ejection port
+    tilted(-4,0,-.09F-reload*.12F,.10F,.024F,.10F,.05F,black); // straight 7.62 magazine
+    box(0,-.054F,.02F,.006F,.006F,.05F,black);             // trigger guard
+    tilted(20,0,-.083F,-.03F,.028F,.095F,.036F,polymer);   // grip
+    box(0,-.012F,-.20F,.042F,.06F,.20F,olive);             // stock
+    box(0,.026F,-.19F,.03F,.016F,.12F,black);              // cheek riser
+    box(0,-.02F,-.305F,.044F,.12F,.012F,dark);             // butt pad
+}
+void lmg(float reload,bool irons,float line) {
+    // The VL60: a heavy quick-change barrel with a carry handle, the feed cover (it lifts to load
+    // a belt), the ammunition box under it, a folded bipod, a skeleton stock.
+    tube(.76F,.80F,.0135F,0,dark);                         // flash hider
+    tube(.42F,.76F,.0115F,0,metal);                        // heavy barrel
+    for(int k=0;k<4;++k) tube(.44F+k*.05F,.455F+k*.05F,.0135F,0,dark);
+    box(0,.034F,.40F,.012F,.03F,.012F,black);              // carry handle on the barrel
+    box(0,.05F,.43F,.012F,.008F,.07F,black);
+    box(0,.0F,.29F,.056F,.056F,.22F,polymer);              // handguard
+    box(0,.004F,.06F,.058F,.072F,.30F,black);              // receiver
+    rlPushMatrix();                                        // feed cover, hinged at its front
+    rlTranslatef(0,.042F,.16F);rlRotatef(reload*55,1,0,0);
+    box(0,.004F,-.09F,.05F,.012F,.18F,metal);
+    box(0,.012F,-.09F,.02F,.006F,.16F,black);              // its rail
+    rlPopMatrix();
+    box(0,.052F,.36F,.014F,.014F,.014F,black);             // front sight base
+    front_post(.36F,line,.058F,true);
+    if(irons) rear_aperture(-.06F,line,.040F,.0058F,.0034F);
+    const float drop=reload*.1F;                           // the 100-round box
+    box(0,-.08F-drop,.06F,.07F,.08F,.12F,olive);
+    box(0,-.04F-drop,.06F,.05F,.012F,.09F,dark);
+    box(.032F,.02F,.06F,.006F,.012F,.06F,tan);             // belt into the feed tray
+    box(0,-.05F,-.07F,.006F,.006F,.05F,black);             // trigger guard
+    tilted(18,0,-.085F,-.10F,.03F,.09F,.036F,polymer);     // grip
+    for(const float side:{-1.0F,1.0F}) DrawCylinderEx({side*.012F,-.03F,.38F},{side*.012F,-.03F,.58F},.005F,.005F,6,black); // bipod, folded
+    box(0,.0F,-.21F,.02F,.03F,.16F,black);                 // skeleton stock
+    box(0,-.05F,-.22F,.016F,.05F,.12F,black);
+    box(0,-.025F,-.30F,.046F,.12F,.014F,dark);             // butt plate
+}
 // Optics, built on the rail top `r` at `z` along the gun.
 const Color glass{150,200,225,46}, lens_blue{70,110,150,255}, fibre{120,200,60,255};
 void red_dot(float r,float z,bool pistol) {
@@ -204,7 +296,10 @@ void optic(WeaponId id,Sight sight) {
     else if(id==WeaponId::DoubleBarrel) { rail=.030F;z=.0F; box(0,.032F,0,.02F,.006F,.08F,black); }
     else if(id==WeaponId::AutoShotgun) { rail=.046F;z=.10F; }
     else if(id==WeaponId::Rocket) { rail=.058F;z=.02F; box(0,.05F,.02F,.02F,.012F,.12F,black); }
-    if(sight==Sight::RedDot) red_dot(rail,z,id==WeaponId::Pistol);
+    else if(id==WeaponId::Revolver) { rail=.029F;z=.02F; }
+    else if(id==WeaponId::LeverRifle) { rail=.030F;z=.04F; box(0,.028F,.04F,.018F,.006F,.12F,black); } // a scope base on the receiver
+    else if(id==WeaponId::Lmg) { rail=.058F;z=.0F; }
+    if(sight==Sight::RedDot) red_dot(rail,z,id==WeaponId::Pistol || id==WeaponId::Revolver);
     else scope(rail,z,sight==Sight::Scope4x ? 4 : 2);
 }
 void double_barrel(float reload,float line) {
@@ -274,7 +369,7 @@ void rocket_launcher(float reload,bool irons,float line) {
 }
 // First-person hands and forearms: trigger hand on the grip, support hand under the fore-end.
 void hands(WeaponId id,const GunLayout& layout) {
-    if(id==WeaponId::Pistol || id==WeaponId::MachinePistol || id==WeaponId::Taser) {
+    if(definition(id).hold==WeaponHold::Pistol) {
         tilted(18,0,-.068F,-.048F,.05F,.085F,.07F,glove);
         tilted(18,.026F,-.075F,-.04F,.028F,.08F,.065F,glove);
         DrawCylinderEx({0,-.09F,-.09F},{-.04F,-.17F,-.36F},.032F,.04F,8,sleeve);
@@ -291,7 +386,10 @@ void hands(WeaponId id,const GunLayout& layout) {
 GunLayout gun_layout(WeaponId id,Sight sight) {
     const float line=sight_height(id,sight);
     switch(id) {
-        case WeaponId::Pistol: case WeaponId::MachinePistol: case WeaponId::Taser: return {0,0,line,definition(id).length};
+        case WeaponId::Pistol: case WeaponId::MachinePistol: case WeaponId::Taser: case WeaponId::Revolver: return {0,0,line,definition(id).length};
+        case WeaponId::LeverRifle: return {.33F,.24F,line,definition(id).length};
+        case WeaponId::MarksmanRifle: return {.31F,.26F,line,definition(id).length};
+        case WeaponId::Lmg: return {.31F,.29F,line,definition(id).length};
         case WeaponId::Smg: return {.26F,.17F,line,definition(id).length};
         case WeaponId::Shotgun: return {.34F,.24F,line,definition(id).length};
         case WeaponId::Sniper: return {.36F,.24F,line,definition(id).length};
@@ -329,12 +427,16 @@ void CombatRenderer::draw_gun(Vector3 grip,Vector3 aim,Vector3 up,WeaponId id,fl
         case WeaponId::Rocket: rocket_launcher(reload,sight==Sight::Iron,line);break;
         case WeaponId::MachinePistol: machine_pistol(reload,line);break;
         case WeaponId::Taser: taser(reload,line);break;
+        case WeaponId::Revolver: revolver(reload,line);break;
+        case WeaponId::LeverRifle: lever_rifle(reload,work,line);break;
+        case WeaponId::MarksmanRifle: marksman_rifle(reload,sight==Sight::Iron,line);break;
+        case WeaponId::Lmg: lmg(reload,sight==Sight::Iron,line);break;
         default: rifle(reload,sight==Sight::Iron,line);break;
     }
     if(draw_hands) hands(id,gun_layout(id));
     optic(id,sight);
     if(flash>0) {
-        const float l=definition(id).length+.02F,size=id==WeaponId::Rocket ? 2.4F : is_shotgun(id) || id==WeaponId::Sniper ? 1.5F : 1.0F;
+        const float l=definition(id).length+.02F,size=id==WeaponId::Rocket ? 2.4F : is_shotgun(id) || id==WeaponId::Sniper || id==WeaponId::Revolver || id==WeaponId::LeverRifle || id==WeaponId::MarksmanRifle ? 1.5F : id==WeaponId::Lmg ? 1.25F : 1.0F;
         DrawSphereEx({0,0,l+.03F},.035F*size,4,6,Color{255,228,135,255});
         DrawCylinderEx({0,0,l},{0,0,l+.16F*size},.03F*size,0,5,Color{255,169,65,255});
     }

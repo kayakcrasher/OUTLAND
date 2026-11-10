@@ -6,8 +6,9 @@
 namespace outland::game::combat {
 
 // Saves store weapons by index: append new weapons, never reorder.
-enum class WeaponId : std::size_t { Pistol, Rifle, Smg, Shotgun, Sniper, DoubleBarrel, AutoShotgun, Rocket, MachinePistol, Taser };
-inline constexpr std::size_t weapon_count = 10;
+enum class WeaponId : std::size_t { Pistol, Rifle, Smg, Shotgun, Sniper, DoubleBarrel, AutoShotgun, Rocket, MachinePistol, Taser,
+                                    Revolver, LeverRifle, MarksmanRifle, Lmg };
+inline constexpr std::size_t weapon_count = 14;
 
 // How the body holds it: a pistol in both hands at arm's length, long guns shouldered.
 enum class WeaponHold : unsigned char { Pistol, Shouldered };
@@ -93,6 +94,26 @@ inline constexpr std::array<WeaponDefinition, weapon_count> weapons{{
     {"VT2 TASER", 1, 8, false, 0.60F, 1.6F, 120.0F, 0.0F, 0.40F, 0.020F, 0.0040F, 0.0040F,
      0.0F, 0.0020F, 0.80F, 0.02F, 60.0F, 1.0F, 1.0F,
      1, 0, "taser", WeaponHold::Pistol, 0.16F, 25, 0, 0, 2.2F},
+    // .357 six-shooter: double action, two body hits or one to the head, a hard kick and a slow
+    // reload (a speedloader into the swung-out cylinder). Its own .357 rounds.
+    {"VR6 REVOLVER", 6, 36, false, 0.32F, 2.8F, 440.0F, 58.0F, 0.10F, 0.030F, 0.0025F, 0.0240F,
+     0.0F, 0.0060F, 0.55F, 0.07F, 54.0F, 2.20F, 0.90F,
+     1, 0, "revolver", WeaponHold::Pistol, 0.20F, 230, 50, 0, 0.78F},
+    // .30-30 lever action, the backcountry's deer rifle: seven rounds through the loading gate, a
+    // throw of the lever between shots, two body hits. Takes rifle rounds.
+    {"VL30 LEVER RIFLE", 7, 42, false, 0.62F, 3.6F, 720.0F, 62.0F, 0.05F, 0.050F, 0.0010F, 0.0300F,
+     0.0F, 0.0060F, 0.40F, 0.0F, 44.0F, 2.30F, 0.90F,
+     1, 0, "lever_rifle", WeaponHold::Shouldered, 0.68F, 340, 160, 1, 0.90F},
+    // 7.62 semi-automatic marksman rifle: ten rounds as fast as you can aim them, two body hits,
+    // between the rifle and the bolt gun. Takes the sniper's 7.62 rounds; any optic fits.
+    {"VM14 MARKSMAN RIFLE", 10, 40, false, 0.30F, 2.9F, 820.0F, 56.0F, 0.04F, 0.060F, 0.0006F, 0.0200F,
+     0.10F, 0.0050F, 0.50F, 0.05F, 40.0F, 2.40F, 0.90F,
+     1, 0, "marksman_rifle", WeaponHold::Shouldered, 0.74F, 380, 220, 1, 0.85F},
+    // Belt-fed light machine gun: a hundred rifle rounds in the box, steady in short bursts, a
+    // wild spray from the hip, a long reload (cover up, belt in, cover down).
+    {"VL60 LIGHT MACHINE GUN", 100, 200, true, 0.075F, 5.4F, 860.0F, 38.0F, 0.08F, 0.060F, 0.0020F, 0.0075F,
+     0.08F, 0.0060F, 0.50F, 0.10F, 50.0F, 2.20F, 0.90F,
+     1, 0, "lmg", WeaponHold::Shouldered, 0.80F, 330, 150, 1, 0.92F},
 }};
 // The taser's darts reach this far (metres); further off they fall short.
 inline constexpr float taser_reach = 10.5F;
@@ -101,9 +122,16 @@ inline const WeaponDefinition& definition(WeaponId id) {
     return weapons[static_cast<std::size_t>(id)];
 }
 
-// The ammunition a weapon loads: every shotgun takes the same 12-gauge shells.
+// The ammunition a weapon loads: every shotgun takes the same 12-gauge shells, the machine pistol
+// the pistol's 9 mm, the lever rifle and the machine gun rifle rounds, the marksman rifle 7.62.
 inline constexpr WeaponId ammo_of(WeaponId id) {
-    return id == WeaponId::DoubleBarrel || id == WeaponId::AutoShotgun ? WeaponId::Shotgun : id == WeaponId::MachinePistol ? WeaponId::Pistol : id;
+    switch (id) {
+        case WeaponId::DoubleBarrel: case WeaponId::AutoShotgun: return WeaponId::Shotgun;
+        case WeaponId::MachinePistol: return WeaponId::Pistol;
+        case WeaponId::LeverRifle: case WeaponId::Lmg: return WeaponId::Rifle;
+        case WeaponId::MarksmanRifle: return WeaponId::Sniper;
+        default: return id;
+    }
 }
 inline constexpr bool is_shotgun(WeaponId id) { return ammo_of(id) == WeaponId::Shotgun; }
 

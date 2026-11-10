@@ -22,7 +22,7 @@ struct ArmoryItem {
     int rounds;            // ...how many (or how many of the item itself, for gear)
 };
 
-inline constexpr std::array<ArmoryItem, 13> armory{{
+inline constexpr std::array<ArmoryItem, 17> armory{{
     {"pistol", "V9 pistol", 0, 0, 150, "pistol_ammo", 45},
     {"taser", "VT2 taser", 0, -1, 0, "taser_cartridges", 8},
     {"vest_heavy", "Plate carrier (armour II)", 0, 2, 900, "", 0},
@@ -36,6 +36,10 @@ inline constexpr std::array<ArmoryItem, 13> armory{{
     {"sniper", "VP7 sniper rifle", 3, 3, 900, "sniper_ammo", 20},
     {"scope_4x", "4x scope", 3, 3, 300, "", 1},
     {"rocket_launcher", "VR7 rocket launcher", 4, 4, 2400, "rockets", 4},
+    {"revolver", "VR6 revolver", 1, 0, 300, "magnum_ammo", 36},
+    {"lever_rifle", "VL30 lever rifle", 1, 1, 450, "rifle_ammo", 42},
+    {"marksman_rifle", "VM14 marksman rifle", 3, 3, 800, "sniper_ammo", 30},
+    {"lmg", "VL60 light machine gun", 4, 4, 1600, "rifle_ammo", 200},
 }};
 
 // Whether an officer of `rank` may draw item `index` (free), or a gangster of `rank` buy it.

@@ -16,9 +16,14 @@ The guns are modelled at real-world sizes, and characters hold them in their han
 | **VD2 double barrel** | 12-gauge side-by-side | 12 pellets × 22 per barrel | 0.24 s (both barrels) | 2 | 62° | Hardest hit inside 8 m; nothing past 30 m; slow break-open reload |
 | **VA12 auto shotgun** | Drum-fed automatic 12-gauge | 8 pellets × 14 | 300 rounds/min | 8 | 60° | Close-range spray; a long drum change |
 | **VR7 rocket launcher** | Shoulder-fired rocket | Blast: 220 within 3 m, nothing past 10 m | 1 shot, 3.6 s reload | 1 | 50° | Cars, groups, anyone behind thin cover |
+| **VR6 revolver** | .357 double action | 58 (128 to the head) | 0.32 s | 6 | 54° (red dot) | Two body hits or one to the head; a hard kick, a slow speedloader reload. Its own `.357 rounds` |
+| **VL30 lever rifle** | .30-30 lever action | 62 | 0.62 s (a throw of the lever) | 7 | 44° (any optic) | The backcountry's deer rifle: two body hits at medium range. Loads rifle rounds through its gate |
+| **VM14 marksman rifle** | 7.62 semi-automatic | 56 | 0.30 s | 10 | 40° (any optic) | Between the rifle and the sniper: two body hits as fast as you can aim. Loads 7.62 rounds |
+| **VL60 light machine gun** | Belt-fed 5.56 automatic | 38 | 800 rounds/min | 100 | 50° (any optic) | Suppressing fire: steady in short bursts, wild from the hip; a 5.4 s belt change. Loads rifle rounds |
 
 - **Shotgun pellets** spread in a fixed cone (about 3°; 4° for the double barrel) around the aim point, whatever the stance. Air drag soon bleeds their damage away.
 - **Shells:** all three shotguns load the same 12-gauge shells (`combat::ammo_of`). Walking over shells picks them up if you carry any shotgun.
+- **Shared rounds:** the machine pistol loads 9 mm; the lever rifle and the machine gun load rifle rounds; the marksman rifle loads the sniper's 7.62. The revolver alone takes `.357 rounds`.
 - **Rockets:**
   - A rocket flies straight at 60 m/s and drops only a little. It goes off on the first person, car or wall it touches, or after 5 s if it hits nothing.
   - The blast reaches 10 m; walls between it and a target stop it, as with frag grenades. It hurts the shooter too.
@@ -26,13 +31,15 @@ The guns are modelled at real-world sizes, and characters hold them in their han
   - Rockets are their own ammo item (`rockets`, 4 to a stack). They are rare in weapon spawns, and the general store sells them.
   - In LAN play the rocket is replayed on everyone's screen. Like a grenade, each player's own hits are theirs to send.
 - **The sniper scope** replaces the view with a scope picture: a black surround, a fine cross-hair and thick outer posts. The normal camera hides while scoping, in first or third person.
-- **The pump and bolt** visibly work after each shot.
+- **The pump, bolt and lever** visibly work after each shot.
 - **Sound:** each gun has its own pitch on one of the two recorded reports. Each also has its own hearing distance on the sound bus (180–420 m), which bots and zombies react to.
 - **Where to find them:**
   - loot in weapon spawns (`loot_tables.tsv`);
   - the general store in Explore (`offers.tsv`);
-  - new ammo items: `.45 rounds`, `12-gauge shells`, `7.62 rounds`, `Rockets`.
-- **Battle Royale bots carry mixed loadouts:** 40% rifle, 20% SMG, 18% pistol, 7% pump shotgun, 4% double barrel, 3% auto shotgun, 8% sniper. Each bot fights at its gun's range. No bot carries a rocket launcher.
+  - the Armilejo gun shops (all four new guns) and the general store (the revolver and the lever rifle);
+  - new ammo items: `.45 rounds`, `12-gauge shells`, `7.62 rounds`, `.357 rounds`, `Rockets`.
+- **Battle Royale bots carry mixed loadouts:** 36% rifle, 18% SMG, 14% pistol, 4% revolver, 7% pump shotgun, 4% double barrel, 3% auto shotgun, 4% lever rifle, 3% machine gun, 3% marksman rifle, 4% sniper. Each bot fights at its gun's range. No bot carries a rocket launcher.
+- **The ranches:** the Vakeroj keep pump shotguns; the one who drives the family's truck carries a lever rifle.
 - **Saves** list every gun's loaded rounds. Older saves with only two guns still load.
 
 ## Real-scale guns
@@ -49,11 +56,19 @@ The guns are modelled at real-world sizes, and characters hold them in their han
 | Double barrel | 0.83 m |
 | Auto shotgun | 0.84 m |
 | Rocket launcher | 1.35 m |
+| Revolver | 0.26 m |
+| Lever rifle | 1.01 m |
+| Marksman rifle | 1.05 m |
+| Light machine gun | 1.11 m |
 
 - **Rifle detail:** quad-rail handguard, holographic sight, raked magazine, buffer tube and stock.
 - **Double barrel:** side-by-side barrels on a box lock, with twin hammers and a brass bead. The barrels drop open while it reloads.
 - **Auto shotgun:** ribbed shroud, muzzle brake, carry handle with an aperture sight, and a 20-round drum that drops away on a reload.
 - **Rocket launcher:** an olive tube with a venturi bell, a warhead in the muzzle while loaded, flip-up sights, and pistol and fore grips.
+- **Revolver:** a full-lug barrel, an exposed hammer and wooden grips. The six-shot cylinder swings out on its crane for the reload, and no case flies when it fires.
+- **Lever rifle:** a round barrel over its tube magazine, a grey receiver with its loading gate, walnut furniture and a buckhorn rear sight. The lever loop throws down and back after each shot.
+- **Marksman rifle:** a long free-floated barrel in an olive handguard, flip-up sights, a straight 10-round magazine and a cheek riser on the stock.
+- **Light machine gun:** a heavy finned barrel with a carry handle and a folded bipod. The feed cover lifts and the 100-round box drops on a reload.
 - `gun_layout(id)` gives each gun's stock length, where the support hand goes, and the sight height.
 - **First person:** the gun sits at the hip with gloved hands and sleeves. When aiming, its sight line lines up with the eye.
 - **Third person:** the camera now looks over the right shoulder, from closer in (3.6 m, or 1.9 m when aiming), as PUBG and Fortnite frame it. That puts the gun in view.

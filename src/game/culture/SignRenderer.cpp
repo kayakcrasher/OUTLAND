@@ -7,7 +7,12 @@
 
 namespace outland::game::culture {
 namespace {
-constexpr float pad = .14F, depth = .08F, line_gap = 1.18F;
+constexpr float pad = .14F, line_gap = 1.18F;
+// The board: its face at the sign's position, `depth` thick; the darker frame round it sits inside
+// its thickness (a clear `rim` from both faces), and the lettering stands `lift` off each face. The
+// gaps are what the depth buffer must resolve out at the signs' range: a few millimetres there
+// shimmer (the lettering through the board, the frame through its back).
+constexpr float depth = .08F, rim = .02F, lift = .025F;
 Color darker(Color c, float k) {
     return {static_cast<unsigned char>(c.r * k), static_cast<unsigned char>(c.g * k), static_cast<unsigned char>(c.b * k), 255};
 }
@@ -153,13 +158,13 @@ void SignRenderer::draw(Vector3 camera, Vector3 camera_target, float time_second
         rlPushMatrix();
         rlTranslatef(sign.position.x, sign.position.y, sign.position.z);
         rlRotatef(sign.yaw, 0, 1, 0);
-        DrawCube({0, 0, -.05F}, m.width, m.height, depth, sign.board);
-        DrawCube({0, 0, -.055F}, m.width + .07F, m.height + .07F, depth * .8F, darker(sign.board, .55F));
+        DrawCube({0, 0, -depth * .5F}, m.width, m.height, depth, sign.board);
+        DrawCube({0, 0, -depth * .5F}, m.width + .07F, m.height + .07F, depth - rim * 2, darker(sign.board, .55F));
         if (sign.post > 0) {
             const float bottom = -m.height * .5F;
             if (m.width > 2.6F) for (const float x : {-m.width * .32F, m.width * .32F})
-                DrawCube({x, bottom - sign.post * .5F, -.05F}, .08F, sign.post, .08F, Color{120, 124, 128, 255});
-            else DrawCube({0, bottom - sign.post * .5F, -.05F}, .09F, sign.post, .09F, Color{120, 124, 128, 255});
+                DrawCube({x, bottom - sign.post * .5F, -depth * .5F}, .08F, sign.post, .08F, Color{120, 124, 128, 255});
+            else DrawCube({0, bottom - sign.post * .5F, -depth * .5F}, .09F, sign.post, .09F, Color{120, 124, 128, 255});
         }
         rlPopMatrix();
     }
@@ -175,7 +180,7 @@ void SignRenderer::draw(Vector3 camera, Vector3 camera_target, float time_second
             rlPushMatrix();
             rlTranslatef(sign.position.x, sign.position.y, sign.position.z);
             rlRotatef(sign.yaw + (back ? 180.0F : 0.0F), 0, 1, 0);
-            rlTranslatef(0, 0, back ? .105F : .006F);
+            rlTranslatef(0, 0, back ? depth + lift : lift);
             float y = stack_height(lines) * .5F;
             for (std::size_t k = 0; k < lines.size(); ++k) {
                 text_line(lines[k].text, lines[k].height, scales[k], y, sign.ink);
@@ -189,21 +194,43 @@ void SignRenderer::draw(Vector3 camera, Vector3 camera_target, float time_second
     rlSetTexture(0);
 
     };
-    // Signs never move: recorded once into two static meshes (boards, lettering) and drawn from
-    // the GPU every frame after. If they do not fit one recording, they are drawn as they come.
+    // Signs never move: recorded once into static meshes - a street's worth of signs to a chunk,
+    // boards and lettering apart - and drawn from the GPU every frame after, each within its range.
+    // If they do not fit the recordings, they are drawn as they come.
     if (!baked_ready_ && !bake_failed_) {
         constexpr std::size_t chunk = 48;   // signs per recording: ~25,000 vertices at most
+        constexpr float cell = 80;          // chunks gather the signs of one 80 m square
         baked_.clear();
-        for (std::size_t from = 0; from < signage_.signs.size() && !bake_failed_; from += chunk) {
+        std::vector<std::size_t> order(signage_.signs.size());
+        for (std::size_t i = 0; i < order.size(); ++i) order[i] = i;
+        const auto cell_of = [&](std::size_t i) {
+            const auto& p = signage_.signs[i].position;
+            return std::pair{static_cast<long>(std::floor(p.x / cell)), static_cast<long>(std::floor(p.z / cell))};
+        };
+        std::stable_sort(order.begin(), order.end(), [&](std::size_t a, std::size_t b) {return cell_of(a) < cell_of(b);});
+        for (std::size_t from = 0; from < order.size() && !bake_failed_;) {
             std::vector<std::size_t> some;
-            for (std::size_t i = from; i < std::min(signage_.signs.size(), from + chunk); ++i) some.push_back(i);
-            baked_.emplace_back();
-            bake_failed_ = !recorder_.record([&] {boards(some); lettering(some, false);}, baked_.back());
+            const auto here = cell_of(order[from]);
+            while (from < order.size() && some.size() < chunk && cell_of(order[from]) == here) some.push_back(order[from++]);
+            Baked piece;
+            for (const auto i : some) piece.centre = Vector3Add(piece.centre, signage_.signs[i].position);
+            piece.centre = Vector3Scale(piece.centre, 1.0F / static_cast<float>(some.size()));
+            for (const auto i : some)
+                piece.radius = std::max(piece.radius, Vector3Distance(piece.centre, signage_.signs[i].position) + measured_[i].width * .5F + 1);
+            bake_failed_ = !recorder_.record([&] {boards(some);}, piece.boards) || !recorder_.record([&] {lettering(some, false);}, piece.letters);
+            baked_.push_back(std::move(piece));
         }
         if (bake_failed_) baked_.clear();
         baked_ready_ = !bake_failed_;
-    } else if (baked_ready_) for (const auto& piece : baked_) piece.draw();
-    else {boards(shown); lettering(shown, true);}
+    } else if (baked_ready_) {
+        for (const auto& piece : baked_) {
+            const Vector3 to = Vector3Subtract(piece.centre, camera);
+            const float near = Vector3Length(to) - piece.radius;
+            if (near > sign_range || (near > 20 && Vector3DotProduct(to, forward) < -10 - piece.radius)) continue;   // too far, or behind
+            piece.boards.draw();
+            if (near < text_range) piece.letters.draw();
+        }
+    } else {boards(shown); lettering(shown, true);}
 
     // The poles: the island's own, then the gangs' banners (which come and go with the turf).
     std::vector<const FlagPole*> flags;

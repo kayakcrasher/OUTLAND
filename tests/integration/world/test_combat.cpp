@@ -109,7 +109,7 @@ int main() {
     gun.update(.05F,input,high,world);assert(gun.reload_remaining()==0 && gun.selected()==WeaponId::Rifle);
     // SWITCH WEAPON goes through the guns, then to empty hands, then back to the first gun.
     input.next_weapon=false;
-    assert(gun.select(WeaponId::Taser) && !gun.holstered());   // (the last gun in the list)
+    assert(gun.select(WeaponId::Lmg) && !gun.holstered());   // (the last gun in the list)
     gun.update(.05F,input,high,world);   // (the switch cooldown)
     input.next_weapon=true;gun.update(.05F,input,high,world);
     assert(gun.holstered() && !gun.available());
@@ -214,6 +214,19 @@ int main() {
             assert(weapons[i].length>.08F && weapons[i].length<.9F);
         }
         assert(definition(WeaponId::Pistol).hold==WeaponHold::Pistol && definition(WeaponId::Sniper).hold==WeaponHold::Shouldered);
+        // The newer four: the revolver (its own .357, a head shot kills, semi-automatic, held like a
+        // pistol), the lever rifle (one shot per pull, cycling slower than the marksman rifle, rifle
+        // rounds), the marksman rifle (7.62, two body hits), the belt-fed machine gun (a hundred
+        // rifle rounds, out-firing the rifle over a long burst).
+        const auto& revolver=definition(WeaponId::Revolver);
+        assert(ammo_of(WeaponId::Revolver)==WeaponId::Revolver && revolver.hold==WeaponHold::Pistol && revolver.magazine==6 && !revolver.automatic);
+        assert(revolver.damage*revolver.head_multiplier>=100 && revolver.damage>definition(WeaponId::Pistol).damage);
+        assert(ammo_of(WeaponId::LeverRifle)==WeaponId::Rifle && ammo_of(WeaponId::Lmg)==WeaponId::Rifle && ammo_of(WeaponId::MarksmanRifle)==WeaponId::Sniper);
+        assert(count(WeaponId::LeverRifle,3)==1 && count(WeaponId::MarksmanRifle,3)==1 && count(WeaponId::Revolver,3)==1);   // one shot per pull
+        assert(definition(WeaponId::LeverRifle).interval>definition(WeaponId::MarksmanRifle).interval);
+        assert(definition(WeaponId::MarksmanRifle).damage*2>=100 && definition(WeaponId::LeverRifle).damage*2>=100);
+        assert(definition(WeaponId::Lmg).magazine==100 && definition(WeaponId::Lmg).automatic);
+        assert(count(WeaponId::Lmg,4)>count(WeaponId::Rifle,4));   // the rifle runs dry and reloads; the belt goes on
     }
 
     // Extra drill targets (the police training camp): traced as targets from drill_base, a bullet's

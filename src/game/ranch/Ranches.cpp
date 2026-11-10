@@ -122,7 +122,9 @@ int Ranches::start(const world::VerdaRegion& region, ai::BattleRoyaleBots& bots,
             const auto& bodies = v.female ? female : male;
             if (!bodies.empty()) v.character = bodies[(family_seed / 3 + static_cast<std::uint64_t>(k) * 13 + static_cast<std::uint64_t>(index) * 5) % bodies.size()];
             const Vector3 at = on_ground(r.frame.at(rr::yard.x + static_cast<float>(k) * 1.5F - 2, rr::yard.y + 2));
-            auto& bot = bots.add_bot(at, combat::WeaponId::Shotgun, ai::BotLevel::Medium, family_seed + static_cast<std::uint64_t>(k));
+            // The family keeps pump shotguns; the one who drives the truck carries a lever rifle.
+            const auto gun = v.role == Role::Driver ? combat::WeaponId::LeverRifle : combat::WeaponId::Shotgun;
+            auto& bot = bots.add_bot(at, gun, ai::BotLevel::Medium, family_seed + static_cast<std::uint64_t>(k));
             bot.set_roam_center(at, 4);
             v.bot = bot.id();
             bots.set_asleep(v.bot, true);

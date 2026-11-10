@@ -28,6 +28,10 @@ void Haptics::shot(combat::WeaponId weapon) {
     case combat::WeaponId::Rocket: request(90, 1.0F); break;
     case combat::WeaponId::MachinePistol: request(12, .35F); break;
     case combat::WeaponId::Taser: request(20, .3F); break;
+    case combat::WeaponId::Revolver: request(40, .85F); break;
+    case combat::WeaponId::LeverRifle: request(45, .9F); break;
+    case combat::WeaponId::MarksmanRifle: request(35, .8F); break;
+    case combat::WeaponId::Lmg: request(16, .5F); break;
     }
 }
 

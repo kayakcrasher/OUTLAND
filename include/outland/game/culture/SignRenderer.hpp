@@ -45,9 +45,12 @@ private:
     Texture2D flag_{}, apelacio_{}, verda_mano_{};
     bool loaded_{false};
     mutable engine::GeometryRecorder recorder_;
-    // In chunks of signs, each well inside one recording (a recording that overflows loses what was
-    // drawn before the overflow without knowing it).
-    mutable std::vector<engine::RecordedGeometry> baked_;
+    // In chunks of signs near one another, each well inside one recording (a recording that
+    // overflows loses what was drawn before the overflow without knowing it): the boards and the
+    // lettering apart, so each is drawn only within its range of the camera (beyond it the depth
+    // buffer can no longer tell lettering from board, and distant signs shimmer).
+    struct Baked { engine::RecordedGeometry boards, letters; Vector3 centre{}; float radius{0}; };
+    mutable std::vector<Baked> baked_;
     mutable bool baked_ready_{false}, bake_failed_{false};
 };
 }

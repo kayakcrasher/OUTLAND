@@ -80,12 +80,15 @@ void BattleRoyaleBots::start(const world::VerdaRegion& region,BotLevel level,int
         if(world::physics::WorldCollision::body_blocked(feet,feet.y,region,.35F)) continue;
         if(Vector3Distance(feet,player_feet)<drop_clearance) continue;
         if(std::any_of(placed.begin(),placed.end(),[&](Vector3 p){return Vector3Distance(p,feet)<60;})) continue;
-        // Loadouts roughly as found in a drop: mostly rifles, then SMGs, pistols, shotguns (pump,
-        // double barrel, automatic), a few snipers. No bot carries a rocket launcher.
+        // Loadouts roughly as found in a drop: mostly rifles, then SMGs, pistols and revolvers,
+        // shotguns (pump, double barrel, automatic), lever rifles, a few machine gunners, marksmen
+        // and snipers. No bot carries a rocket launcher.
         const float pick=unit(state);
-        const auto weapon=pick<.40F ? combat::WeaponId::Rifle : pick<.60F ? combat::WeaponId::Smg :
-            pick<.78F ? combat::WeaponId::Pistol : pick<.85F ? combat::WeaponId::Shotgun :
-            pick<.89F ? combat::WeaponId::DoubleBarrel : pick<.92F ? combat::WeaponId::AutoShotgun : combat::WeaponId::Sniper;
+        const auto weapon=pick<.36F ? combat::WeaponId::Rifle : pick<.54F ? combat::WeaponId::Smg :
+            pick<.68F ? combat::WeaponId::Pistol : pick<.72F ? combat::WeaponId::Revolver : pick<.79F ? combat::WeaponId::Shotgun :
+            pick<.83F ? combat::WeaponId::DoubleBarrel : pick<.86F ? combat::WeaponId::AutoShotgun :
+            pick<.90F ? combat::WeaponId::LeverRifle : pick<.93F ? combat::WeaponId::Lmg :
+            pick<.96F ? combat::WeaponId::MarksmanRifle : combat::WeaponId::Sniper;
         auto& bot=add_bot(feet,weapon,level,state);
         bot.set_roam_center(center,140);
         placed.push_back(feet);

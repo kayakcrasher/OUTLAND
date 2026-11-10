@@ -41,6 +41,10 @@ const char* gun_name(game::combat::WeaponId id) {
         case game::combat::WeaponId::Rocket: return "rocket";
         case game::combat::WeaponId::MachinePistol: return "machine_pistol";
         case game::combat::WeaponId::Taser: return "taser";
+        case game::combat::WeaponId::Revolver: return "revolver";
+        case game::combat::WeaponId::LeverRifle: return "lever_rifle";
+        case game::combat::WeaponId::MarksmanRifle: return "marksman_rifle";
+        case game::combat::WeaponId::Lmg: return "lmg";
     }
     return "rifle";
 }
@@ -146,12 +150,15 @@ void GunAudio::player_shot(game::combat::WeaponId weapon) {
     play(close_[index], 1.0F, 0, .97F + random() * .06F);
     // The punch in the chest under the report (heavier for the big guns), and the report rolling
     // back off the hills a moment later.
-    static constexpr float punch[game::combat::weapon_count]{.45F, .6F, .45F, .9F, 1.0F, 1.0F, .75F, 1.0F};
+    static constexpr float punch[game::combat::weapon_count]{.45F, .6F, .45F, .9F, 1.0F, 1.0F, .75F, 1.0F, .4F, .2F, .8F, .9F, .75F, .6F};
     play(punch_, punch[index], 0, .95F + random() * .1F);
     pending_.push_back({&distant_[index], .5F + random() * .25F, .09F + .05F * punch[index], (random() - .5F) * .6F, .97F + random() * .06F});
     // The gun's own mechanics and the spent case, after the report.
     if (weapon == game::combat::WeaponId::Shotgun) pending_.push_back({&pump_, .32F, .55F, 0, 1});
     else if (weapon == game::combat::WeaponId::Sniper) pending_.push_back({&bolt_, .42F, .5F, 0, 1});
+    else if (weapon == game::combat::WeaponId::LeverRifle) pending_.push_back({&bolt_, .26F, .45F, 0, 1.25F});   // the lever's throw
+    // A revolver keeps its cases in the cylinder until the reload.
+    if (weapon == game::combat::WeaponId::Revolver) return;
     // Shotguns keep their shells until the reload (the pump ejects one); a rocket leaves no case.
     if (!game::combat::is_shotgun(weapon) && weapon != game::combat::WeaponId::Rocket)
         pending_.push_back({&casing_, .38F + random() * .12F, .22F, .25F, .95F + random() * .1F});
