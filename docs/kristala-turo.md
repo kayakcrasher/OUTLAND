@@ -10,9 +10,9 @@ Norda Kvartalo (around x 52, z −214), its front and its plaza to the south, to
 - **26 x 26 m, 118.7 m to the tip of its spire:** a 6 m lobby, 23 office floors of 3.6 m (the top
   three set back to 23 x 23 m), the penthouse floor at 89 m, a lantern and a spire over it.
 - **The plaza:** granite planters and benches either side of the way in, a canopy over the doors and
-  the tower's name in gold over them (KRISTALA TURO · OFICEJOJ · PENTDOMO).
+  the tower's name on its offices' board over them (KRISTALA TURO · OFICEJOJ · PENTDOMO).
 - **The lobby is open to everyone:** glass on three sides, a marble floor, the concierge's desk, benches
-  and plants, a service door at the back. It counts as an office (a work place on the island).
+  and plants, a service door at the back. The tower is a place of work on the island (offices).
   It is on the enterable list, so the world-kit test walks in through its front door.
 - **The elevator core** faces the way in, with three brass doors. Stand at them and press **E / USE**:
   "Elevator up to the penthouse (25)". The ride takes a few seconds behind a fade, with the floor counting

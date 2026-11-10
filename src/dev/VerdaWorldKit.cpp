@@ -839,7 +839,7 @@ void sky_tower(Kit& kit, world::VerdaRegion& region) {
     lobby.door_x = 0;
     lobby.ground_floor = tw::lobby_floor;
     kit.report.enterable.push_back(lobby);
-    kit.purpose(to_world(at, tw::site_yaw, -6.5F, tw::lobby_floor + .1F, -4.0F), tw::site_yaw, world::BuildingPurpose::Office);   // the concierge
+    // (A tower is a place of its own - offices - so it needs no purpose marker.)
     kit.report.sky_tower = true;
 }
 
