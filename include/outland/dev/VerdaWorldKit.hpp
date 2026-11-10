@@ -25,6 +25,7 @@ struct WorldKitReport {
     int police_stations{0}, police_cars{0}, ambulances{0}, clinics{0}, south_blocks{0};
     int north_blocks{0}, north_buildings{0}, l_stations{0}, l_bents{0};   // Norda Kvartalo and La Levita (world::north)
     bool sky_tower{false};   // Kristala Turo (world::tower)
+    std::vector<Vector3> pizzerias;   // Picolando's (design origins)
     int county_roads{0}, county_homes{0}, county_donors{0}, village_buildings{0}, village_homes{0};   // Sovaĝejo's country (world::county)
     int baptist_churches{0}, orthodox_churches{0};   // game::culture::Faith: the west's chapels, the east's churches
     int street_lights{0};   // added by street_lighting() along dark town streets

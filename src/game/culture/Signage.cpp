@@ -171,6 +171,8 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
         if (place.kind == PlaceKind::Pub)
             for (const auto& rest : world::highways::rest_areas())
                 if (flat(place.door, rest.building) < 20) text = {"LA RINGO", rest.brotherhood ? "TRINKEJO · KRADROSTEJO · LA FRATECO" : "TRINKEJO · KRADROSTEJO"};
+        // Picolando, the pizza chain.
+        if (place.kind == PlaceKind::Pub && near_model("civic/pizzeria.glb")) text = {"PICOLANDO", "PICOJ · LIVERADO · VARMEGE AL VIA PORDO"};
         // The radio stations' studios.
         if (place.kind == PlaceKind::Office && near_model("civic/radio_station_popolko.glb")) text = {"VERDA POPOLKO 98.1", "RADIO · POPMUZIKO KAJ POLKO"};
         if (place.kind == PlaceKind::Office && near_model("civic/radio_station_kantrio.glb")) text = {"RADIO SOVAĜEJO 102.5", "KANTRIO · BLUGRASO"};

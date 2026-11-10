@@ -2218,6 +2218,99 @@ def gun_shop():
     return b
 
 
+def pizzeria():
+    """Picolando, the island's pizza chain (modular, one storey, enterable): white stucco over a
+    red-tiled plinth, a red-and-white chequer band under the eaves, green trim; at the front (-Z) a
+    glass door between two big windows under red-and-white striped awnings, and on the roof the
+    giant pizza - a two-metre round of cheese on its crust, pepperoni and basil on top - standing on
+    two steel posts, facing the street. Inside: the counter with its till and the pick-up shelf of
+    hot boxes, two brick ovens glowing at the back, the prep table, a few tables. 12 x 9 m."""
+    b = Builder()
+    b.material("stucco", flat((240, 236, 226), 3), 3, 3)
+    b.material("tile", flat((176, 46, 36), 5), 3, 1)
+    b.material("chequer", checker((214, 34, 30), (244, 242, 236), 8, 607), 1.2, 1.2)
+    b.material("awning", stripes((214, 34, 30), (244, 242, 236), 16, 608), 1.5, 1.5)
+    b.material("trim", flat((0, 132, 64), 3), 1, 1)
+    b.material("plaster", flat((246, 230, 200), 3), 3, 3)
+    b.material("floor", checker((30, 30, 32), (236, 234, 228), 6, 609), 2, 2)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("steel", flat((60, 62, 66), 3), 2, 2)
+    b.material("brick", flat((150, 70, 44), 6), 1, 1)
+    b.material("fire", flat((255, 150, 40), 2), 1, 1)
+    b.material("soot", flat((24, 20, 18), 2), 1, 1)
+    b.material("wood", wood(), 2, 2)
+    b.material("box", stripes((214, 34, 30), (244, 242, 236), 32, 610), .4, .4)
+    b.material("cheese", flat((255, 210, 70), 4), 1, 1)
+    b.material("crust", flat((196, 128, 52), 5), 1, 1)
+    b.material("pepperoni", flat((168, 34, 28), 3), 1, 1)
+    b.material("basil", flat((46, 140, 60), 3), 1, 1)
+    w, d, height, t, slab = 6.0, 4.5, 4.2, .25, .2
+    front = [(-1.0, 1.0, slab, 2.4), (-5.2, -1.8, .7, 2.2), (1.8, 5.2, .7, 2.2)]   # door, two windows
+    wall_with_openings(b, 'x', -d, (-w, w), height, t, front, "stucco", "plaster", -1)
+    wall_with_openings(b, 'x', d, (-w, w), height, t, [], "stucco", "plaster", +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), height, t, [], "stucco", "plaster", -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), height, t, [(-.5, .5, slab, 2.3)], "stucco", "plaster", +1)   # the back door
+    b.box((-w + t, 0, -d + t), (w - t, slab, d - t), {'+y': "floor", '-y': "plaster"})
+    b.box((-w, height - .2, -d), (w, height, d), {'+y': "roof", '-y': "plaster", '+x': "tile", '-x': "tile", '+z': "tile", '-z': "tile"})
+    plinth_skirt(b, w, d, .5, "tile", front_doors=[(-1.0, 1.0)], side_doors=[(-.5, .5)])
+    # The chequer band under the eaves, all round; green trim over and under it.
+    for lo, hi in (((-w - .06, height - .75, -d - .06), (w + .06, height - .2, -d)), ((-w - .06, height - .75, d), (w + .06, height - .2, d + .06)),
+                   ((-w - .06, height - .75, -d), (-w, height - .2, d)), ((w, height - .75, -d), (w + .06, height - .2, d))):
+        b.solid(lo, hi, "chequer")
+    for y in (height - .8, height - .2):
+        b.solid((-w - .1, y, -d - .1), (w + .1, y + .06, -d), "trim")
+    # The parapet round the roof.
+    for lo, hi in (((-w, height, -d), (w, height + .4, -d + .15)), ((-w, height, d - .15), (w, height + .4, d)),
+                   ((-w, height, -d), (-w + .15, height + .4, d)), ((w - .15, height, -d), (w, height + .4, d))):
+        b.solid(lo, hi, "stucco")
+    # Striped awnings over the windows and the door, sloping out.
+    for x0, x1 in ((-5.4, -1.6), (-1.2, 1.2), (1.6, 5.4)):
+        for k in range(4):
+            y = 2.95 - k * .08
+            b.solid((x0, y, -d - .25 - k * .25), (x1, y + .08, -d - k * .25), "awning")
+        b.solid((x0, 2.55, -d - 1.0), (x1, 2.71, -d - .97), "awning")   # the valance, clear over a head
+    # The giant pizza on the roof, facing the street on two posts: horizontal strips of a disc.
+    cy, cz, r = height + 2.6, -d + 1.2, 2.0
+    for x in (-1.1, 1.1):
+        b.solid((x - .08, height, cz + .1), (x + .08, cy, cz + .26), "steel")
+    strips = 16
+    for k in range(strips):
+        y0 = -r + 2 * r * k / strips
+        y1 = y0 + 2 * r / strips
+        ym = (y0 + y1) / 2
+        half = math.sqrt(max(0.0, r * r - ym * ym))
+        b.solid((-half, cy + y0, cz), (half, cy + y1, cz + .12), "crust")
+        inner = math.sqrt(max(0.0, (r - .22) ** 2 - ym * ym))
+        if inner > 0:
+            b.solid((-inner, cy + y0, cz - .04), (inner, cy + y1, cz), "cheese")
+    for x, y in ((-.9, .7), (.6, 1.0), (0, .1), (-.5, -.7), (.9, -.4), (.2, -1.2), (-1.2, -.1), (.55, .45)):
+        b.solid((x - .2, cy + y - .2, cz - .07), (x + .2, cy + y + .2, cz - .04), "pepperoni")
+    for x, y in ((-.2, .8), (1.1, .3), (-.9, -.3), (.4, -.75)):
+        b.solid((x - .12, cy + y - .06, cz - .06), (x + .12, cy + y + .06, cz - .04), "basil")
+    # Inside: the counter with the till and the pick-up shelf of hot boxes, the ovens at the back,
+    # the prep table, three little tables with stools.
+    b.solid((-4.0, slab, -.2), (3.0, 1.05, .5), "wood")
+    b.solid((-4.05, 1.05, -.25), (3.05, 1.1, .55), "trim")
+    b.solid((2.2, 1.1, 0), (2.7, 1.35, .3), "steel")
+    b.solid((-3.8, 1.1, .05), (-1.8, 1.14, .45), "steel")              # the pick-up shelf
+    for k in range(5):
+        b.solid((-3.7 + k * .38, 1.14, .08), (-3.38 + k * .38, 1.2 + (k % 3) * .06, .42), "box")
+    for x in (-3.0, 1.0):
+        b.solid((x - 1.1, slab, d - t - 1.6), (x + 1.1, 1.0, d - t), "brick")       # an oven's base
+        b.dome("brick", x, d - t - .8, 1.0, 1.0, courses=5, sides=14, rise=.9)
+        b.solid((x - .4, 1.05, d - t - 1.85), (x + .4, 1.5, d - t - 1.75), "soot")   # its mouth
+        b.solid((x - .3, 1.07, d - t - 1.7), (x + .3, 1.25, d - t - 1.4), "fire")
+        b.solid((x - .15, 1.9, d - t - 1.0), (x + .15, height - .2, d - t - .7), "steel")  # the flue
+    b.solid((-1.0, slab, 2.0), (.5, .95, 2.6), "steel")                             # prep table
+    for x, z in ((-4.2, -2.9), (-2.4, -3.2), (4.0, -2.9)):
+        b.ring("wood", x, z, .45, .45, .7, .75, 10, top_cap=True)
+        b.ring("steel", x, z, .05, .05, slab, .7, 6)
+        for dx in (-.7, .7):
+            b.ring("trim", x + dx, z, .18, .18, .4, .45, 8, top_cap=True)
+            b.ring("steel", x + dx, z, .03, .03, slab, .4, 6)
+    return b
+
+
 # ---------------------------------------------------------------- the motor trade
 # Marnafto (the island's oil company: its rigs out at sea, its stations on the roads), the
 # Meĥanikejo workshops and Aŭtovendejo Verda's car lot. Keep the layout numbers in step with
@@ -4275,6 +4368,7 @@ def kit():
     add("civic/parking_garage.glb", parking_garage(), "city_parking_garage", "Parkumejo Centra - multi-storey car park (drive up 4 levels), rooftop mansion for sale", "Building", 38.6, 32.6, 20.2)
     add("civic/truck_depot.glb", truck_depot(), "city_truck_depot", "Verda Transporto - truck depot with office", "Building", 38, 31, 9)
     add("civic/gun_shop.glb", gun_shop(), "city_gun_shop", "Armilejo - gun shop (modular, enterable)", "Building", 12.2, 9.2, 4.4)
+    add("civic/pizzeria.glb", pizzeria(), "city_pizzeria", "Picolando - pizzeria (modular, enterable, the giant pizza on the roof)", "Building", 12.2, 9.2, 8.8)
     for style, name in (("popolko", "Verda Popolko 98.1"), ("kantrio", "Radio Sovaĝejo 102.5"), ("roko", "Espera Roko 105.9"), ("disko", "Luma Disko 94.3")):
         mast = RADIO_STYLES[style]["mast"]
         add(f"civic/radio_station_{style}.glb", radio_station(style), f"city_radio_station_{style}",

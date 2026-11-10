@@ -19,6 +19,7 @@ inline void register_vehicle_assets(CreatorAssetRegistry& registry) {
 (void)registry.add({.id="vehicle_van",.name="Verda Furgono",.category=CreatorAssetCategory::Vehicle,.model_path="assets/verda/vehicles/runtime/van_body.glb",.thumbnail_path="",.footprint={2.0F,5.2F,2.62F},.placement={},.default_scale=1,.tags={"vehicles","vehicle_definition:van"}});
 (void)registry.add({.id="vehicle_flatbed",.name="Verda Platformo",.category=CreatorAssetCategory::Vehicle,.model_path="assets/verda/vehicles/runtime/flatbed_body.glb",.thumbnail_path="",.footprint={2.0F,5.9F,2.1F},.placement={},.default_scale=1,.tags={"vehicles","vehicle_definition:flatbed"}});
 (void)registry.add({.id="vehicle_motorcycle",.name="Verda Fulmo",.category=CreatorAssetCategory::Vehicle,.model_path="assets/verda/vehicles/runtime/motorcycle_body.glb",.thumbnail_path="",.footprint={0.78F,2.08F,1.16F},.placement={},.default_scale=1,.tags={"vehicles","vehicle_definition:motorcycle"}});
+(void)registry.add({.id="vehicle_pizza",.name="Picolando Kuriero",.category=CreatorAssetCategory::Vehicle,.model_path="assets/verda/vehicles/runtime/pizza_body.glb",.thumbnail_path="",.footprint={1.72F,4.1F,1.86F},.placement={},.default_scale=1,.tags={"vehicles","vehicle_definition:pizza"}});
 }
 }
 #endif

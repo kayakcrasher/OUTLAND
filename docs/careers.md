@@ -37,6 +37,7 @@ it whose it is and how to join.
 - **No gang takes a cop:** an officer hands in the badge first. A crime on duty (assaulting or killing a resident, or attacking an officer) ends the career on the force and leaves a record. Bystanders hit in a gunfight with a gang (on a gang's turf, or while a gang is shooting) are crossfire: expected, and no crime, no wanted level, no lost respect (`Career::stray_round`). Murder is another story: three bystanders dead by your gun before your next job is done, and the badge goes. Outside a gang fight, hurting a resident is a crime as before.
 - Joining a different gang starts your respect again from zero.
 - **Trucking** is open to anyone but a serving officer, gang members included: sign on with the boss at Verda Transporto's depot and drive loads for pay by the trip. See [trucking](trucking.md).
+- **Pizza delivery** is open to anyone but an officer on duty: sign on at any Picolando pizzeria's counter and deliver pizzas for pay and tips. See [Picolando](picolando.md).
 
 ## Ŝtata Malliberejo, the state prison
 

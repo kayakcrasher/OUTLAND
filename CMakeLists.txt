@@ -184,6 +184,7 @@ add_library(
     src/game/ranch/Ranches.cpp
     src/game/freight/Freight.cpp
     src/game/freight/Trucking.cpp
+    src/game/pizza/Picolando.cpp
     src/game/campaign/Campaign.cpp
     src/game/outbreak/Outbreak.cpp
     src/game/outbreak/OutbreakRun.cpp
@@ -937,6 +938,11 @@ if(OUTLAND_BUILD_TESTS)
     target_compile_options(outland_sky_tower_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
     target_compile_definitions(outland_sky_tower_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_test(NAME outland_sky_tower_tests COMMAND outland_sky_tower_tests)
+    add_executable(outland_picolando_tests tests/integration/world/test_picolando.cpp)
+    target_link_libraries(outland_picolando_tests PRIVATE outland_render)
+    target_compile_options(outland_picolando_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
+    target_compile_definitions(outland_picolando_tests PRIVATE OUTLAND_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_test(NAME outland_picolando_tests COMMAND outland_picolando_tests)
     add_executable(outland_helicopter_drop_tests tests/integration/modes/test_helicopter_drop.cpp)
     target_link_libraries(outland_helicopter_drop_tests PRIVATE outland_render)
     target_compile_options(outland_helicopter_drop_tests PRIVATE -Wall -Wextra -Wpedantic -UNDEBUG)
@@ -973,6 +979,7 @@ if(OUTLAND_BUILD_TESTS)
         add_test(NAME outland_generated_vehicle_models COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_truck_model.py" --check)
         add_test(NAME outland_generated_emergency_vehicles COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_emergency_vehicles.py" --check)
         add_test(NAME outland_generated_sedan COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_sedan_model.py" --check)
+        add_test(NAME outland_generated_pizza_car COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_pizza_car.py" --check)
         add_test(NAME outland_generated_green_hand_car COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_green_hand_car.py" --check)
         add_test(NAME outland_generated_furniture COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_furniture.py" --check)
         add_test(NAME outland_generated_gang_outfits COMMAND ${Python3_EXECUTABLE} "${PROJECT_SOURCE_DIR}/tools/generate_gang_outfits.py" --check)

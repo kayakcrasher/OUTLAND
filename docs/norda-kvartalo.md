@@ -53,6 +53,7 @@ Cars and the odd Verda Fulmo are parked at the kerbs.
 **Who uses them:**
 - **Flats are homes:** Verda City's people live in them (the city's population grows by two for
   each new home).
+- **In and out by the door:** each building's place marker stands 2.6 m inside, in line with its doorway. Island life makes a 3 m place round it and puts its door 2 m in front, on the threshold. Residents walk out through the doorway, never pressed against the front wall beside it.
 - **Corner stores are shops**, with flats over them.
 - **Taverns are pubs**, with the bar, stools and tables inside and a flat upstairs.
 

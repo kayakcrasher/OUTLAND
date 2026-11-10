@@ -1,4 +1,5 @@
 #include "outland/game/mafia/Mafio.hpp"
+#include "outland/world/Picolando.hpp"
 #include "outland/game/vehicles/VehicleSystem.hpp"
 #include "outland/world/VerdaRegion.hpp"
 #include "outland/world/physics/WorldCollision.hpp"
@@ -62,6 +63,7 @@ int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegio
     message_.clear();
     message_time_ = 0;
     const auto& towns = region.settlements();
+    const auto pizzerias = world::picolando::find(region);
     for (std::size_t s = 0; s < towns.size(); ++s) {
         const auto& town = towns[s];
         if (town.id.starts_with("ranch_")) continue; // the Vakeroj's ranches answer to nobody
@@ -91,6 +93,7 @@ int Mafio::start(const std::vector<life::Place>& places, const world::VerdaRegio
             const auto& place = places[i];
             if (place.settlement != static_cast<int>(s)) continue;
             if (houses && !plain_house(i)) continue;
+            if (std::any_of(pizzerias.begin(), pizzerias.end(), [&](const auto& p) {return flat(p.origin, place.door) < 12;})) continue;   // Picolando's: no gang's hideout
             float score = suitability(place);
             if (score < 0) continue;
             // Not on the police's doorstep: well away from any station (the Green Hand keep the

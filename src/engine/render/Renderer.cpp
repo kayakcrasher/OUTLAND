@@ -28,6 +28,7 @@
 #include "outland/game/ranch/Ranches.hpp"
 #include "outland/game/freight/Freight.hpp"
 #include "outland/game/freight/Trucking.hpp"
+#include "outland/game/pizza/Picolando.hpp"
 #include "outland/game/player/PlayerStats.hpp"
 #include "outland/game/campaign/Campaign.hpp"
 #include "outland/game/TouchLayoutEditor.hpp"
@@ -787,6 +788,9 @@ void Renderer::run() {
     // Verda Transporto: the boss at the depot door (a body under his own id), the loads he gives out
     // (saved beside the career) and where they go.
     game::freight::Trucking trucking;
+    // Picolando: the player's pizza deliveries, the pizzerias and their households, the chain's own drivers.
+    game::pizza::Delivery pizza;std::string pizza_path,pizza_saved;
+    game::pizza::PizzaWorld pizza_world;game::pizza::Fleet pizza_fleet;
     game::freight::HaulWorld haul_world;
     std::string trucking_path,trucking_saved;
     // The player's record (game::player::PlayerStats): kept beside the career, shown in the bag.
@@ -2099,6 +2103,7 @@ void Renderer::run() {
                 vehicles.set_training_structure(game_mode == game::GameMode::DevLab);
                 if(bus_line.running()) bus_line.stop(verda_region,vehicles);
                 if(freight.running()) freight.stop(verda_region,vehicles);
+                if(pizza_fleet.running()) pizza_fleet.stop(verda_region,vehicles);
                 ranches.clear(vehicles);
                 garage_here=world::garage::find(verda_region,garage_site);
                 tower_here=world::tower::find(verda_region,tower_site);lift_ride=-1;was_in_suite=false;
@@ -2219,6 +2224,7 @@ void Renderer::run() {
                 }
                 walking_man.clear();backup.clear();cb_backup.clear();kamionistoj.clear();society={};player_crew.clear();prison_yard.clear();jail_terms.clear();
                 trucking=game::freight::Trucking{};trucking_path.clear();depot_boss={};haul_world={};
+                pizza=game::pizza::Delivery{};pizza_path.clear();pizza_world={};
                 career=game::career::Career{};career_path.clear();mafio.set_player_gang(-1);services.assign_player_car({});
                 police_camp=game::career::TrainingCamp{};chief={};lights_car.clear();
                 territory.clear();territory_path.clear();smuggling_docks.clear();
@@ -2549,6 +2555,29 @@ void Renderer::run() {
                     trucking_path=career_path+".trucking";
                     if(FileExists(trucking_path.c_str())) if(char* text=LoadFileText(trucking_path.c_str())) {trucking.parse(text);UnloadFileText(text);}
                     trucking_saved=trucking.serialise();
+                    // Picolando: the pizzerias, every household with someone at home (named for its family),
+                    // the player's deliveries from the last session, and the chain's three drivers.
+                    pizza=game::pizza::Delivery{};pizza.seed(session_seed);
+                    pizza_path=career_path+".pizza";
+                    if(FileExists(pizza_path.c_str())) if(char* text=LoadFileText(pizza_path.c_str())) {pizza.parse(text);UnloadFileText(text);}
+                    pizza_saved=pizza.serialise();
+                    {
+                        const auto& isl=island_life.island();
+                        std::vector<std::string> family(isl.places.size());
+                        for(const auto& r:isl.residents)
+                            if(r.home>=0 && static_cast<std::size_t>(r.home)<family.size() && family[static_cast<std::size_t>(r.home)].empty()) family[static_cast<std::size_t>(r.home)]=r.family_name;
+                        std::vector<game::pizza::Customer> homes;
+                        for(std::size_t i=0;i<isl.places.size();++i) {
+                            const auto& place=isl.places[i];
+                            if((place.kind!=game::life::PlaceKind::Home && !place.mixed_home) || family[i].empty() || place.building_id.starts_with("gang_house_")) continue;
+                            homes.push_back({"the "+family[i]+" household",place.door,-1});
+                        }
+                        pizza_world=game::pizza::make_world(world::picolando::find(verda_region),std::move(homes));
+                        if(pizza_fleet.running()) pizza_fleet.stop(verda_region,vehicles);
+                        if(pizza_fleet.build(verda_region,vehicles,pizza_world,&character_registry,session_seed)) pizza_fleet.start(verda_region,vehicles);
+                        TraceLog(LOG_INFO,"OUTLAND Picolando: %d pizzerias, %d households, %d drivers",static_cast<int>(pizza_world.shops.size()),
+                                 static_cast<int>(pizza_world.customers.size()),static_cast<int>(pizza_fleet.drivers().size()));
+                    }
                     stats=game::player::PlayerStats{};stats_path=career_path+".stats";stats_money=-1;stats_placed=false;
                     if(FileExists(stats_path.c_str())) if(char* text=LoadFileText(stats_path.c_str())) {stats.parse(text);UnloadFileText(text);}
                     stats_saved=stats.serialise();
@@ -3731,6 +3760,9 @@ void Renderer::run() {
                     gun_audio.kill_confirm();
                 }
                 input_system.player().interact=false;
+            } else if(const int counter=pizza.at_counter(feet,pizza_world);counter>=0) {
+                chief_line=pizza.talk(counter,career.on_duty(),match_time,pizza_world);chief_line_time=9;
+                input_system.player().interact=false;
             } else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) {
                 chief_line=trucking.talk(career.on_duty(),match_time,haul_world);chief_line_time=9;
                 input_system.player().interact=false;
@@ -4134,6 +4166,15 @@ void Renderer::run() {
             const bool at_stash=stash && game::rules_for(game_mode).civilian_life && !vehicles.driver() && !game::economy::Stash::taken(loot_session.economy()) &&
                 std::hypot(feet.x-stash->at.x,feet.z-stash->at.z)<1.8F && std::abs(feet.y-stash->at.y)<1.5F;
             if(at_stash) {here=true;if(store_prompt.empty()) store_prompt=touch_ui ? "USE - Take the holdall" : "E - Take the holdall";}
+            // Picolando's counter (before anyone standing about in the pizzeria).
+            if(game_mode==game::GameMode::Explore && !career_path.empty() && !vehicles.driver() && !here && player_health.alive())
+                if(const int counter=pizza.at_counter(feet,pizza_world);counter>=0) {
+                    here=true;
+                    if(store_prompt.empty())
+                        store_prompt=!pizza.hired() ? "E - Ask "+pizza_world.shops[static_cast<std::size_t>(counter)].name+" for delivery work" :
+                            pizza.order().stage==game::pizza::Stage::Pickup && pizza.order().shop==counter ? std::string("E - Take the order") : std::string("E - Talk to the counter");
+                    if(touch_ui && store_prompt.rfind("E - ",0)==0) store_prompt="USE - "+store_prompt.substr(4);
+                }
             if(game::rules_for(game_mode).civilian_life && !vehicles.driver() && !here) {
                 if(street_race.ready() && race_bots_out && std::hypot(feet.x-street_race.organiser().x,feet.z-street_race.organiser().z)<game::racing::StreetRace::talk_range) {
                     here=true;if(store_prompt.empty()) store_prompt=touch_ui ? "USE - Talk to Fulmo" : "E - Talk to Fulmo";
@@ -4144,7 +4185,7 @@ void Renderer::run() {
             if(!here && game::rules_for(game_mode).civilian_life && !vehicles.driver()) {Vector3 s{};float y=0;here=stand_seat.on || stand_seat_near(feet,s,y);}
             if(!here && game_mode==game::GameMode::Explore && !career_path.empty()) {
                 here=(chief.placed && Vector3Distance(feet,chief.at)<2.4F) || (police_camp.placed() && police_camp.at_line(feet)) || arrestable(feet)>=0 || (career.on_duty() && (callouts.to_cuff(feet,mafio,br_bots)>=0 || routine.to_cuff(feet,br_bots)>=0 || routine.to_ticket(feet,br_bots)>=0)) ||
-                    (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) || trucker_near(feet)>=0 || society_near(feet) || gun_man_near(feet)>=0 ||
+                    (depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F) || pizza.at_counter(feet,pizza_world)>=0 || trucker_near(feet)>=0 || society_near(feet) || gun_man_near(feet)>=0 ||
                     (!campaign_path.empty() && (story.talking() || (uncle_ron.placed && Vector3Distance(feet,uncle_ron.at)<3.2F))) ||
                     boss_near(feet)>=0 || station_desk(feet)!=nullptr || recruit_near(feet)>=0 ||
                     booking.stage==2 || inside_line<inside_lines.size() ||
@@ -4158,6 +4199,9 @@ void Renderer::run() {
                     else if(career.on_duty() && !vehicles.driver() && routine.to_ticket(feet,br_bots)>=0) store_prompt="E - Write the ticket";
                     else if(career.on_duty() && !vehicles.driver() && (callouts.to_cuff(feet,mafio,br_bots)>=0 || routine.to_cuff(feet,br_bots)>=0)) store_prompt="E - Cuff him (hands up)";
                     else if(arrestable(feet)>=0) store_prompt="E - Arrest him";
+                    else if(const int counter=pizza.at_counter(feet,pizza_world);counter>=0)
+                        store_prompt=!pizza.hired() ? "E - Ask "+pizza_world.shops[static_cast<std::size_t>(counter)].name+" for delivery work" :
+                            pizza.order().stage==game::pizza::Stage::Pickup && pizza.order().shop==counter ? std::string("E - Take the order") : std::string("E - Talk to the counter");
                     else if(depot_boss.placed && Vector3Distance(feet,depot_boss.at)<2.6F)
                         store_prompt=!trucking.hired() ? "E - Ask the boss of Verda Transporto for work" :
                             trucking.job().stage==game::freight::HaulStage::Report ? "E - Report in for your pay" : "E - Talk to the boss";
@@ -6118,6 +6162,7 @@ void Renderer::run() {
         }
         if(freight.running()) freight.update(vehicle_paused ? 0.0F : dt,verda_region,vehicles,Vector3Subtract(player.position,{0,1,0}),&npcs,&ranches);
         freight.follow_trailers(verda_region,vehicles);
+        if(pizza_fleet.running()) pizza_fleet.update(vehicle_paused ? 0.0F : dt,verda_region,vehicles,Vector3Subtract(player.position,{0,1,0}),&npcs,pizza_world);
         if(bus_line.running()) {
             bus_line.update(vehicle_paused ? 0.0F : dt,verda_region,vehicles,Vector3Subtract(player.position,{0,1,0}),&npcs);
             for(std::size_t i=0;i<bus_drivers.size() && i<bus_line.buses().size();++i) bus_drivers[i].advance(characters::AnimationAction::Idle,dt,0);
@@ -6957,6 +7002,17 @@ void Renderer::run() {
                             }
                         }
                     }
+                    // Picolando: the order in hand (picked up, delivered and paid on the doorstep).
+                    {
+                        game::pizza::Frame order;
+                        order.dt=dt;order.now=match_time;order.player=feet;
+                        if(const auto* car=vehicles.driver()) {order.driving=true;order.speed=car->speed;}
+                        switch(pizza.update(order,pizza_world)) {
+                            case game::pizza::Event::PickedUp: case game::pizza::Event::Delivered: gun_audio.kill_confirm();break;
+                            default: break;
+                        }
+                        if(const int pay=pizza.take_pay();pay>0) {loot_session.economy().money+=pay;loot_session.changed();}
+                    }
                     if(police_camp.placed()) {
                         police_camp.update(dt,feet,weapons.events().shots);
                         if(police_camp.take_graduation()) career.passed_training();
@@ -7472,6 +7528,7 @@ void Renderer::run() {
                         career_save_wait=1;
                         if(const auto text=career.serialise();text!=career_saved && SaveFileText(career_path.c_str(),const_cast<char*>(text.c_str()))) career_saved=text;
                         if(const auto text=trucking.serialise();!trucking_path.empty() && text!=trucking_saved && SaveFileText(trucking_path.c_str(),const_cast<char*>(text.c_str()))) trucking_saved=text;
+                        if(const auto text=pizza.serialise();!pizza_path.empty() && text!=pizza_saved && SaveFileText(pizza_path.c_str(),const_cast<char*>(text.c_str()))) pizza_saved=text;
                         if(const auto text=league.serialise();!league_path.empty() && text!=league_saved && SaveFileText(league_path.c_str(),const_cast<char*>(text.c_str()))) league_saved=text;
                     }
                     // The stats change every second (time played): saved every ten, so the browser's
@@ -8128,6 +8185,7 @@ void Renderer::run() {
             std::vector<std::pair<std::string,std::pair<std::string,bool>>> seated;
             for(const auto& d:ranches.drivers()) seated.push_back({d.vehicle,{d.character,d.hat}});
             for(const auto& d:freight.drivers()) seated.push_back({d.vehicle,{d.character,d.hat}});
+            for(const auto& d:pizza_fleet.seats()) seated.push_back({d.vehicle,{d.character,false}});
             ranch_seats.resize(seated.size());
             for(std::size_t i=0;i<seated.size();++i) {
                 const auto* asset=vehicles.asset(verda_region,seated[i].first);
@@ -8150,6 +8208,7 @@ void Renderer::run() {
             for(const auto& bus:bus_line.buses()) taken.insert(bus.vehicle);
             for(const auto& d:ranches.drivers()) taken.insert(d.vehicle);
             for(const auto& d:freight.drivers()) taken.insert(d.vehicle);
+            for(const auto& d:pizza_fleet.seats()) taken.insert(d.vehicle);
             const std::string mine=vehicles.driver() ? vehicles.driver()->id : std::string();
             car_seat_pose.advance(characters::AnimationAction::Idle,dt,0);
             // Where a sitting body's hips go: the seat, low enough that the head clears the roof
@@ -8664,6 +8723,19 @@ void Renderer::run() {
             EndBlendMode();
             DrawCircle3D({at.x,ground+.15F,at.z},game::freight::Trucking::stop_radius*.6F,{1,0,0},90,Fade(beam,.8F));
         }
+        // Picolando: an orange beam over the pizzeria to pull up at, or the customer's door.
+        if(pizza.hired() && pizza.order().stage!=game::pizza::Stage::None &&
+           std::hypot(pizza.target().x-player.position.x,pizza.target().z-player.position.z)>game::pizza::Delivery::door_reach) {
+            const Vector3 at=pizza.target();
+            const float ground=world::terrain::TerrainHeight::sample(at.x,at.z);
+            const Color beam{255,150,40,255};
+            const float pulse=.75F+.25F*std::sin(static_cast<float>(GetTime())*3);
+            BeginBlendMode(BLEND_ADDITIVE);
+            DrawCylinder({at.x,ground,at.z},.9F,.9F,70,10,Fade(beam,.24F*pulse));
+            DrawCylinder({at.x,ground,at.z},.3F,.3F,70,8,Fade(beam,.55F*pulse));
+            EndBlendMode();
+            DrawCircle3D({at.x,ground+.15F,at.z},pizza.order().stage==game::pizza::Stage::Pickup ? game::pizza::Delivery::pickup_reach*.5F : 2.5F,{1,0,0},90,Fade(beam,.8F));
+        }
         // The street race: the grid's flare, then the next flare along the ring, burning red.
         if(street_race.ready() && street_race.stage()!=game::racing::Stage::Closed && street_race.stage()!=game::racing::Stage::Open &&
            street_race.stage()!=game::racing::Stage::Done) {
@@ -9139,6 +9211,12 @@ void Renderer::run() {
                 if(!brief.empty()) brief[0]=static_cast<char>(std::toupper(static_cast<unsigned char>(brief[0])));
                 quests.push_back({trucking.title()+"  ·  Verda Transporto",brief,TextFormat("%d kr  ·  %.0f m",trucking.job().pay,metres(trucking.target())),Color{90,220,140,255}});
             }
+            if(pizza.hired() && pizza.order().stage!=game::pizza::Stage::None) {
+                const float hot=pizza.hot_left(match_time);
+                quests.push_back({pizza.title(),pizza.detail(),TextFormat("%d kr + tip  ·  %.0f m%s",pizza.order().pay,metres(pizza.target()),
+                                  pizza.order().stage==game::pizza::Stage::Deliver ? (hot>=0 ? TextFormat("  ·  hot for %d s",static_cast<int>(hot)) : "  ·  going cold") : ""),
+                                  Color{255,150,40,255}});
+            }
             // The player's record, last (read it any time in the bag).
             if(!stats_path.empty()) {
                 game::inventory::QuestNote record{"YOUR STATS","","",Color{170,200,235,255},{}};
@@ -9454,6 +9532,41 @@ void Renderer::run() {
                 DrawRectangle(static_cast<int>(x),static_cast<int>(y),4,static_cast<int>(h),Color{90,220,140,255});
                 DrawTextEx(font,title.c_str(),{x+12,y+4},17,1,Color{90,220,140,255});
                 for(std::size_t k=0;k<lines.size();++k) DrawTextEx(font,lines[k].c_str(),{x+12,y+24+17*static_cast<float>(k)},14,1,Color{220,226,206,255});
+            }
+            // The pizza order in hand (top right, under the load if there is one): where to, and how hot.
+            if(pizza.hired() && pizza.order().stage!=game::pizza::Stage::None && !map_screen.is_open()) {
+                const auto& o=pizza.order();
+                const std::string title=pizza.title();
+                std::string sub=o.stage==game::pizza::Stage::Pickup ? "Pull up at "+o.shop_name+" and stop" : "To "+o.customer_name+": "+o.pizzas;
+                std::string timer;Color tone{255,214,120,255};
+                if(o.stage==game::pizza::Stage::Deliver) {
+                    const float hot=pizza.hot_left(match_time);
+                    if(hot>=0) {timer=TextFormat("HOT  %d:%02d   ·   %.0f m",static_cast<int>(hot)/60,static_cast<int>(hot)%60,std::hypot(o.to.x-player.position.x,o.to.z-player.position.z));
+                                if(hot<20) tone=Color{255,120,80,255};}
+                    else {timer=TextFormat("GOING COLD   ·   %.0f m",std::hypot(o.to.x-player.position.x,o.to.z-player.position.z));tone=Color{150,190,255,255};}
+                } else timer=TextFormat("%.0f m",std::hypot(o.from.x-player.position.x,o.from.z-player.position.z));
+                const float max_w=std::min(420.0F,screen_width*.4F);
+                float w=std::max({MeasureTextEx(font,title.c_str(),17,1).x,MeasureTextEx(font,sub.c_str(),14,1).x,MeasureTextEx(font,timer.c_str(),15,1).x});
+                w=std::min(w+24,max_w);
+                while(sub.size()>4 && MeasureTextEx(font,sub.c_str(),14,1).x>w-24) {   // (cut to fit, at a whole UTF-8 letter)
+                    sub.pop_back();
+                    while(!sub.empty() && (static_cast<unsigned char>(sub.back())&0xC0)==0x80) sub.pop_back();
+                    if(!sub.empty() && static_cast<unsigned char>(sub.back())>=0xC0) sub.pop_back();
+                    if(MeasureTextEx(font,(sub+"...").c_str(),14,1).x<=w-24) {sub+="...";break;}
+                }
+                const bool load=trucking.hired() && trucking.job().stage!=game::freight::HaulStage::None;
+                const float x=screen_width-w-10,y=load ? 160.0F : 88.0F;
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y),static_cast<int>(w),62,Fade(BLACK,.5F));
+                DrawRectangle(static_cast<int>(x),static_cast<int>(y),4,62,Color{214,34,30,255});
+                DrawTextEx(font,title.c_str(),{x+12,y+4},17,1,Color{255,150,40,255});
+                DrawTextEx(font,sub.c_str(),{x+12,y+24},14,1,Color{240,232,214,255});
+                DrawTextEx(font,timer.c_str(),{x+12,y+41},15,1,tone);
+            }
+            if(pizza.message_time()>0) {
+                const float alpha=std::clamp(pizza.message_time(),0.0F,1.0F);
+                const float mw=MeasureTextEx(font,pizza.message().c_str(),18,1).x;
+                DrawRectangle(static_cast<int>(screen_width/2-mw/2-12),screen_height-425,static_cast<int>(mw+24),28,Fade(Color{70,20,10,255},.7F*alpha));
+                DrawTextEx(font,pizza.message().c_str(),{screen_width/2-mw/2,static_cast<float>(screen_height-420)},18,1,Fade(Color{255,214,150,255},alpha));
             }
             if(trucking.message_time()>0) {
                 const float alpha=std::clamp(trucking.message_time(),0.0F,1.0F);
@@ -10331,6 +10444,8 @@ void Renderer::run() {
                 }
             if(trucking.hired() && trucking.job().stage!=game::freight::HaulStage::None && flat(trucking.target())>game::freight::Trucking::stop_radius)
                 compass_marks.push_back({trucking.target(),Glyph::Objective,Color{90,220,140,255},trucking.title(),true});
+            if(pizza.hired() && pizza.order().stage!=game::pizza::Stage::None && flat(pizza.target())>game::pizza::Delivery::door_reach)
+                compass_marks.push_back({pizza.target(),Glyph::Objective,Color{255,150,40,255},pizza.order().stage==game::pizza::Stage::Pickup ? "PICOLANDO" : "PIZZA",true});
             if(game_mode==game::GameMode::BattleRoyale && !mode_session.terminal()) {
                 const auto zone=mode_session.zone();
                 const bool next=zone.next_radius<zone.radius-1;
@@ -10365,6 +10480,11 @@ void Renderer::run() {
                     std::vector<Vector3> stations;
                     for(const auto& unit:services.units()) if(unit.kind==game::services::UnitKind::Police) stations.push_back(unit.home);
                     nearest(Glyph::Police,Color{70,130,255,255},"POLICE",career.on_duty() ? 2500.0F : 700.0F,stations);
+                }
+                {   // Picolando: the nearest pizzeria (from anywhere while delivering).
+                    std::vector<Vector3> shops;
+                    for(const auto& shop:pizza_world.shops) shops.push_back(shop.door);
+                    nearest(Glyph::Shop,Color{214,34,30,255},"PICOLANDO",pizza.hired() ? 1e9F : 450.0F,shops);
                 }
                 {   // Marnafto: the nearest filling station - from far off when the tank runs low.
                     std::vector<Vector3> pumps;
@@ -10581,6 +10701,10 @@ void Renderer::run() {
                     if(site.team>=0)
                         view.marks.push_back({site.to_world(world::ballpark::gate),game::hud::Glyph::Shop,game::sports::teams[static_cast<std::size_t>(site.team)].primary,
                             TextFormat("%s BALLPARK",game::sports::teams[static_cast<std::size_t>(site.team)].nick),false});
+            // Picolando's four pizzerias.
+            if(game::rules_for(game_mode).civilian_life)
+                for(const auto& shop:pizza_world.shops)
+                    view.marks.push_back({shop.door,game::hud::Glyph::Shop,Color{214,34,30,255},shop.name,false});
             if(game::rules_for(game_mode).civilian_life && tower_here && !game::economy::SkyPenthouse::owned(loot_session.economy()))
                 view.marks.push_back({tower_site.to_world(world::tower::door),game::hud::Glyph::Home,Color{230,90,90,255},
                     TextFormat("PENTHOUSE FOR SALE %lld kr",static_cast<long long>(game::economy::SkyPenthouse::price)),false});

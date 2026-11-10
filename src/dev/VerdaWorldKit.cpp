@@ -10,6 +10,7 @@
 #include "outland/world/NorthQuarter.hpp"
 #include "outland/world/SovagejoCounty.hpp"
 #include "outland/world/SkyTower.hpp"
+#include "outland/world/Picolando.hpp"
 #include "outland/world/Ranches.hpp"
 #include "outland/world/Zones.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -719,7 +720,10 @@ void north_quarter(Kit& kit, world::VerdaRegion& region) {
             kit.report.enterable.push_back(inside);
             // Who it's for: flats are homes, the corner store a shop, the tavern a pub.
             const auto purpose = tavern ? world::BuildingPurpose::Pub : kind == 'S' ? world::BuildingPurpose::Shop : world::BuildingPurpose::Home;
-            kit.purpose(to_world(p, yaw, inside.door_x - (flat3 ? 0.0F : 2.5F), base + slab + .1F, -half_d + 1.2F), yaw, purpose);
+            // In line with the doorway and 2.6 m in: island life makes a 3 m place round the marker
+            // (wholly inside, clear of the front wall - nobody stands embedded in it) with its door
+            // 2 m in front of it, on the threshold.
+            kit.purpose(to_world(p, yaw, inside.door_x, base + slab + .1F, -half_d + 2.6F), yaw, purpose);
             homes += purpose == world::BuildingPurpose::Home;
             if (kind == 'S') {kit.purpose(to_world(p, yaw, -5.0F, first + slab + .1F, 2.0F), yaw, world::BuildingPurpose::Home); ++homes;}   // the flats over the shop
         }
@@ -3438,6 +3442,48 @@ void sovagejo_county(Kit& kit, world::VerdaRegion& region) {
     kit.report.county_donors += donors;
 }
 
+// ------------------------------------------------------------------ Picolando
+// The pizza chain (world/Picolando.hpp): a pizzeria facing a paved street near the middle of
+// Verda City, Roka, Espera and Suda Haveno (city kit civic/pizzeria.glb, its giant pizza on the
+// roof), a Pub place - people eat there, staff work there - and a lay-by in front where the
+// delivery cars stand in bays nose out to the street, each with a clear run onto it: three at
+// Verda City's (two of them its drivers'), two at the others' (one of Roka's its driver's). Built
+// last, so nothing else moves for it.
+void pizzerias(Kit& kit, world::VerdaRegion& region) {
+    namespace pl = world::picolando;
+    for (std::size_t i = 0; i < pl::town_ids.size(); ++i) {
+        const std::string id = pl::town_ids[i];
+        auto* town = settlement(region, id);
+        if (!town) continue;
+        const bool capital = i == 0;
+        // The cars need a clear run out (no lamp post, tree or sign in the lay-by).
+        const auto lay_by = [&](const CivicSpot& at) {
+            const Vector3 from = to_world(at.origin, at.yaw, -8.5F, 0, pl::bay_z), to = to_world(at.origin, at.yaw, 8.5F, 0, pl::bay_z);
+            for (const auto& t : region.settlements()) for (const auto& asset : t.assets) {
+                if (!asset.collision || !asset.vehicle.definition.empty()) continue;
+                const float dx = to.x - from.x, dz = to.z - from.z, l2 = dx * dx + dz * dz;
+                const float u = std::clamp(((asset.position.x - from.x) * dx + (asset.position.z - from.z) * dz) / l2, 0.0F, 1.0F);
+                if (std::hypot(asset.position.x - from.x - dx * u, asset.position.z - from.z - dz * u) < 1.6F + std::max(asset.size.x, asset.size.z) * .5F) return false;
+            }
+            for (const auto& t : region.settlements()) for (const auto& marker : t.gameplay_markers) {
+                if (marker.type != world::GameplayMarkerType::VehicleSpawn) continue;
+                if (std::hypot(marker.position.x - at.origin.x, marker.position.z - at.origin.z) < 16) return false;
+            }
+            return true;
+        };
+        // Model bounds x -6.1..6.1, z -5.5..4.6 (the awnings forward).
+        CivicSpot spot;
+        if (!civic_lot(kit, region, town->center, capital ? 50 : 15, capital ? 400 : 280, 0, -.45F, 6.6F, 5.6F, pl::front, pl::apron, spot, lay_by)) continue;
+        if (!kit.put(pl::model, spot.origin, spot.yaw)) continue;
+        kit.purpose(to_world(spot.origin, spot.yaw, pl::door.x, .35F, pl::door.y), spot.yaw, world::BuildingPurpose::Pub);
+        const int cars = capital ? 3 : 2;
+        for (int k = 0; k < cars; ++k)
+            vehicle_marker(*town, "vehicle_spawn_pizza_" + id + "_" + std::to_string(k + 1),
+                           to_world(spot.origin, spot.yaw, pl::bays[static_cast<std::size_t>(k)], 0, pl::bay_z), spot.yaw + 180);
+        kit.report.pizzerias.push_back(spot.origin);
+    }
+}
+
 WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::CreatorAssetRegistry& catalog) {
     wipe_downtown(region);
     lay_highways(region);
@@ -3503,6 +3549,8 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     // After those (new pieces only): Sovaĝa Monto's road, its pullouts and Supra Sovaĝejo.
     sovagejo_mountain(kit, region);
     sovagejo_county(kit, region);
+    // After those (new pieces only): Picolando's pizzerias.
+    pizzerias(kit, region);
     return kit.report;
 }
 }
