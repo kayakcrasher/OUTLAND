@@ -520,9 +520,11 @@ int main() {
             check(std::abs(world::terrain::TerrainHeight::sample(1750 + o, -400 + q) - h) < .05F, "Porto Luma grid is level");
     }
     int towers = 0;
-    // (Stela Turo is the enterable exception: its front door faces the avenue; checked below.)
+    // (Stela Turo is an enterable exception: its front door faces the avenue; checked below. So is
+    // Kristala Turo, its lobby open off its plaza: test_sky_tower walks in and up.)
     for (const auto& s : region.settlements()) for (const auto& a : s.assets) if (a.model_path.find("/city/towers/") != std::string::npos &&
-                                                                                 !a.model_path.ends_with("stela_turo.glb")) {
+                                                                                 !a.model_path.ends_with("stela_turo.glb") &&
+                                                                                 !a.model_path.ends_with("kristala_turo.glb")) {
         ++towers;
         // Towers are solid cover: walking at one from the street stops at its wall.
         Vector3 p{a.position.x + std::max(a.size.x, a.size.z) * .5F + 3, a.position.y, a.position.z};

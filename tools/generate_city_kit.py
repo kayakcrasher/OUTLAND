@@ -3471,9 +3471,11 @@ def l_station():
         b.box((x0, L_PLATFORM - .3, -h), (x1, L_PLATFORM, h), {'+y': "deck", '-y': "steel", '+x': "steel", '-x': "steel", '+z': "steel", '-z': "steel"})
         inner = x0 if side > 0 else x1 - .4
         b.solid((inner, L_PLATFORM, -h), (inner + .4, L_PLATFORM + .01, h), "edge")
+        # The outer railing, open only onto the stair's landing (z .4 to 2); railed along the stair
+        # itself, which drops away beside the platform.
         outer = x1 - .06 if side > 0 else x0
-        b.solid((outer, L_PLATFORM, -h), (outer + .06, L_PLATFORM + 1.1, 2.0), "steel")
-        b.solid((outer, L_PLATFORM, 13.6), (outer + .06, L_PLATFORM + 1.1, h), "steel")
+        b.solid((outer, L_PLATFORM, -h), (outer + .06, L_PLATFORM + 1.1, .4), "steel")
+        b.solid((outer, L_PLATFORM, 2.0), (outer + .06, L_PLATFORM + 1.1, h), "steel")
         for z in (-16, -6, 4, 14):
             b.solid((x0 + 1.2, 0, z - .15), (x0 + 1.5, L_PLATFORM - .3, z + .15), "steel")
             b.solid((x0 + 1.2, L_PLATFORM, z - .1), (x0 + 1.5, L_PLATFORM + 3.0, z + .1), "steel")
@@ -3490,6 +3492,8 @@ def l_station():
             b.solid((sx0, max(0.0, y - .25), z), (sx1, y, z + .3), "tread")
         b.solid((sx0, L_PLATFORM - .3, z_top - 1.6), (sx1, L_PLATFORM, z_top), "deck")   # the landing
         far = sx1 - .05 if side > 0 else sx0
+        b.solid((far, L_PLATFORM, z_top - 1.6), (far + .05, L_PLATFORM + 1.1, z_top), "steel")         # railed round
+        b.solid((sx0, L_PLATFORM, z_top - 1.6), (sx1, L_PLATFORM + 1.1, z_top - 1.54), "steel")
         for k in range(0, steps, 4):
             y = L_PLATFORM - k * .2
             b.solid((far, y, z_top + k * .3), (far + .05, y + 1.0, z_top + k * .3 + .06), "steel")
@@ -4014,6 +4018,128 @@ def pickup_bay(length=16.0, width=6.0):
     return b
 
 
+# ---------------------------------------------------------------- Kristala Turo
+# Verda's tallest building (world::tower): a glass skyscraper with a lobby open to the street, an
+# elevator in its core, and the penthouse on the 25th floor - for sale.
+TOWER_HALF = 13.0
+TOWER_LOBBY = 6.0
+TOWER_FLOORS = 23
+TOWER_PENTHOUSE = TOWER_LOBBY + TOWER_FLOORS * FLOOR + .2    # its floor top
+TOWER_SUITE_X, TOWER_SUITE_Z0, TOWER_SUITE_Z1, TOWER_TERRACE = 9.5, -7.0, 11.5, 11.5
+
+
+def kristala_turo(seed=601):
+    """Kristala Turo (front -Z, 26 x 26 m on a plaza, about 118 m to the spire's tip). A blue glass
+    curtain wall with steel fins, set back for its top three office floors; a lobby 6 m high behind
+    a glass front, with the concierge's desk and the elevator core; the penthouse on top: a glass
+    suite (living room, kitchen, bedroom behind a partition, the elevator), its terrace all round
+    behind a glass balustrade, a pool on the front terrace; a lantern and a spire over it."""
+    b = Builder()
+    b.material("glass", curtain_wall((70, 122, 152), (40, 46, 52), (36, 42, 50), seed), BAY, FLOOR)
+    b.material("lobbyglass", curtain_wall((96, 140, 164), (40, 46, 52), (40, 46, 52), seed + 1), BAY, TOWER_LOBBY)
+    b.material("fin", flat((44, 50, 58), 3), 1, 1)
+    b.material("plaza", pavers(), 3, 3)
+    b.material("granite", flat((96, 98, 104), 4), 2, 2)
+    b.material("marble", checker((226, 224, 218), (190, 188, 184), 4, seed), 2, 2)
+    b.material("core", flat((70, 74, 80), 4), 2, 2)
+    b.material("gold", flat((206, 168, 76), 3), 1, 1)
+    b.material("white", flat((236, 236, 232), 2), 2, 2)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("deck", wood(), 2, 2)
+    b.material("rail", flat((150, 184, 196), 3), 1, 1)
+    b.material("water", flat((60, 170, 210), 3), 2, 2)
+    b.material("fabric", flat((210, 204, 190), 4), 1, 1)
+    b.material("sofa", flat((58, 74, 96), 4), 1, 1)
+    b.material("plant", flat((40, 120, 60), 8), 1, 1)
+    b.material("desk", flat((30, 32, 36), 3), 1, 1)
+    h, t = TOWER_HALF, .25
+    # The plaza, the step up into the lobby, planters and benches either side of the way in.
+    b.box((-18, 0, -25), (18, .12, 15), {'+y': "plaza", '+x': "granite", '-x': "granite", '+z': "granite", '-z': "granite"})
+    for x in (-12.0, 12.0):
+        b.solid((x - 3, .12, -22), (x + 3, .7, -17), "granite")
+        b.solid((x - 2.6, .7, -21.6), (x + 2.6, .9, -17.4), "plant")
+        b.solid((x - 2.5, .12, -15.6), (x + 2.5, .55, -15.0), "deck")
+    # The lobby: glass on three sides, the way in at the front, a service door at the back.
+    entrance = (-2.5, 2.5, .15, 3.2)
+    wall_with_openings(b, 'x', -h, (-h, h), TOWER_LOBBY, t, [entrance], "lobbyglass", "lobbyglass", -1)
+    wall_with_openings(b, 'x', h, (-h, h), TOWER_LOBBY, t, [(8.0, 9.4, .15, 2.4)], "core", "core", +1)
+    wall_with_openings(b, 'z', -h, (-h + t, h - t), TOWER_LOBBY, t, [], "lobbyglass", "lobbyglass", -1)
+    wall_with_openings(b, 'z', h, (-h + t, h - t), TOWER_LOBBY, t, [], "lobbyglass", "lobbyglass", +1)
+    b.box((-h + t, 0, -h + t), (h - t, .15, h - t), {'+y': "marble"})
+    b.box((-h, TOWER_LOBBY, -h), (h, TOWER_LOBBY + .3, h), {'-y': "white"})
+    b.solid((-3.0, 3.2, -h - .25), (3.0, 3.6, -h), "gold")                       # over the way in
+    b.solid((-6.0, 3.6, -h - 2.4), (6.0, 3.8, -h), "fin")                         # the canopy
+    # The core with its three elevator doors (brass, in gold frames) facing the way in.
+    b.box((-4.0, .15, 4.0), (4.0, TOWER_LOBBY, h - t), {'-z': "core", '+x': "core", '-x': "core"})
+    for x in (-2.6, 0.0, 2.6):
+        b.solid((x - .8, .15, 3.94), (x + .8, 2.75, 4.0), "gold")
+        b.solid((x - .65, .15, 3.9), (x + .65, 2.6, 3.94), "desk")
+        b.solid((x + .9, 1.2, 3.92), (x + 1.0, 1.35, 4.0), "gold")             # the call button
+    # The concierge's desk, benches, plants.
+    b.solid((-8.5, .15, -6.4), (-4.5, 1.15, -5.4), "desk")
+    b.solid((-8.6, 1.15, -6.5), (-4.4, 1.25, -5.3), "gold")
+    for z in (-9.0, 8.0):
+        b.solid((6.0, .15, z - .4), (10.0, .6, z + .4), "deck")
+    for x, z in ((-11.0, -11.0), (11.0, -11.0), (-11.0, 11.0)):
+        b.solid((x - .5, .15, z - .5), (x + .5, 1.0, z + .5), "granite")
+        b.solid((x - .4, 1.0, z - .4), (x + .4, 2.0, z + .4), "plant")
+    # The shaft of the tower: glass from the lobby up, set back for its top three office floors.
+    set_at = TOWER_LOBBY + 20 * FLOOR
+    top = TOWER_PENTHOUSE - .2
+    b.box((-h, TOWER_LOBBY + .3, -h), (h, set_at, h), {s: "glass" for s in ('+x', '-x', '+z', '-z')} | {'+y': "roof"}, v_origin=set_at)
+    hs = TOWER_TERRACE
+    b.box((-hs, set_at, -hs), (hs, top, hs), {s: "glass" for s in ('+x', '-x', '+z', '-z')}, v_origin=top)
+    for k in range(-4, 5):                                                       # the steel fins
+        x = k * 3.0
+        for z, d in ((-h, -.3), (h, .3)):
+            b.solid((x - .08, TOWER_LOBBY, min(z, z + d)), (x + .08, set_at, max(z, z + d)), "fin")
+        for xx, d in ((-h, -.3), (h, .3)):
+            b.solid((min(xx, xx + d), TOWER_LOBBY, x - .08), (max(xx, xx + d), set_at, x + .08), "fin")
+    # The penthouse floor: a deck all round, the glass suite on it.
+    fl = TOWER_PENTHOUSE
+    b.box((-hs, top, -hs), (hs, fl, hs), {'+y': "deck", '+x': "fin", '-x': "fin", '+z': "fin", '-z': "fin"})
+    sx, z0, z1, sh = TOWER_SUITE_X, TOWER_SUITE_Z0, TOWER_SUITE_Z1, 4.4
+    wall_with_openings(b, 'x', z0, (-sx, sx), fl + sh, .2, [(-6.0, 6.0, fl, fl + 2.6)], "lobbyglass", "lobbyglass", -1, base=fl)
+    wall_with_openings(b, 'x', z1, (-sx, sx), fl + sh, .2, [], "lobbyglass", "lobbyglass", +1, base=fl)
+    wall_with_openings(b, 'z', -sx, (z0 + .2, z1 - .2), fl + sh, .2, [], "lobbyglass", "lobbyglass", -1, base=fl)
+    wall_with_openings(b, 'z', sx, (z0 + .2, z1 - .2), fl + sh, .2, [], "lobbyglass", "lobbyglass", +1, base=fl)
+    b.box((-sx - .3, fl + sh, z0 - .3), (sx + .3, fl + sh + .3, z1 + .3), {'+y': "roof", '-y': "white", '+x': "fin", '-x': "fin", '+z': "fin", '-z': "fin"})
+    # The terrace's glass balustrade and its rail; the pool on the front terrace.
+    for lo, hi in (((-hs, fl, -hs), (hs, fl + 1.1, -hs + .06)), ((-hs, fl, hs - .06), (hs, fl + 1.1, hs)),
+                   ((-hs, fl, -hs), (-hs + .06, fl + 1.1, hs)), ((hs - .06, fl, -hs), (hs, fl + 1.1, hs))):
+        b.solid(lo, hi, "rail")
+    for lo, hi in (((-hs, fl + 1.1, -hs), (hs, fl + 1.18, -hs + .1)), ((-hs, fl + 1.1, hs - .1), (hs, fl + 1.18, hs)),
+                   ((-hs, fl + 1.1, -hs), (-hs + .1, fl + 1.18, hs)), ((hs - .1, fl + 1.1, -hs), (hs, fl + 1.18, hs))):
+        b.solid(lo, hi, "fin")
+    b.solid((-7.0, fl, -11.0), (3.0, fl + .3, -8.0), "white")
+    b.box((-6.8, fl + .3, -10.8), (2.8, fl + .31, -8.2), {'+y': "water"})
+    for x in (5.0, 7.0):
+        b.solid((x - .4, fl, -10.6), (x + .4, fl + .35, -8.6), "fabric")         # loungers
+    # Inside: the elevator core and its door, the bedroom behind a partition, the living room.
+    b.box((-3.0, fl, 5.0), (3.0, fl + sh, z1 - .2), {'-z': "core", '+x': "core", '-x': "core"})
+    b.solid((-1.0, fl, 4.94), (1.0, fl + 2.6, 5.0), "gold")
+    b.solid((-.85, fl, 4.9), (.85, fl + 2.45, 4.94), "desk")
+    b.solid((-sx + .2, fl, 2.0), (-4.6, fl + 3.0, 2.2), "white")                 # the bedroom's wall (its door by the core)
+    b.solid((-7.4, fl, 7.0), (-5.4, fl + .55, 9.6), "fabric")                    # the bed
+    b.solid((-7.4, fl + .55, 9.0), (-5.4, fl + .75, 9.6), "white")
+    b.solid((-9.2, fl, 3.0), (-8.6, fl + 2.2, 6.0), "deck")                      # a wardrobe
+    b.solid((2.0, fl, -5.6), (7.0, fl + .5, -4.6), "sofa")                       # the living room
+    b.solid((7.0, fl, -5.6), (8.0, fl + .5, -1.0), "sofa")
+    b.solid((3.4, fl, -3.4), (5.6, fl + .4, -2.0), "desk")
+    b.solid((4.6, fl, 2.4), (8.6, fl + .95, 3.4), "white")                       # the kitchen island
+    b.solid((-6.0, fl, -3.2), (-2.0, fl + .75, -1.6), "deck")                    # the dining table
+    for x, z in ((-8.6, -6.2), (8.6, 10.6)):
+        b.solid((x - .4, fl, z - .4), (x + .4, fl + 1.4, z + .4), "plant")
+    # The lantern and the spire over the roof.
+    rt = fl + sh + .3
+    for x in (-4.0, 4.0):
+        for z in (-4.0, 4.0):
+            b.solid((x - .2, rt, z - .2), (x + .2, rt + 7, z + .2), "fin")
+    b.solid((-4.4, rt + 7, -4.4), (4.4, rt + 7.4, 4.4), "gold")
+    b.ring("fin", 0, 0, .8, .1, rt + 7.4, rt + 25, 8)
+    return b
+
+
 def pad(size, kind):
     """Block surface 0.15 m above the street: sidewalk (pavers), park (grass + paths) or parking."""
     b = Builder()
@@ -4164,6 +4290,7 @@ def kit():
     add("civic/church_orthodox.glb", orthodox_church(), "city_church_orthodox", "Ortodoksa Preĝejo - Esperanto Orthodox church, onion domes (enterable)", "Building", 15.1, 18.9, 18.8)
     add("civic/parliament.glb", parliament(), "city_parliament", "Registaro de Verda - domed parliament (enterable hall)", "Building", 48, 33, 29.6)
     add("civic/town_hall.glb", town_hall(), "city_town_hall", "Urbodomo - county town hall with clock tower (enterable)", "Building", 23, 17, 17.0)
+    add("towers/kristala_turo.glb", kristala_turo(), "city_kristala_turo", "Kristala Turo - glass skyscraper, lobby, elevator, penthouse for sale (enterable)", "Building", 36, 40, 118.7)
     add("towers/stela_turo.glb", stela_turo(), "city_stela_turo", "Stela Turo - art deco skyscraper, 17 floors, penthouse (enterable)", "Building", 30.6, 29.2, 86.2)
     for tone, stone in (("grey", (176, 172, 164)), ("buff", (204, 186, 146))):
         for k, side in enumerate(((186, 152, 108), (150, 84, 60))):

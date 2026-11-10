@@ -9,6 +9,7 @@
 #include "outland/world/MountainRoad.hpp"
 #include "outland/world/NorthQuarter.hpp"
 #include "outland/world/SovagejoCounty.hpp"
+#include "outland/world/SkyTower.hpp"
 #include "outland/world/Ranches.hpp"
 #include "outland/world/Zones.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -817,6 +818,29 @@ void north_quarter(Kit& kit, world::VerdaRegion& region) {
     capital->survivors += homes * 2;
     // Keep the rest of the kit off the new blocks (the first row's inner two stay free).
     for (const auto& [bx, bz] : blocks) kit.claim({bx, 0, bz}, 36, 36, 0);
+}
+
+// ------------------------------------------------------------------ Kristala Turo
+// Verda's tallest building (world::tower) on the block east of the highway at the foot of Norda
+// Kvartalo, its plaza and its way in to the south, toward downtown: a lobby anyone can walk into,
+// a concierge at the desk, an elevator up to the penthouse that is for sale.
+void sky_tower(Kit& kit, world::VerdaRegion& region) {
+    namespace tw = world::tower;
+    if (!settlement(region, "capital_verda")) return;
+    const Vector3 at{tw::site.x, world::terrain::TerrainHeight::sample(tw::site.x, tw::site.z), tw::site.z};
+    // (The plaza reaches 25 m out in front and 15 behind; the tower is 26 m square.)
+    if (!kit.claim(to_world(at, tw::site_yaw, 0, 0, -5), 18.5F, 20.5F, tw::site_yaw)) return;
+    if (!kit.put(tw::model, at, tw::site_yaw, false)) return;
+    dev::KitBuilding lobby;
+    lobby.origin = at;
+    lobby.yaw = tw::site_yaw;
+    lobby.width = lobby.depth = tw::half * 2;
+    lobby.storeys = 1;
+    lobby.door_x = 0;
+    lobby.ground_floor = tw::lobby_floor;
+    kit.report.enterable.push_back(lobby);
+    kit.purpose(to_world(at, tw::site_yaw, -6.5F, tw::lobby_floor + .1F, -4.0F), tw::site_yaw, world::BuildingPurpose::Office);   // the concierge
+    kit.report.sky_tower = true;
 }
 
 void roka_city(Kit& kit, world::VerdaRegion& region) {
@@ -3432,6 +3456,7 @@ WorldKitReport build_verda_towns(world::VerdaRegion& region, const creator::Crea
     downtown(kit, region);
     downtown_south(kit, region);
     north_quarter(kit, region);
+    sky_tower(kit, region);
     roka_city(kit, region);
     trailer_park(kit, region);
     suda_haveno(kit, region);

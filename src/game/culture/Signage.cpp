@@ -5,6 +5,7 @@
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/world/Highways.hpp"
 #include "outland/world/Harbour.hpp"
+#include "outland/world/SkyTower.hpp"
 #include "outland/world/VerdaLayout.hpp"
 #include "outland/world/MountainRoad.hpp"
 #include "outland/world/SovagejoCounty.hpp"
@@ -959,6 +960,23 @@ void rest_area_signs(const world::VerdaRegion& region, Signage& out) {
     }
 }
 
+// Kristala Turo's name in gold letters over its way in, above the canopy.
+void tower_signs(const world::VerdaRegion& region, Signage& out) {
+    namespace tw = world::tower;
+    tw::Site site;
+    if (!tw::find(region, site)) return;
+    Sign sign;
+    sign.kind = SignKind::Notice;
+    sign.place = "kristala_turo";
+    sign.position = site.to_world({0, 4.7F, -tw::half - .3F});
+    sign.yaw = std::remainder(site.yaw + 180, 360.0F);   // facing out of its front
+    sign.max_width = 11;
+    sign.front = {{"KRISTALA TURO", .7F}, {"OFICEJOJ · PENTDOMO", .26F}};
+    sign.board = {28, 32, 38, 255};
+    sign.ink = {222, 184, 92, 255};
+    out.signs.push_back(std::move(sign));
+}
+
 Signage build_signage(const world::VerdaRegion& region, const life::Island& island) {
     Signage out;
     shopfronts(region, island, out);
@@ -973,6 +991,7 @@ Signage build_signage(const world::VerdaRegion& region, const life::Island& isla
     mountain_signs(region, out);
     county_signs(region, out);
     harbour_signs(region, out);
+    tower_signs(region, out);
     for (auto& sign : out.signs)
         std::erase_if(sign.front, [](const SignLine& line) {return line.text.empty();});
     return out;

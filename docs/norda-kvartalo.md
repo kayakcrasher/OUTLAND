@@ -80,7 +80,10 @@ The line runs about **1.15 km** in a U round the north of the city (`world::nort
 - **The ground:** where the line crosses open country between Norda Kvartalo and the suburbs, the
   ground under it is levelled (`north::corridor_outside`).
 - **Stations:** five (`north/l_station.glb`).
-  - Each has side platforms under canopies with benches, and stairs down from each.
+  - Each has side platforms under canopies with benches, and stairs down from each. A stair climbs to a
+    landing beside its platform; the platform's railing opens onto the landing and is closed everywhere
+    else, along the stair too. The landing is railed round. The walkway is the platform's outer lane,
+    past the benches and the canopy posts.
   - A board over each platform names the station: "LA LEVITA · OKCIDENTA PARKO - ORIENTA VERDA".
 - **Under it:** cars and people pass freely, because collision meets its real shape
   (`WorldCollision::elevated`).
@@ -106,7 +109,7 @@ The line runs about **1.15 km** in a U round the north of the city (`world::nort
   - the deck the whole length of the line, and five stations;
   - the avenues, highway, alleys, suburb streets and their cross streets open to cars and walkers
     under it;
-  - the stairs up to Centro's platform.
+  - at every station, both platforms: up the stair from the street, across the landing and along the platform, and no stepping off its side onto the stair.
 
 `outland_world_kit_tests` walks into every building through its front door and up its stairs. The
 road audits (`outland_road_audit_tests`, `outland_road_conflict_tests`) know the line spans the

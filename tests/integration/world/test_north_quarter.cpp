@@ -111,6 +111,44 @@ int main() {
     for (float x = centro.x + 2 + 40 * .3F + .5F; x > centro.x + 1.5F; x -= .1F)
         feet = WorldCollision::ground_height({x, feet + 1, stair_z}, feet, region);
     check(std::abs(feet - (street + nq::l_platform)) < .35F, "the stairs climb to the platform: " + std::to_string(feet - street));
+    // Every station, both platforms: in off the street at the foot of its stair, up it to the landing
+    // and across onto the platform (the platform's railing open there, nowhere else), along its outer lane past the benches.
+    {
+        const auto walk = [&](Vector3 p, Vector3 to) {
+            for (int i = 0; i < 4000; ++i) {
+                const float dx = to.x - p.x, dz = to.z - p.z, l = std::hypot(dx, dz);
+                if (l < .05F) break;
+                const float st = std::min(.05F, l);
+                p = WorldCollision::resolve_body_movement(p, {p.x + dx / l * st, p.y, p.z + dz / l * st}, p.y, region, .3F);
+                p.y = WorldCollision::ground_height(p, p.y + .4F, region);
+            }
+            return p;
+        };
+        for (std::size_t i = 0; i < nq::stations.size(); ++i) {
+            const float s = nq::station_s(i);
+            Vector2 h{};
+            const Vector2 c = nq::at(s, &h);
+            // Station-local (x across, z along the line) to the world: the model's +Z along the line.
+            const auto world = [&](float x, float z) { return Vector3{c.x + x * h.y + z * h.x, 0, c.y - x * h.x + z * h.y}; };
+            for (const float side : {-1.0F, 1.0F}) {
+                const std::string where = std::string(nq::stations[i].name) + (side < 0 ? " (left)" : " (right)");
+                Vector3 p = world(side * 7.6F, 16.5F);
+                const float ground = WorldCollision::ground_height({p.x, street + 1, p.z}, street, region);
+                p.y = ground;
+                for (const auto& [x, z] : {std::pair{7.6F, 13.0F}, {7.6F, 1.2F}, {6.3F, 1.2F}, {6.3F, -8.0F}}) {
+                    const Vector3 to = world(side * x, z), got = walk(p, to);
+                    check(std::hypot(got.x - to.x, got.z - to.z) < .2F, "up to the platform at " + where + ": stuck short of " + std::to_string(x) + "," +
+                          std::to_string(z) + " (" + std::to_string(got.y - ground) + " m up)");
+                    p = got;
+                }
+                check(std::abs(p.y - ground - nq::l_platform) < .3F, "on the platform at " + where + " (" + std::to_string(p.y - ground) + ")");
+                // And the platform's side over the stair is railed: walking out sideways halfway along it stops you.
+                Vector3 q = walk(p, world(side * 6.3F, 8.0F));
+                q = walk(q, world(side * 9.0F, 8.0F));
+                check(std::abs(q.y - ground - nq::l_platform) < .3F, "no stepping off the platform onto the stair's side at " + where);
+            }
+        }
+    }
     std::cout << "Norda Kvartalo: " << flats << " three-flats, " << walkups << " walk-ups, " << taverns << " taverns, " << murals << " murals; La Levita "
               << total << " m, " << stations << " stations, a round in " << round << " s: GREEN\n";
 }

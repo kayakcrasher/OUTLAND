@@ -72,6 +72,8 @@
 #include "outland/game/aircraft/DropRenderer.hpp"
 #include "outland/game/economy/Penthouse.hpp"
 #include "outland/game/economy/SkyMansion.hpp"
+#include "outland/game/economy/SkyPenthouse.hpp"
+#include "outland/world/SkyTower.hpp"
 #include "outland/game/economy/Stash.hpp"
 #include "outland/world/ParkingGarage.hpp"
 #include "outland/world/NorthQuarter.hpp"
@@ -948,6 +950,12 @@ void Renderer::run() {
     // mansion on its roof is for sale (game::economy::SkyMansion), with its own parking bay.
     world::garage::Site garage_site;
     bool garage_here=false,was_in_mansion=false,was_in_bay=false;
+    // Kristala Turo (world::tower): its elevator between the lobby and the penthouse (a ride: the
+    // screen dims, the floors count, the doors open on the other end), the penthouse for sale.
+    world::tower::Site tower_site;
+    bool tower_here=false,was_in_suite=false,lift_up=false;
+    float lift_ride=-1;
+    constexpr float lift_time=2.4F;
     // Homes for sale round the island (besides the penthouse): vacant while listed this session.
     std::vector<game::economy::Listing> homes_for_sale;
     std::vector<game::economy::Vacated> vacated_homes;
@@ -1362,6 +1370,7 @@ void Renderer::run() {
     // Over the parking garage a car rides its decks and ramps: the highest floor of it within a
     // metre above the wheels (WorldCollision::ground_height); everywhere else, the terrain.
     garage_here=world::garage::find(verda_region,garage_site);
+    tower_here=world::tower::find(verda_region,tower_site);
     vehicles.bind_surface([&](Vector3 p,float from) {
         if(!garage_here || !garage_site.over(p,1.5F)) return std::numeric_limits<float>::quiet_NaN();
         return world::physics::WorldCollision::ground_height({p.x,from,p.z},from,verda_region,1.0F);
@@ -2092,6 +2101,7 @@ void Renderer::run() {
                 if(freight.running()) freight.stop(verda_region,vehicles);
                 ranches.clear(vehicles);
                 garage_here=world::garage::find(verda_region,garage_site);
+                tower_here=world::tower::find(verda_region,tower_site);lift_ride=-1;was_in_suite=false;
                 vehicles.reconcile(verda_region);
                 if(game_mode==game::GameMode::BattleRoyale) {
                     match_fleet=vehicles.checkpoint(verda_region);match_fleet_active=true;fleet_was_dirty=vehicle_dirty;
@@ -4100,6 +4110,13 @@ void Renderer::run() {
             const Vector3 feet{player.position.x,player.position.y-1,player.position.z};
             // (The car lot first: its clerk stands by the desk, and the sale is what you came for.)
             if(car_lot_desk(feet)>=0 && store_prompt.empty()) store_prompt=touch_ui ? "USE - Buy a car (Aŭtovendejo Verda)" : "E - Buy a car (Aŭtovendejo Verda)";
+            // Kristala Turo's elevator.
+            bool lift_here=false;
+            if(tower_here && !vehicles.driver() && lift_ride<0) {
+                bool up=false;
+                if((lift_here=tower_site.at_elevator(feet,up)) && store_prompt.empty())
+                    store_prompt=std::string(touch_ui ? "USE - " : "E - ")+(up ? "Elevator up to the penthouse (25)" : "Elevator down to the lobby");
+            }
             {
                 int lot=-1;
                 if(const int k=car_on_show(feet,lot);k>=0 && store_prompt.empty()) {
@@ -4108,7 +4125,7 @@ void Renderer::run() {
                 }
             }
             int show_lot=-1;
-            bool here=store_mannequin>=0 || at_store_counter || nearby_shop || at_table || car_lot_desk(feet)>=0 || car_on_show(feet,show_lot)>=0 ||
+            bool here=store_mannequin>=0 || at_store_counter || nearby_shop || at_table || car_lot_desk(feet)>=0 || car_on_show(feet,show_lot)>=0 || lift_here ||
                 vehicles.nearest(verda_region,feet)>=0 || loot_session.world().nearest(feet,2.8F)>=0 ||
                 (game::rules_for(game_mode).civilian_life && penthouse.inside(feet)) || home_here;
             if(outbreak.active() && !vehicles.driver()) if(const auto said=outbreak.prompt(feet);!said.empty()) {
@@ -5026,6 +5043,48 @@ void Renderer::run() {
                 }
             }
             was_in_mansion=in_mansion;
+            // Kristala Turo: the elevator (USE at its doors, up in the lobby or down from the
+            // penthouse); the penthouse - buy it anywhere up there, sleep in its bed once it's yours.
+            if(tower_here && !vehicles.driver() && !(shop_open||store_open||motor_menu.is_open()||gear_menu.is_open()) && !poker_open && !inventory_open) {
+                bool up=false;
+                if(lift_ride<0 && controls.interact && !home_used && tower_site.at_elevator(loot_feet,up)) {
+                    lift_ride=0;lift_up=up;home_used=true;
+                    interaction_message=up ? "Going up..." : "Going down...";interaction_remaining=1.5F;
+                }
+                const bool in_suite=game::rules_for(game_mode).civilian_life && lift_ride<0 && tower_site.in_penthouse(loot_feet);
+                if(in_suite) {
+                    const bool owned=game::economy::SkyPenthouse::owned(loot_session.economy());
+                    if(!was_in_suite) {interaction_message=owned ? "Home: the Kristala Turo penthouse" : "The Kristala Turo penthouse - for sale";interaction_remaining=3;}
+                    const auto bed=tower_site.to_world(world::tower::bed);
+                    const bool by_bed=std::hypot(loot_feet.x-bed.x,loot_feet.z-bed.z)<2.4F && std::abs(loot_feet.y-bed.y)<1.5F;
+                    if(controls.interact && !home_used && loot_session.world().nearest(loot_feet,2.8F,reachable_pickup)<0) {
+                        if(!owned) {
+                            interaction_message=game::economy::SkyPenthouse::buy(loot_session.economy());loot_session.changed();
+                            if(game::economy::SkyPenthouse::owned(loot_session.economy())) {gun_audio.kill_confirm();haptics.hit_given(true);}
+                            interaction_remaining=5;home_used=true;
+                        } else if(by_bed) {
+                            const auto clock=island_life.clock();
+                            const int days=clock.minute_of_day()>=7*60 ? clock.day()+1 : clock.day();
+                            island_life.set_clock(game::life::WorldClock::at(days,7,0));
+                            player_health.reset();health_seen=player_health.current();
+                            interaction_message="Slept until morning - "+island_life.clock().label();interaction_remaining=4;home_used=true;
+                        }
+                    }
+                }
+                was_in_suite=in_suite;
+            }
+            // The ride: the doors close, the screen dims, and half a second in the player stands at
+            // the other end (held there till the doors open), facing out of the car.
+            if(lift_ride>=0) {
+                lift_ride+=dt;
+                if(lift_ride>=.5F && lift_ride<lift_time-.5F) {
+                    const Vector3 call=lift_up ? world::tower::penthouse_call : world::tower::lobby_call;
+                    const Vector3 at=tower_site.to_world(call),ahead=tower_site.to_world({call.x,call.y,call.z-1});
+                    player.position={at.x,at.y+1,at.z};player.vertical_velocity=0;
+                    player.yaw=std::atan2(ahead.x-at.x,ahead.z-at.z);
+                }
+                if(lift_ride>=lift_time) lift_ride=-1;
+            }
             // The hidden stash: USE by the holdall.
             if(stash && game::rules_for(game_mode).civilian_life && !vehicles.driver() && !game::economy::Stash::taken(loot_session.economy()) &&
                std::hypot(loot_feet.x-stash->at.x,loot_feet.z-stash->at.z)<1.8F && std::abs(loot_feet.y-stash->at.y)<1.5F &&
@@ -9934,6 +9993,20 @@ void Renderer::run() {
                         break;
                     }
                 }
+                if(tower_here && !vehicles.driver() && lift_ride<0 && tower_site.in_penthouse(loot_feet)) {
+                    const bool owned=game::economy::SkyPenthouse::owned(loot_session.economy());
+                    const auto bed=tower_site.to_world(world::tower::bed);
+                    const bool by_bed=std::hypot(loot_feet.x-bed.x,loot_feet.z-bed.z)<2.4F && std::abs(loot_feet.y-bed.y)<1.5F;
+                    bool up=false;
+                    const char* line=tower_site.at_elevator(loot_feet,up) ? nullptr :
+                        !owned ? TextFormat("PENTHOUSE FOR SALE - %lld kronoj (terrace and pool)   E / USE: BUY",static_cast<long long>(game::economy::SkyPenthouse::price)) :
+                        by_bed ? "E / USE: SLEEP UNTIL MORNING" : nullptr;
+                    if(line) {
+                        const int tw=MeasureText(line,22);
+                        DrawRectangle(screen_width/2-tw/2-14,screen_height-252,tw+28,34,Fade(BLACK,.6F));
+                        DrawText(line,screen_width/2-tw/2,screen_height-246,22,GOLD);
+                    }
+                }
                 if(garage_here && !vehicles.driver() && garage_site.in_mansion(loot_feet)) {
                     const bool owned=game::economy::SkyMansion::owned(loot_session.economy());
                     const auto bed=garage_site.to_world(world::garage::bed);
@@ -10327,6 +10400,8 @@ void Renderer::run() {
                     compass_marks.push_back({penthouse.to_world({0,0,0}),Glyph::Home,Color{255,214,90,255},"HOME",false});
                 if(garage_here && game::economy::SkyMansion::owned(loot_session.economy()))
                     compass_marks.push_back({garage_site.to_world(world::garage::door),Glyph::Home,Color{255,214,90,255},"HOME",false});
+                if(tower_here && game::economy::SkyPenthouse::owned(loot_session.economy()))
+                    compass_marks.push_back({tower_site.to_world(world::tower::door),Glyph::Home,Color{255,214,90,255},"HOME",false});
                 // A ball game on (or about to be) within a drive: its park on the compass.
                 if(!league.fixtures().empty())
                     for(int p=0;p<5;++p) {
@@ -10506,6 +10581,9 @@ void Renderer::run() {
                     if(site.team>=0)
                         view.marks.push_back({site.to_world(world::ballpark::gate),game::hud::Glyph::Shop,game::sports::teams[static_cast<std::size_t>(site.team)].primary,
                             TextFormat("%s BALLPARK",game::sports::teams[static_cast<std::size_t>(site.team)].nick),false});
+            if(game::rules_for(game_mode).civilian_life && tower_here && !game::economy::SkyPenthouse::owned(loot_session.economy()))
+                view.marks.push_back({tower_site.to_world(world::tower::door),game::hud::Glyph::Home,Color{230,90,90,255},
+                    TextFormat("PENTHOUSE FOR SALE %lld kr",static_cast<long long>(game::economy::SkyPenthouse::price)),false});
             if(game::rules_for(game_mode).civilian_life && garage_here && !game::economy::SkyMansion::owned(loot_session.economy()))
                 view.marks.push_back({garage_site.to_world(world::garage::door),game::hud::Glyph::Home,Color{230,90,90,255},
                     TextFormat("MANSION FOR SALE %lld kr",static_cast<long long>(game::economy::SkyMansion::price)),false});
@@ -10545,6 +10623,16 @@ void Renderer::run() {
                 const float cw=MeasureTextEx(f,caption,26,1).x;
                 DrawTextEx(f,caption,{screen_width/2-cw/2,screen_height/2-13.0F},26,1,Fade(Color{236,240,226,255},(outbreak.dark()-.5F)/.5F));
             }
+        }
+        // Kristala Turo's elevator ride: dim, the floors counting by, then the doors open.
+        if(lift_ride>=0) {
+            const float a=lift_ride<.5F ? lift_ride/.5F : lift_ride>lift_time-.5F ? (lift_time-lift_ride)/.5F : 1.0F;
+            DrawRectangle(0,0,screen_width,screen_height,Fade(BLACK,std::clamp(a,0.0F,1.0F)*.92F));
+            const float t=std::clamp((lift_ride-.4F)/(lift_time-1.0F),0.0F,1.0F);
+            const int level=static_cast<int>(std::round(lift_up ? t*25 : (1-t)*25));
+            const char* text=TextFormat("KRISTALA TURO   %s %d",lift_up ? "^" : "v",level);
+            const int tw=MeasureText(text,30);
+            DrawText(text,screen_width/2-tw/2,screen_height/2-15,30,Fade(GOLD,std::clamp(a,0.0F,1.0F)));
         }
         if(!campaign_path.empty() && story.fade()>0) {
             DrawRectangle(0,0,screen_width,screen_height,Fade(BLACK,story.fade()));
