@@ -41,37 +41,73 @@ kerb. A row is one of five patterns:
   - a name board over the door: ĈE LA ANGULO, LA VENTO, TAVERNO STELO, LA RUĜA LAMPO, or LA LASTA
     TRAJNO.
 
-Cars and the odd Verda Fulmo are parked at the kerbs. The buildings are shells (cover), not
-enterable.
+Cars and the odd Verda Fulmo are parked at the kerbs.
+
+**Every building can be entered** (`walk_in()` in the generator):
+- a front door and a back door;
+- a floor on every storey;
+- switchback stairs up the +X wall, 0.2 m risers and 0.28 m treads, so you can climb to the top
+  floor;
+- a three-flat's door is up its stoop, its back door out onto the first floor's porch.
+
+**Who uses them:**
+- **Flats are homes:** Verda City's people live in them (the city's population grows by two for
+  each new home).
+- **Corner stores are shops**, with flats over them.
+- **Taverns are pubs**, with the bar, stools and tables inside and a flat upstairs.
+
+They are on the world kit's list of enterable buildings, so each gets a loot spot on its ground
+floor.
 
 ## La Levita, the elevated railway
-- **The line** runs over the second row's alley (z = −294), from x = −150 to x = 150:
-  - a steel deck with two tracks, 5.4 m up at its underside;
-  - 20 m deck pieces (`north/l_deck.glb`);
-  - steel bents at each block's quarter points (`north/l_bent.glb`).
-- **Spans:** the line crosses the avenues at ±87 and the highway on 24 m spans. Cars and people pass
-  under it freely: collision meets the deck's real shape (`WorldCollision::elevated`).
-- **Stations:** three of them, Okcidento (x −130), Centro (45) and Oriento (130)
-  (`north/l_station.glb`).
-  - Each has a side platform beyond each track, under a canopy, with benches.
-  - A board names the station over each platform.
-  - Stairs climb to each platform from the yards beside the alley.
-- **Trains:** two two-car trains in brushed steel with a red stripe (`north/l_train.glb`).
-  - Each shuttles on its own track: west terminal, Centro, east terminal, Centro, and back.
-  - They pull away and brake into each stop (14 m/s top speed, 1.1 m/s²) and stand 14 s at each.
-  - The second runs half a round (about 71 s) behind the first.
-  - The renderer draws them from `world::north::train()`. They are scenery: you can't ride them.
+The line runs about **1.15 km** in a U round the north of the city (`world::north::pieces`).
+
+**The route:**
+1. **Okcidenta Parko**, the west terminal, stands in the park in the middle of the west suburbs'
+   blocks (their empty heart).
+2. The line curves out of the park onto the suburb street at x = −330 and runs north up it, on
+   **wide bents** whose posts stand on the verges either side, so the street stays open under it.
+3. It swings round onto Norda Kvartalo's second-row alley and runs east over it, crossing the
+   avenues and the highway on long spans: **Okcidento**, **Centro** and **Oriento** stations.
+4. It swings round again and runs down the east suburbs' street at x = 330 to **Orienta Verda**,
+   the east terminal.
+
+**How it's built:**
+- **Deck:** 20 m pieces down the straights (`north/l_deck.glb`), 4.4 m pieces round the curves
+  (`north/l_deck_4.glb`).
+- **Bents:** one every 16 m or so (`north/l_bent.glb`, wide ones `north/l_bent_wide.glb`). A bent
+  goes up only where both its posts stand clear of every street the line runs over or crosses.
+- **The ground:** where the line crosses open country between Norda Kvartalo and the suburbs, the
+  ground under it is levelled (`north::corridor_outside`).
+- **Stations:** five (`north/l_station.glb`).
+  - Each has side platforms under canopies with benches, and stairs down from each.
+  - A board over each platform names the station: "LA LEVITA · OKCIDENTA PARKO - ORIENTA VERDA".
+- **Under it:** cars and people pass freely, because collision meets its real shape
+  (`WorldCollision::elevated`).
+
+**The trains:**
+- Two two-car trains (`north/l_car.glb`), each shuttling on its own track from one terminal to the
+  other and back.
+- They stop at every station: 14 m/s top speed, 1.1 m/s², 14 s at each stop. A round takes about
+  six minutes.
+- The second runs half a round behind the first.
+- Each car is drawn on its own stretch of the line (`north::car`), so the trains bend round the
+  curves.
+- They are scenery: you can't ride them.
 
 ## Tests
 `outland_north_quarter_tests` checks:
-- the timetable: each train keeps to its track, stays on the deck, never outruns the line or jumps,
-  and stands at every station;
+- the line is one continuous path;
+- the timetable: each car keeps to its track, the trains stay on the line, never outrun it or
+  jump, and stand at every station;
 - the map:
   - the new streets;
   - the three-flats, walk-ups, taverns and murals;
-  - the deck the length of the line, and three stations;
-  - the avenues, highway and alleys open to cars and walkers under the deck;
+  - the deck the whole length of the line, and five stations;
+  - the avenues, highway, alleys, suburb streets and their cross streets open to cars and walkers
+    under it;
   - the stairs up to Centro's platform.
 
-The road audits (`outland_road_audit_tests`, `outland_road_conflict_tests`) know the deck spans
-the streets.
+`outland_world_kit_tests` walks into every building through its front door and up its stairs. The
+road audits (`outland_road_audit_tests`, `outland_road_conflict_tests`) know the line spans the
+streets.

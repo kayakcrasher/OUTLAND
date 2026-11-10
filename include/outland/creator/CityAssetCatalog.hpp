@@ -213,6 +213,15 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_north_l_deck", .name = "The L - elevated railway deck, 20 m (two tracks)", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/north/l_deck.glb", .thumbnail_path = "", .footprint = {7.60F, 20.00F, 7.10F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_l_deck_4", .name = "The L - elevated railway deck, 4.4 m (round a curve)", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/north/l_deck_4.glb", .thumbnail_path = "", .footprint = {7.60F, 4.40F, 1.70F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_l_bent_wide", .name = "The L - wide bent (posts either side of a street)", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/north/l_bent_wide.glb", .thumbnail_path = "", .footprint = {13.20F, 1.00F, 5.40F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_north_l_car", .name = "The L - one car", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/north/l_car.glb", .thumbnail_path = "", .footprint = {2.85F, 14.70F, 3.80F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_north_l_bent", .name = "The L - steel bent (columns and cap girder)", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/north/l_bent.glb", .thumbnail_path = "", .footprint = {7.60F, 1.00F, 5.40F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

@@ -669,7 +669,7 @@ void north_quarter(Kit& kit, world::VerdaRegion& region) {
     // fronts -z; yaw 180 fronts +z). F three-flat, W walk-up, S walk-up with a corner store, M
     // walk-up with a mural on its left end wall, T corner tavern; '_' a 4 m gangway.
     static constexpr std::array<const char*, 5> patterns{"MFFFFT", "WFFST", "FFFWFF_", "SWFFF_", "MFFWF"};
-    int parked = 0;
+    int parked = 0, homes = 0;
     const auto row = [&](float bx, float bz, bool north_side, std::uint32_t seed) {
         const float yaw = north_side ? 0.0F : 180.0F, sign = north_side ? 1.0F : -1.0F;
         const char* pattern = patterns[seed % patterns.size()];
@@ -696,6 +696,31 @@ void north_quarter(Kit& kit, world::VerdaRegion& region) {
             if (!kit.put(north + model + ".glb", p, yaw, false)) continue;
             ++kit.report.north_buildings;
             ++kit.report.buildings;
+            // Walk in (tools/generate_city_kit.py walk_in()): the door in the front wall, the floors,
+            // the stairs up the +X wall (0.2 m risers, 0.28 m treads, from 2.5 m inside the front).
+            // A three-flat's front is up its stoop (its foot 1.8 m out), its first floor 1.2 m up.
+            const bool flat3 = kind == 'F', tavern = kind == 'T';
+            const float half_d = tavern ? 8.0F : 9.0F, base = flat3 ? 1.2F : 0.0F, first = tavern ? 4.0F : kind == 'S' ? 3.8F : 3.4F;
+            const float half_w = flat3 ? 3.8F : tavern ? 6.0F : 8.0F, slab = .2F, run = std::round(first / .2F) * .28F;
+            dev::KitBuilding inside;
+            inside.origin = p;
+            inside.yaw = yaw;
+            inside.width = half_w * 2;
+            inside.depth = (half_d + (flat3 ? 1.8F : 0.0F)) * 2;
+            inside.storeys = flat3 ? 3 : tavern ? 2 : 4;
+            inside.door_x = flat3 ? 1.75F : 0.0F;
+            inside.stairs_start = {half_w - .25F - .65F, base + slab, -half_d + 1.5F};
+            inside.stairs_direction = {0, 0, 1};
+            inside.stairs_length = run + 2.2F;
+            inside.ground_floor = base + slab;
+            inside.upper_floor = base + first + slab;
+            inside.upstairs_walk = {-3, 0, 0};
+            kit.report.enterable.push_back(inside);
+            // Who it's for: flats are homes, the corner store a shop, the tavern a pub.
+            const auto purpose = tavern ? world::BuildingPurpose::Pub : kind == 'S' ? world::BuildingPurpose::Shop : world::BuildingPurpose::Home;
+            kit.purpose(to_world(p, yaw, inside.door_x - (flat3 ? 0.0F : 2.5F), base + slab + .1F, -half_d + 1.2F), yaw, purpose);
+            homes += purpose == world::BuildingPurpose::Home;
+            if (kind == 'S') {kit.purpose(to_world(p, yaw, -5.0F, first + slab + .1F, 2.0F), yaw, world::BuildingPurpose::Home); ++homes;}   // the flats over the shop
         }
         // Cars at the kerb along the street in front: mostly hatchbacks, now and then a motorcycle.
         static constexpr std::array<const char*, 6> kinds{"hatchback", "sedan", "hatchback", "motorcycle", "wagon", "hatchback"};
@@ -721,8 +746,10 @@ void north_quarter(Kit& kit, world::VerdaRegion& region) {
             const auto spot = [&](float a) {
                 return side == 0 ? at(bx + a, bz - e) : side == 1 ? at(bx + e, bz + a) : side == 2 ? at(bx - a, bz + e) : at(bx - e, bz - a);
             };
-            for (const float a : {-16.0F, 16.0F}) kit.tree(spot(a + ((side % 2) ? 0.0F : 4.0F)));
-            kit.put(urban + "Traffic lights/street_light.glb", spot(side % 2 ? 12.0F : -4.0F), side == 0 ? 0.0F : side == 1 ? 270.0F : side == 2 ? 180.0F : 90.0F, false);
+            // (On the avenues' sides only: the street fronts are the buildings' doors.)
+            if (side % 2 == 0) continue;
+            for (const float a : {-16.0F, 16.0F}) kit.tree(spot(a));
+            kit.put(urban + "Traffic lights/street_light.glb", spot(12.0F), side == 1 ? 270.0F : 90.0F, false);
         }
         for (const float x : {-24.0F, 2.0F, 26.0F})
             for (const float z : {-1.0F, 1.0F})
@@ -730,17 +757,64 @@ void north_quarter(Kit& kit, world::VerdaRegion& region) {
         if (bz == nq::rows[0]) for (const float x : {-18.0F, 18.0F}) for (const float z : {-7.0F, 7.0F}) kit.tree(at(bx + x, bz + z));
         ++kit.report.north_blocks;
     }
-    // La Levita over the second row's alley: the deck in 20 m pieces, a bent at each block's
-    // quarter points (spanning the streets and the highway), and the three stations.
-    for (float x = nq::l_west + nq::l_piece * .5F; x < nq::l_east; x += nq::l_piece)
-        kit.put(north + "l_deck.glb", {x, ground, nq::l_z}, 90, false);
-    std::vector<float> bents{nq::l_west, nq::l_east};
-    for (const float bx : dt_block_x)
-        for (const float a : {-30.0F, -10.0F, 10.0F, 30.0F})
-            if (bx + a > nq::l_west + 4 && bx + a < nq::l_east - 4) bents.push_back(bx + a);
-    for (const float x : bents) kit.put(north + "l_bent.glb", {x, ground, nq::l_z}, 90, false);
-    for (const auto& station : nq::stations)
-        if (kit.put(north + "l_station.glb", {station.x, ground, nq::l_z}, 90, false)) ++kit.report.l_stations;
+    // La Levita (world::north), the whole line: the deck in 20 m pieces down the straights and 4.4 m
+    // pieces round the curves; a bent every 16 m or so - wide ones, posts out on the verges, where
+    // the line runs down a suburb street - except in the streets it crosses; and its five stations.
+    {
+        const float total = nq::length();
+        const auto yaw_at = [](float s) { Vector2 h{}; nq::at(s, &h); return std::atan2(h.x, h.y) * RAD2DEG; };
+        const auto straight_ahead = [&](float s, float len) {
+            // (s .. s + len within one straight piece of the line)
+            float base = 0;
+            for (const auto& piece : nq::pieces) {
+                const float l = nq::detail::piece_length(piece);
+                if (s >= base - .01F && s + len <= base + l + .01F) return !piece.arc;
+                base += l;
+            }
+            return false;
+        };
+        for (float s = 0; s < total - .5F;) {
+            const bool long_piece = straight_ahead(s, nq::l_piece);
+            const float len = long_piece ? nq::l_piece : 4.0F;
+            const Vector2 c = nq::at(std::min(s + len * .5F, total));
+            kit.put(north + (long_piece ? "l_deck.glb" : "l_deck_4.glb"), {c.x, ground, c.y}, yaw_at(s + len * .5F), false);
+            s += len;
+        }
+        // Where a bent's posts may not stand: in the streets the line runs over or crosses (with a
+        // metre to spare). A bent goes up where both its posts stand clear - a standard one, else a
+        // wide one - or not at all.
+        const auto in_a_street = [](Vector2 q) {
+            if (q.y < -176 && std::abs(q.x) < 11) return true;                                          // the highway
+            for (const float ax : nq::avenues) if (q.y < -176 && std::abs(q.x - ax) < 9) return true;  // Norda Kvartalo's avenues
+            if (std::abs(std::abs(q.x) - nq::suburb_street) < 5 && q.y > -170) return true;               // the suburb streets
+            for (const float sz : {-168.0F, -84.0F})                                                     // and their cross streets
+                if (std::abs(q.y - sz) < 7.5F && std::abs(q.x) > 179 && std::abs(q.x) < 480) return true;
+            return false;
+        };
+        for (float s = 2; s < total; s += 16) {
+            const Vector2 c = nq::at(s);
+            for (const float half : {3.0F, 6.2F}) {
+                if (in_a_street(nq::beside(s, half)) || in_a_street(nq::beside(s, -half))) continue;
+                kit.put(north + (half < 4 ? "l_bent.glb" : "l_bent_wide.glb"), {c.x, ground, c.y}, yaw_at(s), false);
+                ++kit.report.l_bents;
+                break;
+            }
+        }
+        for (std::size_t i = 0; i < nq::stations.size(); ++i) {
+            const float s = nq::station_s(i);
+            const Vector2 c = nq::at(s);
+            kit.claim({c.x, 0, c.y}, 8.4F, nq::station_half, yaw_at(s));
+            if (kit.put(north + "l_station.glb", {c.x, ground, c.y}, yaw_at(s), false)) ++kit.report.l_stations;
+        }
+        // Okcidenta Parko: the park round the west terminal - trees, benches under the station.
+        const Vector2 park = nq::stations.front().at;
+        for (const float dx : {-30.0F, -12.0F, 12.0F, 30.0F})
+            for (const float dz : {-16.0F, 16.0F}) kit.tree({park.x + dx, 0, park.y + dz});
+        for (const float dx : {-8.0F, 8.0F})
+            kit.put(city + "civic/waiting_shelter.glb", {park.x + dx, 0, park.y + 11}, 180);
+    }
+    // The flats bring their people (Verda City's stated population caps island life).
+    capital->survivors += homes * 2;
     // Keep the rest of the kit off the new blocks (the first row's inner two stay free).
     for (const auto& [bx, bz] : blocks) kit.claim({bx, 0, bz}, 36, 36, 0);
 }
@@ -1534,7 +1608,8 @@ void west_suburbs(Kit& kit, world::VerdaRegion& region) {
     // On the boulevard: the park (north-east), shops (south-east), a church and a clinic (west).
     for (int i = 0; i < 5; ++i) for (int j = 0; j < 3; ++j) {
         const auto r = hash(7500U + static_cast<std::uint32_t>(i * 3 + j));
-        kit.tree({-196 - i * 27.0F + static_cast<float>(r % 7), 0, -18 - j * 14.0F - static_cast<float>((r / 7) % 5)});
+        const Vector3 t{-196 - i * 27.0F + static_cast<float>(r % 7), 0, -18 - j * 14.0F - static_cast<float>((r / 7) % 5)};
+        if (world::north::distance(t.x, t.z) > 10) kit.tree(t);   // (clear of La Levita and Okcidenta Parko)
     }
     for (int i = 0; i < 4; ++i)
         kit.put(urban + "Bus stops/busstop_bench.glb", {-210 - i * 32.0F, 0, -(avenue * .5F + 1.6F)}, 180);

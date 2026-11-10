@@ -3142,10 +3142,63 @@ def back_porch(b, w, back, base, storeys, storey):
           {'+x': "slats", '-x': "slats", '+z': "slats", '-z': "slats", '+y': "porch"})
 
 
+NORTH_SLAB = .2
+NORTH_LANE = 1.3                 # each of a stair's two lanes (switchback flights)
+
+
+def walk_in(b, w, d, heights, base, faces, inner, floor_mat, door, back_door=None, openings=(), t=.25):
+    """Make a Norda Kvartalo building enterable: hollow walls from the ground (front at -Z) with a
+    front door and a back door on the bottom storey, a floor on each storey (the first at `base`,
+    solid below it), switchback stairs up the +X wall - flight s from floor s to floor s + 1 in lane
+    s % 2, 0.2 m risers and 0.28 m treads, each floor open over the flight that arrives at it - and
+    the roof slab. heights: each storey's height, bottom up. faces: the walls' outer materials
+    (front, back, -x side, +x side). openings: more front openings (x0, x1, y0, y1).
+    Returns (the first flight's lane centre x, where it starts z, its run, the floors' tops)."""
+    slab = NORTH_SLAB
+    b.material("stair", flat((96, 84, 72), 5), 1, 1)
+    levels = [base]
+    for h in heights:
+        levels.append(levels[-1] + h)
+    top = levels[-1]
+    front, back, west, east = faces
+    fo = [(door[0], door[1], base + slab, base + slab + 2.4)] + list(openings)
+    bo = [(back_door[0], back_door[1], base + slab, base + slab + 2.3)] if back_door else []
+    wall_with_openings(b, 'x', -d, (-w, w), top, t, fo, front, inner, -1)
+    wall_with_openings(b, 'x', d, (-w, w), top, t, bo, back, inner, +1)
+    wall_with_openings(b, 'z', -w, (-d + t, d - t), top, t, [], west, inner, -1)
+    wall_with_openings(b, 'z', w, (-d + t, d - t), top, t, [], east, inner, +1)
+    lane = lambda f: (w - t - NORTH_LANE * (1 + f % 2), w - t - NORTH_LANE * (f % 2))
+    sz0 = -d + 2.5
+    runs = [int(round(h / .2)) * .28 for h in heights]
+    b.box((-w + t, 0, -d + t), (w - t, base + slab, d - t), {'+y': floor_mat})
+    for f in range(1, len(levels)):
+        y = levels[f]
+        if f == len(levels) - 1:
+            b.box((-w + t, y, -d + t), (w - t, y + slab, d - t), {'+y': "roof", '-y': inner})
+            continue
+        hx0, hx1 = lane(f - 1)
+        hz0, hz1 = sz0, sz0 + runs[f - 1]
+        faces_ = {'+y': floor_mat, '-y': inner, '+x': inner, '-x': inner, '+z': inner, '-z': inner}
+        for lo, hi in (((-w + t, y, -d + t), (hx0, y + slab, d - t)), ((hx1, y, -d + t), (w - t, y + slab, d - t)),
+                       ((hx0, y, -d + t), (hx1, y + slab, hz0)), ((hx0, y, hz1), (hx1, y + slab, d - t))):
+            if hi[0] - lo[0] > 1e-3 and hi[2] - lo[2] > 1e-3:
+                b.box(lo, hi, faces_)
+    for f in range(len(heights) - 1):
+        x0, x1 = lane(f)
+        n = int(round(heights[f] / .2))
+        rise, run = heights[f] / n, runs[f]
+        foot = levels[f] + slab
+        for k in range(n):
+            z0 = sz0 + k * .28 if f % 2 == 0 else sz0 + run - (k + 1) * .28
+            b.solid((x0, foot, z0), (x1, foot + (k + 1) * rise - (slab if k == n - 1 else 0), z0 + .28), "stair")
+    return (sum(lane(0)) / 2, sz0, runs[0], [y + slab for y in levels[:-1]])
+
+
 def three_flat(stone, side_brick, cornice, seed):
-    """A greystone three-flat (front -Z, 7.6 x 18 m): a flat on each of three floors over a raised
-    garden level, a limestone front with a three-sided bay, a stoop up to the door, a pressed-metal
-    cornice; common brick sides and back, wooden porches on the back."""
+    """A greystone three-flat (front -Z, 7.6 x 18 m, enterable): a flat on each of three floors over
+    a raised garden level, a limestone front with a three-sided bay, a stoop up to the door, a
+    pressed-metal cornice; common brick sides and back, wooden porches on the back (a door out to
+    the first floor's); the stairs up the +X wall inside."""
     b = Builder()
     north_glass(b)
     w, d = 3.8, 9.0
@@ -3157,10 +3210,11 @@ def three_flat(stone, side_brick, cornice, seed):
     b.material("roof", gravel_roof(), 3, 3)
     b.material("cornice", flat(cornice, 4), 1, 1)
     b.material("trim", flat(shade(stone, 18), 4), 1, 1)
-    b.material("door", flat((74, 42, 28), 6), 1, 1)
     b.material("iron", flat((34, 36, 38), 3), 1, 1)
-    b.box((-w, 0, -d), (w, base, d), {'-z': "rustic", '+x': "side", '-x': "side", '+z': "side"})
-    b.box((-w, base, -d), (w, top, d), {'-z': "stone", '+x': "side", '-x': "side", '+z': "side", '+y': "roof"})
+    b.material("plaster", flat((206, 196, 178), 4), 3, 3)
+    b.material("floor", wood(), 3, 3)
+    walk_in(b, w, d, [storey] * 3, base, ("stone", "side", "side", "side"), "plaster", "floor", (.9, 2.6), (-2.6, -1.4))
+    b.box((-w, 0, -d - .02), (w, base, -d), {'-z': "rustic"})
     # The bay: three sides of stone, a window in each, the whole height of the flats.
     bx0, bx1, bd = -3.4, -.4, 1.0
     b.box((bx0, base, -d - bd), (bx1, top, -d), {'-z': "stone", '+x': "stone", '-x': "stone", '+y': "roof"})
@@ -3171,13 +3225,11 @@ def three_flat(stone, side_brick, cornice, seed):
         window_box(b, 'z', bx1, 1, -d - bd + .2, -d - .2, y0, y0 + 1.9)
         if s:
             window_box(b, 'x', -d, -1, .8, 2.7, y0, y0 + 1.9)
-        window_box(b, 'x', d, 1, -2.6, -1.2, y0, y0 + 1.7)
         window_box(b, 'x', d, 1, .4, 1.8, y0, y0 + 1.7)
     for x0, x1 in ((-3.0, -1.6), (.8, 2.6)):   # the garden flat's low windows
         window_box(b, 'x', -d - (bd if x1 < 0 else 0), -1, x0, x1, .35, 1.0)
-    # The door at the top of the stoop, a transom over it, a stone surround.
-    b.box((.9, base, -d - .05), (2.6, base + 2.5, -d), {'-z': "door"})
-    b.box((.9, base + 2.55, -d - .05), (2.6, base + 3.0, -d), {'-z': "glass"})
+    # The doorway at the top of the stoop: a transom over it, a stone surround.
+    b.box((.9, base + 2.65, -d - .05), (2.6, base + 3.0, -d), {'-z': "glass"})
     b.solid((.7, base + 3.0, -d - .2), (2.8, base + 3.3, -d), "trim")
     for k in range(6):
         b.solid((.75, 0, -d - (k + 1) * .3), (2.75, base - k * .2, -d - k * .3), "stone")
@@ -3196,10 +3248,11 @@ def three_flat(stone, side_brick, cornice, seed):
 
 
 def walkup(brick_color, trim, shop, mural_kind, seed):
-    """A four-storey brick walk-up (front -Z, 16 x 18 m): six windows a floor with stone sills and
-    lintels and a band at each floor, a pressed-metal cornice, a black fire escape across the right
-    of the front, a timber water tank on the roof; a shop on the ground floor if `shop` (a corner
-    store: plate glass and a sign band); a mural over the -x end wall if `mural_kind`."""
+    """A four-storey brick walk-up (front -Z, 16 x 18 m, enterable): six windows a floor with stone
+    sills and lintels and a band at each floor, a pressed-metal cornice, a black fire escape across
+    the right of the front, a timber water tank on the roof, the stairs up the +X wall inside; a
+    shop on the ground floor if `shop` (a corner store: display windows, a counter, shelves); a
+    mural over the -x end wall if `mural_kind`."""
     b = Builder()
     north_glass(b)
     w, d = 8.0, 9.0
@@ -3210,8 +3263,11 @@ def walkup(brick_color, trim, shop, mural_kind, seed):
     b.material("trim", flat(trim, 4), 1, 1)
     b.material("roof", gravel_roof(), 3, 3)
     b.material("cornice", flat((52, 56, 54), 4), 1, 1)
-    b.material("door", flat((44, 30, 24), 6), 1, 1)
-    b.box((-w, 0, -d), (w, top, d), {'-z': "brick", '+x': "brick", '-x': "brick", '+z': "brick", '+y': "roof"})
+    b.material("plaster", flat((210, 200, 182), 4), 3, 3)
+    b.material("floor", wood(), 3, 3)
+    b.material("frame", flat((30, 34, 32), 3), 1, 1)
+    display = ((-7.2, -1.6, .6, 3.0), (1.6, 4.6, .6, 3.0)) if shop else ()
+    walk_in(b, w, d, [ground, storey, storey, storey], 0, ("brick", "brick", "brick", "brick"), "plaster", "floor", (-1.0, 1.0), (-6.4, -5.2), display)
     cols = (-6.0, -3.6, -1.2, 1.2, 3.6, 6.0)
     for s in range(4):
         y0 = (0 if s == 0 else ground + (s - 1) * storey) + .9
@@ -3221,25 +3277,28 @@ def walkup(brick_color, trim, shop, mural_kind, seed):
                 window_box(b, 'x', d, 1, cx - .6, cx + .6, y0, y0 + 1.7)
             b.solid((-w - .02, y0 - .9 - .1, -d - .1), (w + .02, y0 - .9 + .15, -d), "trim")   # the band at the floor
     if shop:
-        b.material("shopglass", storefront((40, 42, 44), (70, 92, 104), (24, 92, 60)), BAY, ground)
-        b.box((-w + .3, 0, -d - .06), (w - .3, ground, -d), {'-z': "shopglass"}, v_origin=ground)
-        b.box((-w + .3, 0, -d - .08), (w - .3, .5, -d - .06), {'-z': "trim"})
-        b.box((-1.0, 0, -d - .1), (1.0, 2.6, -d - .06), {'-z': "door"})
+        b.material("goods", stripes((60, 110, 160), (214, 170, 60), width=6, seed=seed), .8, .8)
+        b.material("shelf", wood(), 1, 1)
+        for x0, x1, y0, y1 in display:
+            b.box((x0, y0, -d + .1), (x1, y1, -d + .12), {'-z': "glass", '+z': "glass"})
+            b.solid((x0 - .1, y1, -d - .12), (x1 + .1, y1 + .12, -d), "frame")
+        b.solid((-w, 3.0, -d - .14), (w, 3.7, -d), "trim")             # the sign band
+        b.solid((-6.0, NORTH_SLAB, -2.0), (-1.5, NORTH_SLAB + 1.0, -1.3), "shelf")   # the counter
+        for z in (1.5, 4.5):
+            b.solid((-7.6, NORTH_SLAB, z - .3), (-2.0, NORTH_SLAB + 1.8, z + .3), "shelf")
+            b.box((-7.5, NORTH_SLAB + .3, z - .32), (-2.1, NORTH_SLAB + 1.7, z - .3), {'-z': "goods"})
     else:
         for cx in cols:
             if abs(cx) > 2:
                 window_box(b, 'x', -d, -1, cx - .6, cx + .6, 1.0, 2.6)
-        b.box((-1.0, .3, -d - .05), (1.0, 2.8, -d), {'-z': "door"})
-        b.solid((-1.4, 2.8, -d - .3), (1.4, 3.15, -d), "trim")
-        for k in range(2):
-            b.solid((-1.5, 0, -d - (k + 1) * .35), (1.5, .3 - k * .15, -d - k * .35), "trim")
+        b.solid((-1.4, 2.7, -d - .3), (1.4, 3.05, -d), "trim")
     b.solid((-w - .15, top - .4, -d - .6), (w + .15, top + .8, -d), "cornice")
     for x in [-7.5 + k * 1.5 for k in range(11)]:
         b.solid((x - .1, top - .9, -d - .45), (x + .1, top - .4, -d), "cornice")
     for lo, hi in (((-w, top, -d), (-w + .3, top + .8, d)), ((w - .3, top, -d), (w, top + .8, d)), ((-w, top, d - .3), (w, top + .8, d))):
         b.solid(lo, hi, "brick")
     fire_escape(b, 2.3, 7.4, -d, 1, 3, ground - storey, storey)
-    water_tower(b, -4.2, 4.0, top)
+    water_tower(b, -4.2, 4.0, top + NORTH_SLAB)
     b.solid((2.0, top, 2.0), (4.4, top + 2.4, 4.6), "brick")   # the stair's bulkhead
     if mural_kind:
         b.material("mural", mural(mural_kind, seed), 1, 1)
@@ -3250,8 +3309,9 @@ def walkup(brick_color, trim, shop, mural_kind, seed):
 
 
 def corner_tavern(brick_color, seed):
-    """A corner tavern (front -Z, 12 x 16 m, two storeys): a bar behind plate glass with neon in
-    the windows, a blade sign over the pavement, a canopy over the door, a flat upstairs."""
+    """A corner tavern (front -Z, 12 x 16 m, two storeys, enterable): a bar behind dark glass with
+    neon in the windows, the counter and tables inside, a blade sign over the pavement, a canopy
+    over the door; the stairs up the +X wall to the flat upstairs."""
     b = Builder()
     north_glass(b)
     w, d = 6.0, 8.0
@@ -3268,8 +3328,10 @@ def corner_tavern(brick_color, seed):
     b.material("neon_gold", flat((255, 210, 80), 3), 1, 1)
     b.material("blade", stripes((176, 28, 34), (246, 230, 190), width=10, seed=seed), .6, .6)
     b.material("canopy", flat((22, 82, 54), 4), 1, 1)
-    b.box((-w, 0, -d), (w, top, d), {'-z': "brick", '+x': "brick", '-x': "brick", '+z': "brick", '+y': "roof"})
-    # The bar's windows: dark glass in a black frame on both street sides, neon signs inside them.
+    b.material("plaster", flat((120, 90, 70), 4), 3, 3)
+    b.material("floor", wood(), 3, 3)
+    walk_in(b, w, d, [ground, storey], 0, ("brick", "brick", "brick", "brick"), "plaster", "floor", (-1.0, 1.0), (3.4, 4.6))
+    # The bar's windows: dark glass in a black frame on both street sides, neon signs in them.
     neon = ("neon_red", "neon_blue", "neon_gold")
     for k, (a0, a1) in enumerate(((-5.4, -2.2), (2.2, 5.4))):
         b.box((a0, .6, -d - .06), (a1, 3.2, -d), {'-z': "pane"})
@@ -3281,11 +3343,20 @@ def corner_tavern(brick_color, seed):
     for side, o in ((-w, -1), (w, 1)):
         for a0, a1 in ((-6.4, -3.4), (-1.6, 1.4)):
             b.box((min(side, side + o * .06), .6, a0), (max(side, side + o * .06), 3.2, a1), {'-x' if o < 0 else '+x': "pane"})
-            b.solid((min(side, side + o * .1) - (0 if o > 0 else 0), 3.2, a0 - .1), (max(side, side + o * .1), 3.32, a1 + .1), "frame")
+            b.solid((min(side, side + o * .1), 3.2, a0 - .1), (max(side, side + o * .1), 3.32, a1 + .1), "frame")
         b.solid((min(side, side + o * .1), 2.0, -5.6), (max(side, side + o * .1), 2.4, -4.2), neon[(seed + 2) % 3])
-    b.box((-1.0, 0, -d - .06), (1.0, 2.7, -d), {'-z': "bar"})
     b.solid((-1.6, 2.9, -d - 1.4), (1.6, 3.05, -d), "canopy")
     b.solid((-w, ground - .4, -d - .14), (w, ground - .1, -d), "trim")
+    # Inside: the bar along the back, stools, two tables, bottles on the back bar, neon over it.
+    f = NORTH_SLAB
+    b.solid((-5.2, f, 4.6), (1.8, f + 1.1, 5.4), "bar")
+    b.solid((-5.3, f + 1.1, 4.5), (1.9, f + 1.2, 5.5), "frame")
+    b.solid((-5.4, f, 7.2), (1.8, f + 2.0, 7.7), "bar")
+    b.solid((-4.0, f + 2.2, 7.6), (-1.0, f + 2.6, 7.7), neon[(seed + 1) % 3])
+    for x in (-4.2, -2.6, -1.0, .6):
+        b.solid((x - .2, f, 3.6), (x + .2, f + .75, 4.0), "frame")
+    for x, z in ((-3.5, -2.0), (-.5, .5)):
+        b.solid((x - .5, f, z - .5), (x + .5, f + .8, z + .5), "bar")
     for cx in (-4.0, -1.4, 1.4, 4.0):
         window_box(b, 'x', -d, -1, cx - .6, cx + .6, ground + .9, ground + 2.7)
     for cz in (-5.0, -1.0, 3.0):
@@ -3301,7 +3372,7 @@ def corner_tavern(brick_color, seed):
     return b
 
 
-def l_deck():
+def l_deck(length=L_PIECE):
     """A 20 m piece of the L's deck, along Z: two lattice girders, timber ties, two tracks of
     rails and a third rail, a walkway rail along each edge. Bottom at 5.4 m, deck top at L_DECK."""
     b = Builder()
@@ -3309,7 +3380,7 @@ def l_deck():
     b.material("steel", flat((58, 72, 66), 4), 1, 1)
     b.material("ties", ties(), 2, 2)
     b.material("rail", flat((176, 176, 180), 3), 1, 1)
-    h = L_PIECE / 2
+    h = length / 2
     for x in (-L_HALF, L_HALF - .25):
         b.box((x, 5.4, -h), (x + .25, L_DECK + .1, h), {s: "lattice" for s in ('+x', '-x')})
         b.solid((x, L_DECK + .1, -h), (x + .25, L_DECK + .3, h), "steel")
@@ -3320,6 +3391,53 @@ def l_deck():
         for r in (-.72, .72):
             b.solid((cx + r - .04, L_DECK, -h), (cx + r + .04, L_DECK + .16, h), "rail")
         b.solid((cx + 1.05, L_DECK + .02, -h), (cx + 1.15, L_DECK + .12, h), "steel")   # the third rail
+    return b
+
+
+def l_bent_wide():
+    """A wide bent of the L, for a stretch over a street: the posts out on the verges 6.2 m either
+    side, a deep cap girder across the street the deck sits on."""
+    b = Builder()
+    b.material("steel", flat((58, 72, 66), 4), 1, 1)
+    b.material("footing", flat((168, 164, 156), 5), 1, 1)
+    for x in (-6.2, 6.2):
+        b.solid((x - .5, 0, -.5), (x + .5, .4, .5), "footing")
+        b.solid((x - .22, .4, -.22), (x + .22, 5.4, .22), "steel")
+    b.solid((-6.6, 4.8, -.35), (6.6, 5.4, .35), "steel")
+    for x in (-6.2, 6.2):                                       # knee braces
+        inward = 1.0 if x < 0 else -1.0
+        for k in range(4):
+            b.solid((x + inward * (.2 + k * .3) - .1, 4.0 + k * .2, -.1), (x + inward * (.2 + k * .3) + .1, 4.2 + k * .2, .1), "steel")
+    return b
+
+
+def l_car():
+    """One car of an L train (14.7 m along Z, 2.8 m wide): brushed steel, a band of windows, a red
+    stripe, two doors a side, a headlamp pair and a gangway end, a bogie at each end. Origin: the
+    rails' top, centred. Two make a train; the game draws each on its own stretch of a curve."""
+    b = Builder()
+    b.material("body", flat((188, 192, 196), 4), 1, 1)
+    b.material("band", window_glass(seed=101), 1.4, 1.2)
+    b.material("stripe", flat((186, 30, 38), 3), 1, 1)
+    b.material("door", flat((150, 154, 158), 3), 1, 1)
+    b.material("under", flat((36, 36, 38), 3), 1, 1)
+    b.material("lamp", flat((255, 244, 210), 2), 1, 1)
+    b.material("roofing", flat((150, 152, 154), 4), 1, 1)
+    z0, z1 = -7.35, 7.35
+    b.box((-1.4, 1.0, z0), (1.4, 3.6, z1), {'+x': "body", '-x': "body", '+z': "body", '-z': "body", '-y': "under"})
+    b.solid((-1.3, 3.6, z0 + .2), (1.3, 3.8, z1 - .2), "roofing")
+    for x, face in ((-1.42, '-x'), (1.4, '+x')):
+        b.box((x, 2.0, z0 + .6), (x + .02, 3.2, z1 - .6), {face: "band"})
+        b.box((x, 1.55, z0 + .2), (x + .02, 1.75, z1 - .2), {face: "stripe"})
+        for dz in (3.6, 10.8):
+            b.box((x - (.01 if x < 0 else -.01), 1.05, z0 + dz - .7), (x + .02, 3.2, z0 + dz + .7), {face: "door"})
+    for z, face in ((z0, '-z'), (z1, '+z')):
+        zz = z - .02 if face == '-z' else z
+        b.box((-.9, 2.2, zz), (.9, 3.1, zz + .02), {face: "band"})
+        for x in (-1.0, .8):
+            b.box((x, 1.5, zz), (x + .2, 1.75, zz + .02), {face: "lamp"})
+    for zc in (z0 + 2.6, z1 - 2.6):
+        b.solid((-1.1, 0, zc - 1.3), (1.1, 1.0, zc + 1.3), "under")
     return b
 
 
@@ -4063,6 +4181,9 @@ def kit():
         add(f"north/corner_tavern_{k + 1}.glb", corner_tavern(tone, 330 + k), f"city_north_corner_tavern_{k + 1}",
             "Corner tavern (neon in the windows, blade sign, flat upstairs)", "Building", 12.3, 17.75, 7.9)
     add("north/l_deck.glb", l_deck(), "city_north_l_deck", "The L - elevated railway deck, 20 m (two tracks)", "BuildingPart", 7.6, 20, 7.1)
+    add("north/l_deck_4.glb", l_deck(4.4), "city_north_l_deck_4", "The L - elevated railway deck, 4.4 m (round a curve)", "BuildingPart", 7.6, 4.4, 1.7)
+    add("north/l_bent_wide.glb", l_bent_wide(), "city_north_l_bent_wide", "The L - wide bent (posts either side of a street)", "BuildingPart", 13.2, 1.0, 5.4)
+    add("north/l_car.glb", l_car(), "city_north_l_car", "The L - one car", "BuildingPart", 2.85, 14.7, 3.8)
     add("north/l_bent.glb", l_bent(), "city_north_l_bent", "The L - steel bent (columns and cap girder)", "BuildingPart", 7.6, 1, 5.4)
     add("north/l_station.glb", l_station(), "city_north_l_station", "The L - station: side platforms, canopies, stairs", "BuildingPart", 16.6, 40, 11.1)
     add("north/l_train.glb", l_train(), "city_north_l_train", "The L - two-car train", "BuildingPart", 2.85, 30, 3.8)

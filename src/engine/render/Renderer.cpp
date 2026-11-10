@@ -1233,16 +1233,20 @@ void Renderer::run() {
                 sign.kind=game::culture::SignKind::Shopfront;
                 sign.place=a.id;
                 if(station) {
-                    const char* name="CENTRO";
-                    for(const auto& st:world::north::stations) if(std::abs(st.x-origin.x)<5)
-                        name=std::string_view(st.name)=="Okcidento" ? "OKCIDENTO" : std::string_view(st.name)=="Oriento" ? "ORIENTO" : "CENTRO";
+                    // The nearest of the line's stations; a board over each platform, facing the tracks.
+                    std::string name="CENTRO";
+                    float best=1e9F;
+                    for(const auto& st:world::north::stations) {
+                        const float d=std::hypot(st.at.x-origin.x,st.at.y-origin.z);
+                        if(d<best) {best=d;name=st.name;for(auto& ch:name) ch=static_cast<char>(std::toupper(static_cast<unsigned char>(ch)));}
+                    }
                     for(const float side:{-1.0F,1.0F}) {
                         auto board=sign;
-                        board.place=a.id+(side<0 ? "_n" : "_s");
-                        board.position={origin.x,origin.y+world::north::l_platform+2.3F,origin.z+side*5.4F};
-                        board.yaw=side<0 ? 0.0F : 180.0F;
+                        board.place=a.id+(side<0 ? "_a" : "_b");
+                        board.position=local(side*5.4F,world::north::l_platform+2.3F,0);
+                        board.yaw=a.rotation_y+(side<0 ? 90.0F : 270.0F);   // (faces across, toward the tracks)
                         board.max_width=5.0F;
-                        board.front={{name,.5F},{"LA LEVITA · NORDA KVARTALO",.2F}};
+                        board.front={{name,.5F},{"LA LEVITA · OKCIDENTA PARKO - ORIENTA VERDA",.2F}};
                         board.board=Color{18,60,44,255};board.ink=WHITE;
                         signage.signs.push_back(std::move(board));
                     }
@@ -8278,19 +8282,19 @@ void Renderer::run() {
                     DrawModelEx(*model,at,{0,1,0},a.rotation_y+(ship ? pose.yaw : 0.0F),{1,1,1},WHITE);
             }
         }
-        // La Levita's two trains over Norda Kvartalo's alley (world::north), on their timetable.
-        if(verda_region.coastal_layout() && std::abs(camera.position.z-world::north::l_z)<700 && std::abs(camera.position.x)<800)
-            if(Model* train=get_world_asset_model("assets/verda/city/north/l_train.glb",character_registry)) {
+        // La Levita's two trains (world::north) on their timetable, each car on its own stretch of the
+        // line (round the curves too).
+        if(verda_region.coastal_layout() && camera.position.z<120 && camera.position.z>-500 && std::abs(camera.position.x)<600)
+            if(Model* car_model=get_world_asset_model("assets/verda/city/north/l_car.glb",character_registry)) {
                 static const float street=world::terrain::TerrainHeight::sample(0,0);
                 for(int k=0;k<2;++k) {
                     const auto t=world::north::train(k,GetTime());
-                    const Vector3 at{t.at.x,street+t.at.y,t.at.z};
-                    if(!view.sphere({at.x,at.y+2,at.z},16)) continue;
-                    rlPushMatrix();
-                    rlTranslatef(at.x,at.y,at.z);
-                    rlRotatef(90,0,1,0);   // (its length along the line, east-west)
-                    DrawModel(*train,{0,0,0},1,WHITE);
-                    rlPopMatrix();
+                    for(int which=0;which<2;++which) {
+                        const auto c=world::north::car(t,which);
+                        const Vector3 at{c.at.x,street+c.at.y,c.at.z};
+                        if(!view.sphere({at.x,at.y+2,at.z},9)) continue;
+                        DrawModelEx(*car_model,at,{0,1,0},c.yaw,{1,1,1},WHITE);
+                    }
                 }
             }
         double sub_t3=GetTime();

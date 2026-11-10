@@ -45,7 +45,7 @@ bool log() { return std::getenv("OUTLAND_CONFLICT_LOG") != nullptr; }
 // the lamps down a boulevard's median), the cars on it.
 bool of_the_road(const world::WorldAsset& a) {
     if (!a.vehicle.definition.empty() || a.model_path.empty()) return a.model_path.empty() && a.type != world::AssetType::Tree;
-    for (const char* kind : {"/city/ground/", "Traffic lights", "signal", "gantry", "sign_", "_sign", "Sign", "road_marking", "crosswalk", "Crosswalk", "manhole", "loading_chute", "harbour_crane", "quay_apron", "north/l_deck"})
+    for (const char* kind : {"/city/ground/", "Traffic lights", "signal", "gantry", "sign_", "_sign", "Sign", "road_marking", "crosswalk", "Crosswalk", "manhole", "loading_chute", "harbour_crane", "quay_apron", "north/l_"})
         if (a.model_path.find(kind) != std::string::npos) return true;
     return false;
 }
@@ -124,7 +124,7 @@ int main() {
         for (const auto& asset : town.assets) {
             if (!asset.vehicle.definition.empty() || asset.model_path.empty() || asset.size.y < .5F) continue;
             if (asset.model_path.find("Stairs") != std::string::npos) continue;   // up to a door
-            if (asset.model_path.ends_with("north/l_deck.glb")) continue;   // La Levita's deck, up on its bents
+            if (asset.model_path.find("north/l_deck") != std::string::npos) continue;   // La Levita's deck, up on its bents
             // An upper storey stands on the one below (a wall piece of the same building under it).
             if (asset.model_path.find("/Building Parts/") != std::string::npos) {
                 bool storey = false;

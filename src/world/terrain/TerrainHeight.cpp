@@ -9,6 +9,7 @@
 #include "outland/world/Ballparks.hpp"
 #include "outland/world/MountainRoad.hpp"
 #include "outland/world/SovagejoCounty.hpp"
+#include "outland/world/NorthQuarter.hpp"
 
 namespace outland::world::terrain {
 
@@ -184,7 +185,7 @@ float TerrainHeight::pad_weight(
     const float suburb=std::hypot(std::max({layout::suburb_near-std::abs(world_x),std::abs(world_x)-layout::suburb_far,0.0F}),
                                   std::max(std::abs(world_z)-layout::suburb_half,0.0F));
     float weight = 1 - smooth(std::min({distance-layout::capital_flat_radius,suburb,layout::downtown_outside(world_x,world_z),
-                                        layout::freight_outside(world_x,world_z)})/80.0F);
+                                        layout::freight_outside(world_x,world_z),north::corridor_outside(world_x,world_z)})/80.0F);
     const auto pad=[&](float cx,float cz,float flat,float band) {
         const float d=std::hypot(world_x-cx,world_z-cz);
         if(d<flat+band) weight=std::max(weight,1-smooth((d-flat)/band));
@@ -310,8 +311,9 @@ float TerrainHeight::land(
         // Flat central building pad (downtown and the suburbs either side), then the original countryside.
         const float suburb=std::hypot(std::max({layout::suburb_near-std::abs(world_x),std::abs(world_x)-layout::suburb_far,0.0F}),
                                       std::max(std::abs(world_z)-layout::suburb_half,0.0F));
+        // (and the strip La Levita crosses open country on: world/NorthQuarter.hpp)
         height *= smooth(std::min({distance-layout::capital_flat_radius,suburb,layout::downtown_outside(world_x,world_z),
-                                   layout::freight_outside(world_x,world_z)})/80.0F);
+                                   layout::freight_outside(world_x,world_z),north::corridor_outside(world_x,world_z)})/80.0F);
         // Small building pads retain hills and wilderness between towns.
         for (std::size_t i=1;i<layout::sites.size();++i) {
             const auto c=layout::sites[i].center;
