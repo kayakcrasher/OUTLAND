@@ -363,6 +363,7 @@ void FoliageSystem::draw(
                 ++evaluations_;
                 bool allowed=!physics::WorldCollision::blocked({world_x,0,world_z},region,.35F);
                 if(allowed && (highways::paved_ground(world_x,world_z) || highways::network(region).on_apron(world_x,world_z))) allowed=false;   // a gore, a roundabout, a drive-in's apron
+                if(allowed && region.coastal_layout() && layout::on_quay(world_x,world_z)) allowed=false;   // Porto Luma's concrete quay
                 if(allowed) for(const auto& town:region.settlements()) {
                     // (Clear of a highway's gravel verge and a slip road's shoulders too.)
                     for(const auto& road:town.roads) {

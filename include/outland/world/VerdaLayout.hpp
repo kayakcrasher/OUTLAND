@@ -92,6 +92,8 @@ inline constexpr float fish_z = -360;                         // the second ramp
 inline constexpr float quay_z0 = cargo_z - cargo_quay_half, quay_z1 = fish_z + 18;   // the whole quay, end to end
 inline constexpr float quay_lane_x = 2214;                    // the lane along the quay, under the cranes
 inline constexpr Vector3 fishers_jetty{cargo_quay_x1, 0, fish_z};   // the jetty's land end, at the quay face
+// On the quay's concrete (the cargo apron and the fishers' quay, end to end): no grass grows there.
+inline constexpr bool on_quay(float x, float z) { return x > cargo_ramp_x1 - 1 && x < cargo_quay_x1 + 1 && z > quay_z0 - 1 && z < quay_z1 + 1; }
 // Marnafto's diesel lanes for the big rigs (city kit civic/diesel_island.glb, 4 x 12 m; the game
 // finds them by model), each 2.5 m clear of the road a rig pulls up on: one beside the quay lane
 // on the fishers' quay, one in Verda Transporto's yard, and one inside each freight yard's loop

@@ -1268,7 +1268,7 @@ def quay_apron():
     b.box((-hx, -.4, -hz), (hx, 0, hz), {'+y': "concrete", '-x': "wall", '+z': "wall", '-z': "wall"})
     b.box((hx - 1.5, -14, -hz), (hx, 0, hz), {'+x': "wall", '+z': "wall", '-z': "wall"})
     b.solid((hx - 2.2, 0, -hz), (hx - 1.9, .01, hz), "yellow")
-    for x in (7.0, 23.0):                                 # crane rails
+    for x in (14.5, 28.5):                                # crane rails (under the cranes' legs)
         b.solid((x - .15, 0, -hz), (x + .15, .03, hz), "rail")
     for z in range(-50, 51, 8):                          # the lane's dashes (x = 6 local)
         b.solid((5.85, 0, z), (6.15, .01, z + 4), "white")
@@ -1331,11 +1331,13 @@ def cargo_ship():
     for x in (-hw + .1, hw - .3):
         b.solid((x, deck, body0), (x + .2, deck + 1.1, a0), "steel")
     b.solid((-hw - .05, deck - 2.8, 20), (-hw + .1, deck - .2, 26), "black")
+    # The passenger door in the house's quay side, where the brow comes aboard (world::harbour).
+    b.solid((-6.55, deck, 36.4), (-6.45, deck + 2.1, 37.6), "black")
     return b
 
 
 def harbour_crane():
-    """A ship-to-shore container crane on rails along the quay: two portal frames 16 m apart
+    """A ship-to-shore container crane on rails along the quay: two portal frames 14 m apart
     (across the quay, X) and 12 m between them along it (Z), a machinery house, and the boom at
     32 m - out 40 m over the water (+X) and back 18 m over the quay - with its trolley and
     spreader. Red and white."""
@@ -1344,11 +1346,14 @@ def harbour_crane():
     b.material("white", flat((232, 232, 226), 3), 2, 2)
     b.material("dark", flat((70, 74, 80), 3), 2, 2)
     b.material("glass", flat((50, 70, 88), 2), 1, 1)
-    g, s, top = 8.0, 6.0, 30.0
+    g, s, top = 7.0, 6.0, 30.0
+    b.material("wheel", flat((30, 30, 32), 3), 1, 1)
     for x in (-g, g):
         for z in (-s, s):
-            b.solid((x - .7, 0, z - .7), (x + .7, top, z + .7), "red")
-        b.solid((x - .9, 0, -s - 1.5), (x + .9, 1.2, s + 1.5), "dark")            # the bogies
+            b.solid((x - .7, 1.0, z - .7), (x + .7, top, z + .7), "red")
+            b.solid((x - .8, .25, z - 1.4), (x + .8, 1.0, z + 1.4), "dark")         # its bogie on the rail
+            for w in (-.9, 0, .9):
+                b.solid((x - .35, 0, z + w - .3), (x + .35, .5, z + w + .3), "wheel")
         b.solid((x - .6, 12, -s), (x + .6, 13.2, s), "red")                         # portal ties
     for z in (-s, s):
         b.solid((-g - .7, top - 1.4, z - .7), (g + .7, top, z + .7), "red")
@@ -3753,6 +3758,144 @@ def mailbox(seed=491):
     return b
 
 
+# ---------------------------------------------------------------- Porto Luma's arrivals
+# Where the island's ship lands its passengers (world::harbour): the brow down from her side, the
+# arrival hall on the quay, a zebra over the quay lane to the waiting area, and the port's gate.
+def arrival_hall(seed=501):
+    """Alvenejo, the arrival hall on the quay (10 x 14 m, the long way along Z, enterable): glazed
+    sides over a white base, a door at each end under a canopy (from the ship at -Z, out to the
+    waiting area at +Z), benches and the customs desk inside, a tiled floor."""
+    b = Builder()
+    b.material("render", flat((236, 234, 226), 3), 3, 3)
+    b.material("inner", flat((214, 212, 204), 3), 3, 3)
+    b.material("glass", curtain_wall((96, 132, 150), (60, 66, 72), (70, 76, 82), seed), 3, 3)
+    b.material("tiles", checker((200, 196, 186), (176, 172, 162), 4, seed), 2, 2)
+    b.material("roof", gravel_roof(), 3, 3)
+    b.material("trim", flat((16, 110, 64), 3), 1, 1)
+    b.material("steel", flat((150, 154, 160), 3), 1, 1)
+    b.material("bench", wood(), 1, 1)
+    b.material("desk", flat((120, 90, 60), 5), 1, 1)
+    w, d, h, f, t = 5.0, 7.0, 4.2, .1, .25
+    door = (-1.3, 1.3, f, 2.6)
+    wall_with_openings(b, 'x', -d, (-w, w), h, t, [door], "render", "inner", -1)
+    wall_with_openings(b, 'x', d, (-w, w), h, t, [door], "render", "inner", +1)
+    for x, o in ((-w, -1), (w, 1)):
+        wall_with_openings(b, 'z', x, (-d + t, d - t), h, t, [(-5.6, 5.6, 1.0, 3.6)], "render", "inner", o)
+        xx = x - o * .12
+        b.box((min(xx, xx + .02), 1.0, -5.6), (max(xx, xx + .02), 3.6, 5.6), {'-x': "glass", '+x': "glass"})
+    b.box((-w + t, 0, -d + t), (w - t, f, d - t), {'+y': "tiles"})
+    b.box((-w - .3, h, -d - .3), (w + .3, h + .35, d + .3), {s: "render" for s in ('+x', '-x', '+z', '-z')} | {'+y': "roof", '-y': "inner"})
+    b.solid((-w - .32, h - .1, -d - .32), (w + .32, h + .05, d + .32), "trim")
+    for zz in (-d, d):
+        sign = -1 if zz < 0 else 1
+        b.solid((-2.6, 2.9, min(zz, zz + sign * 2.4)), (2.6, 3.05, max(zz, zz + sign * 2.4)), "steel")   # canopies
+        for x in (-2.4, 2.4):
+            b.solid((x - .06, 0, zz + sign * 2.3 - .06), (x + .06, 2.9, zz + sign * 2.3 + .06), "steel")
+    for x in (-3.6, 3.6):                                      # benches along the glazing
+        b.solid((x - .3, f, -4.5), (x + .3, f + .45, -.5), "bench")
+        b.solid((x - .3, f, .8), (x + .3, f + .45, 3.8), "bench")
+    b.solid((-2.8, f, 4.2), (-.9, f + 1.1, 5.0), "desk")        # the customs desk by the way out
+    b.solid((-2.8, f + 1.1, 4.2), (-.9, f + 1.2, 5.0), "trim")
+    return b
+
+
+def ship_brow():
+    """The brow from the ship's side down to the quay: a stepped gangway 6.8 m long (X), rising
+    2 m to the +X end, with handrails and a landing at its foot."""
+    b = Builder()
+    b.material("steel", flat((150, 154, 160), 3), 1, 1)
+    b.material("tread", flat((96, 98, 100), 5), 1, 1)
+    b.material("rope", flat((236, 236, 230), 2), 1, 1)
+    run, rise, half = 6.8, 2.0, .65
+    b.solid((-run / 2 - 1.2, 0, -half - .1), (-run / 2, .12, half + .1), "tread")   # the landing
+    steps = 10
+    for k in range(steps):
+        x0 = -run / 2 + k * run / steps
+        y = (k + 1) * rise / steps
+        b.solid((x0, y - .1, -half), (x0 + run / steps, y, half), "tread")
+    for z in (-half - .05, half + .05):
+        for k in range(steps + 1):
+            x = -run / 2 + k * run / steps
+            y = k * rise / steps
+            b.solid((x - .03, y, z - .03), (x + .03, y + 1.0, z + .03), "steel")
+            if k < steps:
+                b.raw("rope", [(x, y + .95, z - .02), (x + run / steps, y + rise / steps + .95, z - .02),
+                               (x + run / steps, y + rise / steps + 1.0, z - .02), (x, y + 1.0, z - .02)], (0, 0, -1), [(0, 0), (1, 0), (1, 1), (0, 1)])
+                b.raw("rope", [(x + run / steps, y + rise / steps + .95, z + .02), (x, y + .95, z + .02),
+                               (x, y + 1.0, z + .02), (x + run / steps, y + rise / steps + 1.0, z + .02)], (0, 0, 1), [(0, 0), (1, 0), (1, 1), (0, 1)])
+    return b
+
+
+def port_gate(seed=511):
+    """The port's gate over the terminal road (the road along Z, 14 m between the kerbs): a sign
+    gantry on two posts 6.6 m up (the name board is a runtime sign), the gatehouse at the -X side
+    with its windows to the road, the barrier's boom raised on its post."""
+    b = Builder()
+    b.material("steel", flat((40, 92, 66), 3), 1, 1)
+    b.material("render", flat((236, 234, 226), 3), 3, 3)
+    b.material("glass", flat((60, 84, 100), 3), 1, 1)
+    b.material("roof", flat((60, 64, 66), 3), 1, 1)
+    b.material("boom", stripes((206, 36, 36), (240, 240, 236), width=8, seed=seed), .8, .8)
+    b.material("dark", flat((36, 38, 40), 3), 1, 1)
+    for x in (-9.0, 9.0):
+        b.solid((x - .3, 0, -.3), (x + .3, 7.6, .3), "steel")
+    b.solid((-9.3, 6.6, -.35), (9.3, 7.6, .35), "steel")
+    # The gatehouse: 3 x 3.4 m, windows on three sides, a flat roof overhanging.
+    gx = -12.2
+    b.box((gx - 1.5, 0, -1.7), (gx + 1.5, 1.0, 1.7), {s: "render" for s in ('+x', '-x', '+z', '-z')})
+    b.box((gx - 1.5, 1.0, -1.7), (gx + 1.5, 2.2, 1.7), {s: "glass" for s in ('+x', '-x', '+z', '-z')})
+    b.box((gx - 1.5, 2.2, -1.7), (gx + 1.5, 2.8, 1.7), {s: "render" for s in ('+x', '-x', '+z', '-z')})
+    b.solid((gx - 2.0, 2.8, -2.2), (gx + 2.0, 3.0, 2.2), "roof")
+    # The barrier, raised.
+    b.solid((-8.1, 0, 1.2), (-7.5, 1.1, 1.8), "dark")
+    b.solid((-7.95, 1.1, 1.35), (-7.65, 7.0, 1.65), "boom")
+    return b
+
+
+def waiting_shelter(seed=531):
+    """A shelter for people meeting the ship (front -Z): a bench under a canopy, a glazed back and
+    ends, in the port's green."""
+    b = Builder()
+    b.material("steel", flat((16, 110, 64), 3), 1, 1)
+    b.material("glass", flat((150, 180, 196), 3), 1, 1)
+    b.material("bench", wood(), 1, 1)
+    b.material("roof", flat((236, 236, 230), 2), 1, 1)
+    w, d, h = 2.4, .8, 2.5
+    for x in (-w, w):
+        for z in (-d, d):
+            b.solid((x - .05, 0, z - .05), (x + .05, h, z + .05), "steel")
+    b.solid((-w - .2, h, -d - .4), (w + .2, h + .12, d + .2), "roof")
+    b.box((-w, .4, d - .02), (w, h - .1, d), {'-z': "glass", '+z': "glass"})
+    for x in (-w, w):
+        b.box((x - .01, .4, -d + .3), (x + .01, h - .1, d), {'-x': "glass", '+x': "glass"})
+    b.solid((-w + .2, .42, 0), (w - .2, .48, d - .1), "bench")
+    for x in (-w + .4, w - .4):
+        b.solid((x - .05, 0, .3), (x + .05, .42, .4), "steel")
+    return b
+
+
+def crosswalk_strip(length=14.0, width=3.5):
+    """A zebra crossing painted across a road (the road along Z; the stripes along it, across X)."""
+    b = Builder()
+    b.material("zebra", stripes((70, 72, 71), (232, 230, 220), width=16, seed=521), 1.0, 1.0)
+    b.box((-length / 2, 0, -width / 2), (length / 2, .03, width / 2), {'+y': "zebra"})
+    return b
+
+
+def pickup_bay(length=16.0, width=6.0):
+    """A pick-up bay painted on the paving: a yellow box with hatching at its ends."""
+    b = Builder()
+    b.material("yellow", flat((236, 196, 40), 2), 1, 1)
+    l, w, t = length / 2, width / 2, .15
+    for lo, hi in (((-l, 0, -w), (l, .02, -w + t)), ((-l, 0, w - t), (l, .02, w)), ((-l, 0, -w), (-l + t, .02, w)), ((l - t, 0, -w), (l, .02, w))):
+        b.box(lo, hi, {'+y': "yellow"})
+    for k in range(5):
+        x = -l + .6 + k * .5
+        b.box((x, 0, -w + t), (x + .15, .02, w - t), {'+y': "yellow"})
+        b.box((l - .6 - k * .5 - .15, 0, -w + t), (l - .6 - k * .5, .02, w - t), {'+y': "yellow"})
+    return b
+
+
 def pad(size, kind):
     """Block surface 0.15 m above the street: sidewalk (pavers), park (grass + paths) or parking."""
     b = Builder()
@@ -3938,6 +4081,12 @@ def kit():
     add("country/woodpile.glb", woodpile(), "city_country_woodpile", "Covered woodpile", "BuildingPart", 3.8, 1.6, 2.0)
     add("country/outhouse.glb", outhouse(), "city_country_outhouse", "Outhouse", "BuildingPart", 1.5, 1.6, 2.4)
     add("country/mailbox.glb", mailbox(), "city_country_mailbox", "Rural mailbox on a post", "BuildingPart", .3, .5, 1.4)
+    add("civic/arrival_hall.glb", arrival_hall(), "city_arrival_hall", "Alvenejo - the port's arrival hall (glazed, doors at both ends, enterable)", "Building", 10.6, 19.4, 4.55)
+    add("civic/ship_brow.glb", ship_brow(), "city_ship_brow", "Ship's brow - a passenger gangway down to the quay", "BuildingPart", 8.0, 1.5, 3.0)
+    add("civic/port_gantry.glb", port_gate(), "city_port_gantry", "Port gate - sign gantry, gatehouse, raised barrier", "BuildingPart", 23.5, 4.4, 7.6)
+    add("civic/waiting_shelter.glb", waiting_shelter(), "city_waiting_shelter", "Waiting shelter (bench, canopy, glazed back)", "BuildingPart", 5.2, 2.0, 2.6)
+    add("ground/crosswalk_14.glb", crosswalk_strip(), "city_crosswalk_14", "Zebra crossing across a 14 m road", "Road", 14, 3.5, .03)
+    add("ground/pickup_bay.glb", pickup_bay(), "city_pickup_bay", "Pick-up bay (painted)", "Road", 16, 6, .02)
     add("ground/sidewalk_block_68.glb", pad(68, "sidewalk"), "city_sidewalk_block_68", "Sidewalk Block 68 m", "BuildingPart", 68, 68, .15)
     add("ground/courthouse_square_68.glb", pad(68, "park"), "city_courthouse_square_68", "Courthouse Square Park 68 m", "BuildingPart", 68, 68, 4.6)
     add("ground/parking_lot_68.glb", pad(68, "parking"), "city_parking_lot_68", "Parking Lot 68 m", "BuildingPart", 68, 68, .15)

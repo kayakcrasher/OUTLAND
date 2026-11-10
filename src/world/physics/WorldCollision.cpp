@@ -69,7 +69,12 @@ bool WorldCollision::vehicle_blocked(
 }
 
 // La Levita's deck, bents and stations (world::north): the streets run on under them.
-bool WorldCollision::elevated(const WorldAsset& asset) { return asset.model_path.find("city/north/l_") != std::string::npos; }
+// So do the harbour's cranes (their portals straddle the quay) and the port's gate (its gantry over
+// the terminal road): legs and posts stop you, the way between them is open.
+bool WorldCollision::elevated(const WorldAsset& asset) {
+    return asset.model_path.find("city/north/l_") != std::string::npos || asset.model_path.ends_with("civic/harbour_crane.glb") ||
+           asset.model_path.ends_with("civic/port_gantry.glb");
+}
 
 bool WorldCollision::light_prop(const WorldAsset& asset) {
     if (!asset.vehicle.definition.empty() || asset.model_path.empty()) return false;

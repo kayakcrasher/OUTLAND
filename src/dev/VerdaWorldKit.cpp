@@ -4,6 +4,7 @@
 #include "outland/world/ParkingGarage.hpp"
 #include "outland/world/Ballparks.hpp"
 #include "outland/world/Highways.hpp"
+#include "outland/world/Harbour.hpp"
 #include "outland/world/MotorTrade.hpp"
 #include "outland/world/MountainRoad.hpp"
 #include "outland/world/NorthQuarter.hpp"
@@ -2539,9 +2540,12 @@ void cargo_terminal(Kit& kit, world::VerdaRegion& region) {
     // Marnafto's diesel lane for the rigs, beside the quay lane (layout::quay_diesel).
     kit.put(city + "civic/diesel_island.glb", {L::quay_diesel.x, quay, L::quay_diesel.z}, 0, false);
     // The ship at the berth, her quay side 1.2 m off the quay face; the keel 5 m under the sea.
+    // (She comes and goes on her timetable - world::harbour - and the game draws her where she is.)
     if (!kit.put(city + "civic/cargo_ship.glb", {L::cargo_quay_x1 + 9.2F, L::sea_level - 5, z}, 0, false, false)) return;
+    // The cranes: their legs on the rails either side of the quay's edge strip, clear of the lane;
+    // solid (WorldCollision meets their real shape: the portal between the legs is open).
     for (const float cz : {z - 22, z})
-        kit.put(city + "civic/harbour_crane.glb", {L::cargo_quay_x1 - 9, quay, cz}, 0, false, false);
+        kit.put(city + "civic/harbour_crane.glb", {L::cargo_quay_x1 - 8.5F, quay, cz}, 0, false, true);
     // Containers waiting on the quay, either side of the ramp's mouth (the cattle pen north).
     kit.put(city + "civic/container_stack.glb", {lane - 23, quay, z - 33}, 0, false);
     kit.put(city + "civic/container_stack.glb", {lane - 36, quay, z - 33}, 0, false);
@@ -2552,9 +2556,26 @@ void cargo_terminal(Kit& kit, world::VerdaRegion& region) {
     kit.put(ranch_dir + "loading_chute.glb", f.at(rr::cattle_quay_chute.x, rr::cattle_quay_chute.y + 2.2F), f.yaw() + 180);
     kit.put(ranch_dir + "water_trough.glb", f.at(-6, 22), f.yaw());
     kit.put(city + "civic/cattle_gangway.glb", {rr::cattle_gangway_foot.x, quay, rr::cattle_gangway_foot.y}, 0, false, false);
-    // Lamps and bollards along the quay edge, end to end (clear of the jetty's foot).
+    // The arrivals (world::harbour): the ship's brow down to the quay (drawn while she is alongside),
+    // the arrival hall, a zebra over the quay lane, and the waiting area where people meet the ship -
+    // a pick-up bay, a shelter, benches, a lamp.
+    {
+        namespace hb = world::harbour;
+        kit.put(city + "civic/ship_brow.glb", {hb::brow_foot.x + 4.2F, quay, hb::brow_foot.z}, 0, false, false);
+        if (kit.put(city + "civic/arrival_hall.glb", {hb::hall.x, quay, hb::hall.z}, 0, false))
+            kit.purpose({hb::hall.x, quay + .2F, hb::hall.z + 3}, 0, world::BuildingPurpose::Office);
+        kit.put(city + "ground/crosswalk_14.glb", {hb::crossing.x, quay + .005F, hb::crossing.z}, 0, false, false);
+        kit.put(city + "ground/pickup_bay.glb", {hb::pickup_bay.x, quay + .005F, hb::pickup_bay.z}, 0, false, false);
+        kit.put(city + "civic/waiting_shelter.glb", {hb::waiting.x - 8, quay, hb::waiting.z - 3.4F}, 180, false);   // (its bench toward the bay)
+        kit.put(urban + "Traffic lights/street_light_clean.glb", {hb::waiting.x + 4, quay, hb::waiting.z - 4}, 270, false);
+        kit.tree({hb::waiting.x - 14, quay, hb::waiting.z - 4});
+    }
+    // The port's gate on the terminal road, short of the quay road's crossing: the name over the
+    // road, the gatehouse beside it, the barrier up.
+    kit.put(city + "civic/port_gantry.glb", {world::harbour::gate_x, world::terrain::TerrainHeight::sample(world::harbour::gate_x, z), z}, 90, false, true);
+    // Lamps and bollards along the quay edge, end to end (clear of the jetty's foot and the hall).
     for (float lz = z - 50; lz < L::quay_z1 - 2; lz += 25)
-        if (std::abs(lz - L::fish_z) > 6) kit.put(urban + "Traffic lights/street_light_clean.glb", {L::cargo_quay_x1 - 2, quay, lz}, 90, false);
+        if (std::abs(lz - L::fish_z) > 6 && std::abs(lz - world::harbour::hall.z) > 12) kit.put(urban + "Traffic lights/street_light_clean.glb", {L::cargo_quay_x1 - 2, quay, lz}, 90, false);
     for (float bz = z - 48; bz < L::quay_z1 - 2; bz += 8)
         if (std::abs(bz - L::fish_z) > 5) kit.put(urban + "Cones & Barriers/Bollards/square_bollard.glb", {L::cargo_quay_x1 - .6F, quay, bz}, 0, false);
     kit.report.cargo_terminal = true;

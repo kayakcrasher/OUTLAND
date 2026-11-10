@@ -75,6 +75,7 @@
 #include "outland/game/economy/Stash.hpp"
 #include "outland/world/ParkingGarage.hpp"
 #include "outland/world/NorthQuarter.hpp"
+#include "outland/world/Harbour.hpp"
 #include "outland/world/Ballparks.hpp"
 #include "outland/game/sports/BallGame.hpp"
 #include "outland/game/sports/League.hpp"
@@ -317,6 +318,9 @@ void draw_model_backed_world_assets(
             if (!asset.vehicle.definition.empty() || asset.model_path.empty()) {
                 continue;
             }
+            // (The ship and her gangways come and go: drawn on her timetable - world::harbour.)
+            if (asset.model_path.ends_with("civic/cargo_ship.glb") || asset.model_path.ends_with("civic/ship_brow.glb") ||
+                asset.model_path.ends_with("civic/cattle_gangway.glb")) continue;
 
             const float dx =
                 asset.position.x - camera_position.x;
@@ -840,7 +844,14 @@ void Renderer::run() {
     float autosave_wait=0,autosave_note=0,slots_refresh=0;
     constexpr float autosave_every=120;
     // The cargo terminal's quay, where the player comes off the ship and Uncle Ron waits by his truck.
-    constexpr Vector3 arrival_spot{2230,0,-482},ron_at_port{2203,0,-462},ron_truck_at_port{2195,0,-454};
+    // (world::harbour: off the ship's brow, through the arrival hall, over the zebra to the waiting area.)
+    constexpr Vector3 arrival_spot{world::harbour::brow_foot.x-.8F,0,world::harbour::brow_foot.z+1.2F};
+    constexpr Vector3 ron_at_port{world::harbour::waiting.x,0,world::harbour::waiting.z};
+    constexpr Vector3 ron_truck_at_port{world::harbour::pickup_bay.x,0,world::harbour::pickup_bay.z};
+    // Stella Maris on her timetable: when she sailed early (island minutes; < 0 on schedule), and
+    // whether she was being held alongside last frame (the opening, until the player meets Uncle Ron).
+    double ship_sailed=-1;
+    bool ship_held=false;
     std::string lights_car;          // the police car whose lights the player switched on ("" none)
     // Who runs Verda: every town and ranch, their holders and holds, the tags on the walls (saved
     // beside the career); the logos the tags are painted with; the underworld's news.
@@ -1579,7 +1590,7 @@ void Renderer::run() {
             const Vector3 nephew=floor_at({arrival_spot.x,world::layout::cargo_quay_height,arrival_spot.z});
             const Vector3 ron=floor_at({ron_at_port.x,world::layout::cargo_quay_height,ron_at_port.z});
             place_ron(ron,facing(ron,nephew));
-            park_ron_truck(floor_at({ron_truck_at_port.x,world::layout::cargo_quay_height,ron_truck_at_port.z}),90);
+            park_ron_truck(floor_at({ron_truck_at_port.x,world::layout::cargo_quay_height,ron_truck_at_port.z}),270);   // (nose to the way out)
             if(!explicit_spawn) {player.position=Vector3Add(nephew,{0,1,0});player.yaw=facing(nephew,ron)*DEG2RAD;}
             interaction_message="Verda. Home again, after all those years in Eastern Europe";interaction_remaining=6;
             return;
@@ -2935,6 +2946,9 @@ void Renderer::run() {
                     }
 #endif
                     story.start(campaign.stage);
+                    // Stella Maris waits alongside for a new arrival; mid-way through the first day she is gone.
+                    ship_held=story.stage()==game::campaign::Stage::Arrival;
+                    ship_sailed=!ship_held && story.stage()!=game::campaign::Stage::Free ? island_life.clock().minutes-world::harbour::passage-1 : -1;
                     phone=game::campaign::Phone{};phone.set_done(campaign.calls);
 #ifdef OUTLAND_DEV_TOOLS
                     if(const char* soon=std::getenv("OUTLAND_DEV_PHONE"); soon && *soon=='1') phone.ring_in(5);   // dev: a call within seconds
@@ -8236,6 +8250,33 @@ void Renderer::run() {
             for(const auto& ranch:ranches.ranches()) for(const auto& cow:ranch.herd) draw_cow(cow);
             for(const auto& cow:ranches.stockyard().pen) draw_cow(cow);
             for(const auto& cow:ranches.cattle_quay().pen) draw_cow(cow);
+        }
+        // Stella Maris (world::harbour): where her timetable has her - alongside with her brow and the
+        // cattle gangway down, coming or going, or away at sea. The opening holds her alongside until
+        // the player meets Uncle Ron; then she sails.
+        if(verda_region.coastal_layout()) {
+            const bool hold=game_mode==game::GameMode::Explore && !lan_match && story.stage()==game::campaign::Stage::Arrival;
+            if(ship_held && !hold && ship_sailed<0) ship_sailed=island_life.clock().minutes;
+            ship_held=hold;
+            const auto pose=world::harbour::at(island_life.clock().minutes,ship_sailed,hold);
+            // (Her assets found once per world: the ship, her brow, the cattle gangway.)
+            static std::vector<world::WorldAsset> harbour_pieces;
+            static std::size_t harbour_world=static_cast<std::size_t>(-1);
+            if(harbour_world!=world_size()) {
+                harbour_world=world_size();
+                harbour_pieces.clear();
+                for(const auto& town:verda_region.settlements()) for(const auto& a:town.assets)
+                    if(a.model_path.ends_with("civic/cargo_ship.glb") || a.model_path.ends_with("civic/ship_brow.glb") || a.model_path.ends_with("civic/cattle_gangway.glb"))
+                        harbour_pieces.push_back(a);
+            }
+            for(const auto& a:harbour_pieces) {
+                const bool ship=a.model_path.ends_with("civic/cargo_ship.glb");
+                if(ship ? pose.at_sea : !pose.alongside) continue;
+                const Vector3 at=ship ? Vector3{a.position.x+pose.offset.x,a.position.y,a.position.z+pose.offset.y} : a.position;
+                if(Vector3DistanceSqr(at,camera.position)>2400.0F*2400.0F || !view.sphere({at.x,at.y+10,at.z},ship ? 60.0F : 12.0F)) continue;
+                if(Model* model=get_world_asset_model(a.model_path,character_registry))
+                    DrawModelEx(*model,at,{0,1,0},a.rotation_y+(ship ? pose.yaw : 0.0F),{1,1,1},WHITE);
+            }
         }
         // La Levita's two trains over Norda Kvartalo's alley (world::north), on their timetable.
         if(verda_region.coastal_layout() && std::abs(camera.position.z-world::north::l_z)<700 && std::abs(camera.position.x)<800)

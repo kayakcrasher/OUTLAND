@@ -267,6 +267,24 @@ inline void register_city_assets(CreatorAssetRegistry& registry) {
     (void)registry.add({.id = "city_country_mailbox", .name = "Rural mailbox on a post", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/country/mailbox.glb", .thumbnail_path = "", .footprint = {0.30F, 0.50F, 1.40F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_arrival_hall", .name = "Alvenejo - the port's arrival hall (glazed, doors at both ends, enterable)", .category = CreatorAssetCategory::Building,
+        .model_path = "assets/verda/city/civic/arrival_hall.glb", .thumbnail_path = "", .footprint = {10.60F, 19.40F, 4.55F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_ship_brow", .name = "Ship's brow - a passenger gangway down to the quay", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/civic/ship_brow.glb", .thumbnail_path = "", .footprint = {8.00F, 1.50F, 3.00F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_port_gantry", .name = "Port gate - sign gantry, gatehouse, raised barrier", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/civic/port_gantry.glb", .thumbnail_path = "", .footprint = {23.50F, 4.40F, 7.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_waiting_shelter", .name = "Waiting shelter (bench, canopy, glazed back)", .category = CreatorAssetCategory::BuildingPart,
+        .model_path = "assets/verda/city/civic/waiting_shelter.glb", .thumbnail_path = "", .footprint = {5.20F, 2.00F, 2.60F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_crosswalk_14", .name = "Zebra crossing across a 14 m road", .category = CreatorAssetCategory::Road,
+        .model_path = "assets/verda/city/ground/crosswalk_14.glb", .thumbnail_path = "", .footprint = {14.00F, 3.50F, 0.03F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
+    (void)registry.add({.id = "city_pickup_bay", .name = "Pick-up bay (painted)", .category = CreatorAssetCategory::Road,
+        .model_path = "assets/verda/city/ground/pickup_bay.glb", .thumbnail_path = "", .footprint = {16.00F, 6.00F, 0.02F},
+        .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});
     (void)registry.add({.id = "city_sidewalk_block_68", .name = "Sidewalk Block 68 m", .category = CreatorAssetCategory::BuildingPart,
         .model_path = "assets/verda/city/ground/sidewalk_block_68.glb", .thumbnail_path = "", .footprint = {68.00F, 68.00F, 0.15F},
         .placement = {}, .default_scale = 1, .tags = {"verda", "city", "downtown"}});

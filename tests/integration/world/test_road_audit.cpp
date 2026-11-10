@@ -95,7 +95,7 @@ int main() {
             if (!asset.collision || !asset.vehicle.definition.empty()) continue;
             if (asset.model_path.ends_with("loading_chute.glb")) continue;   // a ranch drive ends at it: the trucks back up to it
             if (asset.model_path.find("/city/ground/") != std::string::npos) continue;   // paving and parking lots: driven over
-            if (asset.model_path.ends_with("north/l_deck.glb")) continue;   // La Levita's deck spans the streets 5.4 m up
+            if (world::physics::WorldCollision::elevated(asset)) continue;   // La Levita's deck, the cranes' portals, the port's gantry: over the way
             const float a = asset.rotation_y * DEG2RAD;
             const float hx = asset.size.x * .5F, hz = asset.size.z * .5F;
             std::vector<Vector3> points{asset.position};

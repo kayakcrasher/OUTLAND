@@ -12,9 +12,14 @@ Code: `game::campaign` (`include/outland/game/campaign/Campaign.hpp`): the story
 The player comes home to Verda after years abroad in Eastern Europe. He was born and raised in
 Verda City, and several of his family are in **La Verda Mano**, the Green Hand.
 
-1. **The quay at Porto Luma.** A new game starts on the cargo terminal's quay, just off the ship.
-   **Uncle Ron** waits by his red pickup ("Find Uncle Ron on the quay"; his name shows over his
-   head, and the compass points to him). Ron is a working-class *Esperantisto*, proud his nephew is
+1. **The quay at Porto Luma.** A new game starts at the foot of the ship's brow on the cargo
+   terminal's quay: the player has just come down from **Stella Maris**. The way to Uncle Ron runs
+   through **Alvenejo**, the arrival hall ("BONVENON AL VERDA" over its way out), and over the
+   zebra across the quay lane to the waiting area (ATENDEJO), where **Uncle Ron** waits by his red
+   pickup in the pick-up bay ("Find Uncle Ron on the quay"; his name shows over his head, and the
+   compass points to him). Stella Maris stays alongside until the player starts talking to him;
+   then she casts off and sails, and Ron watches her go ("She's in every Monday morning... miss
+   her and you wait a week"). See [the harbour](harbour.md). Ron is a working-class *Esperantisto*, proud his nephew is
    home: "You still remember Esperanto? Ahaha!" His talk on the quay is a short tour of the island
    and a quick tutorial: the port and Verda Transporto, the towns, the ranchers, the Policio, the
    map and USE.

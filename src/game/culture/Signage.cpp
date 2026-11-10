@@ -4,6 +4,8 @@
 #include "outland/game/culture/Esperanto.hpp"
 #include "outland/game/life/LifePopulation.hpp"
 #include "outland/world/Highways.hpp"
+#include "outland/world/Harbour.hpp"
+#include "outland/world/VerdaLayout.hpp"
 #include "outland/world/MountainRoad.hpp"
 #include "outland/world/SovagejoCounty.hpp"
 #include "outland/world/VerdaRegion.hpp"
@@ -145,6 +147,7 @@ void shopfronts(const world::VerdaRegion& region, const life::Island& island, Si
         }
         // The trucking company's office at its depot.
         if (place.kind == PlaceKind::Office && near_model("civic/truck_depot.glb")) text = {"VERDA TRANSPORTO", "KAMIONADO · ŜARĜOJ · BRUTARO"};
+        if (place.kind == PlaceKind::Office && near_model("civic/arrival_hall.glb")) text = {"ALVENEJO", "PASAĜEROJ · DOGANO"};
         // Fajrejo, Sovaĝejo's little settlement: its store, its mechanic, its church; and the
         // country workshops round about.
         if (world::terrain::TerrainHeight::coastal_layout() && flat(place.door, world::county::village().centre) < world::county::village().flat + 10) {
@@ -775,6 +778,59 @@ void county_signs(const world::VerdaRegion& region, Signage& out) {
     }
 }
 
+// Porto Luma's harbour (world::harbour): the port's name over the gate on the terminal road, both
+// ways; BONVENON AL VERDA over the arrival hall's way out and the hall's name to the ship; a board
+// at the waiting area; the national flag over it.
+void harbour_signs(const world::VerdaRegion& region, Signage& out) {
+    namespace hb = world::harbour;
+    for (const auto& town : region.settlements()) for (const auto& a : town.assets) {
+        const bool gate = a.model_path.ends_with("civic/port_gantry.glb"), hall = a.model_path.ends_with("civic/arrival_hall.glb");
+        if (!gate && !hall) continue;
+        const auto add = [&](Vector3 p, float yaw, std::vector<SignLine> lines, float width, Color board, Color ink, const std::string& place) {
+            Sign sign;
+            sign.kind = gate ? SignKind::Distance : SignKind::Notice;   // (a road sign over the gate; notices on the hall)
+            sign.place = place;
+            sign.position = p;
+            sign.yaw = yaw;
+            sign.max_width = width;
+            sign.front = std::move(lines);
+            sign.board = board;
+            sign.ink = ink;
+            out.signs.push_back(std::move(sign));
+        };
+        const Color green{0, 106, 62, 255};
+        if (gate) {
+            // (The gantry spans the road at 6.6-7.6 m, its posts 9 m either side of the centre line.)
+            const float y = a.position.y + 7.1F;
+            for (const float side : {-1.0F, 1.0F}) {
+                const Vector3 p{a.position.x + side * .45F, y, world::layout::cargo_z};
+                add(p, side < 0 ? 270.0F : 90.0F, {{"HAVENO DE PORTO LUMA", .62F}, {"KARGOHAVENO · ALVENEJO · FIŜISTA KAJO", .3F}}, 15, green, WHITE, a.id + (side < 0 ? ":w" : ":e"));
+            }
+        } else {
+            const float floor = a.position.y;
+            add({hb::hall.x, floor + 3.4F, hb::hall.z + 7.32F}, 0, {{"BONVENON AL VERDA", .5F}, {"WELCOME · WILLKOMMEN · BIENVENUE", .2F}}, 8, green, WHITE, a.id + ":out");
+            add({hb::hall.x, floor + 3.4F, hb::hall.z - 7.32F}, 180, {{"ALVENEJO", .5F}, {"PASAĜEROJ · DOGANO", .22F}}, 8, green, WHITE, a.id + ":in");
+            Sign board;
+            board.kind = SignKind::Notice;
+            board.place = a.id + ":atendejo";
+            board.front = {{"ATENDEJO", .3F}, {"PRENEJO · 10 MINUTOJ", .18F}};
+            board.post = 1.4F;
+            board.max_width = 2.0F;
+            board.position = {hb::waiting.x + 2.5F, floor + 1.4F + .45F, hb::waiting.z - 4.6F};
+            board.yaw = 0;
+            out.signs.push_back(std::move(board));
+            FlagPole flag;
+            flag.place = a.id + ":flago";
+            flag.base = {hb::waiting.x - 4, floor, hb::waiting.z - 5};
+            flag.tip = {flag.base.x, floor + 8, flag.base.z};
+            flag.fly = Vector3Normalize(wind);
+            flag.width = 2.6F;
+            flag.design = FlagDesign::Verda;
+            out.flags.push_back(flag);
+        }
+    }
+}
+
 // The ring road's signs, Verda's autobahn: for each interchange and each carriageway, an exit board
 // a kilometre before it ("ELIRO 2 / PORTO LUMA / VERDA URBO / 1 km"), another where the slip road
 // leaves ("ELIRO 2 »"), and beyond the entry a board with the next two exits and how far; and on the
@@ -916,6 +972,7 @@ Signage build_signage(const world::VerdaRegion& region, const life::Island& isla
     rest_area_signs(region, out);
     mountain_signs(region, out);
     county_signs(region, out);
+    harbour_signs(region, out);
     for (auto& sign : out.signs)
         std::erase_if(sign.front, [](const SignLine& line) {return line.text.empty();});
     return out;

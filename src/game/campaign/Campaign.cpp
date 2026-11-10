@@ -118,6 +118,8 @@ SlotInfo describe(int slot, const std::string& campaign_text, bool any_save) {
 const std::vector<Line>& Story::port_lines() {
     static const std::vector<Line> lines{
         {uncle, "There he is! Nevo! Welcome home to Verda! Come here - let me look at you."},
+        {uncle, "Look at her go - the Stella Maris, already off again. She's in every Monday morning with the containers and gone by noon. "
+                "Miss her and you wait a week, ahaha!"},
         {uncle, "All those years in Eastern Europe... Saluton, nevo! You still remember Esperanto? Ahaha! Don't worry, it comes back. "
                 "Everything here is in Esperanto - the signs, the shops, the radio."},
         {uncle, "This is Porto Luma, the port. The ships come in here - containers, and the ranchers' cattle going abroad. "
